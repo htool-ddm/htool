@@ -365,18 +365,19 @@ public:
 		int nr = nb_rows(m);
 		int nc = nb_cols(m);
 		Cplx alpha = 1;
-		int lda = 1;
+		int lda = nc;
 		int incx =1;
-		Cplx beta =0;
+		Cplx beta =1;
 		int incy = 1;
 		char n='N';
-		Blas<Cplx>::gemv(&n, &nr , &nc, &alpha,
-                     m.mat.data() , &lda, &rhs[0], &incx, &beta, &lhs[0],&incy);
-// 		for(int j=0; j<m.nr; j++){
-// 			for(int k=0; k<m.nc; k++){
-// 				lhs[j]+= m.mat(j,k)*rhs[k];
-// 			}
-// 		}
+		Blas<Cplx>::gemv(&n, &nr , &nc, &alpha, m.mat.data() , &lda, &rhs[0], &incx, &beta, &lhs[0],&incy);
+ 		/*
+ 		for(int j=0; j<m.nr; j++){
+ 			for(int k=0; k<m.nc; k++){
+ 				lhs[j]+= m.mat(j,k)*rhs[k];
+ 			}
+ 		}
+ 		*/
 	}
 	
     
