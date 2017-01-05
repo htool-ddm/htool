@@ -370,16 +370,15 @@ public:
 		Cplx beta =1;
 		int incy = 1;
 		char n='N';
-		Blas<Cplx>::gemv(&n, &nr , &nc, &alpha, m.mat.data() , &lda, &rhs[0], &incx, &beta, &lhs[0],&incy);
- 		/*
+		//Blas<Cplx>::gemv(&n, &nr , &nc, &alpha, m.mat.data() , &lda, &rhs[0], &incx, &beta, &lhs[0],&incy);
+ 		
  		for(int j=0; j<m.nr; j++){
  			for(int k=0; k<m.nc; k++){
  				lhs[j]+= m.mat(j,k)*rhs[k];
  			}
  		}
- 		*/
+ 		
 	}
-	
     
 	friend std::ostream& operator<<(std::ostream& os, const Matrix& m){
 		return os << m.mat;}
