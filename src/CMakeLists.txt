@@ -7,10 +7,10 @@
 # add_executable(CompaSparse comparison_sparse.cpp)
 # target_link_libraries (CompaSparse ${EIGEN3_LIBRARIES})
 # 
-# # Creation de l executable Compression a partir de compress
-# set(CMAKE_CXX_COMPILER "mpic++")
-# add_executable(Compression compress.cpp)
-# target_link_libraries (Compression ${EIGEN3_LIBRARIES})
+# Creation de l executable Compression a partir de compress
+set(CMAKE_CXX_COMPILER "mpic++")
+add_executable(Compression compress.cpp)
+target_link_libraries (Compression ${EIGEN3_LIBRARIES} ${BLAS_LIBRARIES})
 # 
 # # Creation de l executable MultiCompression a partir de multi_compress.cpp
 # add_executable(MultiCompression multi_compress.cpp)
@@ -36,7 +36,7 @@
 # add_executable(VisuMesh visumesh.cpp)
 # target_link_libraries (VisuMesh ${EIGEN3_LIBRARIES})
 
-add_executable(Test main_test.cpp test.cpp)
-target_include_directories(Test PRIVATE ${MPI_INCLUDE_PATH})
-								
-target_link_libraries (Test ${MPI_LIBRARIES})
+# add_executable(Test main_test.cpp test.cpp)
+# target_include_directories(Test PRIVATE ${MPI_INCLUDE_PATH})
+# 								
+# target_link_libraries (Test ${MPI_LIBRARIES})

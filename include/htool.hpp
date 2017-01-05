@@ -2,7 +2,7 @@
 #define HTOOL_HPP
 
 
-
+#include "blas.hpp"
 #include "cluster.hpp"
 #include "export.hpp"
 #include "hmatrix.hpp"
@@ -13,5 +13,6 @@
 #include "point.hpp"
 // #include "sparsematrix.hpp"
 #include "user.hpp"
+
 
 #endif

@@ -1,6 +1,13 @@
 cmake_minimum_required(VERSION 2.6)
 Project(ElastoPhi)
-add_compile_options(-std=c++11)
+
+if ("${CMAKE_VERSION}" VERSION_LESS 3.1)
+	add_compile_options(-std=c++11)
+else ()
+	set(CMAKE_CXX_STANDARD 11)
+	set(CMAKE_CXX_STANDARD_REQUIRED ON)
+endif ()
+
 # List the headers and add them into the project
 FILE(GLOB_RECURSE MY_HEADERS "include/*.hpp")
 include_directories(include)
@@ -11,6 +18,9 @@ include_directories(${EIGEN3_INCLUDE_DIR})
 
 find_package (MPI REQUIRED)
 include_directories(${MPI_INCLUDE_PATH})
+
+# BLAS
+find_package(BLAS REQUIRED)
 	
 # Add sources file
 add_subdirectory(src)

@@ -70,16 +70,16 @@ public:
 		const vector<LowRankMatrix>&    MyFarFieldMats  = A.MyFarFieldMats;
 		const vector<SubMatrix>&        MyNearFieldMats = A.MyNearFieldMats;
 		
-// 		// Contribution champ lointain
-// 		for(int b=0; b<MyFarFieldMats.size(); b++){
-// 			const LowRankMatrix&  M  = MyFarFieldMats[b];
-// 			const vectInt&        It = ir_(M);
-// 			const vectInt&        Is = ic_(M);
-// 			
-// 			ConstSubVectCplx xx(x,Is);
-// 			SubVectCplx ff(f,It);
-// 			MvProd(ff,M,xx);
-// 		}
+		// Contribution champ lointain
+		for(int b=0; b<MyFarFieldMats.size(); b++){
+			const LowRankMatrix&  M  = MyFarFieldMats[b];
+			const vectInt&        It = ir_(M);
+			const vectInt&        Is = ic_(M);
+			
+			ConstSubVectCplx xx(x,Is);
+			SubVectCplx ff(f,It);
+			MvProd(ff,M,xx);
+		}
 		
 		// Contribution champ proche
 		for(int b=0; b<MyNearFieldMats.size(); b++){
@@ -99,9 +99,9 @@ public:
 			MvProd(ff,M,xx);
 // 			std::cout<<M <<" "<<ff<<std::endl;
 		}
-					for (int i =0;i<size(f);i++){
-				std::cout << f[i] << std::endl;
-			}
+// 					for (int i =0;i<size(f);i++){
+// 				std::cout << f[i] << std::endl;
+// 			}
 		time = MPI_Wtime() - time;
 		
 		double meantime;

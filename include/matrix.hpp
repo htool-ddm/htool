@@ -188,6 +188,8 @@ public:
 	 Returns the number of columns of the input argument _A_.
   */
 	friend const int& nb_cols(const VirtualMatrix& A){ return A.nc;}
+	
+	
 };
 
 class Matrix: public VirtualMatrix{
@@ -229,7 +231,17 @@ public:
 		nc = nbc;
 	}
 	
-	
+	Matrix(const VirtualMatrix& V){	
+		nr = nb_rows(V);
+		nc = nb_cols(V);
+		mat.resize(nr,nc);
+		for (int i=0;i<nr;i++)
+			for (int j=0;j<nc;j++)
+				mat(i,j)=V.get_coef(i,j);
+		
+		
+		
+	}
 	//! ### Copy constructor
 	/*!
   */
@@ -248,17 +260,17 @@ public:
 	 be overloaded so that the expression _A(j,k)_ provides
 	 access to the elements of _A_.
   */
-	template <typename MatType>
-	Matrix(const MatType& A):
-	mat(nb_rows(A),nb_cols(A)){
-		nr = nb_rows(A);
-		nc = nb_cols(A);
-		for(int j=0; j<nr; j++){
-			for(int k=0; k<nc; k++){
-				mat(j,k) = A(j,k);
-			}
-		}
-	}
+// 	template <typename MatType>
+// 	Matrix(const MatType& A):
+// 	mat(nb_rows(A),nb_cols(A)){
+// 		nr = nb_rows(A);
+// 		nc = nb_cols(A);
+// 		for(int j=0; j<nr; j++){
+// 			for(int k=0; k<nc; k++){
+// 				mat(j,k) = A(j,k);
+// 			}
+// 		}
+// 	}
 	
 	const Cplx get_coef(const int& j, const int& k) const{
         return mat(j,k);
@@ -350,11 +362,21 @@ public:
   */
 	template <typename LhsType, typename RhsType>
 	friend void MvProd(LhsType& lhs, const Matrix& m, const RhsType& rhs){
-		for(int j=0; j<m.nr; j++){
-			for(int k=0; k<m.nc; k++){
-				lhs[j]+= m.mat(j,k)*rhs[k];
-			}
-		}
+		int nr = nb_rows(m);
+		int nc = nb_cols(m);
+		Cplx alpha = 1;
+		int lda = 1;
+		int incx =1;
+		Cplx beta =0;
+		int incy = 1;
+		char n='N';
+		Blas<Cplx>::gemv(&n, &nr , &nc, &alpha,
+                     m.mat.data() , &lda, &rhs[0], &incx, &beta, &lhs[0],&incy);
+// 		for(int j=0; j<m.nr; j++){
+// 			for(int k=0; k<m.nc; k++){
+// 				lhs[j]+= m.mat(j,k)*rhs[k];
+// 			}
+// 		}
 	}
 	
     
@@ -458,52 +480,52 @@ public:
         return sqrt(norm);
     }
     
-//     friend int matrix_to_bytes(const Matrix& A, const std::string& file){
-// 
-// 		std::ofstream out(file,std::ios::out | std::ios::binary | std::ios::trunc);
-// 		
-//     	if(!out) {
-//     		std::cout << "Cannot open file.";
-//     		return 1;
-//    		}
-// 
-// 		/*
-//     	for(int i = 0; i < A.nr; i++){
-//         	for(int j = 0; j < A.nc; j++){
-//             	double cf = real(A(i,j));
-// 				out.write((char *) &cf, sizeof cf);
-//         	}
-//     	}
-//     	*/
-//     	int rows=nb_rows(A), cols=nb_cols(A);
-//     	out.write((char*) (&rows), sizeof(int));
-//     	out.write((char*) (&cols), sizeof(int));
-//     	out.write((char*) A.mat.data(), rows*cols*sizeof(Cplx) );
-//     	
-//     	out.close();
-//     	return 0;
-// 	}
-// 	
-// 	friend int bytes_to_matrix(const std::string& file, Matrix& A){
-// 
-// 		std::ifstream in(file,std::ios::in | std::ios::binary);
-// 		
-//     	if(!in) {
-//     		std::cout << "Cannot open file.";
-//     		return 1;
-//    		}
-// 
-//     	int rows=0, cols=0;
-//     	in.read((char*) (&rows), sizeof(int));
-//     	in.read((char*) (&cols), sizeof(int));
-//     	A.mat.resize(rows, cols);
-//     	A.nr = rows;
-//     	A.nc = cols;
-//     	in.read( (char *) A.mat.data() , rows*cols*sizeof(Cplx) );
-//     	
-//     	in.close();
-//     	return 0;
-// 	}
+    friend int matrix_to_bytes(const Matrix& A, const std::string& file){
+
+		std::ofstream out(file,std::ios::out | std::ios::binary | std::ios::trunc);
+		
+    	if(!out) {
+    		std::cout << "Cannot open file.";
+    		return 1;
+   		}
+
+		/*
+    	for(int i = 0; i < A.nr; i++){
+        	for(int j = 0; j < A.nc; j++){
+            	double cf = real(A(i,j));
+				out.write((char *) &cf, sizeof cf);
+        	}
+    	}
+    	*/
+    	int rows=nb_rows(A), cols=nb_cols(A);
+    	out.write((char*) (&rows), sizeof(int));
+    	out.write((char*) (&cols), sizeof(int));
+    	out.write((char*) A.mat.data(), rows*cols*sizeof(Cplx) );
+    	
+    	out.close();
+    	return 0;
+	}
+	
+	friend int bytes_to_matrix(const std::string& file, Matrix& A){
+
+		std::ifstream in(file,std::ios::in | std::ios::binary);
+		
+    	if(!in) {
+    		std::cout << "Cannot open file.";
+    		return 1;
+   		}
+
+    	int rows=0, cols=0;
+    	in.read((char*) (&rows), sizeof(int));
+    	in.read((char*) (&cols), sizeof(int));
+    	A.mat.resize(rows, cols);
+    	A.nr = rows;
+    	A.nc = cols;
+    	in.read( (char *) A.mat.data() , rows*cols*sizeof(Cplx) );
+    	
+    	in.close();
+    	return 0;
+	}
 	
 	friend Real squared_absolute_error (const Matrix& m1, const Matrix& m2){
 		assert(nb_rows(m1)==nb_rows(m2) && nb_cols(m1)==nb_cols(m2));

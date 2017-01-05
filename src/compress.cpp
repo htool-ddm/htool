@@ -10,17 +10,12 @@
 
 #include <mpi.h>
 
-#include "point.hpp"
-#include "matrix.hpp"
-#include "lrmat.hpp"
-#include "cluster.hpp"
-#include "hmatrix.hpp"
-#include "loading.hpp"
-#include "export.hpp"
-#include "user.hpp"
-#include "parametres.hpp"
+#include "htool.hpp"
+
 
 using namespace std;
+using namespace htool;
+
 
 /*
 class MyMatrix: public VirtualMatrix{
