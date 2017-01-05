@@ -8,7 +8,7 @@
 #include "matrix.hpp"
 #include "parametres.hpp"
 
-
+namespace htool {
 //==================================================//
 //
 //  DESCRIPTION:
@@ -207,5 +207,5 @@ void ExportGMSH(string inputname, string outputname){
 	outfile << "$EndElements\n";
 	
 }
-
+}
 #endif

@@ -7,15 +7,14 @@
 #include <stack>
 #include <string>
 // #include <sstream>
-// #include <vector>
+// #include <std::vector>
 // #include <cstdlib> // for exit()
 
-using namespace std;
-
+namespace htool {
 ////////////////========================================================////////////////
 ////////////////////////========  Gestion temps	========////////////////////////////////
 
-stack<clock_t> tictoc_stack;
+std::stack<clock_t> tictoc_stack;
 
 void tic() {
 	tictoc_stack.push(clock());
@@ -23,13 +22,13 @@ void tic() {
 
 void toc() {
     double time =((double)(clock() - tictoc_stack.top())) / CLOCKS_PER_SEC;
-    cout << "Time elapsed: " << time << endl;
+    std::cout << "Time elapsed: " << time << std::endl;
     tictoc_stack.pop();
 }
 
-void toc(vector<double>& times) {
+void toc(std::vector<double>& times) {
 	double time =((double)(clock() - tictoc_stack.top())) / CLOCKS_PER_SEC;
-	cout << "Time elapsed: " << time << endl;
+	std::cout << "Time elapsed: " << time << std::endl;
 	times.push_back(time);
 	tictoc_stack.pop();
 }
@@ -38,17 +37,17 @@ void toc(vector<double>& times) {
 ////////////////////////========  Conversions	========////////////////////////////////
 
 template <typename T>
-string NbrToStr ( T Number )
+std::string NbrToStr ( T Number )
 {
-	ostringstream ss;
+	std::ostringstream ss;
 	ss << Number;
 	return ss.str();
 }
 
 template <typename T>
-T StrToNbr ( const string &Text )
+T StrToNbr ( const std::string &Text )
 {
-	istringstream ss(Text);
+	std::istringstream ss(Text);
 	T result;
 	return ss >> result ? result : 0;
 }
@@ -57,19 +56,19 @@ T StrToNbr ( const string &Text )
 ////////////////========================================================////////////////
 ////////////////////////========    String splitting	========////////////////////////
 
-vector<string> &split(const string &s, char delim, vector<string> &elems) {
-    stringstream ss(s);
-    string item;
+std::vector<std::string> &split(const std::string &s, char delim, std::vector<std::string> &elems) {
+    std::stringstream ss(s);
+    std::string item;
     while (getline(ss, item, delim)) {
         elems.push_back(item);
     }
     return elems;
 }
-vector<string> split(const string &s, char delim) {
-	vector<string> elems;
+std::vector<std::string> split(const std::string &s, char delim) {
+	std::vector<std::string> elems;
 	split(s, delim, elems);
 	return elems;
 }
-
+}
 
 #endif

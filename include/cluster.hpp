@@ -7,6 +7,8 @@
 #include <Eigen/Dense>
 #include <Eigen/Eigenvalues>
 
+namespace htool {
+
 typedef Eigen::Matrix3d               MatR3;
 typedef Eigen::EigenSolver<MatR3>     EigenSolver;
 typedef EigenSolver::EigenvectorsType EigenVector;
@@ -84,7 +86,7 @@ public:
 	friend void DisplayTree(const Cluster&);
 	
 	friend void TraversalBuildLabel(const Cluster& t, vectInt& labelVisu, const unsigned int visudep, const unsigned int cnt);
-	friend void VisuPartitionedMesh(const Cluster& t, string inputname, string outputname, const unsigned int visudep);
+	friend void VisuPartitionedMesh(const Cluster& t, std::string inputname, std::string outputname, const unsigned int visudep);
 	
 	
 };
@@ -119,9 +121,9 @@ void Cluster::Build_Borm(){
 	EigenSolver eig(cov);
 	EigenValue  lambda = eig.eigenvalues();
 	EigenVector ev = eig.eigenvectors();
-	int l = 0; Real max=abs(lambda[0]);
-	if( max<abs(lambda[1]) ){l=1; max=abs(lambda[1]);}
-	if( max<abs(lambda[2]) ){l=2; }
+	int l = 0; Real max=std::abs(lambda[0]);
+	if( max<std::abs(lambda[1]) ){l=1; max=std::abs(lambda[1]);}
+	if( max<std::abs(lambda[2]) ){l=2; }
 	R3 w;
 	w[0] = ev(0,l).real();
 	w[1] = ev(1,l).real();
@@ -171,7 +173,7 @@ void Cluster::Build_Borm(){
 }
 
 void Cluster::Build(){
-	stack<Cluster*> s;
+	std::stack<Cluster*> s;
 	s.push(this);
 	
 	while(!s.empty()){
@@ -197,7 +199,7 @@ void Cluster::Build(){
 		curr->rad=0.;
 		for(int j=0; j<nb_pt; j++){
 			R3 u = curr->x[curr->tab[curr->num[j]]] - xc;
-			curr->rad=max(curr->rad,norm(u)+curr->r[curr->tab[curr->num[j]]]);
+			curr->rad=std::max(curr->rad,norm(u)+curr->r[curr->tab[curr->num[j]]]);
 			for(int p=0; p<3; p++){
 				for(int q=0; q<3; q++){
 					cov(p,q) += u[p]*u[q];
@@ -253,7 +255,7 @@ void Cluster::Build(){
 		
 		R3 dir;
 		
-		if (abs(eigs[0]) < 1.e-15)
+		if (std::abs(eigs[0]) < 1.e-15)
 			dir = 0;
 		else {	
 			MatR3 prod = (cov - eigs[1] * I) * (cov - eigs[2] * I);
@@ -364,7 +366,7 @@ void TraversalBuildLabel(const Cluster& t, vectInt& labelVisu, const unsigned in
 	
 }
 
-void VisuPartitionedMesh(const Cluster& t, string inputname, string outputname, const unsigned int visudep){
+void VisuPartitionedMesh(const Cluster& t, std::string inputname, std::string outputname, const unsigned int visudep){
 	
 	assert(t.depth==0); // on peut l'appeler juste pour la racine
 	vector<R3>  X;
@@ -472,5 +474,5 @@ public:
 		os << "src:\t" << src_(b) << endl; os << "tgt:\t" << tgt_(b); return os;}
 	
 };
-
+}
 #endif

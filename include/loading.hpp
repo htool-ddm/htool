@@ -10,7 +10,7 @@
 #include "sparsematrix.hpp"
 #include "parametres.hpp"
 
-using namespace std;
+namespace htool {
 //==================================================//
 //
 //  DESCRIPTION:
@@ -32,10 +32,10 @@ void LoadMatrix(const char* filename, Matrix& m){
 	Cplx         val;
 	
 	// Ouverture fichier
-	ifstream file; file.open(filename);
+	std::ifstream file; file.open(filename);
 	if(!file.good()){
-		cout << "LoadMatrix in loading.hpp: error opening the matrix file" << endl;
-        cout << filename << endl;
+		std::cout << "LoadMatrix in loading.hpp: error opening the matrix file" << std::endl;
+        std::cout << filename << std::endl;
 		abort();}
 	
 	// Lecture parametres
@@ -45,12 +45,12 @@ void LoadMatrix(const char* filename, Matrix& m){
 	file >> NbRow; file >> NbCol;
 	m.resize(NbRow,NbCol);
 	
-	getline(file,line);
-	getline(file,line);
+	std::getline(file,line);
+	std::getline(file,line);
 	while(!file.eof()){
 		
 		// Lecture de la ligne
-		istringstream iss(line);
+		std::istringstream iss(line);
 		
 		// Pour chaque ligne, stockage
 		// du bloc d'interaction
@@ -63,7 +63,7 @@ void LoadMatrix(const char* filename, Matrix& m){
 				m(j0+j,k0+k) = val;
 			}
 		}
-		getline(file,line);
+		std::getline(file,line);
 	}
 	
 	file.close();
@@ -90,27 +90,27 @@ void LoadSpMatrix(const char* filename, SpMatrix& m){
 	Cplx         val;
 	
 	// Ouverture fichier
-	ifstream file; file.open(filename);
+	std::ifstream file; file.open(filename);
 	if(!file.good()){
-		cout << "LoadSpMatrix in loading.hpp: error opening the matrix file" << endl;
-        cout << filename << endl;
+		std::cout << "LoadSpMatrix in loading.hpp: error opening the matrix file" << std::endl;
+        std::cout << filename << std::endl;
 		abort();}
 	
 	// Lecture nombre de lignes et de colonnes
 	file >> NbRow; file >> NbCol;
-	m.resize(NbRow,NbCol,NbRow*max(NbCol/10,10));
+	m.resize(NbRow,NbCol,NbRow*std::max(NbCol/10,10));
 
 	// Lecture parametres
 	int ndofperelt=GetNdofPerElt();
 	
 	int NbCoef=0;
 	
-	getline(file,line);
-	getline(file,line);
+	std::getline(file,line);
+	std::getline(file,line);
 	while(!file.eof()){
 		
 		// Lecture de la ligne
-		istringstream iss(line);
+		std::istringstream iss(line);
 		
 		// Pour chaque ligne, stockage
 		// du bloc d'interaction
@@ -127,7 +127,7 @@ void LoadSpMatrix(const char* filename, SpMatrix& m){
 				NbCoef++;
 			}
 		}
-		getline(file,line);
+		std::getline(file,line);
 	}
 	
 	file.close();
@@ -158,10 +158,10 @@ void LoadPoints(const char* filename, vectR3& x, vectReal& r){
 	R3 Pt[4]; R3 Ctr; Real Rmax,Rad;
 	
 	// Ouverture fichier
-	ifstream file; file.open(filename);
+	std::ifstream file; file.open(filename);
 	if(!file.good()){
-		cout << "LoadPoints in loading.hpp: " ;
-		cout << "error opening the geometry file\n";
+		std::cout << "LoadPoints in loading.hpp: " ;
+		std::cout << "error opening the geometry file\n";
 		abort();}
 	
 	// Nombre d'elements
@@ -199,6 +199,6 @@ void LoadPoints(const char* filename, vectR3& x, vectReal& r){
 	
 }
 
-
+}
 
 #endif

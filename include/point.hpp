@@ -4,10 +4,10 @@
 #include <iostream>
 #include <cmath>
 
-using namespace std;
+namespace htool {
 
 typedef double                   Real;
-typedef complex<Real>            Cplx;
+typedef std::complex<Real>            Cplx;
 
 template<int dim, typename v_t>
 class array_{
@@ -42,10 +42,10 @@ public:
   
   const v_t& operator[](const int& j) const {return v_[j];}
   
-  friend ostream& operator<<(ostream& os, const a_t& a){
+  friend std::ostream& operator<<(std::ostream& os, const a_t& a){
     for(int j=0; j<dim; j++){ os << a[j] << "\t";} return os;}
   
-  friend istream& operator>>(istream& is, a_t& a){
+  friend std::istream& operator>>(std::istream& is, a_t& a){
     for(int j=0; j<dim; j++){ is >> a[j];} return is;}
   
   friend a_t operator+(const a_t& l, const a_t& r){
@@ -86,6 +86,6 @@ typedef array_<3,R2> R2x3;
 typedef array_<3,R3> R3x3;
 typedef array_<4,R2> R2x4;
 typedef array_<4,R3> R3x4;
-
+}
 
 #endif

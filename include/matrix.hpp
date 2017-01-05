@@ -8,19 +8,19 @@
 #include <Eigen/Dense>
 #include "point.hpp"
 
+namespace htool {
 //================================//
 //      DECLARATIONS DE TYPE      //
 //================================//
-using namespace std;
-typedef pair<int,int>            Int2;
+typedef std::pair<int,int>            Int2;
 
 //================================//
 //      VECTEUR DE COMPLEXES      //
 //================================//
-typedef vector<Cplx>    vectCplx;
-typedef vector<Real>    vectReal;
-typedef vector<int>     vectInt;
-typedef vector<R3>      vectR3;
+typedef std::vector<Cplx>    vectCplx;
+typedef std::vector<Real>    vectReal;
+typedef std::vector<int>     vectInt;
+typedef std::vector<R3>      vectR3;
 
 void operator+=(vectInt& J, const int& inc){
 	for(int k=0; k<J.size(); k++){J[k]+=inc;} }
@@ -34,7 +34,7 @@ vectInt operator+(vectInt& J, const int& inc){
 	return I;}
 
 template <typename T>
-int size(const vector<T>& u){return u.size();}
+int size(const std::vector<T>& u){return u.size();}
 
 void fill(vectCplx& u, const Cplx& v){
 	for(int j=0; j<u.size(); j++){u[j]=v;}}
@@ -68,7 +68,7 @@ Cplx dprod(const vectCplx& u, const vectCplx& v){
 Real norm(const vectCplx& u){return sqrt(abs(dprod(u,u)));}
 
 template <typename T>
-ostream& operator<<(ostream& os, const vector<T>& u){
+std::ostream& operator<<(std::ostream& os, const std::vector<T>& u){
 	for(int j=0; j<u.size(); j++){ os << u[j] << "\t";}
 	return os;}
 
@@ -130,7 +130,7 @@ public:
 	
 	friend int size(const SubVec& sv){ return sv.size;}
 	
-	friend ostream& operator<<(ostream& os, const SubVec& u){
+	friend std::ostream& operator<<(std::ostream& os, const SubVec& u){
 		for(int j=0; j<u.size; j++){ os << u[j] << "\t";}
 		return os;}
 	
@@ -308,12 +308,12 @@ public:
 	}
     
 	
-	//! ### Matrix-vector product
+	//! ### Matrix-std::vector product
 	/*!
-	 Naive self-contained implementation of matrix-vector product
-	 for dense matrices. The input parameter _u_ is the input vector
+	 Naive self-contained implementation of matrix-std::vector product
+	 for dense matrices. The input parameter _u_ is the input std::vector
 	 (i.e. the right operand). This operator does not rely on the
-	 matrix-vector operator obtained via the library eigen3.
+	 matrix-std::vector operator obtained via the library eigen3.
   */
 	vectCplx operator*(const vectCplx& u){
 		vectCplx v(nr,0.);
@@ -335,11 +335,11 @@ public:
 		mat.resize(nbr,nbc); nr = nbr; nc = nbc;}
 	
 	
-	//! ### Matrix-vector product
+	//! ### Matrix-std::vector product
 	/*!
-	 Another instanciation of the matrix-vector product
+	 Another instanciation of the matrix-std::vector product
 	 that avoids the generation of temporary instance for the
-	 output vector. This routine achieves the operation
+	 output std::vector. This routine achieves the operation
 	 
 	 lhs = m*rhs
 	 
@@ -358,12 +358,12 @@ public:
 	}
 	
     
-	friend ostream& operator<<(ostream& os, const Matrix& m){
+	friend std::ostream& operator<<(std::ostream& os, const Matrix& m){
 		return os << m.mat;}
 	
 	//! ### Extraction of a column
 	/*!
-	 Returns, as a vector, the column numbered _k_ of the matrix _A_.
+	 Returns, as a std::vector, the column numbered _k_ of the matrix _A_.
   */
 	friend vectCplx col(const Matrix& A, const int& k){
 		vectCplx u(A.nr,0.);
@@ -373,7 +373,7 @@ public:
 	
 	//! ### Extraction of a row
 	/*!
-	 Returns, as a vector, the row numbered _j_ of the matrix  _A_.
+	 Returns, as a std::vector, the row numbered _j_ of the matrix  _A_.
   */
 	friend vectCplx row(const Matrix& A, const int& j){
 		vectCplx u(A.nc,0.);
@@ -401,7 +401,7 @@ public:
 	
 	//! ### Computation of singular values
 	/*!
-	 Returns a vector of Real containing the singular values
+	 Returns a std::vector of Real containing the singular values
 	 of the input matrix _A_ in decreasing order.
   */
 	friend vectReal SVD(const Matrix& A){
@@ -419,8 +419,8 @@ public:
      of the input matrix _A_ up to rank _k_.
      */
 	
-	friend void PartialSVD(const Matrix& A, vector<vectCplx>& u ,vector<vectCplx>& v, int k){
-		assert(k<=min(A.nr,A.nc));
+	friend void PartialSVD(const Matrix& A, std::vector<vectCplx>& u ,std::vector<vectCplx>& v, int k){
+		assert(k<=std::min(A.nr,A.nc));
 		SVDType svd(A.mat,Eigen::ComputeThinU | Eigen::ComputeThinV );
 		const SgValType& sv = svd.singularValues();
 		
@@ -428,8 +428,8 @@ public:
 		const VMatrixType& vv = svd.matrixV();
 		
 		for (int i=0;i<k;i++){
-			vector<Cplx> uuu;
-			vector<Cplx> vvv;
+			std::vector<Cplx> uuu;
+			std::vector<Cplx> vvv;
 			for (int j=0;j<A.nr;j++){
 				uuu.push_back(uu(j,i)*sv[i]);
 			}
@@ -458,53 +458,65 @@ public:
         return sqrt(norm);
     }
     
-    friend int matrix_to_bytes(const Matrix& A, const string& file){
-
-		std::ofstream out(file,ios::out | ios::binary | ios::trunc);
-		
-    	if(!out) {
-    		cout << "Cannot open file.";
-    		return 1;
-   		}
-
-		/*
-    	for(int i = 0; i < A.nr; i++){
-        	for(int j = 0; j < A.nc; j++){
-            	double cf = real(A(i,j));
-				out.write((char *) &cf, sizeof cf);
-        	}
-    	}
-    	*/
-    	int rows=nb_rows(A), cols=nb_cols(A);
-    	out.write((char*) (&rows), sizeof(int));
-    	out.write((char*) (&cols), sizeof(int));
-    	out.write((char*) A.mat.data(), rows*cols*sizeof(Cplx) );
-    	
-    	out.close();
-    	return 0;
+//     friend int matrix_to_bytes(const Matrix& A, const std::string& file){
+// 
+// 		std::ofstream out(file,std::ios::out | std::ios::binary | std::ios::trunc);
+// 		
+//     	if(!out) {
+//     		std::cout << "Cannot open file.";
+//     		return 1;
+//    		}
+// 
+// 		/*
+//     	for(int i = 0; i < A.nr; i++){
+//         	for(int j = 0; j < A.nc; j++){
+//             	double cf = real(A(i,j));
+// 				out.write((char *) &cf, sizeof cf);
+//         	}
+//     	}
+//     	*/
+//     	int rows=nb_rows(A), cols=nb_cols(A);
+//     	out.write((char*) (&rows), sizeof(int));
+//     	out.write((char*) (&cols), sizeof(int));
+//     	out.write((char*) A.mat.data(), rows*cols*sizeof(Cplx) );
+//     	
+//     	out.close();
+//     	return 0;
+// 	}
+// 	
+// 	friend int bytes_to_matrix(const std::string& file, Matrix& A){
+// 
+// 		std::ifstream in(file,std::ios::in | std::ios::binary);
+// 		
+//     	if(!in) {
+//     		std::cout << "Cannot open file.";
+//     		return 1;
+//    		}
+// 
+//     	int rows=0, cols=0;
+//     	in.read((char*) (&rows), sizeof(int));
+//     	in.read((char*) (&cols), sizeof(int));
+//     	A.mat.resize(rows, cols);
+//     	A.nr = rows;
+//     	A.nc = cols;
+//     	in.read( (char *) A.mat.data() , rows*cols*sizeof(Cplx) );
+//     	
+//     	in.close();
+//     	return 0;
+// 	}
+	
+	friend Real squared_absolute_error (const Matrix& m1, const Matrix& m2){
+		assert(nb_rows(m1)==nb_rows(m2) && nb_cols(m1)==nb_cols(m2));
+		Real err=0;
+		for (int j=0;j<m1.nr;j++){
+			for (int k=0;k<m1.nc;k++){
+				
+				err+=std::pow(std::abs(m1(j,k)-m2(j,k)),2);
+			}
+		}
+		return err;
 	}
 	
-	friend int bytes_to_matrix(const string& file, Matrix& A){
-
-		std::ifstream in(file,ios::in | std::ios::binary);
-		
-    	if(!in) {
-    		cout << "Cannot open file.";
-    		return 1;
-   		}
-
-    	int rows=0, cols=0;
-    	in.read((char*) (&rows), sizeof(int));
-    	in.read((char*) (&cols), sizeof(int));
-    	A.mat.resize(rows, cols);
-    	A.nr = rows;
-    	A.nc = cols;
-    	in.read( (char *) A.mat.data() , rows*cols*sizeof(Cplx) );
-    	
-    	in.close();
-    	return 0;
-	}
-
 };
 
 //================================//
@@ -555,7 +567,7 @@ public:
 		}
 		return v;}
 	
-	friend ostream& operator<<(ostream& os, const SubMatrix& m){
+	friend std::ostream& operator<<(std::ostream& os, const SubMatrix& m){
 		for(int j=0; j<m.nr; j++){ for(int k=0; k<m.nc; k++){
 			os << m(j,k) << "\t";} os << "\n";}
 		return os;}
@@ -597,7 +609,7 @@ public:
 	}
 	*/
 };
-
+}
 
 
 #endif

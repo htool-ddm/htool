@@ -10,7 +10,7 @@
 #include "user.hpp"
 
 
-using namespace std;
+namespace htool {
 //==================================================//
 //
 //  DESCRIPTION:
@@ -224,5 +224,5 @@ void LoadParam(string inputname){
 }
 
 Parametres Parametres_defauts(3,0.5,0.5);
-
+}
 #endif

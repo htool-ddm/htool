@@ -9,6 +9,7 @@
 #include <Eigen/Dense>
 //#include "point.hpp"
 
+namespace htool {
 //================================//
 //      DECLARATIONS DE TYPE      //
 //================================//
@@ -184,5 +185,5 @@ public:
     
 };
 
-
+}
 #endif

@@ -10,7 +10,7 @@
 //#include "loading.hpp"
 #include <Eigen/Dense>
 
-
+namespace htool {
 //================================//
 //   CLASSE MATRICE RANG FAIBLE   //
 //================================//
@@ -634,4 +634,5 @@ public:
  
  }
  ==========================*/
+}
 #endif

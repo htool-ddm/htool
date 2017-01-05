@@ -6,6 +6,8 @@
 #include "matrix.hpp"
 #include "loading.hpp"
 #include "lrmat.hpp"
+namespace htool {
+	
 
 //===============================//
 //     MATRICE HIERARCHIQUE      //
@@ -40,9 +42,18 @@ private:
 	
 public:
 	
-	HMatrix(const VirtualMatrix&, const vectR3&, const vectReal&, const vectInt&, const vectR3&, const vectReal&, const vectInt&); // To be used with two different clusters
+	HMatrix(const VirtualMatrix&, const vectR3&, const vectReal&, const vectInt&, const vectR3&, const vectReal&, const vectInt&, int reqrank=-1, const MPI_Comm& comm=MPI_COMM_WORLD); // To be used with two different clusters
 	HMatrix(const VirtualMatrix&, const vectR3&, const vectReal&, const vectInt&, int reqrank=-1, const MPI_Comm& comm=MPI_COMM_WORLD); // To be used with one cluster
 	//	friend void DisplayPartition(const HMatrix&, char const* const);
+
+	friend const int& nb_rows(const HMatrix& A){ return nb_rows(A.mat);}
+
+	friend const int& nb_cols(const HMatrix& A){ return nb_cols(A.mat);}
+	
+	friend const int nb_lrmats(const HMatrix& A, const MPI_Comm& comm=MPI_COMM_WORLD){ int res=A.MyFarFieldMats.size(); MPI_Allreduce(MPI_IN_PLACE, &res, 1, MPI_INT, MPI_SUM, comm); return res;}
+    
+	friend const int nb_densemats(const HMatrix& A, const MPI_Comm& comm=MPI_COMM_WORLD){ int res=A.MyNearFieldMats.size(); MPI_Allreduce(MPI_IN_PLACE, &res, 1, MPI_INT, MPI_SUM, comm); return res;}
+    
 	friend void MvProd(vectCplx&, const HMatrix&, const vectCplx&);
 	
 	friend void MvProdMPI(vectCplx& f, const HMatrix& A, const vectCplx& x, const MPI_Comm& comm=MPI_COMM_WORLD){
@@ -52,21 +63,23 @@ public:
 		
 		double time = MPI_Wtime();
 		
-		assert(size(f)==size(x)); fill(f,0.);
-		
+		assert(nb_rows(A.mat)==size(f) && nb_cols(A.mat)==size(x)); fill(f,0.);
+// 			for (int i =0;i<size(f);i++){
+// 				std::cout << f[i] << std::endl;
+// 			}
 		const vector<LowRankMatrix>&    MyFarFieldMats  = A.MyFarFieldMats;
 		const vector<SubMatrix>&        MyNearFieldMats = A.MyNearFieldMats;
 		
-		// Contribution champ lointain
-		for(int b=0; b<MyFarFieldMats.size(); b++){
-			const LowRankMatrix&  M  = MyFarFieldMats[b];
-			const vectInt&        It = ir_(M);
-			const vectInt&        Is = ic_(M);
-			
-			ConstSubVectCplx xx(x,Is);
-			SubVectCplx ff(f,It);
-			MvProd(ff,M,xx);
-		}
+// 		// Contribution champ lointain
+// 		for(int b=0; b<MyFarFieldMats.size(); b++){
+// 			const LowRankMatrix&  M  = MyFarFieldMats[b];
+// 			const vectInt&        It = ir_(M);
+// 			const vectInt&        Is = ic_(M);
+// 			
+// 			ConstSubVectCplx xx(x,Is);
+// 			SubVectCplx ff(f,It);
+// 			MvProd(ff,M,xx);
+// 		}
 		
 		// Contribution champ proche
 		for(int b=0; b<MyNearFieldMats.size(); b++){
@@ -76,9 +89,19 @@ public:
 			const vectInt& Is = ic_ (M);
 			
 			ConstSubVectCplx xx(x,Is);
+// 			if (b==0){
+// 			for (int i =0;i<size(f);i++){
+// 				std::cout << f[i] << std::endl;
+// 			}
+// 			}
 			SubVectCplx ff(f,It);
+// 			std::cout<<xx <<" "<<ff<<std::endl;
 			MvProd(ff,M,xx);
+// 			std::cout<<M <<" "<<ff<<std::endl;
 		}
+					for (int i =0;i<size(f);i++){
+				std::cout << f[i] << std::endl;
+			}
 		time = MPI_Wtime() - time;
 		
 		double meantime;
@@ -125,12 +148,17 @@ public:
 		assert(i<m.FarFieldMat.size());
 		return m.FarFieldMat[i];}
 		
-	friend Real squared_absolute_error(const HMatrix& B, const Matrix& A, const MPI_Comm& comm=MPI_COMM_WORLD){
+	friend Real squared_absolute_error(const HMatrix& B, const VirtualMatrix& A, const MPI_Comm& comm=MPI_COMM_WORLD){
 		Real myerr = 0;
 		for(int j=0; j<B.MyFarFieldMats.size(); j++){
-			SubMatrix subm(B.mat,ir_(B.MyFarFieldMats[j]),ic_(B.MyFarFieldMats[j]));
+			SubMatrix subm(A,ir_(B.MyFarFieldMats[j]),ic_(B.MyFarFieldMats[j]));
 			myerr += squared_absolute_error(B.MyFarFieldMats[j], subm);
 		}
+		for(int j=0; j<B.MyNearFieldMats.size(); j++){
+			SubMatrix subm(A,ir_(B.MyNearFieldMats[j]),ic_(B.MyNearFieldMats[j]));
+			myerr += squared_absolute_error(B.MyNearFieldMats[j], subm);
+		}
+		
 		
 		Real err = 0;
 		MPI_Allreduce(&myerr, &err, 1, MPI_DOUBLE, MPI_SUM, comm);
@@ -141,7 +169,7 @@ public:
 };
 
 void HMatrix::BuildBlockTree(const Cluster& tgt, const Cluster& src, int reqrank){
-	stack<Block*> st;
+	std::stack<Block*> st;
 	st.push(new Block(tgt,src));
 	
 	while (!st.empty()){
@@ -284,16 +312,47 @@ void HMatrix::ComputeBlocks(int reqrank){
 
 HMatrix::HMatrix(const VirtualMatrix& mat0,
 		 const vectR3& xt0, const vectReal& rt, const vectInt& tabt0,
-		 const vectR3& xs0, const vectReal& rs, const vectInt& tabs0):
+		 const vectR3& xs0, const vectReal& rs, const vectInt& tabs0, int reqrank, const MPI_Comm& comm):
 
 mat(mat0), xt(xt0), xs(xs0), tabt(tabt0), tabs(tabs0) {
 	assert( nb_rows(mat)==tabt.size() && nb_cols(mat)==tabs.size() );
 	
+	int rankWorld, sizeWorld;
+    MPI_Comm_size(comm, &sizeWorld);
+    MPI_Comm_rank(comm, &rankWorld);
+    vector<double> myttime(4), maxtime(4), meantime(4);
+	
+	
 	// Construction arbre des paquets
+	double time = MPI_Wtime();
 	Cluster t(xt,rt,tabt); Cluster s(xs,rs,tabs);
+	myttime[0] = MPI_Wtime() - time;
 	
 	// Construction arbre des blocs
-	BuildBlockTree(t,s);
+	time = MPI_Wtime();
+	BuildBlockTree(t,s,reqrank);
+	myttime[1] = MPI_Wtime() - time;
+	
+	// Repartition des blocs sur les processeurs
+	time = MPI_Wtime();
+	ScatterTasks(reqrank);
+	myttime[2] = MPI_Wtime() - time;
+	
+	// Assemblage des sous-matrices
+	time = MPI_Wtime();
+	ComputeBlocks(reqrank);
+	myttime[3] = MPI_Wtime() - time;
+	
+	MPI_Reduce(&myttime.front(), &maxtime.front(), 4, MPI_DOUBLE, MPI_MAX, 0, comm);
+	MPI_Reduce(&myttime.front(), &meantime.front(), 4, MPI_DOUBLE, MPI_SUM, 0, comm);
+	if (rankWorld == 0) {
+		meantime /= sizeWorld;
+		cout << "Cluster tree: \t mean = " << meantime[0] << ", \t max = " << maxtime[0] << endl;
+		cout << "Block tree: \t mean = " << meantime[1] << ", \t max = " << maxtime[1] << endl;
+		cout << "Scatter tasks: \t mean = " << meantime[2] << ", \t max = " << maxtime[2] << endl;
+		cout << "Blocks: \t mean = " << meantime[3] << ", \t max = " << maxtime[3] << endl;
+	}
+	
 }
 
 HMatrix::HMatrix(const VirtualMatrix& mat0,
@@ -451,5 +510,5 @@ void MvProd(vectCplx& f, const HMatrix& A, const vectCplx& x){
 	}
 	
 }
-
+}
 #endif
