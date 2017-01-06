@@ -88,15 +88,28 @@ public:
 			const vectInt& It = ir_ (M);
 			const vectInt& Is = ic_ (M);
 			
-			ConstSubVectCplx xx(x,Is);
+			//ConstSubVectCplx xx(x,Is);
 // 			if (b==0){
 // 			for (int i =0;i<size(f);i++){
 // 				std::cout << f[i] << std::endl;
 // 			}
 // 			}
-			SubVectCplx ff(f,It);
+			//SubVectCplx ff(f,It);
+			
+			std::vector<Cplx> lhs(size(It));
+			std::vector<Cplx> rhs(size(Is));
+			
+			for (int i=0; i<size(Is); i++)
+				rhs[i] = x[Is[i]];
+			
+			std::cout << size(It) << " " << size(Is) << endl;
+			
 // 			std::cout<<xx <<" "<<ff<<std::endl;
-			MvProd(ff,M,xx);
+			MvProd(lhs,M,rhs);
+			
+			for (int i=0; i<size(It); i++)
+				f[It[i]] += lhs[i];
+			
 // 			std::cout<<M <<" "<<ff<<std::endl;
 		}
 // 					for (int i =0;i<size(f);i++){
