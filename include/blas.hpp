@@ -25,9 +25,11 @@
 #define BLAS_HPP
 
 
+#if defined(__powerpc__) || defined(INTEL_MKL_VERSION)
 # define HPDDM_F77(func) func
-
-// # define HPDDM_F77(func) func ## _
+#else
+# define HPDDM_F77(func) func ## _
+#endif
 
 
 #define HPDDM_GENERATE_EXTERN_BLAS(C, T)                                                                     \
