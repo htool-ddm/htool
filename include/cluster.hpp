@@ -291,28 +291,32 @@ void Cluster::Build(){
 		*/
 		
 		// Construction des paquets enfants
-		if(curr->num.size()!=ndofperelt){
-			curr->son[0] = new Cluster(curr->x,curr->r,curr->tab,curr->depth+1);
-			curr->son[1] = new Cluster(curr->x,curr->r,curr->tab,curr->depth+1);
-			for(int j=0; j<nb_pt; j++){
-				R3 dx = curr->x[curr->tab[curr->num[j]]] - xc;
-				if( (dir,dx)>0 ){
-					curr->son[0]->push_back(curr->num[j]);
-				}
-				else{
-					curr->son[1]->push_back(curr->num[j]);
-				}
+		//if(curr->num.size() > 10) {
+		//if(curr->num.size()!=ndofperelt){
+		curr->son[0] = new Cluster(curr->x,curr->r,curr->tab,curr->depth+1);
+		curr->son[1] = new Cluster(curr->x,curr->r,curr->tab,curr->depth+1);
+		for(int j=0; j<nb_pt; j++){
+			R3 dx = curr->x[curr->tab[curr->num[j]]] - xc;
+			if( (dir,dx)>0 ){
+				curr->son[0]->push_back(curr->num[j]);
+			}
+			else{
+				curr->son[1]->push_back(curr->num[j]);
 			}
 		}
+		//}
 		
 		// Recursivite
-		if(curr->num.size()!=ndofperelt){ // On utilise le fait qu'on a toujours ndofperelt dofs par element geometrique
-			assert( curr->son[0]!=0 );
-			assert( curr->son[1]!=0 );
+		if((curr->son[0]->num.size() >= minclustersize) && (curr->son[1]->num.size() >= minclustersize)) {
+		//if(curr->num.size()!=ndofperelt){ // On utilise le fait qu'on a toujours ndofperelt dofs par element geometrique
+			//assert( curr->son[0]!=0 );
+			//assert( curr->son[1]!=0 );
 			s.push(curr->son[0]);
 			s.push(curr->son[1]);
 		}
 		else{
+			delete curr->son[0]; curr->son[0] = 0;
+			delete curr->son[1]; curr->son[1] = 0;
 			curr->ctr=curr->x[curr->tab[curr->num[0]]];
 			curr->rad=curr->r[curr->tab[curr->num[0]]];
 		}

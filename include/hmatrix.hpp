@@ -27,10 +27,10 @@ private:
 	vector<LowRankMatrix> FarFieldMat;
 	vector<SubMatrix>     NearFieldMat;
 	
-	vector<Block>		  Tasks;
-	vector<Block>		  MyBlocks;
+	vector<Block*>		  Tasks;
+	vector<Block*>		  MyBlocks;
 	
-	void BuildBlockTree(const Cluster&, const Cluster&, int reqrank=-1);
+	Block* BuildBlockTree(const Cluster&, const Cluster&, int reqrank=-1);
 	
 	void UpdateBlocks(const Cluster&, const Cluster&, int reqrank=-1);
 	
@@ -45,6 +45,11 @@ public:
 	HMatrix(const VirtualMatrix&, const vectR3&, const vectReal&, const vectInt&, const vectR3&, const vectReal&, const vectInt&, int reqrank=-1, const MPI_Comm& comm=MPI_COMM_WORLD); // To be used with two different clusters
 	HMatrix(const VirtualMatrix&, const vectR3&, const vectReal&, const vectInt&, int reqrank=-1, const MPI_Comm& comm=MPI_COMM_WORLD); // To be used with one cluster
 	//	friend void DisplayPartition(const HMatrix&, char const* const);
+
+	~HMatrix() {
+		for (int i=0; i<Tasks.size(); i++)
+			delete Tasks[i];
+	}
 
 	friend const int& nb_rows(const HMatrix& A){ return nb_rows(A.mat);}
 
@@ -89,11 +94,6 @@ public:
 			const vectInt& Is = ic_ (M);
 			
 			//ConstSubVectCplx xx(x,Is);
-// 			if (b==0){
-// 			for (int i =0;i<size(f);i++){
-// 				std::cout << f[i] << std::endl;
-// 			}
-// 			}
 			//SubVectCplx ff(f,It);
 			
 			std::vector<Cplx> lhs(size(It));
@@ -101,20 +101,15 @@ public:
 			
 			for (int i=0; i<size(Is); i++)
 				rhs[i] = x[Is[i]];
-			
-			std::cout << size(It) << " " << size(Is) << endl;
-			
-// 			std::cout<<xx <<" "<<ff<<std::endl;
+
+			//std::cout << lhs.size() << " " << rhs.size() << endl;
+
 			MvProd(lhs,M,rhs);
 			
 			for (int i=0; i<size(It); i++)
 				f[It[i]] += lhs[i];
-			
-// 			std::cout<<M <<" "<<ff<<std::endl;
 		}
-// 					for (int i =0;i<size(f);i++){
-// 				std::cout << f[i] << std::endl;
-// 			}
+
 		time = MPI_Wtime() - time;
 		
 		double meantime;
@@ -181,18 +176,20 @@ public:
 		
 };
 
-void HMatrix::BuildBlockTree(const Cluster& tgt, const Cluster& src, int reqrank){
-	std::stack<Block*> st;
-	st.push(new Block(tgt,src));
+Block* HMatrix::BuildBlockTree(const Cluster& t, const Cluster& s, int reqrank){
+	//std::stack<Block*> st;
+	//st.push(new Block(tgt,src));
 	
-	while (!st.empty()){
-		Block* curr = st.top();
-		st.pop();
-		const Cluster& t = tgt_(*curr);
-		const Cluster& s = src_(*curr);
-		curr->ComputeAdmissibility();
-		if( curr->IsAdmissible() ){
-			Tasks.push_back(*curr);
+	//while (!st.empty()){
+	//	Block* curr = st.top();
+	//	st.pop();
+	{
+		Block* B = new Block(t,s);
+		int bsize = size(num_(t))*size(num_(s));
+		B->ComputeAdmissibility();
+		if( B->IsAdmissible() ){
+			Tasks.push_back(B);
+			return NULL;
 		//int nr = num_(t).size();
 		//int nc = num_(s).size();
 		//const vectInt& I = num_(t);
@@ -208,29 +205,72 @@ void HMatrix::BuildBlockTree(const Cluster& tgt, const Cluster& src, int reqrank
 		}
 		else if( s.IsLeaf() ){
 			if( t.IsLeaf() ){
-			//const vectInt& I = num_(t);
-			//const vectInt& J = num_(s);
-			//NearFieldMat.push_back(SubMatrix(mat,I,J));
-			Tasks.push_back(*curr);
+				//const vectInt& I = num_(t);
+				//const vectInt& J = num_(s);
+				//NearFieldMat.push_back(SubMatrix(mat,I,J));
+				//Tasks.push_back(B);
+				return B;
 			}
 			else{
-				st.push(new Block(son_(t,0),s));
-				st.push(new Block(son_(t,1),s));
+				Block* r1 = BuildBlockTree(son_(t,0),s, reqrank);
+				Block* r2 = BuildBlockTree(son_(t,1),s, reqrank);
+				if ((bsize <= maxblocksize) && (r1 != NULL) && (r2 != NULL)) {
+					delete r1;
+					delete r2;
+					return B;
+				}
+				else {
+					if (r1 != NULL) Tasks.push_back(r1);					
+					if (r2 != NULL) Tasks.push_back(r2);	
+					return NULL;
+				}
+				//st.push(new Block(son_(t,0),s));
+				//st.push(new Block(son_(t,1),s));
 			}
 		}
 		else{
 			if( t.IsLeaf() ){
-				st.push(new Block(t,son_(s,0)));
-				st.push(new Block(t,son_(s,1)));
+				Block* r3 = BuildBlockTree(t,son_(s,0), reqrank);
+				Block* r4 = BuildBlockTree(t,son_(s,1), reqrank);
+				if ((bsize <= maxblocksize) && (r3 != NULL) && (r4 != NULL)) {
+					delete r3;
+					delete r4;
+					return B;
+				}
+				else {
+					if (r3 != NULL) Tasks.push_back(r3);				
+					if (r4 != NULL) Tasks.push_back(r4);	
+					return NULL;				
+				}
+				//st.push(new Block(t,son_(s,0)));
+				//st.push(new Block(t,son_(s,1)));
 			}
 			else{
-				st.push(new Block(son_(t,0),son_(s,0)));
-				st.push(new Block(son_(t,0),son_(s,1)));
-				st.push(new Block(son_(t,1),son_(s,0)));
-				st.push(new Block(son_(t,1),son_(s,1)));
+				Block* r1 = BuildBlockTree(son_(t,0),son_(s,0), reqrank);
+				Block* r2 = BuildBlockTree(son_(t,0),son_(s,1), reqrank);
+				Block* r3 = BuildBlockTree(son_(t,1),son_(s,0), reqrank);
+				Block* r4 = BuildBlockTree(son_(t,1),son_(s,1), reqrank);
+				if ((bsize <= maxblocksize) && (r1 != NULL) && (r2 != NULL) && (r3 != NULL) && (r4 != NULL)) {
+					delete r1;
+					delete r2;
+					delete r3;
+					delete r4;
+					return B;
+				}
+				else {
+					if (r1 != NULL) Tasks.push_back(r1);					
+					if (r2 != NULL) Tasks.push_back(r2);
+					if (r3 != NULL) Tasks.push_back(r3);					
+					if (r4 != NULL) Tasks.push_back(r4);	
+					return NULL;
+				}				
+				//st.push(new Block(son_(t,0),son_(s,0)));
+				//st.push(new Block(son_(t,0),son_(s,1)));
+				//st.push(new Block(son_(t,1),son_(s,0)));
+				//st.push(new Block(son_(t,1),son_(s,1)));
 			}
 		}
-		delete(curr);
+		//delete(curr);
 	}
 }
 
@@ -282,7 +322,7 @@ void HMatrix::UpdateBlocks(const Cluster& t, const Cluster& s, int reqrank){
 
 void HMatrix::ComputeBlocks(int reqrank){
     for(int b=0; b<MyBlocks.size(); b++) {
-    	const Block& B = MyBlocks[b];
+    	const Block& B = *(MyBlocks[b]);
    		const Cluster& t = tgt_(B);
 		const Cluster& s = src_(B);
 		const vectInt& I = num_(t);
@@ -343,7 +383,8 @@ mat(mat0), xt(xt0), xs(xs0), tabt(tabt0), tabs(tabs0) {
 	
 	// Construction arbre des blocs
 	time = MPI_Wtime();
-	BuildBlockTree(t,s,reqrank);
+	Block* B = BuildBlockTree(t,s,reqrank);
+	if (B != NULL) Tasks.push_back(B);
 	myttime[1] = MPI_Wtime() - time;
 	
 	// Repartition des blocs sur les processeurs
@@ -386,7 +427,8 @@ mat(mat0), xt(xt0), xs(xt0), tabt(tabt0), tabs(tabt0) {
 	
 	// Construction arbre des blocs
 	time = MPI_Wtime();
-	BuildBlockTree(t,t,reqrank);	
+	Block* B = BuildBlockTree(t,t,reqrank);
+	if (B != NULL) Tasks.push_back(B);
 	myttime[1] = MPI_Wtime() - time;
 	
 	// Repartition des blocs sur les processeurs

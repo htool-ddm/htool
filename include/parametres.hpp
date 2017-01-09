@@ -146,9 +146,11 @@ public:
 	static int  ndofperelt;
 	static Real eta;
 	static Real epsilon;
+	static int maxblocksize;
+ 	static int minclustersize;	
 	
 	Parametres();
-	Parametres(int, Real, Real);
+	Parametres(int, Real, Real, int, int);
 	
 	friend void LoadParam(string inputname);
 	friend Real GetEta();
@@ -157,22 +159,30 @@ public:
 	friend void SetEta(Real);
 	friend void SetEpsilon(Real);
 	friend void SetNdofPerElt(int);
-	
+	friend int GetMaxBlockSize();
+	friend void SetMaxBlockSize(int);
+	friend int GetMinClusterSize();
+	friend void SetMinClusterSize(int);	
+
 };
 
 // Allocation de la mémoire pour les valeurs statiques (obligatoire)
 Real Parametres::eta;
 Real Parametres::epsilon;
 int Parametres::ndofperelt;
+int Parametres::maxblocksize;
+int Parametres::minclustersize;
 
 Parametres::Parametres(){
 	
 }
 
-Parametres::Parametres(int ndofperelt0, Real eta0, Real epsilon0){
+Parametres::Parametres(int ndofperelt0, Real eta0, Real epsilon0, int maxblocksize0, int minclustersize0){
 	ndofperelt=ndofperelt0;
 	eta=eta0;
 	epsilon=epsilon0;
+	maxblocksize=maxblocksize0;
+	minclustersize=minclustersize0;
 }
 
 
@@ -195,6 +205,21 @@ int GetNdofPerElt(){
 	return Parametres::ndofperelt;
 }
 
+int GetMaxBlockSize(){
+	return Parametres::maxblocksize;
+}
+
+void SetMaxBlockSize(int maxblocksize0){
+	Parametres::maxblocksize=maxblocksize0;
+}
+
+int GetMinClusterSize(){
+	return Parametres::minclustersize;
+}
+
+void SetMinClusterSize(int minclustersize0){
+	Parametres::minclustersize=minclustersize0;
+}
 
 void LoadParam(string inputname){
 	ifstream data(inputname.c_str());
@@ -223,6 +248,6 @@ void LoadParam(string inputname){
 	}
 }
 
-Parametres Parametres_defauts(3,0.5,0.5);
+Parametres Parametres_defauts(3,0.5,0.5,100000,3);
 }
 #endif
