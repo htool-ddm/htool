@@ -27,3 +27,12 @@
 *.exe
 *.out
 *.app
+
+# Builds
+build*/
+
+# Data
+data
+matrices
+matrice
+*.dat
