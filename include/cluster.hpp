@@ -317,8 +317,6 @@ void Cluster::Build(){
 		else{
 			delete curr->son[0]; curr->son[0] = 0;
 			delete curr->son[1]; curr->son[1] = 0;
-			curr->ctr=curr->x[curr->tab[curr->num[0]]];
-			curr->rad=curr->r[curr->tab[curr->num[0]]];
 		}
 	}
 }
