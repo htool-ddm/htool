@@ -32,7 +32,7 @@ private:
 	
 	Block* BuildBlockTree(const Cluster&, const Cluster&, int reqrank=-1);
 	
-	void UpdateBlocks(const Cluster&, const Cluster&, int reqrank=-1);
+	bool UpdateBlocks(const Cluster&, const Cluster&, int reqrank=-1);
 	
 	void ScatterTasks(int reqrank=-1);
 	void ComputeBlocks(int reqrank=-1);
@@ -284,9 +284,10 @@ void HMatrix::ScatterTasks(int reqrank){
     		MyBlocks.push_back(Tasks[b]);
 }
 
-void HMatrix::UpdateBlocks(const Cluster& t, const Cluster& s, int reqrank){
+bool HMatrix::UpdateBlocks(const Cluster& t, const Cluster& s, int reqrank){
 	const vectInt& I = num_(t);
-	const vectInt& J = num_(s);   
+	const vectInt& J = num_(s);
+	int bsize = size(num_(t))*size(num_(s));
 	Block B(t,s);
 	B.ComputeAdmissibility();
 	if( B.IsAdmissible() ){
@@ -294,28 +295,54 @@ void HMatrix::UpdateBlocks(const Cluster& t, const Cluster& s, int reqrank){
 		LowRankMatrix lrm(mat,I,J,t,s,reqrank);
 		if(rank_of(lrm)!=-5){
 			MyFarFieldMats.push_back(lrm);
-			return;
+			return true;
 		}
 	}
 	if( s.IsLeaf() ){
 		if( t.IsLeaf() ){
-			MyNearFieldMats.push_back(SubMatrix(mat,I,J));
+// 			MyNearFieldMats.push_back(SubMatrix(mat,I,J));
+			return false;
 		}
 		else{
-			UpdateBlocks(son_(t,0),s, reqrank);
-			UpdateBlocks(son_(t,1),s, reqrank);
+			bool b1 = UpdateBlocks(son_(t,0),s, reqrank);
+			bool b2 = UpdateBlocks(son_(t,1),s, reqrank);
+			if ((bsize <= maxblocksize) && (b1 != true) && (b2 != true)) 
+				return false;
+			else {
+				if (b1 != true) MyNearFieldMats.push_back(SubMatrix(mat,num_(son_(t,0)),J));
+				if (b2 != true) MyNearFieldMats.push_back(SubMatrix(mat,num_(son_(t,1)),J));
+				return true;
+			}
 		}
 	}
 	else{
 		if( t.IsLeaf() ){
-			UpdateBlocks(t,son_(s,0), reqrank);
-			UpdateBlocks(t,son_(s,1), reqrank);
+			bool b3 = UpdateBlocks(t,son_(s,0), reqrank);
+			bool b4 = UpdateBlocks(t,son_(s,1), reqrank);
+			if ((bsize <= maxblocksize) && (b3 != true) && (b4 != true)) 
+				return false;
+			else{
+				if (b3 != true) MyNearFieldMats.push_back(SubMatrix(mat,I,num_(son_(s,0))));
+				if (b4 != true) MyNearFieldMats.push_back(SubMatrix(mat,I,num_(son_(s,1))));
+				return true;	
+			}
 		}
 		else{
-			UpdateBlocks(son_(t,0),son_(s,0), reqrank);
-			UpdateBlocks(son_(t,0),son_(s,1), reqrank);
-			UpdateBlocks(son_(t,1),son_(s,0), reqrank);
-			UpdateBlocks(son_(t,1),son_(s,1), reqrank);
+			bool b1 = UpdateBlocks(son_(t,0),son_(s,0), reqrank);
+			bool b2 = UpdateBlocks(son_(t,0),son_(s,1), reqrank);
+			bool b3 = UpdateBlocks(son_(t,1),son_(s,0), reqrank);
+			bool b4 = UpdateBlocks(son_(t,1),son_(s,1), reqrank);
+			if ((bsize <= maxblocksize) && (b1 != true) && (b2 != true) && (b3 != true) && (b4 != true)) 
+				return false;
+			else {
+				if (b1 != true) MyNearFieldMats.push_back(SubMatrix(mat,num_(son_(t,0)),num_(son_(s,0))));
+				if (b2 != true) MyNearFieldMats.push_back(SubMatrix(mat,num_(son_(t,0)),num_(son_(s,1))));
+				if (b3 != true) MyNearFieldMats.push_back(SubMatrix(mat,num_(son_(t,1)),num_(son_(s,0))));
+				if (b4 != true) MyNearFieldMats.push_back(SubMatrix(mat,num_(son_(t,1)),num_(son_(s,1))));
+				return true;
+			}
+			
+			
 		}
 	}
 }
@@ -339,20 +366,41 @@ void HMatrix::ComputeBlocks(int reqrank){
 						MyNearFieldMats.push_back(SubMatrix(mat,I,J));
 					}
 					else{
-						UpdateBlocks(son_(t,0),s, reqrank);
-						UpdateBlocks(son_(t,1),s, reqrank);
+						bool b1 = UpdateBlocks(son_(t,0),s, reqrank);
+						bool b2 = UpdateBlocks(son_(t,1),s, reqrank);
+						if ((b1 != true) && (b2 != true)) 
+							MyNearFieldMats.push_back(SubMatrix(mat,I,J));
+						else {
+							if (b1 != true) MyNearFieldMats.push_back(SubMatrix(mat,num_(son_(t,0)),J));
+							if (b2 != true) MyNearFieldMats.push_back(SubMatrix(mat,num_(son_(t,1)),J));
+						}
 					}
 				}
 				else{
 					if( t.IsLeaf() ){
-						UpdateBlocks(t,son_(s,0), reqrank);
-						UpdateBlocks(t,son_(s,1), reqrank);
+						bool b3 = UpdateBlocks(t,son_(s,0), reqrank);
+						bool b4 = UpdateBlocks(t,son_(s,1), reqrank);
+						if ((b3 != true) && (b4 != true)) 
+							MyNearFieldMats.push_back(SubMatrix(mat,I,J));
+						else {
+							if (b3 != true) MyNearFieldMats.push_back(SubMatrix(mat,I,num_(son_(s,0))));
+							if (b4 != true) MyNearFieldMats.push_back(SubMatrix(mat,I,num_(son_(s,1))));
+						}
 					}
 					else{
-						UpdateBlocks(son_(t,0),son_(s,0), reqrank);
-						UpdateBlocks(son_(t,0),son_(s,1), reqrank);
-						UpdateBlocks(son_(t,1),son_(s,0), reqrank);
-						UpdateBlocks(son_(t,1),son_(s,1), reqrank);
+						bool b1 = UpdateBlocks(son_(t,0),son_(s,0), reqrank);
+						bool b2 = UpdateBlocks(son_(t,0),son_(s,1), reqrank);
+						bool b3 = UpdateBlocks(son_(t,1),son_(s,0), reqrank);
+						bool b4 = UpdateBlocks(son_(t,1),son_(s,1), reqrank);
+						if ((b1 != true) && (b2 != true) && (b3 != true) && (b4 != true)) 
+							MyNearFieldMats.push_back(SubMatrix(mat,I,J));
+						else {
+							if (b1 != true) MyNearFieldMats.push_back(SubMatrix(mat,num_(son_(t,0)),num_(son_(s,0))));
+							if (b2 != true) MyNearFieldMats.push_back(SubMatrix(mat,num_(son_(t,0)),num_(son_(s,1))));
+							if (b3 != true) MyNearFieldMats.push_back(SubMatrix(mat,num_(son_(t,1)),num_(son_(s,0))));
+							if (b4 != true) MyNearFieldMats.push_back(SubMatrix(mat,num_(son_(t,1)),num_(son_(s,1))));
+						}
+						
 					}
 				}
 			}
