@@ -32,14 +32,14 @@ public:
 	static string outputpath;
 	static string meshname;
 	static string matrixname;
-	
+
 	friend void LoadParamIO (string inputname);
 	friend string GetMatrixPath();
 	friend string GetMeshPath();
 	friend string GetOutputPath();
 	friend string GetMatrixName();
 	friend string GetDataPath();
-	
+
 	Parametres_IO (); // Constructeur par defaut
 	Parametres_IO (string , string, string , string); // Valeurs données à la main par défaut
 };
@@ -51,7 +51,7 @@ string Parametres_IO::meshname;
 string Parametres_IO::matrixname;
 
 Parametres_IO::Parametres_IO(){
-	
+
 }
 
 Parametres_IO::Parametres_IO(string datapath0, string outputpath0, string meshname0, string matrixname0){
@@ -83,7 +83,7 @@ string GetOutputPath(){
 
 void LoadParamIO(string inputname){
 	ifstream data(inputname.c_str());
-	
+
 	// Si le fichier n'existe pas
 	if (!data){
 		cerr << "Input file doesn't exist" << endl;
@@ -94,7 +94,7 @@ void LoadParamIO(string inputname){
 		while (data){
 			string strInput;
 			getline(data,strInput);
-			
+
 			vector<string> line = split (strInput,' ');
 			if (!line.empty()){
 				if (line.at(0)=="Data_path"){
@@ -147,11 +147,11 @@ public:
 	static Real eta;
 	static Real epsilon;
 	static int maxblocksize;
- 	static int minclustersize;	
-	
+ 	static int minclustersize;
+
 	Parametres();
 	Parametres(int, Real, Real, int, int);
-	
+
 	friend void LoadParam(string inputname);
 	friend Real GetEta();
 	friend Real GetEpsilon();
@@ -162,7 +162,7 @@ public:
 	friend int GetMaxBlockSize();
 	friend void SetMaxBlockSize(int);
 	friend int GetMinClusterSize();
-	friend void SetMinClusterSize(int);	
+	friend void SetMinClusterSize(int);
 
 };
 
@@ -174,7 +174,7 @@ int Parametres::maxblocksize;
 int Parametres::minclustersize;
 
 Parametres::Parametres(){
-	
+
 }
 
 Parametres::Parametres(int ndofperelt0, Real eta0, Real epsilon0, int maxblocksize0, int minclustersize0){
@@ -223,7 +223,7 @@ void SetMinClusterSize(int minclustersize0){
 
 void LoadParam(string inputname){
 	ifstream data(inputname.c_str());
-	
+
 	// Si le fichier n'existe pas
 	if (!data){
 		cerr << "Input file doesn't exist" << endl;
@@ -234,7 +234,7 @@ void LoadParam(string inputname){
 		while (data){
 			string strInput;
 			getline(data,strInput);
-			
+
 			vector<string> line = split (strInput,' ');
 			if (!line.empty()){
 				if (line.at(0)=="Epsilon"){
@@ -242,6 +242,9 @@ void LoadParam(string inputname){
 				}
 				else if (line.at(0)=="Eta"){
 					Parametres::eta=StrToNbr<Real>(line.back());
+				}
+				else if (line.at(0)=="MinClusterSize"){
+					Parametres::minclustersize=StrToNbr<Real>(line.back());
 				}
 			}
 		}

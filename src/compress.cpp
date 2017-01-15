@@ -68,16 +68,16 @@ public:
 *****************************************************************************/
 
 int main(int argc, char* argv[]){
-	
+
     MPI_Init(&argc, &argv);
     /*# Init #*/
     int rankWorld, sizeWorld;
     MPI_Comm_size(MPI_COMM_WORLD, &sizeWorld);
     MPI_Comm_rank(MPI_COMM_WORLD, &rankWorld);
-	
+
 	////////////////========================================================////////////////
 	////////////////////////////////========  Input ========////////////////////////////////
-	
+
 	// Check the number of parameters
 	if (argc < 2) {
 		// Tell the user how to run the program
@@ -87,22 +87,23 @@ int main(int argc, char* argv[]){
 		 */
 		return 1;
 	}
-	
+
 	// Load the inputs
 	string inputname = argv[1];
 	LoadParamIO(inputname);
 	LoadParam(inputname);
-	
+
 	if (rankWorld == 0) {
 		cout<<"############# Inputs #############"<<endl;
 		cout<<"Eta : "+NbrToStr(GetEta())<<endl;
 		cout<<"Epsilon : "+NbrToStr(GetEpsilon())<<endl;
+		cout<<"MinClusterSize : "+NbrToStr(GetMinClusterSize())<<endl;
 		cout<<"Output path : "+GetOutputPath()<<endl;
 		cout<<"Mesh path : "+GetMeshPath()<<endl;
 		cout<<"Matrix path : "+GetMatrixPath()<<endl;
 		cout<<"##################################"<<endl;
 	}
- 
+
 	//////////////////////////////////////////////////////////////////////////////////////
 	//////////////////////////////    Build Hmatrix 	////////////////////////////////
 	//////////////////////////////////////////////////////////////////////////////////////
@@ -111,8 +112,8 @@ int main(int argc, char* argv[]){
 	vectR3   x;
 	Matrix   A;
 	//tic();
-	
-	//LoadMatrix(GetMatrixPath().c_str(),A);
+
+	// LoadMatrix(GetMatrixPath().c_str(),A);
 	bytes_to_matrix(GetMatrixPath().c_str(),A);
 	LoadPoints(GetMeshPath().c_str(),x,r);
 	vectInt tab(nb_rows(A));
@@ -123,23 +124,23 @@ int main(int argc, char* argv[]){
 	}
 	//toc();
 	//tic();
-	
+
 	//if (rankWorld == 0)
-	//	matrix_to_bytes(A, "../matrices/matrice3600FracsV1DN1.bin");
-	
-	
+		// matrix_to_bytes(A, "../data/matrice450Fracs.bin");
+
+
 	//MyMatrix mA(A);
 	//HMatrix B(mA,x,r,tab);
-	
+
 	HMatrix B(A,x,r,tab);
-	
+
 	//toc();
-	
-	
+
+
 	//////////////////////////////////////////////////////////////////////////////////////
 	//////////////////////////////     Errors 	//////////////////////////////////////
 	//////////////////////////////////////////////////////////////////////////////////////
-	
+
 	// Vecteur
 	int nr  = nb_rows(A);
 	vectCplx u(nr);
@@ -149,13 +150,13 @@ int main(int argc, char* argv[]){
 	for(int j=0; j<nr; j++){
 		int n = rand()%(NbSpl+1);
 		u[j] = n*du;}
-	
+
 	vectCplx ua(nr),ub(nr);
 	MvProd(ua,A,u);
 	MvProdMPI(ub,B,u);
 	Real err = norm(ua-ub)/norm(ua);
 	Real compression=CompressionRate(B);
-  
+
   	if (rankWorld == 0) {
 		cout<<"Matrix-vector product relative error : "<<err<<endl;
 		cout<<"Compression rate: "<<compression<<endl;
@@ -171,4 +172,3 @@ int main(int argc, char* argv[]){
 	MPI_Finalize();
 	return 0;
 }
-
