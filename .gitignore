@@ -36,3 +36,7 @@ data
 matrices
 matrice
 *.dat
+
+# Temporary files
+*~
+*.DS_Store

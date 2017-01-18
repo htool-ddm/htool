@@ -20,7 +20,7 @@
    You should have received a copy of the GNU Lesser General Public License
    along with HPDDM.  If not, see <http://www.gnu.org/licenses/>.
  */
-
+#include <complex>
 #ifndef BLAS_HPP
 #define BLAS_HPP
 
@@ -35,11 +35,11 @@
 #define HPDDM_GENERATE_EXTERN_BLAS(C, T)                                                                     \
 void    HPDDM_F77(C ## gemv)(const char*, const int*, const int*, const T*,                                  \
                              const T*, const int*, const T*, const int*,                                     \
-                             const T*, T*, const int*);     
-                             
+                             const T*, T*, const int*);
+
 #define HPDDM_GENERATE_EXTERN_BLAS_COMPLEX(C, T, B, U)                                                       \
 HPDDM_GENERATE_EXTERN_BLAS(B, U)                                                                             \
-HPDDM_GENERATE_EXTERN_BLAS(C, T)     
+HPDDM_GENERATE_EXTERN_BLAS(C, T)
 
 
 extern "C" {
