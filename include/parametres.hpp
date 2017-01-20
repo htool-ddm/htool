@@ -251,6 +251,6 @@ void LoadParam(string inputname){
 	}
 }
 
-Parametres Parametres_defauts(3,0.5,0.5,100000,3);
+Parametres Parametres_defauts(3,0.5,0.5,10000000,3);
 }
 #endif

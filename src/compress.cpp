@@ -72,6 +72,7 @@ int main(int argc, char* argv[]){
     MPI_Init(&argc, &argv);
     /*# Init #*/
     int rankWorld, sizeWorld;
+	std::cout << "Rang : "<<rankWorld << std::endl;
     MPI_Comm_size(MPI_COMM_WORLD, &sizeWorld);
     MPI_Comm_rank(MPI_COMM_WORLD, &rankWorld);
 
@@ -133,7 +134,7 @@ int main(int argc, char* argv[]){
 	//HMatrix B(mA,x,r,tab);
 
 	HMatrix B(A,x,r,tab);
-
+	
 	//toc();
 
 
@@ -153,11 +154,18 @@ int main(int argc, char* argv[]){
 
 	vectCplx ua(nr),ub(nr);
 	MvProd(ua,A,u);
-	MvProdMPI(ub,B,u);
+	std::pair <double,double > mvp_stats= MvProdMPI(ub,B,u);
+	add_stats(B,"MvProd (mean)",get<0>(mvp_stats));
+	add_stats(B,"MvProd (max)",get<1>(mvp_stats));
+	
+	
 	Real err = norm(ua-ub)/norm(ua);
 	Real compression=CompressionRate(B);
 
   	if (rankWorld == 0) {
+		print_stats(B);
+		cout<<"nb_dense_mat : "<< nb_densemats(B)<<endl;
+		cout<<"nb_lr_mat : "<< nb_lrmats(B)<<endl;
 		cout<<"Matrix-vector product relative error : "<<err<<endl;
 		cout<<"Compression rate: "<<compression<<endl;
   	}
