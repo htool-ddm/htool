@@ -30,20 +30,22 @@ private:
 	vector<Block*>		  Tasks;
 	vector<Block*>		  MyBlocks;
 	
-	Block* BuildBlockTree(const Cluster&, const Cluster&, int reqrank=-1);
+	Block* BuildBlockTree(const Cluster&, const Cluster&);
 	
-	bool UpdateBlocks(const Cluster&, const Cluster&, int reqrank=-1);
+	bool UpdateBlocks(const Cluster&, const Cluster&);
 	
-	void ScatterTasks(int reqrank=-1);
-	void ComputeBlocks(int reqrank=-1);
+	void ScatterTasks();
+	void ComputeBlocks();
 	
 	vector<LowRankMatrix> MyFarFieldMats;
 	vector<SubMatrix>     MyNearFieldMats;
 	
+	const int& reqrank;
+	
 public:
 	
-	HMatrix(const VirtualMatrix&, const vectR3&, const vectReal&, const vectInt&, const vectR3&, const vectReal&, const vectInt&, int reqrank=-1, const MPI_Comm& comm=MPI_COMM_WORLD); // To be used with two different clusters
-	HMatrix(const VirtualMatrix&, const vectR3&, const vectReal&, const vectInt&, int reqrank=-1, const MPI_Comm& comm=MPI_COMM_WORLD); // To be used with one cluster
+	HMatrix(const VirtualMatrix&, const vectR3&, const vectReal&, const vectInt&, const vectR3&, const vectReal&, const vectInt&, const int& reqrank=-1, const MPI_Comm& comm=MPI_COMM_WORLD); // To be used with two different clusters
+	HMatrix(const VirtualMatrix&, const vectR3&, const vectReal&, const vectInt&, const int& reqrank=-1, const MPI_Comm& comm=MPI_COMM_WORLD); // To be used with one cluster
 	//	friend void DisplayPartition(const HMatrix&, char const* const);
 
 	~HMatrix() {
@@ -176,7 +178,7 @@ public:
 		
 };
 
-Block* HMatrix::BuildBlockTree(const Cluster& t, const Cluster& s, int reqrank){
+Block* HMatrix::BuildBlockTree(const Cluster& t, const Cluster& s){
 	//std::stack<Block*> st;
 	//st.push(new Block(tgt,src));
 	
@@ -212,8 +214,8 @@ Block* HMatrix::BuildBlockTree(const Cluster& t, const Cluster& s, int reqrank){
 				return B;
 			}
 			else{
-				Block* r1 = BuildBlockTree(son_(t,0),s, reqrank);
-				Block* r2 = BuildBlockTree(son_(t,1),s, reqrank);
+				Block* r1 = BuildBlockTree(son_(t,0),s);
+				Block* r2 = BuildBlockTree(son_(t,1),s);
 				if ((bsize <= maxblocksize) && (r1 != NULL) && (r2 != NULL)) {
 					delete r1;
 					delete r2;
@@ -230,8 +232,8 @@ Block* HMatrix::BuildBlockTree(const Cluster& t, const Cluster& s, int reqrank){
 		}
 		else{
 			if( t.IsLeaf() ){
-				Block* r3 = BuildBlockTree(t,son_(s,0), reqrank);
-				Block* r4 = BuildBlockTree(t,son_(s,1), reqrank);
+				Block* r3 = BuildBlockTree(t,son_(s,0));
+				Block* r4 = BuildBlockTree(t,son_(s,1));
 				if ((bsize <= maxblocksize) && (r3 != NULL) && (r4 != NULL)) {
 					delete r3;
 					delete r4;
@@ -246,10 +248,10 @@ Block* HMatrix::BuildBlockTree(const Cluster& t, const Cluster& s, int reqrank){
 				//st.push(new Block(t,son_(s,1)));
 			}
 			else{
-				Block* r1 = BuildBlockTree(son_(t,0),son_(s,0), reqrank);
-				Block* r2 = BuildBlockTree(son_(t,0),son_(s,1), reqrank);
-				Block* r3 = BuildBlockTree(son_(t,1),son_(s,0), reqrank);
-				Block* r4 = BuildBlockTree(son_(t,1),son_(s,1), reqrank);
+				Block* r1 = BuildBlockTree(son_(t,0),son_(s,0));
+				Block* r2 = BuildBlockTree(son_(t,0),son_(s,1));
+				Block* r3 = BuildBlockTree(son_(t,1),son_(s,0));
+				Block* r4 = BuildBlockTree(son_(t,1),son_(s,1));
 				if ((bsize <= maxblocksize) && (r1 != NULL) && (r2 != NULL) && (r3 != NULL) && (r4 != NULL)) {
 					delete r1;
 					delete r2;
@@ -274,7 +276,7 @@ Block* HMatrix::BuildBlockTree(const Cluster& t, const Cluster& s, int reqrank){
 	}
 }
 
-void HMatrix::ScatterTasks(int reqrank){
+void HMatrix::ScatterTasks(){
 	int rankWorld, sizeWorld;
     MPI_Comm_size(MPI_COMM_WORLD, &sizeWorld);
     MPI_Comm_rank(MPI_COMM_WORLD, &rankWorld);	
@@ -284,7 +286,7 @@ void HMatrix::ScatterTasks(int reqrank){
     		MyBlocks.push_back(Tasks[b]);
 }
 
-bool HMatrix::UpdateBlocks(const Cluster& t, const Cluster& s, int reqrank){
+bool HMatrix::UpdateBlocks(const Cluster& t, const Cluster& s){
 	const vectInt& I = num_(t);
 	const vectInt& J = num_(s);
 	int bsize = size(num_(t))*size(num_(s));
@@ -292,7 +294,7 @@ bool HMatrix::UpdateBlocks(const Cluster& t, const Cluster& s, int reqrank){
 	B.ComputeAdmissibility();
 	if( B.IsAdmissible() ){
 		//SubMatrix submat = SubMatrix(mat,I,J);
-		LowRankMatrix lrm(mat,I,J,t,s,reqrank);
+		LowRankMatrix lrm(mat,I,J,t,s);
 		if(rank_of(lrm)!=-5){
 			MyFarFieldMats.push_back(lrm);
 			return true;
@@ -304,8 +306,8 @@ bool HMatrix::UpdateBlocks(const Cluster& t, const Cluster& s, int reqrank){
 			return false;
 		}
 		else{
-			bool b1 = UpdateBlocks(son_(t,0),s, reqrank);
-			bool b2 = UpdateBlocks(son_(t,1),s, reqrank);
+			bool b1 = UpdateBlocks(son_(t,0),s);
+			bool b2 = UpdateBlocks(son_(t,1),s);
 			if ((bsize <= maxblocksize) && (b1 != true) && (b2 != true)) 
 				return false;
 			else {
@@ -317,8 +319,8 @@ bool HMatrix::UpdateBlocks(const Cluster& t, const Cluster& s, int reqrank){
 	}
 	else{
 		if( t.IsLeaf() ){
-			bool b3 = UpdateBlocks(t,son_(s,0), reqrank);
-			bool b4 = UpdateBlocks(t,son_(s,1), reqrank);
+			bool b3 = UpdateBlocks(t,son_(s,0));
+			bool b4 = UpdateBlocks(t,son_(s,1));
 			if ((bsize <= maxblocksize) && (b3 != true) && (b4 != true)) 
 				return false;
 			else{
@@ -328,10 +330,10 @@ bool HMatrix::UpdateBlocks(const Cluster& t, const Cluster& s, int reqrank){
 			}
 		}
 		else{
-			bool b1 = UpdateBlocks(son_(t,0),son_(s,0), reqrank);
-			bool b2 = UpdateBlocks(son_(t,0),son_(s,1), reqrank);
-			bool b3 = UpdateBlocks(son_(t,1),son_(s,0), reqrank);
-			bool b4 = UpdateBlocks(son_(t,1),son_(s,1), reqrank);
+			bool b1 = UpdateBlocks(son_(t,0),son_(s,0));
+			bool b2 = UpdateBlocks(son_(t,0),son_(s,1));
+			bool b3 = UpdateBlocks(son_(t,1),son_(s,0));
+			bool b4 = UpdateBlocks(son_(t,1),son_(s,1));
 			if ((bsize <= maxblocksize) && (b1 != true) && (b2 != true) && (b3 != true) && (b4 != true)) 
 				return false;
 			else {
@@ -347,7 +349,7 @@ bool HMatrix::UpdateBlocks(const Cluster& t, const Cluster& s, int reqrank){
 	}
 }
 
-void HMatrix::ComputeBlocks(int reqrank){
+void HMatrix::ComputeBlocks(){
     for(int b=0; b<MyBlocks.size(); b++) {
     	const Block& B = *(MyBlocks[b]);
    		const Cluster& t = tgt_(B);
@@ -356,7 +358,7 @@ void HMatrix::ComputeBlocks(int reqrank){
 		const vectInt& J = num_(s);   
 		if( B.IsAdmissible() ){
 			//SubMatrix submat = SubMatrix(mat,I,J);
-			LowRankMatrix lrm(mat,I,J,t,s,reqrank);
+			LowRankMatrix lrm(mat,I,J,t,s);
 			if(rank_of(lrm)!=-5){
 				MyFarFieldMats.push_back(lrm);
 			}
@@ -366,8 +368,8 @@ void HMatrix::ComputeBlocks(int reqrank){
 						MyNearFieldMats.push_back(SubMatrix(mat,I,J));
 					}
 					else{
-						bool b1 = UpdateBlocks(son_(t,0),s, reqrank);
-						bool b2 = UpdateBlocks(son_(t,1),s, reqrank);
+						bool b1 = UpdateBlocks(son_(t,0),s);
+						bool b2 = UpdateBlocks(son_(t,1),s);
 						if ((b1 != true) && (b2 != true)) 
 							MyNearFieldMats.push_back(SubMatrix(mat,I,J));
 						else {
@@ -378,8 +380,8 @@ void HMatrix::ComputeBlocks(int reqrank){
 				}
 				else{
 					if( t.IsLeaf() ){
-						bool b3 = UpdateBlocks(t,son_(s,0), reqrank);
-						bool b4 = UpdateBlocks(t,son_(s,1), reqrank);
+						bool b3 = UpdateBlocks(t,son_(s,0));
+						bool b4 = UpdateBlocks(t,son_(s,1));
 						if ((b3 != true) && (b4 != true)) 
 							MyNearFieldMats.push_back(SubMatrix(mat,I,J));
 						else {
@@ -388,10 +390,10 @@ void HMatrix::ComputeBlocks(int reqrank){
 						}
 					}
 					else{
-						bool b1 = UpdateBlocks(son_(t,0),son_(s,0), reqrank);
-						bool b2 = UpdateBlocks(son_(t,0),son_(s,1), reqrank);
-						bool b3 = UpdateBlocks(son_(t,1),son_(s,0), reqrank);
-						bool b4 = UpdateBlocks(son_(t,1),son_(s,1), reqrank);
+						bool b1 = UpdateBlocks(son_(t,0),son_(s,0));
+						bool b2 = UpdateBlocks(son_(t,0),son_(s,1));
+						bool b3 = UpdateBlocks(son_(t,1),son_(s,0));
+						bool b4 = UpdateBlocks(son_(t,1),son_(s,1));
 						if ((b1 != true) && (b2 != true) && (b3 != true) && (b4 != true)) 
 							MyNearFieldMats.push_back(SubMatrix(mat,I,J));
 						else {
@@ -413,9 +415,9 @@ void HMatrix::ComputeBlocks(int reqrank){
 
 HMatrix::HMatrix(const VirtualMatrix& mat0,
 		 const vectR3& xt0, const vectReal& rt, const vectInt& tabt0,
-		 const vectR3& xs0, const vectReal& rs, const vectInt& tabs0, int reqrank, const MPI_Comm& comm):
+		 const vectR3& xs0, const vectReal& rs, const vectInt& tabs0, const int& reqrank0, const MPI_Comm& comm):
 
-mat(mat0), xt(xt0), xs(xs0), tabt(tabt0), tabs(tabs0) {
+mat(mat0), xt(xt0), xs(xs0), tabt(tabt0), tabs(tabs0),reqrank(reqrank0) {
 	assert( nb_rows(mat)==tabt.size() && nb_cols(mat)==tabs.size() );
 	
 	int rankWorld, sizeWorld;
@@ -431,18 +433,18 @@ mat(mat0), xt(xt0), xs(xs0), tabt(tabt0), tabs(tabs0) {
 	
 	// Construction arbre des blocs
 	time = MPI_Wtime();
-	Block* B = BuildBlockTree(t,s,reqrank);
+	Block* B = BuildBlockTree(t,s);
 	if (B != NULL) Tasks.push_back(B);
 	myttime[1] = MPI_Wtime() - time;
 	
 	// Repartition des blocs sur les processeurs
 	time = MPI_Wtime();
-	ScatterTasks(reqrank);
+	ScatterTasks();
 	myttime[2] = MPI_Wtime() - time;
 	
 	// Assemblage des sous-matrices
 	time = MPI_Wtime();
-	ComputeBlocks(reqrank);
+	ComputeBlocks();
 	myttime[3] = MPI_Wtime() - time;
 	
 	MPI_Reduce(&myttime.front(), &maxtime.front(), 4, MPI_DOUBLE, MPI_MAX, 0, comm);
@@ -458,9 +460,9 @@ mat(mat0), xt(xt0), xs(xs0), tabt(tabt0), tabs(tabs0) {
 }
 
 HMatrix::HMatrix(const VirtualMatrix& mat0,
-		 const vectR3& xt0, const vectReal& rt, const vectInt& tabt0, int reqrank, const MPI_Comm& comm):
+		 const vectR3& xt0, const vectReal& rt, const vectInt& tabt0, const int& reqrank0, const MPI_Comm& comm):
 
-mat(mat0), xt(xt0), xs(xt0), tabt(tabt0), tabs(tabt0) {
+mat(mat0), xt(xt0), xs(xt0), tabt(tabt0), tabs(tabt0),reqrank(reqrank0) {
 	assert( nb_rows(mat)==tabt.size() && nb_cols(mat)==tabs.size() );
 	
 	int rankWorld, sizeWorld;
@@ -475,18 +477,18 @@ mat(mat0), xt(xt0), xs(xt0), tabt(tabt0), tabs(tabt0) {
 	
 	// Construction arbre des blocs
 	time = MPI_Wtime();
-	Block* B = BuildBlockTree(t,t,reqrank);
+	Block* B = BuildBlockTree(t,t);
 	if (B != NULL) Tasks.push_back(B);
 	myttime[1] = MPI_Wtime() - time;
 	
 	// Repartition des blocs sur les processeurs
 	time = MPI_Wtime();
-	ScatterTasks(reqrank);
+	ScatterTasks();
 	myttime[2] = MPI_Wtime() - time;
 	
 	// Assemblage des sous-matrices
 	time = MPI_Wtime();
-	ComputeBlocks(reqrank);
+	ComputeBlocks();
 	myttime[3] = MPI_Wtime() - time;
 	
 	MPI_Reduce(&myttime.front(), &maxtime.front(), 4, MPI_DOUBLE, MPI_MAX, 0, comm);
