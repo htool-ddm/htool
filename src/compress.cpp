@@ -72,7 +72,6 @@ int main(int argc, char* argv[]){
     MPI_Init(&argc, &argv);
     /*# Init #*/
     int rankWorld, sizeWorld;
-	std::cout << "Rang : "<<rankWorld << std::endl;
     MPI_Comm_size(MPI_COMM_WORLD, &sizeWorld);
     MPI_Comm_rank(MPI_COMM_WORLD, &rankWorld);
 
