@@ -134,7 +134,7 @@ int main(int argc, char* argv[]){
 	//HMatrix B(mA,x,r,tab);
 
 	HMatrix B(A,x,r,tab);
-	
+
 	//toc();
 
 
@@ -155,27 +155,17 @@ int main(int argc, char* argv[]){
 	vectCplx ua(nr),ub(nr);
 	MvProd(ua,A,u);
 	std::pair <double,double > mvp_stats= MvProdMPI(ub,B,u);
+	Real normA = NormFrob(A);
+
 	add_stats(B,"MvProd (mean)",get<0>(mvp_stats));
 	add_stats(B,"MvProd (max)",get<1>(mvp_stats));
-	
-	
-	Real err = norm(ua-ub)/norm(ua);
-	Real compression=CompressionRate(B);
+	add_stats(B,"MvProd err",norm(ua-ub)/norm(ua));
+	add_stats(B,"Compression",CompressionRate(B));
+	add_stats(B,"Nb dense mats",nb_densemats(B));
+	add_stats(B,"Nb lr mats",nb_lrmats(B));
+	add_stats(B,"Relative Frob error",sqrt(squared_absolute_error(B,A))/normA);
 
-  	if (rankWorld == 0) {
-		print_stats(B);
-		cout<<"nb_dense_mat : "<< nb_densemats(B)<<endl;
-		cout<<"nb_lr_mat : "<< nb_lrmats(B)<<endl;
-		cout<<"Matrix-vector product relative error : "<<err<<endl;
-		cout<<"Compression rate: "<<compression<<endl;
-  	}
-
-	Real normA = NormFrob(A);
-	//cout << "Frobenius norm of the dense matrix: " << normA << endl;
-
-	Real froberrH = sqrt(squared_absolute_error(B,A))/normA;
-	if (rankWorld == 0)
-		cout << "Relative error in Frobenius norm: " << froberrH << endl;
+	print_stats(B);
 
 	MPI_Finalize();
 	return 0;
