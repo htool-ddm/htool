@@ -27,7 +27,7 @@ namespace htool {
 void LoadMatrix(const char* filename, Matrix& m){
 	
 	int NbRow, NbCol;
-	string      line;
+	std::string      line;
 	int        j0,k0;
 	Cplx         val;
 	
@@ -85,7 +85,7 @@ void LoadMatrix(const char* filename, Matrix& m){
 void LoadSpMatrix(const char* filename, SpMatrix& m){
 	
 	int NbRow, NbCol;
-	string      line;
+	std::string      line;
 	int        j0,k0;
 	Cplx         val;
 	

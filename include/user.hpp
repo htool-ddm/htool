@@ -1,14 +1,10 @@
 #ifndef USER_HPP
 #define USER_HPP
 
-// #include <iostream>
-// #include <fstream>
 #include <ctime>
 #include <stack>
 #include <string>
-// #include <sstream>
-// #include <std::vector>
-// #include <cstdlib> // for exit()
+
 
 namespace htool {
 ////////////////========================================================////////////////

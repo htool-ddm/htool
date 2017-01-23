@@ -24,11 +24,11 @@ private:
 	const vectInt& tabs;
 
 
-	vector<LowRankMatrix> FarFieldMat;
-	vector<SubMatrix>     NearFieldMat;
+	std::vector<LowRankMatrix> FarFieldMat;
+	std::vector<SubMatrix>     NearFieldMat;
 
-	vector<Block*>		  Tasks;
-	vector<Block*>		  MyBlocks;
+	std::vector<Block*>		  Tasks;
+	std::vector<Block*>		  MyBlocks;
 
 	Block* BuildBlockTree(const Cluster&, const Cluster&);
 
@@ -37,8 +37,8 @@ private:
 	void ScatterTasks();
 	void ComputeBlocks();
 
-	vector<LowRankMatrix> MyFarFieldMats;
-	vector<SubMatrix>     MyNearFieldMats;
+	std::vector<LowRankMatrix> MyFarFieldMats;
+	std::vector<SubMatrix>     MyNearFieldMats;
 
 	const int& reqrank;
 
@@ -70,7 +70,7 @@ public:
 	// 1- !!!
 	friend Real CompressionRate(const HMatrix& hmat, const MPI_Comm& comm/*=MPI_COMM_WORLD*/);
 
-	friend void Output(const HMatrix&, string filename);
+	friend void Output(const HMatrix&, std::string filename);
 	friend const LowRankMatrix& GetLowRankMatrix(HMatrix m, int i){
 		assert(i<m.FarFieldMat.size());
 		return m.FarFieldMat[i];}
@@ -105,7 +105,7 @@ mat(mat0), xt(xt0), xs(xs0), tabt(tabt0), tabs(tabs0),reqrank(reqrank0) {
 	int rankWorld, sizeWorld;
     MPI_Comm_size(comm, &sizeWorld);
     MPI_Comm_rank(comm, &rankWorld);
-    vector<double> myttime(4), maxtime(4), meantime(4);
+    std::vector<double> myttime(4), maxtime(4), meantime(4);
 
 
 	// Construction arbre des paquets
@@ -151,7 +151,7 @@ mat(mat0), xt(xt0), xs(xt0), tabt(tabt0), tabs(tabt0),reqrank(reqrank0) {
 	int rankWorld, sizeWorld;
     MPI_Comm_size(comm, &sizeWorld);
     MPI_Comm_rank(comm, &rankWorld);
-    vector<double> myttime(4), maxtime(4), meantime(4);
+    std::vector<double> myttime(4), maxtime(4), meantime(4);
 
 	// Construction arbre des paquets
 	double time = MPI_Wtime();
@@ -401,8 +401,8 @@ void HMatrix::ComputeBlocks(){
 // 	}
 // 	else{
 //
-// 		const vector<LowRankMatrix>& FarFieldMat  = hmat.FarFieldMat;
-// 		//		const vector<SubMatrix>&     NearFieldMat = hmat.NearFieldMat;
+// 		const std::vector<LowRankMatrix>& FarFieldMat  = hmat.FarFieldMat;
+// 		//		const std::vector<SubMatrix>&     NearFieldMat = hmat.NearFieldMat;
 //
 // 		for(int i=0; i<FarFieldMat.size(); i++){
 //
@@ -436,8 +436,8 @@ void HMatrix::ComputeBlocks(){
 void MvProd(vectCplx& f, const HMatrix& A, const vectCplx& x){
 	assert(size(f)==size(x)); fill(f,0.);
 
-	const vector<LowRankMatrix>&    FarFieldMat  = A.FarFieldMat;
-	const vector<SubMatrix>&        NearFieldMat = A.NearFieldMat;
+	const std::vector<LowRankMatrix>&    FarFieldMat  = A.FarFieldMat;
+	const std::vector<SubMatrix>&        NearFieldMat = A.NearFieldMat;
 
 	// Contribution champ lointain
 	for(int b=0; b<FarFieldMat.size(); b++){
@@ -471,8 +471,8 @@ std::pair<double,double> MvProdMPI(vectCplx& f, const HMatrix& A, const vectCplx
 	double time = MPI_Wtime();
 
 	assert(nb_rows(A.mat)==size(f) && nb_cols(A.mat)==size(x)); fill(f,0.);
-	const vector<LowRankMatrix>&    MyFarFieldMats  = A.MyFarFieldMats;
-	const vector<SubMatrix>&        MyNearFieldMats = A.MyNearFieldMats;
+	const std::vector<LowRankMatrix>&    MyFarFieldMats  = A.MyFarFieldMats;
+	const std::vector<SubMatrix>&        MyNearFieldMats = A.MyNearFieldMats;
 
 	// Contribution champ lointain
 	for(int b=0; b<MyFarFieldMats.size(); b++){
@@ -511,7 +511,7 @@ std::pair<double,double> MvProdMPI(vectCplx& f, const HMatrix& A, const vectCplx
 	MPI_Reduce(&time, &meantime, 1, MPI_DOUBLE, MPI_SUM, 0, comm);
 // 	if (rankWorld == 0) {
 		meantime /= sizeWorld;
-// 		cout << "MvProd: \t mean = " << meantime << ", \t max = " << maxtime << endl;
+// 		std::cout << "MvProd: \t mean = " << meantime << ", \t max = " << maxtime << endl;
 // 	}
 
 	MPI_Allreduce(MPI_IN_PLACE, &f.front(), f.size(), MPI_DOUBLE_COMPLEX, MPI_SUM, comm);
@@ -522,8 +522,8 @@ Real CompressionRate(const HMatrix& hmat, const MPI_Comm& comm=MPI_COMM_WORLD){
 
 	Real mycomp = 0.;
 	Real size = ( (hmat.tabt).size() )*( (hmat.tabs).size() );
-	const vector<LowRankMatrix>& MyFarFieldMats  = hmat.MyFarFieldMats;
-	const vector<SubMatrix>&     MyNearFieldMats = hmat.MyNearFieldMats;
+	const std::vector<LowRankMatrix>& MyFarFieldMats  = hmat.MyFarFieldMats;
+	const std::vector<SubMatrix>&     MyNearFieldMats = hmat.MyNearFieldMats;
 
 	for(int j=0; j<MyFarFieldMats.size(); j++){
 		Real nr   = nb_rows(MyFarFieldMats[j]);

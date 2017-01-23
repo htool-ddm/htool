@@ -28,74 +28,74 @@ namespace htool {
 
 class Parametres_IO{
 public:
-	static string datapath;
-	static string outputpath;
-	static string meshname;
-	static string matrixname;
+	static std::string datapath;
+	static std::string outputpath;
+	static std::string meshname;
+	static std::string matrixname;
 
-	friend void LoadParamIO (string inputname);
-	friend string GetMatrixPath();
-	friend string GetMeshPath();
-	friend string GetOutputPath();
-	friend string GetMatrixName();
-	friend string GetDataPath();
+	friend void LoadParamIO (std::string inputname);
+	friend std::string GetMatrixPath();
+	friend std::string GetMeshPath();
+	friend std::string GetOutputPath();
+	friend std::string GetMatrixName();
+	friend std::string GetDataPath();
 
 	Parametres_IO (); // Constructeur par defaut
-	Parametres_IO (string , string, string , string); // Valeurs données à la main par défaut
+	Parametres_IO (std::string , std::string, std::string , std::string); // Valeurs données à la main par défaut
 };
 
 // Allocation de la mémoire pour les valeurs statiques (obligatoire)
-string Parametres_IO::datapath;
-string Parametres_IO::outputpath;
-string Parametres_IO::meshname;
-string Parametres_IO::matrixname;
+std::string Parametres_IO::datapath;
+std::string Parametres_IO::outputpath;
+std::string Parametres_IO::meshname;
+std::string Parametres_IO::matrixname;
 
 Parametres_IO::Parametres_IO(){
 
 }
 
-Parametres_IO::Parametres_IO(string datapath0, string outputpath0, string meshname0, string matrixname0){
+Parametres_IO::Parametres_IO(std::string datapath0, std::string outputpath0, std::string meshname0, std::string matrixname0){
 	datapath=datapath0;
 	outputpath=outputpath0;
 	meshname=meshname0;
 	matrixname=matrixname0;
 }
 
-string GetDataPath(){
+std::string GetDataPath(){
 	return Parametres_IO::datapath;
 }
-string GetMatrixPath(){
+std::string GetMatrixPath(){
 	return Parametres_IO::datapath+"/"+Parametres_IO::matrixname;
 }
-string GetMatrixName(){
+std::string GetMatrixName(){
 	return Parametres_IO::matrixname;
 }
-string GetMeshName(){
+std::string GetMeshName(){
 	return Parametres_IO::meshname;
 }
-string GetMeshPath(){
+std::string GetMeshPath(){
 	return Parametres_IO::datapath+"/"+Parametres_IO::meshname;
 }
-string GetOutputPath(){
+std::string GetOutputPath(){
 	return Parametres_IO::outputpath;
 }
 
 
-void LoadParamIO(string inputname){
-	ifstream data(inputname.c_str());
+void LoadParamIO(std::string inputname){
+	std::ifstream data(inputname.c_str());
 
 	// Si le fichier n'existe pas
 	if (!data){
-		cerr << "Input file doesn't exist" << endl;
+		std::cerr << "Input file doesn't exist" << std::endl;
 		exit(1);
 	}
 	// Lecture du fichier
 	else {
 		while (data){
-			string strInput;
+			std::string strInput;
 			getline(data,strInput);
 
-			vector<string> line = split (strInput,' ');
+			std::vector<std::string> line = split (strInput,' ');
 			if (!line.empty()){
 				if (line.at(0)=="Data_path"){
 					Parametres_IO::datapath=line.back();
@@ -105,17 +105,17 @@ void LoadParamIO(string inputname){
 				}
 				else if (line.at(0)=="Mesh_name"){
 					Parametres_IO::meshname=line.back();
-					ifstream Meshname((Parametres_IO::datapath+"/"+Parametres_IO::meshname).c_str());
+					std::ifstream Meshname((Parametres_IO::datapath+"/"+Parametres_IO::meshname).c_str());
 					if (!Meshname){
-						cerr << "Mesh file does not exist" << endl;
+						std::cerr << "Mesh file does not exist" << std::endl;
 						exit(1);
 					}
 				}
 				else if (line.at(0)=="Matrix_name"){
 					Parametres_IO::matrixname=line.back();
-					ifstream Matrixname((Parametres_IO::datapath+"/"+Parametres_IO::matrixname).c_str());
+					std::ifstream Matrixname((Parametres_IO::datapath+"/"+Parametres_IO::matrixname).c_str());
 					if (!Matrixname){
-						cerr << "Matrix file does not exist" << endl;
+						std::cerr << "Matrix file does not exist" << std::endl;
 						exit(1);
 					}
 				}
@@ -152,7 +152,7 @@ public:
 	Parametres();
 	Parametres(int, Real, Real, int, int);
 
-	friend void LoadParam(string inputname);
+	friend void LoadParam(std::string inputname);
 	friend Real GetEta();
 	friend Real GetEpsilon();
 	friend int GetNdofPerElt();
@@ -221,21 +221,21 @@ void SetMinClusterSize(int minclustersize0){
 	Parametres::minclustersize=minclustersize0;
 }
 
-void LoadParam(string inputname){
-	ifstream data(inputname.c_str());
+void LoadParam(std::string inputname){
+	std::ifstream data(inputname.c_str());
 
 	// Si le fichier n'existe pas
 	if (!data){
-		cerr << "Input file doesn't exist" << endl;
+		std::cerr << "Input file doesn't exist" << std::endl;
 		exit(1);
 	}
 	// Lecture du fichier
 	else {
 		while (data){
-			string strInput;
+			std::string strInput;
 			getline(data,strInput);
 
-			vector<string> line = split (strInput,' ');
+			std::vector<std::string> line = split (strInput,' ');
 			if (!line.empty()){
 				if (line.at(0)=="Epsilon"){
 					Parametres::epsilon=StrToNbr<Real>(line.back());

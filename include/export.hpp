@@ -28,19 +28,19 @@ namespace htool {
 //
 //==================================================//
 
-void ExportMEDIT(string inputname, string outputname){
+void ExportMEDIT(std::string inputname, std::string outputname){
 	
-	vector<R3>  X;
-	vector<N4>  Elt;
-	vector<int> NbPt;
+	std::vector<R3>  X;
+	std::vector<N4>  Elt;
+	std::vector<int> NbPt;
 	int   num,NbElt,poubelle, NbTri, NbQuad;
 	R3    Pt;
 	
 	// Ouverture fichier
-	ifstream infile;
+	std::ifstream infile;
 	infile.open(inputname.c_str());
 	if(!infile.good()){
-		cout << "LoadPoints in loading.hpp: error opening the geometry file" << endl;
+		std::cout << "LoadPoints in loading.hpp: error opening the geometry file" << std::endl;
 		abort();}
 	
 	// Nombre d'elements
@@ -73,38 +73,38 @@ void ExportMEDIT(string inputname, string outputname){
 	infile.close();
 	
 	// Ecriture fichier de sortie
-	ofstream outfile;
+	std::ofstream outfile;
 	outfile.open((GetOutputPath()+"/"+outputname).c_str());
 	outfile << "MeshVersionFormatted 1\n";
 	outfile << "Dimension 3\n";
 	outfile << "Vertices\n";
-	outfile << X.size() << endl;
+	outfile << X.size() << std::endl;
 	for(int j=0; j<X.size(); j++){
 		outfile << X[j] << "\t" << 0 << "\n";}
 	
 	if(NbQuad>0){
-		outfile << endl;
+		outfile << std::endl;
 		outfile << "Quadrilaterals\n";
-		outfile << NbQuad << endl;
+		outfile << NbQuad << std::endl;
 		for(int j=0; j<NbElt; j++){
 			if(NbPt[j]==4){
 				for(int k=0; k<4; k++){
 					outfile << Elt[j][k]+1 << "\t";
 				}
-				outfile << 0 << endl;
+				outfile << 0 << std::endl;
 			}
 		}
 	}
 	
 	if(NbTri>0){
-		outfile << endl;
+		outfile << std::endl;
 		outfile << "Triangles\n";
-		outfile << NbTri << endl;
+		outfile << NbTri << std::endl;
 		for(int j=0; j<NbElt; j++){
 			if(NbPt[j]==3){
 				for(int k=0; k<3; k++){
 					outfile << Elt[j][k]+1 << "\t";}
-				outfile << 0 << endl;
+				outfile << 0 << std::endl;
 			}
 		}
 	}
@@ -135,19 +135,19 @@ void ExportMEDIT(string inputname, string outputname){
 //
 //==================================================//
 
-void ExportGMSH(string inputname, string outputname){
+void ExportGMSH(std::string inputname, std::string outputname){
 	
-	vector<R3>  X;
-	vector<N4>  Elt;
-	vector<int> NbPt;
+	std::vector<R3>  X;
+	std::vector<N4>  Elt;
+	std::vector<int> NbPt;
 	int   num,NbElt,poubelle, NbTri, NbQuad;
 	R3    Pt;
 	
 	// Ouverture fichier
-	ifstream infile;
+	std::ifstream infile;
 	infile.open(inputname.c_str());
 	if(!infile.good()){
-		cout << "LoadPoints in loading.hpp: error opening the geometry file" << endl;
+		std::cout << "LoadPoints in loading.hpp: error opening the geometry file" << std::endl;
 		abort();}
 	
 	// Nombre d'elements
@@ -181,18 +181,18 @@ void ExportGMSH(string inputname, string outputname){
 	
 	
 	// Ecriture fichier de sortie
-	ofstream outfile;
+	std::ofstream outfile;
 	outfile.open((GetOutputPath()+"/"+outputname).c_str());
 	outfile << "$MeshFormat\n";
 	outfile << "2.2 0 8\n";
 	outfile << "$EndMeshFormat\n";
 	outfile << "$Nodes\n";
-	outfile << X.size() << endl;
+	outfile << X.size() << std::endl;
 	for(int j=0; j<X.size(); j++){
 		outfile << j+1 << "\t" << X[j] << "\n";}
 	outfile << "$EndNodes\n";
 	outfile << "$Elements\n";
-	outfile << NbElt << endl;
+	outfile << NbElt << std::endl;
 	for(int j=0; j<NbElt; j++){
 		outfile << j  << "\t";
 		if(NbPt[j]==3){outfile << 2  << "\t";}

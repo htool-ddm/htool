@@ -6,8 +6,6 @@
 #include <vector>
 #include <cassert>
 #include "cluster.hpp"
-//#include "matrix.hpp"
-//#include "loading.hpp"
 #include <Eigen/Dense>
 
 namespace htool {
@@ -35,7 +33,7 @@ class LowRankMatrix: public Parametres{
 	
 private:
 	int rank, nr, nc;
-	vector<vectCplx> u, v;
+	std::vector<vectCplx> u, v;
 	vectInt ir;
 	vectInt ic;
 	
@@ -63,8 +61,8 @@ public:
 
 		rank = 0;
 
-		vector<bool> visited_row(nr,false);
-		vector<bool> visited_col(nc,false);
+		std::vector<bool> visited_row(nr,false);
+		std::vector<bool> visited_col(nc,false);
 		
 		Real frob = 0.;
 		Real aux  = 0.;
@@ -135,14 +133,14 @@ public:
 				u.push_back(c);
 				v.push_back(r);
 			}
-			else{cout << "There is a zero row in the starting submatrix and ACA didn't work" << endl;}
+			else{std::cout << "There is a zero row in the starting submatrix and ACA didn't work" << std::endl;}
 			
 			// Stopping criterion of slide 26 of Stephanie Chaillat and Rjasanow-Steinbach
             // (if epsilon>=1, it always stops to rank 1 since frob=aux)
 			while ( ((reqrank > 0) && (q < reqrank) ) ||
 			       ( (reqrank < 0) && ( sqrt(aux/frob)>epsilon ) ) ) {
 				
-				if (q >= min(nr,nc) )
+				if (q >= std::min(nr,nc) )
 					break;
 				if ( (q+1)*(nr+nc) > (nr*nc) ){ // one rank more is not advantageous
 					if (reqrank <0){ // If we didn't required a rank, i.e. we required a precision with epsilon
@@ -180,7 +178,7 @@ public:
 					aux = abs(dprod(c,c)*dprod(r,r));
                     // aux: terme quadratiques du developpement du carre' de la norme de Frobenius de la matrice low rank
 				}
-				else{ cout << "ACA's loop terminated" << endl; break; } // terminate algorithm with exact rank q (not full-rank submatrix)
+				else{ std::cout << "ACA's loop terminated" << std::endl; break; } // terminate algorithm with exact rank q (not full-rank submatrix)
 				// We accept the cross
 				q++;
 				//====================//
@@ -239,7 +237,7 @@ public:
 //				
 //				aux = abs(dprod(c,c)*dprod(r,r));
 //			}
-//			else{cout << "There is a zero row in the starting submatrix and ACA didn't work" << endl;}
+//			else{std::cout << "There is a zero row in the starting submatrix and ACA didn't work" << std::endl;}
 //			
 //			// (see Bebendorf stopping criterion (3.58) pag 141)
 //			while ( (q == 0) ||
@@ -262,7 +260,7 @@ public:
 //				u.push_back(c);
 //				v.push_back(r);
 //				
-//				if (q >= min(nr,nc) )
+//				if (q >= std::min(nr,nc) )
 //					break;
 //				if ( (q+1)*(nr +nc) > (nr*nc) ){ // one rank more is not advantageous
 //					if (reqrank <0){ // If we didn't required a rank, i.e. we required a precision with epsilon
@@ -299,7 +297,7 @@ public:
 //					
 //					aux = abs(dprod(c,c)*dprod(r,r));
 //				}
-//				else{ cout << "ACA's loop terminated" << endl; break; } // terminate algorithm with exact rank q (not full-rank submatrix)
+//				else{ std::cout << "ACA's loop terminated" << std::endl; break; } // terminate algorithm with exact rank q (not full-rank submatrix)
 //			}
 //			
 //			rank = u.size();
@@ -337,8 +335,8 @@ public:
 	//	}
 	
 	friend Real NormFrob(const LowRankMatrix& m){
-		const vector<vectCplx>& u = m.u;
-		const vector<vectCplx>& v = m.v;
+		const std::vector<vectCplx>& u = m.u;
+		const std::vector<vectCplx>& v = m.v;
 		const int& rank = m.rank;
 		
 		Cplx frob = 0.;
@@ -364,8 +362,8 @@ public:
 	
 	template <typename LhsType, typename RhsType>
 	friend void MvProd(LhsType& lhs, const LowRankMatrix& m, const RhsType& rhs){
-		const vector<vectCplx>& u = m.u;
-		const vector<vectCplx>& v = m.v;
+		const std::vector<vectCplx>& u = m.u;
+		const std::vector<vectCplx>& v = m.v;
 		for(int k=0; k<v.size(); k++){
 			Cplx pk = (rhs,v[k]);
 			for(int j=0; j<m.nr; j++){
@@ -374,21 +372,21 @@ public:
 		}
 	}
 	
-	friend ostream& operator<<(ostream& os, const LowRankMatrix& m){
-		os << "rank:\t" << m.rank << endl;
-		os << "nr:\t"   << m.nr << endl;
-		os << "nc:\t"   << m.nc << endl;
+	friend std::ostream& operator<<(std::ostream& os, const LowRankMatrix& m){
+		os << "rank:\t" << m.rank << std::endl;
+		os << "nr:\t"   << m.nr << std::endl;
+		os << "nc:\t"   << m.nc << std::endl;
 		os << "\nu:\n";
 		for(int j=0; j<m.nr; j++){
 			for(int k=0; k<m.rank; k++){
-				cout << m.u[k][j] << "\t";}
-			cout << "\n";}
+				std::cout << m.u[k][j] << "\t";}
+			std::cout << "\n";}
 		os << "\nv:\n";
 		for(int j=0; j<m.nc; j++){
 			for(int k=0; k<m.rank; k++){
-				cout << m.v[k][j] << "\t";
+				std::cout << m.v[k][j] << "\t";
 			}
-			cout << "\n";
+			std::cout << "\n";
 		}
 		
 		return os;
@@ -438,7 +436,7 @@ class LowRankMatrixSVD{
 private:
 	
 	int rank, nr, nc;
-	vector<vectCplx> u, v;
+	std::vector<vectCplx> u, v;
 	vectInt ir;
 	vectInt ic;
 	
@@ -496,8 +494,8 @@ public:
 	//	}
 	
 	friend Real NormFrob(const LowRankMatrixSVD& m){
-		const vector<vectCplx>& u = m.u;
-		const vector<vectCplx>& v = m.v;
+		const std::vector<vectCplx>& u = m.u;
+		const std::vector<vectCplx>& v = m.v;
 		const int& rank = m.rank;
 		
 		Cplx frob = 0.;
@@ -523,8 +521,8 @@ public:
 	
 	template <typename LhsType, typename RhsType>
 	friend void MvProd(LhsType& lhs, const LowRankMatrixSVD& m, const RhsType& rhs){
-		const vector<vectCplx>& u = m.u;
-		const vector<vectCplx>& v = m.v;
+		const std::vector<vectCplx>& u = m.u;
+		const std::vector<vectCplx>& v = m.v;
 		for(int k=0; k<v.size(); k++){
 			Cplx pk = (rhs,v[k]);
 			for(int j=0; j<m.nr; j++){
@@ -533,21 +531,21 @@ public:
 		}
 	}
 	
-	friend ostream& operator<<(ostream& os, const LowRankMatrixSVD& m){
-		os << "rank:\t" << m.rank << endl;
-		os << "nr:\t"   << m.nr << endl;
-		os << "nc:\t"   << m.nc << endl;
+	friend std::ostream& operator<<(std::ostream& os, const LowRankMatrixSVD& m){
+		os << "rank:\t" << m.rank << std::endl;
+		os << "nr:\t"   << m.nr << std::endl;
+		os << "nc:\t"   << m.nc << std::endl;
 		os << "\nu:\n";
 		for(int j=0; j<m.nr; j++){
 			for(int k=0; k<m.rank; k++){
-				cout << m.u[k][j] << "\t";}
-			cout << "\n";}
+				std::cout << m.u[k][j] << "\t";}
+			std::cout << "\n";}
 		os << "\nv:\n";
 		for(int j=0; j<m.nc; j++){
 			for(int k=0; k<m.rank; k++){
-				cout << m.v[k][j] << "\t";
+				std::cout << m.v[k][j] << "\t";
 			}
-			cout << "\n";
+			std::cout << "\n";
 		}
 		
 		return os;

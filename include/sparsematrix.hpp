@@ -13,7 +13,6 @@ namespace htool {
 //================================//
 //      DECLARATIONS DE TYPE      //
 //================================//
-using namespace std;
 
 //typedef vector<Cplx>    vectCplx;
 
@@ -33,8 +32,8 @@ class SpMatrix{
 	
 private:
 		
-    vector<int> I,J;
-    vector<Cplx> K;
+    std::vector<int> I,J;
+    std::vector<Cplx> K;
 	int  nr;
 	int  nc;
 	
@@ -53,7 +52,7 @@ public:
      _Ip_ as vector of the row indices, _Jp_ as vector of the column indices, 
      _Kp_ as vector of the coefficients of the matrix.
   */
-	SpMatrix(const vector<int>& Ip, const vector<int>& Jp, vector<Cplx>& Kp, const int& nrp, const int& ncp):
+	SpMatrix(const std::vector<int>& Ip, const std::vector<int>& Jp, std::vector<Cplx>& Kp, const int& nrp, const int& ncp):
     I(Ip), J(Jp), K(Kp), nr(nrp), nc(ncp) {}
 	
 	

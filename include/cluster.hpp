@@ -81,7 +81,7 @@ public:
 	friend const R3&      ctr_(const Cluster& t){return t.ctr;}
 	friend Cluster&       son_(const Cluster& t,const int& j){return *(t.son[j]);}
 	friend const vectInt& num_(const Cluster& t){return t.num;}
-	friend ostream& operator<<(ostream& os, const Cluster& cl){
+	friend std::ostream& operator<<(std::ostream& os, const Cluster& cl){
 		for(int j=0; j<(cl.num).size(); j++){os<<cl.num[j]<< "\t";} return os;}
 	friend void DisplayTree(const Cluster&);
 	
@@ -92,7 +92,7 @@ public:
 };
 
 //void DisplayTree(const Cluster& cl){
-//	cout << cl << endl;
+//	cout << cl << std::endl;
 //	if(!cl.IsLeaf()){
 //		DisplayTree(son_(cl,0));
 //		DisplayTree(son_(cl,1));}
@@ -278,7 +278,7 @@ void Cluster::Build(){
 		/*
 		EigenSolver eig(cov);
 		EigenValue  lambda = eig.eigenvalues();
-		EigenVector ev = eig.eigenvectors();
+		EigenVector ev = eig.eigenstd::vectors();
 		int l = 0; Real max=abs(lambda[0]);
 		if( max<abs(lambda[1]) ){l=1; max=abs(lambda[1]);}
 		if( max<abs(lambda[2]) ){l=2; }
@@ -287,7 +287,7 @@ void Cluster::Build(){
 		w[1] = ev(1,l).real();
 		w[2] = ev(2,l).real();
 		//dir = w;
-		cout << dir << " " << w << endl;
+		cout << dir << " " << w << std::endl;
 		*/
 		
 		// Construction des paquets enfants
@@ -330,7 +330,7 @@ void Cluster::Build(){
 //	if(son[0]==0){
 //		ctr=x[num[0]];
 //		rad=r[num[0]];
-////		cout<<"rayon minimal :"<<r[num[0]]<<endl;
+////		cout<<"rayon minimal :"<<r[num[0]]<<std::endl;
 //		return;}
 //
 //	// Recursivite
@@ -347,7 +347,7 @@ void Cluster::Build(){
 //	ctr = (1-l)*c0 + l*c1;
 //	rad = l*norm(c1-c0)+r0;
 //
-////	cout<<ctr<<" "<<rad<<endl;
+////	cout<<ctr<<" "<<rad<<std::endl;
 //
 //	}
 
@@ -371,17 +371,17 @@ void TraversalBuildLabel(const Cluster& t, vectInt& labelVisu, const unsigned in
 void VisuPartitionedMesh(const Cluster& t, std::string inputname, std::string outputname, const unsigned int visudep){
 	
 	assert(t.depth==0); // on peut l'appeler juste pour la racine
-	vector<R3>  X;
-	vector<N4>  Elt;
-	vector<int> NbPt;
+	std::vector<R3>  X;
+	std::vector<N4>  Elt;
+	std::vector<int> NbPt;
 	int   num,NbElt,poubelle, NbTri, NbQuad;
 	R3    Pt;
 	
 	// Ouverture fichier
-	ifstream infile;
+	std::ifstream infile;
 	infile.open(inputname.c_str());
 	if(!infile.good()){
-		cout << "LoadPoints in loading.hpp: error opening the geometry file" << endl;
+		std::cout << "LoadPoints in loading.hpp: error opening the geometry file" << std::endl;
 		abort();}
 	
 	// Nombre d'elements
@@ -418,18 +418,18 @@ void VisuPartitionedMesh(const Cluster& t, std::string inputname, std::string ou
 	TraversalBuildLabel(t,labelVisu,visudep,1);
 	
 	// Ecriture fichier de sortie
-	ofstream outfile;
+	std::ofstream outfile;
 	outfile.open((GetOutputPath()+"/"+outputname).c_str());
 	outfile << "$MeshFormat\n";
 	outfile << "2.2 0 8\n";
 	outfile << "$EndMeshFormat\n";
 	outfile << "$Nodes\n";
-	outfile << X.size() << endl;
+	outfile << X.size() << std::endl;
 	for(int j=0; j<X.size(); j++){
 		outfile << j+1 << "\t" << X[j] << "\n";}
 	outfile << "$EndNodes\n";
 	outfile << "$Elements\n";
-	outfile << NbElt << endl;
+	outfile << NbElt << std::endl;
 	for(int j=0; j<NbElt; j++){
 		outfile << j  << "\t";
 		if(NbPt[j]==3){outfile << 2  << "\t";}
@@ -466,14 +466,14 @@ public:
 	friend const Cluster& src_(const Block& b){return *(b.s);}
 	void ComputeAdmissibility() {
 		// Rjasanow - Steinbach (3.15) p111 Chap Approximation of Boundary Element Matrices
-		Admissible = ( 2*min(rad_(*t),rad_(*s)) < eta*( norm(ctr_(*t)-ctr_(*s))-rad_(*t)-rad_(*s) ) );
+		Admissible = ( 2*std::min(rad_(*t),rad_(*s)) < eta*( norm(ctr_(*t)-ctr_(*s))-rad_(*t)-rad_(*s) ) );
 	}
 	bool IsAdmissible() const{
 		assert(Admissible != -1);
 		return Admissible;
 	}
-	friend ostream& operator<<(ostream& os, const Block& b){
-		os << "src:\t" << src_(b) << endl; os << "tgt:\t" << tgt_(b); return os;}
+	friend std::ostream& operator<<(std::ostream& os, const Block& b){
+		os << "src:\t" << src_(b) << std::endl; os << "tgt:\t" << tgt_(b); return os;}
 	
 };
 }
