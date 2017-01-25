@@ -231,24 +231,52 @@ Block* HMatrix::BuildBlockTree(const Cluster& t, const Cluster& s){
 			}
 		}
 		else{
-			Block* r1 = BuildBlockTree(son_(t,0),son_(s,0));
-			Block* r2 = BuildBlockTree(son_(t,0),son_(s,1));
-			Block* r3 = BuildBlockTree(son_(t,1),son_(s,0));
-			Block* r4 = BuildBlockTree(son_(t,1),son_(s,1));
-			if ((bsize <= maxblocksize) && (r1 != NULL) && (r2 != NULL) && (r3 != NULL) && (r4 != NULL)) {
-				delete r1;
-				delete r2;
-				delete r3;
-				delete r4;
-				return B;
+			if (size(num_(t))>size(num_(s))){
+				Block* r1 = BuildBlockTree(son_(t,0),s);
+				Block* r2 = BuildBlockTree(son_(t,1),s);
+				if ((bsize <= maxblocksize) && (r1 != NULL) && (r2 != NULL)) {
+					delete r1;
+					delete r2;
+					return B;
+				}
+				else {
+					if (r1 != NULL) Tasks.push_back(r1);
+					if (r2 != NULL) Tasks.push_back(r2);
+					return NULL;
+				}
 			}
-			else {
-				if (r1 != NULL) Tasks.push_back(r1);
-				if (r2 != NULL) Tasks.push_back(r2);
-				if (r3 != NULL) Tasks.push_back(r3);
-				if (r4 != NULL) Tasks.push_back(r4);
-				return NULL;
+			else{
+				Block* r3 = BuildBlockTree(t,son_(s,0));
+				Block* r4 = BuildBlockTree(t,son_(s,1));
+				if ((bsize <= maxblocksize) && (r3 != NULL) && (r4 != NULL)) {
+					delete r3;
+					delete r4;
+					return B;
+				}
+				else {
+					if (r3 != NULL) Tasks.push_back(r3);
+					if (r4 != NULL) Tasks.push_back(r4);
+					return NULL;
+				}
 			}
+// 			Block* r1 = BuildBlockTree(son_(t,0),son_(s,0));
+// 			Block* r2 = BuildBlockTree(son_(t,0),son_(s,1));
+// 			Block* r3 = BuildBlockTree(son_(t,1),son_(s,0));
+// 			Block* r4 = BuildBlockTree(son_(t,1),son_(s,1));
+// 			if ((bsize <= maxblocksize) && (r1 != NULL) && (r2 != NULL) && (r3 != NULL) && (r4 != NULL)) {
+// 				delete r1;
+// 				delete r2;
+// 				delete r3;
+// 				delete r4;
+// 				return B;
+// 			}
+// 			else {
+// 				if (r1 != NULL) Tasks.push_back(r1);
+// 				if (r2 != NULL) Tasks.push_back(r2);
+// 				if (r3 != NULL) Tasks.push_back(r3);
+// 				if (r4 != NULL) Tasks.push_back(r4);
+// 				return NULL;
+// 			}
 		}
 	}
 }
@@ -305,19 +333,41 @@ bool HMatrix::UpdateBlocks(const Cluster& t, const Cluster& s){
 			}
 		}
 		else{
-			bool b1 = UpdateBlocks(son_(t,0),son_(s,0));
-			bool b2 = UpdateBlocks(son_(t,0),son_(s,1));
-			bool b3 = UpdateBlocks(son_(t,1),son_(s,0));
-			bool b4 = UpdateBlocks(son_(t,1),son_(s,1));
-			if ((bsize <= maxblocksize) && (b1 != true) && (b2 != true) && (b3 != true) && (b4 != true))
-				return false;
-			else {
-				if (b1 != true) MyNearFieldMats.push_back(SubMatrix(mat,num_(son_(t,0)),num_(son_(s,0))));
-				if (b2 != true) MyNearFieldMats.push_back(SubMatrix(mat,num_(son_(t,0)),num_(son_(s,1))));
-				if (b3 != true) MyNearFieldMats.push_back(SubMatrix(mat,num_(son_(t,1)),num_(son_(s,0))));
-				if (b4 != true) MyNearFieldMats.push_back(SubMatrix(mat,num_(son_(t,1)),num_(son_(s,1))));
-				return true;
+			
+			if (size(num_(t))>size(num_(s))){
+				bool b1 = UpdateBlocks(son_(t,0),s);
+				bool b2 = UpdateBlocks(son_(t,1),s);
+				if ((b1 != true) && (b2 != true))
+					MyNearFieldMats.push_back(SubMatrix(mat,I,J));
+				else {
+				if (b1 != true) MyNearFieldMats.push_back(SubMatrix(mat,num_(son_(t,0)),J));
+				if (b2 != true) MyNearFieldMats.push_back(SubMatrix(mat,num_(son_(t,1)),J));
+				}
 			}
+			else{
+				bool b3 = UpdateBlocks(t,son_(s,0));
+				bool b4 = UpdateBlocks(t,son_(s,1));
+				if ((b3 != true) && (b4 != true))
+					MyNearFieldMats.push_back(SubMatrix(mat,I,J));
+				else {
+					if (b3 != true) MyNearFieldMats.push_back(SubMatrix(mat,I,num_(son_(s,0))));
+					if (b4 != true) MyNearFieldMats.push_back(SubMatrix(mat,I,num_(son_(s,1))));
+				}
+			}
+		
+// 			bool b1 = UpdateBlocks(son_(t,0),son_(s,0));
+// 			bool b2 = UpdateBlocks(son_(t,0),son_(s,1));
+// 			bool b3 = UpdateBlocks(son_(t,1),son_(s,0));
+// 			bool b4 = UpdateBlocks(son_(t,1),son_(s,1));
+// 			if ((bsize <= maxblocksize) && (b1 != true) && (b2 != true) && (b3 != true) && (b4 != true))
+// 				return false;
+// 			else {
+// 				if (b1 != true) MyNearFieldMats.push_back(SubMatrix(mat,num_(son_(t,0)),num_(son_(s,0))));
+// 				if (b2 != true) MyNearFieldMats.push_back(SubMatrix(mat,num_(son_(t,0)),num_(son_(s,1))));
+// 				if (b3 != true) MyNearFieldMats.push_back(SubMatrix(mat,num_(son_(t,1)),num_(son_(s,0))));
+// 				if (b4 != true) MyNearFieldMats.push_back(SubMatrix(mat,num_(son_(t,1)),num_(son_(s,1))));
+// 				return true;
+// 			}
 
 
 		}
@@ -364,18 +414,43 @@ void HMatrix::ComputeBlocks(){
 						}
 					}
 					else{
-						bool b1 = UpdateBlocks(son_(t,0),son_(s,0));
-						bool b2 = UpdateBlocks(son_(t,0),son_(s,1));
-						bool b3 = UpdateBlocks(son_(t,1),son_(s,0));
-						bool b4 = UpdateBlocks(son_(t,1),son_(s,1));
-						if ((b1 != true) && (b2 != true) && (b3 != true) && (b4 != true))
-							MyNearFieldMats.push_back(SubMatrix(mat,I,J));
-						else {
-							if (b1 != true) MyNearFieldMats.push_back(SubMatrix(mat,num_(son_(t,0)),num_(son_(s,0))));
-							if (b2 != true) MyNearFieldMats.push_back(SubMatrix(mat,num_(son_(t,0)),num_(son_(s,1))));
-							if (b3 != true) MyNearFieldMats.push_back(SubMatrix(mat,num_(son_(t,1)),num_(son_(s,0))));
-							if (b4 != true) MyNearFieldMats.push_back(SubMatrix(mat,num_(son_(t,1)),num_(son_(s,1))));
+						if (size(num_(t))>size(num_(s))){
+							bool b1 = UpdateBlocks(son_(t,0),s);
+							bool b2 = UpdateBlocks(son_(t,1),s);
+							if ((b1 != true) && (b2 != true))
+								MyNearFieldMats.push_back(SubMatrix(mat,I,J));
+							else {
+								if (b1 != true) MyNearFieldMats.push_back(SubMatrix(mat,num_(son_(t,0)),J));
+								if (b2 != true) MyNearFieldMats.push_back(SubMatrix(mat,num_(son_(t,1)),J));
+							}
 						}
+						else{
+							bool b3 = UpdateBlocks(t,son_(s,0));
+							bool b4 = UpdateBlocks(t,son_(s,1));
+							if ((b3 != true) && (b4 != true))
+								MyNearFieldMats.push_back(SubMatrix(mat,I,J));
+							else {
+								if (b3 != true) MyNearFieldMats.push_back(SubMatrix(mat,I,num_(son_(s,0))));
+								if (b4 != true) MyNearFieldMats.push_back(SubMatrix(mat,I,num_(son_(s,1))));
+							}
+						}
+							
+							
+							
+						
+						
+// 						bool b1 = UpdateBlocks(son_(t,0),son_(s,0));
+// 						bool b2 = UpdateBlocks(son_(t,0),son_(s,1));
+// 						bool b3 = UpdateBlocks(son_(t,1),son_(s,0));
+// 						bool b4 = UpdateBlocks(son_(t,1),son_(s,1));
+// 						if ((b1 != true) && (b2 != true) && (b3 != true) && (b4 != true))
+// 							MyNearFieldMats.push_back(SubMatrix(mat,I,J));
+// 						else {
+// 							if (b1 != true) MyNearFieldMats.push_back(SubMatrix(mat,num_(son_(t,0)),num_(son_(s,0))));
+// 							if (b2 != true) MyNearFieldMats.push_back(SubMatrix(mat,num_(son_(t,0)),num_(son_(s,1))));
+// 							if (b3 != true) MyNearFieldMats.push_back(SubMatrix(mat,num_(son_(t,1)),num_(son_(s,0))));
+// 							if (b4 != true) MyNearFieldMats.push_back(SubMatrix(mat,num_(son_(t,1)),num_(son_(s,1))));
+// 						}
 
 					}
 				}
