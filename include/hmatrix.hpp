@@ -337,21 +337,23 @@ bool HMatrix::UpdateBlocks(const Cluster& t, const Cluster& s){
 			if (size(num_(t))>size(num_(s))){
 				bool b1 = UpdateBlocks(son_(t,0),s);
 				bool b2 = UpdateBlocks(son_(t,1),s);
-				if ((b1 != true) && (b2 != true))
-					MyNearFieldMats.push_back(SubMatrix(mat,I,J));
+				if ((bsize <= maxblocksize) && (b1 != true) && (b2 != true))
+					return false;
 				else {
-				if (b1 != true) MyNearFieldMats.push_back(SubMatrix(mat,num_(son_(t,0)),J));
-				if (b2 != true) MyNearFieldMats.push_back(SubMatrix(mat,num_(son_(t,1)),J));
+					if (b1 != true) MyNearFieldMats.push_back(SubMatrix(mat,num_(son_(t,0)),J));
+					if (b2 != true) MyNearFieldMats.push_back(SubMatrix(mat,num_(son_(t,1)),J));
+					return true;
 				}
 			}
 			else{
 				bool b3 = UpdateBlocks(t,son_(s,0));
 				bool b4 = UpdateBlocks(t,son_(s,1));
-				if ((b3 != true) && (b4 != true))
-					MyNearFieldMats.push_back(SubMatrix(mat,I,J));
-				else {
+				if ((bsize <= maxblocksize) && (b3 != true) && (b4 != true))
+					return false;
+				else{
 					if (b3 != true) MyNearFieldMats.push_back(SubMatrix(mat,I,num_(son_(s,0))));
 					if (b4 != true) MyNearFieldMats.push_back(SubMatrix(mat,I,num_(son_(s,1))));
+					return true;
 				}
 			}
 		
