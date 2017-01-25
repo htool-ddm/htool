@@ -185,8 +185,8 @@ void Cluster::Build(){
 		R3 xc = 0.;
 		for(int j=0; j<nb_pt; j++){
 			xc += curr->x[curr->tab[curr->num[j]]];}
+
 		xc = (1./Real(nb_pt))*xc;
-	
 		curr->ctr = xc;
 	
 		//	Real radmax=0.;
@@ -211,20 +211,26 @@ void Cluster::Build(){
 		Real p1 = pow(cov(0,1),2) + pow(cov(0,2),2) + pow(cov(1,2),2);
 		vectReal eigs(3);
 		MatR3 I = MatR3::Identity();
-		if (p1 == 0) {
+		R3 dir;
+		
+		
+		if (p1 < 1e-15) {
 	    	// cov is diagonal.
 	   		eigs[0] = cov(0,0);
 	   		eigs[1] = cov(1,1);
 	   		eigs[2] = cov(2,2);
+			dir[0]=1;dir[1]=0;dir[2]=0;
 	   		if (eigs[0] < eigs[1]) {
 	   			Real tmp = eigs[0];
 	   			eigs[0] = eigs[1];
 	   			eigs[1] = tmp;
+				dir[0]=0;dir[1]=1;dir[2]=0;
 	   		}
 	   		if (eigs[0] < eigs[2]) {
 	   			Real tmp = eigs[0];
 	   			eigs[0] = eigs[2];
 	   			eigs[2] = tmp;
+				dir[0]=0;dir[1]=0;dir[2]=1;
 	 		}   		
 		}
 		else {
@@ -251,44 +257,45 @@ void Cluster::Build(){
 	   		eigs[0] = q + 2. * p * cos(phi);
 	   		eigs[2] = q + 2. * p * cos(phi + (2.*M_PI/3.));
 	   		eigs[1] = 3. * q - eigs[0] - eigs[2];     // since trace(cov) = eig1 + eig2 + eig3
-		}
-		
-		R3 dir;
-		
-		if (std::abs(eigs[0]) < 1.e-15)
-			dir = 0;
-		else {	
-			MatR3 prod = (cov - eigs[1] * I) * (cov - eigs[2] * I);
-			int ind = 0;
-			Real dirnorm = 0;
-			do {
-				dir[0] = prod(0,ind);
-				dir[1] = prod(1,ind);
-				dir[2] = prod(2,ind);
-				dirnorm = sqrt(dir[0]*dir[0]+dir[1]*dir[1]+dir[2]*dir[2]);
-				ind++;
+			if (std::abs(eigs[0]) < 1.e-15)
+				dir = 0;
+			else {	
+				MatR3 prod = (cov - eigs[1] * I) * (cov - eigs[2] * I);
+				int ind = 0;
+				Real dirnorm = 0;
+				do {
+					dir[0] = prod(0,ind);
+					dir[1] = prod(1,ind);
+					dir[2] = prod(2,ind);
+					dirnorm = sqrt(dir[0]*dir[0]+dir[1]*dir[1]+dir[2]*dir[2]);
+					ind++;
+				}
+				while ((dirnorm < 1.e-15) && (ind < 3));
+				assert(dirnorm >= 1.e-15);		
+				dir[0] /= dirnorm;
+				dir[1] /= dirnorm;
+				dir[2] /= dirnorm;
 			}
-			while ((dirnorm < 1.e-15) && (ind < 3));
-			assert(dirnorm >= 1.e-15);		
-			dir[0] /= dirnorm;
-			dir[1] /= dirnorm;
-			dir[2] /= dirnorm;
 		}
 		
-		/*
-		EigenSolver eig(cov);
-		EigenValue  lambda = eig.eigenvalues();
-		EigenVector ev = eig.eigenstd::vectors();
-		int l = 0; Real max=abs(lambda[0]);
-		if( max<abs(lambda[1]) ){l=1; max=abs(lambda[1]);}
-		if( max<abs(lambda[2]) ){l=2; }
-		R3 w;
-		w[0] = ev(0,l).real();
-		w[1] = ev(1,l).real();
-		w[2] = ev(2,l).real();
-		//dir = w;
-		cout << dir << " " << w << std::endl;
-		*/
+		
+		
+// 		EigenSolver eig(cov);
+// 		EigenValue  lambda = eig.eigenvalues();
+// 		EigenVector ev = eig.eigenvectors();
+// 		int l = 0; Real max=abs(lambda[0]);
+// 		if( max<abs(lambda[1]) ){l=1; max=abs(lambda[1]);}
+// 		if( max<abs(lambda[2]) ){l=2; }
+// 		R3 w;
+// 		w[0] = ev(0,l).real();
+// 		w[1] = ev(1,l).real();
+// 		w[2] = ev(2,l).real();
+// 		//dir = w;
+// 		std::cout << dir << " " << w << std::endl;
+// 		if ((dir,w)<0) w=(-1)*w; 
+// 		assert(std::abs(dir[0]-w[0])+std::abs(dir[1]-w[1])+std::abs(dir[2]-w[2])<1e-10);
+// 		
+		
 		
 		// Construction des paquets enfants
 		//if(curr->num.size() > 10) {
@@ -305,6 +312,7 @@ void Cluster::Build(){
 			}
 		}
 		//}
+		
 		
 		// Recursivite
 		if((curr->son[0]->num.size() >= minclustersize) && (curr->son[1]->num.size() >= minclustersize)) {
