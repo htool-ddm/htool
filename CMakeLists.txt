@@ -8,6 +8,9 @@ else ()
 	set(CMAKE_CXX_STANDARD_REQUIRED ON)
 endif ()
 
+# Files to do find_package for some module
+list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}/cmake_modules")
+
 # Useful variables
 set(htool_include_dir "${CMAKE_CURRENT_SOURCE_DIR}/include")
 

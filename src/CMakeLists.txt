@@ -17,10 +17,19 @@ if(NOT OPENGL_FOUND)
 endif(NOT OPENGL_FOUND)
 
 #FreeGlut
-find_package(GLUT REQUIRED)
+find_package(GLUT)
 if(NOT GLUT_FOUND)
     message(ERROR " GLUT not found!")
 endif(NOT GLUT_FOUND)
+
+#Glui
+find_package(GLUI)
+# if(NOT GLUT_FOUND)
+#     message(ERROR " GLUT not found!")
+# endif(NOT GLUT_FOUND)
+
+
+
 #=============================================================================#
 #=========================== Executables =====================================#
 #=============================================================================#
