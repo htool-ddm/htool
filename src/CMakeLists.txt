@@ -10,6 +10,17 @@ find_package (MPI REQUIRED)
 # BLAS
 find_package(BLAS REQUIRED)
 
+#OpenGL
+find_package(OpenGL)
+if(NOT OPENGL_FOUND)
+    message(ERROR " OPENGL not found!")
+endif(NOT OPENGL_FOUND)
+
+#FreeGlut
+find_package(GLUT REQUIRED)
+if(NOT GLUT_FOUND)
+    message(ERROR " GLUT not found!")
+endif(NOT GLUT_FOUND)
 #=============================================================================#
 #=========================== Executables =====================================#
 #=============================================================================#
@@ -32,6 +43,12 @@ target_link_libraries (matrix_to_bytes
                             ${MPI_LIBRARIES}
                             ${EIGEN3_LIBRARIES}
                             ${BLAS_LIBRARIES})
+
+
+if(OPENGL_FOUND AND GLUT_FOUND)
+add_executable(Test_freeGLUT test_freeglut.cpp)
+target_link_libraries(Test_freeGLUT ${OPENGL_LIBRARIES} ${GLUT_LIBRARY})
+endif(OPENGL_FOUND AND GLUT_FOUND)
 
 
 # # Creation de l executable main a partir de prog
