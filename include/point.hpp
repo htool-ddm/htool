@@ -34,6 +34,12 @@ public:
   
   void operator+=(const v_t& v0){
     for(int j=0; j<dim; j++){v_[j]+=v0;}}
+
+  void operator*=(const v_t& v0){
+    for(int j=0; j<dim; j++){v_[j]*=v0;}}
+    
+  void operator/=(const v_t& v0){
+    for(int j=0; j<dim; j++){v_[j]/=v0;}}
   
   void operator+=(const a_t& a){
     for(int j=0; j<dim; j++){v_[j]+=a.v_[j];}}  
@@ -56,6 +62,12 @@ public:
   
   friend a_t operator*(const v_t& l, const a_t& r){
     a_t a; for(int j=0; j<dim; j++){a[j]=l*r[j];} return a;}  
+
+  friend a_t operator*(const a_t& r, const v_t& l){
+    a_t a; for(int j=0; j<dim; j++){a[j]=l*r[j];} return a;}
+    
+  friend a_t operator/(const a_t& r, const v_t& l){
+    a_t a; for(int j=0; j<dim; j++){a[j]=r[j]/l;} return a;}
 
   friend v_t operator,(const a_t& l, const a_t& r){
     v_t v=0; for(int j=0; j<dim; j++){v+=l[j]*r[j];} return v;}
@@ -86,6 +98,8 @@ typedef array_<3,R2> R2x3;
 typedef array_<3,R3> R3x3;
 typedef array_<4,R2> R2x4;
 typedef array_<4,R3> R3x4;
+
+R3  operator^(const R3 &N, const R3 &P) {R3 res; res[0] = N[1]*P[2]-N[2]*P[1] ; res[1] = N[2]*P[0]-N[0]*P[2]; res[2] = N[0]*P[1]-N[1]*P[0]; return res;} 
 }
 
 #endif

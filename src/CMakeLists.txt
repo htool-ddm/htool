@@ -23,10 +23,18 @@ target_link_libraries (matrix_to_bytes
 
 
 if(OPENGL_FOUND AND GLUT_FOUND)
-	add_executable(Test_freeGLUT test_freeglut.cpp)
-	target_link_libraries(Test_freeGLUT ${OPENGL_LIBRARIES} ${GLUT_LIBRARY} ${GLUI_LIBRARY})
+add_executable(Test_freeGLUT test_freeglut.cpp)
+target_include_directories(Test_freeGLUT PRIVATE
+                            ${htool_include_dir}
+                            ${EIGEN3_INCLUDE_DIR}
+                            ${MPI_INCLUDE_PATH})
+target_link_libraries(Test_freeGLUT
+                            ${OPENGL_LIBRARIES}
+                            ${GLUT_LIBRARY}
+                            ${EIGEN3_LIBRARIES}
+                            ${MPI_LIBRARIES}
+                            ${BLAS_LIBRARIES})
 endif(OPENGL_FOUND AND GLUT_FOUND)
-
 
 # # Creation de l executable main a partir de prog
 # add_executable(main prog.cpp ${MY_HEADERS})

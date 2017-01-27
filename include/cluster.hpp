@@ -81,6 +81,7 @@ public:
 	friend const R3&      ctr_(const Cluster& t){return t.ctr;}
 	friend Cluster&       son_(const Cluster& t,const int& j){return *(t.son[j]);}
 	friend const vectInt& num_(const Cluster& t){return t.num;}
+	friend const unsigned int& depth_(const Cluster& t){return t.depth;}
 	friend std::ostream& operator<<(std::ostream& os, const Cluster& cl){
 		for(int j=0; j<(cl.num).size(); j++){os<<cl.num[j]<< "\t";} return os;}
 	friend void DisplayTree(const Cluster&);
