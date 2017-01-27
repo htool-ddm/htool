@@ -1,0 +1,8 @@
+#ifndef CONFIG_H
+#define CONFIG_H
+
+#define OPENGL_FOUND @OPENGL_FOUND@
+#define GLUT_FOUND @GLUT_FOUND@
+
+
+#endif // CONFIG_H

@@ -5,7 +5,7 @@
 #else
 #include <GL/glut.h>
 #endif
-
+#include <GL/glui.h>
 void draw(void) {
 
     // Black background
