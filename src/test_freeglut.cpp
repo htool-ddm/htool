@@ -17,47 +17,6 @@
 using namespace std;
 using namespace htool;
 
-void LoadMesh(std::string inputname, std::vector<R3>&  X, std::vector<N4>&  Elt, std::vector<int>& NbPt) {
-	int   num,NbElt,poubelle, NbTri, NbQuad;
-	R3    Pt;	
-	
-	// Ouverture fichier
-	std::ifstream infile;
-	infile.open(inputname.c_str());
-	if(!infile.good()){
-		std::cout << "LoadPoints in loading.hpp: error opening the geometry file" << std::endl;
-		abort();}
-	
-	// Nombre d'elements
-	infile >> NbElt;
-	Elt.resize(NbElt);
-	NbPt.resize(NbElt);	
-	
-	num=0; NbTri=0; NbQuad=0;
-	// Lecture elements
-	for(int e=0; e<NbElt; e++){
-		infile >> poubelle;
-		infile >> NbPt[e];
-		
-		if(NbPt[e]==3){NbTri++;}
-		if(NbPt[e]==4){NbQuad++;}
-		
-		// Calcul centre element
-		for(int j=0; j<NbPt[e]; j++){
-			infile >> poubelle;
-			infile >> Pt;
-			Elt[e][j] = num;
-			X.push_back(Pt);
-			num++;
-		}
-		
-		// Separateur inter-element
-		if(e<NbElt-1){infile >> poubelle;}
-		
-	}
-	infile.close();	
-}
-
 //Main program
 
 int main(int argc, char **argv) {
@@ -79,6 +38,7 @@ int main(int argc, char **argv) {
     //string str = "../matrices/maillage3600FracsV1DN1.txt";
     //string strm = "../matrices/matrice3600FracsV1DN1.bin";
  
+ 	/*
     string str = "../matrices/maillage450Fracs.txt";
     string strm = "../matrices/matrice450Fracs.bin"; 
     
@@ -96,10 +56,11 @@ int main(int argc, char **argv) {
 	LoadMesh(str,X,Elts,NbPts);
 	GLMesh m(X,Elts,NbPts);
 	m.set_cluster(&t);
+	*/
 	
 	Scene s;
 	
-	s.add_mesh(m);
+	//s.add_mesh(m);
 	
 	s.init(&argc, argv);
 	

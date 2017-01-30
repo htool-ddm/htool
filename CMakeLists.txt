@@ -44,11 +44,11 @@ if(NOT GLUT_FOUND)
     message(ERROR " GLUT not found!")
 endif(NOT GLUT_FOUND)
 
-# #Glui
-# find_package(GLUI)
-# if(NOT GLUI_FOUND)
-#     message(ERROR " GLUI not found!")
-# endif(NOT GLUI_FOUND)
+#Glui
+find_package(GLUI)
+if(NOT GLUI_FOUND)
+    message(ERROR " GLUI not found!")
+endif(NOT GLUI_FOUND)
 
 configure_file(${htool_include_dir}/config.h.in ${CMAKE_BINARY_DIR}/generated/config.h )
 include_directories( ${CMAKE_BINARY_DIR}/generated/ )
