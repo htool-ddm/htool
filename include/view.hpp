@@ -81,9 +81,10 @@ class GLMesh {
 		R3 lbox, ubox;
 		Palette& palette;
 		const Cluster* cluster;
+		GLuint &VBO, &VAO, &EBO;
 		
 	public:
-		GLMesh(const GLMesh& m) : palette(m.palette){
+		GLMesh(const GLMesh& m) : VBO(m.VBO), VAO(m.VAO), EBO(m.EBO), palette(m.palette){
 			X = m.X;
 			Elts = m.Elts;
 			NbPts = m.NbPts;
@@ -108,8 +109,8 @@ class GLMesh {
 			}
 		}
 	
-		GLMesh(std::vector<R3>& X0, std::vector<N4>&  Elts0, std::vector<int>& NbPts0, const Cluster* cluster0 = NULL, Palette& palette0 = default_palette) 
-			: palette(palette0), cluster(cluster0){
+		GLMesh(GLuint& VBO0, GLuint& VAO0, GLuint& EBO0, std::vector<R3>& X0, std::vector<N4>&  Elts0, std::vector<int>& NbPts0, const Cluster* cluster0 = NULL, Palette& palette0 = default_palette) 
+			: VBO(VBO0), VAO(VAO0), EBO(EBO0), palette(palette0), cluster(cluster0){
 			X = X0;
 			Elts = Elts0;
 			NbPts = NbPts0;
@@ -179,25 +180,32 @@ class GLMesh {
 				visudepth = depth;
 				nblabels = 1;
 				TraversalBuildLabel(*cluster);
+				set_buffers();
 			}
 		}
 		
-		void set_buffers(GLuint& VBO, GLuint& VAO, GLuint& EBO) const{		
+		void set_buffers() {		
 			int np = NbPts[0];
 					
-			GLfloat vertices[6*X.size()];
-			for (int i=0; i<6*X.size(); i++)
+			GLfloat vertices[9*X.size()];
+			for (int i=0; i<9*X.size(); i++)
 				vertices[i] = 0;
 
 			for (int i=0; i<X.size(); i++)
 			for (int j=0; j<3; j++)
-				vertices[3*i+j] = X[i][j];
+				vertices[9*i+j] = X[i][j];
 				
 			// Normals
-			for (int i=0; i<Elts.size(); i++)
-			for (int j=0; j<NbPts[i]; j++)
-			for (int k=0; k<3; k++)
-				vertices[3*X.size()+3*Elts[i][j]+k] += normals[i][k];
+			for (int i=0; i<Elts.size(); i++) {
+				R3 col = palette.get_color(1.*labels[i]/nblabels);
+				for (int j=0; j<NbPts[i]; j++) {
+					for (int k=0; k<3; k++)
+						vertices[9*Elts[i][j]+3+k] += normals[i][k];
+					vertices[9*Elts[i][j]+6] = col[0];
+					vertices[9*Elts[i][j]+7] = col[1];
+					vertices[9*Elts[i][j]+8] = col[2];
+				}
+			}
 
 			int sz = (np == 3 ? np : 6);
 			GLuint indices[sz*Elts.size()];
@@ -217,26 +225,29 @@ class GLMesh {
 					indices[6*i+5] = Elts[i][2];
 				}
 			}
-								
+			
 			glGenVertexArrays(1, &VAO);
     		glGenBuffers(1, &VBO);
-    		glGenBuffers(1, &EBO);
-
-   			glBindVertexArray(VAO);
+    		glGenBuffers(1, &EBO);			
     		
     		glBindBuffer(GL_ARRAY_BUFFER, VBO);
 			glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
    			
-    		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(GLfloat), (GLvoid*)0);
+   			glBindVertexArray(VAO);
+   			
+    		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 9 * sizeof(GLfloat), (GLvoid*)0);
     		glEnableVertexAttribArray(0);
     		// Normal attribute
-    		glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(GLfloat), (GLvoid*)(3 * sizeof(GLfloat)));
+    		glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 9 * sizeof(GLfloat), (GLvoid*)(3 * sizeof(GLfloat)));
     		glEnableVertexAttribArray(1);
+    		
+    		glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, 9 * sizeof(GLfloat), (GLvoid*)(6 * sizeof(GLfloat)));
+    		glEnableVertexAttribArray(2);
 
     		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
     		glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
 
-    		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(GLfloat), (GLvoid*)0);
+    		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 9 * sizeof(GLfloat), (GLvoid*)0);
     		glEnableVertexAttribArray(0);
 
     		glBindBuffer(GL_ARRAY_BUFFER, 0); 
@@ -244,13 +255,13 @@ class GLMesh {
     		glBindVertexArray(0);
 		}
 		
-		void draw() const{
+		void draw() const{		
 			//glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 			if (NbPts[0] == 3)
 				glDrawElements(GL_TRIANGLES, 3*Elts.size(), GL_UNSIGNED_INT, (void*)0 );
 			else
 				glDrawElements(GL_TRIANGLES, 6*Elts.size(), GL_UNSIGNED_INT, (void*)0 );
-			//glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+			//glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);			
 		}
 
 };
@@ -374,7 +385,7 @@ class Scene{
 				std::cerr << "No active project" << std::endl;
 			else {
 				active_project->set_mesh(mesh);
-				mesh.set_buffers(VBO, VAO, EBO);
+				active_project->get_mesh()->set_buffers();
 				active_project->center_view_on_mesh();
 			}
 		}
@@ -400,11 +411,11 @@ class Scene{
 
         	glUseProgram(shaderProgram);
         
-       		GLint objectColorLoc = glGetUniformLocation(shaderProgram, "objectColor");
+       		//GLint objectColorLoc = glGetUniformLocation(shaderProgram, "objectColor");
         	GLint lightColorLoc  = glGetUniformLocation(shaderProgram, "lightColor");
         	GLint lightPosLoc    = glGetUniformLocation(shaderProgram, "lightPos");
         	GLint viewPosLoc     = glGetUniformLocation(shaderProgram, "viewPos"); 
-        	glUniform3f(objectColorLoc, 1.0f, 0.5f, 0.31f);
+        	//glUniform3f(objectColorLoc, 1.0f, 0.5f, 0.31f);
         	glUniform3f(lightColorLoc,  1.0f, 1.0f, 1.0f);
         	glUniform3f(lightPosLoc,    lightPos.x, lightPos.y, lightPos.z);
         	glUniform3f(viewPosLoc,     cam.eye[0],cam.eye[1],cam.eye[2]);  
@@ -639,8 +650,10 @@ class Scene{
 	const GLchar* vertexShaderSource = "#version 330 core\n"
     "layout (location = 0) in vec3 position;\n"
     "layout (location = 1) in vec3 normal;\n"
+    "layout (location = 2) in vec3 color;\n"
     "out vec3 Normal;\n"
 	"out vec3 FragPos;\n"
+	"out vec3 Color;\n"
     "uniform mat4 model;\n"
     "uniform mat4 view;\n"
     "uniform mat4 projection;\n"
@@ -649,6 +662,7 @@ class Scene{
     "gl_Position = projection * view * model * vec4(position, 1.0f);\n"
     "FragPos = vec3(model * vec4(position, 1.0f));\n"
     "Normal = mat3(transpose(inverse(model))) * normal;\n"
+    "Color = color;\n"
     "}\0";
     /*
 	const GLchar* fragmentShaderSource = "#version 330 core\n"
@@ -676,11 +690,11 @@ class Scene{
 	const GLchar* fragmentShaderSource = "#version 330 core\n"
 	"out vec4 color;\n"
 	"in vec3 FragPos;\n" 
-	"in vec3 Normal;\n"    
+	"in vec3 Normal;\n"
+	"in vec3 Color;\n"  
 	"uniform vec3 lightPos;\n" 
 	"uniform vec3 viewPos;\n"
 	"uniform vec3 lightColor;\n"
-	"uniform vec3 objectColor;\n"
 	"void main()\n"
 	"{\n"
     // Ambient
@@ -697,7 +711,7 @@ class Scene{
     "vec3 reflectDir = reflect(-lightDir, norm);\n"  
     "float spec = pow(max(dot(viewDir, reflectDir), 0.0), 32);\n"
     "vec3 specular = specularStrength * spec * lightColor;\n"       
-    "vec3 result = (ambient + diffuse + specular) * objectColor;\n"
+    "vec3 result = (ambient + diffuse + specular) * Color;\n"
     "color = vec4(result, 1.0f);\n"
 	"}\0";
 	
@@ -826,7 +840,7 @@ glUniform3f(lightColorLoc,  1.0f, 1.0f, 1.0f); // Also set light's color (white)
     nanogui::ref<nanogui::Window> nanoguiWindow = gui->addWindow(Eigen::Vector2i(10, 10), "");
     
     nanogui::Widget* tools = new nanogui::Widget(nanoguiWindow);
-    tools->setLayout(new nanogui::BoxLayout(nanogui::Orientation::Horizontal,
+    tools->setLayout(new nanogui::BoxLayout(nanogui::Orientation::Vertical,
                                        nanogui::Alignment::Middle, 0, 6));
     nanogui::Button* b = new nanogui::Button(tools, "Load mesh");
     b->setCallback([&] {
@@ -834,16 +848,46 @@ glUniform3f(lightColorLoc,  1.0f, 1.0f, 1.0f); // Also set light's color (white)
 			std::cerr << "No active project" << std::endl;
 				else{
 					std::string str = nanogui::file_dialog(
-                    {{"txt", "Text file"}}, false);
+                    {{"txt", "Mesh file"}}, false);
 					std::vector<R3>  X;
 					std::vector<N4>  Elts;
 					std::vector<int> NbPts;
 					std::cout << "Loading mesh file " << str << " ..." << std::endl;
 					LoadMesh(str.c_str(),X,Elts,NbPts);
-					GLMesh m(X,Elts,NbPts);
-					set_mesh(m);			
+					GLMesh m(VBO,VAO,EBO,X,Elts,NbPts);
+					set_mesh(m);
 				}
     });
+    
+    b = new nanogui::Button(tools, "Load cluster");
+    b->setCallback([&] {
+     			if (active_project == NULL)
+					std::cerr << "No active project" << std::endl;
+				else if (active_project->get_mesh() == NULL)
+					std::cerr << "No active mesh" << std::endl;
+				else{
+					std::string strmesh = nanogui::file_dialog(
+                    {{"txt", "Mesh file"}}, false);
+					std::cout << "Loading points from mesh file " << strmesh << " ..." << std::endl;
+					vectReal r;
+    				vectR3   x;
+    				LoadPoints(strmesh.c_str(),x,r);					
+					std::string strmat = nanogui::file_dialog(
+                    {{"bin", "Matrix binary file"}}, false);
+                    std::cout << "Loading matrix file " << strmat << " ..." << std::endl;              
+    				Matrix   A;
+                    bytes_to_matrix(strmat,A);
+    				vectInt tab(nb_rows(A));
+    				for (int j=0;j<x.size();j++){
+    					tab[3*j]  = j;
+        				tab[3*j+1]= j;
+        				tab[3*j+2]= j;
+    				}
+					Cluster *t = new Cluster(x,r,tab);
+					active_project->get_mesh()->set_cluster(t);
+				}
+    });    
+    
     gui->addWidget("",tools);
     
     screen->setVisible(true);
@@ -958,11 +1002,11 @@ if (active_project == NULL)
     				}
         			break;
         		case 'Q':case'q':
-        			if (mesh != NULL)
+        			if (action == GLFW_PRESS && mesh != NULL)
         				mesh->set_visudepth(std::max(0,(int)mesh->get_visudepth()-1));
         			break;
          		case 'E':case'e':
-         			if (mesh != NULL)
+         			if (action == GLFW_PRESS && mesh != NULL)
         				mesh->set_visudepth(mesh->get_visudepth()+1);
         			break;
     			default:
