@@ -1,11 +1,22 @@
 //#include <OpenGL/gl.h>
 //#include <OpenGL/glu.h>
+
+#define GLEW_STATIC
+#include <GL/glew.h>
+
+
 #ifdef __APPLE__
 #include <GLUT/glut.h>
 #else
 #include <GL/glut.h>
 #endif
 #include <GL/glui.h>
+
+#include <nanogui/nanogui.h>
+
+#include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtc/type_ptr.hpp>
 
 #include <iostream>
 #include <fstream>
@@ -16,8 +27,24 @@
 
 using namespace std;
 using namespace htool;
+using namespace nanogui;
 
 //Main program
+
+enum test_enum {
+    Item1 = 0,
+    Item2,
+    Item3
+};
+
+bool bvar = true;
+int ivar = 12345678;
+double dvar = 3.1415926;
+float fvar = (float)dvar;
+std::string strval = "A string";
+test_enum enumval = Item2;
+Color colval(0.5f, 0.5f, 0.7f, 1.f);
+Screen *screen = nullptr;
 
 int main(int argc, char **argv) {
 	
@@ -57,8 +84,8 @@ int main(int argc, char **argv) {
 	GLMesh m(X,Elts,NbPts);
 	m.set_cluster(&t);
 	*/
-	
-	Scene s;
+    
+    Scene s;
 	
 	//s.add_mesh(m);
 	

@@ -5,9 +5,6 @@
 
 namespace htool {
 
-
-
-
 void LoadMesh(std::string inputname, std::vector<R3>&  X, std::vector<N4>&  Elt, std::vector<int>& NbPt) {
 	int   num,NbElt,poubelle, NbTri, NbQuad;
 	R3    Pt;	
@@ -46,13 +43,12 @@ void LoadMesh(std::string inputname, std::vector<R3>&  X, std::vector<N4>&  Elt,
 		if(e<NbElt-1){infile >> poubelle;}
 		
 	}
+	
+	std::cout << NbTri << " triangle(s) and " << NbQuad << " quad(s)" << std::endl;
+	
 	infile.close();	
 }
 
-
-
-
-	
 class Palette{
 	public:
 		unsigned int n;
@@ -186,34 +182,75 @@ class GLMesh {
 			}
 		}
 		
-		void draw() const{
-			for (int i=0;i<Elts.size();i++) {
-				if (NbPts[i] == 3)
-					glBegin(GL_TRIANGLES);
-				else if (NbPts[i] == 4)
-					glBegin(GL_QUADS);
-				else
-					assert(0);
-				
-				glNormal3d((GLfloat)normals[i][0], (GLfloat)normals[i][1], (GLfloat)normals[i][2]);
-				
-				R3 col = palette.get_color(1.*labels[i]/nblabels);
-				glColor3f(col[0],col[1],col[2]);
+		void set_buffers(GLuint& VBO, GLuint& VAO, GLuint& EBO) const{		
+			int np = NbPts[0];
 					
-				for (int j=0;j<NbPts[i];j++){
-					glVertex3f(X[Elts[i][j]][0], X[Elts[i][j]][1], X[Elts[i][j]][2]);
-				}
-				glEnd();
-			}
-			
-			glColor3f(0,0,0);
-			for (int i=0;i<Elts.size();i++) {
-			    glBegin(GL_LINE_LOOP);
-			    for (int j=0;j<NbPts[i];j++)
-					glVertex3f(X[Elts[i][j]][0], X[Elts[i][j]][1], X[Elts[i][j]][2]);
-    			glEnd();
+			GLfloat vertices[6*X.size()];
+			for (int i=0; i<6*X.size(); i++)
+				vertices[i] = 0;
+
+			for (int i=0; i<X.size(); i++)
+			for (int j=0; j<3; j++)
+				vertices[3*i+j] = X[i][j];
 				
+			// Normals
+			for (int i=0; i<Elts.size(); i++)
+			for (int j=0; j<NbPts[i]; j++)
+			for (int k=0; k<3; k++)
+				vertices[3*X.size()+3*Elts[i][j]+k] += normals[i][k];
+
+			int sz = (np == 3 ? np : 6);
+			GLuint indices[sz*Elts.size()];
+					
+			if (np == 3) {
+				for (int i=0; i<Elts.size(); i++)
+				for (int j = 0; j<3; j++)				
+					indices[3*i+j] = Elts[i][j];
 			}
+			else {
+				for (int i=0; i<Elts.size(); i++) {
+					indices[6*i] = Elts[i][0];
+					indices[6*i+1] = Elts[i][1];
+					indices[6*i+2] = Elts[i][2];
+					indices[6*i+3] = Elts[i][0];
+					indices[6*i+4] = Elts[i][3];
+					indices[6*i+5] = Elts[i][2];
+				}
+			}
+								
+			glGenVertexArrays(1, &VAO);
+    		glGenBuffers(1, &VBO);
+    		glGenBuffers(1, &EBO);
+
+   			glBindVertexArray(VAO);
+    		
+    		glBindBuffer(GL_ARRAY_BUFFER, VBO);
+			glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
+   			
+    		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(GLfloat), (GLvoid*)0);
+    		glEnableVertexAttribArray(0);
+    		// Normal attribute
+    		glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(GLfloat), (GLvoid*)(3 * sizeof(GLfloat)));
+    		glEnableVertexAttribArray(1);
+
+    		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
+    		glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
+
+    		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(GLfloat), (GLvoid*)0);
+    		glEnableVertexAttribArray(0);
+
+    		glBindBuffer(GL_ARRAY_BUFFER, 0); 
+
+    		glBindVertexArray(0);
+		}
+		
+		void draw() const{
+			//glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+			if (NbPts[0] == 3)
+				glDrawElements(GL_TRIANGLES, 3*Elts.size(), GL_UNSIGNED_INT, (void*)0 );
+			else
+				glDrawElements(GL_TRIANGLES, 6*Elts.size(), GL_UNSIGNED_INT, (void*)0 );
+			//glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 		}
 
 };
@@ -225,6 +262,7 @@ class Camera{
 		Camera() {
 			eye = 0;
 			center = 1;
+			up = 1;
 			x = 1;
 			y = 0;
 			z = 0;	
@@ -320,10 +358,10 @@ class Scene{
 		static std::list<Project> projects;
 		static Project* active_project;
 		static Real motionx, motiony;
-		static GLUI_FileBrowser *fbmesh;
-		static GLUI_FileBrowser *fbmat;
-		static GLUI_List* list_projects;
-		static GLUI_EditText* text_project;
+		static nanogui::Screen* screen;
+		static GLFWwindow* glwindow;
+		static GLint shaderProgram, lightshaderProgram;
+		static GLuint VBO, VAO, EBO;
 	public:	
 		Scene() {}
 		
@@ -336,6 +374,7 @@ class Scene{
 				std::cerr << "No active project" << std::endl;
 			else {
 				active_project->set_mesh(mesh);
+				mesh.set_buffers(VBO, VAO, EBO);
 				active_project->center_view_on_mesh();
 			}
 		}
@@ -347,9 +386,475 @@ class Scene{
 			if (mesh != NULL)
 				mesh->draw();
 		}
+				
+		static void draw(){
+		glClearColor(0.2f, 0.25f, 0.3f, 1.0f);
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+        glEnable(GL_DEPTH_TEST);
+        if (active_project != NULL){
+			Camera& cam = active_project->get_camera();
+
+			//glm::vec3 lightPos(cam.center[0],cam.center[1],cam.center[2]+100);
+			R3 lp = cam.eye;
+			glm::vec3 lightPos(lp[0],lp[1],lp[2]);
+
+        	glUseProgram(shaderProgram);
+        
+       		GLint objectColorLoc = glGetUniformLocation(shaderProgram, "objectColor");
+        	GLint lightColorLoc  = glGetUniformLocation(shaderProgram, "lightColor");
+        	GLint lightPosLoc    = glGetUniformLocation(shaderProgram, "lightPos");
+        	GLint viewPosLoc     = glGetUniformLocation(shaderProgram, "viewPos"); 
+        	glUniform3f(objectColorLoc, 1.0f, 0.5f, 0.31f);
+        	glUniform3f(lightColorLoc,  1.0f, 1.0f, 1.0f);
+        	glUniform3f(lightPosLoc,    lightPos.x, lightPos.y, lightPos.z);
+        	glUniform3f(viewPosLoc,     cam.eye[0],cam.eye[1],cam.eye[2]);  
+
+			glm::mat4 view = glm::lookAt(glm::vec3(cam.eye[0],cam.eye[1],cam.eye[2]), glm::vec3(cam.center[0],cam.center[1],cam.center[2]), glm::vec3(cam.up[0],cam.up[1],cam.up[2]));
+			float wdt = 100;
+			//glm::mat4 projection = glm::perspective(0.f, 1.f, 0.1f, 1000.0f);
+			//glm::mat4 projection = glm::perspective(70.f, 1.f, 0.001f, 100.0f);
+			glm::mat4 projection = glm::perspective(70.f,1.f,(float)(0.001*wdt/2.),(float)(1000*wdt/2.));
+			//70,1,0.001*wdt/2.,1000*wdt/2.
+			GLint modelLoc = glGetUniformLocation(shaderProgram, "model");
+        	GLint viewLoc = glGetUniformLocation(shaderProgram, "view");
+        	GLint projLoc = glGetUniformLocation(shaderProgram, "projection");
+	
+			glUniformMatrix4fv(viewLoc, 1, GL_FALSE, glm::value_ptr(view));
+        	glUniformMatrix4fv(projLoc, 1, GL_FALSE, glm::value_ptr(projection));
+
+			glBindVertexArray(VAO);
+			
+			glm::mat4 model;
+			//model = glm::translate(model, glm::vec3(0.f, 0.f, 0.f));
+			glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
+			
+			
+			GLMesh* mesh = active_project->get_mesh();
+			if (mesh != NULL)
+				mesh->draw();
+			
+        	glBindVertexArray(0);
+        	
+        	
+        	/*
+        	
+        	GLfloat vertices[] = {
+        -0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f,
+         0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f,
+         0.5f,  0.5f, -0.5f,  0.0f,  0.0f, -1.0f,
+         0.5f,  0.5f, -0.5f,  0.0f,  0.0f, -1.0f,
+        -0.5f,  0.5f, -0.5f,  0.0f,  0.0f, -1.0f,
+        -0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f,
+
+        -0.5f, -0.5f,  0.5f,  0.0f,  0.0f,  1.0f,
+         0.5f, -0.5f,  0.5f,  0.0f,  0.0f,  1.0f,
+         0.5f,  0.5f,  0.5f,  0.0f,  0.0f,  1.0f,
+         0.5f,  0.5f,  0.5f,  0.0f,  0.0f,  1.0f,
+        -0.5f,  0.5f,  0.5f,  0.0f,  0.0f,  1.0f,
+        -0.5f, -0.5f,  0.5f,  0.0f,  0.0f,  1.0f,
+
+        -0.5f,  0.5f,  0.5f, -1.0f,  0.0f,  0.0f,
+        -0.5f,  0.5f, -0.5f, -1.0f,  0.0f,  0.0f,
+        -0.5f, -0.5f, -0.5f, -1.0f,  0.0f,  0.0f,
+        -0.5f, -0.5f, -0.5f, -1.0f,  0.0f,  0.0f,
+        -0.5f, -0.5f,  0.5f, -1.0f,  0.0f,  0.0f,
+        -0.5f,  0.5f,  0.5f, -1.0f,  0.0f,  0.0f,
+
+         0.5f,  0.5f,  0.5f,  1.0f,  0.0f,  0.0f,
+         0.5f,  0.5f, -0.5f,  1.0f,  0.0f,  0.0f,
+         0.5f, -0.5f, -0.5f,  1.0f,  0.0f,  0.0f,
+         0.5f, -0.5f, -0.5f,  1.0f,  0.0f,  0.0f,
+         0.5f, -0.5f,  0.5f,  1.0f,  0.0f,  0.0f,
+         0.5f,  0.5f,  0.5f,  1.0f,  0.0f,  0.0f,
+
+        -0.5f, -0.5f, -0.5f,  0.0f, -1.0f,  0.0f,
+         0.5f, -0.5f, -0.5f,  0.0f, -1.0f,  0.0f,
+         0.5f, -0.5f,  0.5f,  0.0f, -1.0f,  0.0f,
+         0.5f, -0.5f,  0.5f,  0.0f, -1.0f,  0.0f,
+        -0.5f, -0.5f,  0.5f,  0.0f, -1.0f,  0.0f,
+        -0.5f, -0.5f, -0.5f,  0.0f, -1.0f,  0.0f,
+
+        -0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f,
+         0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f,
+         0.5f,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f,
+         0.5f,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f,
+        -0.5f,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f,
+        -0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f
+    };
+        	
+        	GLuint lightVAO;
+        	glGenVertexArrays(1, &lightVAO);
+    glGenBuffers(1, &VBO);
+
+    glBindBuffer(GL_ARRAY_BUFFER, VBO);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
+    
+    
+        	
+        	glUseProgram(lightshaderProgram);
+        	    
+    glGenVertexArrays(1, &lightVAO);
+    glBindVertexArray(lightVAO);
+    // We only need to bind to the VBO (to link it with glVertexAttribPointer), no need to fill it; the VBO's data already contains all we need.
+    glBindBuffer(GL_ARRAY_BUFFER, VBO);
+    // Set the vertex attributes (only position data for the lamp))
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(GLfloat), (GLvoid*)0); // Note that we skip over the normal vectors
+    glEnableVertexAttribArray(0);
+    glBindVertexArray(0);
+    
+    modelLoc = glGetUniformLocation(lightshaderProgram, "model");
+        viewLoc  = glGetUniformLocation(lightshaderProgram, "view");
+        projLoc  = glGetUniformLocation(lightshaderProgram, "projection");
+        // Set matrices
+        glUniformMatrix4fv(viewLoc, 1, GL_FALSE, glm::value_ptr(view));
+        glUniformMatrix4fv(projLoc, 1, GL_FALSE, glm::value_ptr(projection));
+        model = glm::mat4();
+        model = glm::translate(model, lightPos);
+        model = glm::scale(model, glm::vec3(1.f)); // Make it a smaller cube
+        glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
+        // Draw the light object (using light's vertex attributes)
+        glBindVertexArray(lightVAO);
+        glDrawArrays(GL_TRIANGLES, 0, 36);
+        glBindVertexArray(0);
+        */
+        	
+        	
+        	
 		
-		static void motion(int x, int y){
-			if (active_project == NULL)
+		}	
+    		
+		}
+		
+//		static void control_cb(int control) {
+//			/* attach mesh to current project from file */
+//			if (control == 1) {
+//				if (active_project == NULL)
+//					std::cerr << "No active project" << std::endl;
+//				else{
+//					std::string str = fbmesh->get_file();
+//					str = "../matrices/"+str;
+//					std::vector<R3>  X;
+//					std::vector<N4>  Elts;
+//					std::vector<int> NbPts;
+//					std::cout << "Loading mesh file " << str << " ..." << std::endl;
+//					LoadMesh(str.c_str(),X,Elts,NbPts);
+//					GLMesh m(X,Elts,NbPts);
+//					set_mesh(m);				
+//				}
+//  			}
+//  			/* change active project */
+//  			if (control == 3) {
+//  				if (projects.size() > 0){
+//  					int i = list_projects->get_current_item();
+//  					auto it = projects.begin();
+//  					std::advance(it,i);
+//  					set_active_project(&(*it));
+//  				}
+//  			}
+//  			/* create project */
+//  			if (control == 4) {
+//  				const char* name = text_project->get_text();
+//  				GLUI_List_Item* item = list_projects->get_item_ptr(name);
+//  				if (item != NULL)
+//  					std::cerr << "Project \'" << name << "\' already exists" << std::endl;
+//  				else{
+//					list_projects->add_item(0,name);
+//					projects.push_back(Project(name));
+//  				}
+//  			}
+//  			/* delete project */
+//  			if (control == 5) {
+//  				if (projects.size() > 0){
+//  					int i = list_projects->get_current_item();
+//  					auto it = projects.begin();
+//  					std::advance(it,i);  				
+//  					list_projects->delete_item((*it).get_name().c_str());
+//  					projects.erase(it);
+//  					set_active_project(NULL);
+//  				}
+//  			}
+//		}
+
+		void init(int* argc, char **argv){
+		
+			glfwInit();
+    		glfwSetTime(0);
+    		glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
+    		glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
+    		glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+    		glfwWindowHint(GLFW_RESIZABLE, GL_FALSE);
+    		glfwWindowHint(GLFW_SAMPLES, 4);    		
+    		glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
+  
+    		glwindow = glfwCreateWindow(800, 800, "example3", nullptr, nullptr);
+    
+    		int width, height;
+			glfwGetFramebufferSize(glwindow, &width, &height);
+			glViewport(0, 0, width, height);
+    		glfwMakeContextCurrent(glwindow);
+    
+        	// Set this to true so GLEW knows to use a modern approach to retrieving function pointers and extensions
+    		glewExperimental = GL_TRUE;
+    		// Initialize GLEW to setup the OpenGL Function pointers
+    		glewInit();
+    		
+    		glEnable(GL_DEPTH_TEST);
+    
+    /*
+    		    GLfloat WHITE[] = {1, 1, 1};
+			GLfloat RED[] = {1, 0, 0};
+			GLfloat GREEN[] = {0, 1, 0};
+			GLfloat MAGENTA[] = {1, 0, 1};
+		    
+			Real wdt = 100;
+		    glClearColor(0,0,0,0);
+			glMatrixMode(GL_PROJECTION);
+			glLoadIdentity();
+			gluPerspective(70,1,0.001*wdt/2.,1000*wdt/2.);
+			glEnable(GL_DEPTH_TEST);//(NEW) Enable depth testing
+			glDisable (GL_BLEND);
+			
+			glLightfv(GL_LIGHT0, GL_DIFFUSE, WHITE);
+			glLightfv(GL_LIGHT0, GL_SPECULAR, WHITE);
+		  //glMaterialfv(GL_FRONT, GL_SPECULAR, WHITE);
+		  //glMaterialf(GL_FRONT, GL_SHININESS, 30);
+			glEnable(GL_LIGHTING);
+			glEnable(GL_LIGHT0);
+		  
+			glEnable(GL_COLOR_MATERIAL);
+			glColorMaterial(GL_FRONT_AND_BACK,GL_AMBIENT_AND_DIFFUSE);
+    */
+    
+    //glClearColor(0.2f, 0.25f, 0.3f, 1.0f);
+    //glClear(GL_COLOR_BUFFER_BIT);
+    
+    /*
+    glMatrixMode(GL_PROJECTION);
+	glLoadIdentity();
+	gluPerspective(70,1,0.001*wdt/2.,1000*wdt/2.);
+	glEnable(GL_DEPTH_TEST);//(NEW) Enable depth testing
+	glDisable (GL_BLEND);
+	*/
+
+	const GLchar* vertexShaderSource = "#version 330 core\n"
+    "layout (location = 0) in vec3 position;\n"
+    "layout (location = 1) in vec3 normal;\n"
+    "out vec3 Normal;\n"
+	"out vec3 FragPos;\n"
+    "uniform mat4 model;\n"
+    "uniform mat4 view;\n"
+    "uniform mat4 projection;\n"
+    "void main()\n"
+    "{\n"
+    "gl_Position = projection * view * model * vec4(position, 1.0f);\n"
+    "FragPos = vec3(model * vec4(position, 1.0f));\n"
+    "Normal = mat3(transpose(inverse(model))) * normal;\n"
+    "}\0";
+    /*
+	const GLchar* fragmentShaderSource = "#version 330 core\n"
+	"out vec4 color;\n"
+  	"uniform vec3 objectColor;\n"
+	"uniform vec3 lightColor;\n"
+	"void main()\n"
+	"{\n"
+   	"color = vec4(lightColor * objectColor, 1.0f);\n"
+	"}\0";
+	*/
+	/*
+	const GLchar* fragmentShaderSource = "#version 330 core\n"
+	"out vec4 color;\n"
+  	"uniform vec3 objectColor;\n"
+	"uniform vec3 lightColor;\n"
+	"void main()\n"
+	"{\n"
+    "float ambientStrength = 0.1f;\n"
+    "vec3 ambient = ambientStrength * lightColor;\n"
+    "vec3 result = ambient * objectColor;\n"
+    "color = vec4(result, 1.0f);\n"
+	"}\0";
+	*/
+	const GLchar* fragmentShaderSource = "#version 330 core\n"
+	"out vec4 color;\n"
+	"in vec3 FragPos;\n" 
+	"in vec3 Normal;\n"    
+	"uniform vec3 lightPos;\n" 
+	"uniform vec3 viewPos;\n"
+	"uniform vec3 lightColor;\n"
+	"uniform vec3 objectColor;\n"
+	"void main()\n"
+	"{\n"
+    // Ambient
+    "float ambientStrength = 0.1f;\n"
+    "vec3 ambient = ambientStrength * lightColor;\n"
+    // Diffuse 
+    "vec3 norm = normalize(Normal);\n"
+    "vec3 lightDir = normalize(lightPos - FragPos);\n"
+    "float diff = abs(dot(norm, lightDir));\n"
+    "vec3 diffuse = diff * lightColor;\n"   
+    // Specular
+    "float specularStrength = 0.5f;\n"
+    "vec3 viewDir = normalize(viewPos - FragPos);\n"
+    "vec3 reflectDir = reflect(-lightDir, norm);\n"  
+    "float spec = pow(max(dot(viewDir, reflectDir), 0.0), 32);\n"
+    "vec3 specular = specularStrength * spec * lightColor;\n"       
+    "vec3 result = (ambient + diffuse + specular) * objectColor;\n"
+    "color = vec4(result, 1.0f);\n"
+	"}\0";
+	
+	const GLchar* lightvertexShaderSource = "#version 330 core\n"
+	"layout (location = 0) in vec3 position;\n"
+	"uniform mat4 model;\n"
+	"uniform mat4 view;\n"
+	"uniform mat4 projection;\n"
+	"void main()\n"
+	"{\n"
+    "gl_Position = projection * view * model * vec4(position, 1.0f);\n"
+	"}\0";
+
+	const GLchar* lightfragmentShaderSource = "#version 330 core\n"
+	"out vec4 color;\n"
+ 	"uniform vec3 objectColor;\n"
+	"uniform vec3 lightColor;\n"
+	"void main()\n"
+	"{\n"
+    "color = vec4(1.0f);\n"
+	"}\0";
+
+	
+    // Build and compile our shader program
+    // Vertex shader
+    GLint vertexShader = glCreateShader(GL_VERTEX_SHADER);
+    glShaderSource(vertexShader, 1, &vertexShaderSource, NULL);
+    glCompileShader(vertexShader);
+    // Check for compile time errors
+    GLint success;
+    GLchar infoLog[512];
+    glGetShaderiv(vertexShader, GL_COMPILE_STATUS, &success);
+    if (!success)
+    {
+        glGetShaderInfoLog(vertexShader, 512, NULL, infoLog);
+        std::cout << "ERROR::SHADER::VERTEX::COMPILATION_FAILED\n" << infoLog << std::endl;
+    }
+    // Fragment shader
+    GLint fragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
+    glShaderSource(fragmentShader, 1, &fragmentShaderSource, NULL);
+    glCompileShader(fragmentShader);
+    // Check for compile time errors
+    glGetShaderiv(fragmentShader, GL_COMPILE_STATUS, &success);
+    if (!success)
+    {
+        glGetShaderInfoLog(fragmentShader, 512, NULL, infoLog);
+        std::cout << "ERROR::SHADER::FRAGMENT::COMPILATION_FAILED\n" << infoLog << std::endl;
+    }
+    // Vertex shader
+    GLint lightvertexShader = glCreateShader(GL_VERTEX_SHADER);
+    glShaderSource(lightvertexShader, 1, &lightvertexShaderSource, NULL);
+    glCompileShader(lightvertexShader);
+    // Check for compile time errors
+    glGetShaderiv(lightvertexShader, GL_COMPILE_STATUS, &success);
+    if (!success)
+    {
+        glGetShaderInfoLog(lightvertexShader, 512, NULL, infoLog);
+        std::cout << "ERROR::SHADER::VERTEX::COMPILATION_FAILED\n" << infoLog << std::endl;
+    }    
+    // Fragment shader
+    GLint lightfragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
+    glShaderSource(lightfragmentShader, 1, &lightfragmentShaderSource, NULL);
+    glCompileShader(lightfragmentShader);
+    // Check for compile time errors
+    glGetShaderiv(lightfragmentShader, GL_COMPILE_STATUS, &success);
+    if (!success)
+    {
+        glGetShaderInfoLog(lightfragmentShader, 512, NULL, infoLog);
+        std::cout << "ERROR::SHADER::FRAGMENT::COMPILATION_FAILED\n" << infoLog << std::endl;
+    }        
+    // Link shaders
+    shaderProgram = glCreateProgram();
+    glAttachShader(shaderProgram, vertexShader);
+    glAttachShader(shaderProgram, fragmentShader);
+    glLinkProgram(shaderProgram);
+    // Check for linking errors
+    glGetProgramiv(shaderProgram, GL_LINK_STATUS, &success);
+    if (!success) {
+        glGetProgramInfoLog(shaderProgram, 512, NULL, infoLog);
+        std::cout << "ERROR::SHADER::PROGRAM::LINKING_FAILED\n" << infoLog << std::endl;
+    }
+    
+    lightshaderProgram = glCreateProgram();
+    glAttachShader(lightshaderProgram, lightvertexShader);
+    glAttachShader(lightshaderProgram, lightfragmentShader);
+    glLinkProgram(lightshaderProgram);
+    // Check for linking errors
+    glGetProgramiv(lightshaderProgram, GL_LINK_STATUS, &success);
+    if (!success) {
+        glGetProgramInfoLog(lightshaderProgram, 512, NULL, infoLog);
+        std::cout << "ERROR::SHADER::PROGRAM::LINKING_FAILED\n" << infoLog << std::endl;
+    }
+    glDeleteShader(vertexShader);
+    glDeleteShader(fragmentShader);
+    glDeleteShader(lightvertexShader); 
+    glDeleteShader(lightfragmentShader); 
+    
+    
+    
+    GLuint lightVAO;
+	glGenVertexArrays(1, &lightVAO);
+	glBindVertexArray(lightVAO);
+	// We only need to bind to the VBO, the container's VBO's data already contains the correct data.
+	glBindBuffer(GL_ARRAY_BUFFER, VBO);
+	// Set the vertex attributes (only position data for our lamp)
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(GLfloat), (GLvoid*)0);
+	glEnableVertexAttribArray(0);
+	glBindVertexArray(0);
+
+// Don't forget to 'use' the corresponding shader program first (to set the uniform)
+GLint objectColorLoc = glGetUniformLocation(shaderProgram, "objectColor");
+GLint lightColorLoc  = glGetUniformLocation(shaderProgram, "lightColor");
+glUniform3f(objectColorLoc, 1.0f, 0.5f, 0.31f);
+glUniform3f(lightColorLoc,  1.0f, 1.0f, 1.0f); // Also set light's color (white)
+
+
+        
+    // Create nanogui gui
+    bool enabled = true;
+    
+        // Create a nanogui screen and pass the glfw pointer to initialize
+    screen = new nanogui::Screen();
+    screen->initialize(glwindow, true);
+    
+    nanogui::FormHelper *gui = new nanogui::FormHelper(screen);
+    nanogui::ref<nanogui::Window> nanoguiWindow = gui->addWindow(Eigen::Vector2i(10, 10), "");
+    
+    nanogui::Widget* tools = new nanogui::Widget(nanoguiWindow);
+    tools->setLayout(new nanogui::BoxLayout(nanogui::Orientation::Horizontal,
+                                       nanogui::Alignment::Middle, 0, 6));
+    nanogui::Button* b = new nanogui::Button(tools, "Load mesh");
+    b->setCallback([&] {
+     			if (active_project == NULL)
+			std::cerr << "No active project" << std::endl;
+				else{
+					std::string str = nanogui::file_dialog(
+                    {{"txt", "Text file"}}, false);
+					std::vector<R3>  X;
+					std::vector<N4>  Elts;
+					std::vector<int> NbPts;
+					std::cout << "Loading mesh file " << str << " ..." << std::endl;
+					LoadMesh(str.c_str(),X,Elts,NbPts);
+					GLMesh m(X,Elts,NbPts);
+					set_mesh(m);			
+				}
+    });
+    gui->addWidget("",tools);
+    
+    screen->setVisible(true);
+    screen->performLayout();
+    //nanoguiWindow->center();
+    nanoguiWindow->setPosition(Eigen::Vector2i(600, 15));
+    
+    
+        glfwSetCursorPosCallback(glwindow,
+            [](GLFWwindow *, double x, double y) {
+if (active_project == NULL)
 				return;
 			Camera& cam = active_project->get_camera();
 			R3 trans = cam.center;
@@ -415,22 +920,32 @@ class Scene{
 			cam.eye += trans;
 			
 			motionx = x;
-			motiony = y;
+			motiony = y;           	
+            	
+            	
+            screen->cursorPosCallbackEvent(x, y);
+        }
+    );
 
-		}
-		
-		static void keyboard(unsigned char key, int , int ){
+    glfwSetMouseButtonCallback(glwindow,
+        [](GLFWwindow *, int button, int action, int modifiers) {
+            screen->mouseButtonCallbackEvent(button, action, modifiers);
+        }
+    );
+
+    glfwSetKeyCallback(glwindow,
+        [](GLFWwindow *, int key, int scancode, int action, int mods) {
 			GLMesh* mesh = NULL;
 			if (active_project != NULL)
 				mesh = active_project->get_mesh();
     		switch(key){
-    			case 'Q':case'q':
+    			case 'A':case'a':
  						
         			break;
     			case 'D':case'd':
 
         			break;
-    			case 'Z':case'z':			
+    			case 'W':case'w':			
    					if (active_project != NULL){
     					Camera& cam = active_project->get_camera();
     					cam.eye += 10*cam.z;
@@ -442,7 +957,7 @@ class Scene{
     					cam.eye += -10*cam.z;
     				}
         			break;
-        		case 'A':case'a':
+        		case 'Q':case'q':
         			if (mesh != NULL)
         				mesh->set_visudepth(std::max(0,(int)mesh->get_visudepth()-1));
         			break;
@@ -453,114 +968,36 @@ class Scene{
     			default:
         			break;
     		}
-		}
-				
-		static void draw(){		
-    		// Black background
-    		glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT);//(NEW) setup our buffers
-    
-    		glMatrixMode(GL_MODELVIEW); 
-			glLoadIdentity();
+            screen->keyCallbackEvent(key, scancode, action, mods);
+        }
+    );
+
+    glfwSetCharCallback(glwindow,
+        [](GLFWwindow *, unsigned int codepoint) {
+            screen->charCallbackEvent(codepoint);
+        }
+    );
+
+    glfwSetDropCallback(glwindow,
+        [](GLFWwindow *, int count, const char **filenames) {
+            screen->dropCallbackEvent(count, filenames);
+        }
+    );
+
+    glfwSetScrollCallback(glwindow,
+        [](GLFWwindow *, double x, double y) {
+            screen->scrollCallbackEvent(x, y);
+       }
+    );
+
+    glfwSetFramebufferSizeCallback(glwindow,
+        [](GLFWwindow *, int width, int height) {
+            screen->resizeCallbackEvent(width, height);
+        }
+    );
 			
-			if (active_project != NULL){
-				const Camera& cam = active_project->get_camera();
-				gluLookAt(cam.eye[0],cam.eye[1],cam.eye[2], cam.center[0],cam.center[1],cam.center[2], cam.up[0],cam.up[1],cam.up[2]);				
-			}
-			/*
-			glTranslatef(0,0,0);
-			glRotatef(angleX,1,0,0);
-			glRotatef(angleY,0,1,0);
-    		*/
-    		glClearColor(1.0f,1.0f,1.0f,1.0f);
-    		
-    		
-    		GLfloat mat_specular[] = { 1.0, 1.0, 1.0, 1.0 };
-    		GLfloat diffuseMaterial[4] = { 1.0, 0., 0., 1.0 };
-    		GLfloat MatAmbient[] = { 0.3, 0., 0., 1.0 };
-    		//GLfloat lightPosition[] = {(GLfloat)cam.eye[0],(GLfloat)cam.eye[1],(GLfloat)cam.eye[2], 0};
-    		GLfloat lightPosition[] = {10,10,5, 0};
-    		GLfloat light_diffuse[] = {1,1,1,1};
-    		GLfloat light_specular[] = {1,1,1,1};
-    		glLightfv(GL_LIGHT0, GL_POSITION, lightPosition);
-    		glLightfv(GL_LIGHT0, GL_DIFFUSE, light_diffuse);
-    		glLightfv(GL_LIGHT0, GL_SPECULAR, light_specular);
-    		glEnable(GL_LIGHT0);
-    		glEnable(GL_LIGHTING);
-    		glMaterialfv(GL_FRONT_AND_BACK, GL_DIFFUSE, diffuseMaterial);
-    		glMaterialfv(GL_FRONT_AND_BACK, GL_AMBIENT, MatAmbient);
-    		glMaterialfv(GL_FRONT_AND_BACK, GL_SPECULAR, mat_specular);
-
-    		glMaterialf(GL_FRONT_AND_BACK, GL_SHININESS, 25.0);
-    		glShadeModel(GL_SMOOTH);
-    		
-    		draw_mesh();
-						
-    		glDisable(GL_LIGHT0);
-    		glDisable(GL_LIGHTING);
-    		      
-    		/*
-    		glMatrixMode(GL_PROJECTION);
-			glPopMatrix();
-			glMatrixMode(GL_MODELVIEW);
-			*/ 
-			glPopMatrix();
-			glFlush();
-	
-			glutSwapBuffers();
-			glutPostRedisplay();//This function is crucial in animation, it refreshes the screen
-		}
-		
-		static void control_cb(int control) {
-			/* attach mesh to current project from file */
-			if (control == 1) {
-				if (active_project == NULL)
-					std::cerr << "No active project" << std::endl;
-				else{
-					std::string str = fbmesh->get_file();
-					str = "../matrices/"+str;
-					std::vector<R3>  X;
-					std::vector<N4>  Elts;
-					std::vector<int> NbPts;
-					std::cout << "Loading mesh file " << str << " ..." << std::endl;
-					LoadMesh(str.c_str(),X,Elts,NbPts);
-					GLMesh m(X,Elts,NbPts);
-					set_mesh(m);				
-				}
-  			}
-  			/* change active project */
-  			if (control == 3) {
-  				if (projects.size() > 0){
-  					int i = list_projects->get_current_item();
-  					auto it = projects.begin();
-  					std::advance(it,i);
-  					set_active_project(&(*it));
-  				}
-  			}
-  			/* create project */
-  			if (control == 4) {
-  				const char* name = text_project->get_text();
-  				GLUI_List_Item* item = list_projects->get_item_ptr(name);
-  				if (item != NULL)
-  					std::cerr << "Project \'" << name << "\' already exists" << std::endl;
-  				else{
-					list_projects->add_item(0,name);
-					projects.push_back(Project(name));
-  				}
-  			}
-  			/* delete project */
-  			if (control == 5) {
-  				if (projects.size() > 0){
-  					int i = list_projects->get_current_item();
-  					auto it = projects.begin();
-  					std::advance(it,i);  				
-  					list_projects->delete_item((*it).get_name().c_str());
-  					projects.erase(it);
-  					set_active_project(NULL);
-  				}
-  			}
-		}
-
-		static void init(int* argc, char **argv){
+			
+			
 			std::vector<R3> colors(20);
 			colors[0][0]=255;colors[0][1]=102;colors[0][2]=51;
 			colors[1][0]=255;colors[1][1]=153;colors[1][2]=51;
@@ -585,11 +1022,13 @@ class Scene{
 			default_palette.n = 20;
 			default_palette.colors = colors;
 			
+			Project p("my project");
+			projects.push_back(p);
+			set_active_project(&(projects.front()));
+			
+/*			
 		    glutInit(argc, argv);
 
-		    /*Setting up  The Display
-		    /    -RGB color model + Alpha Channel = GLUT_RGBA
-		    */
 		    glutInitDisplayMode(GLUT_RGBA|GLUT_SINGLE|GLUT_DEPTH);
 		
 		    //Configure Window Postion
@@ -637,6 +1076,7 @@ class Scene{
 			fbmesh = new GLUI_FileBrowser(op_panel_load, "Open mesh file", GLUI_PANEL_EMBOSSED, 0, control_cb);
 			fbmesh->fbreaddir("../matrices/");
 			fbmesh->set_h(90);
+			fbmesh->list->set_click_type(GLUI_SINGLE_CLICK);
 			glui_v_subwindow->add_button_to_panel(op_panel_load,"Load mesh", 1,control_cb);
 			fbmat = new GLUI_FileBrowser(op_panel_load, "Open matrix file", GLUI_PANEL_EMBOSSED, 0, control_cb);
 			fbmat->fbreaddir("../matrices/");
@@ -656,14 +1096,28 @@ class Scene{
 			
 			glui_v_subwindow->add_button_to_panel(op_panel_projects,"Create", 4,control_cb);
 			glui_v_subwindow->add_button_to_panel(op_panel_projects,"Delete", 5,control_cb);
-			
-			
+*/			
+
 			
 		}
 		
 		void run() {
+			while (!glfwWindowShouldClose(glwindow)) {
+				glfwPollEvents();
+
+       			draw();
+		//draw();
+
+        // Draw nanogui
+        screen->drawContents();
+        screen->drawWidgets();
+
+        glfwSwapBuffers(glwindow);
+    }
+    
+    glfwTerminate();
 			// Loop require by OpenGL
-			glutMainLoop();
+			//glutMainLoop();
 		}
 		
 };
@@ -671,10 +1125,10 @@ class Scene{
 std::list<Project> Scene::projects;
 Project* Scene::active_project = NULL;
 Real Scene::motionx, Scene::motiony;
-GLUI_FileBrowser *Scene::fbmesh;
-GLUI_FileBrowser *Scene::fbmat;
-GLUI_List* Scene::list_projects;
-GLUI_EditText* Scene::text_project;
+nanogui::Screen* Scene::screen;
+GLFWwindow* Scene::glwindow;
+GLint Scene::shaderProgram, Scene::lightshaderProgram;
+GLuint Scene::VBO, Scene::VAO, Scene::EBO;
 }
 
 #endif
