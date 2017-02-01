@@ -1,8 +1,8 @@
 //#include <OpenGL/gl.h>
 //#include <OpenGL/glu.h>
 
-#define GLEW_STATIC
-#include <GL/glew.h>
+//#define GLEW_STATIC
+//#include <GL/glew.h>
 
 
 #ifdef __APPLE__

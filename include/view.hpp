@@ -5,9 +5,10 @@
 
 namespace htool {
 
-void LoadMesh(std::string inputname, std::vector<R3>&  X, std::vector<N4>&  Elt, std::vector<int>& NbPt) {
+void LoadMesh(std::string inputname, std::vector<R3>&  X, std::vector<N4>&  Elt, std::vector<int>& NbPt, std::vector<R3>& ctrs, std::vector<Real>& rays) {
 	int   num,NbElt,poubelle, NbTri, NbQuad;
-	R3    Pt;	
+	R3    Pt, Ctr;
+	Real Rmax, Rad;	
 	
 	// Ouverture fichier
 	std::ifstream infile;
@@ -19,13 +20,15 @@ void LoadMesh(std::string inputname, std::vector<R3>&  X, std::vector<N4>&  Elt,
 	// Nombre d'elements
 	infile >> NbElt;
 	Elt.resize(NbElt);
-	NbPt.resize(NbElt);	
+	NbPt.resize(NbElt);
 	
 	num=0; NbTri=0; NbQuad=0;
 	// Lecture elements
 	for(int e=0; e<NbElt; e++){
 		infile >> poubelle;
 		infile >> NbPt[e];
+		
+		Ctr = 0;
 		
 		if(NbPt[e]==3){NbTri++;}
 		if(NbPt[e]==4){NbQuad++;}
@@ -37,7 +40,19 @@ void LoadMesh(std::string inputname, std::vector<R3>&  X, std::vector<N4>&  Elt,
 			Elt[e][j] = num;
 			X.push_back(Pt);
 			num++;
+			Ctr += (1./Real(NbPt[e]))*Pt;
 		}
+		
+		ctrs.push_back(Ctr);
+		Rmax = norm(Ctr-X[Elt[e][0]]);
+		
+        for(int j=1; j<NbPt[e]; j++){
+        	Rad = norm(Ctr-X[Elt[e][j]]);
+			if (Rad > Rmax)
+             	Rmax=Rad;
+        }
+    
+        rays.push_back(Rmax);
 		
 		// Separateur inter-element
 		if(e<NbElt-1){infile >> poubelle;}
@@ -116,15 +131,26 @@ class Project{
 		GLMesh* mesh;
 		std::string name;
 		Camera cam;
+		Matrix* matrix;
+		std::vector<R3>* ctrs;
+		std::vector<Real>* rays;
 	public:
 		Project(const char* s);
 		
 		~Project();
 	
-		GLMesh* get_mesh() const;
-		
+		GLMesh* get_mesh() const;		
 		void set_mesh(const GLMesh& m);
 		
+		Matrix* get_matrix() const;		
+		void set_matrix(const Matrix& m);
+
+		std::vector<R3>* get_ctrs() const;		
+		void set_ctrs(const std::vector<R3>& m);
+
+		std::vector<Real>* get_rays() const;		
+		void set_rays(const std::vector<Real>& m);
+
 		std::string& get_name();		
 		Camera& get_camera();
 		
@@ -452,6 +478,9 @@ void Camera::center_on(const GLMesh& mesh){
 
 Project::Project(const char* s){
 	mesh = NULL;
+	matrix = NULL;
+	ctrs = NULL;
+	rays = NULL;
 	name = s;			
 }
 
@@ -459,6 +488,18 @@ Project::~Project(){
 	if (mesh != NULL) {
 		delete mesh;
 		mesh = NULL;
+	}
+	if (matrix != NULL) {
+		delete matrix;
+		matrix = NULL;
+	}
+	if (ctrs != NULL) {
+		delete ctrs;
+		ctrs = NULL;
+	}
+	if (rays != NULL) {
+		delete rays;
+		rays = NULL;
 	}
 }
 
@@ -470,7 +511,38 @@ void Project::set_mesh(const GLMesh& m) {
 	if (mesh != NULL)
 		delete mesh;
 	mesh = new GLMesh(m);
+}
+
+Matrix* Project::get_matrix() const{
+	return matrix;
+}
+
+void Project::set_matrix(const Matrix& m) {
+	if (matrix != NULL)
+		delete matrix;
+	matrix = new Matrix(m);
+}
+
+std::vector<R3>* Project::get_ctrs() const{
+	return ctrs;
+}
+
+void Project::set_ctrs(const std::vector<R3>& m) {
+	if (ctrs != NULL)
+		delete ctrs;
+	ctrs = new std::vector<R3>(m);
+}
+
+std::vector<Real>* Project::get_rays() const{
+	return rays;
+}
+
+void Project::set_rays(const std::vector<Real>& m) {
+	if (rays != NULL)
+		delete rays;
+	rays = new std::vector<Real>(m);
 }		
+		
 
 std::string& Project::get_name() {
 	return name;	
@@ -536,9 +608,9 @@ void Scene::init(int* argc, char **argv){
 	glfwMakeContextCurrent(gv.glwindow);
 	
 	// Set this to true so GLEW knows to use a modern approach to retrieving function pointers and extensions
-	glewExperimental = GL_TRUE;
+	//glewExperimental = GL_TRUE;
 	// Initialize GLEW to setup the OpenGL Function pointers
-	glewInit();
+	//glewInit();
 	
 	glEnable(GL_DEPTH_TEST);
    
@@ -753,48 +825,125 @@ const GLchar* fragmentShaderSource = "#version 330 core\n"
 				std::vector<R3>  X;
 				std::vector<N4>  Elts;
 				std::vector<int> NbPts;
+				std::vector<R3>  Ctrs;
+				std::vector<Real> Rays;
 				std::cout << "Loading mesh file " << str << " ..." << std::endl;
-				LoadMesh(str.c_str(),X,Elts,NbPts);
+				LoadMesh(str.c_str(),X,Elts,NbPts,Ctrs,Rays);
 				GLMesh m(X,Elts,NbPts);
 				set_mesh(m);
+				gv.active_project->set_ctrs(Ctrs);
+				gv.active_project->set_rays(Rays);
 			}
    });
    
-   b = new nanogui::Button(tools, "Load cluster");
+   b = new nanogui::Button(tools, "Load matrix");
    b->setCallback([&] {
-    			if (gv.active_project == NULL)
+    		if (gv.active_project == NULL)
 				std::cerr << "No active project" << std::endl;
-			else if (gv.active_project->get_mesh() == NULL)
-				std::cerr << "No active mesh" << std::endl;
-			else{
-				std::string strmesh = nanogui::file_dialog(
-                   {{"txt", "Mesh file"}}, false);
-				std::cout << "Loading points from mesh file " << strmesh << " ..." << std::endl;
-				vectReal r;
-   				vectR3   x;
-   				LoadPoints(strmesh.c_str(),x,r);					
+			else{				
 				std::string strmat = nanogui::file_dialog(
                    {{"bin", "Matrix binary file"}}, false);
                    std::cout << "Loading matrix file " << strmat << " ..." << std::endl;              
-   				Matrix   A;
-                   bytes_to_matrix(strmat,A);
-   				vectInt tab(nb_rows(A));
-   				for (int j=0;j<x.size();j++){
+   				Matrix A;
+                bytes_to_matrix(strmat,A);
+                gv.active_project->set_matrix(A);
+			}
+   }); 
+   
+   gui->addWidget("",tools);  
+   
+   gui->addGroup("Hmatrix parameters");
+   gui->addVariable("eta", Parametres::eta)->setSpinnable(true);
+   gui->addVariable("epsilon", Parametres::epsilon)->setSpinnable(true);
+   gui->addVariable("max block size", Parametres::maxblocksize)->setSpinnable(true);
+   gui->addVariable("min cluster size", Parametres::minclustersize)->setSpinnable(true);
+   gui->addButton("Compute hmatrix",[&]{
+   	  	if (gv.active_project == NULL)
+			std::cerr << "No active project" << std::endl;
+		else if (gv.active_project->get_mesh() == NULL)
+			std::cerr << "No mesh loaded" << std::endl;
+		else if (gv.active_project->get_matrix() == NULL)
+			std::cerr << "No matrix loaded" << std::endl;
+		else {
+			const Matrix& A = *(gv.active_project->get_matrix());
+			const std::vector<R3>& x = *(gv.active_project->get_ctrs());
+			const std::vector<Real>& r = *(gv.active_project->get_rays());
+			vectInt tab(nb_rows(A));
+   			for (int j=0;j<x.size();j++){
    					tab[3*j]  = j;
        				tab[3*j+1]= j;
        				tab[3*j+2]= j;
    				}
-				Cluster *t = new Cluster(x,r,tab);
-				gv.active_project->get_mesh()->set_cluster(t);
+   				 				
+			Cluster *t = new Cluster(x,r,tab);
+			gv.active_project->get_mesh()->set_cluster(t);
+			HMatrix B(A,x,r,tab);
+			int nr  = nb_rows(A);
+			vectCplx u(nr);
+			int NbSpl = 1000;
+			double du = 5./double(NbSpl);
+			srand (1);
+			for(int j=0; j<nr; j++){
+				int n = rand()%(NbSpl+1);
+				u[j] = n*du;}
+		
+			vectCplx ua(nr),ub(nr);
+			MvProd(ua,A,u);
+			std::pair <double,double > mvp_stats= MvProdMPI(ub,B,u);
+			Real normA = NormFrob(A);
+		
+			add_stats(B,"MvProd (mean)",std::get<0>(mvp_stats));
+			add_stats(B,"MvProd (max)",std::get<1>(mvp_stats));
+			add_stats(B,"MvProd err",norm(ua-ub)/norm(ua));
+			add_stats(B,"Compression",CompressionRate(B));
+			add_stats(B,"Nb dense mats",nb_densemats(B));
+			add_stats(B,"Nb lr mats",nb_lrmats(B));
+			add_stats(B,"Relative Frob error",sqrt(squared_absolute_error(B,A))/normA);
+		
+			nanogui::Window *popup = new nanogui::Window(Scene::gv.screen, "Stats");
+			
+			popup->setPosition(Eigen::Vector2i(350, 250));
+			popup->setLayout(new nanogui::BoxLayout(nanogui::Orientation::Vertical,
+			nanogui::Alignment::Middle, 10, 10));
+			nanogui::Widget *panel1 = new nanogui::Widget(popup);
+			panel1->setLayout(new nanogui::BoxLayout(nanogui::Orientation::Horizontal,
+			nanogui::Alignment::Middle, 10, 15));
+			
+			std::map<std::string,double> stats = get_stats(B);
+			std::stringstream s;
+			for (std::map<std::string,double>::const_iterator it = stats.begin() ; it != stats.end() ; ++it){
+				s << it->first << "\t" << it->second << std::endl;
 			}
-   });    
-   
-   gui->addWidget("",tools);
+			
+			nanogui::Label *mMessageLabel = new nanogui::Label(panel1, s.str().c_str());
+			mMessageLabel->setFixedWidth(200);
+			nanogui::Widget *panel2 = new nanogui::Widget(popup);
+			panel2->setLayout(new nanogui::BoxLayout(nanogui::Orientation::Horizontal,
+			nanogui::Alignment::Middle, 0, 15));   
+						
+			nanogui::Button *b = new nanogui::Button(panel2, "Close", ENTYPO_ICON_CHECK);
+			b->setCallback([popup] {
+				popup->dispose();
+			});
+			Scene::gv.screen->performLayout();			
+			
+/*
+        	nanogui::Popup *popup = popupBtn->popup();
+        popup->setLayout(new nanogui::GroupLayout());
+        */
+			/*
+			auto dlg = new nanogui::MessageDialog(Scene::gv.screen, nanogui::MessageDialog::Type::Information, "Title", "This is an information message");
+            dlg->setCallback([](int result) { std::cout << "Dialog result: " << result << std::endl; });
+            */
+            
+
+		}
+   });
    
    gv.screen->setVisible(true);
    gv.screen->performLayout();
    //nanoguiWindow->center();
-   nanoguiWindow->setPosition(Eigen::Vector2i(600, 15));
+   nanoguiWindow->setPosition(Eigen::Vector2i(550, 15));
    
    
        glfwSetCursorPosCallback(gv.glwindow,
