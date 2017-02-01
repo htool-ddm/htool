@@ -2,40 +2,16 @@
 #=========================== Executables =====================================#
 #=============================================================================#
 add_executable(Compression compress.cpp)
-target_include_directories(Compression PRIVATE
-                            ${htool_include_dir}
-                            ${EIGEN3_INCLUDE_DIR}
-                            ${MPI_INCLUDE_PATH})
-target_link_libraries (Compression
-                            ${EIGEN3_LIBRARIES}
-                            ${MPI_LIBRARIES}
-                            ${BLAS_LIBRARIES})
+target_link_libraries (Compression htool)
 
 add_executable(matrix_to_bytes matrix_to_bytes.cpp)
-target_include_directories(matrix_to_bytes PRIVATE
-                            ${htool_include_dir}
-                            ${EIGEN3_INCLUDE_DIR}
-                            ${MPI_INCLUDE_PATH})
-target_link_libraries (matrix_to_bytes
-                            ${MPI_LIBRARIES}
-                            ${EIGEN3_LIBRARIES}
-                            ${BLAS_LIBRARIES})
+target_link_libraries (matrix_to_bytes htool)
 
 
-if(OPENGL_FOUND AND GLUT_FOUND AND GLUI_FOUND)
 add_executable(Test_freeGLUT test_freeglut.cpp)
-target_include_directories(Test_freeGLUT PRIVATE
-                            ${htool_include_dir}
-                            ${EIGEN3_INCLUDE_DIR}
-                            ${MPI_INCLUDE_PATH})
-target_link_libraries(Test_freeGLUT
-                            ${OPENGL_LIBRARIES}
-                            ${GLUT_LIBRARY}
-			    ${GLUI_LIBRARY}
-                            ${EIGEN3_LIBRARIES}
-                            ${MPI_LIBRARIES}
-                            ${BLAS_LIBRARIES})
-endif(OPENGL_FOUND AND GLUT_FOUND AND GLUI_FOUND)
+target_link_libraries(Test_freeGLUT htool nanoGUI
+						${NANOGUI_EXTRA_LIBS} glm)
+
 
 # # Creation de l executable main a partir de prog
 # add_executable(main prog.cpp ${MY_HEADERS})

@@ -2,7 +2,13 @@
 #define CONFIG_H
 
 #define OPENGL_FOUND @OPENGL_FOUND@
-#define GLUT_FOUND @GLUT_FOUND@
+
+
+#if OPENGL_FOUND==TRUE
+# define OPENGL 1
+#else
+# define OPENGL 0
+#endif
 
 
 #endif // CONFIG_H
