@@ -1,6 +1,6 @@
 [submodule "external/nanogui"]
 	path = external/nanogui
-	url = git@github.com:wjakob/nanogui.git
+	url = https://github.com/wjakob/nanogui.git
 [submodule "external/glm"]
 	path = external/glm
-	url = git@github.com:g-truc/glm.git
+	url = https://github.com/g-truc/glm.git
