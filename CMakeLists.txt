@@ -84,7 +84,7 @@ add_definitions(${NANOGUI_EXTRA_DEFS})
 
 # Create an interface library
 add_library(htool_visu INTERFACE)
-target_include_directories(htool_visu INTERFACE ${NANOGUI_EXTRA_INCS} "external/nanogui/include")
+target_include_directories(htool_visu INTERFACE ${NANOGUI_EXTRA_INCS} "${CMAKE_CURRENT_SOURCE_DIR}/external/nanogui/include")
 target_link_libraries(htool_visu INTERFACE 
 					nanogui
 					${NANOGUI_EXTRA_LIBS})
