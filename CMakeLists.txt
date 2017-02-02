@@ -56,8 +56,6 @@ if(MPI_FOUND AND BLAS_FOUND AND EIGEN3_FOUND)
 else()
 	message("Htool and dependencies not found")
 endif()
-configure_file(${htool_include_dir}/config.h.in ${CMAKE_BINARY_DIR}/generated/config.h )
-include_directories( ${CMAKE_BINARY_DIR}/generated/ )
 #===
 
 #=== Nanogui and dependencies

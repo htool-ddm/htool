@@ -10,7 +10,7 @@ target_link_libraries (matrix_to_bytes htool)
 
 add_executable(Test_freeGLUT test_freeglut.cpp)
 target_link_libraries(Test_freeGLUT htool htool_visu)
-
+set_target_properties(Test_freeGLUT PROPERTIES COMPILE_FLAGS -DHTOOL_WITH_GUI )
 
 # # Creation de l executable main a partir de prog
 # add_executable(main prog.cpp ${MY_HEADERS})
