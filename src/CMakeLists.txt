@@ -9,8 +9,7 @@ target_link_libraries (matrix_to_bytes htool)
 
 
 add_executable(Test_freeGLUT test_freeglut.cpp)
-target_link_libraries(Test_freeGLUT htool nanoGUI
-						${NANOGUI_EXTRA_LIBS} glm)
+target_link_libraries(Test_freeGLUT htool htool_visu)
 
 
 # # Creation de l executable main a partir de prog
