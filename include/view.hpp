@@ -2,6 +2,7 @@
 #define VIEW_HPP
 
 #include <algorithm>
+#include <list>
 
 namespace htool {
 
@@ -317,7 +318,7 @@ void GLMesh::set_buffers() {
 		vertices[9*i+j] = X[i][j];
 
 	for (int i=0; i<Elts.size(); i++) {
-		R3 col = palette.get_color(1.*labels[i]/nblabels);
+		R3 col = palette.get_color(1.*(labels[i]%32)/32);
 		for (int j=0; j<NbPts[i]; j++) {
 			// Normals
 			for (int k=0; k<3; k++)
@@ -911,8 +912,15 @@ const GLchar* fragmentShaderSource = "#version 330 core\n"
 			
 			std::map<std::string,double> stats = get_stats(B);
 			std::stringstream s;
+			
+			s << "eta" << "\t" << Parametres::eta << "\n";
+			s << "epsilon" << "\t" << Parametres::epsilon << "\n";
+			s << "max block size" << "\t" << Parametres::maxblocksize << "\n";
+			s << "min cluster size" << "\t" << Parametres::minclustersize << "\n";
+			s << "\n";
 			for (std::map<std::string,double>::const_iterator it = stats.begin() ; it != stats.end() ; ++it){
-				s << it->first << "\t" << it->second << std::endl;
+				if (it->first.find("mean") == std::string::npos)
+				s << it->first << "\t" << it->second << "\n";
 			}
 			
 			nanogui::Label *mMessageLabel = new nanogui::Label(panel1, s.str().c_str());

@@ -557,9 +557,21 @@ std::pair<double,double> MvProdMPI(vectCplx& f, const HMatrix& A, const vectCplx
 		const vectInt&        It = ir_(M);
 		const vectInt&        Is = ic_(M);
 
+		/*
 		ConstSubVectCplx xx(x,Is);
 		SubVectCplx ff(f,It);
 		MvProd(ff,M,xx);
+		*/
+		std::vector<Cplx> lhs(size(It));
+		std::vector<Cplx> rhs(size(Is));
+
+		for (int i=0; i<size(Is); i++)
+			rhs[i] = x[Is[i]];
+
+		MvProd(lhs,M,rhs);
+
+		for (int i=0; i<size(It); i++)
+			f[It[i]] += lhs[i];		
 	}
 
 	// Contribution champ proche

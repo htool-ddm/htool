@@ -6,6 +6,7 @@
 #include <vector>
 #include <cassert>
 #include "cluster.hpp"
+#include "matrix.hpp"
 #include <Eigen/Dense>
 
 namespace htool {
@@ -33,10 +34,11 @@ class LowRankMatrix: public Parametres{
 	
 private:
 	int rank, nr, nc;
-	std::vector<vectCplx> u, v;
+	//std::vector<vectCplx> u, v;
 	vectInt ir;
 	vectInt ic;
-	
+	Matrix  U,V;
+
 public:
 	
 	LowRankMatrix(const vectInt& ir0, const vectInt& ic0){
@@ -60,6 +62,8 @@ public:
 		ic=ic0;
 
 		rank = 0;
+		
+		std::vector<vectCplx> u, v;
 
 		std::vector<bool> visited_row(nr,false);
 		std::vector<bool> visited_col(nc,false);
@@ -194,6 +198,16 @@ public:
 				v.push_back(r);
 			}
 			
+			U.resize(nr,u.size());
+			V.resize(v.size(),nc);
+			for (int i=0; i<nr; i++)
+			for (int j=0; j<u.size(); j++)
+				U(i,j) = u[j][i];
+
+			for (int i=0; i<v.size(); i++)
+			for (int j=0; j<nc; j++)
+				V(i,j) = v[i][j];
+			
 			if (rank != -5)
 				rank = u.size();
 		}
@@ -311,16 +325,28 @@ public:
 		ir=m.ir;
 		ic=m.ic;
 		nr=m.nr; nc=m.nc; rank = m.rank;
+		/*
 		u.resize(rank); v.resize(rank);
 		for(int j=0; j<rank; j++){
 			u[j] = m.u[j]; v[j] = m.v[j];}
+		*/
+		U.resize(nb_rows(m.U), nb_cols(m.U));
+		V.resize(nb_rows(m.V), nb_cols(m.V));
+		U = m.U;
+		V = m.V;
 	}
 	
 	void operator=(const LowRankMatrix& m){
 		nr=m.nr; nc=m.nc; rank = m.rank;
+		/*
 		u.resize(rank); v.resize(rank);
 		for(int j=0; j<rank; j++){
 			u[j] = m.u[j]; v[j] = m.v[j];}
+		*/
+		U.resize(nb_rows(m.U), nb_cols(m.U));
+		V.resize(nb_rows(m.V), nb_cols(m.V));		
+		U = m.U;
+		V = m.V;
 	}
 	
     // 1- !!!
@@ -335,33 +361,57 @@ public:
 	//	}
 	
 	friend Real NormFrob(const LowRankMatrix& m){
+		/*
 		const std::vector<vectCplx>& u = m.u;
 		const std::vector<vectCplx>& v = m.v;
 		const int& rank = m.rank;
-		
+		*/
+
 		Cplx frob = 0.;
+		
+		for (int j=0;j<m.nr;j++)
+		for (int k=0;k<m.nc;k++){
+			Cplx aux=0;
+				for (int l=0;l<m.rank;l++){
+					aux += m.U(j,l) * m.V(l,k);
+				}
+			frob+=pow(abs(aux),2);
+		}
+		
+		/*
 		for(int j=0; j<rank; j++){
 			for(int k=0; k<rank; k++){
 				frob += dprod(v[k],v[j])*dprod(u[k],u[j]) ;
 			}
 		}
+		*/
 		return sqrt(abs(frob));
 	}
 	
 	vectCplx operator*(const vectCplx& rhs){
 		assert(rhs.size()==nc);
+		std::vector<Cplx> tmp(rank);
+		tmp = V*rhs;
 		vectCplx lhs(nr,0.);
+		lhs = U*tmp;
+		/*
 		for(int k=0; k<v.size(); k++){
 			Cplx pk = (v[k],rhs);
 			for(int j=0; j<nr; j++){
 				lhs[j] += pk*u[k][j];
 			}
 		}
+		*/
 		return lhs;
 	}
 	
 	template <typename LhsType, typename RhsType>
 	friend void MvProd(LhsType& lhs, const LowRankMatrix& m, const RhsType& rhs){
+		std::vector<Cplx> tmp(m.rank);	
+		MvProd(tmp,m.V,rhs);
+		MvProd(lhs,m.U,tmp);
+		
+		/*
 		const std::vector<vectCplx>& u = m.u;
 		const std::vector<vectCplx>& v = m.v;
 		for(int k=0; k<v.size(); k++){
@@ -370,6 +420,7 @@ public:
 				lhs[j] += pk*u[k][j];
 			}
 		}
+		*/
 	}
 	
 	friend std::ostream& operator<<(std::ostream& os, const LowRankMatrix& m){
@@ -379,12 +430,12 @@ public:
 		os << "\nu:\n";
 		for(int j=0; j<m.nr; j++){
 			for(int k=0; k<m.rank; k++){
-				std::cout << m.u[k][j] << "\t";}
+				std::cout << m.U(j,k) << "\t";}
 			std::cout << "\n";}
 		os << "\nv:\n";
 		for(int j=0; j<m.nc; j++){
 			for(int k=0; k<m.rank; k++){
-				std::cout << m.v[k][j] << "\t";
+				std::cout << m.V(k,j) << "\t";
 			}
 			std::cout << "\n";
 		}
@@ -405,8 +456,8 @@ public:
 			for (int k=0;k<m.nc;k++){
 				Cplx aux=subm(j,k);
 				norm+= pow(abs(aux),2);
-				for (int l=0;l<m.u.size();l++){
-					aux = aux - m.u[l][j] * m.v[l][k];
+				for (int l=0;l<m.rank;l++){
+					aux = aux - m.U(j,l) * m.V(l,k);
 				}
 				err+=pow(abs(aux),2);
 			}
@@ -419,8 +470,8 @@ public:
 		for (int j=0;j<m.nr;j++){
 			for (int k=0;k<m.nc;k++){
 				Cplx aux=subm(j,k);
-				for (int l=0;l<m.u.size();l++){
-					aux = aux - m.u[l][j] * m.v[l][k];
+				for (int l=0;l<m.rank;l++){
+					aux = aux - m.U(j,l) * m.V(l,k);
 				}
 				err+=pow(abs(aux),2);
 			}
@@ -430,7 +481,7 @@ public:
 	
 };
 
-
+/*
 class LowRankMatrixSVD{
 	
 private:
@@ -589,7 +640,7 @@ public:
 	
 	
 };
-
+*/
 
 //======================//
 //    FULL PIVOT ACA    //
