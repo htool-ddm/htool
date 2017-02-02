@@ -327,7 +327,7 @@ public:
 	 (i.e. the right operand). This operator does not rely on the
 	 matrix-std::vector operator obtained via the library eigen3.
   */
-	vectCplx operator*(const vectCplx& u){
+	vectCplx operator*(const vectCplx& u) const{
 		vectCplx v(nr,0.);
 		for(int j=0; j<nr; j++){
 			for(int k=0; k<nc; k++){
