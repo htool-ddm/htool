@@ -4,6 +4,7 @@
 cmake_minimum_required(VERSION 2.6)
 Project(ElastoPhi)
 
+# To force c++11
 if ("${CMAKE_VERSION}" VERSION_LESS 3.1)
 	add_compile_options(-std=c++11)
 else ()
@@ -11,6 +12,8 @@ else ()
 	set(CMAKE_CXX_STANDARD_REQUIRED ON)
 endif ()
 
+
+# To set CMAKE_BUILD_TYPE
 if(NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
   message(STATUS "Setting build type to 'Release' as none was specified.")
   set(CMAKE_BUILD_TYPE Release)
@@ -23,7 +26,8 @@ list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}/cmake_modules")
 # Useful variables
 set(htool_include_dir "${CMAKE_CURRENT_SOURCE_DIR}/include")
 
-
+# Options
+option(HTOOL_BUILD_EXAMPLE "Build htool example application?" ON)
 
 
 #=============================================================================#
@@ -106,8 +110,9 @@ target_include_directories(htool_visu INTERFACE ${GLM_INCLUDE_DIRS})
 #========================== Repertories ======================================#
 #=============================================================================#
 # Add sources file
+if (HTOOL_BUILD_EXAMPLE)
 add_subdirectory(src)
-
+endif()
 # # Add test files
 # add_subdirectory(test)
 #
