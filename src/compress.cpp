@@ -51,10 +51,7 @@ public:
 		nc = nb_cols(mat);
 	}
 
-	Cplx operator()(const int& j, const int& k){
-		return A(j,k);
-	}
-	const Cplx operator()(const int& j, const int& k) const{
+	const Cplx get_coef(const int& j, const int& k) const{
 		return A(j,k);
 	}
 };

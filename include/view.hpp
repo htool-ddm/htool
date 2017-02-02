@@ -132,7 +132,7 @@ class Project{
 		GLMesh* mesh;
 		std::string name;
 		Camera cam;
-		Matrix* matrix;
+		VirtualMatrix* matrix;
 		std::vector<R3>* ctrs;
 		std::vector<Real>* rays;
 	public:
@@ -143,8 +143,8 @@ class Project{
 		GLMesh* get_mesh() const;		
 		void set_mesh(const GLMesh& m);
 		
-		Matrix* get_matrix() const;		
-		void set_matrix(const Matrix& m);
+		VirtualMatrix* get_matrix() const;		
+		void set_matrix(VirtualMatrix* m);
 
 		std::vector<R3>* get_ctrs() const;		
 		void set_ctrs(const std::vector<R3>& m);
@@ -182,7 +182,7 @@ class Scene{
 		void set_active_project(Project* p);	
 		void set_mesh(const GLMesh& mesh);
 		
-		void init(int* argc, char **argv);
+		void init();
 				
 		void draw();
 		
@@ -514,14 +514,14 @@ void Project::set_mesh(const GLMesh& m) {
 	mesh = new GLMesh(m);
 }
 
-Matrix* Project::get_matrix() const{
+VirtualMatrix* Project::get_matrix() const{
 	return matrix;
 }
 
-void Project::set_matrix(const Matrix& m) {
+void Project::set_matrix(VirtualMatrix* m) {
 	if (matrix != NULL)
 		delete matrix;
-	matrix = new Matrix(m);
+	matrix = m;
 }
 
 std::vector<R3>* Project::get_ctrs() const{
@@ -591,7 +591,7 @@ void Scene::draw(){
 		gv.active_project->draw();
 }
 
-void Scene::init(int* argc, char **argv){
+void Scene::init(){
 	glfwInit();
 	glfwSetTime(0);
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
@@ -813,46 +813,6 @@ const GLchar* fragmentShaderSource = "#version 330 core\n"
 	nanogui::FormHelper *gui = new nanogui::FormHelper(gv.screen);
 	nanogui::ref<nanogui::Window> nanoguiWindow = gui->addWindow(Eigen::Vector2i(10, 10), "");
    
-	nanogui::Widget* tools = new nanogui::Widget(nanoguiWindow);
-	tools->setLayout(new nanogui::BoxLayout(nanogui::Orientation::Vertical,
-                                      nanogui::Alignment::Middle, 0, 6));
-   nanogui::Button* b = new nanogui::Button(tools, "Load mesh");
-   b->setCallback([&] {
-    			if (gv.active_project == NULL)
-		std::cerr << "No active project" << std::endl;
-			else{
-				std::string str = nanogui::file_dialog(
-                   {{"txt", "Mesh file"}}, false);
-				std::vector<R3>  X;
-				std::vector<N4>  Elts;
-				std::vector<int> NbPts;
-				std::vector<R3>  Ctrs;
-				std::vector<Real> Rays;
-				std::cout << "Loading mesh file " << str << " ..." << std::endl;
-				LoadMesh(str.c_str(),X,Elts,NbPts,Ctrs,Rays);
-				GLMesh m(X,Elts,NbPts);
-				set_mesh(m);
-				gv.active_project->set_ctrs(Ctrs);
-				gv.active_project->set_rays(Rays);
-			}
-   });
-   
-   b = new nanogui::Button(tools, "Load matrix");
-   b->setCallback([&] {
-    		if (gv.active_project == NULL)
-				std::cerr << "No active project" << std::endl;
-			else{				
-				std::string strmat = nanogui::file_dialog(
-                   {{"bin", "Matrix binary file"}}, false);
-                   std::cout << "Loading matrix file " << strmat << " ..." << std::endl;              
-   				Matrix A;
-                bytes_to_matrix(strmat,A);
-                gv.active_project->set_matrix(A);
-			}
-   }); 
-   
-   gui->addWidget("",tools);  
-   
    gui->addGroup("Hmatrix parameters");
    gui->addVariable("eta", Parametres::eta)->setSpinnable(true);
    gui->addVariable("epsilon", Parametres::epsilon)->setSpinnable(true);
@@ -866,7 +826,7 @@ const GLchar* fragmentShaderSource = "#version 330 core\n"
 		else if (gv.active_project->get_matrix() == NULL)
 			std::cerr << "No matrix loaded" << std::endl;
 		else {
-			const Matrix& A = *(gv.active_project->get_matrix());
+			const VirtualMatrix& A = *(gv.active_project->get_matrix());
 			const std::vector<R3>& x = *(gv.active_project->get_ctrs());
 			const std::vector<Real>& r = *(gv.active_project->get_rays());
 			vectInt tab(nb_rows(A));
@@ -888,18 +848,21 @@ const GLchar* fragmentShaderSource = "#version 330 core\n"
 				int n = rand()%(NbSpl+1);
 				u[j] = n*du;}
 		
+			/*
 			vectCplx ua(nr),ub(nr);
+			
 			MvProd(ua,A,u);
 			std::pair <double,double > mvp_stats= MvProdMPI(ub,B,u);
-			Real normA = NormFrob(A);
 		
 			add_stats(B,"MvProd (mean)",std::get<0>(mvp_stats));
 			add_stats(B,"MvProd (max)",std::get<1>(mvp_stats));
 			add_stats(B,"MvProd err",norm(ua-ub)/norm(ua));
+			*/
+			//Real normA = NormFrob(A);
 			add_stats(B,"Compression",CompressionRate(B));
 			add_stats(B,"Nb dense mats",nb_densemats(B));
 			add_stats(B,"Nb lr mats",nb_lrmats(B));
-			add_stats(B,"Relative Frob error",sqrt(squared_absolute_error(B,A))/normA);
+			//add_stats(B,"Relative Frob error",sqrt(squared_absolute_error(B,A))/normA);
 		
 			nanogui::Window *popup = new nanogui::Window(Scene::gv.screen, "Stats");
 			

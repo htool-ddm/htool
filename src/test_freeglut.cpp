@@ -21,6 +21,55 @@ using namespace std;
 using namespace htool;
 using namespace nanogui;
 
+void attach_ui(Scene& s) {
+	statics& gv = Scene::gv;
+	
+	nanogui::Window *w = new nanogui::Window(Scene::gv.screen, "IFP");
+	w->setPosition(Eigen::Vector2i(650, 200));
+	w->setLayout(new nanogui::BoxLayout(nanogui::Orientation::Vertical,
+			nanogui::Alignment::Middle, 10, 10));
+	nanogui::Widget* tools = new nanogui::Widget(w);
+	tools->setLayout(new nanogui::BoxLayout(nanogui::Orientation::Vertical,
+                                      nanogui::Alignment::Middle, 0, 6));
+   nanogui::Button* b = new nanogui::Button(tools, "Load mesh");
+   b->setCallback([&] {
+    			if (gv.active_project == NULL)
+		std::cerr << "No active project" << std::endl;
+			else{
+				std::string str = nanogui::file_dialog(
+                   {{"txt", "Mesh file"}}, false);
+				std::vector<R3>  X;
+				std::vector<N4>  Elts;
+				std::vector<int> NbPts;
+				std::vector<R3>  Ctrs;
+				std::vector<Real> Rays;
+				std::cout << "Loading mesh file " << str << " ..." << std::endl;
+				LoadMesh(str.c_str(),X,Elts,NbPts,Ctrs,Rays);
+				GLMesh m(X,Elts,NbPts);
+				s.set_mesh(m);
+				gv.active_project->set_ctrs(Ctrs);
+				gv.active_project->set_rays(Rays);
+			}
+   });
+   
+   b = new nanogui::Button(tools, "Load matrix");
+   b->setCallback([&] {
+    		if (gv.active_project == NULL)
+				std::cerr << "No active project" << std::endl;
+			else{				
+				std::string strmat = nanogui::file_dialog(
+                   {{"bin", "Matrix binary file"}}, false);
+                   std::cout << "Loading matrix file " << strmat << " ..." << std::endl;              
+   				Matrix *A = new Matrix;
+                bytes_to_matrix(strmat,*A);
+                gv.active_project->set_matrix(A);
+			}
+   });
+
+	gv.screen->performLayout();
+
+}
+
 int main(int argc, char **argv) {
 	
 	MPI_Init(&argc, &argv);
@@ -56,7 +105,9 @@ int main(int argc, char **argv) {
 	
 	//s.add_mesh(m);
 	
-	s.init(&argc, argv);
+	s.init();
+	
+	attach_ui(s);
 	
 	s.run();
     
