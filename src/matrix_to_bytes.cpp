@@ -9,7 +9,7 @@
 #include <time.h>
 
 #include <mpi.h>
-#include "htool.hpp"
+#include <htool/htool.hpp>
 using namespace std;
 using namespace htool;
 

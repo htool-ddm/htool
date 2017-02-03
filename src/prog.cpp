@@ -2,14 +2,7 @@
 #include <complex>
 #include <vector>
 #include <cassert>
-#include "point.hpp"
-#include "matrix.hpp"
-#include "lrmat.hpp"
-#include "cluster.hpp"
-#include "hmatrix.hpp"
-#include "loading.hpp"
-#include "export.hpp"
-#include "user.hpp"
+#include <htool/htool.hpp>
 
 
 #include <stdio.h>

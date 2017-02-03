@@ -14,8 +14,8 @@
 #include <fstream>
 
 #include "mpi.h"
-#include "htool.hpp"
-#include "view.hpp"
+#include <htool/htool.hpp>
+#include <htool/view.hpp>
 
 using namespace std;
 using namespace htool;

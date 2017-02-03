@@ -2,9 +2,7 @@
 #include <complex>
 #include <vector>
 #include <cassert>
-#include "point.hpp"
-#include "matrix.hpp"
-#include "lrmat.hpp"
+#include <htool/htool.hpp>
 using namespace std;
 
 /**************************************************************************//**
