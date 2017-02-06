@@ -168,7 +168,7 @@ class statics{
 		Real motionx, motiony;
 		nanogui::Screen* screen;
 		GLFWwindow* glwindow;
-		GLint shaderProgram, lightshaderProgram;
+		GLint shaderProgram, blackshaderProgram, lightshaderProgram;
 		GLuint VBO, VAO, EBO;
 		bool left_mouse_button_pressed;
 };
@@ -388,8 +388,14 @@ void GLMesh::draw(const Camera& cam) {
 	R3 lp = cam.eye;
 	glm::vec3 lightPos(lp[0],lp[1],lp[2]);
 	
+	glm::mat4 view = glm::lookAt(glm::vec3(cam.eye[0],cam.eye[1],cam.eye[2]), glm::vec3(cam.center[0],cam.center[1],cam.center[2]), glm::vec3(cam.up[0],cam.up[1],cam.up[2]));
+	float wdt = 100;
+	//glm::mat4 projection = glm::perspective(0.f, 1.f, 0.1f, 1000.0f);
+	//glm::mat4 projection = glm::perspective(70.f, 1.f, 0.001f, 100.0f);
+	glm::mat4 projection = glm::perspective(70.f,1.f,(float)(0.001*wdt/2.),(float)(1000*wdt/2.));
+	//70,1,0.001*wdt/2.,1000*wdt/2.	
+	
 	GLint shaderProgram = Scene::gv.shaderProgram;
-
     glUseProgram(shaderProgram);
       
 	GLint lightColorLoc  = glGetUniformLocation(shaderProgram, "lightColor");
@@ -398,17 +404,9 @@ void GLMesh::draw(const Camera& cam) {
 	glUniform3f(lightColorLoc,  1.0f, 1.0f, 1.0f);
 	glUniform3f(lightPosLoc,    lightPos.x, lightPos.y, lightPos.z);
 	glUniform3f(viewPosLoc,     cam.eye[0],cam.eye[1],cam.eye[2]);  
-	
-	glm::mat4 view = glm::lookAt(glm::vec3(cam.eye[0],cam.eye[1],cam.eye[2]), glm::vec3(cam.center[0],cam.center[1],cam.center[2]), glm::vec3(cam.up[0],cam.up[1],cam.up[2]));
-	float wdt = 100;
-	//glm::mat4 projection = glm::perspective(0.f, 1.f, 0.1f, 1000.0f);
-	//glm::mat4 projection = glm::perspective(70.f, 1.f, 0.001f, 100.0f);
-	glm::mat4 projection = glm::perspective(70.f,1.f,(float)(0.001*wdt/2.),(float)(1000*wdt/2.));
-	//70,1,0.001*wdt/2.,1000*wdt/2.
 	GLint modelLoc = glGetUniformLocation(shaderProgram, "model");
 	GLint viewLoc = glGetUniformLocation(shaderProgram, "view");
-	GLint projLoc = glGetUniformLocation(shaderProgram, "projection");
-	
+	GLint projLoc = glGetUniformLocation(shaderProgram, "projection");	
 	glUniformMatrix4fv(viewLoc, 1, GL_FALSE, glm::value_ptr(view));
 	glUniformMatrix4fv(projLoc, 1, GL_FALSE, glm::value_ptr(projection));
 	
@@ -420,12 +418,33 @@ void GLMesh::draw(const Camera& cam) {
 	//model = glm::translate(model, glm::vec3(0.f, 0.f, 0.f));
 	glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
 	
-	//glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 	if (NbPts[0] == 3)
 		glDrawElements(GL_TRIANGLES, 3*Elts.size(), GL_UNSIGNED_INT, (void*)0 );
 	else
 		glDrawElements(GL_TRIANGLES, 6*Elts.size(), GL_UNSIGNED_INT, (void*)0 );
-	//glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+	
+	GLint blackshaderProgram = Scene::gv.blackshaderProgram;
+    glUseProgram(blackshaderProgram);
+      
+	lightColorLoc  = glGetUniformLocation(blackshaderProgram, "lightColor");
+	lightPosLoc    = glGetUniformLocation(blackshaderProgram, "lightPos");
+	viewPosLoc     = glGetUniformLocation(blackshaderProgram, "viewPos"); 
+	glUniform3f(lightColorLoc,  1.0f, 1.0f, 1.0f);
+	glUniform3f(lightPosLoc,    lightPos.x, lightPos.y, lightPos.z);
+	glUniform3f(viewPosLoc,     cam.eye[0],cam.eye[1],cam.eye[2]);  
+	modelLoc = glGetUniformLocation(blackshaderProgram, "model");
+	viewLoc = glGetUniformLocation(blackshaderProgram, "view");
+	projLoc = glGetUniformLocation(blackshaderProgram, "projection");	
+	glUniformMatrix4fv(viewLoc, 1, GL_FALSE, glm::value_ptr(view));
+	glUniformMatrix4fv(projLoc, 1, GL_FALSE, glm::value_ptr(projection));
+	glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));	
+
+	glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+	if (NbPts[0] == 3)
+		glDrawElements(GL_TRIANGLES, 3*Elts.size(), GL_UNSIGNED_INT, (void*)0 );
+	else
+		glDrawElements(GL_TRIANGLES, 6*Elts.size(), GL_UNSIGNED_INT, (void*)0 );
+	glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 	
 	glBindVertexArray(0);
 }
@@ -683,6 +702,34 @@ const GLchar* fragmentShaderSource = "#version 330 core\n"
 	"color = vec4(result, 1.0f);\n"
 	"}\0";
 
+	const GLchar* blackfragmentShaderSource = "#version 330 core\n"
+	"out vec4 color;\n"
+	"in vec3 FragPos;\n" 
+	"in vec3 Normal;\n"
+	"uniform vec3 lightPos;\n" 
+	"uniform vec3 viewPos;\n"
+	"uniform vec3 lightColor;\n"
+	"void main()\n"
+	"{\n"
+	"vec3 Color = vec3(0.0f,0.0f,0.0f);\n"
+	// Ambient
+	"float ambientStrength = 0.1f;\n"
+	"vec3 ambient = ambientStrength * lightColor;\n"
+	// Diffuse 
+	"vec3 norm = normalize(Normal);\n"
+	"vec3 lightDir = normalize(lightPos - FragPos);\n"
+	"float diff = abs(dot(norm, lightDir));\n"
+	"vec3 diffuse = diff * lightColor;\n"   
+	// Specular
+	"float specularStrength = 0.5f;\n"
+	"vec3 viewDir = normalize(viewPos - FragPos);\n"
+	"vec3 reflectDir = reflect(-lightDir, norm);\n"  
+	"float spec = pow(max(dot(viewDir, reflectDir), 0.0), 32);\n"
+	"vec3 specular = specularStrength * spec * lightColor;\n"       
+	"vec3 result = (ambient + diffuse + specular) * Color;\n"
+	"color = vec4(result, 1.0f);\n"
+	"}\0";
+
 	const GLchar* lightvertexShaderSource = "#version 330 core\n"
 	"layout (location = 0) in vec3 position;\n"
 	"uniform mat4 model;\n"
@@ -728,6 +775,19 @@ const GLchar* fragmentShaderSource = "#version 330 core\n"
        glGetShaderInfoLog(fragmentShader, 512, NULL, infoLog);
        std::cout << "ERROR::SHADER::FRAGMENT::COMPILATION_FAILED\n" << infoLog << std::endl;
    }
+   
+   // black Fragment shader
+   GLint blackfragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
+   glShaderSource(blackfragmentShader, 1, &blackfragmentShaderSource, NULL);
+   glCompileShader(blackfragmentShader);
+   // Check for compile time errors
+   glGetShaderiv(blackfragmentShader, GL_COMPILE_STATUS, &success);
+   if (!success)
+   {
+       glGetShaderInfoLog(blackfragmentShader, 512, NULL, infoLog);
+       std::cout << "ERROR::SHADER::FRAGMENT::COMPILATION_FAILED\n" << infoLog << std::endl;
+   }
+      
    // Vertex shader
    GLint lightvertexShader = glCreateShader(GL_VERTEX_SHADER);
    glShaderSource(lightvertexShader, 1, &lightvertexShaderSource, NULL);
@@ -754,6 +814,7 @@ const GLchar* fragmentShaderSource = "#version 330 core\n"
    
    GLint& shaderProgram = gv.shaderProgram;
    GLint& lightshaderProgram = gv.lightshaderProgram;
+   GLint& blackshaderProgram = gv.blackshaderProgram;
    
    shaderProgram = glCreateProgram();
    glAttachShader(shaderProgram, vertexShader);
@@ -763,6 +824,17 @@ const GLchar* fragmentShaderSource = "#version 330 core\n"
    glGetProgramiv(shaderProgram, GL_LINK_STATUS, &success);
    if (!success) {
        glGetProgramInfoLog(shaderProgram, 512, NULL, infoLog);
+       std::cout << "ERROR::SHADER::PROGRAM::LINKING_FAILED\n" << infoLog << std::endl;
+   }
+
+   blackshaderProgram = glCreateProgram();
+   glAttachShader(blackshaderProgram, vertexShader);
+   glAttachShader(blackshaderProgram, blackfragmentShader);
+   glLinkProgram(blackshaderProgram);
+   // Check for linking errors
+   glGetProgramiv(blackshaderProgram, GL_LINK_STATUS, &success);
+   if (!success) {
+       glGetProgramInfoLog(blackshaderProgram, 512, NULL, infoLog);
        std::cout << "ERROR::SHADER::PROGRAM::LINKING_FAILED\n" << infoLog << std::endl;
    }
    
@@ -778,6 +850,7 @@ const GLchar* fragmentShaderSource = "#version 330 core\n"
    }
    glDeleteShader(vertexShader);
    glDeleteShader(fragmentShader);
+   glDeleteShader(blackfragmentShader);
    glDeleteShader(lightvertexShader); 
    glDeleteShader(lightfragmentShader); 
    
