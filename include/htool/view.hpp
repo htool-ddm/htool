@@ -6,10 +6,11 @@
 
 namespace htool {
 
-void LoadMesh(std::string inputname, std::vector<R3>&  X, std::vector<N4>&  Elt, std::vector<int>& NbPt, std::vector<R3>& ctrs, std::vector<Real>& rays) {
+void LoadMesh(std::string inputname, std::vector<R3>&  X, std::vector<N4>&  Elt, std::vector<int>& NbPt, std::vector<R3>& Normals, std::vector<R3>& ctrs, std::vector<Real>& rays) {
 	int   num,NbElt,poubelle, NbTri, NbQuad;
 	R3    Pt, Ctr;
 	Real Rmax, Rad;	
+	R3 v1,v2;
 	
 	// Ouverture fichier
 	std::ifstream infile;
@@ -22,6 +23,7 @@ void LoadMesh(std::string inputname, std::vector<R3>&  X, std::vector<N4>&  Elt,
 	infile >> NbElt;
 	Elt.resize(NbElt);
 	NbPt.resize(NbElt);
+	Normals.resize(NbElt);
 	
 	num=0; NbTri=0; NbQuad=0;
 	// Lecture elements
@@ -43,6 +45,11 @@ void LoadMesh(std::string inputname, std::vector<R3>&  X, std::vector<N4>&  Elt,
 			num++;
 			Ctr += (1./Real(NbPt[e]))*Pt;
 		}
+		
+		v1 = X[Elt[e][1]]-X[Elt[e][0]];
+		v2 = X[Elt[e][2]]-X[Elt[e][0]];
+		Normals[e] = v1^v2;
+		Normals[e] /= norm(Normals[e]);
 		
 		ctrs.push_back(Ctr);
 		Rmax = norm(Ctr-X[Elt[e][0]]);
@@ -109,7 +116,7 @@ class GLMesh {
 		
 		~GLMesh();
 	
-		GLMesh(std::vector<R3>& X0, std::vector<N4>&  Elts0, std::vector<int>& NbPts0, const Cluster* cluster0 = NULL, Palette& palette0 = default_palette);
+		GLMesh(std::vector<R3>& X0, std::vector<N4>&  Elts0, std::vector<int>& NbPts0, std::vector<R3>& normals0, const Cluster* cluster0 = NULL, Palette& palette0 = default_palette);
 		
 		const R3& get_lbox() const;
 		
@@ -230,11 +237,12 @@ GLMesh::~GLMesh() {
 	}
 }
 
-GLMesh::GLMesh(std::vector<R3>& X0, std::vector<N4>&  Elts0, std::vector<int>& NbPts0, const Cluster* cluster0, Palette& palette0) 
+GLMesh::GLMesh(std::vector<R3>& X0, std::vector<N4>&  Elts0, std::vector<int>& NbPts0, std::vector<R3>& normals0, const Cluster* cluster0, Palette& palette0) 
 	: palette(palette0), cluster(cluster0){
 	X = X0;
 	Elts = Elts0;
 	NbPts = NbPts0;
+	normals = normals0;
 	lbox = 1.e+30;
 	ubox = -1.e+30;
 	for (int i=0; i<X.size(); i++){
@@ -248,14 +256,8 @@ GLMesh::GLMesh(std::vector<R3>& X0, std::vector<N4>&  Elts0, std::vector<int>& N
 	
 	normals.resize(Elts.size());
 	labels.resize(Elts.size());
-	R3 v1,v2;
-	for (int i=0; i<Elts.size(); i++){
-		v1 = X[Elts[i][1]]-X[Elts[i][0]];
-		v2 = X[Elts[i][2]]-X[Elts[i][0]];
-		normals[i] = v1^v2;
-		normals[i] /= norm(normals[i]);
+	for (int i=0; i<Elts.size(); i++)
 		labels[i] = 0;
-	}
 	
 	nblabels = 1;
 	visudepth = 0;

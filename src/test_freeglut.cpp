@@ -41,11 +41,12 @@ void attach_ui(Scene& s) {
 				std::vector<R3>  X;
 				std::vector<N4>  Elts;
 				std::vector<int> NbPts;
+				std::vector<R3> Normals;
 				std::vector<R3>  Ctrs;
 				std::vector<Real> Rays;
 				std::cout << "Loading mesh file " << str << " ..." << std::endl;
-				LoadMesh(str.c_str(),X,Elts,NbPts,Ctrs,Rays);
-				GLMesh m(X,Elts,NbPts);
+				LoadMesh(str.c_str(),X,Elts,NbPts,Normals,Ctrs,Rays);
+				GLMesh m(X,Elts,NbPts,Normals);
 				s.set_mesh(m);
 				gv.active_project->set_ctrs(Ctrs);
 				gv.active_project->set_rays(Rays);
