@@ -126,7 +126,7 @@ class GLMesh {
 		const Cluster* get_cluster() const;		
 		void set_cluster(const Cluster* c);
 		
-		void TraversalBuildLabel(const Cluster& t);
+		void TraversalBuildLabel(const Cluster& t, std::vector<int>& labeldofs);
 		void set_visudepth(const unsigned int depth);
 		
 		void set_buffers();
@@ -280,17 +280,23 @@ const Cluster* GLMesh::get_cluster() const{
 }
 
 void GLMesh::set_cluster(const Cluster* c) {
+	if (cluster != NULL)
+		delete cluster;
 	cluster = c;
 }
 
-void GLMesh::TraversalBuildLabel(const Cluster& t){
+void GLMesh::TraversalBuildLabel(const Cluster& t, std::vector<int>& labeldofs){
 	if(depth_(t)<visudepth && !t.IsLeaf()){
-		TraversalBuildLabel(son_(t,0));
-		TraversalBuildLabel(son_(t,1));
+		TraversalBuildLabel(son_(t,0), labeldofs);
+		TraversalBuildLabel(son_(t,1), labeldofs);
 	}
 	else {
+		/*
+		for(int i=0; i<num_(t).size(); i++)
+			labeldofs[num_(t)[i]] = nblabels;
+		*/
 		for(int i=0; i<num_(t).size()/GetNdofPerElt(); i++)
-			labels[num_(t)[GetNdofPerElt()*i]/GetNdofPerElt()] = nblabels;
+			labeldofs[num_(t)[GetNdofPerElt()*i]/GetNdofPerElt()] = nblabels;
 		nblabels++;
 	}
 }
@@ -301,7 +307,28 @@ void GLMesh::set_visudepth(const unsigned int depth){
 	else {
 		visudepth = depth;
 		nblabels = 1;
-		TraversalBuildLabel(*cluster);
+		int sizeg = Scene::gv.active_project->get_ctrs()->size();
+		std::vector<int> labeldofs(sizeg);
+		TraversalBuildLabel(*cluster, labeldofs);
+		if (sizeg == Elts.size())
+			labels = labeldofs;
+		else {
+			for (int i=0; i<Elts.size(); i++) {
+				std::map<int,int> m;
+				for (int j=0; j<NbPts[i]; j++) {
+					auto search = m.find(labeldofs[Elts[i][j]]);
+    				if(search != m.end())
+    					search->second++;
+    				else
+    					m[labeldofs[Elts[i][j]]] = 1;	
+				}
+
+				auto max = std::max_element(m.begin(), m.end(),
+    [](const std::pair<int,int>& p1, const std::pair<int,int>& p2) {
+        return p1.second < p2.second; });			
+				labels[i] = max->first;
+			}
+		}
 		set_buffers();
 		std::cout << "Depth set to " << depth << std::endl;
 	}
@@ -309,11 +336,47 @@ void GLMesh::set_visudepth(const unsigned int depth){
 
 void GLMesh::set_buffers() {		
 	int np = NbPts[0];
+	int sz = (np == 3 ? np : 6);
 			
-	GLfloat vertices[9*X.size()];
-	for (int i=0; i<9*X.size(); i++)
+	GLfloat vertices[9*sz*Elts.size()];
+	for (int i=0; i<9*sz*Elts.size(); i++)
 		vertices[i] = 0;
 
+	if (np == 3) {
+		for (int i=0; i<Elts.size(); i++) {
+			R3 col = palette.get_color(1.*(labels[i])/nblabels);
+			for (int j=0; j<3; j++){
+				for (int k=0; k<3; k++) {
+					vertices[9*sz*i+9*j+k] = X[Elts[i][j]][k];		
+					// Normals
+					vertices[9*sz*i+9*j+3+k] = normals[i][k];
+					// Colors
+					vertices[9*sz*i+9*j+6+k] =col[k];	
+				}					
+			}
+		}
+	}
+	else if (np == 4) {
+		for (int i=0; i<Elts.size(); i++) {
+			R3 col = palette.get_color(1.*(labels[i]%32)/32);
+			for (int k=0; k<3; k++) {
+				vertices[9*sz*i+9*0+k] = X[Elts[i][0]][k];
+				vertices[9*sz*i+9*1+k] = X[Elts[i][1]][k];
+				vertices[9*sz*i+9*2+k] = X[Elts[i][2]][k];
+				vertices[9*sz*i+9*3+k] = X[Elts[i][0]][k];
+				vertices[9*sz*i+9*4+k] = X[Elts[i][3]][k];
+				vertices[9*sz*i+9*5+k] = X[Elts[i][2]][k];
+				for (int j=0; j<6; j++) {
+					// Normals
+					vertices[9*sz*i+9*j+3+k] = normals[i][k];
+					// Colors
+					vertices[9*sz*i+9*j+6+k] =col[k];
+				}				
+			}
+		}
+	}
+	
+	/*
 	// Coordinates
 	for (int i=0; i<X.size(); i++)
 	for (int j=0; j<3; j++)
@@ -350,6 +413,7 @@ void GLMesh::set_buffers() {
 			indices[6*i+5] = Elts[i][2];
 		}
 	}
+	*/
 	
 	GLuint &VBO = Scene::gv.VBO;
 	GLuint &VAO = Scene::gv.VAO;
@@ -357,7 +421,7 @@ void GLMesh::set_buffers() {
 	
 	glGenVertexArrays(1, &VAO);
 	glGenBuffers(1, &VBO);
-	glGenBuffers(1, &EBO);			
+	//glGenBuffers(1, &EBO);			
 	
 	glBindBuffer(GL_ARRAY_BUFFER, VBO);
 	glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
@@ -373,12 +437,13 @@ void GLMesh::set_buffers() {
 	glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, 9 * sizeof(GLfloat), (GLvoid*)(6 * sizeof(GLfloat)));
 	glEnableVertexAttribArray(2);
 	
+	/*
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
 	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
 	
 	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 9 * sizeof(GLfloat), (GLvoid*)0);
 	glEnableVertexAttribArray(0);
-	
+	*/
 	glBindBuffer(GL_ARRAY_BUFFER, 0); 
 	
 	glBindVertexArray(0);
@@ -419,11 +484,18 @@ void GLMesh::draw(const Camera& cam) {
 	glm::mat4 model;
 	//model = glm::translate(model, glm::vec3(0.f, 0.f, 0.f));
 	glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
-	
+
+	if (NbPts[0] == 3)
+		glDrawArrays(GL_TRIANGLES, 0, 3*Elts.size());
+	else
+		glDrawArrays(GL_TRIANGLES, 0, 6*Elts.size());	
+
+	/*
 	if (NbPts[0] == 3)
 		glDrawElements(GL_TRIANGLES, 3*Elts.size(), GL_UNSIGNED_INT, (void*)0 );
 	else
 		glDrawElements(GL_TRIANGLES, 6*Elts.size(), GL_UNSIGNED_INT, (void*)0 );
+	*/
 	
 	GLint blackshaderProgram = Scene::gv.blackshaderProgram;
     glUseProgram(blackshaderProgram);
@@ -442,10 +514,17 @@ void GLMesh::draw(const Camera& cam) {
 	glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));	
 
 	glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+	/*
 	if (NbPts[0] == 3)
 		glDrawElements(GL_TRIANGLES, 3*Elts.size(), GL_UNSIGNED_INT, (void*)0 );
 	else
 		glDrawElements(GL_TRIANGLES, 6*Elts.size(), GL_UNSIGNED_INT, (void*)0 );
+	*/
+	if (NbPts[0] == 3)
+		glDrawArrays(GL_TRIANGLES, 0, 3*Elts.size());
+	else
+		glDrawArrays(GL_TRIANGLES, 0, 6*Elts.size());	
+	
 	glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 	
 	glBindVertexArray(0);
@@ -943,7 +1022,7 @@ const GLchar* fragmentShaderSource = "#version 330 core\n"
    					tab[3*j]  = j;
        				tab[3*j+1]= j;
        				tab[3*j+2]= j;
-   				}
+   			}
    				 				
 			Cluster *t = new Cluster(x,r,tab);
 			gv.active_project->get_mesh()->set_cluster(t);
@@ -1199,6 +1278,15 @@ const GLchar* fragmentShaderSource = "#version 330 core\n"
 		colors[19][0]=255;colors[19][1]=0;colors[19][2]=0;
 		default_palette.n = 20;
 		default_palette.colors = colors;
+		
+		/*
+		std::vector<R3> colors(3);
+		colors[0][0]=59;colors[0][1]=76;colors[0][2]=192;
+		colors[1][0]=221;colors[1][1]=221;colors[1][2]=221;
+		colors[2][0]=0.916482116*255;colors[2][1]=0.236630659*255;colors[2][2]=0.209939162*255;
+		default_palette.n = 3;
+		default_palette.colors = colors;		
+		*/
 		
 		Project p("my project");
 		gv.projects.push_back(p);
