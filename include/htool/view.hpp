@@ -653,6 +653,27 @@ void Scene::init(){
 	"Normal = mat3(transpose(inverse(model))) * normal;\n"
 	"Color = color;\n"
 	"}\0";
+	
+	const GLchar* blackvertexShaderSource = "#version 330 core\n"
+	"layout (location = 0) in vec3 position;\n"
+	"layout (location = 1) in vec3 normal;\n"
+	"layout (location = 2) in vec3 color;\n"
+	"out vec3 Normal;\n"
+	"out vec3 FragPos;\n"
+	"out vec3 Color;\n"
+	"uniform mat4 model;\n"
+	"uniform mat4 view;\n"
+	"uniform mat4 projection;\n"
+	"void main()\n"
+	"{\n"
+	"vec4 v = view * model * vec4(position, 1.0f);\n"
+	"v.xyz = v.xyz * 0.995;\n"
+	"gl_Position = projection * v;\n"
+	"FragPos = vec3(model * vec4(position, 1.0f));\n"
+	"FragPos = FragPos * 0.995;\n"
+	"Normal = mat3(transpose(inverse(model))) * normal;\n"
+	"Color = color;\n"
+	"}\0";	
    /*
 const GLchar* fragmentShaderSource = "#version 330 core\n"
 "out vec4 color;\n"
@@ -777,6 +798,18 @@ const GLchar* fragmentShaderSource = "#version 330 core\n"
        glGetShaderInfoLog(fragmentShader, 512, NULL, infoLog);
        std::cout << "ERROR::SHADER::FRAGMENT::COMPILATION_FAILED\n" << infoLog << std::endl;
    }
+ 
+   // black Vertex shader
+   GLint blackvertexShader = glCreateShader(GL_VERTEX_SHADER);
+   glShaderSource(blackvertexShader, 1, &blackvertexShaderSource, NULL);
+   glCompileShader(blackvertexShader);
+   // Check for compile time errors
+   glGetShaderiv(blackvertexShader, GL_COMPILE_STATUS, &success);
+   if (!success)
+   {
+       glGetShaderInfoLog(blackvertexShader, 512, NULL, infoLog);
+       std::cout << "ERROR::SHADER::VERTEX::COMPILATION_FAILED\n" << infoLog << std::endl;
+   } 
    
    // black Fragment shader
    GLint blackfragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
@@ -830,7 +863,7 @@ const GLchar* fragmentShaderSource = "#version 330 core\n"
    }
 
    blackshaderProgram = glCreateProgram();
-   glAttachShader(blackshaderProgram, vertexShader);
+   glAttachShader(blackshaderProgram, blackvertexShader);
    glAttachShader(blackshaderProgram, blackfragmentShader);
    glLinkProgram(blackshaderProgram);
    // Check for linking errors
@@ -852,6 +885,7 @@ const GLchar* fragmentShaderSource = "#version 330 core\n"
    }
    glDeleteShader(vertexShader);
    glDeleteShader(fragmentShader);
+   glDeleteShader(blackvertexShader);
    glDeleteShader(blackfragmentShader);
    glDeleteShader(lightvertexShader); 
    glDeleteShader(lightfragmentShader); 
