@@ -4,7 +4,9 @@
 #include <ctime>
 #include <stack>
 #include <string>
-
+#include <vector>
+#include <sstream>
+#include <iostream>
 
 namespace htool {
 ////////////////========================================================////////////////

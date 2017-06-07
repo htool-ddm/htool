@@ -1,12 +1,7 @@
 #ifndef PARAMETRES_HPP
 #define PARAMETRES_HPP
 
-#include <fstream>
-#include <sstream>
-#include <string>
-#include <stdlib.h>
-#include "matrix.hpp"
-#include "point.hpp"
+#include <cassert>
 #include "user.hpp"
 
 
@@ -144,20 +139,20 @@ Parametres_IO Parametre_IO_defauts("data","output","none","none");
 class Parametres{
 public:
 	static int  ndofperelt;
-	static Real eta;
-	static Real epsilon;
+	static double eta;
+	static double epsilon;
 	static int maxblocksize;
  	static int minclustersize;
 
 	Parametres();
-	Parametres(int, Real, Real, int, int);
+	Parametres(int, double, double, int, int);
 
 	friend void LoadParam(std::string inputname);
-	friend Real GetEta();
-	friend Real GetEpsilon();
+	friend double GetEta();
+	friend double GetEpsilon();
 	friend int GetNdofPerElt();
-	friend void SetEta(Real);
-	friend void SetEpsilon(Real);
+	friend void SetEta(double);
+	friend void SetEpsilon(double);
 	friend void SetNdofPerElt(int);
 	friend int GetMaxBlockSize();
 	friend void SetMaxBlockSize(int);
@@ -167,8 +162,8 @@ public:
 };
 
 // Allocation de la mémoire pour les valeurs statiques (obligatoire)
-Real Parametres::eta;
-Real Parametres::epsilon;
+double Parametres::eta;
+double Parametres::epsilon;
 int Parametres::ndofperelt;
 int Parametres::maxblocksize;
 int Parametres::minclustersize;
@@ -177,7 +172,7 @@ Parametres::Parametres(){
 
 }
 
-Parametres::Parametres(int ndofperelt0, Real eta0, Real epsilon0, int maxblocksize0, int minclustersize0){
+Parametres::Parametres(int ndofperelt0, double eta0, double epsilon0, int maxblocksize0, int minclustersize0){
 	ndofperelt=ndofperelt0;
 	eta=eta0;
 	epsilon=epsilon0;
@@ -186,19 +181,19 @@ Parametres::Parametres(int ndofperelt0, Real eta0, Real epsilon0, int maxblocksi
 }
 
 
-void SetEta(Real eta0){
+void SetEta(double eta0){
 	Parametres::eta=eta0;
 }
-void SetEpsilon(Real epsilon0){
+void SetEpsilon(double epsilon0){
 	Parametres::epsilon=epsilon0;
 }
 void SetNdofPerElt(int ndofperelt0){
 	Parametres::ndofperelt=ndofperelt0;
 }
-Real GetEta(){
+double GetEta(){
 	return Parametres::eta;
 }
-Real GetEpsilon(){
+double GetEpsilon(){
 	return Parametres::epsilon;
 }
 int GetNdofPerElt(){
@@ -238,13 +233,13 @@ void LoadParam(std::string inputname){
 			std::vector<std::string> line = split (strInput,' ');
 			if (!line.empty()){
 				if (line.at(0)=="Epsilon"){
-					Parametres::epsilon=StrToNbr<Real>(line.back());
+					Parametres::epsilon=StrToNbr<double>(line.back());
 				}
 				else if (line.at(0)=="Eta"){
-					Parametres::eta=StrToNbr<Real>(line.back());
+					Parametres::eta=StrToNbr<double>(line.back());
 				}
 				else if (line.at(0)=="MinClusterSize"){
-					Parametres::minclustersize=StrToNbr<Real>(line.back());
+					Parametres::minclustersize=StrToNbr<double>(line.back());
 				}
 			}
 		}
