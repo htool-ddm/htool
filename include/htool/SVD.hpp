@@ -37,7 +37,7 @@ public:
   			M(i,j) = A.get_coef(this->ir[i], this->ic[j]);
       }
     }
-      
+
     //// SVD
     SVDType svd(M,Eigen::ComputeThinU | Eigen::ComputeThinV );
 

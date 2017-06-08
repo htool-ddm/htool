@@ -36,6 +36,7 @@ int main(int argc, char const *argv[]) {
 
   Cluster t(p,r,tab);
   t.build();
+  t.print();
 
   return 0;
 }

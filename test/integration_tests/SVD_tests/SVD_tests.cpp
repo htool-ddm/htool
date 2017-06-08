@@ -55,7 +55,6 @@ int main(){
 		vector<int>  tab1(nr);
 		for(int j=0; j<nr; j++){
 			Ir[j] = j;
-			Ic[j] = j;
 			double rho = ((double) rand() / (double)(RAND_MAX)); // (double) otherwise integer division!
 			double theta = ((double) rand() / (double)(RAND_MAX));
 			p1[j][0] = sqrt(rho)*cos(2*M_PI*theta); p1[j][1] = sqrt(rho)*sin(2*M_PI*theta); p1[j][2] = z1;
@@ -69,6 +68,7 @@ int main(){
 		vector<double> r2(nc);
 		vector<int> tab2(nc);
 		for(int j=0; j<nc; j++){
+            Ic[j] = j;
 			double rho = ((double) rand() / (RAND_MAX)); // (double) otherwise integer division!
 			double theta = ((double) rand() / (RAND_MAX));
 			p2[j][0] = sqrt(rho)*cos(2*M_PI*theta); p2[j][1] = sqrt(rho)*sin(2*M_PI*theta); p2[j][2] = z2;
