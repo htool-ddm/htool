@@ -33,7 +33,7 @@ public:
 int main(){
 	const int ndistance = 4;
 	double distance[ndistance];
-	distance[0] = 2; distance[1] = 5; distance[2] = 10; distance[3] = 20;
+	distance[0] = 10; distance[1] = 20; distance[2] = 30; distance[3] = 40;
 	SetNdofPerElt(1);
 
 	for(int idist=0; idist<ndistance; idist++)
@@ -44,10 +44,10 @@ int main(){
 		// we set a constant seed for rand because we want always the same result if we run the check many times
 		// (two different initializations with the same seed will generate the same succession of results in the subsequent calls to rand)
 
-		int nr = 100;
-		int nc = 50;
+		int nr = 500;
+		int nc = 100;
 		vector<int> Ir(nr); // row indices for the lrmatrix
-		vector<int> Ic(nr); // column indices for the lrmatrix
+		vector<int> Ic(nc); // column indices for the lrmatrix
 
 		double z1 = 1;
 		vector<R3>     p1(nr);
@@ -65,9 +65,9 @@ int main(){
 		}
 		// p2: points in a unit disk of the plane z=z2
 		double z2 = 1+distance[idist];
-		vectR3 p2(nc);
-		vectReal r2(nc);
-		vectInt tab2(nc);
+		vector<R3> p2(nc);
+		vector<double> r2(nc);
+		vector<int> tab2(nc);
 		for(int j=0; j<nc; j++){
 			double rho = ((double) rand() / (RAND_MAX)); // (double) otherwise integer division!
 			double theta = ((double) rand() / (RAND_MAX));
@@ -80,13 +80,12 @@ int main(){
 		MyMatrix A(p1,p2);
 
 		// SVD
-        int reqrank_max = 10;
+    int reqrank_max = 10;
 		SVD<double> A_SVD(Ir,Ic,t,s,reqrank_max);
 		A_SVD.build(A);
 		std::vector<double> SVD_errors;
 		std::vector<double> SVD_errors_check(reqrank_max,0);
-        std::vector<double> test(nc,1);
-        cout << A_SVD*test <<endl;
+
 		for (int k = 0 ; k < reqrank_max ; k++){
 			SVD_errors.push_back(Frobenius_absolute_error(A_SVD,A,k));
 			for (int l=k ; l<min(nr,nc) ; l++){
