@@ -3,6 +3,7 @@
 
 #include "matrix.hpp"
 #include "parametres.hpp"
+#include <iomanip>
 
 namespace htool {
 
@@ -48,14 +49,14 @@ private:
 
 public:
 
-	Cluster(const std::vector<R3>& x0, const std::vector<double>& r0, const std::vector<int>& tab0): x(x0), r(r0), tab(tab0), ctr(0.), rad(0.), depth(0) {
+	Cluster(const std::vector<R3>& x0, const std::vector<double>& r0, const std::vector<int>& tab0): x(x0), r(r0), tab(tab0), ctr(), rad(0.), depth(0) {
 		son[0]=0;son[1]=0;
 		depth = 0; // ce constructeur est appele' juste pour la racine
 		assert(tab.size()==x.size()*ndofperelt);
 		for(int j=0; j<tab.size(); j++){num.push_back(j);}
 	}
 
-	Cluster(const std::vector<R3>& x0, const std::vector<double>& r0, const std::vector<int>& tab0, const unsigned int& dep): x(x0), r(r0), tab(tab0), ctr(0.), rad(0.) {
+	Cluster(const std::vector<R3>& x0, const std::vector<double>& r0, const std::vector<int>& tab0, const unsigned int& dep): x(x0), r(r0), tab(tab0), ctr(), rad(0.) {
 		son[0]=0;son[1]=0; depth = dep;
 	}
 
@@ -72,8 +73,21 @@ public:
 	const std::vector<int>& num_() const {return num;}
 	const unsigned int&   depth_() const {return depth;}
 
+	void print()
+	{
+	    std::cout << num << '\n';
+	    if (this->son[0]!=0) (*this->son[0]).print();
+	    if (this->son[1]!=0) (*this->son[1]).print();
+	}
+
 	friend std::ostream& operator<<(std::ostream& os, const Cluster& cl){
-		for(int j=0; j<(cl.num).size(); j++){os<<cl.num[j]<< "\t";} return os;}
+		for(int j=0; j<(cl.num).size(); j++){os<<cl.num[j]<< "\t";}
+		os<<std::endl;
+		if (!cl.IsLeaf()){
+			os<<cl.son_(0);
+		}
+		return os;
+	}
 
 
 	friend void TraversalBuildLabel(const Cluster& t, vectInt& labelVisu, const unsigned int visudep, const unsigned int cnt);
@@ -92,10 +106,11 @@ void Cluster::build(){
 
 		// Calcul centre du paquet
 		int nb_pt = curr->num.size();
-		R3 xc = 0.;
+		R3 xc;
+		xc.fill(0);
 		for(int j=0; j<nb_pt; j++){
 			xc += curr->x[curr->tab[curr->num[j]]];}
-
+		// std::cout<<"xc "<<xc<<std::endl;
 		xc = (1./double(nb_pt))*xc;
 		curr->ctr = xc;
 
@@ -164,7 +179,7 @@ void Cluster::build(){
 	   		eigs[2] = q + 2. * p * cos(phi + (2.*M_PI/3.));
 	   		eigs[1] = 3. * q - eigs[0] - eigs[2];     // since trace(cov) = eig1 + eig2 + eig3
 			if (std::abs(eigs[0]) < 1.e-15)
-				dir = 0;
+				dir *= 0.;
 			else {
 				Matrix<double> prod(3,3);
 				prod = (cov - eigs[1] * I) * (cov - eigs[2] * I);
@@ -190,6 +205,7 @@ void Cluster::build(){
 		curr->son[1] = new Cluster(curr->x,curr->r,curr->tab,curr->depth+1);
 		for(int j=0; j<nb_pt; j++){
 			R3 dx = curr->x[curr->tab[curr->num[j]]] - xc;
+			// std::cout <<(dir,dx) << std::endl;
 			if( (dir,dx)>0 ){
 				curr->son[0]->num.push_back(curr->num[j]);
 			}
@@ -325,7 +341,7 @@ public:
 	const Cluster& src_() const {return *(s);}
 	void ComputeAdmissibility() {
 		// Rjasanow - Steinbach (3.15) p111 Chap Approximation of Boundary Element Matrices
-		Admissible =  2*std::min((*t).rad_(),(*s).rad_()) < eta* norm((*t).ctr_()-(*s).ctr_()-(*t).rad_()-(*s).rad_() )  ;
+		Admissible =  2*std::min((*t).rad_(),(*s).rad_()) < eta* (norm((*t).ctr_()-(*s).ctr_())-(*t).rad_()-(*s).rad_() )  ;
 	}
 	bool IsAdmissible() const{
 		assert(Admissible != -1);

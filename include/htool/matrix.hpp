@@ -49,7 +49,7 @@ std::vector<T> operator-(const std::vector<T>& a,const std::vector<T>& b){
 
 template<typename T>
 T dprod(const std::vector<T>& a,const std::vector<T>& b){
-	return std::inner_product(a.begin(),a.end(),b.begin(),0.);
+	return std::inner_product(a.begin(),a.end(),b.begin(),T());
 }
 template<typename T>
 std::complex<T> dprod(const std::vector<std::complex<T> >& a,const std::vector<std::complex<T> >& b){
@@ -58,7 +58,7 @@ std::complex<T> dprod(const std::vector<std::complex<T> >& a,const std::vector<s
 
 
 template<typename T>
-T norm(const std::vector<T>& u){return std::sqrt(std::abs(dprod(u,u)));}
+double norm(const std::vector<T>& u){return std::sqrt(std::abs(dprod(u,u)));}
 
 template<typename T>
 T norm(const std::vector<std::complex<T> >& u){return std::sqrt(std::abs(dprod(u,u)));}
