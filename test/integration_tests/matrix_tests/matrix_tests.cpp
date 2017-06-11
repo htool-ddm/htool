@@ -20,9 +20,11 @@ int main(int argc, char const *argv[]) {
   cout <<"ai+bi      = "<< ai + bi <<endl;
   cout <<"ai-bi      = "<< ai - bi <<endl;
   cout <<"ai.bi      = "<< dprod(ai,bi)<<endl;
-  cout <<"norm(ai)   = "<< norm(ai)<<endl;
+  cout <<"norm2(ai)   = "<< norm2(ai)<<endl;
   cout <<"argmax(ai) = "<<argmax(ai)<<endl;
   cout <<"max(ai+bi) = "<<max(ai+bi)<<endl;
+  cout <<"ai*3       = "<<ai*3<<endl;
+  cout <<"ai/3       = "<<ai/3<<endl;
 
   // double
   vector<double> ad(10,0);
@@ -40,9 +42,11 @@ int main(int argc, char const *argv[]) {
   cout <<"ad+bd      = "<< ad + bd <<endl;
   cout <<"ad-bd      = "<< ad - bd <<endl;
   cout <<"ad.bd      = "<< dprod(ad,bd)<<endl;
-  cout <<"norm(ad)   = "<< norm(ad)<<endl;
+  cout <<"norm2(ad)   = "<< norm2(ad)<<endl;
   cout <<"argmax(ad) = "<<argmax(ad)<<endl;
   cout <<"max(ad+bd) = "<<max(ad+bd)<<endl;
+  cout <<"ad*3       = "<<ad*3<<endl;
+  cout <<"ad/3       = "<<ad/3<<endl;
 
   // complex double
   vector<complex<double> > acd(10,0);
@@ -60,17 +64,18 @@ int main(int argc, char const *argv[]) {
   cout <<"acd+bcd     = "<< acd + bcd <<endl;
   cout <<"acd-bcd     = "<< acd - bcd <<endl;
   cout <<"acd.bcd     = "<< dprod(acd,bcd)<<endl;
-  cout <<"norm(acd)   = "<< norm(acd)<<endl;
+  cout <<"norm2(acd)   = "<< norm2(acd)<<endl;
   cout <<"argmax(acd) = "<<argmax(acd)<<endl;
   cout <<"max(acd+bcd)= "<<max(acd+bcd)<<endl;
-
+  cout <<"acd*3       = "<<acd*3<<endl;
+  cout <<"acd/3       = "<<acd/3<<endl;
 
   //// Matrix - double
   // Constructor
   Matrix<double> Md(10,5);
   Matrix<double> Pd(5,10);
-  cout << Md.nb_rows() << endl;
-  cout << Md.nb_rows() << endl;
+  cout << "nb_rows = "<< Md.nb_rows() << endl;
+  cout << "nb_cols = "<< Md.nb_cols() << endl;
 
 
   // Access operator
@@ -82,25 +87,27 @@ int main(int argc, char const *argv[]) {
   }
   // Assignement operator
   Matrix<double> Nd=Md;
-  cout << Md <<endl;
-  cout << Nd <<endl;
-  cout << Pd <<endl;
+  cout << "Md : "<< Md <<endl;
+  cout << "Nd : "<< Nd <<endl;
+  cout << "Pd : "<< Pd <<endl;
 
   // Getters for strides
-  cout << Md.get_row(1) << endl;
-  cout << Md.get_col(3) << endl;
+  cout << "Md second row : "<< Md.get_row(1) << endl;
+  cout << "Md fourth col : "<< Md.get_col(3) << endl;
 
   // Setters for strides
   std::vector<double> rowd(5,2);
   std::vector<double> cold(10,2);
   Md.set_row(1,rowd);
-  Md.set_col(3,cold);
-  cout << Md << endl;
+  Md.set_col(4,cold);
+  cout << "Set second row and fifth col of Md : "<< Md << endl;
 
   // Matrix vector product
   std::vector <double> md(5,1);
-  cout << Md*md<<endl;
+  cout << "Matrix vector product : "<< Md*md<<endl;
 
+  // Matrix argmax
+  cout << "Md's argmax : "<< argmax(Md).first<<" "<< argmax(Md).second << endl;
 
   //// Matrix - complex double
   // Constructor
@@ -116,24 +123,27 @@ int main(int argc, char const *argv[]) {
   }
   // Assignement operator
   Matrix<complex<double> > Ncd=Mcd;
-  cout << Mcd <<endl;
-  cout << Ncd <<endl;
-  cout << Pcd <<endl;
+  cout << "Mcd : "<< Mcd <<endl;
+  cout << "Ncd : "<< Ncd <<endl;
+  cout << "Pcd : "<< Pcd <<endl;
 
   // Getters for strides
-  cout << Mcd.get_row(1) << endl;
-  cout << Mcd.get_col(3) << endl;
+  cout << "Mcd second row : "<< Mcd.get_row(1) << endl;
+  cout << "Mcd fourth row : "<< Mcd.get_col(3) << endl;
 
   // Setters for strides
   std::vector<std::complex<double> > rowcd(5,2);
   std::vector<std::complex<double> > colcd(10,2);
   Mcd.set_row(1,rowcd);
-  Mcd.set_col(3,colcd);
-  cout << Mcd << endl;
+  Mcd.set_col(4,colcd);
+  cout << "Set second row and fifth col of Md : "<< Mcd << endl;
 
   // Matrix vector product
   std::vector <complex<double> > mcd(5,1);
-  cout << Mcd*mcd<<endl;
+  cout << "Matrix vector product : "<< Mcd*mcd<<endl;
+
+  // Matrix argmax
+  cout << "Mcd's argmax : "<< argmax(Mcd).first<<" "<< argmax(Mcd).second << endl;
 
   return 0;
 }

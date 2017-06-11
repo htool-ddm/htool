@@ -47,6 +47,31 @@ std::vector<T> operator-(const std::vector<T>& a,const std::vector<T>& b){
 	return result;
 }
 
+template<typename T, typename V>
+std::vector<T> operator*(V value,const std::vector<T>& a)
+{
+	std::vector<T> result(a.size(),0);
+	std::transform (a.begin(), a.end(), result.begin(), std::bind1st(std::multiplies<T>(),value));
+
+	return result;
+}
+
+template<typename T, typename V>
+std::vector<T> operator*(const std::vector<T>& b,V value)
+{
+	return value*b;
+}
+
+template<typename T, typename V>
+std::vector<T> operator/(const std::vector<T>& a,V value)
+{
+  std::vector<T> result(a.size(),0);
+	std::transform (a.begin(), a.end(), result.begin(), std::bind2nd(std::divides<T>(),value));
+
+	return result;
+}
+
+
 template<typename T>
 T dprod(const std::vector<T>& a,const std::vector<T>& b){
 	return std::inner_product(a.begin(),a.end(),b.begin(),T());
@@ -58,10 +83,7 @@ std::complex<T> dprod(const std::vector<std::complex<T> >& a,const std::vector<s
 
 
 template<typename T>
-double norm(const std::vector<T>& u){return std::sqrt(std::abs(dprod(u,u)));}
-
-template<typename T>
-T norm(const std::vector<std::complex<T> >& u){return std::sqrt(std::abs(dprod(u,u)));}
+double norm2(const std::vector<T>& u){return std::sqrt(std::abs(dprod(u,u)));}
 
 template<typename T>
 T max(const std::vector<T>& u){
@@ -69,7 +91,7 @@ T max(const std::vector<T>& u){
 }
 
 template<typename T>
-T argmax(const std::vector<T>& u){
+int argmax(const std::vector<T>& u){
   return std::max_element(u.begin(),u.end(),[](T a, T b){return std::abs(a)<std::abs(b);})-u.begin();
 }
 
@@ -166,14 +188,14 @@ public:
 	/*!
 	 Returns the number of rows of the input argument _A_.
   */
-	const int& nb_rows(){ return nr;}
+	const int& nb_rows() const{ return nr;}
 
 
 	//! ### Access to number of columns
 	/*!
 	 Returns the number of columns of the input argument _A_.
   */
-	const int& nb_cols(){ return nc;}
+	const int& nb_cols() const{ return nc;}
 
 
 };
@@ -366,8 +388,8 @@ public:
 	 the number of rows is set to _nbr_ and
 	 the number of columns is set to _nbc_.
   */
-	void resize(const int nbr, const int nbc){
-		this->mat.resize(nbr*nbc); this->nr = nbr; this->nc = nbc;}
+	void resize(const int nbr, const int nbc, T value=0){
+		this->mat.resize(nbr*nbc, value); this->nr = nbr; this->nc = nbc;}
 
 	//! ### Matrix-scalar product
 	/*!
@@ -470,102 +492,17 @@ public:
     return out;
   }
 
-	//! ### Extraction of a column
-	/*!
-	 Returns, as a std::vector, the column numbered _k_ of the matrix _A_.
-  */
-	std::vector<T> col(const int& k){
-		std::vector<T> u(this->nr,0.);
-		for(int j=0; j<this->nr; j++){u[j]=this->mat(j+k*this->nr);}
-		return u;}
-
-
-	//! ### Extraction of a row
-	/*!
-	 Returns, as a std::vector, the row numbered _j_ of the matrix  _A_.
-  */
-	std::vector<T> row(const int& j){
-		std::vector<T> u(this->nc,0.);
-		for(int k=0; k<this->nc; k++){u[k]=this->mat(j+k*this->nr);}
-		return u;}
-
 
 	//! ### Looking for the entry of maximal modulus
 	/*!
 	 Returns the number of row and column of the entry
 	 of maximal modulus in the matrix _A_.
   */
-	// friend Int2 argmax(const Matrix& A){
-	// 	int jj=0,kk=0; Real Amax=0.;
-	// 	for(int j=0; j<A.nr; j++){
-	// 		for(int k=0; k<A.nc; k++){
-	// 			if(abs(A(j,k))>Amax){
-	// 				jj=j; kk=k; Amax=abs(A(j,k));
-	// 			}
-	// 		}
-	// 	}
-	// 	return Int2(jj,kk);
-	// }
+	friend std::pair<int,int> argmax(const Matrix<T>& M) {
+    int p = argmax(M.mat);
+		return std::pair<int,int> (p% M.nr,(int) p/M.nr);
+	}
 
-
-	// //! ### Computation of singular values
-	// /*!
-	//  Returns a std::vector of Real containing the singular values
-	//  of the input matrix _A_ in decreasing order.
-  // */
-	// friend vectReal SVD(const Matrix& A){
-	// 	SVDType svd(A.mat);
-	// 	const SgValType& sv = svd.singularValues();
-	// 	vectReal s(sv.size());
-	// 	for(int j=0; j<sv.size(); j++){s[j]=sv[j];}
-	// 	return s;
-	// }
-	//
-	//
-  //   //! ### Computation of singular value decomposition (SVD) up to a certain rank
-  //   /*!
-  //    Computes and stores inside _u_ and _v_ the singular value decomposition
-  //    of the input matrix _A_ up to rank _k_.
-  //    */
-	//
-	// friend void PartialSVD(const Matrix& A, std::vector<vectCplx>& u ,std::vector<vectCplx>& v, int k){
-	// 	assert(k<=std::min(A.nr,A.nc));
-	// 	SVDType svd(A.mat,Eigen::ComputeThinU | Eigen::ComputeThinV );
-	// 	const SgValType& sv = svd.singularValues();
-	//
-	// 	const UMatrixType& uu = svd.matrixU();
-	// 	const VMatrixType& vv = svd.matrixV();
-	//
-	// 	for (int i=0;i<k;i++){
-	// 		std::vector<Cplx> uuu;
-	// 		std::vector<Cplx> vvv;
-	// 		for (int j=0;j<A.nr;j++){
-	// 			uuu.push_back(uu(j,i)*sv[i]);
-	// 		}
-	// 		for (int j=0;j<A.nc;j++){
-	// 			vvv.push_back(vv(j,i));
-	// 		}
-	// 		u.push_back(uuu);
-	// 		v.push_back(vvv);
-	//
-	// 	}
-	// }
-
-
-    //! ### Computation of the Frobenius norm
-    /*!
-     Computes the Frobenius norm of the input matrix _A_.
-     */
-
-    friend double NormFrob (const Matrix& A){
-        double norm=0;
-        for (int j=0;j<A.nr;j++){
-            for (int k=0;k<A.nc;k++){
-                norm = norm + pow(abs(A(j,k)),2);
-            }
-        }
-        return sqrt(norm);
-    }
 
     friend int matrix_to_bytes(const Matrix& A, const std::string& file){
 
@@ -625,6 +562,21 @@ public:
 	}
 
 };
+
+//! ### Computation of the Frobenius norm
+/*!
+Computes the Frobenius norm of the input matrix _A_.
+*/
+template<typename T>
+double normFrob (const Matrix<T>& A){
+    double norm=0;
+    for (int j=0;j<A.nb_rows();j++){
+        for (int k=0;k<A.nb_cols();k++){
+            norm = norm + std::pow(std::abs(A(j,k)),2);
+        }
+    }
+    return sqrt(norm);
+}
 
 //================================//
 //      CLASSE SOUS-MATRICE       //
