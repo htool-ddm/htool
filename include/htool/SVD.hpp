@@ -27,11 +27,24 @@ private:
   SVD & operator=(const SVD& copy_from);
 
 public:
-  SVD(const std::vector<int>& ir0, const std::vector<int>& ic0, const Cluster& t0, const Cluster& s0, int rank0=0): LowRankMatrix<T>(ir0,ic0,t0,s0,rank0){}
+  SVD(const std::vector<int>& ir0, const std::vector<int>& ic0, const Cluster& t0, const Cluster& s0,int rank0=-1): LowRankMatrix<T>(ir0,ic0,t0,s0,rank0){}
 
   void build(const IMatrix<T>& A){
+    int reqrank=0;
+    if (this->rank==0){
+      this->U.resize(this->nr,1);
+      this->V.resize(1,this->nc);
+      return;
+    }
+    else if (this->rank==-1){
+      reqrank=std::min(this->ir.size(),this->ic.size());
+      this->rank=reqrank;
+    }
+    else{
+      reqrank=this->rank;
+    }
     //// Matrix assembling
-    DenseMatrix M(this->ir.size(),this->ic.size());
+    DenseMatrix M(this->nr,this->nc);
     for (int i=0; i<M.rows(); i++){
   		for (int j=0; j<M.cols(); j++){
   			M(i,j) = A.get_coef(this->ir[i], this->ic[j]);
@@ -47,15 +60,15 @@ public:
     const UMatrixType& uu = svd.matrixU();
     const VMatrixType& vv = svd.matrixV();
 
-    this->U.resize(M.rows(),sv.size());
-    this->V.resize(sv.size(),M.cols());
+    this->U.resize(M.rows(),reqrank);
+    this->V.resize(reqrank,M.cols());
 
     for (int i=0;i<M.rows();i++){
-      for (int j=0;j<sv.size();j++){
+      for (int j=0;j<reqrank;j++){
         this->U(i,j)=uu(i,j)*sv[j];
       }
     }
-    for (int i=0;i<sv.size();i++){
+    for (int i=0;i<reqrank;i++){
       for (int j=0;j<M.cols();j++){
           this->V(i,j)=vv(j,i);
         }
