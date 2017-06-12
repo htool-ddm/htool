@@ -21,25 +21,17 @@ template< template<typename> class LowRankMatrix, typename T >
 class HMatrix: public Parametres{
 
 private:
-
+	// Data members
 	const std::vector<R3>& xt;
 	const std::vector<R3>& xs;
 	const std::vector<int>& tabt;
 	const std::vector<int>& tabs;
-
 
 	std::vector<LowRankMatrix<T> > FarFieldMat;
 	std::vector<SubMatrix<T> >     NearFieldMat;
 
 	std::vector<Block*>		  Tasks;
 	std::vector<Block*>		  MyBlocks;
-
-	Block* BuildBlockTree(const Cluster&, const Cluster&);
-
-	bool UpdateBlocks(const Cluster&, const Cluster&);
-
-	void ScatterTasks();
-	void ComputeBlocks();
 
 	std::vector<LowRankMatrix<T> > MyFarFieldMats;
 	std::vector<SubMatrix<T> >     MyNearFieldMats;
@@ -48,69 +40,77 @@ private:
 
 	std::map<std::string, double> stats;
 
+	// Internal methods
+	Block* BuildBlockTree(const Cluster&, const Cluster&);
+
+	bool UpdateBlocks(const Cluster&, const Cluster&);
+
+	void ScatterTasks();
+	void ComputeBlocks();
+
 public:
 
-	HMatrix(const VirtualMatrix<T>&, const std::vector<R3>&, const std::vector<double>&, const std::vector<int>&, const std::vector<R3>&, const std::vector<double>&, const std::vector<int>&, const int& reqrank=-1, const MPI_Comm& comm=MPI_COMM_WORLD); // To be used with two different clusters
-	HMatrix(const VirtualMatrix<T>&, const std::vector<R3>&, const std::vector<double>&, const std::vector<int>&, const int& reqrank=-1, const MPI_Comm& comm=MPI_COMM_WORLD); // To be used with one cluster
+	HMatrix(const IMatrix<T>&, const std::vector<R3>&, const std::vector<double>&, const std::vector<int>&, const std::vector<R3>&, const std::vector<double>&, const std::vector<int>&, const int& reqrank=-1, const MPI_Comm& comm=MPI_COMM_WORLD); // To be used with two different clusters
+	HMatrix(const IMatrix<T>&, const std::vector<R3>&, const std::vector<double>&, const std::vector<int>&, const int& reqrank=-1, const MPI_Comm& comm=MPI_COMM_WORLD); // To be used with one cluster
 
 	~HMatrix() {
 		for (int i=0; i<Tasks.size(); i++)
 			delete Tasks[i];
 	}
 
-	friend const int& nb_rows(const HMatrix& A){ return nb_rows(A.mat);}
-	friend const int& nb_cols(const HMatrix& A){ return nb_cols(A.mat);}
+	int nb_rows() const { return tabt.size();}
+	int nb_cols() const { return tabs.size();}
 
-	friend const std::map<std::string,double>& get_stats (const HMatrix& A) { return A.stats;}
-	friend void add_stats(HMatrix& A, const std::string& keyname, const double& value){A.stats[keyname]=value;}
-	friend void print_stats(const HMatrix& A, const MPI_Comm& comm/*=MPI_COMM_WORLD*/);
+	std::map<std::string,double>& get_stats () const { return stats;}
+	void add_stats(const std::string& keyname, const double& value){A.stats[keyname]=value;}
+	void print_stats(const MPI_Comm& comm=MPI_COMM_WORLD);
 
-	friend const int nb_lrmats(const HMatrix& A, const MPI_Comm& comm=MPI_COMM_WORLD){ int res=A.MyFarFieldMats.size(); MPI_Allreduce(MPI_IN_PLACE, &res, 1, MPI_INT, MPI_SUM, comm); return res;}
-	friend const int nb_densemats(const HMatrix& A, const MPI_Comm& comm=MPI_COMM_WORLD){ int res=A.MyNearFieldMats.size(); MPI_Allreduce(MPI_IN_PLACE, &res, 1, MPI_INT, MPI_SUM, comm); return res;}
+	int nb_lrmats(const MPI_Comm& comm=MPI_COMM_WORLD){
+		int res=MyFarFieldMats.size(); MPI_Allreduce(MPI_IN_PLACE, &res, 1, MPI_INT, MPI_SUM, comm); return res;
+	}
+	int nb_densemats(const MPI_Comm& comm=MPI_COMM_WORLD){
+		int res=MyNearFieldMats.size(); MPI_Allreduce(MPI_IN_PLACE, &res, 1, MPI_INT, MPI_SUM, comm); return res;}
 
 	friend void MvProd(std::vector<Cplx>&, const HMatrix&, const std::vector<Cplx>&);
 	friend std::pair<double,double> MvProdMPI(std::vector<Cplx>& f, const HMatrix& A, const std::vector<Cplx>& x, const MPI_Comm& comm/*=MPI_COMM_WORLD*/);
 
-	// 1- !!!
-	friend double CompressionRate(const HMatrix& hmat, const MPI_Comm& comm/*=MPI_COMM_WORLD*/);
-
-	friend void Output(const HMatrix&, std::string filename);
-	friend const LowRankMatrix<T>& GetLowRankMatrix(HMatrix m, int i){
-		assert(i<m.FarFieldMats.size());
-		return m.FarFieldMats[i];}
-
-	friend double squared_absolute_error(const HMatrix& B, const VirtualMatrix<T>& A, const MPI_Comm& comm=MPI_COMM_WORLD){
-		double myerr = 0;
-		for(int j=0; j<B.MyFarFieldMats.size(); j++){
-			SubMatrix<T> subm(A,ir_(B.MyFarFieldMats[j]),ic_(B.MyFarFieldMats[j]));
-			myerr += squared_absolute_error(B.MyFarFieldMats[j], subm);
-		}
-		for(int j=0; j<B.MyNearFieldMats.size(); j++){
-			SubMatrix<T> subm(A,ir_(B.MyNearFieldMats[j]),ic_(B.MyNearFieldMats[j]));
-			myerr += squared_absolute_error(B.MyNearFieldMats[j], subm);
-		}
-
-
-		double err = 0;
-		MPI_Allreduce(&myerr, &err, 1, MPI_DOUBLE, MPI_SUM, comm);
-
-		return err;
-	}
+	// // 1- !!!
+	// double CompressionRate(const MPI_Comm& comm=MPI_COMM_WORLD) const;
+	//
+	// friend void Output(const HMatrix&, std::string filename);
+	// friend const LowRankMatrix<T>& GetLowRankMatrix(HMatrix m, int i){
+	// 	assert(i<m.FarFieldMats.size());
+	// 	return m.FarFieldMats[i];}
+	//
+	// friend double squared_absolute_error(const HMatrix& B, const VirtualMatrix<T>& A, const MPI_Comm& comm=MPI_COMM_WORLD){
+	// 	double myerr = 0;
+	// 	for(int j=0; j<B.MyFarFieldMats.size(); j++){
+	// 		SubMatrix<T> subm(A,ir_(B.MyFarFieldMats[j]),ic_(B.MyFarFieldMats[j]));
+	// 		myerr += squared_absolute_error(B.MyFarFieldMats[j], subm);
+	// 	}
+	// 	for(int j=0; j<B.MyNearFieldMats.size(); j++){
+	// 		SubMatrix<T> subm(A,ir_(B.MyNearFieldMats[j]),ic_(B.MyNearFieldMats[j]));
+	// 		myerr += squared_absolute_error(B.MyNearFieldMats[j], subm);
+	// 	}
+	//
+	//
+	// 	double err = 0;
+	// 	MPI_Allreduce(&myerr, &err, 1, MPI_DOUBLE, MPI_SUM, comm);
+	//
+	// 	return err;
+	// }
 
 };
 
 template< template<typename> class LowRankMatrix, typename T >
-HMatrix<LowRankMatrix, T >::HMatrix(const VirtualMatrix<T>& mat0,
-		 const std::vector<R3>& xt0, const std::vector<double>& rt, const std::vector<int>& tabt0,
-		 const std::vector<R3>& xs0, const std::vector<double>& rs, const std::vector<int>& tabs0, const int& reqrank0, const MPI_Comm& comm):
+HMatrix<LowRankMatrix, T >::HMatrix(const IMatrix<T>& mat0,
+	const std::vector<R3>& xt0, const std::vector<double>& rt, const std::vector<int>& tabt0, const std::vector<R3>& xs0, const std::vector<double>& rs, const std::vector<int>& tabs0, const int& reqrank0, const MPI_Comm& comm): mat(mat0), xt(xt0), xs(xs0), tabt(tabt0), tabs(tabs0),reqrank(reqrank0) {
 
-mat(mat0), xt(xt0), xs(xs0), tabt(tabt0), tabs(tabs0),reqrank(reqrank0) {
 	assert( mat.nb_rows()==tabt.size() && mat.nb_cols()==tabs.size() );
-
 	int rankWorld, sizeWorld;
-    MPI_Comm_size(comm, &sizeWorld);
-    MPI_Comm_rank(comm, &rankWorld);
-    std::vector<double> myttime(4), maxtime(4), meantime(4);
+  MPI_Comm_size(comm, &sizeWorld);
+  MPI_Comm_rank(comm, &rankWorld);
+  std::vector<double> myttime(4), maxtime(4), meantime(4);
 
 
 	// Construction arbre des paquets

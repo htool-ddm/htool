@@ -25,6 +25,7 @@ int main(int argc, char const *argv[]) {
   cout <<"norm2(ai)   = "<< norm2(ai)<<endl;
   cout <<"argmax(ai)  = "<< argmax(ai)<<endl;
   cout <<"max(ai+bi)  = "<< max(ai+bi)<<endl;
+  cout <<"mean(ai)    = "<<mean(ai)<<endl;
 
   ai*=3;
   cout <<"ai*=3    ai = "<<ai<<endl;
@@ -53,6 +54,8 @@ int main(int argc, char const *argv[]) {
   cout <<"norm2(ad)   = "<< norm2(ad)<<endl;
   cout <<"argmax(ad)  = "<<argmax(ad)<<endl;
   cout <<"max(ad+bd)  = "<<max(ad+bd)<<endl;
+  cout <<"mean(ad)    = "<<mean(ad)<<endl;
+
   ad*=3;
   cout <<"ad*=3    ad = "<<ad<<endl;
   ad/=3;
@@ -79,6 +82,8 @@ int main(int argc, char const *argv[]) {
   cout <<"norm2(acd)    = "<< norm2(acd)<<endl;
   cout <<"argmax(acd)   = "<<argmax(acd)<<endl;
   cout <<"max(acd+bcd)  = "<<max(acd+bcd)<<endl;
+  cout <<"mean(acd)    = "<<mean(acd)<<endl;
+
   acd*=3;
   cout <<"acd*=3    acd = "<<acd<<endl;
   acd/=3;
