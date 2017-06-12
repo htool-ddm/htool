@@ -32,7 +32,6 @@ class Cluster: public Parametres{
 
 private:
 	const std::vector<R3>&       x;     // Nuage complet des points
-	const std::vector<double>&   r;     // Rayon de champs proche pour chaque point
 	const std::vector<int>&     tab;	  // Vecteur renvoyant pour chaque dof l'indice de l'entite geometrique correspondante dans x
 
 	std::vector<int>            num;     // Indices des dofs
@@ -49,14 +48,14 @@ private:
 
 public:
 
-	Cluster(const std::vector<R3>& x0, const std::vector<double>& r0, const std::vector<int>& tab0): x(x0), r(r0), tab(tab0), ctr(), rad(0.), depth(0) {
+	Cluster(const std::vector<R3>& x0, const std::vector<int>& tab0): x(x0), tab(tab0), ctr(), rad(0.), depth(0) {
 		son[0]=0;son[1]=0;
 		depth = 0; // ce constructeur est appele' juste pour la racine
 		assert(tab.size()==x.size()*ndofperelt);
 		for(int j=0; j<tab.size(); j++){num.push_back(j);}
 	}
 
-	Cluster(const std::vector<R3>& x0, const std::vector<double>& r0, const std::vector<int>& tab0, const unsigned int& dep): x(x0), r(r0), tab(tab0), ctr(), rad(0.) {
+	Cluster(const std::vector<R3>& x0, const std::vector<int>& tab0, const unsigned int& dep): x(x0), tab(tab0), ctr(), rad(0.) {
 		son[0]=0;son[1]=0; depth = dep;
 	}
 
@@ -119,7 +118,7 @@ void Cluster::build(){
 		curr->rad=0.;
 		for(int j=0; j<nb_pt; j++){
 			R3 u = curr->x[curr->tab[curr->num[j]]] - xc;
-			curr->rad=std::max(curr->rad,norm(u)+curr->r[curr->tab[curr->num[j]]]);
+			curr->rad=std::max(curr->rad,norm(u));
 			for(int p=0; p<3; p++){
 				for(int q=0; q<3; q++){
 					cov(p,q) += u[p]*u[q];
@@ -201,8 +200,8 @@ void Cluster::build(){
 		}
 
 		// Construction des paquets enfants
-		curr->son[0] = new Cluster(curr->x,curr->r,curr->tab,curr->depth+1);
-		curr->son[1] = new Cluster(curr->x,curr->r,curr->tab,curr->depth+1);
+		curr->son[0] = new Cluster(curr->x,curr->tab,curr->depth+1);
+		curr->son[1] = new Cluster(curr->x,curr->tab,curr->depth+1);
 		for(int j=0; j<nb_pt; j++){
 			R3 dx = curr->x[curr->tab[curr->num[j]]] - xc;
 			// std::cout <<(dir,dx) << std::endl;
