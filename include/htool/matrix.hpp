@@ -74,11 +74,11 @@ std::vector<T> operator/(const std::vector<T>& a,V value)
 
 template<typename T>
 T dprod(const std::vector<T>& a,const std::vector<T>& b){
-	return std::inner_product(a.begin(),a.end(),b.begin(),T());
+	return std::inner_product(a.begin(),a.end(),b.begin(),T(0));
 }
 template<typename T>
 std::complex<T> dprod(const std::vector<std::complex<T> >& a,const std::vector<std::complex<T> >& b){
-	return std::inner_product(a.begin(),a.end(),b.begin(),std::complex<T>(),std::plus<std::complex<T> >(), [](std::complex<T>u,std::complex<T>v){return u*std::conj<T>(v);});
+	return std::inner_product(a.begin(),a.end(),b.begin(),std::complex<T>(0),std::plus<std::complex<T> >(), [](std::complex<T>u,std::complex<T>v){return u*std::conj<T>(v);});
 }
 
 
@@ -111,48 +111,39 @@ void operator/=(std::vector<T>& a, const V& value){
   std::transform (a.begin(), a.end(), a.begin(), std::bind2nd(std::divides<T>(),value));
 }
 
-
-double mean(const std::vector<double>& u){
-	double res = 0;
-	for(int j=0; j<u.size(); j++)
-		res += u[j];
-	res /= u.size();
-	return res;
+template<typename T>
+T mean(const std::vector<T>& u){
+	return std::accumulate(u.begin(),u.end(),T(0))/T(u.size());
 }
 
 //================================//
 //      CLASSE SUBVECTOR          //
 //================================//
 
-template <typename VecType>
+template <typename T>
 class SubVec{
 
 private:
-	VecType&       U;
-	const vectInt& I;
+	std::vector<T>&       U;
+	const std::vector<int>& I;
 	const int      size;
-
-	typedef typename VecType::value_type ValType;
 
 public:
 
-	SubVec(VecType& U0, const vectInt& I0): U(U0), I(I0), size(I0.size()) {}
+	SubVec(std::vector<T>&& U0, const std::vector<int>& I0): U(U0), I(I0), size(I0.size()) {}
 	SubVec(const SubVec&); // Pas de constructeur par recopie
 
-	ValType& operator[](const int& k) {return U[I[k]];}
-	const ValType& operator[](const int& k) const {return U[I[k]];}
-
-	void operator=(const ValType& v){
-		for(int k=0; k<size; k++){ U[I[k]]=v;}}
+	T& operator[](const int& k) {return U[I[k]];}
+	const T& operator[](const int& k) const {return U[I[k]];}
 
 	template <typename RhsType>
-	ValType operator,(const RhsType& rhs) const {
-		ValType lhs = 0.;
+	T operator,(const RhsType& rhs) const {
+		T lhs = 0.;
 		for(int k=0; k<size; k++){lhs += U[I[k]]*rhs[k];}
 		return lhs;
 	}
 
-	friend int size(const SubVec& sv){ return sv.size;}
+	int get_size() const { return this->size;}
 
 	friend std::ostream& operator<<(std::ostream& os, const SubVec& u){
 		for(int j=0; j<u.size; j++){ os << u[j] << "\t";}
@@ -612,9 +603,9 @@ public:
     this->nc=m.nc;
   }
 
-  const vectInt& ir_(){ return ir;}
+  const std::vector<int>& ir_(){ return ir;}
 
-  const vectInt& ic_(){ return ic;}
+  const std::vector<int>& ic_(){ return ic;}
 
 };
 } // namespace
