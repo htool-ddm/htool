@@ -101,11 +101,15 @@ typedef std::vector<int>     vectInt;
 typedef std::vector<R3>      vectR3;
 
 
+template<typename T, typename V>
+void operator*=(std::vector<T>& a, const V& value){
+  std::transform (a.begin(), a.end(), a.begin(), std::bind1st(std::multiplies<T>(),value));
+}
 
-
-
-void operator/=(std::vector<double>& J, const double& d){
-	for(int k=0; k<J.size(); k++){J[k]/=d;} }
+template<typename T, typename V>
+void operator/=(std::vector<T>& a, const V& value){
+  std::transform (a.begin(), a.end(), a.begin(), std::bind2nd(std::divides<T>(),value));
+}
 
 
 double mean(const std::vector<double>& u){
