@@ -1,4 +1,5 @@
 add_subdirectory(fullACA_tests)
+add_subdirectory(partialACA_tests)
 add_subdirectory(SVD_tests)
 add_subdirectory(matrix_tests)
 add_subdirectory(cluster_tests)
