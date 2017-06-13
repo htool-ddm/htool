@@ -35,8 +35,8 @@ class fullACA: public LowRankMatrix<T>{
 
 private:
 	// No assignement or copy
-	fullACA(const fullACA& copy_from);
-	fullACA & operator=(const fullACA& copy_from);
+	// fullACA(const fullACA& copy_from);
+	// fullACA & operator=(const fullACA& copy_from);
 
 public:
 	//=========================//
@@ -46,7 +46,8 @@ public:
     // otherwise, we use the required rank for the stopping criterion (!: at the end the rank could be lower)
 	fullACA(const std::vector<int>& ir0, const std::vector<int>& ic0, const Cluster& t0,const Cluster& s0, int rank0=-1):LowRankMatrix<T>(ir0,ic0,t0,s0,rank0){}
 
-
+	// fullACA(fullACA&&) = default; // move constructor
+  // fullACA& operator=(fullACA&&) = default; // move assignement operator
 
 	void build(const IMatrix<T>& A){
 		if(this->rank == 0){

@@ -174,9 +174,6 @@ protected:
 
 public:
 
-	// virtual ~IMatrix(){}
-
-
   virtual T get_coef(const int& j, const int& k) const =0;
 
 	//! ### Access to number of rows
@@ -582,7 +579,6 @@ class SubMatrix : public Matrix<T>{
 	std::vector<int> ir;
 	std::vector<int> ic;
 
-
 public:
 
   SubMatrix(const IMatrix<T>& mat0, const std::vector<int>& ir0, const std::vector<int>& ic0):
@@ -592,7 +588,7 @@ public:
   	this->mat.resize(this->nr, this->nc);
   	for (int i=0; i<this->nr; i++)
   		for (int j=0; j<this->nc; j++)
-  			this->mat(i,j) = mat0.get_coef(ir[i], ic[j]);
+  			this->mat[i+j*this->nr] = mat0.get_coef(ir[i], ic[j]);
   }
 
   SubMatrix(const SubMatrix& m) {

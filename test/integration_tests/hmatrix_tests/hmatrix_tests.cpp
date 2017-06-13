@@ -4,7 +4,10 @@
 
 #include <htool/cluster.hpp>
 #include <htool/lrmat.hpp>
-#include <htool/partialACA.hpp>
+#include <htool/hmatrix.hpp>
+#include <htool/fullACA.hpp>
+#include <mpi.h>
+
 
 
 using namespace std;
@@ -31,6 +34,19 @@ public:
 
 
 int main(){
+
+	// Initialize the MPI environment
+	MPI_Init(NULL, NULL);
+
+	// Get the number of processes
+	int size;
+	MPI_Comm_size(MPI_COMM_WORLD, &size);
+
+	// Get the rank of the process
+	int rank;
+	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+
+	//
 	const int ndistance = 4;
 	double distance[ndistance];
 	distance[0] = 10; distance[1] = 20; distance[2] = 30; distance[3] = 40;
@@ -51,6 +67,7 @@ int main(){
 
 		double z1 = 1;
 		vector<R3>     p1(nr);
+		vector<double> r1(nr);
 		vector<int>  tab1(nr);
 		for(int j=0; j<nr; j++){
 			Ir[j] = j;
@@ -63,6 +80,7 @@ int main(){
 		// p2: points in a unit disk of the plane z=z2
 		double z2 = 1+distance[idist];
 		vector<R3> p2(nc);
+		vector<double> r2(nc);
 		vector<int> tab2(nc);
 		for(int j=0; j<nc; j++){
             Ic[j] = j;
@@ -74,19 +92,10 @@ int main(){
 
 		Cluster t(p1,tab1); Cluster s(p2,tab2);
 		MyMatrix A(p1,p2);
-
-		// ACA
-		int reqrank_max = 10;
-		partialACA<double> A_partialACA(Ir,Ic,t,s,reqrank_max);
-		A_partialACA.build(A);
-		std::vector<double> partialACA_errors;
-		for (int k = 0 ; k < A_partialACA.rank_of()+1 ; k++){
-			partialACA_errors.push_back(Frobenius_absolute_error(A_partialACA,A,k));
-		}
-		cout<<partialACA_errors<<endl;
-
-
-
+		MPI_Barrier(MPI_COMM_WORLD);
+		HMatrix<fullACA,double>(A,p1,tab1,p2,tab2);
+		MPI_Barrier(MPI_COMM_WORLD);
 	}
-
+	// Finalize the MPI environment.
+	MPI_Finalize();
 }

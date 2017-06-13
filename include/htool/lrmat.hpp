@@ -29,6 +29,8 @@ protected:
 
 
 public:
+
+
   int nb_rows() const {return this->nr;}
   int nb_cols() const{return this->nc;}
   int rank_of() const {return this->rank;}
