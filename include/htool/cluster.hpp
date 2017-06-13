@@ -49,7 +49,7 @@ private:
 public:
 
 	Cluster(const std::vector<R3>& x0, const std::vector<int>& tab0): x(x0), tab(tab0), ctr(), rad(0.), depth(0) {
-		son[0]=0;son[1]=0;
+		son[0]=NULL;son[1]=NULL;
 		depth = 0; // ce constructeur est appele' juste pour la racine
 		assert(tab.size()==x.size()*ndofperelt);
 		for(int j=0; j<tab.size(); j++){num.push_back(j);}
@@ -59,10 +59,10 @@ public:
 		son[0]=0;son[1]=0; depth = dep;
 	}
 
-	~Cluster(){if (son[0]!=0){ delete son[0];}if (son[1]!=0){ delete son[1];}};
+	~Cluster(){if (son[0]!=NULL){ delete son[0];}if (son[1]!=NULL){ delete son[1];}};
 
 	void build();
-	bool IsLeaf() const { if(son[0]==0){return true;} return false; }
+	bool IsLeaf() const { if(son[0]==NULL){return true;} return false; }
 
   const std::vector<R3>&  pts_() const {return x;}
   const std::vector<int>& tab_() const {return tab;}
@@ -75,8 +75,8 @@ public:
 	void print()
 	{
 	    std::cout << num << '\n';
-	    if (this->son[0]!=0) (*this->son[0]).print();
-	    if (this->son[1]!=0) (*this->son[1]).print();
+	    if (this->son[0]!=NULL) (*this->son[0]).print();
+	    if (this->son[1]!=NULL) (*this->son[1]).print();
 	}
 
 	friend std::ostream& operator<<(std::ostream& os, const Cluster& cl){
@@ -219,8 +219,8 @@ void Cluster::build(){
 			s.push(curr->son[1]);
 		}
 		else{
-			delete curr->son[0]; curr->son[0] = 0;
-			delete curr->son[1]; curr->son[1] = 0;
+			delete curr->son[0]; curr->son[0] = NULL;
+			delete curr->son[1]; curr->son[1] = NULL;
 		}
 	}
 }
