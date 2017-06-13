@@ -5,155 +5,10 @@
 #include <iostream>
 #include <fstream>
 #include <vector>
-#include <numeric>
-#include "point.hpp"
 #include "blas.hpp"
+#include "vector.hpp"
 
 namespace htool {
-//================================//
-//      DECLARATIONS DE TYPE      //
-//================================//
-typedef std::pair<int,int>            Int2;
-
-//================================//
-//            VECTEUR             //
-//================================//
-template <typename T>
-std::ostream& operator<< (std::ostream& out, const std::vector<T>& v) {
-  if ( !v.empty() ) {
-    out << '[';
-    std::copy (v.begin(), v.end(), std::ostream_iterator<T>(out, ", "));
-    out << "\b\b]";
-  }
-  return out;
-}
-
-
-template<typename T>
-std::vector<T> operator+(const std::vector<T>& a,const std::vector<T>& b){
-	assert(a.size()==b.size());
-	std::vector<T> result(a.size(),0);
-	std::transform (a.begin(), a.end(), b.begin(), result.begin(), std::plus<T>());
-
-	return result;
-}
-
-template<typename T>
-std::vector<T> operator-(const std::vector<T>& a,const std::vector<T>& b){
-	assert(a.size()==b.size());
-	std::vector<T> result(a.size(),0);
-	std::transform (a.begin(), a.end(), b.begin(), result.begin(), std::minus<T>());
-
-	return result;
-}
-
-template<typename T, typename V>
-std::vector<T> operator*(V value,const std::vector<T>& a)
-{
-	std::vector<T> result(a.size(),0);
-	std::transform (a.begin(), a.end(), result.begin(), std::bind1st(std::multiplies<T>(),value));
-
-	return result;
-}
-
-template<typename T, typename V>
-std::vector<T> operator*(const std::vector<T>& b,V value)
-{
-	return value*b;
-}
-
-template<typename T, typename V>
-std::vector<T> operator/(const std::vector<T>& a,V value)
-{
-  std::vector<T> result(a.size(),0);
-	std::transform (a.begin(), a.end(), result.begin(), std::bind2nd(std::divides<T>(),value));
-
-	return result;
-}
-
-
-template<typename T>
-T dprod(const std::vector<T>& a,const std::vector<T>& b){
-	return std::inner_product(a.begin(),a.end(),b.begin(),T(0));
-}
-template<typename T>
-std::complex<T> dprod(const std::vector<std::complex<T> >& a,const std::vector<std::complex<T> >& b){
-	return std::inner_product(a.begin(),a.end(),b.begin(),std::complex<T>(0),std::plus<std::complex<T> >(), [](std::complex<T>u,std::complex<T>v){return u*std::conj<T>(v);});
-}
-
-
-template<typename T>
-double norm2(const std::vector<T>& u){return std::sqrt(std::abs(dprod(u,u)));}
-
-template<typename T>
-T max(const std::vector<T>& u){
-  return *std::max_element(u.begin(),u.end(),[](T a, T b){return std::abs(a)<std::abs(b);});
-}
-
-template<typename T>
-int argmax(const std::vector<T>& u){
-  return std::max_element(u.begin(),u.end(),[](T a, T b){return std::abs(a)<std::abs(b);})-u.begin();
-}
-
-typedef std::vector<Cplx>    vectCplx;
-typedef std::vector<double>    vectReal;
-typedef std::vector<int>     vectInt;
-typedef std::vector<R3>      vectR3;
-
-
-template<typename T, typename V>
-void operator*=(std::vector<T>& a, const V& value){
-  std::transform (a.begin(), a.end(), a.begin(), std::bind1st(std::multiplies<T>(),value));
-}
-
-template<typename T, typename V>
-void operator/=(std::vector<T>& a, const V& value){
-  std::transform (a.begin(), a.end(), a.begin(), std::bind2nd(std::divides<T>(),value));
-}
-
-template<typename T>
-T mean(const std::vector<T>& u){
-	return std::accumulate(u.begin(),u.end(),T(0))/T(u.size());
-}
-
-//================================//
-//      CLASSE SUBVECTOR          //
-//================================//
-
-template <typename T>
-class SubVec{
-
-private:
-	std::vector<T>&       U;
-	const std::vector<int>& I;
-	const int      size;
-
-public:
-
-	SubVec(std::vector<T>&& U0, const std::vector<int>& I0): U(U0), I(I0), size(I0.size()) {}
-	SubVec(const SubVec&); // Pas de constructeur par recopie
-
-	T& operator[](const int& k) {return U[I[k]];}
-	const T& operator[](const int& k) const {return U[I[k]];}
-
-	template <typename RhsType>
-	T operator,(const RhsType& rhs) const {
-		T lhs = 0.;
-		for(int k=0; k<size; k++){lhs += U[I[k]]*rhs[k];}
-		return lhs;
-	}
-
-	int get_size() const { return this->size;}
-
-	friend std::ostream& operator<<(std::ostream& os, const SubVec& u){
-		for(int j=0; j<u.size; j++){ os << u[j] << "\t";}
-		return os;}
-
-};
-
-typedef SubVec<std::vector<Cplx> > SubVectCplx;
-typedef SubVec<const std::vector<Cplx> > ConstSubVectCplx;
-
 
 
 //=================================================================//
@@ -163,14 +18,18 @@ template<typename T>
 class IMatrix{
 
 protected:
-  IMatrix(){};
+  // Data members
+  int  nr;
+	int  nc;
+
+  // Constructos and cie
+  IMatrix()                           = delete; // no default constructor
   IMatrix(const IMatrix&)             = default; // copy constructor
   IMatrix& operator= (const IMatrix&) = default; // copy assignement operator
   IMatrix(IMatrix&&)                  = default; // move constructor
   IMatrix& operator=(IMatrix&&)       = default; // move assignement operator
 
-	int  nr;
-	int  nc;
+  IMatrix(int nr0,int nc0): nr(nr0), nc(nc0){}
 
 public:
 
@@ -206,10 +65,7 @@ public:
 	/*!
 	 Initializes the matrix to the size 0*0.
   */
-	Matrix(){
-		this->nr = 0;
-		this->nc = 0;
-	}
+    Matrix():IMatrix<T>(0,0){}
 
 
 	//! ### Another constructor
@@ -217,10 +73,8 @@ public:
 	 Initializes the matrix with _nbr_ rows and _nbc_ columns,
 	 and fills the matrix with zeros.
   */
-	Matrix(const int& nbr, const int& nbc){
+	Matrix(const int& nbr, const int& nbc): IMatrix<T>(nbr,nbc){
 		this->mat.resize(nbr*nbc,0);
-		this->nr = nbr;
-		this->nc = nbc;
 	}
 
 	//! ### Copy constructor
@@ -495,63 +349,63 @@ public:
 		return std::pair<int,int> (p% M.nr,(int) p/M.nr);
 	}
 
+  //
+  //   friend int matrix_to_bytes(const Matrix& A, const std::string& file){
+  //
+	// 	std::ofstream out(file,std::ios::out | std::ios::binary | std::ios::trunc);
+  //
+  //   	if(!out) {
+  //   		std::cout << "Cannot open file.";
+  //   		return 1;
+  //  		}
+  //
+	// 	/*
+  //   	for(int i = 0; i < A.nr; i++){
+  //       	for(int j = 0; j < A.nc; j++){
+  //           	double cf = real(A(i,j));
+	// 			out.write((char *) &cf, sizeof cf);
+  //       	}
+  //   	}
+  //   	*/
+  //   	int rows=nb_rows(A), cols=nb_cols(A);
+  //   	out.write((char*) (&rows), sizeof(int));
+  //   	out.write((char*) (&cols), sizeof(int));
+  //   	out.write((char*) &(A.mat[0]), rows*cols*sizeof(Cplx) );
+  //
+  //   	out.close();
+  //   	return 0;
+	// }
+  //
+	// friend int bytes_to_matrix(const std::string& file, Matrix& A){
+  //
+	// 	std::ifstream in(file,std::ios::in | std::ios::binary);
+  //
+  //   	if(!in) {
+  //   		std::cout << "Cannot open file.";
+  //   		return 1;
+  //  		}
+  //
+  //   	int rows=0, cols=0;
+  //   	in.read((char*) (&rows), sizeof(int));
+  //   	in.read((char*) (&cols), sizeof(int));
+  //   	A.resize(rows,cols);
+  //   	in.read( (char *) &(A.mat[0]) , rows*cols*sizeof(Cplx) );
+  //
+  //   	in.close();
+  //   	return 0;
+	// }
 
-    friend int matrix_to_bytes(const Matrix& A, const std::string& file){
-
-		std::ofstream out(file,std::ios::out | std::ios::binary | std::ios::trunc);
-
-    	if(!out) {
-    		std::cout << "Cannot open file.";
-    		return 1;
-   		}
-
-		/*
-    	for(int i = 0; i < A.nr; i++){
-        	for(int j = 0; j < A.nc; j++){
-            	double cf = real(A(i,j));
-				out.write((char *) &cf, sizeof cf);
-        	}
-    	}
-    	*/
-    	int rows=nb_rows(A), cols=nb_cols(A);
-    	out.write((char*) (&rows), sizeof(int));
-    	out.write((char*) (&cols), sizeof(int));
-    	out.write((char*) &(A.mat[0]), rows*cols*sizeof(Cplx) );
-
-    	out.close();
-    	return 0;
-	}
-
-	friend int bytes_to_matrix(const std::string& file, Matrix& A){
-
-		std::ifstream in(file,std::ios::in | std::ios::binary);
-
-    	if(!in) {
-    		std::cout << "Cannot open file.";
-    		return 1;
-   		}
-
-    	int rows=0, cols=0;
-    	in.read((char*) (&rows), sizeof(int));
-    	in.read((char*) (&cols), sizeof(int));
-    	A.resize(rows,cols);
-    	in.read( (char *) &(A.mat[0]) , rows*cols*sizeof(Cplx) );
-
-    	in.close();
-    	return 0;
-	}
-
-	friend double squared_absolute_error (const Matrix& m1, const Matrix& m2){
-		assert(nb_rows(m1)==nb_rows(m2) && nb_cols(m1)==nb_cols(m2));
-		double err=0;
-		for (int j=0;j<m1.nr;j++){
-			for (int k=0;k<m1.nc;k++){
-
-				err+=std::pow(std::abs(m1(j,k)-m2(j,k)),2);
-			}
-		}
-		return err;
-	}
+	// friend double squared_absolute_error (const Matrix& m1, const Matrix& m2){
+	// 	assert(nb_rows(m1)==nb_rows(m2) && nb_cols(m1)==nb_cols(m2));
+	// 	double err=0;
+	// 	for (int j=0;j<m1.nr;j++){
+	// 		for (int k=0;k<m1.nc;k++){
+  //
+	// 			err+=std::pow(std::abs(m1(j,k)-m2(j,k)),2);
+	// 		}
+	// 	}
+	// 	return err;
+	// }
 
 };
 
