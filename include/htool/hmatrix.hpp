@@ -27,8 +27,14 @@ private:
 	std::vector<LowRankMatrix> FarFieldMat;
 	std::vector<SubMatrix>     NearFieldMat;
 
-	std::vector<Block*>		  Tasks;
-	std::vector<Block*>		  MyBlocks;
+	std::vector<Block*>		   Tasks;
+	std::vector<Block*>		   MyBlocks;
+	
+	std::vector<std::vector<int>>	   MasterClusters;
+	
+	void SetRanksRec(Cluster& t, const unsigned int depth, const unsigned int cnt);
+	
+	void SetRanks(Cluster& t);
 
 	Block* BuildBlockTree(const Cluster&, const Cluster&);
 
@@ -95,6 +101,33 @@ public:
 
 };
 
+void HMatrix::SetRanksRec(Cluster& t, const unsigned int depth, const unsigned int cnt){
+	if(depth_(t)<depth){
+		t.set_rank(-1);
+		SetRanksRec(son_(t,0), depth, 2*cnt);
+		SetRanksRec(son_(t,1), depth, 2*cnt+1);
+	}
+	else{
+		t.set_rank(cnt-pow(2,depth));
+		if (depth_(t) == depth)
+			MasterClusters[cnt-pow(2,depth)] = num_(t);
+		if (!t.IsLeaf()){
+			SetRanksRec(son_(t,0), depth, cnt);
+			SetRanksRec(son_(t,1), depth, cnt);
+		}
+	}		
+}
+
+void HMatrix::SetRanks(Cluster& t){
+	int rankWorld, sizeWorld;
+    MPI_Comm_size(MPI_COMM_WORLD, &sizeWorld);
+    MPI_Comm_rank(MPI_COMM_WORLD, &rankWorld);
+    
+    MasterClusters.resize(sizeWorld);
+
+	SetRanksRec(t, log2(sizeWorld), 1);
+}
+
 HMatrix::HMatrix(const VirtualMatrix& mat0,
 		 const vectR3& xt0, const vectReal& rt, const vectInt& tabt0,
 		 const vectR3& xs0, const vectReal& rs, const vectInt& tabs0, const int& reqrank0, const MPI_Comm& comm):
@@ -106,7 +139,6 @@ mat(mat0), xt(xt0), xs(xs0), tabt(tabt0), tabs(tabs0),reqrank(reqrank0) {
     MPI_Comm_size(comm, &sizeWorld);
     MPI_Comm_rank(comm, &rankWorld);
     std::vector<double> myttime(4), maxtime(4), meantime(4);
-
 
 	// Construction arbre des paquets
 	double time = MPI_Wtime();
@@ -156,6 +188,7 @@ mat(mat0), xt(xt0), xs(xt0), tabt(tabt0), tabs(tabt0),reqrank(reqrank0) {
 	// Construction arbre des paquets
 	double time = MPI_Wtime();
 	Cluster t(xt,rt,tabt);
+	SetRanks(t);
 	myttime[0] = MPI_Wtime() - time;
 
 	// Construction arbre des blocs
@@ -287,7 +320,8 @@ void HMatrix::ScatterTasks(){
     MPI_Comm_rank(MPI_COMM_WORLD, &rankWorld);
 
     for(int b=0; b<Tasks.size(); b++)
-    	if (b%sizeWorld == rankWorld)
+    	//if (b%sizeWorld == rankWorld)
+    	if (rank_(tgt_(*(Tasks[b]))) == rankWorld)
     		MyBlocks.push_back(Tasks[b]);
 }
 
@@ -592,6 +626,42 @@ std::pair<double,double> MvProdMPI(vectCplx& f, const HMatrix& A, const vectCplx
 		for (int i=0; i<size(It); i++)
 			f[It[i]] += lhs[i];
 	}
+	
+	/*
+	vectCplx res;
+	res.resize(f.size());
+	int offset = 0;
+	*/
+	
+	vectCplx snd;
+	snd.resize(size(A.MasterClusters[rankWorld]));
+	
+	vectCplx rcv;
+	rcv.resize(f.size());	
+	
+	std::vector<int> recvcounts(sizeWorld);
+	std::vector<int>  displs(sizeWorld);
+	
+	displs[0] = 0;
+	
+	for (int i=0; i<sizeWorld; i++) {
+		recvcounts[i] = size(A.MasterClusters[i]);
+		if (i > 0)
+			displs[i] = displs[i-1] + recvcounts[i-1];
+	}
+	
+	for (int i=0; i< size(A.MasterClusters[rankWorld]); i++) {
+		snd[i] = f[A.MasterClusters[rankWorld][i]];
+	}
+	
+	MPI_Allgatherv(&(snd.front()), recvcounts[rankWorld], MPI_DOUBLE_COMPLEX, &(rcv.front()), &(recvcounts.front()), &(displs.front()), MPI_DOUBLE_COMPLEX, comm);
+
+	for (int i=0; i<sizeWorld; i++)
+	for (int j=0; j< size(A.MasterClusters[i]); j++)
+		f[A.MasterClusters[i][j]] = rcv[displs[i]+j];
+
+	//MPI_Allreduce(MPI_IN_PLACE, &f.front(), f.size(), MPI_DOUBLE_COMPLEX, MPI_SUM, comm);
+
 	time = MPI_Wtime() - time;
 
 	double meantime;
@@ -602,8 +672,6 @@ std::pair<double,double> MvProdMPI(vectCplx& f, const HMatrix& A, const vectCplx
 		meantime /= sizeWorld;
 // 		std::cout << "MvProd: \t mean = " << meantime << ", \t max = " << maxtime << endl;
 // 	}
-
-	MPI_Allreduce(MPI_IN_PLACE, &f.front(), f.size(), MPI_DOUBLE_COMPLEX, MPI_SUM, comm);
 
 	return std::pair<double,double>(meantime,maxtime);
 }

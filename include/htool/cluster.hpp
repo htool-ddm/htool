@@ -48,6 +48,8 @@ private:
 	R3              ctr;     // Centre du paquet
 	Real            rad;     // Rayon du champ proche
 	
+	int				rank;    // rang du processeur qui s'occupe des dofs de ce cluster
+	
 	unsigned int depth; // profondeur du cluster dans l'arbre des paquets
 	
 	void Build_Borm();
@@ -75,6 +77,9 @@ public:
 	bool IsLeaf() const { if(son[0]==0){return true;} return false; }
 	void push_back(const int& j){num.push_back(j);}
 	
+	void set_rank(const int& rank0){rank = rank0;}
+	friend const int& rank_(const Cluster& t){return t.rank;}
+	
 	friend const vectR3&  pts_(const Cluster& t){return t.x;}
     friend const vectInt& tab_(const Cluster& t){return t.tab;}
 	friend const Real&    rad_(const Cluster& t){return t.rad;}
@@ -88,7 +93,6 @@ public:
 	
 	friend void TraversalBuildLabel(const Cluster& t, vectInt& labelVisu, const unsigned int visudep, const unsigned int cnt);
 	friend void VisuPartitionedMesh(const Cluster& t, std::string inputname, std::string outputname, const unsigned int visudep);
-	
 	
 };
 
@@ -169,8 +173,6 @@ void Cluster::Build_Borm(){
 		ctr = (1-l)*c0 + l*c1;
 		rad = l*norm(c1-c0)+r0;
 	}
-	
-	
 }
 
 void Cluster::Build(){
@@ -374,7 +376,6 @@ void TraversalBuildLabel(const Cluster& t, vectInt& labelVisu, const unsigned in
 			
 		}
 	}
-	
 }
 
 void VisuPartitionedMesh(const Cluster& t, std::string inputname, std::string outputname, const unsigned int visudep){
