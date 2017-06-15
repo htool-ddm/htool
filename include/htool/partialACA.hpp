@@ -33,11 +33,6 @@ template<typename T>
 class partialACA: public LowRankMatrix<T>{
 
 
-private:
-	// No assignement or copy
-	partialACA(const partialACA& copy_from);
-	partialACA & operator=(const partialACA& copy_from);
-
 public:
 	//=========================//
 	//    PARTIAL PIVOT ACA    //

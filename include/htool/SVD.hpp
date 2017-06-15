@@ -22,9 +22,6 @@ private:
   // Data member
   std::vector<T> singular_values;
 
-  // No assignement or copy
-  SVD(const SVD& copy_from);
-  SVD & operator=(const SVD& copy_from);
 
 public:
   SVD(const std::vector<int>& ir0, const std::vector<int>& ic0, int rank0=-1): LowRankMatrix<T>(ir0,ic0,rank0){}
@@ -79,20 +76,7 @@ public:
     this->build(A);
   }
   T get_singular_value(int i){return singular_values[i];}
-  //
-  // double NormFrob(){
-  //   T frob = 0.;
-  //
-  //   for (int j=0;j<m.nr;j++){
-  //     for (int k=0;k<m.nc;k++){
-  //       T aux=0;
-  //       for (int l=0;l<m.rank;l++){
-  //         T += m.U(j,l) * m.V(l,k);
-  //       }
-  //     frob+=pow(abs(aux),2);
-  //     }
-  //   }
-  // }
+
 };
 
 }

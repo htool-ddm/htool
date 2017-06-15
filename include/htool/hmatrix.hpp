@@ -18,6 +18,15 @@ namespace htool {
 //===============================//
 //     MATRICE HIERARCHIQUE      //
 //===============================//
+
+// Friend functions
+template< template<typename> class LowRankMatrix, typename T >
+class HMatrix;
+
+template< template<typename> class LowRankMatrix, typename T >
+double Frobenius_absolute_error(const HMatrix<LowRankMatrix,T>& B, const IMatrix<T>& A);
+
+// Class
 template< template<typename> class LowRankMatrix, typename T >
 class HMatrix: public Parametres{
 
@@ -56,8 +65,10 @@ public:
 	// Getters
 	int nb_rows() const { return nr;}
 	int nb_cols() const { return nc;}
-	std::vector<LowRankMatrix<T> > get_MyFarFieldMats() const {return MyFarFieldMats;}
-	std::vector<SubMatrix<T> > get_MyNearFieldMats() const {return MyNearFieldMats;}
+	MPI_Comm get_comm() const {return comm;}
+	int get_nlrmat() const {return MyFarFieldMats.size();}
+	int get_ndmat() const {return MyNearFieldMats.size();}
+	LowRankMatrix<T> get_lrmat(int i) const{return MyFarFieldMats[i];}
 
 	std::map<std::string,double>& get_stats () const { return stats;}
 	void add_stats(const std::string& keyname, const double& value){stats[keyname]=value;}
@@ -71,31 +82,10 @@ public:
 
 	std::vector<T> operator*( const std::vector<T>& x) const;
 
-	// // 1- !!!
-	// double CompressionRate(const MPI_Comm& comm=MPI_COMM_WORLD) const;
-	//
-	// friend void Output(const HMatrix&, std::string filename);
-	// friend const LowRankMatrix<T>& GetLowRankMatrix(HMatrix m, int i){
-	// 	assert(i<m.FarFieldMats.size());
-	// 	return m.FarFieldMats[i];}
-	//
-	// friend double squared_absolute_error(const HMatrix& B, const VirtualMatrix<T>& A, const MPI_Comm& comm=MPI_COMM_WORLD){
-	// 	double myerr = 0;
-	// 	for(int j=0; j<B.MyFarFieldMats.size(); j++){
-	// 		SubMatrix<T> subm(A,ir_(B.MyFarFieldMats[j]),ic_(B.MyFarFieldMats[j]));
-	// 		myerr += squared_absolute_error(B.MyFarFieldMats[j], subm);
-	// 	}
-	// 	for(int j=0; j<B.MyNearFieldMats.size(); j++){
-	// 		SubMatrix<T> subm(A,ir_(B.MyNearFieldMats[j]),ic_(B.MyNearFieldMats[j]));
-	// 		myerr += squared_absolute_error(B.MyNearFieldMats[j], subm);
-	// 	}
-	//
-	//
-	// 	double err = 0;
-	// 	MPI_Allreduce(&myerr, &err, 1, MPI_DOUBLE, MPI_SUM, comm);
-	//
-	// 	return err;
-	// }
+	// 1- !!!
+	double compression() const;
+
+	friend double Frobenius_absolute_error<LowRankMatrix,T>(const HMatrix<LowRankMatrix,T>& B, const IMatrix<T>& A);
 
 };
 
@@ -429,7 +419,7 @@ std::vector<T> HMatrix<LowRankMatrix,T >::operator*(const std::vector<T>& x) con
 	assert(nc==x.size());
 
 	std::vector<T> result(nr,0);
-std::cout << MyFarFieldMats.size() <<" "<<MyNearFieldMats.size()<<std::endl;
+
 	// Contribution champ lointain
 	for(int b=0; b<MyFarFieldMats.size(); b++){
 		const LowRankMatrix<T>&  M  = MyFarFieldMats[b];
@@ -463,7 +453,7 @@ std::cout << MyFarFieldMats.size() <<" "<<MyNearFieldMats.size()<<std::endl;
 			rhs[i] = x[Is[i]];
 
 		lhs=M*rhs;
-        
+
 		for (int i=0; i<It.size(); i++)
 			result[It[i]] += lhs[i];
 	}
@@ -484,27 +474,27 @@ std::cout << MyFarFieldMats.size() <<" "<<MyNearFieldMats.size()<<std::endl;
 }
 
 template< template<typename> class LowRankMatrix, typename T >
-double CompressionRate(const HMatrix<LowRankMatrix,T >& hmat, const MPI_Comm& comm=MPI_COMM_WORLD){
+double HMatrix<LowRankMatrix,T >::compression() const{
 
 	double mycomp = 0.;
-	double size = ( (hmat.tabt).size() )*( (hmat.tabs).size() );
-	const std::vector<LowRankMatrix<T> >& MyFarFieldMats  = hmat.MyFarFieldMats;
-	const std::vector<SubMatrix<T> >& MyNearFieldMats = hmat.MyNearFieldMats;
+	double size = nr*nc;
+
 
 	for(int j=0; j<MyFarFieldMats.size(); j++){
-		double nr   = nb_rows(MyFarFieldMats[j]);
-		double nc   = nb_cols(MyFarFieldMats[j]);
-		double rank = rank_of(MyFarFieldMats[j]);
+		double nr   = MyFarFieldMats[j].nb_rows();
+		double nc   = MyFarFieldMats[j].nb_cols();
+		double rank = MyFarFieldMats[j].rank_of();
 		mycomp += rank*(nr + nc)/size;
 	}
 
 	for(int j=0; j<MyNearFieldMats.size(); j++){
-		double nr   = nb_rows(MyNearFieldMats[j]);
-		double nc   = nb_cols(MyNearFieldMats[j]);
+		double nr   = MyNearFieldMats[j].nb_rows();
+		double nc   = MyNearFieldMats[j].nb_cols();
 		mycomp += nr*nc/size;
 	}
 
 	double comp = 0;
+
 	MPI_Allreduce(&mycomp, &comp, 1, MPI_DOUBLE, MPI_SUM, comm);
 
 	return 1-comp;
@@ -522,6 +512,20 @@ void print_stats(const HMatrix<LowRankMatrix,T>& A, const MPI_Comm& comm=MPI_COM
 	}
 }
 
+template< template<typename> class LowRankMatrix, typename T >
+double Frobenius_absolute_error(const HMatrix<LowRankMatrix,T>& B, const IMatrix<T>& A){
+	double myerr = 0;
+	for(int j=0; j<B.MyFarFieldMats.size(); j++){
+		double test = Frobenius_absolute_error(B.MyFarFieldMats[j], A);
+		myerr += std::pow(test,2);
+
+	}
+
+	double err = 0;
+	MPI_Allreduce(&myerr, &err, 1, MPI_DOUBLE, MPI_SUM, B.comm);
+
+	return std::sqrt(err);
+}
 
 } //namespace
 #endif

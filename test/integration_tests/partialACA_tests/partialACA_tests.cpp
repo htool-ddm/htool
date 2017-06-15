@@ -83,10 +83,12 @@ int main(){
 		for (int k = 0 ; k < A_partialACA.rank_of()+1 ; k++){
 			partialACA_errors.push_back(Frobenius_absolute_error(A_partialACA,A,k));
 		}
-		cout<<partialACA_errors<<endl;
+
+		cout << "Errors with Frobenius norm: "<<partialACA_errors<<endl;
+		cout << "Compression rate : "<<A_partialACA.compression()<<endl;
 
 		std::vector<double> test(nc,1);
-		cout << norm2(A*test-A_partialACA*test)<<endl;
+		cout << "Errors on a mat vec prod : "<< norm2(A*test-A_partialACA*test)<<endl;
 
 	}
 

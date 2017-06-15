@@ -1,7 +1,11 @@
 add_subdirectory(fullACA_tests)
 add_subdirectory(partialACA_tests)
 add_subdirectory(SVD_tests)
+
 add_subdirectory(matrix_tests)
 add_subdirectory(vector_tests)
 add_subdirectory(cluster_tests)
-add_subdirectory(hmatrix_tests)
+
+add_subdirectory(hmat_SVD_tests)
+add_subdirectory(hmat_fullACA_tests)
+add_subdirectory(hmat_partialACA_tests)

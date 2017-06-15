@@ -90,11 +90,12 @@ int main(){
 		}
 
     // Testing with Eckart–Young–Mirsky theorem for Frobenius norm
-		cout << SVD_errors<<endl;
-		cout << SVD_errors_check << endl;
+		cout << "Errors with Frobenius norm: "<<SVD_errors<<endl;
+		cout << "Errors computed with the remaining eigenvalues : "<<SVD_errors_check << endl;
+		cout << "Compression rate : "<<A_SVD.compression()<<endl;
 
 		std::vector<double> test(nc,1);
-		cout << norm2(A*test-A_SVD*test)<<endl;
+		cout << "Errors on a mat vec prod : "<< norm2(A*test-A_SVD*test)<<endl;
 
 	}
 

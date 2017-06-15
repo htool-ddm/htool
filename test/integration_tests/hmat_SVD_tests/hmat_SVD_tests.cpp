@@ -5,7 +5,7 @@
 #include <htool/cluster.hpp>
 #include <htool/lrmat.hpp>
 #include <htool/hmatrix.hpp>
-#include <htool/fullACA.hpp>
+#include <htool/SVD.hpp>
 #include <htool/matrix.hpp>
 #include <mpi.h>
 
@@ -52,7 +52,7 @@ int main(){
 	double distance[ndistance];
 	distance[0] = 10; distance[1] = 20; distance[2] = 30; distance[3] = 40;
 	SetNdofPerElt(1);
-	SetEpsilon(0.001);
+	SetEpsilon(0.0001);
 	SetEta(0.1);
 
 	for(int idist=0; idist<ndistance; idist++)
@@ -95,13 +95,19 @@ int main(){
 
 		vector<double> rhs(p2.size(),1);
 		MyMatrix A(p1,p2);
-		HMatrix<fullACA,double> HA(A,p1,tab1,p2,tab2);
+		HMatrix<SVD,double> HA(A,p1,tab1,p2,tab2);
 
 		std::vector<double> test(nc,1);
-		double erreur = norm2(A*test-HA*test);
-		// cout <<HA*test<<endl;
+		double erreur2 = norm2(A*test-HA*test);
+		double erreurFrob = Frobenius_absolute_error(HA,A);
+		double compression = HA.compression();
 		if (rank==0){
-			cout << erreur<<endl;
+			cout << "Errors with Frobenius norm: "<<erreurFrob<<endl;
+			cout << "Compression rate : "<<compression<<endl;
+
+			std::vector<double> test(nc,1);
+			cout << "Errors on a mat vec prod : "<< erreur2<<endl;
+
 		}
 
 	}

@@ -48,7 +48,9 @@ public:
   }
 
 
-  double compression_rate(){return (1 - ( this->rank*( 1./double(this->nr) + 1./double(this->nc)))); }
+  double compression() const{
+    return (1 - ( this->rank*( 1./double(this->nr) + 1./double(this->nc))));
+  }
 
   // friend Real NormFrob(const ACA& m){
 	// 	/*
@@ -91,15 +93,21 @@ public:
 };
 
 template<typename T>
-double Frobenius_relative_error(const LowRankMatrix<T>& lrmat, const IMatrix<T>& ref, int reqrank){
+double Frobenius_relative_error(const LowRankMatrix<T>& lrmat, const IMatrix<T>& ref, int reqrank=-1){
   assert(reqrank<=lrmat.rank_of());
+  if (reqrank==-1){
+    reqrank=lrmat.rank_of();
+  }
   T norm= 0;
   T err = 0;
+  std::vector<int> ir = lrmat.get_ir();
+  std::vector<int> ic = lrmat.get_ic();
+
   for (int j=0;j<lrmat.nb_rows();j++){
     for (int k=0;k<lrmat.nb_cols();k++){
-      T aux=ref.get_coef(j,k);
+      T aux=ref.get_coef(ir[j],ic[k]);
       norm+= std::pow(std::abs(aux),2);
-      for (int l=0;l<std::min(reqrank,lrmat.rank_of());l++){
+      for (int l=0;l<reqrank;l++){
         aux = aux - lrmat.get_U(j,l) * lrmat.get_V(l,k);
       }
       err+=std::pow(std::abs(aux),2);
@@ -111,12 +119,19 @@ double Frobenius_relative_error(const LowRankMatrix<T>& lrmat, const IMatrix<T>&
 
 
 template<typename T>
-double Frobenius_absolute_error(const LowRankMatrix<T>& lrmat, const IMatrix<T>& ref, int reqrank){
+double Frobenius_absolute_error(const LowRankMatrix<T>& lrmat, const IMatrix<T>& ref, int reqrank=-1){
+  assert(reqrank<=lrmat.rank_of());
+  if (reqrank==-1){
+    reqrank=lrmat.rank_of();
+  }
   T err = 0;
+  std::vector<int> ir = lrmat.get_ir();
+  std::vector<int> ic = lrmat.get_ic();
+
   for (int j=0;j<lrmat.nb_rows();j++){
     for (int k=0;k<lrmat.nb_cols();k++){
-      T aux=ref.get_coef(j,k);
-      for (int l=0;l<std::min(reqrank,lrmat.rank_of());l++){
+      T aux=ref.get_coef(ir[j],ic[k]);
+      for (int l=0;l<reqrank;l++){
         aux = aux - lrmat.get_U(j,l) * lrmat.get_V(l,k);
       }
       err+=std::pow(std::abs(aux),2);
