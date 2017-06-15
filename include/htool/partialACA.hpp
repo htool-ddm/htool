@@ -44,11 +44,11 @@ public:
 	//=========================//
     // If reqrank=-1 (default value), we use the precision given by epsilon for the stopping criterion;
     // otherwise, we use the required rank for the stopping criterion (!: at the end the rank could be lower)
-	partialACA(const std::vector<int>& ir0, const std::vector<int>& ic0, const Cluster& t0,const Cluster& s0, int rank0=-1):LowRankMatrix<T>(ir0,ic0,t0,s0,rank0){}
+	partialACA(const std::vector<int>& ir0, const std::vector<int>& ic0, int rank0=-1): LowRankMatrix<T>(ir0,ic0,rank0){}
 
 
 
-	void build(const IMatrix<T>& A){
+	void build(const IMatrix<T>& A, const Cluster& t, const Cluster& s){
 		if(this->rank == 0){
 			this->U.resize(this->nr,1);
 			this->V.resize(1,this->nc);
@@ -59,7 +59,7 @@ public:
 			double dist=1e30;
 			int I=0;
 			for (int i =0;i<int(this->nr/this->ndofperelt);i++){
-				double aux_dist= norm(this->t.pts_()[this->t.tab_()[this->t.num_()[i*this->ndofperelt]]]-this->t.ctr_());
+				double aux_dist= norm(t.pts_()[t.tab_()[t.num_()[i*this->ndofperelt]]]-t.ctr_());
 				if (dist>aux_dist){
 					dist=aux_dist;
 					I=i*this->ndofperelt;

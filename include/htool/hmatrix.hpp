@@ -8,6 +8,7 @@
 #include "matrix.hpp"
 #include "parametres.hpp"
 #include "cluster.hpp"
+#include "wrapper_mpi.hpp"
 
 // #include "loading.hpp"
 // #include "lrmat.hpp"
@@ -34,38 +35,41 @@ private:
 
 	std::map<std::string, double> stats;
 
+	MPI_Comm comm;
+
 	// Internal methods
 	Block* BuildBlockTree(const Cluster&, const Cluster&);
-
 	bool UpdateBlocks(const IMatrix<T>&mat ,const Cluster&, const Cluster&);
-
 	void ScatterTasks();
 	void ComputeBlocks(const IMatrix<T>& mat);
 
 public:
-	HMatrix(const IMatrix<T>&, const std::vector<R3>&, const std::vector<int>&, const std::vector<R3>&, const std::vector<int>&, const int& reqrank=-1, const MPI_Comm& comm=MPI_COMM_WORLD); // To be used with two different clusters
-	HMatrix(const IMatrix<T>&, const std::vector<R3>&, const std::vector<int>&, const int& reqrank=-1, const MPI_Comm& comm=MPI_COMM_WORLD); // To be used with one cluster
+	HMatrix(const IMatrix<T>&, const std::vector<R3>&, const std::vector<int>&, const std::vector<R3>&, const std::vector<int>&, const int& reqrank=-1, MPI_Comm comm=MPI_COMM_WORLD); // To be used with two different clusters
+	HMatrix(const IMatrix<T>&, const std::vector<R3>&, const std::vector<int>&, const int& reqrank=-1, MPI_Comm comm=MPI_COMM_WORLD); // To be used with one cluster
 
 	~HMatrix() {
 		for (int i=0; i<Tasks.size(); i++)
 			delete Tasks[i];
 	}
 
+
+	// Getters
 	int nb_rows() const { return nr;}
 	int nb_cols() const { return nc;}
+	std::vector<LowRankMatrix<T> > get_MyFarFieldMats() const {return MyFarFieldMats;}
+	std::vector<SubMatrix<T> > get_MyNearFieldMats() const {return MyNearFieldMats;}
 
 	std::map<std::string,double>& get_stats () const { return stats;}
 	void add_stats(const std::string& keyname, const double& value){stats[keyname]=value;}
-	void print_stats(const MPI_Comm& comm=MPI_COMM_WORLD);
+	void print_stats();
 
-	int nb_lrmats(const MPI_Comm& comm=MPI_COMM_WORLD){
+	int nb_lrmats(){
 		int res=MyFarFieldMats.size(); MPI_Allreduce(MPI_IN_PLACE, &res, 1, MPI_INT, MPI_SUM, comm); return res;
 	}
-	int nb_densemats(const MPI_Comm& comm=MPI_COMM_WORLD){
+	int nb_densemats(){
 		int res=MyNearFieldMats.size(); MPI_Allreduce(MPI_IN_PLACE, &res, 1, MPI_INT, MPI_SUM, comm); return res;}
 
-	friend void MvProd(std::vector<Cplx>&, const HMatrix&, const std::vector<Cplx>&);
-	friend std::pair<double,double> MvProdMPI(std::vector<Cplx>& f, const HMatrix& A, const std::vector<Cplx>& x, const MPI_Comm& comm/*=MPI_COMM_WORLD*/);
+	std::vector<T> operator*( const std::vector<T>& x) const;
 
 	// // 1- !!!
 	// double CompressionRate(const MPI_Comm& comm=MPI_COMM_WORLD) const;
@@ -97,7 +101,7 @@ public:
 
 template< template<typename> class LowRankMatrix, typename T >
 HMatrix<LowRankMatrix, T >::HMatrix(const IMatrix<T>& mat,
-	const std::vector<R3>& xt, const std::vector<int>& tabt, const std::vector<R3>& xs, const std::vector<int>& tabs, const int& reqrank0, const MPI_Comm& comm): nr(mat.nb_rows()),nc(mat.nb_cols()), reqrank(reqrank0) {
+	const std::vector<R3>& xt, const std::vector<int>& tabt, const std::vector<R3>& xs, const std::vector<int>& tabs, const int& reqrank0, MPI_Comm comm0): nr(mat.nb_rows()),nc(mat.nb_cols()), reqrank(reqrank0), comm(comm0) {
 
 	assert( mat.nb_rows()==tabt.size() && mat.nb_cols()==tabs.size() );
 	int rankWorld, sizeWorld;
@@ -109,10 +113,14 @@ HMatrix<LowRankMatrix, T >::HMatrix(const IMatrix<T>& mat,
 	// Construction arbre des paquets
 	double time = MPI_Wtime();
 	Cluster t(xt,tabt); Cluster s(xs,tabs);
+    t.build();s.build();
 	myttime[0] = MPI_Wtime() - time;
 
 	// Construction arbre des blocs
 	time = MPI_Wtime();
+	if (rankWorld==0){
+	std::cout << "start" <<std::endl;
+	}
 	Block* B = BuildBlockTree(t,s);
 	if (B != NULL) Tasks.push_back(B);
 	myttime[1] = MPI_Wtime() - time;
@@ -142,7 +150,7 @@ HMatrix<LowRankMatrix, T >::HMatrix(const IMatrix<T>& mat,
 
 template< template<typename> class LowRankMatrix, typename T >
 HMatrix<LowRankMatrix, T >::HMatrix(const IMatrix<T>& mat,
-		 const std::vector<R3>& xt, const std::vector<int>& tabt, const int& reqrank0, const MPI_Comm& comm):nr(mat.nb_rows()),nc(mat.nb_cols()),reqrank(reqrank0){
+		 const std::vector<R3>& xt, const std::vector<int>& tabt, const int& reqrank0,  MPI_Comm comm0):nr(mat.nb_rows()),nc(mat.nb_cols()),reqrank(reqrank0), comm(comm0){
 	assert( mat.nb_rows()==tabt.size() && mat.nb_cols()==tabt.size() );
 
 	int rankWorld, sizeWorld;
@@ -152,7 +160,7 @@ HMatrix<LowRankMatrix, T >::HMatrix(const IMatrix<T>& mat,
 
 	// Construction arbre des paquets
 	double time = MPI_Wtime();
-	Cluster t(xt,tabt);
+    Cluster t(xt,tabt);t.build();
 	myttime[0] = MPI_Wtime() - time;
 
 	// Construction arbre des blocs
@@ -171,8 +179,8 @@ HMatrix<LowRankMatrix, T >::HMatrix(const IMatrix<T>& mat,
 	ComputeBlocks(mat);
 	myttime[3] = MPI_Wtime() - time;
 
-	MPI_Reduce(&myttime.front(), &maxtime.front(), 4, MPI_DOUBLE, MPI_MAX, 0, comm);
-	MPI_Reduce(&myttime.front(), &meantime.front(), 4, MPI_DOUBLE, MPI_SUM, 0, comm);
+	MPI_Reduce(&myttime.front(), &maxtime.front(), 4, MPI_DOUBLE, MPI_MAX, 0,comm);
+	MPI_Reduce(&myttime.front(), &meantime.front(), 4, MPI_DOUBLE, MPI_SUM, 0,comm);
 	meantime /= sizeWorld;
 	stats["Cluster tree (mean)"]=meantime[0];
 	stats["Cluster tree  (max)"]=maxtime[0];
@@ -195,7 +203,6 @@ Block* HMatrix<LowRankMatrix, T >::BuildBlockTree(const Cluster& t, const Cluste
 	}
 	else if( s.IsLeaf() ){
 				if( t.IsLeaf() ){
-
 					return B;
 				}
 				else{
@@ -280,10 +287,9 @@ bool HMatrix<LowRankMatrix,T >::UpdateBlocks(const IMatrix<T>& mat,const Cluster
 	Block B(t,s);
 	B.ComputeAdmissibility();
 	if( B.IsAdmissible() ){
-		MyFarFieldMats.emplace_back(I,J,t,s,reqrank);
-		MyFarFieldMats.back().build(mat);
+		MyFarFieldMats.emplace_back(I,J,reqrank);
+		MyFarFieldMats.back().build(mat,t,s);
 		if(MyFarFieldMats.back().rank_of()!=-1){
-			MyFarFieldMats.pop_back();
 			return true;
 		}
 	}
@@ -352,40 +358,15 @@ void HMatrix<LowRankMatrix,T >::ComputeBlocks(const IMatrix<T>& mat){
 			const std::vector<int>& I = t.num_();
 			const std::vector<int>& J = s.num_();
 			if( B.IsAdmissible() ){
-				MyFarFieldMats.emplace_back(I,J,t,s,reqrank);
-				MyFarFieldMats.back().build(mat);
-				if(MyFarFieldMats.back().rank_of()!=-1){
+				MyFarFieldMats.emplace_back(I,J,reqrank);
+				MyFarFieldMats.back().build(mat,t,s);
+				if(MyFarFieldMats.back().rank_of()==-1){
 					MyFarFieldMats.pop_back();
-				}
-			else {
-				if( s.IsLeaf() ){
-					if( t.IsLeaf() ){
-						MyNearFieldMats.emplace_back(mat,I,J);
-					}
-					else{
-						bool b1 = UpdateBlocks(mat,t.son_(0),s);
-						bool b2 = UpdateBlocks(mat,t.son_(1),s);
-						if ((b1 != true) && (b2 != true))
+					if( s.IsLeaf() ){
+						if( t.IsLeaf() ){
 							MyNearFieldMats.emplace_back(mat,I,J);
-						else {
-							if (b1 != true) MyNearFieldMats.emplace_back(mat,t.son_(0).num_(),J);
-							if (b2 != true) MyNearFieldMats.emplace_back(mat,t.son_(1).num_(),J);
 						}
-					}
-				}
-				else{
-					if( t.IsLeaf() ){
-						bool b3 = UpdateBlocks(mat,t,s.son_(0));
-						bool b4 = UpdateBlocks(mat,t,s.son_(1));
-						if ((b3 != true) && (b4 != true))
-							MyNearFieldMats.emplace_back(mat,I,J);
-						else {
-							if (b3 != true) MyNearFieldMats.emplace_back(mat,I,s.son_(0).num_());
-							if (b4 != true) MyNearFieldMats.emplace_back(mat,I,s.son_(1).num_());
-						}
-					}
-					else{
-						if (t.num_().size()>s.num_().size()){
+						else{
 							bool b1 = UpdateBlocks(mat,t.son_(0),s);
 							bool b2 = UpdateBlocks(mat,t.son_(1),s);
 							if ((b1 != true) && (b2 != true))
@@ -395,99 +376,85 @@ void HMatrix<LowRankMatrix,T >::ComputeBlocks(const IMatrix<T>& mat){
 								if (b2 != true) MyNearFieldMats.emplace_back(mat,t.son_(1).num_(),J);
 							}
 						}
-						else{
+					}
+					else{
+						if( t.IsLeaf() ){
 							bool b3 = UpdateBlocks(mat,t,s.son_(0));
 							bool b4 = UpdateBlocks(mat,t,s.son_(1));
 							if ((b3 != true) && (b4 != true))
-								MyNearFieldMats.push_back(SubMatrix<T>(mat,I,J));
+								MyNearFieldMats.emplace_back(mat,I,J);
 							else {
 								if (b3 != true) MyNearFieldMats.emplace_back(mat,I,s.son_(0).num_());
 								if (b4 != true) MyNearFieldMats.emplace_back(mat,I,s.son_(1).num_());
 							}
 						}
+						else{
+							if (t.num_().size()>s.num_().size()){
+								bool b1 = UpdateBlocks(mat,t.son_(0),s);
+								bool b2 = UpdateBlocks(mat,t.son_(1),s);
+								if ((b1 != true) && (b2 != true))
+									MyNearFieldMats.emplace_back(mat,I,J);
+								else {
+									if (b1 != true) MyNearFieldMats.emplace_back(mat,t.son_(0).num_(),J);
+									if (b2 != true) MyNearFieldMats.emplace_back(mat,t.son_(1).num_(),J);
+								}
+							}
+							else{
+								bool b3 = UpdateBlocks(mat,t,s.son_(0));
+								bool b4 = UpdateBlocks(mat,t,s.son_(1));
+								if ((b3 != true) && (b4 != true))
+									MyNearFieldMats.push_back(SubMatrix<T>(mat,I,J));
+								else {
+									if (b3 != true) MyNearFieldMats.emplace_back(mat,I,s.son_(0).num_());
+									if (b4 != true) MyNearFieldMats.emplace_back(mat,I,s.son_(1).num_());
+								}
+							}
+						}
 					}
 				}
 			}
+			else {
+				MyNearFieldMats.emplace_back(mat,I,J);
+			}
 		}
-		else {
-			MyNearFieldMats.emplace_back(mat,I,J);
-		}
-    }
-}
-//
-// template<typename T, template<typename> class LowRankMatrix >
-// void MvProd(std::vector<T>& f, const HMatrix<LowRankMatrix,T>& A, const std::vector<T>& x){
-// 	assert(f.size()==x.size()); std::fill(f.begin(), f.end(), 0);
-//
-// 	const std::vector<LowRankMatrix>&    FarFieldMat  = A.FarFieldMats;
-// 	const std::vector<SubMatrix<T> >&    NearFieldMat = A.NearFieldMats;
-//
-// 	// Contribution champ lointain
-// 	for(int b=0; b<FarFieldMat.size(); b++){
-// 		const LowRankMatrix&  M  = FarFieldMat[b];
-// 		const std::vector<int>&        It = M.ir_();
-// 		const std::vector<int>&        Is = M.ic_();
-//
-// 		ConstSubVectCplx xx(x,Is);
-// 		SubVectCplx ff(f,It);
-// 		MvProd(ff,M,xx);
-// 	}
-//
-// 	// Contribution champ proche
-// 	for(int b=0; b<NearFieldMat.size(); b++){
-// 		const SubMatrix<T>&  M  = NearFieldMat[b];
-//
-// 		const std::vector<int>& It = M.ir_();
-// 		const std::vector<int>& Is = M.ic_();
-//
-// 		ConstSubVectCplx xx(x,Is);
-// 		SubVectCplx ff(f,It);
-// 		MvProd(ff,M,xx);
-// 	}
-//
-// }
+	}
 
 template< template<typename> class LowRankMatrix, typename T >
-std::pair<double,double> MvProdMPI(std::vector<T>& f, const HMatrix<LowRankMatrix,T >& A, const std::vector<T>& x, const MPI_Comm& comm=MPI_COMM_WORLD){
+std::vector<T> HMatrix<LowRankMatrix,T >::operator*(const std::vector<T>& x) const{
 	int rankWorld, sizeWorld;
-   	MPI_Comm_size(comm, &sizeWorld);
-   	MPI_Comm_rank(comm, &rankWorld);
+  MPI_Comm_size(comm, &sizeWorld);
+  MPI_Comm_rank(comm, &rankWorld);
 
 	double time = MPI_Wtime();
+	assert(nc==x.size());
 
-	assert(nb_rows(A.mat)==size(f) && nb_cols(A.mat)==size(x)); std::fill(f.begin(), f.end(), 0);
-	const std::vector<LowRankMatrix<T> >&    MyFarFieldMats  = A.MyFarFieldMats;
-	const std::vector<SubMatrix<T> >&    MyNearFieldMats = A.MyNearFieldMats;
-
+	std::vector<T> result(nr,0);
+std::cout << MyFarFieldMats.size() <<" "<<MyNearFieldMats.size()<<std::endl;
 	// Contribution champ lointain
 	for(int b=0; b<MyFarFieldMats.size(); b++){
 		const LowRankMatrix<T>&  M  = MyFarFieldMats[b];
-		const std::vector<int>&        It = ir_(M);
-		const std::vector<int>&        Is = ic_(M);
+		const std::vector<int>&        It = M.get_ir();
+		const std::vector<int>&        Is = M.get_ic();
 
-		/*
-		ConstSubVectCplx xx(x,Is);
-		SubVectCplx ff(f,It);
-		MvProd(ff,M,xx);
-		*/
+
 		std::vector<T> lhs(It.size());
 		std::vector<T> rhs(Is.size());
 
 		for (int i=0; i<Is.size(); i++)
 			rhs[i] = x[Is[i]];
 
-		MvProd(lhs,M,rhs);
+		lhs=M*rhs;
 
 		for (int i=0; i<It.size(); i++)
-			f[It[i]] += lhs[i];
+			result[It[i]] += lhs[i];
 	}
 
 	// Contribution champ proche
 	for(int b=0; b<MyNearFieldMats.size(); b++){
 		const SubMatrix<T>&  M  = MyNearFieldMats[b];
 
-		const std::vector<int>& It = ir_ (M);
-		const std::vector<int>& Is = ic_ (M);
+		const std::vector<int>& It = M.get_ir();
+		const std::vector<int>& Is = M.get_ic();
 
 		std::vector<T> lhs(It.size());
 		std::vector<T> rhs(Is.size());
@@ -495,10 +462,10 @@ std::pair<double,double> MvProdMPI(std::vector<T>& f, const HMatrix<LowRankMatri
 		for (int i=0; i<Is.size(); i++)
 			rhs[i] = x[Is[i]];
 
-		MvProd(lhs,M,rhs);
-
+		lhs=M*rhs;
+        
 		for (int i=0; i<It.size(); i++)
-			f[It[i]] += lhs[i];
+			result[It[i]] += lhs[i];
 	}
 	time = MPI_Wtime() - time;
 
@@ -511,9 +478,9 @@ std::pair<double,double> MvProdMPI(std::vector<T>& f, const HMatrix<LowRankMatri
 // 		std::cout << "MvProd: \t mean = " << meantime << ", \t max = " << maxtime << endl;
 // 	}
 
-	MPI_Allreduce(MPI_IN_PLACE, &f.front(), f.size(), MPI_DOUBLE_COMPLEX, MPI_SUM, comm);
+	MPI_Allreduce(MPI_IN_PLACE, &result.front(), result.size(), wrapper_mpi<T>::mpi_type(), MPI_SUM, comm);
 
-	return std::pair<double,double>(meantime,maxtime);
+	return result;
 }
 
 template< template<typename> class LowRankMatrix, typename T >

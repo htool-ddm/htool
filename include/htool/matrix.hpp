@@ -16,18 +16,17 @@ namespace htool {
 //*****************************************************************//
 template<typename T>
 class IMatrix{
-
 protected:
   // Data members
   int  nr;
 	int  nc;
 
-  // Constructos and cie
-  IMatrix()                           = delete; // no default constructor
-  IMatrix(const IMatrix&)             = default; // copy constructor
-  IMatrix& operator= (const IMatrix&) = default; // copy assignement operator
+  // Constructors and cie
+  IMatrix()                           = delete;  // no default constructor
   IMatrix(IMatrix&&)                  = default; // move constructor
   IMatrix& operator=(IMatrix&&)       = default; // move assignement operator
+  IMatrix(const IMatrix&)             = default; // copy constructor
+  IMatrix& operator= (const IMatrix&) = default; // copy assignement operator
 
   IMatrix(int nr0,int nc0): nr(nr0), nc(nc0){}
 
@@ -242,7 +241,7 @@ public:
 	 */
 
 	friend Matrix operator*(const Matrix& A, const T& a){
-		Matrix R = A;
+		Matrix R(A.nr,A.nc);
 		for (int i=0;i<A.nr;i++){
 			for (int j=0;j<A.nc;j++){
 				R(i,j)=R(i,j)*a;
@@ -260,7 +259,7 @@ public:
 
 	Matrix operator+(const Matrix& A){
 		assert(this->nr==A.nr && this->nc==A.nc);
-		Matrix R = A;
+		Matrix R(A.nr,A.nc);
 		for (int i=0;i<A.nr;i++){
 			for (int j=0;j<A.nc;j++){
 				R(i,j)=this->mat[i+j*this->nr]+A(i,j);
@@ -275,7 +274,7 @@ public:
 
 	Matrix operator-(const Matrix& A){
 		assert(this->nr==A.nr && this->nc==A.nc);
-		Matrix R = A;
+		Matrix R(A.nr,A.nc);
 		for (int i=0;i<A.nr;i++){
 			for (int j=0;j<A.nc;j++){
 				R(i,j)=this->mat[i+j*this->nr]-A(i,j);
@@ -304,7 +303,7 @@ public:
 	/*!
   */
 
-	std::vector<T> operator*(const std::vector<T>& rhs){
+	std::vector<T> operator*(const std::vector<T>& rhs) const{
 		int nr = this->nr;
 		int nc = this->nc;
 		T alpha = 1;
@@ -439,7 +438,7 @@ public:
     ir(ir0), ic(ic0) {
     this->nr =  ir0.size();
     this->nc =  ic0.size();
-  	this->mat.resize(this->nr, this->nc);
+  	this->mat.resize(this->nr*this->nc);
   	for (int i=0; i<this->nr; i++)
   		for (int j=0; j<this->nc; j++)
   			this->mat[i+j*this->nr] = mat0.get_coef(ir[i], ic[j]);
@@ -453,9 +452,9 @@ public:
     this->nc=m.nc;
   }
 
-  const std::vector<int>& ir_(){ return ir;}
-
-  const std::vector<int>& ic_(){ return ic;}
+  // Getters
+  std::vector<int> get_ir() const{ return ir;}
+  std::vector<int> get_ic() const{ return ic;}
 
 };
 } // namespace

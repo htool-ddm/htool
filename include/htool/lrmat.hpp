@@ -8,37 +8,45 @@ namespace htool{
 
 template<typename T>
 class LowRankMatrix: public Parametres{
+private:
+  LowRankMatrix(const LowRankMatrix&) = default; // copy constructor
+  LowRankMatrix& operator=(const LowRankMatrix&) = default; // copy assignement operator
 
 
 protected:
   // Data member
   int rank, nr, nc;
   Matrix<T>  U,V;
-  const std::vector<int>& ir;
-  const std::vector<int>& ic;
-  const Cluster& t;
-  const Cluster& s;
+  std::vector<int> ir;
+  std::vector<int> ic;
 
-  LowRankMatrix(){};
-  LowRankMatrix(const std::vector<int>& ir0, const std::vector<int>& ic0, const Cluster& t0, const Cluster& s0,int rank0=-1):rank(rank0),nr(ir0.size()),nc(ic0.size()),U(ir0.size(),1),V(1,ic0.size()),ir(ir0),ic(ic0),t(t0),s(s0){
-  }
-  LowRankMatrix(const LowRankMatrix&) = default; // copy constructor
-  LowRankMatrix& operator=(const LowRankMatrix&) = default; // copy assignement operator
-  LowRankMatrix(LowRankMatrix&&) = default; // move constructor
-  LowRankMatrix& operator=(LowRankMatrix&&) = default; // move assignement operator
+
+  LowRankMatrix() = delete;
+  LowRankMatrix(const std::vector<int>& ir0, const std::vector<int>& ic0, int rank0=-1):rank(rank0), nr(ir0.size()), nc(ic0.size()), U(ir0.size(),1),V(1,ic0.size()), ir(ir0),ic(ic0){}
 
 
 public:
 
+  LowRankMatrix(LowRankMatrix&&) = default; // move constructor
+  LowRankMatrix& operator=(LowRankMatrix&&) = default; // move assignement operator
 
+  // Getters
   int nb_rows() const {return this->nr;}
   int nb_cols() const{return this->nc;}
   int rank_of() const {return this->rank;}
-  std::vector<T> operator*(const std::vector<T> a){
+  std::vector<int> get_ir() const {return this->ir;}
+  std::vector<int> get_ic() const {return this->ic;}
+  T get_U(int i, int j) const {return this->U(i,j);}
+  T get_V(int i, int j) const {return this->V(i,j);}
+  std::vector<int> get_xr() const {return this->xr;}
+  std::vector<int> get_xc() const {return this->xc;}
+  std::vector<int> get_tabr() const {return this->tabr;}
+  std::vector<int> get_tabc() const {return this->tabc;}
+
+  std::vector<T> operator*(const std::vector<T>& a) const{
     return this->U*(this->V*a);
   }
-  T get_U(int i, int j) const {return U(i,j);}
-  T get_V(int i, int j) const {return V(i,j);}
+
 
   double compression_rate(){return (1 - ( this->rank*( 1./double(this->nr) + 1./double(this->nc)))); }
 
@@ -77,17 +85,6 @@ public:
     os << "U:\n";
     os<< m.U << std::endl;
     os<< m.V << std::endl;
-    // for(int j=0; j<m.nr; j++){
-    //   for(int k=0; k<m.rank; k++){
-    //     std::cout << m.U(j,k) << "\t";}
-    //   std::cout << "\n";}
-    // os << "\nv:\n";
-    // for(int j=0; j<m.nc; j++){
-    //   for(int k=0; k<m.rank; k++){
-    //     std::cout << m.V(k,j) << "\t";
-    //   }
-    //   std::cout << "\n";
-    // }
 
     return os;
   }

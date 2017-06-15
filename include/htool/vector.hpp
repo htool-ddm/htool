@@ -47,20 +47,20 @@ std::vector<T> operator-(const std::vector<T>& a,const std::vector<T>& b){
 	return result;
 }
 
-template<typename T, typename V>
-std::vector<T> operator*(V value,const std::vector<T>& a)
-{
-	std::vector<T> result(a.size(),0);
-	std::transform (a.begin(), a.end(), result.begin(), std::bind1st(std::multiplies<T>(),value));
-
-	return result;
-}
-
-template<typename T, typename V>
-std::vector<T> operator*(const std::vector<T>& b,V value)
-{
-	return value*b;
-}
+// template<typename T>
+// std::vector<T> mult(V value,const std::vector<T>& a)
+// {
+// 	std::vector<T> result(a.size(),0);
+// 	std::transform (a.begin(), a.end(), result.begin(), std::bind1st(std::multiplies<T>(),value));
+//
+// 	return result;
+// }
+//
+// template<typename T, typename V>
+// std::vector<T> mult(const std::vector<T>& b,V value)
+// {
+// 	return value*b;
+// }
 
 template<typename T, typename V>
 std::vector<T> operator/(const std::vector<T>& a,V value)

@@ -19,7 +19,7 @@ public:
 	MyMatrix(const vector<R3>& p10,const vector<R3>& p20 ):IMatrix<double>(p10.size(),p20.size()),p1(p10),p2(p20) {}
 	 double get_coef(const int& i, const int& j)const {return 1./(4*M_PI*norm(p1[i]-p2[j]));}
 	 std::vector<double> operator*(std::vector<double> a){
-		std::vector<double> result(a.size(),0);
+		std::vector<double> result(p1.size(),0);
 		for (int i=0;i<p1.size();i++){
 			for (int k=0;k<p2.size();k++){
 				result[i]+=this->get_coef(i,k)*a[k];
@@ -77,15 +77,16 @@ int main(){
 
 		// ACA
 		int reqrank_max = 10;
-		partialACA<double> A_partialACA(Ir,Ic,t,s,reqrank_max);
-		A_partialACA.build(A);
+		partialACA<double> A_partialACA(Ir,Ic,reqrank_max);
+		A_partialACA.build(A,t,s);
 		std::vector<double> partialACA_errors;
 		for (int k = 0 ; k < A_partialACA.rank_of()+1 ; k++){
 			partialACA_errors.push_back(Frobenius_absolute_error(A_partialACA,A,k));
 		}
 		cout<<partialACA_errors<<endl;
 
-
+		std::vector<double> test(nc,1);
+		cout << norm2(A*test-A_partialACA*test)<<endl;
 
 	}
 

@@ -19,7 +19,7 @@ int main(int argc, char const *argv[]) {
 
   cout <<"ai+bi       = "<< ai + bi <<endl;
   cout <<"ai-bi       = "<< ai - bi <<endl;
-  cout <<"ai*3        = "<<ai*3<<endl;
+  // cout <<"ai*3        = "<<ai*3<<endl;
   cout <<"ai/3        = "<<ai/3<<endl;
   cout <<"dprod(ai,bi)= "<< dprod(ai,bi)<<endl;
   cout <<"norm2(ai)   = "<< norm2(ai)<<endl;
@@ -48,7 +48,7 @@ int main(int argc, char const *argv[]) {
 
   cout <<"ad+bd       = "<< ad + bd <<endl;
   cout <<"ad-bd       = "<< ad - bd <<endl;
-  cout <<"ad*3        = "<<ad*3<<endl;
+  // cout <<"ad*3        = "<<ad*3<<endl;
   cout <<"ad/3        = "<<ad/3<<endl;
   cout <<"dprod(ad,bd)= "<< dprod(ad,bd)<<endl;
   cout <<"norm2(ad)   = "<< norm2(ad)<<endl;
@@ -76,7 +76,7 @@ int main(int argc, char const *argv[]) {
 
   cout <<"acd+bcd       = "<< acd + bcd <<endl;
   cout <<"acd-bcd       = "<< acd - bcd <<endl;
-  cout <<"acd*3         = "<<acd*3<<endl;
+  // cout <<"acd*3         = "<<acd*3<<endl;
   cout <<"acd/3         = "<<acd/3<<endl;
   cout <<"dprod(acd,bcd)= "<< dprod(acd,bcd)<<endl;
   cout <<"norm2(acd)    = "<< norm2(acd)<<endl;

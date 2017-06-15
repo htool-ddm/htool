@@ -44,10 +44,7 @@ public:
 	//=========================//
     // If reqrank=-1 (default value), we use the precision given by epsilon for the stopping criterion;
     // otherwise, we use the required rank for the stopping criterion (!: at the end the rank could be lower)
-	fullACA(const std::vector<int>& ir0, const std::vector<int>& ic0, const Cluster& t0,const Cluster& s0, int rank0=-1):LowRankMatrix<T>(ir0,ic0,t0,s0,rank0){}
-
-	// fullACA(fullACA&&) = default; // move constructor
-  // fullACA& operator=(fullACA&&) = default; // move assignement operator
+	fullACA(const std::vector<int>& ir0, const std::vector<int>& ic0, int rank0=-1): LowRankMatrix<T>(ir0,ic0,rank0){}
 
 	void build(const IMatrix<T>& A){
 		if(this->rank == 0){
@@ -108,7 +105,9 @@ public:
 			}
 		}
 	}
-
+	void build(const IMatrix<T>& A, const Cluster& t, const Cluster& s){
+    this->build(A);
+  }
 };
 
 }

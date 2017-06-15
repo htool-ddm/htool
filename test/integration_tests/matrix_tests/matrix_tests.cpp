@@ -78,5 +78,13 @@ int main(int argc, char const *argv[]) {
   // Matrix argmax
   cout << "Mcd's argmax : "<< argmax(Mcd).first<<" "<< argmax(Mcd).second << endl;
 
+  // Submatrix
+  std::vector<int> ir = {0,1};
+  std::vector<int> ic = {0,1};
+  SubMatrix<double> SMd(Md,ir,ic);
+  cout<< "Md : "<<Md<<endl;
+  cout<< "SMd : "<<SMd<<endl;
+
+
   return 0;
 }

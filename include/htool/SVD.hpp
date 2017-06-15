@@ -27,7 +27,7 @@ private:
   SVD & operator=(const SVD& copy_from);
 
 public:
-  SVD(const std::vector<int>& ir0, const std::vector<int>& ic0, const Cluster& t0, const Cluster& s0,int rank0=-1): LowRankMatrix<T>(ir0,ic0,t0,s0,rank0){}
+  SVD(const std::vector<int>& ir0, const std::vector<int>& ic0, int rank0=-1): LowRankMatrix<T>(ir0,ic0,rank0){}
 
   void build(const IMatrix<T>& A){
     int reqrank=0;
@@ -75,6 +75,9 @@ public:
     }
   }
 
+  void build(const IMatrix<T>& A, const Cluster& t, const Cluster& s){
+    this->build(A);
+  }
   T get_singular_value(int i){return singular_values[i];}
   //
   // double NormFrob(){

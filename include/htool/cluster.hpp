@@ -2,6 +2,7 @@
 #define CLUSTER_HPP
 
 #include "matrix.hpp"
+#include "point.hpp"
 #include "parametres.hpp"
 #include <iomanip>
 
@@ -89,7 +90,7 @@ public:
 	}
 
 
-	friend void TraversalBuildLabel(const Cluster& t, vectInt& labelVisu, const unsigned int visudep, const unsigned int cnt);
+	friend void TraversalBuildLabel(const Cluster& t, std::vector<int>& labelVisu, const unsigned int visudep, const unsigned int cnt);
 	friend void VisuPartitionedMesh(const Cluster& t, std::string inputname, std::string outputname, const unsigned int visudep);
 
 
@@ -226,7 +227,7 @@ void Cluster::build(){
 }
 
 // On utilise le fait qu'on a toujours ndofperelt dofs par element geometrique
-void TraversalBuildLabel(const Cluster& t, vectInt& labelVisu, const unsigned int visudep, const unsigned int cnt){
+void TraversalBuildLabel(const Cluster& t, std::vector<int>& labelVisu, const unsigned int visudep, const unsigned int cnt){
 	if(t.depth<visudep){
 		assert( t.son[0]!=0 ); // check if visudep is too high!
 		TraversalBuildLabel(*(t.son[0]),labelVisu,visudep,2*cnt);
@@ -288,7 +289,7 @@ void VisuPartitionedMesh(const Cluster& t, std::string inputname, std::string ou
 	}
 	infile.close();
 
-	vectInt labelVisu(NbElt);
+	std::vector<int> labelVisu(NbElt);
 	TraversalBuildLabel(t,labelVisu,visudep,1);
 
 	// Ecriture fichier de sortie

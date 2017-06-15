@@ -19,7 +19,7 @@ public:
 	MyMatrix(const vector<R3>& p10,const vector<R3>& p20 ):IMatrix<double>(p10.size(),p20.size()),p1(p10),p2(p20) {}
 	 double get_coef(const int& i, const int& j)const {return 1./(4*M_PI*norm(p1[i]-p2[j]));}
 	 std::vector<double> operator*(std::vector<double> a){
-		std::vector<double> result(a.size(),0);
+		std::vector<double> result(p1.size(),0);
 		for (int i=0;i<p1.size();i++){
 			for (int k=0;k<p2.size();k++){
 				result[i]+=this->get_coef(i,k)*a[k];
@@ -76,37 +76,22 @@ int main(){
 			tab2[j]=j;
 		}
 
-		Cluster t(p1,r1,tab1); Cluster s(p2,r2,tab2);
 		MyMatrix A(p1,p2);
 
 		// ACA
 		int reqrank_max = 10;
-		fullACA<double> A_fullACA(Ir,Ic,t,s,reqrank_max);
+		fullACA<double> A_fullACA(Ir,Ic,reqrank_max);
 		A_fullACA.build(A);
+
 		std::vector<double> fullACA_errors;
 		for (int k = 0 ; k < A_fullACA.rank_of()+1 ; k++){
 			fullACA_errors.push_back(Frobenius_absolute_error(A_fullACA,A,k));
 		}
 		cout<<fullACA_errors<<endl;
 
-		// // SVD
-    // int reqrank_max = 10;
-		// SVD<double> A_SVD(Ir,Ic,t,s,reqrank_max);
-		// A_SVD.build(A);
-		// std::vector<double> SVD_errors;
-		// std::vector<double> SVD_errors_check(reqrank_max,0);
-		//
-		// for (int k = 0 ; k < reqrank_max ; k++){
-		// 	SVD_errors.push_back(Frobenius_absolute_error(A_SVD,A,k));
-		// 	for (int l=k ; l<min(nr,nc) ; l++){
-		// 		SVD_errors_check[k]+=pow(A_SVD.get_singular_value(l),2);
-		// 	}
-		// 	SVD_errors_check[k]=sqrt(SVD_errors_check[k]);
-		// }
-		//
-    // // Testing with Eckart–Young–Mirsky theorem for Frobenius norm
-		// cout << SVD_errors<<endl;
-		// cout << SVD_errors_check << endl;
+
+		std::vector<double> test(nc,1);
+		cout << norm2(A*test-A_fullACA*test)<<endl;
 
 	}
 
