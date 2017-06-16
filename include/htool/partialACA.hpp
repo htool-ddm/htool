@@ -63,18 +63,22 @@ public:
 
 			// Partial pivot
 			int J=0;
-			int q = 1;
+			int q = 0;
 			int reqrank = this->rank;
 			std::vector<std::vector<T> > uu, vv;
 			std::vector<bool> visited_row(this->nr,false);
 			std::vector<bool> visited_col(this->nc,false);
 
-			double frob = 0.;
-			double aux  = 0.;
+			double frob = 0;
+			double aux  = 0;
 
 			while (((reqrank > 0) && (q < reqrank) ) ||
-			      ( (reqrank < 0) && ( sqrt(aux/frob)>this->epsilon ) )) {
-				if (q*(this->nr+this->nc) > (this->nr*this->nc)) { // the current rank would not be advantageous
+			       (reqrank < 0)) {
+
+				// Next current rank
+				q+=1;
+
+				if (q*(this->nr+this->nc) > (this->nr*this->nc)) { // the next current rank would not be advantageous
 					std::cout << "Pas avantageux" << std::endl;
 					break;
 				}
@@ -83,7 +87,7 @@ public:
 
 					// Compute the first cross
 					//==================//
-					// Recherche colonne
+					// Look for a column
 					double pivot = 0.;
 					for(int k=0; k<this->nc; k++){
 						r[k] = A.get_coef(this->ir[I],this->ic[k]);
@@ -96,8 +100,7 @@ public:
 					visited_row[I] = true;
 
 					//==================//
-					// Recherche ligne
-
+					// Look for a line
 					if( std::abs(r[J]) > 1e-15 ){
 						double cmax = 0.;
 						for(int j=0; j<this->nr; j++){
@@ -111,38 +114,47 @@ public:
 						c /= pivot;
 						visited_col[J] = true;
 
-						// We accept the cross
-						q++;
-						//====================//
-						// Estimateur d'erreur
-						T frob_aux = 0.;
-						aux = std::pow(norm2(c)*norm2(r),2);
-						// aux: terme quadratiques du developpement du carre' de la norme de Frobenius de la matrice low rank
-						for(int j=0; j<uu.size(); j++){
-							frob_aux += dprod(r,vv[j])*dprod(c,uu[j]);
-						}
-						// frob_aux: termes croises du developpement du carre' de la norme de Frobenius de la matrice low rank
-						frob += aux + 2*std::real(frob_aux); // frob: Frobenius norm of the low rank matrix
-						//==================//
-						// Nouvelle croix
+						// New cross added
 						uu.push_back(c);
 						vv.push_back(r);
-					}
-					else{std::cout << "There is a zero row in the starting submatrix and ACA didn't work" << std::endl;
-					}
-					this->rank=q-1;
-					if (this->rank==0){
-						this->U.resize(this->nr,1);
-						this->V.resize(1,this->nc);
-					}
-					else{
-						this->U.resize(this->nr,this->rank);
-						this->V.resize(this->rank,this->nc);
-						for (int k=0;k<this->rank;k++){
-							this->U.set_col(k,uu[k]);
-							this->V.set_row(k,vv[k]);
+
+						// Test if no given rank
+						if (reqrank<0){
+							// Error estimator
+							T frob_aux = 0.;
+							aux = std::pow(norm2(c)*norm2(r),2);
+							// aux: terme quadratiques du developpement du carre' de la norme de Frobenius de la matrice low rank
+							for(int j=0; j<uu.size(); j++){
+								frob_aux += dprod(r,vv[j])*dprod(c,uu[j]);
+							}
+							// frob_aux: termes croises du developpement du carre' de la norme de Frobenius de la matrice low rank
+							frob += aux + 2*std::real(frob_aux); // frob: Frobenius norm of the low rank matrix
+							//==================//
+
+							if ( aux/frob<std::pow(this->epsilon,2) ){
+								break;
+							}
 						}
 					}
+					else{
+						std::cout << "There is a zero row in the starting submatrix and ACA didn't work" << std::endl;
+						break;
+					}
+				}
+			}
+
+			// Final rank
+			this->rank=q;
+			if (this->rank==0){
+				this->U.resize(this->nr,1);
+				this->V.resize(1,this->nc);
+			}
+			else{
+				this->U.resize(this->nr,this->rank);
+				this->V.resize(this->rank,this->nc);
+				for (int k=0;k<this->rank;k++){
+					this->U.set_col(k,uu[k]);
+					this->V.set_row(k,vv[k]);
 				}
 			}
 		}

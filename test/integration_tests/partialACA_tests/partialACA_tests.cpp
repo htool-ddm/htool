@@ -75,21 +75,33 @@ int main(){
 		Cluster t(p1,tab1); Cluster s(p2,tab2);
 		MyMatrix A(p1,p2);
 
-		// ACA
+		// ACA with fixed rank
 		int reqrank_max = 10;
-		partialACA<double> A_partialACA(Ir,Ic,reqrank_max);
+		partialACA<double> A_partialACA_fixed(Ir,Ic,reqrank_max);
+		A_partialACA_fixed.build(A,t,s);
+		std::vector<double> partialACA_fixed_errors;
+		for (int k = 0 ; k < A_partialACA_fixed.rank_of()+1 ; k++){
+			partialACA_fixed_errors.push_back(Frobenius_absolute_error(A_partialACA_fixed,A,k));
+		}
+		cout << "rank : "<<A_partialACA_fixed.rank_of() << endl;
+		cout << "Partial ACA with fixed rank" << endl;
+		cout << "Errors with Frobenius norm : "<<partialACA_fixed_errors<<endl;
+		cout << "Compression rate : "<<A_partialACA_fixed.compression()<<endl;
+
+		std::vector<double> test(nc,1);
+		cout << "Errors on a mat vec prod : "<< norm2(A*test-A_partialACA_fixed*test)<<endl<<endl;
+
+		// ACA automatic building
+		partialACA<double> A_partialACA(Ir,Ic);
 		A_partialACA.build(A,t,s);
 		std::vector<double> partialACA_errors;
 		for (int k = 0 ; k < A_partialACA.rank_of()+1 ; k++){
 			partialACA_errors.push_back(Frobenius_absolute_error(A_partialACA,A,k));
 		}
-
+		cout << "Partial ACA" << endl;
 		cout << "Errors with Frobenius norm: "<<partialACA_errors<<endl;
 		cout << "Compression rate : "<<A_partialACA.compression()<<endl;
-
-		std::vector<double> test(nc,1);
-		cout << "Errors on a mat vec prod : "<< norm2(A*test-A_partialACA*test)<<endl;
-
+		cout << "Errors on a mat vec prod : "<< norm2(A*test-A_partialACA*test)<<endl<<endl<<endl;
 	}
 
 }
