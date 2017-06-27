@@ -150,7 +150,6 @@ HMatrix<LowRankMatrix, T >::HMatrix(const IMatrix<T>& mat,
 	time = MPI_Wtime();
 	ScatterTasks();
 	myttime[2] = MPI_Wtime() - time;
-	std::cout << "start" <<std::endl;
 	}
 	// Assemblage des sous-matrices
 	time = MPI_Wtime();

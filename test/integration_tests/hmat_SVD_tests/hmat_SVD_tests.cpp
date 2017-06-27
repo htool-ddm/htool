@@ -70,7 +70,6 @@ int main(){
 
 		double z1 = 1;
 		vector<R3>     p1(nr);
-		vector<double> r1(nr);
 		vector<int>  tab1(nr);
 		for(int j=0; j<nr; j++){
 			Ir[j] = j;
@@ -83,7 +82,6 @@ int main(){
 		// p2: points in a unit disk of the plane z=z2
 		double z2 = 1+distance[idist];
 		vector<R3> p2(nc);
-		vector<double> r2(nc);
 		vector<int> tab2(nc);
 		for(int j=0; j<nc; j++){
             Ic[j] = j;

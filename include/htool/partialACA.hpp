@@ -54,7 +54,7 @@ public:
 			double dist=1e30;
 			int I=0;
 			for (int i =0;i<int(this->nr/this->ndofperelt);i++){
-				double aux_dist= norm(t.pts_()[t.tab_()[t.num_()[i*this->ndofperelt]]]-t.ctr_());
+				double aux_dist= norm(t.get_pts()[t.get_tab()[t.get_num()[i*this->ndofperelt]]]-t.get_ctr());
 				if (dist>aux_dist){
 					dist=aux_dist;
 					I=i*this->ndofperelt;
