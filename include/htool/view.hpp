@@ -701,7 +701,7 @@ void Scene::init(){
 	glfwWindowHint(GLFW_SAMPLES, 4);    		
 	glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
 	
-	gv.glwindow = glfwCreateWindow(800, 800, "example3", nullptr, nullptr);
+	gv.glwindow = glfwCreateWindow(800, 800, "htool gui", nullptr, nullptr);
 	
 	int width, height;
 	glfwGetFramebufferSize(gv.glwindow, &width, &height);

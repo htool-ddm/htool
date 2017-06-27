@@ -38,8 +38,10 @@ private:
 	std::vector<int>            num;     // Indices des dofs
 
 	Cluster*        son[2];  // Paquets enfants
-	R3                 ctr;  // Centre du paquet
-	double             rad;  // Rayon du champ proche
+	R3              ctr;     // Centre du paquet
+	double            rad;     // Rayon du champ proche
+
+	int				rank;    // rang du processeur qui s'occupe des dofs de ce cluster
 
 	unsigned int depth; // profondeur du cluster dans l'arbre des paquets
 
@@ -65,13 +67,19 @@ public:
 	void build();
 	bool IsLeaf() const { if(son[0]==NULL){return true;} return false; }
 
-  const std::vector<R3>&  pts_() const {return x;}
-  const std::vector<int>& tab_() const {return tab;}
-	const double&           rad_() const {return rad;}
-	const R3&               ctr_() const {return ctr;}
-	const Cluster&       		son_(const int& j) const {return *(son[j]);}
-	const std::vector<int>& num_() const {return num;}
-	const unsigned int&   depth_() const {return depth;}
+	//// Getters
+  const std::vector<R3>&  get_pts() const {return x;}
+  const std::vector<int>& get_tab() const {return tab;}
+	const double&           get_rad() const {return rad;}
+	const R3&               get_ctr() const {return ctr;}
+	const Cluster&       		get_son(const int& j) const {return *(son[j]);}
+	Cluster&       		get_son(const int& j){return *(son[j]);}
+	const std::vector<int>& get_num() const {return num;}
+	const unsigned int&     get_depth() const {return depth;}
+	const int& 							get_rank()const {return rank;}
+
+	//// Setters
+	void set_rank(const int& rank0){rank = rank0;}
 
 	void print()
 	{
@@ -84,7 +92,7 @@ public:
 		for(int j=0; j<(cl.num).size(); j++){os<<cl.num[j]<< "\t";}
 		os<<std::endl;
 		if (!cl.IsLeaf()){
-			os<<cl.son_(0);
+			os<<cl.get_son(0);
 		}
 		return os;
 	}
@@ -341,7 +349,7 @@ public:
 	const Cluster& src_() const {return *(s);}
 	void ComputeAdmissibility() {
 		// Rjasanow - Steinbach (3.15) p111 Chap Approximation of Boundary Element Matrices
-		Admissible =  2*std::min((*t).rad_(),(*s).rad_()) < eta* (norm((*t).ctr_()-(*s).ctr_())-(*t).rad_()-(*s).rad_() )  ;
+		Admissible =  2*std::min((*t).get_rad(),(*s).get_rad()) < eta* (norm((*t).get_ctr()-(*s).get_ctr())-(*t).get_rad()-(*s).get_rad() )  ;
 	}
 	bool IsAdmissible() const{
 		assert(Admissible != -1);
