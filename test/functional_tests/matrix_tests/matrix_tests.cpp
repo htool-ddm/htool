@@ -24,17 +24,17 @@ int main(int argc, char const *argv[]) {
   }
   // Assignement operator
   Matrix<double> Nd=Md;
-  test = test || !(normFrob(Nd-Md)<1e16);
+  test = test || !(normFrob(Nd-Md)<1e-16);
   cout << "Md : "<< Md <<endl;
   cout << "Nd : "<< Nd <<endl;
 
 
   // Getters for strides
   vector<double> diff = {1,2,3,4,5};
-  test = test || !(norm2(Md.get_row(1)-diff)<1e16);
+  test = test || !(norm2(Md.get_row(1)-diff)<1e-16);
   cout << "Md second row : "<< Md.get_row(1) << endl;
   diff = {3, 4, 5, 6, 7, 8, 9, 10, 11, 12};
-  test = test || !(norm2(Md.get_col(3)-diff)<1e16);
+  test = test || !(norm2(Md.get_col(3)-diff)<1e-16);
   cout << "Md fourth col : "<< Md.get_col(3) << endl;
 
   // Setters for strides
@@ -42,16 +42,16 @@ int main(int argc, char const *argv[]) {
   std::vector<double> cold(10,2);
   Md.set_row(1,rowd);
   diff = {2, 2, 2, 2, 2};
-  test = test || !(norm2(Md.get_row(1)-diff)<1e16);
+  test = test || !(norm2(Md.get_row(1)-diff)<1e-16);
   Md.set_col(4,cold);
   diff = {2, 2, 2, 2, 2, 2, 2, 2, 2, 2};
-  test = test || !(norm2(Md.get_col(4)-diff)<1e16);
+  test = test || !(norm2(Md.get_col(4)-diff)<1e-16);
   cout << "Set second row and fifth col of Md : "<< Md << endl;
 
   // Matrix vector product
   std::vector <double> md(5,1);
   diff = {8, 10, 16, 20, 24, 28, 32, 36, 40, 44};
-  test = test || !(norm2(Md*md-diff)<1e16);
+  test = test || !(norm2(Md*md-diff)<1e-16);
   cout << "Matrix vector product : "<< Md*md<<endl;
 
   // Matrix argmax
@@ -73,17 +73,17 @@ int main(int argc, char const *argv[]) {
   }
   // Assignement operator
   Matrix<complex<double> > Ncd=Mcd;
-  test = test || !(normFrob(Ncd-Mcd)<1e16);
+  test = test || !(normFrob(Ncd-Mcd)<1e-16);
   cout << "Mcd : "<< Mcd <<endl;
   cout << "Ncd : "<< Ncd <<endl;
   cout << "Pcd : "<< Pcd <<endl;
 
   // Getters for strides
   vector<complex<double>> diffc = {1,2,3,4,5};
-  test = test || !(norm2(Mcd.get_row(1)-diffc)<1e16);
+  test = test || !(norm2(Mcd.get_row(1)-diffc)<1e-16);
   cout << "Mcd second row : "<< Mcd.get_row(1) << endl;
   diffc = {3, 4, 5, 6, 7, 8, 9, 10, 11, 12};
-  test = test || !(norm2(Mcd.get_col(3)-diffc)<1e16);
+  test = test || !(norm2(Mcd.get_col(3)-diffc)<1e-16);
   cout << "Mcd fourth row : "<< Mcd.get_col(3) << endl;
 
   // Setters for strides
@@ -91,16 +91,16 @@ int main(int argc, char const *argv[]) {
   std::vector<std::complex<double> > colcd(10,2);
   Mcd.set_row(1,rowcd);
   diffc = {2, 2, 2, 2, 2};
-  test = test || !(norm2(Mcd.get_row(1)-diffc)<1e16);
+  test = test || !(norm2(Mcd.get_row(1)-diffc)<1e-16);
   Mcd.set_col(4,colcd);
-  diff = {2, 2, 2, 2, 2, 2, 2, 2, 2, 2};
-  test = test || !(norm2(Mcd.get_col(4)-diffc)<1e16);
+  diffc = {2, 2, 2, 2, 2, 2, 2, 2, 2, 2};
+  test = test || !(norm2(Mcd.get_col(4)-diffc)<1e-16);
   cout << "Set second row and fifth col of Md : "<< Mcd << endl;
 
   // Matrix vector product
   std::vector <complex<double> > mcd(5,1);
-  diff = {8, 10, 16, 20, 24, 28, 32, 36, 40, 44};
-  test = test || !(norm2(Mcd*mcd-diffc)<1e16);
+  diffc = {8, 10, 16, 20, 24, 28, 32, 36, 40, 44};
+  test = test || !(norm2(Mcd*mcd-diffc)<1e-16);
   cout << "Matrix vector product : "<< Mcd*mcd<<endl;
 
   // Matrix argmax
@@ -118,7 +118,7 @@ int main(int argc, char const *argv[]) {
       diffs += abs(Md(ir[i],ic[j])-SMd(i,j));
     }
   }
-  test = test || !(diffs<1e16);
+  test = test || !(diffs<1e-16);
   cout<< "Md : "<<Md<<endl;
   cout<< "SMd : "<<SMd<<endl;
 

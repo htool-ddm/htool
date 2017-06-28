@@ -42,11 +42,11 @@ int main(int argc, char const *argv[]) {
   cout <<"ai/3        = "<<ai/3<<endl;
   test = test || !(iprod==dprod(ai,bi));
   cout <<"dprod(ai,bi)= "<< dprod(ai,bi)<<endl;
-  test = test || !((inorm-norm2(ai))<1e16);
+  test = test || !((inorm-norm2(ai))<1e-16);
   cout <<"norm2(ai)   = "<< norm2(ai)<<endl;
   test = test || !(argmax(ai)==ai.size()-1);
   cout <<"argmax(ai)  = "<< argmax(ai)<<endl;
-  test = test || !(abs(max(ai+bi)-aiplus[aiplus.size()-1])<1e16);
+  test = test || !(abs(max(ai+bi)-aiplus[aiplus.size()-1])<1e-16);
   cout <<"max(ai+bi)  = "<< max(ai+bi)<<endl;
   test = test || !(imean == mean(ai));
   cout <<"mean(ai)    = "<<mean(ai)<<endl;
@@ -72,10 +72,10 @@ int main(int argc, char const *argv[]) {
   for (int i =0 ;i<ad.size();i++){
     ad[i]=i;
     adplus[i]=2*i;
-    addiv[i]=i/3;
+    addiv[i]=i/3.;
     ddprod+=i*i;
     dmean += i;
-    admult3[i]=3*i;
+    admult3[i]=3.*i;
     addiv3[i]=i;
   }
   dnorm = sqrt(ddprod);
@@ -84,27 +84,28 @@ int main(int argc, char const *argv[]) {
 
 
   cout<<"bd = "<<bd<<endl;
-  test = test || !(norm2(ad+bd-adplus)<1e16);
+  test = test || !(norm2(ad+bd-adplus)<1e-16);
   cout <<"ad+bd       = "<< ad + bd <<endl;
-  test = test || !(norm2(ad-bd)<1e16);
+  test = test || !(norm2(ad-bd)<1e-16);
   cout <<"ad-bd       = "<< ad - bd <<endl;
-  test = test || !(norm2(ad/3-addiv)<1e16);
-  cout <<"ad/3        = "<<ad/3<<endl;
-  test = test || !(abs(ddprod-dprod(ad,bd))<1e16);
+  test = test || !(norm2(ad/3.-addiv)<1e-16);
+  cout << norm2(ad/3-addiv)<<endl;
+  cout <<"ad/3        = "<<ad/3.<<endl;
+  test = test || !(abs(ddprod-dprod(ad,bd))<1e-16);
   cout <<"dprod(ad,bd)= "<< dprod(ad,bd)<<endl;
-  test = test || !((dnorm-norm2(ad))<1e16);
+  test = test || !((dnorm-norm2(ad))<1e-16);
   cout <<"norm2(ad)   = "<< norm2(ad)<<endl;
   test = test || !(argmax(ad)==ad.size()-1);
   cout <<"argmax(ad)  = "<< argmax(ad)<<endl;
-  test = test || !(abs(max(ad+bd)-adplus[adplus.size()-1])<1e16);
+  test = test || !(abs(max(ad+bd)-adplus[adplus.size()-1])<1e-16);
   cout <<"max(ad+bd)  = "<< max(ad+bd)<<endl;
-  test = test || !(abs(dmean -mean(ad))<1e16);
+  test = test || !(abs(dmean -mean(ad))<1e-16);
   cout <<"mean(ad)    = "<<mean(ad)<<endl;
   ad*=3;
-  test = test || !(norm2(ad-admult3)<1e16);
+  test = test || !(norm2(ad-admult3)<1e-16);
   cout <<"ad*=3    ad = "<<ad<<endl;
   ad/=3;
-  test = test || !(norm2(ad-addiv3)<1e16);
+  test = test || !(norm2(ad-addiv3)<1e-16);
   cout <<"ad/=3    ad = "<<ad<<endl;
 
   // complex double
@@ -133,27 +134,27 @@ int main(int argc, char const *argv[]) {
 
 
   cout<<"bcd = "<<bcd<<endl;
-  test = test || !(norm2(acd+bcd-acdplus)<1e16);
+  test = test || !(norm2(acd+bcd-acdplus)<1e-16);
   cout <<"acd+bcd       = "<< acd + bcd <<endl;
-  test = test || !(norm2(acd-bcd)<1e16);
+  test = test || !(norm2(acd-bcd)<1e-16);
   cout <<"acd-bcd       = "<< acd - bcd <<endl;
-  test = test || !(norm2(acd/3.-acddiv)<1e16);
+  test = test || !(norm2(acd/3.-acddiv)<1e-16);
   cout <<"acd/3        = "<<acd/3.<<endl;
-  test = test || !(abs(cddprod-dprod(acd,bcd))<1e16);
+  test = test || !(abs(cddprod-dprod(acd,bcd))<1e-16);
   cout <<"dprod(acd,bcd)= "<< dprod(acd,bcd)<<endl;
-  test = test || !((cdnorm-norm2(acd))<1e16);
+  test = test || !((cdnorm-norm2(acd))<1e-16);
   cout <<"norm2(acd)   = "<< norm2(acd)<<endl;
   test = test || !(argmax(acd)==acd.size()-1);
   cout <<"argmax(acd)  = "<< argmax(acd)<<endl;
-  test = test || !(abs(max(acd+bcd)-acdplus[acdplus.size()-1])<1e16);
+  test = test || !(abs(max(acd+bcd)-acdplus[acdplus.size()-1])<1e-16);
   cout <<"max(acd+bcd)  = "<< max(acd+bcd)<<endl;
-  test = test || !(abs(cdmean -mean(acd))<1e16);
+  test = test || !(abs(cdmean -mean(acd))<1e-16);
   cout <<"mean(acd)    = "<<mean(acd)<<endl;
   acd*=3.;
-  test = test || !(norm2(acd-acdmult3)<1e16);
+  test = test || !(norm2(acd-acdmult3)<1e-16);
   cout <<"acd*=3    acd = "<<acd<<endl;
   acd/=3.;
-  test = test || !(norm2(acd-acddiv3)<1e16);
+  test = test || !(norm2(acd-acddiv3)<1e-16);
   cout <<"acd/=3    acd = "<<acd<<endl;
 
   return test;

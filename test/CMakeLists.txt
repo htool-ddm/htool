@@ -1,2 +1,2 @@
-add_subdirectory(integration_tests)
+add_subdirectory(functional_tests)
 add_subdirectory(validation_tests)
