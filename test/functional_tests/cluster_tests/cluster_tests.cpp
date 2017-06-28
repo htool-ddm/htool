@@ -6,7 +6,7 @@ using namespace htool;
 int main(int argc, char const *argv[]) {
 
   SetMinClusterSize(1);
-
+  bool test =0;
 
 	int n1 = 5;
   int n2 = 5;
@@ -33,7 +33,36 @@ int main(int argc, char const *argv[]) {
 
   Cluster t(p,tab);
   t.build();
+
+  // Test
+  Cluster* s = &t;
+  int depth =0;
+  while (s!=NULL){
+    // test depth
+    test = test || !((*s).get_depth()==depth);
+
+    depth+=1;
+    if ((*s).IsLeaf()){
+      s=NULL;
+    }
+    else{
+      // test num inclusion
+      if (!((*s).get_son(0).IsLeaf()) && !((*s).get_son(1).IsLeaf())){
+        cout << (*s).get_num()<<endl;
+        std::vector<int> root = (*s).get_num();
+        std::vector<int> son0 = (*s).get_son(0).get_num();
+        std::vector<int> son1 = (*s).get_son(1).get_num();
+        for (int i=0;i<root.size();i++){
+          int count0 = count(son0.begin(),son0.end(),root[i]);
+          int count1 = count(son1.begin(),son1.end(),root[i]);
+          test = test || !((count0==0 && count1==1) || (count0==1 && count1==0) );
+          cout << count0<<" "<<count1<<" "<<test << endl;
+        }
+      }
+      s=&((*s).get_son(0));
+    }
+  }
   t.print();
 
-  return 0;
+  return test;
 }
