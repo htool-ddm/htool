@@ -218,7 +218,7 @@ Block* HMatrix<LowRankMatrix, T >::BuildBlockTree(const Cluster& t, const Cluste
 	Block* B = new Block(t,s);
 	int bsize = t.get_num().size()*s.get_num().size();
 	B->ComputeAdmissibility();
-	if( B->IsAdmissible() ){
+	if( B->IsAdmissible() && t.get_rank()>=0){
 		Tasks.push_back(B);
 		return NULL;
 	}
@@ -229,7 +229,7 @@ Block* HMatrix<LowRankMatrix, T >::BuildBlockTree(const Cluster& t, const Cluste
 				else{
 					Block* r1 = BuildBlockTree(t.get_son(0),s);
 					Block* r2 = BuildBlockTree(t.get_son(1),s);
-					if ((bsize <= maxblocksize) && (r1 != NULL) && (r2 != NULL)) {
+					if ((bsize <= maxblocksize) && (r1 != NULL) && (r2 != NULL) && t.get_rank()>=0) {
 						delete r1;
 						delete r2;
 						return B;
@@ -245,7 +245,7 @@ Block* HMatrix<LowRankMatrix, T >::BuildBlockTree(const Cluster& t, const Cluste
 		if( t.IsLeaf() ){
 			Block* r3 = BuildBlockTree(t,s.get_son(0));
 			Block* r4 = BuildBlockTree(t,s.get_son(1));
-			if ((bsize <= maxblocksize) && (r3 != NULL) && (r4 != NULL)) {
+			if ((bsize <= maxblocksize) && (r3 != NULL) && (r4 != NULL)&& t.get_rank()>=0) {
 				delete r3;
 				delete r4;
 				return B;
@@ -260,7 +260,7 @@ Block* HMatrix<LowRankMatrix, T >::BuildBlockTree(const Cluster& t, const Cluste
 			if (t.get_num().size()>s.get_num().size()){
 				Block* r1 = BuildBlockTree(t.get_son(0),s);
 				Block* r2 = BuildBlockTree(t.get_son(1),s);
-				if ((bsize <= maxblocksize) && (r1 != NULL) && (r2 != NULL)) {
+				if ((bsize <= maxblocksize) && (r1 != NULL) && (r2 != NULL)&& t.get_rank()>=0) {
 					delete r1;
 					delete r2;
 					return B;
@@ -274,7 +274,7 @@ Block* HMatrix<LowRankMatrix, T >::BuildBlockTree(const Cluster& t, const Cluste
 			else{
 				Block* r3 = BuildBlockTree(t,s.get_son(0));
 				Block* r4 = BuildBlockTree(t,s.get_son(1));
-				if ((bsize <= maxblocksize) && (r3 != NULL) && (r4 != NULL)) {
+				if ((bsize <= maxblocksize) && (r3 != NULL) && (r4 != NULL)&& t.get_rank()>=0) {
 					delete r3;
 					delete r4;
 					return B;
