@@ -141,7 +141,6 @@ HMatrix<LowRankMatrix, T >::HMatrix(const IMatrix<T>& mat,
 
 	// Construction arbre des blocs
 	time = MPI_Wtime();
-	if (rankWorld==0){
 	Block* B = BuildBlockTree(t,s);
 	if (B != NULL) Tasks.push_back(B);
 	myttime[1] = MPI_Wtime() - time;
@@ -150,7 +149,7 @@ HMatrix<LowRankMatrix, T >::HMatrix(const IMatrix<T>& mat,
 	time = MPI_Wtime();
 	ScatterTasks();
 	myttime[2] = MPI_Wtime() - time;
-	}
+
 	// Assemblage des sous-matrices
 	time = MPI_Wtime();
 	ComputeBlocks(mat);
@@ -293,13 +292,19 @@ Block* HMatrix<LowRankMatrix, T >::BuildBlockTree(const Cluster& t, const Cluste
 template< template<typename> class LowRankMatrix, typename T >
 void HMatrix<LowRankMatrix, T >::ScatterTasks(){
 	int rankWorld, sizeWorld;
-    MPI_Comm_size(MPI_COMM_WORLD, &sizeWorld);
-    MPI_Comm_rank(MPI_COMM_WORLD, &rankWorld);
-
-    for(int b=0; b<Tasks.size(); b++)
+  MPI_Comm_size(MPI_COMM_WORLD, &sizeWorld);
+  MPI_Comm_rank(MPI_COMM_WORLD, &rankWorld);
+	std::cout << "rank : "<<rankWorld<<"  Tasks size : "<<Tasks.size()<<std::endl;
+  for(int b=0; b<Tasks.size(); b++){
     	//if (b%sizeWorld == rankWorld)
-    	if ((*(Tasks[b])).tgt_().get_rank() == rankWorld)
+    if ((*(Tasks[b])).tgt_().get_rank() == rankWorld){
     		MyBlocks.push_back(Tasks[b]);
+		}
+		if (rankWorld==0){
+			std::cout << "get rank "<<(*(Tasks[b])).tgt_().get_rank()<<std::endl;
+		}
+	}
+	// std::cout << "rank : "<<rankWorld<<"  Blocks size : "<<MyBlocks.size()<<std::endl;
 }
 
 template< template<typename> class LowRankMatrix, typename T >
@@ -498,7 +503,6 @@ std::vector<T> HMatrix<LowRankMatrix,T >::operator*(const std::vector<T>& x) con
 	*/
 
 	std::vector<T> snd;
-	std::cout << rankWorld << std::endl;
 	snd.resize(MasterClusters[rankWorld].size());
 
 	std::vector<T> rcv;
@@ -518,7 +522,7 @@ std::vector<T> HMatrix<LowRankMatrix,T >::operator*(const std::vector<T>& x) con
 	for (int i=0; i< MasterClusters[rankWorld].size(); i++) {
 		snd[i] = result[MasterClusters[rankWorld][i]];
 	}
-
+std::cout << "rank : "<<rankWorld<<" num : "<<MasterClusters[rankWorld]<<std::endl;
 	MPI_Allgatherv(&(snd.front()), recvcounts[rankWorld], wrapper_mpi<T>::mpi_type(), &(rcv.front()), &(recvcounts.front()), &(displs.front()), wrapper_mpi<T>::mpi_type(), comm);
 
 	for (int i=0; i<sizeWorld; i++)
@@ -568,7 +572,9 @@ double HMatrix<LowRankMatrix,T >::compression() const{
 	}
 
 	double comp = 0;
-
+	int rankWorld;
+		MPI_Comm_rank(comm, &rankWorld);
+std::cout << "rank : "<<rankWorld <<" MyFarFieldMats.size() : "<<MyFarFieldMats.size()<<"   MyNearFieldMats.size() : "<<MyNearFieldMats.size()<< std::endl;
 	MPI_Allreduce(&mycomp, &comp, 1, MPI_DOUBLE, MPI_SUM, comm);
 
 	return 1-comp;

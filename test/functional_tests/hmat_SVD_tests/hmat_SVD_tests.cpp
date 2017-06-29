@@ -63,8 +63,8 @@ int main(){
 		// we set a constant seed for rand because we want always the same result if we run the check many times
 		// (two different initializations with the same seed will generate the same succession of results in the subsequent calls to rand)
 
-		int nr = 500;
-		int nc = 100;
+		int nr = 10;
+		int nc = 10;
 		vector<int> Ir(nr); // row indices for the lrmatrix
 		vector<int> Ic(nc); // column indices for the lrmatrix
 
@@ -95,15 +95,17 @@ int main(){
 		MyMatrix A(p1,p2);
 		HMatrix<SVD,double> HA(A,p1,tab1,p2,tab2);
 
-		std::vector<double> test(nc,1);
-		double erreur2 = norm2(A*test-HA*test);
+		std::vector<double> f(nc,1),result(nr,0);
+		result = HA*f;
+		double erreur2 = norm2(A*f-result);
 		double erreurFrob = Frobenius_absolute_error(HA,A);
 		double compression = HA.compression();
+
 		if (rank==0){
 			cout << "Errors with Frobenius norm: "<<erreurFrob<<endl;
 			cout << "Compression rate : "<<compression<<endl;
-
-			std::vector<double> test(nc,1);
+cout << result<< endl;
+			// std::vector<double> test(nc,1);
 			cout << "Errors on a mat vec prod : "<< erreur2<<endl;
 
 		}
