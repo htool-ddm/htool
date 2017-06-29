@@ -35,6 +35,7 @@ int main(){
 	double distance[ndistance];
 	distance[0] = 10; distance[1] = 20; distance[2] = 30; distance[3] = 40;
 	SetNdofPerElt(1);
+	bool test = 0;
 
 	for(int idist=0; idist<ndistance; idist++)
 	{
@@ -88,13 +89,25 @@ int main(){
 			fullACA_errors.push_back(Frobenius_absolute_error(A_fullACA,A,k));
 		}
 
+
+		// Test errors
+		for (int i =1 ;i<fullACA_errors.size();i++){
+			test = test || !(fullACA_errors[i-1]>fullACA_errors[i]);
+		}
 		cout << "Errors with Frobenius norm: "<<fullACA_errors<<endl;
+
+		// Test compression
+		test = test || !(0.89<A_fullACA.compression() && A_fullACA.compression()<0.9);
 		cout << "Compression rate : "<<A_fullACA.compression()<<endl;
 
-		std::vector<double> test(nc,1);
-		cout << "Errors on a mat vec prod : "<< norm2(A*test-A_fullACA*test)<<endl;
+		// Test error on mat vec prod
+		std::vector<double> f(nc,1);
+		double error=norm2(A*f-A_fullACA*f);
+		test = test ||!(error<1e-7);
+		cout << "Errors on a mat vec prod : "<< error<<endl;
 
 
 	}
 
+	return test ;
 }
