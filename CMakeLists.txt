@@ -121,6 +121,8 @@ endif()
 
 # Add test files
 if (HTOOL_WITH_TESTS)
+	enable_testing()
+	add_custom_target(build-tests)
 	add_subdirectory(test)
 endif()
 
