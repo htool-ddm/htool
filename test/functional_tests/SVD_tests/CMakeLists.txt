@@ -10,4 +10,6 @@ if (EIGEN3_FOUND)
                             ${EIGEN3_LIBRARIES})
   target_include_directories(SVD_tests PUBLIC
                             ${EIGEN3_INCLUDE_DIR})
+  add_dependencies(build-tests SVD_tests)
+  add_test(SVD_tests SVD_tests)
 endif()

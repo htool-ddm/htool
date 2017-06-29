@@ -35,6 +35,7 @@ int main(){
 	double distance[ndistance];
 	distance[0] = 10; distance[1] = 20; distance[2] = 30; distance[3] = 40;
 	SetNdofPerElt(1);
+	bool test =0;
 
 	for(int idist=0; idist<ndistance; idist++)
 	{
@@ -90,13 +91,21 @@ int main(){
 		}
 
     // Testing with Eckart–Young–Mirsky theorem for Frobenius norm
+		test = test || !(norm2(SVD_errors-SVD_errors_check)<1e-10);
 		cout << "Errors with Frobenius norm: "<<SVD_errors<<endl;
 		cout << "Errors computed with the remaining eigenvalues : "<<SVD_errors_check << endl;
+
+		// Testing compression rate
+		test = test || !(0.85<abs(A_SVD.compression())&& abs(A_SVD.compression())<0.9);
 		cout << "Compression rate : "<<A_SVD.compression()<<endl;
 
-		std::vector<double> test(nc,1);
-		cout << "Errors on a mat vec prod : "<< norm2(A*test-A_SVD*test)<<endl;
+		// Testing error on mat vec prod
+		std::vector<double> f(nc,1);
+		double error=norm2(A*f-A_SVD*f);
+		test = test || !(error<1e-10);
+		cout << "Errors on a mat vec prod : "<< error<<endl;
+
 
 	}
-
+	return test;
 }
