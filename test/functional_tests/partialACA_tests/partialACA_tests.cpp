@@ -35,11 +35,11 @@ int main(){
 	double distance[ndistance];
 	distance[0] = 10; distance[1] = 20; distance[2] = 30; distance[3] = 40;
 	SetNdofPerElt(1);
-
+	bool test = 0;
 	for(int idist=0; idist<ndistance; idist++)
 	{
 		cout << "Distance between the clusters: " << distance[idist] << endl;
-		SetEpsilon(0.0001);
+		SetEpsilon(1e-5);
 		srand (1);
 		// we set a constant seed for rand because we want always the same result if we run the check many times
 		// (two different initializations with the same seed will generate the same succession of results in the subsequent calls to rand)
@@ -83,13 +83,22 @@ int main(){
 		for (int k = 0 ; k < A_partialACA_fixed.rank_of()+1 ; k++){
 			partialACA_fixed_errors.push_back(Frobenius_absolute_error(A_partialACA_fixed,A,k));
 		}
+
 		cout << "rank : "<<A_partialACA_fixed.rank_of() << endl;
 		cout << "Partial ACA with fixed rank" << endl;
+		// Test Frobenius errors
+		test = test || !(partialACA_fixed_errors[partialACA_fixed_errors.size()-1]<1e-6);
 		cout << "Errors with Frobenius norm : "<<partialACA_fixed_errors<<endl;
+
+		// Test compression
+		test = test || !(0.85<A_partialACA_fixed.compression() && A_partialACA_fixed.compression()<0.9);
 		cout << "Compression rate : "<<A_partialACA_fixed.compression()<<endl;
 
-		std::vector<double> test(nc,1);
-		cout << "Errors on a mat vec prod : "<< norm2(A*test-A_partialACA_fixed*test)<<endl<<endl;
+		// Test mat vec prod
+		std::vector<double> f(nc,1);
+		double error=norm2(A*f-A_partialACA_fixed*f);
+		test = test || !(error<1e-6);
+		cout << "Errors on a mat vec prod : "<< error<<endl<<endl;
 
 		// ACA automatic building
 		partialACA<double> A_partialACA(Ir,Ic);
@@ -99,9 +108,16 @@ int main(){
 			partialACA_errors.push_back(Frobenius_absolute_error(A_partialACA,A,k));
 		}
 		cout << "Partial ACA" << endl;
+		// Test Frobenius error
+		test = test || !(partialACA_errors[A_partialACA.rank_of()]<GetEpsilon());
 		cout << "Errors with Frobenius norm: "<<partialACA_errors<<endl;
+		// Test compression rate
+		test = test || !(0.9<A_partialACA.compression() && A_partialACA.compression()<0.95);
 		cout << "Compression rate : "<<A_partialACA.compression()<<endl;
-		cout << "Errors on a mat vec prod : "<< norm2(A*test-A_partialACA*test)<<endl<<endl<<endl;
+		// Test mat vec prod
+		error = norm2(A*f-A_partialACA*f);
+		test = test || !(error<5e-5);
+		cout << "Errors on a mat vec prod : "<< error<<endl<<endl<<endl;
 	}
-
+	return test;
 }
