@@ -102,8 +102,9 @@ void HMatrix<LowRankMatrix, T >::SetRanksRec(Cluster& t, const unsigned int dept
 	}
 	else{
 		t.set_rank(cnt-pow(2,depth));
-		if (t.get_depth() == depth)
+		if (t.get_depth() == depth){
 			MasterClusters[cnt-pow(2,depth)] = t.get_num();
+		}
 		if (!t.IsLeaf()){
 			SetRanksRec(t.get_son(0), depth, cnt);
 			SetRanksRec(t.get_son(1), depth, cnt);
@@ -114,20 +115,21 @@ void HMatrix<LowRankMatrix, T >::SetRanksRec(Cluster& t, const unsigned int dept
 template< template<typename> class LowRankMatrix, typename T >
 void HMatrix<LowRankMatrix, T >::SetRanks(Cluster& t){
 	int rankWorld, sizeWorld;
-    MPI_Comm_size(MPI_COMM_WORLD, &sizeWorld);
-    MPI_Comm_rank(MPI_COMM_WORLD, &rankWorld);
-
-    MasterClusters.resize(sizeWorld);
+  MPI_Comm_size(comm, &sizeWorld);
+  MPI_Comm_rank(comm, &rankWorld);
+  MasterClusters.resize(sizeWorld);
 
 	SetRanksRec(t, log2(sizeWorld), 1);
 }
 
 template< template<typename> class LowRankMatrix, typename T >
 HMatrix<LowRankMatrix, T >::HMatrix(const IMatrix<T>& mat,
-	const std::vector<R3>& xt, const std::vector<int>& tabt, const std::vector<R3>& xs, const std::vector<int>& tabs, const int& reqrank0, MPI_Comm comm0): nr(mat.nb_rows()),nc(mat.nb_cols()), reqrank(reqrank0), comm(comm0) {
+	const std::vector<R3>& xt, const std::vector<int>& tabt, const std::vector<R3>& xs, const std::vector<int>& tabs, const int& reqrank0, MPI_Comm comm0): nr(mat.nb_rows()),nc(mat.nb_cols()), reqrank(reqrank0) {
 
 	assert( mat.nb_rows()==tabt.size() && mat.nb_cols()==tabs.size() );
+
 	int rankWorld, sizeWorld;
+	MPI_Comm_dup(comm0,&comm);
   MPI_Comm_size(comm, &sizeWorld);
   MPI_Comm_rank(comm, &rankWorld);
   std::vector<double> myttime(4), maxtime(4), meantime(4);
@@ -136,6 +138,7 @@ HMatrix<LowRankMatrix, T >::HMatrix(const IMatrix<T>& mat,
 	double time = MPI_Wtime();
 	Cluster t(xt,tabt); Cluster s(xs,tabs);
   t.build();s.build();
+	assert(std::pow(2,t.get_min_depth())>sizeWorld);
 	SetRanks(t);
 	myttime[0] = MPI_Wtime() - time;
 
@@ -181,6 +184,7 @@ HMatrix<LowRankMatrix, T >::HMatrix(const IMatrix<T>& mat,
 	// Construction arbre des paquets
 	double time = MPI_Wtime();
 	Cluster t(xt,tabt);t.build();
+	assert(std::pow(2,t.get_min_depth())>sizeWorld);
 	SetRanks(t);
 	myttime[0] = MPI_Wtime() - time;
 
@@ -292,19 +296,14 @@ Block* HMatrix<LowRankMatrix, T >::BuildBlockTree(const Cluster& t, const Cluste
 template< template<typename> class LowRankMatrix, typename T >
 void HMatrix<LowRankMatrix, T >::ScatterTasks(){
 	int rankWorld, sizeWorld;
-  MPI_Comm_size(MPI_COMM_WORLD, &sizeWorld);
-  MPI_Comm_rank(MPI_COMM_WORLD, &rankWorld);
-	std::cout << "rank : "<<rankWorld<<"  Tasks size : "<<Tasks.size()<<std::endl;
+  MPI_Comm_size(comm, &sizeWorld);
+  MPI_Comm_rank(comm, &rankWorld);
   for(int b=0; b<Tasks.size(); b++){
     	//if (b%sizeWorld == rankWorld)
     if ((*(Tasks[b])).tgt_().get_rank() == rankWorld){
     		MyBlocks.push_back(Tasks[b]);
 		}
-		if (rankWorld==0){
-			std::cout << "get rank "<<(*(Tasks[b])).tgt_().get_rank()<<std::endl;
-		}
 	}
-	// std::cout << "rank : "<<rankWorld<<"  Blocks size : "<<MyBlocks.size()<<std::endl;
 }
 
 template< template<typename> class LowRankMatrix, typename T >
@@ -522,7 +521,7 @@ std::vector<T> HMatrix<LowRankMatrix,T >::operator*(const std::vector<T>& x) con
 	for (int i=0; i< MasterClusters[rankWorld].size(); i++) {
 		snd[i] = result[MasterClusters[rankWorld][i]];
 	}
-std::cout << "rank : "<<rankWorld<<" num : "<<MasterClusters[rankWorld]<<std::endl;
+
 	MPI_Allgatherv(&(snd.front()), recvcounts[rankWorld], wrapper_mpi<T>::mpi_type(), &(rcv.front()), &(recvcounts.front()), &(displs.front()), wrapper_mpi<T>::mpi_type(), comm);
 
 	for (int i=0; i<sizeWorld; i++)
@@ -573,8 +572,7 @@ double HMatrix<LowRankMatrix,T >::compression() const{
 
 	double comp = 0;
 	int rankWorld;
-		MPI_Comm_rank(comm, &rankWorld);
-std::cout << "rank : "<<rankWorld <<" MyFarFieldMats.size() : "<<MyFarFieldMats.size()<<"   MyNearFieldMats.size() : "<<MyNearFieldMats.size()<< std::endl;
+	MPI_Comm_rank(comm, &rankWorld);
 	MPI_Allreduce(&mycomp, &comp, 1, MPI_DOUBLE, MPI_SUM, comm);
 
 	return 1-comp;
