@@ -48,11 +48,12 @@ int main(){
 	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 
 	//
+	bool test = 0;
 	const int ndistance = 4;
 	double distance[ndistance];
 	distance[0] = 10; distance[1] = 20; distance[2] = 30; distance[3] = 40;
 	SetNdofPerElt(1);
-	SetEpsilon(0.0001);
+	SetEpsilon(1e-8);
 	SetEta(0.1);
 
 	for(int idist=0; idist<ndistance; idist++)
@@ -63,14 +64,13 @@ int main(){
 		// we set a constant seed for rand because we want always the same result if we run the check many times
 		// (two different initializations with the same seed will generate the same succession of results in the subsequent calls to rand)
 
-		int nr = 500;
+		int nr = 100;
 		int nc = 100;
 		vector<int> Ir(nr); // row indices for the lrmatrix
 		vector<int> Ic(nc); // column indices for the lrmatrix
 
 		double z1 = 1;
 		vector<R3>     p1(nr);
-		vector<double> r1(nr);
 		vector<int>  tab1(nr);
 		for(int j=0; j<nr; j++){
 			Ir[j] = j;
@@ -83,7 +83,6 @@ int main(){
 		// p2: points in a unit disk of the plane z=z2
 		double z2 = 1+distance[idist];
 		vector<R3> p2(nc);
-		vector<double> r2(nc);
 		vector<int> tab2(nc);
 		for(int j=0; j<nc; j++){
             Ic[j] = j;
@@ -97,15 +96,18 @@ int main(){
 		MyMatrix A(p1,p2);
 		HMatrix<fullACA,double> HA(A,p1,tab1,p2,tab2);
 
-		std::vector<double> test(nc,1);
-		double erreur2 = norm2(A*test-HA*test);
+		std::vector<double> f(nc,1),result(nr,0);
+		result = HA*f;
+		double erreur2 = norm2(A*f-result);
 		double erreurFrob = Frobenius_absolute_error(HA,A);
 		double compression = HA.compression();
+
+		test = test || !(erreurFrob<GetEpsilon()*10);
+		test = test || !(erreur2<GetEpsilon()*10);
+
 		if (rank==0){
 			cout << "Errors with Frobenius norm: "<<erreurFrob<<endl;
 			cout << "Compression rate : "<<compression<<endl;
-
-			std::vector<double> test(nc,1);
 			cout << "Errors on a mat vec prod : "<< erreur2<<endl;
 
 		}
@@ -113,4 +115,6 @@ int main(){
 	}
 	// Finalize the MPI environment.
 	MPI_Finalize();
+	cout << test << endl;
+	return test;
 }
