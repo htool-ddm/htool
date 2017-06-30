@@ -48,7 +48,6 @@ int main(int argc, char const *argv[]) {
     else{
       // test num inclusion
       if (!((*s).get_son(0).IsLeaf()) && !((*s).get_son(1).IsLeaf())){
-        cout << (*s).get_num()<<endl;
         std::vector<int> root = (*s).get_num();
         std::vector<int> son0 = (*s).get_son(0).get_num();
         std::vector<int> son1 = (*s).get_son(1).get_num();
@@ -56,13 +55,18 @@ int main(int argc, char const *argv[]) {
           int count0 = count(son0.begin(),son0.end(),root[i]);
           int count1 = count(son1.begin(),son1.end(),root[i]);
           test = test || !((count0==0 && count1==1) || (count0==1 && count1==0) );
-          cout << count0<<" "<<count1<<" "<<test << endl;
         }
       }
       s=&((*s).get_son(0));
     }
   }
+  cout<<"max depth : "<<t.get_max_depth()<<endl;
+  cout<<"min depth : "<<t.get_min_depth()<<endl;
+
+  test = test || !(t.get_max_depth()==4 && t.get_min_depth()==3);
   t.print();
+
+
 
   return test;
 }

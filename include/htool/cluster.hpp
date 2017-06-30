@@ -43,7 +43,10 @@ private:
 
 	int				rank;    // rang du processeur qui s'occupe des dofs de ce cluster
 
-	unsigned int depth; // profondeur du cluster dans l'arbre des paquets
+	int depth; // profondeur du cluster dans l'arbre des paquets
+
+	int max_depth;
+	int min_depth;
 
 	Cluster(const Cluster& ); // Pas de recopie
 	Cluster & operator=(const Cluster& copy_from); // pas d'affectation
@@ -51,14 +54,14 @@ private:
 
 public:
 
-	Cluster(const std::vector<R3>& x0, const std::vector<int>& tab0): x(x0), tab(tab0), ctr(), rad(0.), depth(0) {
+	Cluster(const std::vector<R3>& x0, const std::vector<int>& tab0): x(x0), tab(tab0), ctr(), rad(0.), depth(0),max_depth(0),min_depth(-1) {
 		son[0]=NULL;son[1]=NULL;
 		depth = 0; // ce constructeur est appele' juste pour la racine
 		assert(tab.size()==x.size()*ndofperelt);
 		for(int j=0; j<tab.size(); j++){num.push_back(j);}
 	}
 
-	Cluster(const std::vector<R3>& x0, const std::vector<int>& tab0, const unsigned int& dep): x(x0), tab(tab0), ctr(), rad(0.) {
+	Cluster(const std::vector<R3>& x0, const std::vector<int>& tab0, const int& dep): x(x0), tab(tab0), ctr(), rad(0.),max_depth(-1),min_depth(-1) {
 		son[0]=0;son[1]=0; depth = dep;
 	}
 
@@ -73,10 +76,12 @@ public:
 	const double&           get_rad() const {return rad;}
 	const R3&               get_ctr() const {return ctr;}
 	const Cluster&       		get_son(const int& j) const {return *(son[j]);}
-	Cluster&       		get_son(const int& j){return *(son[j]);}
+	Cluster&       					get_son(const int& j){return *(son[j]);}
 	const std::vector<int>& get_num() const {return num;}
-	const unsigned int&     get_depth() const {return depth;}
-	const int& 							get_rank()const {return rank;}
+	int     								get_depth() const {return depth;}
+	int 										get_rank()const {return rank;}
+	int											get_max_depth() const {return max_depth;}
+	int											get_min_depth() const {return min_depth;}
 
 	//// Setters
 	void set_rank(const int& rank0){rank = rank0;}
@@ -228,9 +233,19 @@ void Cluster::build(){
 			s.push(curr->son[1]);
 		}
 		else{
+			this->max_depth= std::max(this->max_depth,curr ->depth);
+			if (this->min_depth<0) {this->min_depth=curr->depth;}
+			else{
+			this->min_depth= std::min(this->min_depth,curr ->depth);}
+
 			delete curr->son[0]; curr->son[0] = NULL;
 			delete curr->son[1]; curr->son[1] = NULL;
 		}
+// std::cout << "TEST"<<std::endl;
+// std::cout << curr->num << std::endl;
+// std::cout << curr->depth <<std::endl;
+// std::cout << curr->max_depth <<std::endl;
+// std::cout << "TEST"<< std::endl<<std::endl;
 	}
 }
 
