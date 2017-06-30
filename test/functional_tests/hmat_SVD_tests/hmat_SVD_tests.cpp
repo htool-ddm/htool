@@ -48,6 +48,7 @@ int main(){
 	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 
 	//
+	bool test = 0;
 	const int ndistance = 4;
 	double distance[ndistance];
 	distance[0] = 10; distance[1] = 20; distance[2] = 30; distance[3] = 40;
@@ -63,8 +64,8 @@ int main(){
 		// we set a constant seed for rand because we want always the same result if we run the check many times
 		// (two different initializations with the same seed will generate the same succession of results in the subsequent calls to rand)
 
-		int nr = 10;
-		int nc = 10;
+		int nr = 100;
+		int nc = 100;
 		vector<int> Ir(nr); // row indices for the lrmatrix
 		vector<int> Ic(nc); // column indices for the lrmatrix
 
@@ -101,11 +102,12 @@ int main(){
 		double erreurFrob = Frobenius_absolute_error(HA,A);
 		double compression = HA.compression();
 
+		test = test || !(erreurFrob<1e-10);
+		test = test || !(erreur2<1e-10);
+
 		if (rank==0){
 			cout << "Errors with Frobenius norm: "<<erreurFrob<<endl;
 			cout << "Compression rate : "<<compression<<endl;
-cout << result<< endl;
-			// std::vector<double> test(nc,1);
 			cout << "Errors on a mat vec prod : "<< erreur2<<endl;
 
 		}
@@ -113,4 +115,5 @@ cout << result<< endl;
 	}
 	// Finalize the MPI environment.
 	MPI_Finalize();
+	return test;
 }
