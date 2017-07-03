@@ -44,6 +44,14 @@ find_package(BLAS REQUIRED)
 message("-- Blas implementation found in " ${BLAS_LIBRARIES})
 # EIGEN3
 find_package(EIGEN3)
+# LAPACK
+find_package(LAPACK REQUIRED)
+if(NOT LAPACK_FOUND)
+    message("Lapack not found. Needed in htool and hpddm")
+else()
+	add_library(lapack INTERFACE)
+	target_link_libraries(lapack INTERFACE ${LAPACK_LIBRARIES})
+endif()
 
 #=============================================================================#
 #========================== Libraries ========================================#
@@ -91,16 +99,32 @@ if (HTOOL_WITH_GUI)
 endif()
 
 #=== HTOOL
-if(MPI_FOUND AND BLAS_FOUND)
+if(MPI_FOUND AND BLAS_FOUND AND LAPACK_FOUND)
 	message("-- Htool and dependencies found")
+	#=== HPDDM
+	find_path(hpddm_include_dir "HPDDM.hpp" "${CMAKE_CURRENT_SOURCE_DIR}/external/hpddm/include")
+	if(hpddm_include_dir)
+		message("-- HPDDM and dependencies found")
+	elseif(NOT hpddm_include_dir)
+		execute_process(COMMAND git submodule update --init --recursive
+	                    WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
+	    set(hpddm_include_dir "${CMAKE_CURRENT_SOURCE_DIR}/external/hpddm/include")
+	endif()
+	add_library(hpddm INTERFACE)
+	target_include_directories(hpddm INTERFACE "${hpddm_include_dir}")
+	target_link_libraries(hpddm INTERFACE
+						blas
+						lapack)
+	#===
+
 	add_library(htool INTERFACE)
 	target_include_directories(htool INTERFACE
-						${CMAKE_BINARY_DIR}/generated/
 						${htool_include_dir}
 						${MPI_INCLUDE_PATH})
 	target_link_libraries(htool INTERFACE
 						${MPI_LIBRARIES}
-						${BLAS_LIBRARIES})
+						${BLAS_LIBRARIES}
+					hpddm)
 
 	# For headers to show in IDE
 	target_sources(htool INTERFACE ${htool_include_dir})

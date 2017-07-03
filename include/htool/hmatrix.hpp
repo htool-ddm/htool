@@ -85,7 +85,7 @@ public:
 
 
 
-
+	void mvprod(const T* const in, T* const out) const;
 	std::vector<T> operator*( const std::vector<T>& x) const;
 
 	// 1- !!!
@@ -450,16 +450,14 @@ void HMatrix<LowRankMatrix,T >::ComputeBlocks(const IMatrix<T>& mat){
 		}
 	}
 
-template< template<typename> class LowRankMatrix, typename T >
-std::vector<T> HMatrix<LowRankMatrix,T >::operator*(const std::vector<T>& x) const{
+template< template<typename> class LowRankMatrix, typename T>
+void HMatrix<LowRankMatrix,T >::mvprod(const T* const in, T* const out) const{
 	int rankWorld, sizeWorld;
   MPI_Comm_size(comm, &sizeWorld);
   MPI_Comm_rank(comm, &rankWorld);
 
 	double time = MPI_Wtime();
-	assert(nc==x.size());
 
-	std::vector<T> result(nr,0);
 
 	// Contribution champ lointain
 	for(int b=0; b<MyFarFieldMats.size(); b++){
@@ -472,12 +470,12 @@ std::vector<T> HMatrix<LowRankMatrix,T >::operator*(const std::vector<T>& x) con
 		std::vector<T> rhs(Is.size());
 
 		for (int i=0; i<Is.size(); i++)
-			rhs[i] = x[Is[i]];
+			rhs[i] = in[Is[i]];
 
 		lhs=M*rhs;
 
 		for (int i=0; i<It.size(); i++)
-			result[It[i]] += lhs[i];
+			out[It[i]] += lhs[i];
 	}
 
 	// Contribution champ proche
@@ -491,12 +489,12 @@ std::vector<T> HMatrix<LowRankMatrix,T >::operator*(const std::vector<T>& x) con
 		std::vector<T> rhs(Is.size());
 
 		for (int i=0; i<Is.size(); i++)
-			rhs[i] = x[Is[i]];
+			rhs[i] = in[Is[i]];
 
 		lhs=M*rhs;
 
 		for (int i=0; i<It.size(); i++)
-			result[It[i]] += lhs[i];
+			out[It[i]] += lhs[i];
 	}
 
 	/*
@@ -509,7 +507,7 @@ std::vector<T> HMatrix<LowRankMatrix,T >::operator*(const std::vector<T>& x) con
 	snd.resize(MasterClusters[rankWorld].size());
 
 	std::vector<T> rcv;
-	rcv.resize(result.size());
+	rcv.resize(nr);
 
 	std::vector<int> recvcounts(sizeWorld);
 	std::vector<int>  displs(sizeWorld);
@@ -523,14 +521,14 @@ std::vector<T> HMatrix<LowRankMatrix,T >::operator*(const std::vector<T>& x) con
 	}
 
 	for (int i=0; i< MasterClusters[rankWorld].size(); i++) {
-		snd[i] = result[MasterClusters[rankWorld][i]];
+		snd[i] = out[MasterClusters[rankWorld][i]];
 	}
 
 	MPI_Allgatherv(&(snd.front()), recvcounts[rankWorld], wrapper_mpi<T>::mpi_type(), &(rcv.front()), &(recvcounts.front()), &(displs.front()), wrapper_mpi<T>::mpi_type(), comm);
 
 	for (int i=0; i<sizeWorld; i++)
 	for (int j=0; j< MasterClusters[i].size(); j++)
-		result[MasterClusters[i][j]] = rcv[displs[i]+j];
+		out[MasterClusters[i][j]] = rcv[displs[i]+j];
 
 	//MPI_Allreduce(MPI_IN_PLACE, &f.front(), f.size(), MPI_DOUBLE_COMPLEX, MPI_SUM, comm);
 
@@ -550,9 +548,19 @@ std::vector<T> HMatrix<LowRankMatrix,T >::operator*(const std::vector<T>& x) con
 // MPI_Allreduce(MPI_IN_PLACE, &result.front(), result.size(), wrapper_mpi<T>::mpi_type(), MPI_SUM, comm);
 //
 // return result;
-	return result;
+	// return result;
 
 }
+
+
+template< template<typename> class LowRankMatrix, typename T>
+std::vector<T> HMatrix<LowRankMatrix,T >::operator*(const std::vector<T>& x) const{
+	assert(x.size()==nc);
+	std::vector<T> result(nr,0);
+	mvprod(x.data(),result.data());
+	return result;
+}
+
 
 template< template<typename> class LowRankMatrix, typename T >
 double HMatrix<LowRankMatrix,T >::compression() const{

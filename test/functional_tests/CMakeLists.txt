@@ -10,3 +10,5 @@ add_subdirectory(cluster_tests)
 add_subdirectory(hmat_SVD_tests)
 add_subdirectory(hmat_fullACA_tests)
 add_subdirectory(hmat_partialACA_tests)
+
+add_subdirectory(hpddm_tests)
