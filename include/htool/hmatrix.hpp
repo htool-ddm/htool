@@ -70,19 +70,21 @@ public:
 	int nb_rows() const { return nr;}
 	int nb_cols() const { return nc;}
 	MPI_Comm get_comm() const {return comm;}
-	int get_nlrmat() const {return MyFarFieldMats.size();}
-	int get_ndmat() const {return MyNearFieldMats.size();}
+	int get_nlrmat() const {
+		int res=MyFarFieldMats.size(); MPI_Allreduce(MPI_IN_PLACE, &res, 1, MPI_INT, MPI_SUM, comm); return res;
+	}
+	int get_ndmat() const {
+		int res=MyNearFieldMats.size(); MPI_Allreduce(MPI_IN_PLACE, &res, 1, MPI_INT, MPI_SUM, comm); return res;
+	}
+
 	LowRankMatrix<T> get_lrmat(int i) const{return MyFarFieldMats[i];}
 
 	std::map<std::string,double>& get_stats () const { return stats;}
 	void add_stats(const std::string& keyname, const double& value){stats[keyname]=value;}
 	void print_stats();
 
-	int nb_lrmats(){
-		int res=MyFarFieldMats.size(); MPI_Allreduce(MPI_IN_PLACE, &res, 1, MPI_INT, MPI_SUM, comm); return res;
-	}
-	int nb_densemats(){
-		int res=MyNearFieldMats.size(); MPI_Allreduce(MPI_IN_PLACE, &res, 1, MPI_INT, MPI_SUM, comm); return res;}
+
+
 
 	std::vector<T> operator*( const std::vector<T>& x) const;
 
@@ -298,12 +300,14 @@ void HMatrix<LowRankMatrix, T >::ScatterTasks(){
 	int rankWorld, sizeWorld;
   MPI_Comm_size(comm, &sizeWorld);
   MPI_Comm_rank(comm, &rankWorld);
+	std::cout << "Tasks : "<<Tasks.size()<<std::endl;
   for(int b=0; b<Tasks.size(); b++){
     	//if (b%sizeWorld == rankWorld)
     if ((*(Tasks[b])).tgt_().get_rank() == rankWorld){
     		MyBlocks.push_back(Tasks[b]);
 		}
 	}
+	std::cout << "rank : "<<rankWorld<<" "<<"Block : "<<MyBlocks.size() <<std::endl;
 }
 
 template< template<typename> class LowRankMatrix, typename T >
