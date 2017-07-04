@@ -457,7 +457,7 @@ void HMatrix<LowRankMatrix,T >::mvprod(const T* const in, T* const out) const{
   MPI_Comm_rank(comm, &rankWorld);
 
 	double time = MPI_Wtime();
-
+	std::fill(out,out+nr,0);
 
 	// Contribution champ lointain
 	for(int b=0; b<MyFarFieldMats.size(); b++){
@@ -478,6 +478,7 @@ void HMatrix<LowRankMatrix,T >::mvprod(const T* const in, T* const out) const{
 			out[It[i]] += lhs[i];
 	}
 
+
 	// Contribution champ proche
 	for(int b=0; b<MyNearFieldMats.size(); b++){
 		const SubMatrix<T>&  M  = MyNearFieldMats[b];
@@ -496,12 +497,6 @@ void HMatrix<LowRankMatrix,T >::mvprod(const T* const in, T* const out) const{
 		for (int i=0; i<It.size(); i++)
 			out[It[i]] += lhs[i];
 	}
-
-	/*
-	vectCplx res;
-	res.resize(f.size());
-	int offset = 0;
-	*/
 
 	std::vector<T> snd;
 	snd.resize(MasterClusters[rankWorld].size());
