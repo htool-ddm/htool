@@ -348,63 +348,52 @@ public:
 		return std::pair<int,int> (p% M.nr,(int) p/M.nr);
 	}
 
-  //
-  //   friend int matrix_to_bytes(const Matrix& A, const std::string& file){
-  //
-	// 	std::ofstream out(file,std::ios::out | std::ios::binary | std::ios::trunc);
-  //
-  //   	if(!out) {
-  //   		std::cout << "Cannot open file.";
-  //   		return 1;
-  //  		}
-  //
-	// 	/*
-  //   	for(int i = 0; i < A.nr; i++){
-  //       	for(int j = 0; j < A.nc; j++){
-  //           	double cf = real(A(i,j));
-	// 			out.write((char *) &cf, sizeof cf);
-  //       	}
-  //   	}
-  //   	*/
-  //   	int rows=nb_rows(A), cols=nb_cols(A);
-  //   	out.write((char*) (&rows), sizeof(int));
-  //   	out.write((char*) (&cols), sizeof(int));
-  //   	out.write((char*) &(A.mat[0]), rows*cols*sizeof(Cplx) );
-  //
-  //   	out.close();
-  //   	return 0;
-	// }
-  //
-	// friend int bytes_to_matrix(const std::string& file, Matrix& A){
-  //
-	// 	std::ifstream in(file,std::ios::in | std::ios::binary);
-  //
-  //   	if(!in) {
-  //   		std::cout << "Cannot open file.";
-  //   		return 1;
-  //  		}
-  //
-  //   	int rows=0, cols=0;
-  //   	in.read((char*) (&rows), sizeof(int));
-  //   	in.read((char*) (&cols), sizeof(int));
-  //   	A.resize(rows,cols);
-  //   	in.read( (char *) &(A.mat[0]) , rows*cols*sizeof(Cplx) );
-  //
-  //   	in.close();
-  //   	return 0;
-	// }
+  //! ### Looking for the entry of maximal modulus
+	/*!
+	 Save a Matrix in a file (bytes)
+  */
+  int matrix_to_bytes(const std::string& file){
 
-	// friend double squared_absolute_error (const Matrix& m1, const Matrix& m2){
-	// 	assert(nb_rows(m1)==nb_rows(m2) && nb_cols(m1)==nb_cols(m2));
-	// 	double err=0;
-	// 	for (int j=0;j<m1.nr;j++){
-	// 		for (int k=0;k<m1.nc;k++){
-  //
-	// 			err+=std::pow(std::abs(m1(j,k)-m2(j,k)),2);
-	// 		}
-	// 	}
-	// 	return err;
-	// }
+		std::ofstream out(file,std::ios::out | std::ios::binary | std::ios::trunc);
+
+    if(!out) {
+    	std::cout << "Cannot open file."<<std::endl;
+    	return 1;
+   	}
+    int rows = this->nr;
+    int cols = this->nc;
+  	out.write((char*) (&rows), sizeof(int));
+  	out.write((char*) (&cols), sizeof(int));
+  	out.write((char*) &(mat[0]), rows*cols*sizeof(T) );
+
+  	out.close();
+  	return 0;
+	}
+
+  //! ### Looking for the entry of maximal modulus
+	/*!
+	 Load a matrix from a file (bytes)
+  */
+	int bytes_to_matrix(const std::string& file){
+
+		std::ifstream in(file,std::ios::in | std::ios::binary);
+
+    	if(!in) {
+    		std::cout << "Cannot open file."<<std::endl;
+    		return 1;
+   		}
+
+    	int rows=0, cols=0;
+    	in.read((char*) (&rows), sizeof(int));
+    	in.read((char*) (&cols), sizeof(int));
+    	mat.resize(rows*cols);
+      this->nr=rows;
+      this->nc=cols;
+    	in.read( (char *) &(mat[0]) , rows*cols*sizeof(T) );
+
+    	in.close();
+    	return 0;
+	}
 
 };
 
