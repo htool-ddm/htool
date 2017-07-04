@@ -92,7 +92,6 @@ int main(){
 			tab2[j]=j;
 		}
 
-		vector<double> rhs(p2.size(),1);
 		MyMatrix A(p1,p2);
 		HMatrix<fullACA,double> HA(A,p1,tab1,p2,tab2);
 
