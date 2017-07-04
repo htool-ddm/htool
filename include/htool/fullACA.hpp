@@ -63,7 +63,7 @@ public:
 			}
 
 			// Full pivot
-			int q=1;
+			int q=0;
 			int reqrank = this->rank;
 			std::vector<std::vector<T> > uu;
 			std::vector<std::vector<T> > vv;
@@ -71,8 +71,10 @@ public:
 
 			while (((reqrank > 0) && (q < reqrank) ) ||
 			      ( (reqrank < 0) && ( normFrob(M)>this->epsilon ) )) {
+
+				q+=1;
 				if (q*(this->nr+this->nc) > (this->nr*this->nc)) { // the current rank would not be advantageous
-					std::cout << "Pas avantageux" << std::endl;
+					q=-1;
 					break;
 				}
 				else{
@@ -87,15 +89,10 @@ public:
 							M(i,j)-=uu[q-1][i]*vv[q-1][j];
 						}
 					}
-					q+=1;
 				}
 			}
-			this->rank=q-1;
-			if (this->rank==0){
-				this->U.resize(this->nr,1);
-				this->V.resize(1,this->nc);
-			}
-			else{
+			this->rank=q;
+			if (this->rank>0){
 				this->U.resize(this->nr,this->rank);
 				this->V.resize(this->rank,this->nc);
 				for (int k=0;k<this->rank;k++){
