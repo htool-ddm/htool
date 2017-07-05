@@ -481,11 +481,6 @@ void HMatrix<LowRankMatrix,T >::mvprod_global(const T* const in, T* const out) c
 
 		for (int i=0; i<It.size(); i++)
 			out[It[i]] += lhs[i];
-        double max_test=0;
-        for(int i=0;i<nr;i++){
-            max_test = std::max(max_test,out[i]);
-        }
-        // std::cout<<b<<" "<<max_test<<std::endl;
 	}
 
 

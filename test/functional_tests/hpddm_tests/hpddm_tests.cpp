@@ -104,20 +104,35 @@ int main(int argc, char const *argv[]){
 			cout << "compression : "<<comp<<endl;
 		}
 
+  	double mytime, maxtime, meantime;
+
 		std::vector<double> x_ref(nc,1),f(nc,1),x_test_global(nc,1);
 		vector<R3> p1_local(nc),p2_local(nc);
 		f=A*x_ref;
 		nc=HA.get_local_size_cluster();
 		const std::vector<std::vector<int>>& MasterClusters = HA.get_MasterClusters();
-		std::vector<double> x_test_local(nc,0),f_local(nc,1);
+		std::vector<double> x_ref_local(nc,0),x_test_local(nc,0),f_local(nc,1);
 		for (int i=0;i<nc;i++){
 			f_local[i]=f[MasterClusters[rank][i]];
-			p1_local[i]=p1[MasterClusters[rank][i]];
-			p2_local[i]=p2[MasterClusters[rank][i]];
 		}
-		// MyMatrix A_local(p1,p2_local);
-    // f = A*x_ref;
-
+		mytime = MPI_Wtime();
+    HA.mvprod_global(x_ref.data(),f.data());
+		mytime= MPI_Wtime() - mytime;
+		MPI_Reduce(&mytime, &maxtime, 1, MPI_DOUBLE, MPI_MAX, 0,HA.get_comm());
+		MPI_Reduce(&mytime, &meantime, 1, MPI_DOUBLE, MPI_SUM, 0,HA.get_comm());
+		meantime/=size;
+		if (rank==0){
+			cout << maxtime<<" "<<meantime<<endl;
+		}
+		mytime = MPI_Wtime();
+    HA.mvprod_local(x_ref_local.data(),f_local.data());
+		mytime= MPI_Wtime() - mytime;
+		MPI_Reduce(&mytime, &maxtime, 1, MPI_DOUBLE, MPI_MAX, 0,HA.get_comm());
+		MPI_Reduce(&mytime, &meantime, 1, MPI_DOUBLE, MPI_SUM, 0,HA.get_comm());
+		meantime/=size;
+		if (rank==0){
+			cout << maxtime<<" "<<meantime<<endl;
+		}
 
 		// cout << pow(norm2(fl),2)<<endl;
 
@@ -130,43 +145,43 @@ int main(int argc, char const *argv[]){
 		// 	cout <<"error on mat vec prod : "<<erreur2 << endl;
 		// }
 		//
-    HPDDMOperator<fullACA,double> A_HPDDM(HA,A);
-    double* const rhs = &(f_local[0]);
-    double* x = &(x_test_local[0]);
-		double time = MPI_Wtime();
-    HPDDM::IterativeMethod::solve(A_HPDDM, rhs, x, 1,HA.get_comm());
-		if (rank==0){
-			cout << MPI_Wtime() - time<<endl;
-		}
-		std::vector<double> rcv;
-		rcv.resize(nr);
-
-		std::vector<int> recvcounts(size);
-		std::vector<int>  displs(size);
-
-		displs[0] = 0;
-
-		for (int i=0; i<size; i++) {
-			recvcounts[i] = MasterClusters[i].size();
-			if (i > 0)
-				displs[i] = displs[i-1] + recvcounts[i-1];
-		}
-
-
-		MPI_Allgatherv(&(x_test_local.front()), recvcounts[rank], MPI_DOUBLE, &(rcv.front()), &(recvcounts.front()), &(displs.front()), MPI_DOUBLE, HA.get_comm());
-
-		for (int i=0; i<size; i++)
-		for (int j=0; j< MasterClusters[i].size(); j++)
-			x_test_global[MasterClusters[i][j]] = rcv[displs[i]+j];
-
-
-
-		double inv_erreur2_global=norm2(f-A*x_test_global)/norm2(f);
-
-    if (rank==0){
-      cout <<"error on inversion : "<<inv_erreur2_global << endl;
-
-    }
+    // HPDDMOperator<fullACA,double> A_HPDDM(HA,A);
+    // double* const rhs = &(f_local[0]);
+    // double* x = &(x_test_local[0]);
+		// double time = MPI_Wtime();
+    // HPDDM::IterativeMethod::solve(A_HPDDM, rhs, x, 1,HA.get_comm());
+		// if (rank==0){
+		// 	cout << MPI_Wtime() - time<<endl;
+		// }
+		// std::vector<double> rcv;
+		// rcv.resize(nr);
+		//
+		// std::vector<int> recvcounts(size);
+		// std::vector<int>  displs(size);
+		//
+		// displs[0] = 0;
+		//
+		// for (int i=0; i<size; i++) {
+		// 	recvcounts[i] = MasterClusters[i].size();
+		// 	if (i > 0)
+		// 		displs[i] = displs[i-1] + recvcounts[i-1];
+		// }
+		//
+		//
+		// MPI_Allgatherv(&(x_test_local.front()), recvcounts[rank], MPI_DOUBLE, &(rcv.front()), &(recvcounts.front()), &(displs.front()), MPI_DOUBLE, HA.get_comm());
+		//
+		// for (int i=0; i<size; i++)
+		// for (int j=0; j< MasterClusters[i].size(); j++)
+		// 	x_test_global[MasterClusters[i][j]] = rcv[displs[i]+j];
+		//
+		//
+		//
+		// double inv_erreur2_global=norm2(f-A*x_test_global)/norm2(f);
+		//
+    // if (rank==0){
+    //   cout <<"error on inversion : "<<inv_erreur2_global << endl;
+		//
+    // }
 		// test = test || !(inv_erreur2<1.e-6); // default tol in hpddm
 
 	}
