@@ -97,7 +97,7 @@ int main(){
 		cout << "Errors with Frobenius norm: "<<fullACA_errors<<endl;
 
 		// Test compression
-		test = test || !(0.89<A_fullACA.compression() && A_fullACA.compression()<0.9);
+		test = test || !(0.87<A_fullACA.compression() && A_fullACA.compression()<0.89);
 		cout << "Compression rate : "<<A_fullACA.compression()<<endl;
 
 		// Test error on mat vec prod
