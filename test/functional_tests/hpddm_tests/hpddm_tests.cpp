@@ -96,7 +96,7 @@ int main(int argc, char const *argv[]){
 		HMatrix<fullACA,double> HA(A,p1,tab1,p2,tab2);
 		int nbr_dmat = HA.get_ndmat();
 		int nbr_lmat = HA.get_nlrmat();
-		int comp = HA.compression();
+		double comp = HA.compression();
 
 		if (rank==0){
 			cout << "nbr_dmat : "<<nbr_dmat<<endl;
