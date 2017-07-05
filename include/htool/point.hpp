@@ -4,6 +4,8 @@
 #include <complex>
 #include <array>
 #include <numeric>
+#include <iterator>
+
 namespace htool {
 
 typedef std::complex<double>       Cplx;

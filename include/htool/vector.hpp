@@ -8,6 +8,7 @@
 #include <numeric>
 #include <complex>
 #include <cassert>
+#include <iterator>
 
 namespace htool {
 //================================//
