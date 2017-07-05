@@ -40,6 +40,7 @@ private:
 	std::vector<Block*>		   MyBlocks;
 
 	std::vector<std::vector<int>>	   MasterClusters;
+	int local_cluster_size;
 
 	std::vector<LowRankMatrix<T> > MyFarFieldMats;
 	std::vector<SubMatrix<T> >     MyNearFieldMats;
@@ -76,6 +77,8 @@ public:
 	int get_ndmat() const {
 		int res=MyNearFieldMats.size(); MPI_Allreduce(MPI_IN_PLACE, &res, 1, MPI_INT, MPI_SUM, comm); return res;
 	}
+	int get_local_size_cluster() const{return local_cluster_size;}
+	const std::vector<std::vector<int>>& get_MasterClusters() const {return MasterClusters;}
 
 	LowRankMatrix<T> get_lrmat(int i) const{return MyFarFieldMats[i];}
 
@@ -85,7 +88,8 @@ public:
 
 
 
-	void mvprod(const T* const in, T* const out) const;
+	void mvprod_global(const T* const in, T* const out) const;
+	void mvprod_local(const T* const in, T* const out) const;
 	std::vector<T> operator*( const std::vector<T>& x) const;
 
 	// 1- !!!
@@ -142,6 +146,7 @@ HMatrix<LowRankMatrix, T >::HMatrix(const IMatrix<T>& mat,
   t.build();s.build();
 	assert(std::pow(2,t.get_min_depth())>sizeWorld);
 	SetRanks(t);
+	local_cluster_size=MasterClusters[rankWorld].size();
 	myttime[0] = MPI_Wtime() - time;
 
 	// Construction arbre des blocs
@@ -451,7 +456,7 @@ void HMatrix<LowRankMatrix,T >::ComputeBlocks(const IMatrix<T>& mat){
 	}
 
 template< template<typename> class LowRankMatrix, typename T>
-void HMatrix<LowRankMatrix,T >::mvprod(const T* const in, T* const out) const{
+void HMatrix<LowRankMatrix,T >::mvprod_global(const T* const in, T* const out) const{
 	int rankWorld, sizeWorld;
   MPI_Comm_size(comm, &sizeWorld);
   MPI_Comm_rank(comm, &rankWorld);
@@ -476,6 +481,11 @@ void HMatrix<LowRankMatrix,T >::mvprod(const T* const in, T* const out) const{
 
 		for (int i=0; i<It.size(); i++)
 			out[It[i]] += lhs[i];
+        double max_test=0;
+        for(int i=0;i<nr;i++){
+            max_test = std::max(max_test,out[i]);
+        }
+        // std::cout<<b<<" "<<max_test<<std::endl;
 	}
 
 
@@ -547,12 +557,88 @@ void HMatrix<LowRankMatrix,T >::mvprod(const T* const in, T* const out) const{
 
 }
 
+template< template<typename> class LowRankMatrix, typename T>
+void HMatrix<LowRankMatrix,T >::mvprod_local(const T* const in, T* const out) const{
+	int rankWorld, sizeWorld;
+  MPI_Comm_size(comm, &sizeWorld);
+  MPI_Comm_rank(comm, &rankWorld);
+
+	// Gather du in
+	std::vector<T> rcv(nr),in_global(nr);
+	std::vector<int> recvcounts(sizeWorld);
+	std::vector<int>  displs(sizeWorld);
+
+	displs[0] = 0;
+
+	for (int i=0; i<sizeWorld; i++) {
+		recvcounts[i] = MasterClusters[i].size();
+		if (i > 0)
+			displs[i] = displs[i-1] + recvcounts[i-1];
+	}
+
+	MPI_Allgatherv(in, recvcounts[rankWorld], wrapper_mpi<T>::mpi_type(), &(rcv.front()), &(recvcounts.front()), &(displs.front()), wrapper_mpi<T>::mpi_type(), comm);
+
+	for (int i=0; i<sizeWorld; i++)
+	for (int j=0; j< MasterClusters[i].size(); j++)
+		in_global[MasterClusters[i][j]] = rcv[displs[i]+j];
+
+	// Init out
+	double time = MPI_Wtime();
+	std::fill(rcv.begin(),rcv.end(),0);
+
+	// Contribution champ lointain
+	for(int b=0; b<MyFarFieldMats.size(); b++){
+		const LowRankMatrix<T>&  M  = MyFarFieldMats[b];
+		const std::vector<int>&        It = M.get_ir();
+		const std::vector<int>&        Is = M.get_ic();
+
+
+		std::vector<T> lhs(It.size());
+		std::vector<T> rhs(Is.size());
+
+		for (int i=0; i<Is.size(); i++)
+			rhs[i] = in_global[Is[i]];
+
+		lhs=M*rhs;
+
+		for (int i=0; i<It.size(); i++)
+			rcv[It[i]] += lhs[i];
+	}
+
+
+	// Contribution champ proche
+	for(int b=0; b<MyNearFieldMats.size(); b++){
+		const SubMatrix<T>&  M  = MyNearFieldMats[b];
+
+		const std::vector<int>& It = M.get_ir();
+		const std::vector<int>& Is = M.get_ic();
+
+		std::vector<T> lhs(It.size());
+		std::vector<T> rhs(Is.size());
+
+		for (int i=0; i<Is.size(); i++)
+			rhs[i] = in_global[Is[i]];
+
+		lhs=M*rhs;
+
+		for (int i=0; i<It.size(); i++)
+			rcv[It[i]] += lhs[i];
+	}
+
+
+	for (int i=0; i< MasterClusters[rankWorld].size(); i++) {
+		out[i] = rcv[MasterClusters[rankWorld][i]];
+	}
+
+
+
+}
 
 template< template<typename> class LowRankMatrix, typename T>
 std::vector<T> HMatrix<LowRankMatrix,T >::operator*(const std::vector<T>& x) const{
 	assert(x.size()==nc);
 	std::vector<T> result(nr,0);
-	mvprod(x.data(),result.data());
+	mvprod_global(x.data(),result.data());
 	return result;
 }
 
