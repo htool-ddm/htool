@@ -70,7 +70,7 @@ public:
 			double Norm = normFrob(M);
 
 			while (((reqrank > 0) && (q < reqrank) ) ||
-			      ( (reqrank < 0) && ( normFrob(M)>this->epsilon ) )) {
+			      ( (reqrank < 0) && ( normFrob(M)/Norm>this->epsilon ) )) {
 
 				q+=1;
 				if (q*(this->nr+this->nc) > (this->nr*this->nc)) { // the current rank would not be advantageous
