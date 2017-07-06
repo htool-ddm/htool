@@ -642,20 +642,20 @@ template< template<typename> class LowRankMatrix, typename T >
 double HMatrix<LowRankMatrix,T >::compression() const{
 
 	double mycomp = 0.;
-	double size = nr*nc;
-
+	double size = ((long int)this->nr)*this->nc;
+	double nr_b ,nc_b,rank;
 
 	for(int j=0; j<MyFarFieldMats.size(); j++){
-		double nr   = MyFarFieldMats[j].nb_rows();
-		double nc   = MyFarFieldMats[j].nb_cols();
-		double rank = MyFarFieldMats[j].rank_of();
-		mycomp += rank*(nr + nc)/size;
+		nr_b  = MyFarFieldMats[j].nb_rows();
+		nc_b   = MyFarFieldMats[j].nb_cols();
+		rank = MyFarFieldMats[j].rank_of();
+		mycomp += rank*(nr_b + nc_b)/size;
 	}
 
 	for(int j=0; j<MyNearFieldMats.size(); j++){
-		double nr   = MyNearFieldMats[j].nb_rows();
-		double nc   = MyNearFieldMats[j].nb_cols();
-		mycomp += nr*nc/size;
+		nr_b   = MyNearFieldMats[j].nb_rows();
+		nc_b   = MyNearFieldMats[j].nb_cols();
+		mycomp += nr_b*nc_b/size;
 	}
 
 	double comp = 0;
@@ -666,13 +666,13 @@ double HMatrix<LowRankMatrix,T >::compression() const{
 	return 1-comp;
 }
 
-template<typename T, template<typename> class LowRankMatrix >
-void print_stats(const HMatrix<LowRankMatrix,T>& A, const MPI_Comm& comm=MPI_COMM_WORLD){
+template<template<typename> class LowRankMatrix,typename T >
+void HMatrix<LowRankMatrix,T >::print_stats(){
 	int rankWorld;
     MPI_Comm_rank(comm, &rankWorld);
 
 	if (rankWorld==0){
-		for (std::map<std::string,double>::const_iterator it = A.stats.begin() ; it != A.stats.end() ; ++it){
+		for (std::map<std::string,double>::const_iterator it = stats.begin() ; it != stats.end() ; ++it){
 			std::cout<<it->first<<"\t"<<it->second<<std::endl;
 		}
 	}
