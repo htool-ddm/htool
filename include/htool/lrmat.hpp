@@ -140,6 +140,27 @@ double Frobenius_absolute_error(const LowRankMatrix<T>& lrmat, const IMatrix<T>&
   return std::sqrt(err);
 }
 
+template<typename T >
+double Frobenius_absolute_error(const LowRankMatrix<std::complex<T>>& lrmat, const IMatrix<std::complex<T>>& ref, int reqrank=-1){
+  assert(reqrank<=lrmat.rank_of());
+  if (reqrank==-1){
+    reqrank=lrmat.rank_of();
+  }
+  T err = 0;
+  std::vector<int> ir = lrmat.get_ir();
+  std::vector<int> ic = lrmat.get_ic();
+
+  for (int j=0;j<lrmat.nb_rows();j++){
+    for (int k=0;k<lrmat.nb_cols();k++){
+      std::complex<T> aux=ref.get_coef(ir[j],ic[k]);
+      for (int l=0;l<reqrank;l++){
+        aux = aux - lrmat.get_U(j,l) * lrmat.get_V(l,k);
+      }
+      err+=std::pow(std::abs(aux),2);
+    }
+  }
+  return std::sqrt(err);
+}
 
 
 
