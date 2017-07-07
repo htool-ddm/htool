@@ -17,7 +17,7 @@ class MyMatrix: public IMatrix<double>{
 
 public:
 	MyMatrix(const vector<R3>& p10,const vector<R3>& p20 ):IMatrix<double>(p10.size(),p20.size()),p1(p10),p2(p20) {}
-	 double get_coef(const int& i, const int& j)const {return 1./(4*M_PI*norm(p1[i]-p2[j]));}
+	 double get_coef(const int& i, const int& j)const {return 1./(4*M_PI*norm2(p1[i]-p2[j]));}
 	 std::vector<double> operator*(std::vector<double>& a){
 		std::vector<double> result(p1.size(),0);
 		for (int i=0;i<p1.size();i++){
