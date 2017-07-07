@@ -1,2 +1,2 @@
 add_subdirectory(functional_tests)
-add_subdirectory(validation_tests)
+add_subdirectory(performance_tests)
