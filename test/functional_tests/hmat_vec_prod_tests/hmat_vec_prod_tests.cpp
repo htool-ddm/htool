@@ -1,6 +1,5 @@
 #include <htool/fullACA.hpp>
 #include <htool/hmatrix.hpp>
-#include <htool/loading.hpp>
 
 using namespace std;
 using namespace htool;
@@ -13,7 +12,7 @@ class MyMatrix: public IMatrix<double>{
 public:
 	MyMatrix(const vector<R3>& p10,const vector<R3>& p20 ):IMatrix(p10.size(),p20.size()),p1(p10),p2(p20) {}
 
-	double get_coef(const int& i, const int& j)const {return 1./(4*M_PI*norm(p1[i]-p2[j]));}
+	double get_coef(const int& i, const int& j)const {return 1./(4*M_PI*norm2(p1[i]-p2[j]));}
 
 
   std::vector<double> operator*(std::vector<double> a){
@@ -49,9 +48,6 @@ int main(int argc, char const *argv[]) {
   SetEpsilon(1e-6);
   SetEta(0.1);
   SetMinClusterSize(100);
-  typedef double scalar_type;
-
-
 
   	for(int idist=0; idist<ndistance; idist++)
   	{
@@ -92,7 +88,7 @@ int main(int argc, char const *argv[]) {
   		MyMatrix A(p1,p2);
 
 
-  		HMatrix<fullACA,scalar_type> HA(A,p1,tab1,p2,tab2);
+  		HMatrix<fullACA,double> HA(A,p1,tab1,p2,tab2);
   		int nbr_dmat = HA.get_ndmat();
   		int nbr_lmat = HA.get_nlrmat();
   		double comp = HA.compression();
@@ -107,12 +103,12 @@ int main(int argc, char const *argv[]) {
 
 
       // Global vectors
-  		std::vector<scalar_type> x_global(nc,1),f_global(nr),f_global_test(nr);
+  		std::vector<double> x_global(nc,1),f_global(nr),f_global_test(nr);
 
       // Local vectors
   		int nr_local=HA.get_local_size_cluster();
   		const std::vector<std::vector<int>>& MasterClusters = HA.get_MasterClusters();
-  		std::vector<scalar_type> x_local(nr_local,1),f_local(nr_local),f_local_test(nr_local);
+  		std::vector<double> x_local(nr_local,1),f_local(nr_local),f_local_test(nr_local);
 
 
       // Global product

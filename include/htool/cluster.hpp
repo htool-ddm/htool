@@ -132,7 +132,7 @@ void Cluster::build(){
 		curr->rad=0.;
 		for(int j=0; j<nb_pt; j++){
 			R3 u = curr->x[curr->tab[curr->num[j]]] - xc;
-			curr->rad=std::max(curr->rad,norm(u));
+			curr->rad=std::max(curr->rad,norm2(u));
 			for(int p=0; p<3; p++){
 				for(int q=0; q<3; q++){
 					cov(p,q) += u[p]*u[q];
@@ -364,7 +364,7 @@ public:
 	const Cluster& src_() const {return *(s);}
 	void ComputeAdmissibility() {
 		// Rjasanow - Steinbach (3.15) p111 Chap Approximation of Boundary Element Matrices
-		Admissible =  2*std::min((*t).get_rad(),(*s).get_rad()) < eta* (norm((*t).get_ctr()-(*s).get_ctr())-(*t).get_rad()-(*s).get_rad() )  ;
+		Admissible =  2*std::min((*t).get_rad(),(*s).get_rad()) < eta* (norm2((*t).get_ctr()-(*s).get_ctr())-(*t).get_rad()-(*s).get_rad() )  ;
 	}
 	bool IsAdmissible() const{
 		assert(Admissible != -1);
