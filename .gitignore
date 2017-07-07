@@ -32,10 +32,8 @@
 build*/
 
 # Data
-data
-matrices
-matrice
-*.dat
+data/*
+!data/data_test/
 
 # Temporary files
 *~
