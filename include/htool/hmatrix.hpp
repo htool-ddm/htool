@@ -10,8 +10,6 @@
 #include "cluster.hpp"
 #include "wrapper_mpi.hpp"
 
-// #include "loading.hpp"
-// #include "lrmat.hpp"
 namespace htool {
 
 
@@ -653,9 +651,6 @@ double HMatrix<LowRankMatrix,T >::compression() const{
 		nc_b   = MyFarFieldMats[j].nb_cols();
 		rank = MyFarFieldMats[j].rank_of();
 		mycomp += rank*(nr_b + nc_b)/size;
-		if (mycomp<0){
-			std::cout << "size : "<<size<<" nr_b : "<<nr_b<<" nc_b : "<<nc_b<<" rank : "<<rank<< std::endl;
-		}
 	}
 
 	for(int j=0; j<MyNearFieldMats.size(); j++){

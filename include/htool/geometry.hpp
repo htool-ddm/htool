@@ -199,6 +199,59 @@ void LoadPoints(const char* filename, std::vector<R3>& x, std::vector<double>& r
 
 }
 
+
+//==================================================//
+//
+//  DESCRIPTION:
+//  Charge les donnees geometriques
+//  associees au nuage de points
+//
+//  INPUT:
+//  filename: nom du fichier de maillage
+//
+//  OUTPUT:
+//  x: nuage de points (centre des elements)
+//  r: rayon de champ proche associe a chaque point
+//
+//==================================================//
+
+void LoadGMSHMesh(const std::string& filename, std::vector<R3>& x){
+
+	x.clear();
+	int size =0;
+  std::istringstream iss;
+	std::ifstream file;
+	std::string line;
+
+	// Open file
+	file.open(filename);
+	if(!file.good()){
+		std::cout << "Cannot open mesh file\n";
+		return 1;
+	}
+
+	// Number of elements
+	while( line != "$Nodes" ){
+    getline(file,line);
+	}
+	file >> size;
+	x.resize(size);
+
+	// Read point
+	for (p=0;p<size;p++){
+		iss.str(line);
+		iss >> poubelle;
+		iss>>coord;
+		x[p]=coord;
+		iss.clear();
+		getline(file,line);
+	}
+
+	// Fermeture fichier
+	file.close();
+
+}
+
 }
 
 #endif
