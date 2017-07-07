@@ -16,7 +16,7 @@ int main(int argc, char const *argv[]) {
   test = test || (Md.matrix_to_bytes("Md"));
   test = test || (Pd.bytes_to_matrix("Md"));
   test = test || !(normFrob(Md-Pd)<1e-16);
-
+  cout << "diff : "<<normFrob(Md-Pd)<<endl;
 
   //// Matrix - complex double
   Matrix<complex<double> > Mcd(10,5);
@@ -29,7 +29,8 @@ int main(int argc, char const *argv[]) {
   }
   test = test || (Mcd.matrix_to_bytes("Mcd"));
   test = test || (Pcd.bytes_to_matrix("Mcd"));
-  test = test || !(normFrob(Md-Pd)<1e-16);
+  test = test || !(normFrob(Mcd-Pcd)<1e-16);
+  cout << "diff : "<<normFrob(Mcd-Pcd)<<endl;
 
   return test;
 }
