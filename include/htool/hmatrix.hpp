@@ -191,6 +191,7 @@ HMatrix<LowRankMatrix, T >::HMatrix(const IMatrix<T>& mat,
 	Cluster t(xt,tabt);t.build();
 	assert(std::pow(2,t.get_min_depth())>sizeWorld);
 	SetRanks(t);
+	local_cluster_size=MasterClusters[rankWorld].size();
 	myttime[0] = MPI_Wtime() - time;
 
 	// Construction arbre des blocs
