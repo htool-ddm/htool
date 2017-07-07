@@ -1,6 +1,6 @@
 #include <htool/fullACA.hpp>
 #include <htool/matrix.hpp>
-
+#include <htool/hmatrix.hpp>
 
 using namespace std;
 using namespace htool;
