@@ -4,6 +4,7 @@
 #include <vector>
 #include <functional>
 #include <iostream>
+#include <fstream>
 #include <algorithm>
 #include <numeric>
 #include <complex>
@@ -110,6 +111,41 @@ void operator/=(std::vector<T>& a, const V& value){
 template<typename T>
 T mean(const std::vector<T>& u){
 	return std::accumulate(u.begin(),u.end(),T(0))/T(u.size());
+}
+
+template<typename T>
+int vector_to_bytes(const std::vector<T> vect, const std::string& file){
+  std::ofstream out(file,std::ios::out | std::ios::binary | std::ios::trunc);
+
+  if(!out) {
+    std::cout << "Cannot open file."<<std::endl;
+    return 1;
+  }
+  int size = vect.size();
+  out.write((char*) (&size), sizeof(int));
+  out.write((char*) &(vect[0]), size*sizeof(T) );
+
+  out.close();
+  return 0;
+}
+
+template<typename T>
+int bytes_to_vector(std::vector<T>& vect, const std::string& file){
+
+  std::ifstream in(file,std::ios::in | std::ios::binary);
+
+    if(!in) {
+      std::cout << "Cannot open file."<<std::endl;
+      return 1;
+    }
+
+    int size=0;
+    in.read((char*) (&size), sizeof(int));
+    vect.resize(size);
+    in.read( (char *) &(vect[0]) , size*sizeof(T) );
+
+    in.close();
+    return 0;
 }
 
 //================================//
