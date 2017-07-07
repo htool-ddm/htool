@@ -328,6 +328,9 @@ bool HMatrix<LowRankMatrix,T >::UpdateBlocks(const IMatrix<T>& mat,const Cluster
 		if(MyFarFieldMats.back().rank_of()!=-1){
 			return true;
 		}
+		else {
+			MyFarFieldMats.pop_back();
+		}
 	}
 	if( s.IsLeaf() ){
 		if( t.IsLeaf() ){
@@ -650,6 +653,9 @@ double HMatrix<LowRankMatrix,T >::compression() const{
 		nc_b   = MyFarFieldMats[j].nb_cols();
 		rank = MyFarFieldMats[j].rank_of();
 		mycomp += rank*(nr_b + nc_b)/size;
+		if (mycomp<0){
+			std::cout << "size : "<<size<<" nr_b : "<<nr_b<<" nc_b : "<<nc_b<<" rank : "<<rank<< std::endl;
+		}
 	}
 
 	for(int j=0; j<MyNearFieldMats.size(); j++){
@@ -659,8 +665,6 @@ double HMatrix<LowRankMatrix,T >::compression() const{
 	}
 
 	double comp = 0;
-	int rankWorld;
-	MPI_Comm_rank(comm, &rankWorld);
 	MPI_Allreduce(&mycomp, &comp, 1, MPI_DOUBLE, MPI_SUM, comm);
 
 	return 1-comp;
