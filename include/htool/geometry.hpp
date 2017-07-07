@@ -5,10 +5,8 @@
 #include <sstream>
 #include <string>
 #include <stdlib.h>
-#include "matrix.hpp"
-#include "user.hpp"
-// #include "sparsematrix.hpp"
 #include "parametres.hpp"
+#include "point.hpp"
 
 namespace htool {
 //==================================================//
@@ -151,7 +149,7 @@ namespace htool {
 //
 //==================================================//
 
-void LoadPoints(const char* filename, std::vector<R3>& x, std::vector<double>& r){
+void LoadPoints(const std::string& filename, std::vector<R3>& x, std::vector<double>& r){
 
 	x.clear(); r.clear();
 	int NbElt, NbPt, poubelle;
@@ -182,10 +180,10 @@ void LoadPoints(const char* filename, std::vector<R3>& x, std::vector<double>& r
 
 		// Calcul du rayon champ
 		// proche associe a l'element
-		Rmax = norm(Ctr-Pt[0]);
+		Rmax = norm2(Ctr-Pt[0]);
 
 		for(int j=1; j<NbPt; j++){
-			Rad = norm(Ctr-Pt[j]);
+			Rad = norm2(Ctr-Pt[j]);
 			if(Rad>Rmax){Rmax=Rad;}}
 
 		r.push_back(Rmax);
@@ -215,9 +213,8 @@ void LoadPoints(const char* filename, std::vector<R3>& x, std::vector<double>& r
 //
 //==================================================//
 
-void LoadGMSHMesh(const std::string& filename, std::vector<R3>& x){
+int LoadGMSHMesh(std::vector<R3>& x, const std::string& filename){
 
-	x.clear();
 	int size =0;
   std::istringstream iss;
 	std::ifstream file;
@@ -235,12 +232,15 @@ void LoadGMSHMesh(const std::string& filename, std::vector<R3>& x){
     getline(file,line);
 	}
 	file >> size;
+	getline(file,line);
 	x.resize(size);
 
 	// Read point
-	for (p=0;p<size;p++){
+	R3 coord;int dummy;
+	getline(file,line);
+	for (int p=0;p<size;p++){
 		iss.str(line);
-		iss >> poubelle;
+		iss >> dummy;
 		iss>>coord;
 		x[p]=coord;
 		iss.clear();
@@ -250,6 +250,7 @@ void LoadGMSHMesh(const std::string& filename, std::vector<R3>& x){
 	// Fermeture fichier
 	file.close();
 
+	return 0;
 }
 
 }
