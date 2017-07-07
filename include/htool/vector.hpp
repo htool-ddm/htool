@@ -24,8 +24,9 @@ template <typename T>
 std::ostream& operator<< (std::ostream& out, const std::vector<T>& v) {
   if ( !v.empty() ) {
     out << '[';
-    std::copy (v.begin(), v.end(), std::ostream_iterator<T>(out, ", "));
-    out << "\b\b]";
+    for (typename std::vector<T>::const_iterator i = v.begin(); i != v.end(); ++i)
+    std::cout << *i << ',';
+    out << "\b]";
   }
   return out;
 }

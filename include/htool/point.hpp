@@ -22,8 +22,9 @@ template <typename T,std::size_t dim>
 std::ostream& operator<< (std::ostream& out, const std::array<T,dim>& v) {
   if ( !v.empty() ) {
     out << '[';
-    std::copy (v.begin(), v.end(), std::ostream_iterator<T>(out, ", "));
-    out << "\b\b]";
+    for (typename std::array<T,dim>::const_iterator i = v.begin(); i != v.end(); ++i)
+    std::cout << *i << ',';
+    out << "\b]";
   }
   return out;
 }
