@@ -39,17 +39,17 @@ int main(int argc, char const *argv[]) {
   R2 fd = {0,0};
   R2 gd = {6,3};
 
-  test = test || !(norm(ad+bd-cd)<1e-16);
+  test = test || !(norm2(ad+bd-cd)<1e-16);
   cout << ad+bd << endl;
-  test = test || !(norm(ad-bd-dd)<1e-16);
+  test = test || !(norm2(ad-bd-dd)<1e-16);
   cout << ad - bd << endl;
-  test = test || !(norm(3.*ad-ed)<1e-16);
+  test = test || !(norm2(3.*ad-ed)<1e-16);
   cout << 3.*ad << endl;
   ad*=0.;
-  test = test || !(norm(ad-fd)<1e-16);
+  test = test || !(norm2(ad-fd)<1e-16);
   cout << ad << endl;
   ad+=bd;
-  test = test || !(norm(ad-bd)<1e-16);
+  test = test || !(norm2(ad-bd)<1e-16);
   cout<< ad << endl;
   ad*=3.;
   test = test || !(ad==gd);

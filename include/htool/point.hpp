@@ -5,6 +5,7 @@
 #include <array>
 #include <numeric>
 #include <iterator>
+#include <iostream>
 
 namespace htool {
 
@@ -96,10 +97,10 @@ std::complex<T> operator,(const std::array<std::complex<T>,dim >& a,const std::a
 }
 
 template <typename T, std::size_t dim>
-T norm(const std::array<T,dim>& u){return std::sqrt(std::abs(dprod(u,u)));}
+T norm2(const std::array<T,dim>& u){return std::sqrt(std::abs(dprod(u,u)));}
 
 template <typename T, std::size_t dim>
-T norm(const std::array<std::complex<T>,dim >& u){return std::sqrt(std::abs(dprod(u,u)));}
+T norm2(const std::array<std::complex<T>,dim >& u){return std::sqrt(std::abs(dprod(u,u)));}
 
 
 // template<typename T, std::size_t dim>
