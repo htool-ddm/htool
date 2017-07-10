@@ -12,10 +12,8 @@ add_subdirectory(vector_tests)
 add_subdirectory(vector_file_tests)
 
 # Hmatrix
-add_subdirectory(hmat_vec_prod_tests)
-add_subdirectory(hmat_SVD_tests)
-add_subdirectory(hmat_fullACA_tests)
-add_subdirectory(hmat_partialACA_tests)
+add_subdirectory(hmatrix)
+
 
 
 
