@@ -1,27 +1,25 @@
-# lrmat
-add_subdirectory(lrmat_fullACA_tests)
-add_subdirectory(lrmat_partialACA_tests)
-add_subdirectory(lrmat_SVD_tests)
+# point.hpp
+add_subdirectory(point_tests)
 
-# Matrix
+# matrix.hpp
 add_subdirectory(matrix_tests)
 add_subdirectory(matrix_file_tests)
 
-# Vector
+# vector.hpp
 add_subdirectory(vector_tests)
 add_subdirectory(vector_file_tests)
 
-# Hmatrix
-add_subdirectory(hmatrix)
-
-
-
-
-
-add_subdirectory(point_tests)
-add_subdirectory(cluster_tests)
-
-
+# geometry.hpp
 add_subdirectory(geometry_file_tests)
 
+# cluster.hpp
+add_subdirectory(cluster_tests)
+
+# lrmat.hpp
+add_subdirectory(lrmat)
+
+# hmatrix.hpp
+add_subdirectory(hmatrix)
+
+# wrapper_hpddm.hpp
 add_subdirectory(hpddm_solve_tests)
