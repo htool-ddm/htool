@@ -124,7 +124,7 @@ int main(){
 
 		// Test mat vec prod
 		error = norm2(A*f-A_partialACA*f);
-		test = test || !(error<GetEpsilon());
+		test = test || !(error<GetEpsilon()*10);
 		cout << "Errors on a mat vec prod : "<< error<<endl<<endl<<endl;
 	}
 
