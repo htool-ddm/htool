@@ -29,7 +29,7 @@ set(htool_include_dir "${CMAKE_CURRENT_SOURCE_DIR}/include")
 # Options
 option(HTOOL_WITH_EXAMPLES "Build htool examples ?" ON)
 option(HTOOL_WITH_TESTS    "Build htool tests ?" ON)
-option(HTOOL_WITH_GUI      "Build htool visualization tools ?" ON)
+option(HTOOL_WITH_GUI      "Build htool visualization tools ?" OFF)
 
 add_definitions(-DHTOOL_WITH_GUI=${HTOOL_WITH_GUI})
 
