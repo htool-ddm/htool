@@ -21,7 +21,7 @@ class MyMatrix: public IMatrix<double>{
 
 public:
 	MyMatrix(const vector<R3>& p10,const vector<R3>& p20 ):IMatrix(p10.size(),p20.size()),p1(p10),p2(p20) {}
-	 double get_coef(const int& i, const int& j)const {return 1./(4*M_PI*norm(p1[i]-p2[j]));}
+	 double get_coef(const int& i, const int& j)const {return 1./(4*M_PI*norm2(p1[i]-p2[j]));}
 	 std::vector<double> operator*(std::vector<double> a){
 		std::vector<double> result(p1.size(),0);
 		for (int i=0;i<p1.size();i++){
@@ -48,11 +48,12 @@ int main(){
 	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 
 	//
+	bool test = 0;
 	const int ndistance = 4;
 	double distance[ndistance];
 	distance[0] = 10; distance[1] = 20; distance[2] = 30; distance[3] = 40;
 	SetNdofPerElt(1);
-	SetEpsilon(0.0001);
+	SetEpsilon(1e-8);
 	SetEta(0.1);
 
 	for(int idist=0; idist<ndistance; idist++)
@@ -64,7 +65,7 @@ int main(){
 		// (two different initializations with the same seed will generate the same succession of results in the subsequent calls to rand)
 
 		int nr = 500;
-		int nc = 100;
+		int nc = 400;
 		vector<int> Ir(nr); // row indices for the lrmatrix
 		vector<int> Ic(nc); // column indices for the lrmatrix
 
@@ -97,20 +98,28 @@ int main(){
 		MyMatrix A(p1,p2);
 		HMatrix<partialACA,double> HA(A,p1,tab1,p2,tab2);
 
-		std::vector<double> test(nc,1);
-		double erreur2 = norm2(A*test-HA*test);
+		std::vector<double> f(nc,1);
+		double erreur2 = norm2(A*f-HA*f);
 		double erreurFrob = Frobenius_absolute_error(HA,A);
 		double compression = HA.compression();
+		int nb_lrmat = HA.get_nlrmat();
+		int nb_dmat  = HA.get_ndmat();
+
+		test = test || !(erreurFrob<GetEpsilon());
+		test = test || !(erreur2<GetEpsilon()*10);
+
 		if (rank==0){
 			cout << "Errors with Frobenius norm: "<<erreurFrob<<endl;
 			cout << "Compression rate : "<<compression<<endl;
-
-			std::vector<double> test(nc,1);
 			cout << "Errors on a mat vec prod : "<< erreur2<<endl;
+			cout << "nbr lr : "<<nb_lrmat<<endl;
+			cout << "nbr dense : "<<nb_dmat<<endl;
+
 
 		}
 
 	}
+	cout << test << endl;
 	// Finalize the MPI environment.
 	MPI_Finalize();
 }

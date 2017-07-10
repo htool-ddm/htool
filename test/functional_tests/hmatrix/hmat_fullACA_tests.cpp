@@ -64,8 +64,8 @@ int main(){
 		// we set a constant seed for rand because we want always the same result if we run the check many times
 		// (two different initializations with the same seed will generate the same succession of results in the subsequent calls to rand)
 
-		int nr = 1000;
-		int nc = 1000;
+		int nr = 500;
+		int nc = 400;
 		vector<int> Ir(nr); // row indices for the lrmatrix
 		vector<int> Ic(nc); // column indices for the lrmatrix
 
@@ -103,8 +103,8 @@ int main(){
 		int nb_lrmat = HA.get_nlrmat();
 		int nb_dmat  = HA.get_ndmat();
 
-		test = test || !(erreurFrob<GetEpsilon()*10);
-		test = test || !(erreur2<GetEpsilon()*100);
+		test = test || !(erreurFrob<GetEpsilon());
+		test = test || !(erreur2<GetEpsilon()*10);
 
 		if (rank==0){
 			cout << "Errors with Frobenius norm: "<<erreurFrob<<endl;
