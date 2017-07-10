@@ -6,6 +6,7 @@
 #include <numeric>
 #include <iterator>
 #include <iostream>
+#include <algorithm>
 
 namespace htool {
 
