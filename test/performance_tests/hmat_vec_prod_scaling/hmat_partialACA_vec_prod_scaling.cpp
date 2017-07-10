@@ -1,4 +1,4 @@
-#include <htool/fullACA.hpp>
+#include <htool/partialACA.hpp>
 #include <htool/matrix.hpp>
 #include <htool/hmatrix.hpp>
 
@@ -88,7 +88,7 @@ int main(int argc, char const *argv[]){
 	MyMatrix A(p1,p2);
 
   // Hmatrix
-	HMatrix<fullACA,double> HA(A,p1,tab1,p2,tab2);
+	HMatrix<partialACA,double> HA(A,p1,tab1,p2,tab2);
 	int nbr_dmat = HA.get_ndmat();
 	int nbr_lmat = HA.get_nlrmat();
 	double comp = HA.compression();
@@ -109,62 +109,62 @@ int main(int argc, char const *argv[]){
   int nr_local=HA.get_local_size_cluster();
 	const std::vector<std::vector<int>>& MasterClusters = HA.get_MasterClusters();
 	std::vector<double> x_local(nr_local,1),f_local(nr_local);
+	for (int i =0;i<10;i++){
+	  // Global mvprod
+		MPI_Barrier(HA.get_comm());
+		mytime = MPI_Wtime();
+	  HA.mvprod_global(x_global.data(),f_global.data());
+		MPI_Barrier(HA.get_comm());
+		mytime= MPI_Wtime() - mytime;
+		MPI_Reduce(&mytime, &maxtime, 1, MPI_DOUBLE, MPI_MAX, 0,HA.get_comm());
+		MPI_Reduce(&mytime, &meantime, 1, MPI_DOUBLE, MPI_SUM, 0,HA.get_comm());
+		meantime/=size;
+		if (rank==0){
+			cout << maxtime<<" "<<meantime<<endl;
+		}
 
-  // Global mvprod
-	MPI_Barrier(HA.get_comm());
-	mytime = MPI_Wtime();
-  HA.mvprod_global(x_global.data(),f_global.data());
-	MPI_Barrier(HA.get_comm());
-	mytime= MPI_Wtime() - mytime;
-	MPI_Reduce(&mytime, &maxtime, 1, MPI_DOUBLE, MPI_MAX, 0,HA.get_comm());
-	MPI_Reduce(&mytime, &meantime, 1, MPI_DOUBLE, MPI_SUM, 0,HA.get_comm());
-	meantime/=size;
-	if (rank==0){
-		cout << maxtime<<" "<<meantime<<endl;
+	  // Local mvprod
+		MPI_Barrier(HA.get_comm());
+		mytime = MPI_Wtime();
+	  HA.mvprod_local(x_local.data(),f_local.data());
+		MPI_Barrier(HA.get_comm());
+		mytime= MPI_Wtime() - mytime;
+		MPI_Reduce(&mytime, &maxtime, 1, MPI_DOUBLE, MPI_MAX, 0,HA.get_comm());
+		MPI_Reduce(&mytime, &meantime, 1, MPI_DOUBLE, MPI_SUM, 0,HA.get_comm());
+		meantime/=size;
+		if (rank==0){
+			cout << maxtime<<" "<<meantime<<endl;
+		}
+
+	  // Local to global
+	  std::vector<double> rcv(nr);
+
+	  std::vector<int> recvcounts(size);
+	  std::vector<int>  displs(size);
+
+	  displs[0] = 0;
+
+	  for (int i=0; i<size; i++) {
+	    recvcounts[i] = MasterClusters[i].size();
+	    if (i > 0)
+	      displs[i] = displs[i-1] + recvcounts[i-1];
+	  }
+
+
+	  MPI_Allgatherv(&(f_local.front()), recvcounts[rank], MPI_DOUBLE, &(rcv.front()), &(recvcounts.front()), &(displs.front()), MPI_DOUBLE, HA.get_comm());
+
+	  for (int i=0; i<size; i++)
+	    for (int j=0; j< MasterClusters[i].size(); j++)
+	      f_local_to_global[MasterClusters[i][j]] = rcv[displs[i]+j];
+
+
+	  // Errors
+	  if (rank==0){
+	  	cout << "Error on global mat vec prod : "<<norm2(f_global-f_ref_global)/norm2(f_ref_global)<<std::endl;
+	    cout << "Error on local mat vec prod : "<<norm2(f_local_to_global-f_ref_global)/norm2(f_ref_global)<<std::endl;
+
+	  }
 	}
-
-  // Local mvprod
-	MPI_Barrier(HA.get_comm());
-	mytime = MPI_Wtime();
-  HA.mvprod_local(x_local.data(),f_local.data());
-	MPI_Barrier(HA.get_comm());
-	mytime= MPI_Wtime() - mytime;
-	MPI_Reduce(&mytime, &maxtime, 1, MPI_DOUBLE, MPI_MAX, 0,HA.get_comm());
-	MPI_Reduce(&mytime, &meantime, 1, MPI_DOUBLE, MPI_SUM, 0,HA.get_comm());
-	meantime/=size;
-	if (rank==0){
-		cout << maxtime<<" "<<meantime<<endl;
-	}
-
-  // Local to global
-  std::vector<double> rcv(nr);
-
-  std::vector<int> recvcounts(size);
-  std::vector<int>  displs(size);
-
-  displs[0] = 0;
-
-  for (int i=0; i<size; i++) {
-    recvcounts[i] = MasterClusters[i].size();
-    if (i > 0)
-      displs[i] = displs[i-1] + recvcounts[i-1];
-  }
-
-
-  MPI_Allgatherv(&(f_local.front()), recvcounts[rank], MPI_DOUBLE, &(rcv.front()), &(recvcounts.front()), &(displs.front()), MPI_DOUBLE, HA.get_comm());
-
-  for (int i=0; i<size; i++)
-    for (int j=0; j< MasterClusters[i].size(); j++)
-      f_local_to_global[MasterClusters[i][j]] = rcv[displs[i]+j];
-
-
-  // Errors
-  if (rank==0){
-  	cout << "Error on global mat vec prod : "<<norm2(f_global-f_ref_global)/norm2(f_ref_global)<<std::endl;
-    cout << "Error on local mat vec prod : "<<norm2(f_local_to_global-f_ref_global)/norm2(f_ref_global)<<std::endl;
-
-  }
-
 	// Finalize the MPI environment.
 	MPI_Finalize();
 	return test;
