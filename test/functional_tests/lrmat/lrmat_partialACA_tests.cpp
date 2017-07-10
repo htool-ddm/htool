@@ -17,7 +17,7 @@ class MyMatrix: public IMatrix<double>{
 
 public:
 	MyMatrix(const vector<R3>& p10,const vector<R3>& p20 ):IMatrix<double>(p10.size(),p20.size()),p1(p10),p2(p20) {}
-	 double get_coef(const int& i, const int& j)const {return 1./(4*M_PI*norm(p1[i]-p2[j]));}
+	 double get_coef(const int& i, const int& j)const {return 1./(4*M_PI*norm2(p1[i]-p2[j]));}
 	 std::vector<double> operator*(std::vector<double> a){
 		std::vector<double> result(p1.size(),0);
 		for (int i=0;i<p1.size();i++){
@@ -39,7 +39,7 @@ int main(){
 	for(int idist=0; idist<ndistance; idist++)
 	{
 		cout << "Distance between the clusters: " << distance[idist] << endl;
-		SetEpsilon(1e-5);
+		SetEpsilon(0.0001);
 		srand (1);
 		// we set a constant seed for rand because we want always the same result if we run the check many times
 		// (two different initializations with the same seed will generate the same succession of results in the subsequent calls to rand)
@@ -84,14 +84,17 @@ int main(){
 			partialACA_fixed_errors.push_back(Frobenius_absolute_error(A_partialACA_fixed,A,k));
 		}
 
-		cout << "rank : "<<A_partialACA_fixed.rank_of() << endl;
 		cout << "Partial ACA with fixed rank" << endl;
+		// Test rank
+		cout << "rank : "<<A_partialACA_fixed.rank_of() << endl;
+		test = test || !(A_partialACA_fixed.rank_of()==reqrank_max);
+
 		// Test Frobenius errors
 		test = test || !(partialACA_fixed_errors[partialACA_fixed_errors.size()-1]<1e-6);
 		cout << "Errors with Frobenius norm : "<<partialACA_fixed_errors<<endl;
 
 		// Test compression
-		test = test || !(0.85<A_partialACA_fixed.compression() && A_partialACA_fixed.compression()<0.9);
+		test = test || !(0.87<A_partialACA_fixed.compression() && A_partialACA_fixed.compression()<0.89);
 		cout << "Compression rate : "<<A_partialACA_fixed.compression()<<endl;
 
 		// Test mat vec prod
@@ -100,6 +103,8 @@ int main(){
 		test = test || !(error<1e-6);
 		cout << "Errors on a mat vec prod : "<< error<<endl<<endl;
 
+
+
 		// ACA automatic building
 		partialACA<double> A_partialACA(Ir,Ic);
 		A_partialACA.build(A,t,s);
@@ -107,17 +112,21 @@ int main(){
 		for (int k = 0 ; k < A_partialACA.rank_of()+1 ; k++){
 			partialACA_errors.push_back(Frobenius_absolute_error(A_partialACA,A,k));
 		}
+
 		cout << "Partial ACA" << endl;
 		// Test Frobenius error
 		test = test || !(partialACA_errors[A_partialACA.rank_of()]<GetEpsilon());
 		cout << "Errors with Frobenius norm: "<<partialACA_errors<<endl;
+
 		// Test compression rate
-		test = test || !(0.9<A_partialACA.compression() && A_partialACA.compression()<0.95);
+		test = test || !(0.93<A_partialACA.compression() && A_partialACA.compression()<0.96);
 		cout << "Compression rate : "<<A_partialACA.compression()<<endl;
+
 		// Test mat vec prod
 		error = norm2(A*f-A_partialACA*f);
-		test = test || !(error<5e-5);
+		test = test || !(error<GetEpsilon());
 		cout << "Errors on a mat vec prod : "<< error<<endl<<endl<<endl;
 	}
+
 	return test;
 }

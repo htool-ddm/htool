@@ -54,7 +54,7 @@ public:
 			double dist=1e30;
 			int I=0;
 			for (int i =0;i<int(this->nr/this->ndofperelt);i++){
-				double aux_dist= norm(t.get_pts()[t.get_tab()[t.get_num()[i*this->ndofperelt]]]-t.get_ctr());
+				double aux_dist= norm2(t.get_pts()[t.get_tab()[t.get_num()[i*this->ndofperelt]]]-t.get_ctr());
 				if (dist>aux_dist){
 					dist=aux_dist;
 					I=i*this->ndofperelt;
@@ -72,14 +72,17 @@ public:
 			double frob = 0;
 			double aux  = 0;
 
+			// Either we have a required rank
+			// Or it is negative and we have to check the relative error between two iterations.
+			//But to do that we need a least two iterations.
 			while (((reqrank > 0) && (q < reqrank) ) ||
-			       (reqrank < 0)) {
+			       ((reqrank < 0) && (sqrt(aux/frob)>this->epsilon || q<=1))) {
 
 				// Next current rank
 				q+=1;
 
 				if (q*(this->nr+this->nc) > (this->nr*this->nc)) { // the next current rank would not be advantageous
-					std::cout << "Pas avantageux" << std::endl;
+                    q=-1;
 					break;
 				}
 				else{
@@ -98,7 +101,7 @@ public:
 							J=k; pivot=std::abs(r[k]);}
 					}
 					visited_row[I] = true;
-
+					double gamma = T(1.)/r[J];
 					//==================//
 					// Look for a line
 					if( std::abs(r[J]) > 1e-15 ){
@@ -108,15 +111,12 @@ public:
 							for(int k=0; k<uu.size(); k++){
 								c[j] += -uu[k][j]*vv[k][J];
 							}
+							c[j] = gamma*c[j];
 							if( std::abs(c[j])>cmax && !visited_row[j] ){
 								I=j; cmax=std::abs(c[j]);}
 						}
-						c /= pivot;
 						visited_col[J] = true;
 
-						// New cross added
-						uu.push_back(c);
-						vv.push_back(r);
 
 						// Test if no given rank
 						if (reqrank<0){
@@ -130,11 +130,11 @@ public:
 							// frob_aux: termes croises du developpement du carre' de la norme de Frobenius de la matrice low rank
 							frob += aux + 2*std::real(frob_aux); // frob: Frobenius norm of the low rank matrix
 							//==================//
-
-							if ( aux/frob<std::pow(this->epsilon,2) ){
-								break;
-							}
 						}
+						// New cross added
+						uu.push_back(c);
+						vv.push_back(r);
+
 					}
 					else{
 						std::cout << "There is a zero row in the starting submatrix and ACA didn't work" << std::endl;
@@ -145,11 +145,7 @@ public:
 
 			// Final rank
 			this->rank=q;
-			if (this->rank==0){
-				this->U.resize(this->nr,1);
-				this->V.resize(1,this->nc);
-			}
-			else{
+			if (this->rank>0){
 				this->U.resize(this->nr,this->rank);
 				this->V.resize(this->rank,this->nc);
 				for (int k=0;k<this->rank;k++){
