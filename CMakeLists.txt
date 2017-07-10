@@ -1,7 +1,7 @@
 #=============================================================================#
 #============================== Project ======================================#
 #=============================================================================#
-cmake_minimum_required(VERSION 2.6)
+cmake_minimum_required(VERSION 3.0)
 Project(Htool)
 
 # To force c++11
@@ -127,7 +127,9 @@ if(MPI_FOUND AND BLAS_FOUND AND LAPACK_FOUND)
 					hpddm)
 
 	# For headers to show in IDE
-	target_sources(htool INTERFACE ${htool_include_dir})
+	if (NOT "${CMAKE_VERSION}" VERSION_LESS 3.1)
+		target_sources(htool INTERFACE ${htool_include_dir})
+	endif()
 
 else()
 	message("Htool and dependencies not found")
