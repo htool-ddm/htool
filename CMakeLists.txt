@@ -113,8 +113,8 @@ if(MPI_FOUND AND BLAS_FOUND AND LAPACK_FOUND)
 	add_library(hpddm INTERFACE)
 	target_include_directories(hpddm INTERFACE "${hpddm_include_dir}")
 	target_link_libraries(hpddm INTERFACE
-						blas
-						lapack)
+				${MPI_LIBRARIES}
+				${BLAS_LIBRARIES})
 	#===
 
 	add_library(htool INTERFACE)
