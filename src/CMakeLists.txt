@@ -24,9 +24,9 @@ target_compile_options(Test_freeGLUT PRIVATE -DHTOOL_WITH_GUI)
 # add_executable(MultiCompression multi_compress.cpp)
 # target_link_libraries (MultiCompression ${EIGEN3_LIBRARIES})
 #
-# # Creation de l executable Test_ACA a partir de test_ACA
-# add_executable(Test_ACA test_ACA.cpp)
-# target_link_libraries (Test_ACA  ${EIGEN3_LIBRARIES})
+# Creation de l executable Test_ACA a partir de test_ACA
+add_executable(Test_ACA test_ACA.cpp)
+target_link_libraries (Test_ACA  htool)
 #
 # # Creation de l executable ErrDecrease a partir de err_decrease
 # add_executable(ErrDecrease err_decrease.cpp)
