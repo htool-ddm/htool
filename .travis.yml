@@ -1,0 +1,35 @@
+sudo: false
+
+# Enable c++ support
+language: cpp
+
+# OS
+os:
+  - linux
+  - osx
+
+
+# Compiler selection
+compiler:
+  - gcc
+  - clang
+
+# Git options
+git:
+  submodules: false
+
+branches:
+  only:
+  - develop
+
+
+# Updates
+before_install:
+  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then brew install cmake
+
+# Build steps
+script:
+  - mkdir build && cd build
+  - cmake ../
+  - make -j build-tests
+  -make test
