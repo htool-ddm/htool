@@ -115,7 +115,8 @@ if(MPI_FOUND AND BLAS_FOUND AND LAPACK_FOUND)
 	target_include_directories(hpddm INTERFACE "${hpddm_include_dir}")
 	target_link_libraries(hpddm INTERFACE
 				${MPI_LIBRARIES}
-				${BLAS_LIBRARIES})
+				${BLAS_LIBRARIES}
+				${LAPACK_LIBRARIES})
 	#===
 
 	add_library(htool INTERFACE)
@@ -125,7 +126,7 @@ if(MPI_FOUND AND BLAS_FOUND AND LAPACK_FOUND)
 	target_link_libraries(htool INTERFACE
 						${MPI_LIBRARIES}
 						${BLAS_LIBRARIES}
-					hpddm)
+						hpddm)
 
 	# For headers to show in IDE
 	if (NOT "${CMAKE_VERSION}" VERSION_LESS 3.1)
