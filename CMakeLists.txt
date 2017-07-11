@@ -5,13 +5,13 @@ cmake_minimum_required(VERSION 3.0)
 Project(Htool)
 
 # To force c++11
-if ("${CMAKE_VERSION}" VERSION_LESS 3.1)
+if (${CMAKE_VERSION} VERSION_LESS 3.1)
 	add_compile_options(-std=c++11)
-else ()
+elseif (${CMAKE_VERSION} VERSION_LESS 3.5 AND ${CMAKE_CXX_COMPILER_ID} EQUAL "Intel")
+else()
 	set(CMAKE_CXX_STANDARD 11)
 	set(CMAKE_CXX_STANDARD_REQUIRED ON)
 endif ()
-
 
 # To set CMAKE_BUILD_TYPE
 if(NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
