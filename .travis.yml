@@ -32,4 +32,4 @@ script:
   - mkdir build && cd build
   - cmake ../
   - make -j build-tests
-  -make test
+  - make test
