@@ -150,28 +150,12 @@ int main(int argc, char* argv[]){
 
 	vectCplx ua(nr),ub(nr);
 	MvProd(ua,A,u);
-	double norma = norm(ua);
-
 	std::pair <double,double > mvp_stats= MvProdMPI(ub,B,u);
-	for (int i=0; i<nr; i++) {
-	  if (ub[i] == 0.)
-	   ua[i] = 0.;
-	}
-
-	/*
-	vectCplx diff = ua-ub;
-	Cplx spc = (diff,diff);
-	double sp = real(spc);
-	MPI_Allreduce(MPI_IN_PLACE, &sp, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-	double errmvp = sqrt(sp)/norma;
-	*/
-	double errmvp = norm(ub-ua)/norma;
-
 	Real normA = NormFrob(A);
 
 	add_stats(B,"MvProd (mean)",get<0>(mvp_stats));
 	add_stats(B,"MvProd (max)",get<1>(mvp_stats));
-	add_stats(B,"MvProd err",errmvp);
+	add_stats(B,"MvProd err",norm(ua-ub)/norm(ua));
 	add_stats(B,"Compression",CompressionRate(B));
 	add_stats(B,"Nb dense mats",nb_densemats(B));
 	add_stats(B,"Nb lr mats",nb_lrmats(B));

@@ -1,6 +1,7 @@
 #ifndef HTOOL_HPP
 #define HTOOL_HPP
 
+#include "config.h"
 #include "blas.hpp"
 #include "cluster.hpp"
 #include "export.hpp"
@@ -12,8 +13,10 @@
 #include "point.hpp"
 #include "user.hpp"
 
-#if defined(HTOOL_WITH_GUI)
+#if HTOOL_WITH_GUI==ON  && defined GLM_FOUND
+#if GLM_FOUND==TRUE
 #include "view.hpp"
+#endif
 #endif
 
 #endif
