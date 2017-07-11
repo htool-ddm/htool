@@ -7,7 +7,7 @@ Project(Htool)
 # To force c++11
 if (${CMAKE_VERSION} VERSION_LESS 3.1)
 	add_compile_options(-std=c++11)
-elseif (${CMAKE_VERSION} VERSION_LESS 3.5 AND ${CMAKE_CXX_COMPILER_ID} EQUAL "Intel")
+elseif (${CMAKE_VERSION} VERSION_LESS 3.6.3 AND ${CMAKE_CXX_COMPILER_ID} STREQUAL "Intel")
 	add_compile_options(-std=c++11)
 else()
 	set(CMAKE_CXX_STANDARD 11)
@@ -39,20 +39,16 @@ add_definitions(-DHTOOL_WITH_GUI=${HTOOL_WITH_GUI})
 #=============================================================================#
 # MPI
 find_package (MPI REQUIRED)
-
+message("-- MPI implementation found in " "${MPI_LIBRARIES}")
 # BLAS
 find_package(BLAS REQUIRED)
-message("-- Blas implementation found in " ${BLAS_LIBRARIES})
+message("-- Blas implementation found in " "${BLAS_LIBRARIES}")
 # EIGEN3
 find_package(EIGEN3)
 # LAPACK
 find_package(LAPACK REQUIRED)
-if(NOT LAPACK_FOUND)
-    message("Lapack not found. Needed in htool and hpddm")
-else()
-	add_library(lapack INTERFACE)
-	target_link_libraries(lapack INTERFACE ${LAPACK_LIBRARIES})
-endif()
+message("-- Lapack implementation found in " "${LAPACK_LIBRARIES}")
+
 
 #=============================================================================#
 #========================== Libraries ========================================#
