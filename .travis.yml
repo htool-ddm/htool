@@ -6,7 +6,7 @@ language: cpp
 # Cache
 cache:
   directories:
-    - mpich
+    - $HOME/Library/Caches/Homebrew
 
 
 # Compiler selection
@@ -41,6 +41,7 @@ branches:
 
 # Updates
 before_install:
+  - if [ "$TRAVIS_OS_NAME" == "osx" ]; then brew install gcc; fi
   - if [ "$TRAVIS_OS_NAME" == "osx" ]; then brew install mpich; fi
   - test -n $CC && unset CC
   - test -n $CXX && unset CXX
