@@ -3,10 +3,10 @@ sudo: false
 # Enable c++ support
 language: cpp
 
-# Cache
-cache:
-  directories:
-    - $HOME/Library/Caches/Homebrew
+# # Cache
+# cache:
+#   directories:
+#     - $HOME/Library/Caches/Homebrew
 
 
 # Compiler selection
