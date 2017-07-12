@@ -5,13 +5,13 @@ language: cpp
 
 # OS
 os:
-  - linux
+  # - linux
   - osx
 
 
 # Compiler selection
 compiler:
-  - gcc
+  # - gcc
   - clang
 
 # Git options
@@ -23,9 +23,9 @@ branches:
   - develop
 
 
-# # Updates
-# before_install:
-#   - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then brew install cmake
+# Updates
+before_install:
+  - brew install cmake
 
 # Build steps
 script:
