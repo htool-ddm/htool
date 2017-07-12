@@ -22,6 +22,7 @@ matrix:
     #     - C_COMPILER=gcc-7
     - os: linux
       dist: trusty
+      compiler: gcc
       addons:
         apt:
           packages:
