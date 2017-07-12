@@ -29,11 +29,24 @@ matrix:
       addons:
         apt:
           packages:
+            - cmake
             - libmpich-dev
             - libblas-dev
             - liblapack-dev
 
-
+    - os: linux
+      dist: trusty
+      compiler: clang
+      env:
+        - CXX_COMPILER=clang++
+        - C_COMPILER=clang
+      addons:
+        apt:
+          packages:
+            - cmake
+            - libmpich-dev
+            - libblas-dev
+            - liblapack-dev
 
 
 # Git options
