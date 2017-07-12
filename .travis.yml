@@ -30,7 +30,7 @@ matrix:
         apt:
           packages:
             - cmake
-            - libmpich-dev
+            - mpich
             - libblas-dev
             - liblapack-dev
 
@@ -44,7 +44,7 @@ matrix:
         apt:
           packages:
             - cmake
-            - libmpich-dev
+            - mpich
             - libblas-dev
             - liblapack-dev
 
