@@ -23,9 +23,9 @@ branches:
   - develop
 
 
-# Updates
-before_install:
-  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then brew install cmake
+# # Updates
+# before_install:
+#   - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then brew install cmake
 
 # Build steps
 script:
