@@ -24,8 +24,8 @@ matrix:
       dist: trusty
       compiler: gcc
       env:
-        - CXX_COMPILER=$CXX
-        - C_COMPILER=$CC
+        - CXX_COMPILER=g++
+        - C_COMPILER=gcc
       addons:
         apt:
           packages:
