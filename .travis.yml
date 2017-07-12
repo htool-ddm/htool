@@ -67,14 +67,12 @@ install:
 
 
 before_script:
-  - test -n $CC && unset CC
-  - test -n $CXX && unset CXX
   - which $CXX_COMPILER
   - mkdir build
   - cd build
 
 # Build steps
 script:
-  - cmake ../ -DCMAKE_CXX_COMPILER=$CXX_COMPILER -DCMAKE_C_COMPILER=$C_COMPILER
+  - CC=$CC_COMPILER CXX=$CXX_COMPILER cmake ../
   - make -j build-tests
   - make test
