@@ -30,6 +30,8 @@ matrix:
         apt:
           packages:
             - libmpich-dev
+            - libblas-dev
+            - liblapack-dev
 
 
 
