@@ -1,0 +1,86 @@
+sudo: false
+
+# Enable c++ support
+language: cpp
+
+# # Cache
+# cache:
+#   directories:
+#     - $HOME/Library/Caches/Homebrew
+
+
+# Compiler selection
+matrix:
+  include:
+    - os: osx
+      env:
+        - CXX_COMPILER=clang++
+        - C_COMPILER=clang
+    - os: osx
+      env:
+        - CXX_COMPILER=g++-7
+        - C_COMPILER=gcc-7
+    - os: linux
+      dist: trusty
+      compiler: gcc
+      env:
+        - CXX_COMPILER=g++-4.9
+        - C_COMPILER=gcc-4.9
+      addons:
+        apt:
+          sources:
+            - ubuntu-toolchain-r-test
+          packages:
+            - g++-4.9
+            - cmake
+            - mpich
+            - libmpich-dev
+            - libblas-dev
+            - liblapack-dev
+
+    - os: linux
+      dist: trusty
+      compiler: clang
+      env:
+        - CXX_COMPILER=clang++-3.6
+        - C_COMPILER=clang-3.6
+      addons:
+        apt:
+          sources:
+            - ubuntu-toolchain-r-test
+            - llvm-toolchain-precise-3.6
+          packages:
+            - clang-3.6
+            - cmake
+            - mpich
+            - libmpich-dev
+            - libblas-dev
+            - liblapack-dev
+
+
+# Git options
+git:
+  submodules: false
+
+branches:
+  only:
+  - develop
+
+
+# Updates
+install:
+  - if [ "$TRAVIS_OS_NAME" == "osx" ]; then brew install gcc; fi
+  - if [ "$TRAVIS_OS_NAME" == "osx" ]; then brew install mpich; fi
+
+
+
+before_script:
+  - which $CXX_COMPILER
+  - mkdir build
+  - cd build
+
+# Build steps
+script:
+  - CC=$C_COMPILER CXX=$CXX_COMPILER cmake ../
+  - make -j build-tests
+  - make test
