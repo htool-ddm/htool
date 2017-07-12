@@ -13,10 +13,15 @@ os:
 compiler:
   - clang
   - gcc
+
+# No need to check gcc on osx
 matrix:
   exclude:
     - os: osx
       compiler: gcc
+  include:
+    - os: linux
+      dist: trusty
 
 
 
