@@ -5,14 +5,20 @@ language: cpp
 
 # OS
 os:
-  # - linux
+  - linux
   - osx
 
 
 # Compiler selection
 compiler:
-  - gcc
   - clang
+  - gcc
+matrix:
+  exclude:
+    - os: osx
+      compiler: gcc
+
+
 
 # Git options
 git:
@@ -25,7 +31,8 @@ branches:
 
 # Updates
 before_install:
-  - brew install mpich
+  - if [ $TRAVIS_OS_NAME = osx ]; then brew install mpich; fi
+  -
 
 # Build steps
 script:
