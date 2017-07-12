@@ -8,11 +8,11 @@ language: cpp
 matrix:
   include:
     - os: osx
-      compiler: clang
-    - os: osx
-      compiler: gcc
       env:
-        - MATRIX_EVAL="brew install gcc && CC=gcc-7 && CXX=g++-7"
+        - MATRIX_EVAL="brew install mpich && CC=clang && CXX=clang++"
+    - os: osx
+      env:
+        - MATRIX_EVAL="brew install mpich && CC=gcc-7 && CXX=g++-7"
     # - os: linux
     #   compiler: clang
 
@@ -29,7 +29,7 @@ branches:
 
 # Updates
 before_install:
-  - if [ $TRAVIS_OS_NAME = osx ]; then brew install mpich; fi
+  - eval "${MATRIX_EVAL}"
 
 # Build steps
 script:
