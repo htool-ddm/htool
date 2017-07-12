@@ -62,7 +62,7 @@ git:
 
 branches:
   only:
-  - develop
+  - master
 
 
 # Updates
