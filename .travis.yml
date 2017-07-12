@@ -12,20 +12,20 @@ language: cpp
 # Compiler selection
 matrix:
   include:
-    - os: osx
-      env:
-        - CXX_COMPILER=clang++
-        - C_COMPILER=clang
-        - HOMEBREW_CC=clang
-        - HOMEBREW_CXX=clang++
-    - os: osx
-      env:
-        - CXX_COMPILER=g++-7
-        - C_COMPILER=gcc-7
-        - HOMEBREW_CC=gcc-7
-        - HOMEBREW_CXX=g++-7
-    # - os: linux
-    #   dist: trusty
+    # - os: osx
+    #   env:
+    #     - CXX_COMPILER=clang++
+    #     - C_COMPILER=clang
+    # - os: osx
+    #   env:
+    #     - CXX_COMPILER=g++-7
+    #     - C_COMPILER=gcc-7
+    - os: linux
+      dist: trusty
+      addons:
+        apt:
+          packages:
+            - libmpich-dev
 
 
 
@@ -40,15 +40,16 @@ branches:
 
 
 # Updates
-before_install:
+install:
   - if [ "$TRAVIS_OS_NAME" == "osx" ]; then brew install gcc; fi
   - if [ "$TRAVIS_OS_NAME" == "osx" ]; then brew install mpich; fi
-  - test -n $CC && unset CC
-  - test -n $CXX && unset CXX
-  - which $CXX_COMPILER
+
 
 
 before_script:
+  - test -n $CC && unset CC
+  - test -n $CXX && unset CXX
+  - which $CXX_COMPILER
   - mkdir build
   - cd build
 
