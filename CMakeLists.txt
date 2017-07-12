@@ -32,8 +32,6 @@ option(HTOOL_WITH_EXAMPLES "Build htool examples ?" ON)
 option(HTOOL_WITH_TESTS    "Build htool tests ?" ON)
 option(HTOOL_WITH_GUI      "Build htool visualization tools ?" OFF)
 
-add_definitions(-DHTOOL_WITH_GUI=${HTOOL_WITH_GUI})
-
 #=============================================================================#
 #========================== External Libraries ===============================#
 #=============================================================================#
@@ -93,6 +91,8 @@ if (HTOOL_WITH_GUI)
 	endif()
 	target_include_directories(htool_visu INTERFACE ${GLM_INCLUDE_DIRS})
 	#===
+else()
+	message("-- No GUI for Htool")
 endif()
 
 #=== HTOOL
