@@ -46,6 +46,7 @@ matrix:
           packages:
             - cmake
             - mpich
+            - libmpich-dev
             - libblas-dev
             - liblapack-dev
 
