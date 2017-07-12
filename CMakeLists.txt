@@ -56,7 +56,7 @@ message("-- Lapack implementation found in " "${LAPACK_LIBRARIES}")
 if (HTOOL_WITH_GUI)
 	#=== Nanogui and dependencies
 	message("-- Nanogui and its dependencies will be built as submodules")
-	execute_process(COMMAND git submodule update --init --recursive
+	execute_process(COMMAND git submodule update --init --recursive external/nanogui
 	                    WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
 
 
@@ -87,7 +87,7 @@ if (HTOOL_WITH_GUI)
 		message("-- GLM found")
 	else()
 		message("-- GLM downloaded in external")
-		execute_process(COMMAND git submodule update --init --recursive
+		execute_process(COMMAND git submodule update --init --recursive external/glm
 	                    WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
 	    set(${GLM_INCLUDE_DIRS} ${CMAKE_CURRENT_SOURCE_DIR}/external/glm)
 	endif()
@@ -99,11 +99,10 @@ endif()
 if(MPI_FOUND AND BLAS_FOUND AND LAPACK_FOUND)
 	message("-- Htool and dependencies found")
 	#=== HPDDM
-	find_path(hpddm_include_dir "HPDDM.hpp" "${CMAKE_CURRENT_SOURCE_DIR}/external/hpddm/include")
-	if(hpddm_include_dir)
+	if("${CMAKE_CURRENT_SOURCE_DIR}/external/hpddm/include/HPHPDDM.hpp")
 		message("-- HPDDM and dependencies found")
-	elseif(NOT hpddm_include_dir)
-		execute_process(COMMAND git submodule update --init --recursive
+	else()
+		execute_process(COMMAND git submodule update --init --recursive external/hpddm
 	                    WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
 	    set(hpddm_include_dir "${CMAKE_CURRENT_SOURCE_DIR}/external/hpddm/include")
 	endif()
