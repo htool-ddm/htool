@@ -12,14 +12,14 @@ language: cpp
 # Compiler selection
 matrix:
   include:
-    # - os: osx
-    #   env:
-    #     - CXX_COMPILER=clang++
-    #     - C_COMPILER=clang
-    # - os: osx
-    #   env:
-    #     - CXX_COMPILER=g++-7
-    #     - C_COMPILER=gcc-7
+    - os: osx
+      env:
+        - CXX_COMPILER=clang++
+        - C_COMPILER=clang
+    - os: osx
+      env:
+        - CXX_COMPILER=g++-7
+        - C_COMPILER=gcc-7
     - os: linux
       dist: trusty
       compiler: gcc
@@ -81,6 +81,6 @@ before_script:
 
 # Build steps
 script:
-  - CC=$CC_COMPILER CXX=$CXX_COMPILER cmake ../
+  - CC=$C_COMPILER CXX=$CXX_COMPILER cmake ../
   - make -j build-tests
   - make test
