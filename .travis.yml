@@ -24,11 +24,14 @@ matrix:
       dist: trusty
       compiler: gcc
       env:
-        - CXX_COMPILER=g++
-        - C_COMPILER=gcc
+        - CXX_COMPILER=g++-4.9
+        - C_COMPILER=gcc-4.9
       addons:
         apt:
+          sources:
+            - ubuntu-toolchain-r-test
           packages:
+            - g++-4.9
             - cmake
             - mpich
             - libmpich-dev
@@ -39,11 +42,15 @@ matrix:
       dist: trusty
       compiler: clang
       env:
-        - CXX_COMPILER=clang++
-        - C_COMPILER=clang
+        - CXX_COMPILER=clang++-3.6
+        - C_COMPILER=clang-3.6
       addons:
         apt:
+          sources:
+            - ubuntu-toolchain-r-test
+            - llvm-toolchain-precise-3.6
           packages:
+            - clang-3.6
             - cmake
             - mpich
             - libmpich-dev
