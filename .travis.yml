@@ -25,7 +25,7 @@ branches:
 
 # Updates
 before_install:
-  - brew install cmake
+  - brew install mpich
 
 # Build steps
 script:
