@@ -3,18 +3,30 @@ sudo: false
 # Enable c++ support
 language: cpp
 
+# Cache
+cache:
+  directories:
+    - mpich
+
 
 # Compiler selection
 matrix:
   include:
     - os: osx
       env:
-        - MATRIX_EVAL="brew install mpich && CC=clang && CXX=clang++"
+        - CXX_COMPILER=clang++
+        - C_COMPILER=clang
+        - HOMEBREW_CC=clang
+        - HOMEBREW_CXX=clang++
     - os: osx
       env:
-        - MATRIX_EVAL="brew install mpich && CC=gcc-7 && CXX=g++-7"
+        - CXX_COMPILER=g++-7
+        - C_COMPILER=gcc-7
+        - HOMEBREW_CC=gcc-7
+        - HOMEBREW_CXX=g++-7
     # - os: linux
-    #   compiler: clang
+    #   dist: trusty
+
 
 
 
@@ -29,11 +41,18 @@ branches:
 
 # Updates
 before_install:
-  - eval "${MATRIX_EVAL}"
+  - if [ "$TRAVIS_OS_NAME" == "osx" ]; then brew install mpich; fi
+  - test -n $CC && unset CC
+  - test -n $CXX && unset CXX
+  - which $CXX_COMPILER
+
+
+before_script:
+  - mkdir build
+  - cd build
 
 # Build steps
 script:
-  - mkdir build && cd build
-  - cmake ../
+  - cmake ../ -DCMAKE_CXX_COMPILER=$CXX_COMPILER -DCMAKE_C_COMPILER=$C_COMPILER
   - make -j build-tests
   - make test
