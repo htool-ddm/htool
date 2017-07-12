@@ -23,6 +23,9 @@ matrix:
     - os: linux
       dist: trusty
       compiler: gcc
+      env:
+        - CXX_COMPILER=$CXX
+        - C_COMPILER=$CC
       addons:
         apt:
           packages:
