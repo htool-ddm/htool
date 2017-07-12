@@ -8,20 +8,19 @@ os:
   - linux
   - osx
 
+dist: trusty
 
 # Compiler selection
 compiler:
   - clang
-  - gcc
 
-# No need to check gcc on osx
+
 matrix:
-  exclude:
-    - os: osx
-      compiler: gcc
   include:
+    - os: osx
+      compiler: gcc-7
     - os: linux
-      dist: trusty
+      compiler: gcc
 
 
 
@@ -36,8 +35,8 @@ branches:
 
 # Updates
 before_install:
+  - if [ $TRAVIS_OS_NAME = osx ]; then brew install gcc; fi
   - if [ $TRAVIS_OS_NAME = osx ]; then brew install mpich; fi
-  -
 
 # Build steps
 script:
