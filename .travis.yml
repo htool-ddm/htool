@@ -24,8 +24,8 @@ branches:
 
 
 # Updates
-before_install:
-  - brew install cmake
+# before_install:
+#   - brew install cmake
 
 # Build steps
 script:
