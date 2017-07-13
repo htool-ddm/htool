@@ -36,30 +36,28 @@ option(HTOOL_WITH_GUI      "Build htool visualization tools ?" OFF)
 #========================== External Libraries ===============================#
 #=============================================================================#
 # MPI
-find_package (MPI REQUIRED QUIET)
-message("-- MPI libraries found in " "${MPI_LIBRARIES}")
-message("-- MPI include files found in " "${MPI_INCLUDE_PATH}")
+find_package (MPI REQUIRED)
+message("-- Found MPI include files: " "${MPI_INCLUDE_PATH}")
 
 # BLAS
-find_package(BLAS REQUIRED QUIET)
-message("-- Blas implementation found in " "${BLAS_LIBRARIES}")
+find_package(BLAS REQUIRED)
+message("-- Found Blas implementation: " "${BLAS_LIBRARIES}")
 
 # EIGEN3
 find_package(EIGEN3 QUIET)
 if (EIGEN3_FOUND)
-	message("-- Eigen3 found in" "${EIGEN3_INCLUDE_DIR}")
+	message("-- Found Eigen3: " "${EIGEN3_INCLUDE_DIR}")
 else()
 	message("-- Eigen3 not found, no SVD available")
 endif()
 
 # LAPACK
 find_package(LAPACK REQUIRED QUIET)
-message("-- Lapack implementation found in " "${LAPACK_LIBRARIES}")
+message("-- Found Lapack implementation: " "${LAPACK_LIBRARIES}")
 
 # HPDDM
 find_package(HPDDM REQUIRED)
-message("-- HPDDM found in " "${HPDDM_INCLUDE_DIR}")
-message(${HPDDM_INCLUDE_DIR})
+
 if (HTOOL_WITH_GUI)
 	# Nanogui
 	find_package(NANOGUI QUIET)
@@ -129,31 +127,31 @@ endif()
 
 
 #=== HPDDM
-if("${CMAKE_CURRENT_SOURCE_DIR}/external/hpddm/include/HPDDM.hpp")
-	message("-- HPDDM and dependencies found")
-else()
-	execute_process(COMMAND git submodule update --init --remote external/hpddm
-                    WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
-    set(hpddm_include_dir "${CMAKE_CURRENT_SOURCE_DIR}/external/hpddm/include")
-endif()
-add_library(hpddm INTERFACE)
-target_include_directories(hpddm INTERFACE "${hpddm_include_dir}")
-target_link_libraries(hpddm INTERFACE
-			${MPI_LIBRARIES}
-			${BLAS_LIBRARIES}
-			${LAPACK_LIBRARIES})
+# if("${CMAKE_CURRENT_SOURCE_DIR}/external/hpddm/include/HPDDM.hpp")
+# 	message("-- HPDDM and dependencies found")
+# else()
+# 	execute_process(COMMAND git submodule update --init --remote external/hpddm
+#                     WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
+#     set(hpddm_include_dir "${CMAKE_CURRENT_SOURCE_DIR}/external/hpddm/include")
+# endif()
+# add_library(hpddm INTERFACE)
+# target_include_directories(hpddm INTERFACE "${hpddm_include_dir}")
+# target_link_libraries(hpddm INTERFACE
+# 			${MPI_LIBRARIES}
+# 			${BLAS_LIBRARIES}
+# 			${LAPACK_LIBRARIES})
 #===
 
 
 #=== HTOOL
 add_library(htool INTERFACE)
 target_include_directories(htool INTERFACE
-					${htool_include_dir}
-					${MPI_INCLUDE_PATH})
+				${htool_include_dir}
+				${MPI_INCLUDE_PATH}
+				${HPDDM_INCLUDE_DIR})
 target_link_libraries(htool INTERFACE
-					${MPI_LIBRARIES}
-					${BLAS_LIBRARIES}
-					hpddm)
+				${MPI_LIBRARIES}
+				${BLAS_LIBRARIES})
 
 # For headers to show in IDE
 if (NOT "${CMAKE_VERSION}" VERSION_LESS 3.1)

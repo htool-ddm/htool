@@ -7,14 +7,11 @@
 #
 
 FIND_PATH(
-  HPDDM_INCLUDE_DIR
-  NAMES HPDDM.hpp
+  HPDDM_INCLUDE_DIR HPDDM.hpp
   PATHS
-    ${CMAKE_CURRENT_SOURCE_DIR}../hpddm
+    ${CMAKE_CURRENT_SOURCE_DIR}/../hpddm/include
+    ${CMAKE_CURRENT_SOURCE_DIR}/external/hpddm/include
     )
-message(${CMAKE_CURRENT_SOURCE_DIR}/../hpddm/include)
-
-message(${HPDDM_INCLUDE_DIR})
 
 
 # Handle the QUIETLY and REQUIRED arguments and set the HPDDM_FOUND to TRUE
