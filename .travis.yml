@@ -22,7 +22,6 @@ matrix:
         - C_COMPILER=gcc-7
     - os: linux
       dist: trusty
-      compiler: gcc
       env:
         - CXX_COMPILER=g++-4.9
         - C_COMPILER=gcc-4.9
@@ -40,7 +39,6 @@ matrix:
 
     - os: linux
       dist: trusty
-      compiler: clang
       env:
         - CXX_COMPILER=clang++-3.6
         - C_COMPILER=clang-3.6
@@ -64,7 +62,7 @@ git:
 
 branches:
   only:
-  - develop
+  - master
 
 
 # Updates

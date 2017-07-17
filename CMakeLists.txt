@@ -78,6 +78,7 @@ endif()
 #=============================================================================#
 if (HTOOL_WITH_GUI)
 	# Create an interface library
+<<<<<<< HEAD
 	# add_library(htool_visu INTERFACE)
 	# target_include_directories(htool_visu INTERFACE ${NANOGUI_EXTRA_INCS} "${CMAKE_CURRENT_SOURCE_DIR}/external/nanogui/include")
 	# target_link_libraries(htool_visu INTERFACE
@@ -125,6 +126,28 @@ if (HTOOL_WITH_GUI)
 	# endif()
 	# target_include_directories(htool_visu INTERFACE ${GLM_INCLUDE_DIRS})
 	# #===
+=======
+	add_library(htool_visu INTERFACE)
+	target_include_directories(htool_visu INTERFACE ${NANOGUI_EXTRA_INCS} "${CMAKE_CURRENT_SOURCE_DIR}/external/nanogui/include")
+	target_link_libraries(htool_visu INTERFACE
+						nanogui
+						${NANOGUI_EXTRA_LIBS})
+	#===
+	#=== GLM
+	find_package(GLM)
+	if(GLM_FOUND)
+		message("-- GLM found")
+	else()
+		message("-- GLM downloaded in external")
+		execute_process(COMMAND git submodule update --init --recursive external/glm
+	                    WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
+	    set(${GLM_INCLUDE_DIRS} ${CMAKE_CURRENT_SOURCE_DIR}/external/glm)
+	endif()
+	target_include_directories(htool_visu INTERFACE ${GLM_INCLUDE_DIRS})
+	#===
+else()
+	message("-- No GUI for Htool")
+>>>>>>> master
 endif()
 
 
