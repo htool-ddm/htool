@@ -1,3 +1,6 @@
 [submodule "external/hpddm"]
 	path = external/hpddm
 	url = https://github.com/hpddm/hpddm.git
+[submodule "external/nanogui"]
+	path = external/nanogui
+	url = git@github.com:wjakob/nanogui.git
