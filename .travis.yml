@@ -62,13 +62,14 @@ git:
 
 branches:
   only:
-  - master
+  - develop
 
 
 # Updates
 install:
   - if [ "$TRAVIS_OS_NAME" == "osx" ]; then brew install gcc; fi
   - if [ "$TRAVIS_OS_NAME" == "osx" ]; then brew install mpich; fi
+  - cd .. && git clone https://github.com/hpddm/hpddm.git && cd htool
 
 
 
