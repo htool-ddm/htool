@@ -145,7 +145,7 @@ endif()
 if (HTOOL_WITH_TESTS)
 	enable_testing()
 	add_custom_target(build-tests)
-	add_subdirectory(test EXCLUDE_FROM_ALL)
+	add_subdirectory(tests EXCLUDE_FROM_ALL)
 endif()
 
 #
