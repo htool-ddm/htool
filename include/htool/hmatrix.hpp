@@ -80,7 +80,7 @@ public:
 
 	LowRankMatrix<T> get_lrmat(int i) const{return MyFarFieldMats[i];}
 
-	std::map<std::string,double>& get_stats () const { return stats;}
+	const std::map<std::string,double>& get_stats () const { return stats;}
 	void add_stats(const std::string& keyname, const double& value){stats[keyname]=value;}
 	void print_stats();
 

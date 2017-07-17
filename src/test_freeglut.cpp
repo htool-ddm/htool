@@ -14,6 +14,9 @@
 #include <fstream>
 
 #include "mpi.h"
+
+typedef std::complex<double> K;
+
 #include <htool/htool.hpp>
 #include <htool/view.hpp>
 
@@ -43,7 +46,7 @@ void attach_ui(Scene& s) {
 				std::vector<int> NbPts;
 				std::vector<R3> Normals;
 				std::vector<R3>  Ctrs;
-				std::vector<Real> Rays;
+				std::vector<double> Rays;
 				std::cout << "Loading mesh file " << str << " ..." << std::endl;
 				LoadMesh(str.c_str(),X,Elts,NbPts,Normals,Ctrs,Rays);
 				GLMesh m(X,Elts,NbPts,Normals);
@@ -61,8 +64,8 @@ void attach_ui(Scene& s) {
 				std::string strmat = nanogui::file_dialog(
                    {{"bin", "Matrix binary file"}}, false);
                    std::cout << "Loading matrix file " << strmat << " ..." << std::endl;              
-   				Matrix *A = new Matrix;
-                bytes_to_matrix(strmat,*A);
+   				Matrix<K> *A = new Matrix<K>;
+                A->bytes_to_matrix(strmat);
                 gv.active_project->set_matrix(A);
 			}
    });

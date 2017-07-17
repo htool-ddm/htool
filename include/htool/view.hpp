@@ -3,39 +3,40 @@
 
 #include <algorithm>
 #include <list>
+#include <htool/htool.hpp>
 
 namespace htool {
 
-void LoadMesh(std::string inputname, std::vector<R3>&  X, std::vector<N4>&  Elt, std::vector<int>& NbPt, std::vector<R3>& Normals, std::vector<R3>& ctrs, std::vector<Real>& rays) {
+void LoadMesh(std::string inputname, std::vector<R3>&  X, std::vector<N4>&  Elt, std::vector<int>& NbPt, std::vector<R3>& Normals, std::vector<R3>& ctrs, std::vector<double>& rays) {
 	int   num,NbElt,poubelle, NbTri, NbQuad;
 	R3    Pt, Ctr;
-	Real Rmax, Rad;
+	double Rmax, Rad;	
 	R3 v1,v2;
-
+	
 	// Ouverture fichier
 	std::ifstream infile;
 	infile.open(inputname.c_str());
 	if(!infile.good()){
 		std::cout << "LoadPoints in loading.hpp: error opening the geometry file" << std::endl;
 		abort();}
-
+	
 	// Nombre d'elements
 	infile >> NbElt;
 	Elt.resize(NbElt);
 	NbPt.resize(NbElt);
 	Normals.resize(NbElt);
-
+	
 	num=0; NbTri=0; NbQuad=0;
 	// Lecture elements
 	for(int e=0; e<NbElt; e++){
 		infile >> poubelle;
 		infile >> NbPt[e];
-
-		Ctr = 0;
-
+		
+		Ctr.fill(0);
+		
 		if(NbPt[e]==3){NbTri++;}
 		if(NbPt[e]==4){NbQuad++;}
-
+		
 		// Calcul centre element
 		for(int j=0; j<NbPt[e]; j++){
 			infile >> poubelle;
@@ -43,33 +44,33 @@ void LoadMesh(std::string inputname, std::vector<R3>&  X, std::vector<N4>&  Elt,
 			Elt[e][j] = num;
 			X.push_back(Pt);
 			num++;
-			Ctr += (1./Real(NbPt[e]))*Pt;
+			Ctr += (1./double(NbPt[e]))*Pt;
 		}
-
+		
 		v1 = X[Elt[e][1]]-X[Elt[e][0]];
 		v2 = X[Elt[e][2]]-X[Elt[e][0]];
 		Normals[e] = v1^v2;
-		Normals[e] /= norm(Normals[e]);
-
+		Normals[e] = Normals[e]*(1./norm2(Normals[e]));
+		
 		ctrs.push_back(Ctr);
-		Rmax = norm(Ctr-X[Elt[e][0]]);
-
+		Rmax = norm2(Ctr-X[Elt[e][0]]);
+		
         for(int j=1; j<NbPt[e]; j++){
-        	Rad = norm(Ctr-X[Elt[e][j]]);
+        	Rad = norm2(Ctr-X[Elt[e][j]]);
 			if (Rad > Rmax)
              	Rmax=Rad;
         }
-
+    
         rays.push_back(Rmax);
-
+		
 		// Separateur inter-element
 		if(e<NbElt-1){infile >> poubelle;}
-
+		
 	}
-
+	
 	std::cout << NbTri << " triangle(s) and " << NbQuad << " quad(s)" << std::endl;
-
-	infile.close();
+	
+	infile.close();	
 }
 
 class Palette{
@@ -77,7 +78,7 @@ class Palette{
 		unsigned int n;
 		std::vector<R3> colors;
 		Palette();
-		Palette(const unsigned int nb, const std::vector<R3>& cols);
+		Palette(const unsigned int nb, const std::vector<R3>& cols);		
 		R3 get_color(float z) const;
 };
 
@@ -88,13 +89,13 @@ class GLMesh;
 class Camera{
 	public:
 		R3 eye,x,y,z,center,up;
-
+		
 		Camera();
-
+		
 		Camera(const R3& eye0, const R3& center0, const R3& up0);
-
+		
 		void set(const R3& eye0, const R3& center0, const R3& up0);
-
+		
 		void center_on(const GLMesh& mesh);
 };
 
@@ -110,27 +111,27 @@ class GLMesh {
 		R3 lbox, ubox;
 		Palette& palette;
 		const Cluster* cluster;
-
+		
 	public:
 		GLMesh(const GLMesh& m);
-
+		
 		~GLMesh();
-
+	
 		GLMesh(std::vector<R3>& X0, std::vector<N4>&  Elts0, std::vector<int>& NbPts0, std::vector<R3>& normals0, const Cluster* cluster0 = NULL, Palette& palette0 = default_palette);
-
+		
 		const R3& get_lbox() const;
-
+		
 		const R3& get_ubox() const;
-
-		const unsigned int& get_visudepth() const;
-		const Cluster* get_cluster() const;
+		
+		const unsigned int& get_visudepth() const;		
+		const Cluster* get_cluster() const;		
 		void set_cluster(const Cluster* c);
-
+		
 		void TraversalBuildLabel(const Cluster& t, std::vector<int>& labeldofs);
 		void set_visudepth(const unsigned int depth);
-
+		
 		void set_buffers();
-
+		
 		void draw(const Camera& cam);
 };
 
@@ -139,32 +140,32 @@ class Project{
 		GLMesh* mesh;
 		std::string name;
 		Camera cam;
-		VirtualMatrix* matrix;
+		IMatrix<K>* matrix;
 		std::vector<R3>* ctrs;
-		std::vector<Real>* rays;
+		std::vector<double>* rays;
 	public:
 		Project(const char* s);
-
+		
 		~Project();
-
-		GLMesh* get_mesh() const;
+	
+		GLMesh* get_mesh() const;		
 		void set_mesh(const GLMesh& m);
+		
+		IMatrix<K>* get_matrix() const;		
+		void set_matrix(IMatrix<K>* m);
 
-		VirtualMatrix* get_matrix() const;
-		void set_matrix(VirtualMatrix* m);
-
-		std::vector<R3>* get_ctrs() const;
+		std::vector<R3>* get_ctrs() const;		
 		void set_ctrs(const std::vector<R3>& m);
 
-		std::vector<Real>* get_rays() const;
-		void set_rays(const std::vector<Real>& m);
+		std::vector<double>* get_rays() const;		
+		void set_rays(const std::vector<double>& m);
 
-		std::string& get_name();
+		std::string& get_name();		
 		Camera& get_camera();
-
-		void set_camera(const Camera& c);
+		
+		void set_camera(const Camera& c);		
 		void center_view_on_mesh();
-
+		
 		void draw();
 };
 
@@ -172,7 +173,7 @@ class statics{
 	public:
 		std::list<Project> projects;
 		Project* active_project;
-		Real motionx, motiony;
+		double motionx, motiony;
 		nanogui::Screen* screen;
 		GLFWwindow* glwindow;
 		GLint shaderProgram, blackshaderProgram, lightshaderProgram;
@@ -185,14 +186,14 @@ class Scene{
 		static statics gv;
 
 		Scene();
-
-		void set_active_project(Project* p);
+		
+		void set_active_project(Project* p);	
 		void set_mesh(const GLMesh& mesh);
-
+		
 		void init();
-
+				
 		void draw();
-
+		
 		void run();
 };
 
@@ -202,13 +203,13 @@ Palette::Palette() {}
 
 Palette::Palette(const unsigned int nb, const std::vector<R3>& cols) {
 	n = nb;
-	colors = cols;
+	colors = cols;	
 }
 
 R3 Palette::get_color(float z) const{
 	int i=(int)(z*(n-1));
-	float t=z*(n-1)-i;
-	R3 col = ((1-t)*colors[i]+t*colors[i])/255;
+	double t=z*(n-1)-i;
+	R3 col = ((1-t)*colors[i]+t*colors[i])*(1./255);
 	return col;
 }
 
@@ -222,7 +223,7 @@ GLMesh::GLMesh(const GLMesh& m) : palette(m.palette){
 	visudepth = m.visudepth;
 	lbox = m.lbox;
 	ubox = m.ubox;
-	cluster = m.cluster;
+	cluster = m.cluster;			
 }
 
 GLMesh::~GLMesh() {
@@ -237,14 +238,14 @@ GLMesh::~GLMesh() {
 	}
 }
 
-GLMesh::GLMesh(std::vector<R3>& X0, std::vector<N4>&  Elts0, std::vector<int>& NbPts0, std::vector<R3>& normals0, const Cluster* cluster0, Palette& palette0)
+GLMesh::GLMesh(std::vector<R3>& X0, std::vector<N4>&  Elts0, std::vector<int>& NbPts0, std::vector<R3>& normals0, const Cluster* cluster0, Palette& palette0) 
 	: palette(palette0), cluster(cluster0){
 	X = X0;
 	Elts = Elts0;
 	NbPts = NbPts0;
 	normals = normals0;
-	lbox = 1.e+30;
-	ubox = -1.e+30;
+	lbox.fill(1.e+30);
+	ubox.fill(-1.e+30);
 	for (int i=0; i<X.size(); i++){
 		if (X[i][0] < lbox[0]) lbox[0] = X[i][0];
 		if (X[i][0] > ubox[0]) ubox[0] = X[i][0];
@@ -253,12 +254,12 @@ GLMesh::GLMesh(std::vector<R3>& X0, std::vector<N4>&  Elts0, std::vector<int>& N
 		if (X[i][2] < lbox[2]) lbox[2] = X[i][2];
 		if (X[i][2] > ubox[2]) ubox[2] = X[i][2];
 	}
-
+	
 	normals.resize(Elts.size());
 	labels.resize(Elts.size());
 	for (int i=0; i<Elts.size(); i++)
 		labels[i] = 0;
-
+	
 	nblabels = 1;
 	visudepth = 0;
 }
@@ -286,17 +287,17 @@ void GLMesh::set_cluster(const Cluster* c) {
 }
 
 void GLMesh::TraversalBuildLabel(const Cluster& t, std::vector<int>& labeldofs){
-	if(depth_(t)<visudepth && !t.IsLeaf()){
-		TraversalBuildLabel(son_(t,0), labeldofs);
-		TraversalBuildLabel(son_(t,1), labeldofs);
+	if(t.get_depth()<visudepth && !t.IsLeaf()){
+		TraversalBuildLabel(t.get_son(0), labeldofs);
+		TraversalBuildLabel(t.get_son(1), labeldofs);
 	}
 	else {
 		/*
 		for(int i=0; i<num_(t).size(); i++)
 			labeldofs[num_(t)[i]] = nblabels;
 		*/
-		for(int i=0; i<num_(t).size()/GetNdofPerElt(); i++)
-			labeldofs[num_(t)[GetNdofPerElt()*i]/GetNdofPerElt()] = nblabels;
+		for(int i=0; i<t.get_num().size()/GetNdofPerElt(); i++)
+			labeldofs[t.get_num()[GetNdofPerElt()*i]/GetNdofPerElt()] = nblabels;
 		nblabels++;
 	}
 }
@@ -320,12 +321,12 @@ void GLMesh::set_visudepth(const unsigned int depth){
     				if(search != m.end())
     					search->second++;
     				else
-    					m[labeldofs[Elts[i][j]]] = 1;
+    					m[labeldofs[Elts[i][j]]] = 1;	
 				}
 
 				auto max = std::max_element(m.begin(), m.end(),
     [](const std::pair<int,int>& p1, const std::pair<int,int>& p2) {
-        return p1.second < p2.second; });
+        return p1.second < p2.second; });			
 				labels[i] = max->first;
 			}
 		}
@@ -334,10 +335,10 @@ void GLMesh::set_visudepth(const unsigned int depth){
 	}
 }
 
-void GLMesh::set_buffers() {
+void GLMesh::set_buffers() {		
 	int np = NbPts[0];
 	int sz = (np == 3 ? np : 6);
-
+			
 	GLfloat vertices[9*sz*Elts.size()];
 	for (int i=0; i<9*sz*Elts.size(); i++)
 		vertices[i] = 0;
@@ -347,12 +348,12 @@ void GLMesh::set_buffers() {
 			R3 col = palette.get_color(1.*(labels[i])/nblabels);
 			for (int j=0; j<3; j++){
 				for (int k=0; k<3; k++) {
-					vertices[9*sz*i+9*j+k] = X[Elts[i][j]][k];
+					vertices[9*sz*i+9*j+k] = X[Elts[i][j]][k];		
 					// Normals
 					vertices[9*sz*i+9*j+3+k] = normals[i][k];
 					// Colors
-					vertices[9*sz*i+9*j+6+k] =col[k];
-				}
+					vertices[9*sz*i+9*j+6+k] =col[k];	
+				}					
 			}
 		}
 	}
@@ -371,11 +372,11 @@ void GLMesh::set_buffers() {
 					vertices[9*sz*i+9*j+3+k] = normals[i][k];
 					// Colors
 					vertices[9*sz*i+9*j+6+k] =col[k];
-				}
+				}				
 			}
 		}
 	}
-
+	
 	/*
 	// Coordinates
 	for (int i=0; i<X.size(); i++)
@@ -397,10 +398,10 @@ void GLMesh::set_buffers() {
 
 	int sz = (np == 3 ? np : 6);
 	GLuint indices[sz*Elts.size()];
-
+			
 	if (np == 3) {
 		for (int i=0; i<Elts.size(); i++)
-		for (int j = 0; j<3; j++)
+		for (int j = 0; j<3; j++)				
 			indices[3*i+j] = Elts[i][j];
 	}
 	else {
@@ -414,20 +415,20 @@ void GLMesh::set_buffers() {
 		}
 	}
 	*/
-
+	
 	GLuint &VBO = Scene::gv.VBO;
 	GLuint &VAO = Scene::gv.VAO;
 	GLuint &EBO = Scene::gv.EBO;
-
+	
 	glGenVertexArrays(1, &VAO);
 	glGenBuffers(1, &VBO);
-	//glGenBuffers(1, &EBO);
-
+	//glGenBuffers(1, &EBO);			
+	
 	glBindBuffer(GL_ARRAY_BUFFER, VBO);
 	glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
-
+	
 	glBindVertexArray(VAO);
-
+	
 	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 9 * sizeof(GLfloat), (GLvoid*)0);
 	glEnableVertexAttribArray(0);
 	// Normal attribute
@@ -436,16 +437,16 @@ void GLMesh::set_buffers() {
 	// Color attribute
 	glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, 9 * sizeof(GLfloat), (GLvoid*)(6 * sizeof(GLfloat)));
 	glEnableVertexAttribArray(2);
-
+	
 	/*
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
 	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
-
+	
 	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 9 * sizeof(GLfloat), (GLvoid*)0);
 	glEnableVertexAttribArray(0);
 	*/
-	glBindBuffer(GL_ARRAY_BUFFER, 0);
-
+	glBindBuffer(GL_ARRAY_BUFFER, 0); 
+	
 	glBindVertexArray(0);
 }
 
@@ -454,33 +455,33 @@ void GLMesh::draw(const Camera& cam) {
 
 	R3 lp = cam.eye;
 	glm::vec3 lightPos(lp[0],lp[1],lp[2]);
-
+	
 	glm::mat4 view = glm::lookAt(glm::vec3(cam.eye[0],cam.eye[1],cam.eye[2]), glm::vec3(cam.center[0],cam.center[1],cam.center[2]), glm::vec3(cam.up[0],cam.up[1],cam.up[2]));
 	float wdt = 100;
 	//glm::mat4 projection = glm::perspective(0.f, 1.f, 0.1f, 1000.0f);
 	//glm::mat4 projection = glm::perspective(70.f, 1.f, 0.001f, 100.0f);
 	glm::mat4 projection = glm::perspective(70.f,1.f,(float)(0.001*wdt/2.),(float)(1000*wdt/2.));
-	//70,1,0.001*wdt/2.,1000*wdt/2.
-
+	//70,1,0.001*wdt/2.,1000*wdt/2.	
+	
 	GLint shaderProgram = Scene::gv.shaderProgram;
     glUseProgram(shaderProgram);
-
+      
 	GLint lightColorLoc  = glGetUniformLocation(shaderProgram, "lightColor");
 	GLint lightPosLoc    = glGetUniformLocation(shaderProgram, "lightPos");
-	GLint viewPosLoc     = glGetUniformLocation(shaderProgram, "viewPos");
+	GLint viewPosLoc     = glGetUniformLocation(shaderProgram, "viewPos"); 
 	glUniform3f(lightColorLoc,  1.0f, 1.0f, 1.0f);
 	glUniform3f(lightPosLoc,    lightPos.x, lightPos.y, lightPos.z);
-	glUniform3f(viewPosLoc,     cam.eye[0],cam.eye[1],cam.eye[2]);
+	glUniform3f(viewPosLoc,     cam.eye[0],cam.eye[1],cam.eye[2]);  
 	GLint modelLoc = glGetUniformLocation(shaderProgram, "model");
 	GLint viewLoc = glGetUniformLocation(shaderProgram, "view");
-	GLint projLoc = glGetUniformLocation(shaderProgram, "projection");
+	GLint projLoc = glGetUniformLocation(shaderProgram, "projection");	
 	glUniformMatrix4fv(viewLoc, 1, GL_FALSE, glm::value_ptr(view));
 	glUniformMatrix4fv(projLoc, 1, GL_FALSE, glm::value_ptr(projection));
-
+	
 	GLuint &VAO = Scene::gv.VAO;
-
+	
 	glBindVertexArray(VAO);
-
+	
 	glm::mat4 model;
 	//model = glm::translate(model, glm::vec3(0.f, 0.f, 0.f));
 	glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
@@ -488,7 +489,7 @@ void GLMesh::draw(const Camera& cam) {
 	if (NbPts[0] == 3)
 		glDrawArrays(GL_TRIANGLES, 0, 3*Elts.size());
 	else
-		glDrawArrays(GL_TRIANGLES, 0, 6*Elts.size());
+		glDrawArrays(GL_TRIANGLES, 0, 6*Elts.size());	
 
 	/*
 	if (NbPts[0] == 3)
@@ -496,22 +497,22 @@ void GLMesh::draw(const Camera& cam) {
 	else
 		glDrawElements(GL_TRIANGLES, 6*Elts.size(), GL_UNSIGNED_INT, (void*)0 );
 	*/
-
+	
 	GLint blackshaderProgram = Scene::gv.blackshaderProgram;
     glUseProgram(blackshaderProgram);
-
+      
 	lightColorLoc  = glGetUniformLocation(blackshaderProgram, "lightColor");
 	lightPosLoc    = glGetUniformLocation(blackshaderProgram, "lightPos");
-	viewPosLoc     = glGetUniformLocation(blackshaderProgram, "viewPos");
+	viewPosLoc     = glGetUniformLocation(blackshaderProgram, "viewPos"); 
 	glUniform3f(lightColorLoc,  1.0f, 1.0f, 1.0f);
 	glUniform3f(lightPosLoc,    lightPos.x, lightPos.y, lightPos.z);
-	glUniform3f(viewPosLoc,     cam.eye[0],cam.eye[1],cam.eye[2]);
+	glUniform3f(viewPosLoc,     cam.eye[0],cam.eye[1],cam.eye[2]);  
 	modelLoc = glGetUniformLocation(blackshaderProgram, "model");
 	viewLoc = glGetUniformLocation(blackshaderProgram, "view");
-	projLoc = glGetUniformLocation(blackshaderProgram, "projection");
+	projLoc = glGetUniformLocation(blackshaderProgram, "projection");	
 	glUniformMatrix4fv(viewLoc, 1, GL_FALSE, glm::value_ptr(view));
 	glUniformMatrix4fv(projLoc, 1, GL_FALSE, glm::value_ptr(projection));
-	glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
+	glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));	
 
 	glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 	/*
@@ -523,20 +524,20 @@ void GLMesh::draw(const Camera& cam) {
 	if (NbPts[0] == 3)
 		glDrawArrays(GL_TRIANGLES, 0, 3*Elts.size());
 	else
-		glDrawArrays(GL_TRIANGLES, 0, 6*Elts.size());
-
+		glDrawArrays(GL_TRIANGLES, 0, 6*Elts.size());	
+	
 	glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-
+	
 	glBindVertexArray(0);
 }
 
 Camera::Camera() {
-	eye = 0;
-	center = 1;
-	up = 1;
-	x = 1;
-	y = 0;
-	z = 0;
+	eye.fill(0);
+	center.fill(1);
+	up.fill(1);
+	x.fill(1);
+	y.fill(0);
+	z.fill(0);	
 }
 
 Camera::Camera(const R3& eye0, const R3& center0, const R3& up0){
@@ -545,10 +546,10 @@ Camera::Camera(const R3& eye0, const R3& center0, const R3& up0){
 	up = up0;
 	z = center-eye;
 	y = up;
-	z /= norm(z);
-	y /= norm(y);
+	z /= norm2(z);
+	y /= norm2(y);
 	x = y^z;
-	x /= norm(x);
+	x /= norm2(x);
 }
 
 void Camera::set(const R3& eye0, const R3& center0, const R3& up0){
@@ -557,24 +558,24 @@ void Camera::set(const R3& eye0, const R3& center0, const R3& up0){
 	up = up0;
 	z = center-eye;
 	y = up;
-	z /= norm(z);
-	y /= norm(y);
+	z /= norm2(z);
+	y /= norm2(y);
 	x = y^z;
-	x /= norm(x);
+	x /= norm2(x);
 }
 
 void Camera::center_on(const GLMesh& mesh){
 	center = 0.5*(mesh.get_lbox()+mesh.get_ubox());
-	up = 0;
+	up.fill(0);
 	up[2] = 1;
-	eye = center-2*mesh.get_lbox();
+	eye = center-2.*mesh.get_lbox();
 	eye[2] = 0;
 	z = center-eye;
 	y = up;
-	z /= norm(z);
-	y /= norm(y);
+	z /= norm2(z);
+	y /= norm2(y);
 	x = y^z;
-	x /= norm(x);
+	x /= norm2(x);
 }
 
 Project::Project(const char* s){
@@ -582,7 +583,7 @@ Project::Project(const char* s){
 	matrix = NULL;
 	ctrs = NULL;
 	rays = NULL;
-	name = s;
+	name = s;			
 }
 
 Project::~Project(){
@@ -614,11 +615,11 @@ void Project::set_mesh(const GLMesh& m) {
 	mesh = new GLMesh(m);
 }
 
-VirtualMatrix* Project::get_matrix() const{
+IMatrix<K>* Project::get_matrix() const{
 	return matrix;
 }
 
-void Project::set_matrix(VirtualMatrix* m) {
+void Project::set_matrix(IMatrix<K>* m) {
 	if (matrix != NULL)
 		delete matrix;
 	matrix = m;
@@ -634,23 +635,23 @@ void Project::set_ctrs(const std::vector<R3>& m) {
 	ctrs = new std::vector<R3>(m);
 }
 
-std::vector<Real>* Project::get_rays() const{
+std::vector<double>* Project::get_rays() const{
 	return rays;
 }
 
-void Project::set_rays(const std::vector<Real>& m) {
+void Project::set_rays(const std::vector<double>& m) {
 	if (rays != NULL)
 		delete rays;
-	rays = new std::vector<Real>(m);
-}
-
+	rays = new std::vector<double>(m);
+}		
+		
 
 std::string& Project::get_name() {
-	return name;
+	return name;	
 }
 
 Camera& Project::get_camera() {
-	return cam;
+	return cam;	
 }
 
 void Project::set_camera(const Camera& c){
@@ -659,18 +660,18 @@ void Project::set_camera(const Camera& c){
 
 void Project::center_view_on_mesh() {
 	if (mesh != NULL)
-		cam.center_on(*mesh);
+		cam.center_on(*mesh);	
 }
 
 void Project::draw() {
 	if (mesh != NULL)
-		mesh->draw(cam);
+		mesh->draw(cam);	
 }
 
 Scene::Scene() {}
-
+		
 void Scene::set_active_project(Project* p) {
-	gv.active_project = p;
+	gv.active_project = p;	
 }
 
 void Scene::set_mesh(const GLMesh& mesh){
@@ -682,11 +683,11 @@ void Scene::set_mesh(const GLMesh& mesh){
 		gv.active_project->center_view_on_mesh();
 	}
 }
-
+		
 void Scene::draw(){
 	glClearColor(0.2f, 0.25f, 0.3f, 1.0f);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
+      
 	if (gv.active_project != NULL)
 		gv.active_project->draw();
 }
@@ -698,23 +699,23 @@ void Scene::init(){
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
 	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 	glfwWindowHint(GLFW_RESIZABLE, GL_FALSE);
-	glfwWindowHint(GLFW_SAMPLES, 4);
+	glfwWindowHint(GLFW_SAMPLES, 4);    		
 	glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
-
+	
 	gv.glwindow = glfwCreateWindow(800, 800, "htool gui", nullptr, nullptr);
-
+	
 	int width, height;
 	glfwGetFramebufferSize(gv.glwindow, &width, &height);
 	glViewport(0, 0, width, height);
 	glfwMakeContextCurrent(gv.glwindow);
-
+	
 	// Set this to true so GLEW knows to use a modern approach to retrieving function pointers and extensions
 	//glewExperimental = GL_TRUE;
 	// Initialize GLEW to setup the OpenGL Function pointers
 	//glewInit();
-
+	
 	glEnable(GL_DEPTH_TEST);
-
+   
 	const GLchar* vertexShaderSource = "#version 330 core\n"
 	"layout (location = 0) in vec3 position;\n"
 	"layout (location = 1) in vec3 normal;\n"
@@ -732,7 +733,7 @@ void Scene::init(){
 	"Normal = mat3(transpose(inverse(model))) * normal;\n"
 	"Color = color;\n"
 	"}\0";
-
+	
 	const GLchar* blackvertexShaderSource = "#version 330 core\n"
 	"layout (location = 0) in vec3 position;\n"
 	"layout (location = 1) in vec3 normal;\n"
@@ -752,7 +753,7 @@ void Scene::init(){
 	"FragPos = FragPos * 0.995;\n"
 	"Normal = mat3(transpose(inverse(model))) * normal;\n"
 	"Color = color;\n"
-	"}\0";
+	"}\0";	
    /*
 const GLchar* fragmentShaderSource = "#version 330 core\n"
 "out vec4 color;\n"
@@ -778,10 +779,10 @@ const GLchar* fragmentShaderSource = "#version 330 core\n"
 */
 	const GLchar* fragmentShaderSource = "#version 330 core\n"
 	"out vec4 color;\n"
-	"in vec3 FragPos;\n"
+	"in vec3 FragPos;\n" 
 	"in vec3 Normal;\n"
-	"in vec3 Color;\n"
-	"uniform vec3 lightPos;\n"
+	"in vec3 Color;\n"  
+	"uniform vec3 lightPos;\n" 
 	"uniform vec3 viewPos;\n"
 	"uniform vec3 lightColor;\n"
 	"void main()\n"
@@ -789,26 +790,26 @@ const GLchar* fragmentShaderSource = "#version 330 core\n"
 	// Ambient
 	"float ambientStrength = 0.1f;\n"
 	"vec3 ambient = ambientStrength * lightColor;\n"
-	// Diffuse
+	// Diffuse 
 	"vec3 norm = normalize(Normal);\n"
 	"vec3 lightDir = normalize(lightPos - FragPos);\n"
 	"float diff = abs(dot(norm, lightDir));\n"
-	"vec3 diffuse = diff * lightColor;\n"
+	"vec3 diffuse = diff * lightColor;\n"   
 	// Specular
 	"float specularStrength = 0.5f;\n"
 	"vec3 viewDir = normalize(viewPos - FragPos);\n"
-	"vec3 reflectDir = reflect(-lightDir, norm);\n"
+	"vec3 reflectDir = reflect(-lightDir, norm);\n"  
 	"float spec = pow(max(dot(viewDir, reflectDir), 0.0), 32);\n"
-	"vec3 specular = specularStrength * spec * lightColor;\n"
+	"vec3 specular = specularStrength * spec * lightColor;\n"       
 	"vec3 result = (ambient + diffuse + specular) * Color;\n"
 	"color = vec4(result, 1.0f);\n"
 	"}\0";
 
 	const GLchar* blackfragmentShaderSource = "#version 330 core\n"
 	"out vec4 color;\n"
-	"in vec3 FragPos;\n"
+	"in vec3 FragPos;\n" 
 	"in vec3 Normal;\n"
-	"uniform vec3 lightPos;\n"
+	"uniform vec3 lightPos;\n" 
 	"uniform vec3 viewPos;\n"
 	"uniform vec3 lightColor;\n"
 	"void main()\n"
@@ -817,17 +818,17 @@ const GLchar* fragmentShaderSource = "#version 330 core\n"
 	// Ambient
 	"float ambientStrength = 0.1f;\n"
 	"vec3 ambient = ambientStrength * lightColor;\n"
-	// Diffuse
+	// Diffuse 
 	"vec3 norm = normalize(Normal);\n"
 	"vec3 lightDir = normalize(lightPos - FragPos);\n"
 	"float diff = abs(dot(norm, lightDir));\n"
-	"vec3 diffuse = diff * lightColor;\n"
+	"vec3 diffuse = diff * lightColor;\n"   
 	// Specular
 	"float specularStrength = 0.5f;\n"
 	"vec3 viewDir = normalize(viewPos - FragPos);\n"
-	"vec3 reflectDir = reflect(-lightDir, norm);\n"
+	"vec3 reflectDir = reflect(-lightDir, norm);\n"  
 	"float spec = pow(max(dot(viewDir, reflectDir), 0.0), 32);\n"
-	"vec3 specular = specularStrength * spec * lightColor;\n"
+	"vec3 specular = specularStrength * spec * lightColor;\n"       
 	"vec3 result = (ambient + diffuse + specular) * Color;\n"
 	"color = vec4(result, 1.0f);\n"
 	"}\0";
@@ -841,7 +842,7 @@ const GLchar* fragmentShaderSource = "#version 330 core\n"
 	"{\n"
 	"gl_Position = projection * view * model * vec4(position, 1.0f);\n"
 	"}\0";
-
+	
 	const GLchar* lightfragmentShaderSource = "#version 330 core\n"
 	"out vec4 color;\n"
 	"uniform vec3 objectColor;\n"
@@ -877,7 +878,7 @@ const GLchar* fragmentShaderSource = "#version 330 core\n"
        glGetShaderInfoLog(fragmentShader, 512, NULL, infoLog);
        std::cout << "ERROR::SHADER::FRAGMENT::COMPILATION_FAILED\n" << infoLog << std::endl;
    }
-
+ 
    // black Vertex shader
    GLint blackvertexShader = glCreateShader(GL_VERTEX_SHADER);
    glShaderSource(blackvertexShader, 1, &blackvertexShaderSource, NULL);
@@ -888,8 +889,8 @@ const GLchar* fragmentShaderSource = "#version 330 core\n"
    {
        glGetShaderInfoLog(blackvertexShader, 512, NULL, infoLog);
        std::cout << "ERROR::SHADER::VERTEX::COMPILATION_FAILED\n" << infoLog << std::endl;
-   }
-
+   } 
+   
    // black Fragment shader
    GLint blackfragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
    glShaderSource(blackfragmentShader, 1, &blackfragmentShaderSource, NULL);
@@ -901,7 +902,7 @@ const GLchar* fragmentShaderSource = "#version 330 core\n"
        glGetShaderInfoLog(blackfragmentShader, 512, NULL, infoLog);
        std::cout << "ERROR::SHADER::FRAGMENT::COMPILATION_FAILED\n" << infoLog << std::endl;
    }
-
+      
    // Vertex shader
    GLint lightvertexShader = glCreateShader(GL_VERTEX_SHADER);
    glShaderSource(lightvertexShader, 1, &lightvertexShaderSource, NULL);
@@ -912,7 +913,7 @@ const GLchar* fragmentShaderSource = "#version 330 core\n"
    {
        glGetShaderInfoLog(lightvertexShader, 512, NULL, infoLog);
        std::cout << "ERROR::SHADER::VERTEX::COMPILATION_FAILED\n" << infoLog << std::endl;
-   }
+   }    
    // Fragment shader
    GLint lightfragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
    glShaderSource(lightfragmentShader, 1, &lightfragmentShaderSource, NULL);
@@ -923,13 +924,13 @@ const GLchar* fragmentShaderSource = "#version 330 core\n"
    {
        glGetShaderInfoLog(lightfragmentShader, 512, NULL, infoLog);
        std::cout << "ERROR::SHADER::FRAGMENT::COMPILATION_FAILED\n" << infoLog << std::endl;
-   }
+   }        
    // Link shaders
-
+   
    GLint& shaderProgram = gv.shaderProgram;
    GLint& lightshaderProgram = gv.lightshaderProgram;
    GLint& blackshaderProgram = gv.blackshaderProgram;
-
+   
    shaderProgram = glCreateProgram();
    glAttachShader(shaderProgram, vertexShader);
    glAttachShader(shaderProgram, fragmentShader);
@@ -951,7 +952,7 @@ const GLchar* fragmentShaderSource = "#version 330 core\n"
        glGetProgramInfoLog(blackshaderProgram, 512, NULL, infoLog);
        std::cout << "ERROR::SHADER::PROGRAM::LINKING_FAILED\n" << infoLog << std::endl;
    }
-
+   
    lightshaderProgram = glCreateProgram();
    glAttachShader(lightshaderProgram, lightvertexShader);
    glAttachShader(lightshaderProgram, lightfragmentShader);
@@ -966,11 +967,11 @@ const GLchar* fragmentShaderSource = "#version 330 core\n"
    glDeleteShader(fragmentShader);
    glDeleteShader(blackvertexShader);
    glDeleteShader(blackfragmentShader);
-   glDeleteShader(lightvertexShader);
-   glDeleteShader(lightfragmentShader);
-
-
-
+   glDeleteShader(lightvertexShader); 
+   glDeleteShader(lightfragmentShader); 
+   
+   
+   
    /*
 	GLuint lightVAO;
 	glGenVertexArrays(1, &lightVAO);
@@ -981,7 +982,7 @@ const GLchar* fragmentShaderSource = "#version 330 core\n"
 	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(GLfloat), (GLvoid*)0);
 	glEnableVertexAttribArray(0);
 	glBindVertexArray(0);
-
+	
 	// Don't forget to 'use' the corresponding shader program first (to set the uniform)
 	GLint objectColorLoc = glGetUniformLocation(shaderProgram, "objectColor");
 	GLint lightColorLoc  = glGetUniformLocation(shaderProgram, "lightColor");
@@ -989,18 +990,18 @@ const GLchar* fragmentShaderSource = "#version 330 core\n"
 	glUniform3f(lightColorLoc,  1.0f, 1.0f, 1.0f); // Also set light's color (white)
 */
 
-
+       
 	// Create nanogui gui
 	bool enabled = true;
-
+	
 	// Create a nanogui screen and pass the glfw pointer to initialize
-
+	
 	gv.screen = new nanogui::Screen();
 	gv.screen->initialize(gv.glwindow, true);
-
+	
 	nanogui::FormHelper *gui = new nanogui::FormHelper(gv.screen);
 	nanogui::ref<nanogui::Window> nanoguiWindow = gui->addWindow(Eigen::Vector2i(10, 10), "");
-
+   
    gui->addGroup("Hmatrix parameters");
    gui->addVariable("eta", Parametres::eta)->setSpinnable(true);
    gui->addVariable("epsilon", Parametres::epsilon)->setSpinnable(true);
@@ -1014,56 +1015,57 @@ const GLchar* fragmentShaderSource = "#version 330 core\n"
 		else if (gv.active_project->get_matrix() == NULL)
 			std::cerr << "No matrix loaded" << std::endl;
 		else {
-			const VirtualMatrix& A = *(gv.active_project->get_matrix());
+			const IMatrix<K>& A = *(gv.active_project->get_matrix());
 			const std::vector<R3>& x = *(gv.active_project->get_ctrs());
-			const std::vector<Real>& r = *(gv.active_project->get_rays());
-			vectInt tab(nb_rows(A));
+			//const std::vector<double>& r = *(gv.active_project->get_rays());
+			std::vector<int> tab(A.nb_rows());
    			for (int j=0;j<x.size();j++){
    					tab[3*j]  = j;
        				tab[3*j+1]= j;
        				tab[3*j+2]= j;
    			}
-
-			Cluster *t = new Cluster(x,r,tab);
+   				 				
+			Cluster *t = new Cluster(x,tab);
+			t->build();
 			gv.active_project->get_mesh()->set_cluster(t);
-			HMatrix B(A,x,r,tab);
-			int nr  = nb_rows(A);
-			vectCplx u(nr);
+			HMatrix<fullACA,K> B(A,x,tab);
+			int nr  = A.nb_rows();
+			std::vector<K> u(nr);
 			int NbSpl = 1000;
 			double du = 5./double(NbSpl);
 			srand (1);
 			for(int j=0; j<nr; j++){
 				int n = rand()%(NbSpl+1);
 				u[j] = n*du;}
-
+		
 			/*
 			vectCplx ua(nr),ub(nr);
-
+			
 			MvProd(ua,A,u);
 			std::pair <double,double > mvp_stats= MvProdMPI(ub,B,u);
-
+		
 			add_stats(B,"MvProd (mean)",std::get<0>(mvp_stats));
 			add_stats(B,"MvProd (max)",std::get<1>(mvp_stats));
 			add_stats(B,"MvProd err",norm(ua-ub)/norm(ua));
 			*/
 			//Real normA = NormFrob(A);
-			add_stats(B,"Compression",CompressionRate(B));
-			add_stats(B,"Nb dense mats",nb_densemats(B));
-			add_stats(B,"Nb lr mats",nb_lrmats(B));
+			B.add_stats("Compression",B.compression());
+			B.add_stats("Nb dense mats",B.get_ndmat());
+			B.add_stats("Nb lr mats",B.get_nlrmat());
 			//add_stats(B,"Relative Frob error",sqrt(squared_absolute_error(B,A))/normA);
-
+		
 			nanogui::Window *popup = new nanogui::Window(Scene::gv.screen, "Stats");
-
+			
 			popup->setPosition(Eigen::Vector2i(350, 250));
 			popup->setLayout(new nanogui::BoxLayout(nanogui::Orientation::Vertical,
 			nanogui::Alignment::Middle, 10, 10));
 			nanogui::Widget *panel1 = new nanogui::Widget(popup);
 			panel1->setLayout(new nanogui::BoxLayout(nanogui::Orientation::Horizontal,
 			nanogui::Alignment::Middle, 10, 15));
-
-			std::map<std::string,double> stats = get_stats(B);
+			
+			const std::map<std::string,double> stats = B.get_stats();
 			std::stringstream s;
-
+			
 			s << "eta" << "\t" << Parametres::eta << "\n";
 			s << "epsilon" << "\t" << Parametres::epsilon << "\n";
 			s << "max block size" << "\t" << Parametres::maxblocksize << "\n";
@@ -1073,19 +1075,19 @@ const GLchar* fragmentShaderSource = "#version 330 core\n"
 				if (it->first.find("mean") == std::string::npos)
 				s << it->first << "\t" << it->second << "\n";
 			}
-
+			
 			nanogui::Label *mMessageLabel = new nanogui::Label(panel1, s.str().c_str());
 			mMessageLabel->setFixedWidth(200);
 			nanogui::Widget *panel2 = new nanogui::Widget(popup);
 			panel2->setLayout(new nanogui::BoxLayout(nanogui::Orientation::Horizontal,
-			nanogui::Alignment::Middle, 0, 15));
-
+			nanogui::Alignment::Middle, 0, 15));   
+						
 			nanogui::Button *b = new nanogui::Button(panel2, "Close", ENTYPO_ICON_CHECK);
 			b->setCallback([popup] {
 				popup->dispose();
 			});
-			Scene::gv.screen->performLayout();
-
+			Scene::gv.screen->performLayout();			
+			
 /*
         	nanogui::Popup *popup = popupBtn->popup();
         popup->setLayout(new nanogui::GroupLayout());
@@ -1094,28 +1096,28 @@ const GLchar* fragmentShaderSource = "#version 330 core\n"
 			auto dlg = new nanogui::MessageDialog(Scene::gv.screen, nanogui::MessageDialog::Type::Information, "Title", "This is an information message");
             dlg->setCallback([](int result) { std::cout << "Dialog result: " << result << std::endl; });
             */
-
+            
 
 		}
    });
-
+   
    gv.screen->setVisible(true);
    gv.screen->performLayout();
    //nanoguiWindow->center();
    nanoguiWindow->setPosition(Eigen::Vector2i(550, 15));
-
-
+   
+   
        glfwSetCursorPosCallback(gv.glwindow,
            [](GLFWwindow *, double x, double y) {
 		if (gv.active_project != NULL && gv.left_mouse_button_pressed == true){
-
+			
 		Camera& cam = gv.active_project->get_camera();
 		R3 trans = cam.center;
-		cam.center = 0;
-		cam.eye = cam.eye - trans;
-		Real scale = norm(cam.eye);
+		cam.center.fill(0);
+		cam.eye = cam.eye - trans;			
+		double scale = norm2(cam.eye);
 		cam.eye /= scale;
-
+		
 		if (x != gv.motionx) {
        		float depl = 0.1;
        		if (x > gv.motionx)
@@ -1124,23 +1126,24 @@ const GLchar* fragmentShaderSource = "#version 330 core\n"
        		float yy = cam.eye[0]*sin(depl) + cam.eye[1]*cos(depl);
        		cam.eye[0] = xx;
        		cam.eye[1] = yy;
-			cam.center = 0;
-
-			R3 zz = 0;
+			cam.center.fill(0);
+		
+			R3 zz;
+			zz.fill(0);
 			zz[2] = cam.y[2];
-			zz /= norm(zz);
+			zz /= norm2(zz);
 			cam.z = cam.center-cam.eye;
-			cam.z /= norm(cam.z);
+			cam.z /= norm2(cam.z);
 			cam.x = zz^cam.z;
-			cam.x /= norm(cam.x);
+			cam.x /= norm2(cam.x);
 			cam.y = cam.x^cam.z;
-			cam.y *= -1;
-			cam.y /= norm(cam.y);
-
-			cam.center = cam.eye+cam.z;
-			cam.up = cam.y;
+			cam.y *= -1.;
+			cam.y /= norm2(cam.y);
+			
+			cam.center = cam.eye+cam.z;				
+			cam.up = cam.y;					
 		}
-
+					
 		if (y != gv.motiony) {
 			float depl = 0.1;
 			R3 oldeye = cam.eye;
@@ -1149,33 +1152,33 @@ const GLchar* fragmentShaderSource = "#version 330 core\n"
 			R3 uu = cam.y;
 			uu /= -tan(std::abs(depl)/2);
 			uu += cam.z;
-			uu /= norm(uu);
-			float nor = 2*norm(cam.eye)*sin(depl/2);
+			uu /= norm2(uu);
+			double nor = 2*norm2(cam.eye)*sin(depl/2);
 			uu = nor*uu;
 			cam.eye += uu;
-			cam.center = 0;
-			nor = norm(oldeye);
-			cam.eye /= norm(cam.eye);
+			cam.center.fill(0);
+			nor = norm2(oldeye);
+			cam.eye /= norm2(cam.eye);
 			cam.eye = nor*cam.eye;
 			cam.z = cam.center-cam.eye;
-			cam.z /= norm(cam.z);
+			cam.z /= norm2(cam.z);
 			cam.y = cam.x^cam.z;
-			cam.y *= -1;
-			cam.y /= norm(cam.y);
-
+			cam.y *= -1.;
+			cam.y /= norm2(cam.y);
+			
 			cam.center = cam.eye+cam.z;
 			cam.up = cam.y;
 		}
-
+		
 		cam.eye = scale*cam.eye;
-
+		
 		cam.center += trans;
 		cam.eye += trans;
-
+		
 		gv.motionx = x;
-		gv.motiony = y;
+		gv.motiony = y;           	
 		}
-
+           	
          gv.screen->cursorPosCallbackEvent(x, y);
        }
    );
@@ -1185,7 +1188,7 @@ const GLchar* fragmentShaderSource = "#version 330 core\n"
 			if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_PRESS)
 				gv.left_mouse_button_pressed = true;
 			if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_RELEASE)
-				gv.left_mouse_button_pressed = false;
+				gv.left_mouse_button_pressed = false;	
 			gv.screen->mouseButtonCallbackEvent(button, action, modifiers);
        }
    );
@@ -1197,21 +1200,21 @@ const GLchar* fragmentShaderSource = "#version 330 core\n"
 			mesh = gv.active_project->get_mesh();
    		switch(key){
    			case 'A':case'a':
-
+						
        			break;
    			case 'D':case'd':
 
        			break;
-   			case 'W':case'w':
+   			case 'W':case'w':			
   					if (gv.active_project != NULL){
    					Camera& cam = gv.active_project->get_camera();
-   					cam.eye += 10*cam.z;
+   					cam.eye += 10.*cam.z;
    				}
        			break;
    			case 'S':case's':
   					if (gv.active_project != NULL){
    					Camera& cam = gv.active_project->get_camera();
-   					cam.eye += -10*cam.z;
+   					cam.eye += -10.*cam.z;
    				}
        			break;
        		case 'Q':case'q':
@@ -1252,9 +1255,9 @@ const GLchar* fragmentShaderSource = "#version 330 core\n"
            gv.screen->resizeCallbackEvent(width, height);
        }
    );
-
-
-
+		
+		
+		
 		std::vector<R3> colors(20);
 		colors[0][0]=255;colors[0][1]=102;colors[0][2]=51;
 		colors[1][0]=255;colors[1][1]=153;colors[1][2]=51;
@@ -1278,39 +1281,39 @@ const GLchar* fragmentShaderSource = "#version 330 core\n"
 		colors[19][0]=255;colors[19][1]=0;colors[19][2]=0;
 		default_palette.n = 20;
 		default_palette.colors = colors;
-
+		
 		/*
 		std::vector<R3> colors(3);
 		colors[0][0]=59;colors[0][1]=76;colors[0][2]=192;
 		colors[1][0]=221;colors[1][1]=221;colors[1][2]=221;
 		colors[2][0]=0.916482116*255;colors[2][1]=0.236630659*255;colors[2][2]=0.209939162*255;
 		default_palette.n = 3;
-		default_palette.colors = colors;
+		default_palette.colors = colors;		
 		*/
-
+		
 		Project p("my project");
 		gv.projects.push_back(p);
 		set_active_project(&(gv.projects.front()));
-
-/*
+		
+/*			
 	    glutInit(argc, argv);
 
 	    glutInitDisplayMode(GLUT_RGBA|GLUT_SINGLE|GLUT_DEPTH);
-
+	
 	    //Configure Window Postion
 	    glutInitWindowPosition(50, 25);
-
+	
 	    //Configure Window Size
 	    glutInitWindowSize(1024,768);
-
+	
 	    //Create Window
 	    int main_window = glutCreateWindow("Hello OpenGL");
-
+   		    
 	    GLfloat WHITE[] = {1, 1, 1};
 		GLfloat RED[] = {1, 0, 0};
 		GLfloat GREEN[] = {0, 1, 0};
 		GLfloat MAGENTA[] = {1, 0, 1};
-
+	    
 		Real wdt = 100;
 	    glClearColor(0,0,0,0);
 		glMatrixMode(GL_PROJECTION);
@@ -1318,26 +1321,26 @@ const GLchar* fragmentShaderSource = "#version 330 core\n"
 		gluPerspective(70,1,0.001*wdt/2.,1000*wdt/2.);
 		glEnable(GL_DEPTH_TEST);//(NEW) Enable depth testing
 		glDisable (GL_BLEND);
-
+		
 		glLightfv(GL_LIGHT0, GL_DIFFUSE, WHITE);
 		glLightfv(GL_LIGHT0, GL_SPECULAR, WHITE);
 	  //glMaterialfv(GL_FRONT, GL_SPECULAR, WHITE);
 	  //glMaterialf(GL_FRONT, GL_SHININESS, 30);
 		glEnable(GL_LIGHTING);
 		glEnable(GL_LIGHT0);
-
+	  
 		glEnable(GL_COLOR_MATERIAL);
 		glColorMaterial(GL_FRONT_AND_BACK,GL_AMBIENT_AND_DIFFUSE);
-
+	
 	    glutMotionFunc(motion);
 		glutDisplayFunc(draw);
-   		glutKeyboardFunc(keyboard);
-
+   		glutKeyboardFunc(keyboard);	
+   		
 		//GLUI_Master.set_glutIdleFunc (idle);
 		//GLUI_Master.set_glutReshapeFunc(glreshape);
 		GLUI* glui_v_subwindow = GLUI_Master.create_glui_subwindow(main_window,GLUI_SUBWINDOW_RIGHT);
 		glui_v_subwindow->set_main_gfx_window (main_window);
-
+		
 		GLUI_Rollout *op_panel_load = glui_v_subwindow->add_rollout("Load");
 		fbmesh = new GLUI_FileBrowser(op_panel_load, "Open mesh file", GLUI_PANEL_EMBOSSED, 0, control_cb);
 		fbmesh->fbreaddir("../matrices/");
@@ -1348,7 +1351,7 @@ const GLchar* fragmentShaderSource = "#version 330 core\n"
 		fbmat->fbreaddir("../matrices/");
 		fbmat->set_h(90);
 		glui_v_subwindow->add_button_to_panel(op_panel_load,"Load matrix", 2,control_cb);
-
+		
 		GLUI_Rollout *op_panel_projects = glui_v_subwindow->add_rollout("Projects");
 		list_projects = new GLUI_List(op_panel_projects,GLUI_PANEL_EMBOSSED,3,control_cb);
 		list_projects->set_h(90);
@@ -1356,16 +1359,16 @@ const GLchar* fragmentShaderSource = "#version 330 core\n"
 		Project p("my project");
 		projects.push_back(p);
 		set_active_project(&(projects.front()));
-
+		
 		text_project = new GLUI_EditText(op_panel_projects,"");
  			text_project->set_text("new project");
-
+		
 		glui_v_subwindow->add_button_to_panel(op_panel_projects,"Create", 4,control_cb);
 		glui_v_subwindow->add_button_to_panel(op_panel_projects,"Delete", 5,control_cb);
 */
-
+		
 }
-
+	
 void Scene::run() {
 	while (!glfwWindowShouldClose(gv.glwindow)) {
 		glfwPollEvents();
@@ -1378,7 +1381,7 @@ void Scene::run() {
 
 		glfwSwapBuffers(gv.glwindow);
 	}
-
+   
    glfwTerminate();
 }
 

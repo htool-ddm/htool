@@ -20,7 +20,7 @@ class IMatrix{
 protected:
   // Data members
   int  nr;
-	int  nc;
+  int  nc;
 
   // Constructors and cie
   IMatrix()                           = delete;  // no default constructor
@@ -48,7 +48,7 @@ public:
   */
 	const int& nb_cols() const{ return nc;}
 
-
+	virtual ~IMatrix() {};
 };
 
 template<typename T>
