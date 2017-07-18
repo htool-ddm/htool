@@ -61,14 +61,6 @@ find_package(HPDDM REQUIRED)
 
 
 if (HTOOL_WITH_GUI)
-	# Nanogui
-	find_package(NANOGUI QUIET)
-	if (NANOGUI_FOUND)
-		message("-- Nanogui library found in" "${NANOGUI_LIBRARY}")
-		message("-- Nanogui include files found in" "${NANOGUI_INCLUDE_DIR}")
-	else()
-		message("-- Nanogui not found")
-	endif()
 	# GLM
 	find_package(GLM)
 endif()
