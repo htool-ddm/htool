@@ -3,11 +3,11 @@
 
 #include "matrix.hpp"
 #include "lapack.hpp"
-#include <mpi.h>
+#include "wrapper_mpi.hpp"
 
 namespace htool{
-typedef std::complex<double> T;
 
+template<typename T>
 class Preconditioner{
 private:
 
@@ -38,9 +38,9 @@ private:
 
     for (int i=0;i<neighbors.size();i++){
 
-      MPI_Isend( snd[i].data(), snd[i].size(), MPI::DOUBLE_COMPLEX, neighbors[i], 0, comm, &(rq[i]));
+      MPI_Isend( snd[i].data(), snd[i].size(), wrapper_mpi<T>::mpi_type(), neighbors[i], 0, comm, &(rq[i]));
 
-		  MPI_Irecv( rcv[i].data(), rcv[i].size(), MPI::DOUBLE_COMPLEX, neighbors[i], MPI_ANY_TAG, comm, &(rq[i+neighbors.size()]));
+		  MPI_Irecv( rcv[i].data(), rcv[i].size(), wrapper_mpi<T>::mpi_type(), neighbors[i], MPI_ANY_TAG, comm, &(rq[i+neighbors.size()]));
     }
     MPI_Waitall(rq.size(),rq.data(),MPI_STATUSES_IGNORE);
 

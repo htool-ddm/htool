@@ -10,8 +10,8 @@ namespace htool{
 template< template<typename> class LowRankMatrix, typename T>
 struct HPDDMOperator : HPDDM::EmptyOperator<T> {
   HMatrix<LowRankMatrix,T>& HA;
-  Preconditioner& P;
-  HPDDMOperator(HMatrix<LowRankMatrix,T>& A,Preconditioner& P0) : HPDDM::EmptyOperator<T>(A.get_local_size_cluster()), HA(A), P(P0) {}
+  Preconditioner<T>& P;
+  HPDDMOperator(HMatrix<LowRankMatrix,T>& A,Preconditioner<T>& P0) : HPDDM::EmptyOperator<T>(A.get_local_size_cluster()), HA(A), P(P0) {}
   void GMV(const T* const in, T* const out, const int& mu = 1) const {
     HA.mvprod_local(in,out);
   }
