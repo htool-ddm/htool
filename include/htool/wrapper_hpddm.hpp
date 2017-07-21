@@ -5,6 +5,7 @@
 #include <HPDDM.hpp>
 #include "hmatrix.hpp"
 #include "matrix.hpp"
+#include "preconditioner.hpp"
 namespace htool{
 
 template< template<typename> class LowRankMatrix, typename T>

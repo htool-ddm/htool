@@ -16,6 +16,12 @@ namespace htool {
 //                         CLASS MATRIX
 //*****************************************************************//
 template<typename T>
+class Matrix;
+
+template<typename T>
+class SubMatrix;
+
+template<typename T>
 class IMatrix{
 protected:
   // Data members
@@ -34,6 +40,16 @@ protected:
 public:
 
   virtual T get_coef(const int& j, const int& k) const =0;
+
+
+  virtual SubMatrix<T> get_submatrix(const std::vector<int>& J, const std::vector<int>& K) const {
+    SubMatrix<T> mat(J,K);
+  	for (int i=0; i<mat.nb_rows(); i++)
+  		for (int j=0; j<mat.nb_cols(); j++)
+  			mat(i,j) = this->get_coef(J[i], K[j]);
+    return mat;
+  }
+
 
 	//! ### Access to number of rows
 	/*!
@@ -135,6 +151,17 @@ public:
   }
 
   //! ### Access operator
+	/*!
+	 If _A_ is the instance calling the operator
+	 _A.get_coef(j,k)_ returns the entry of _A_ located
+	 jth row and kth column.
+	 */
+
+	// Matrix<T> get_submatrix(const std::vector<int>& J, const std::vector<int>& K) const{
+  //       return SubMatrix<T>(*this,J,K) ;
+  // }
+
+  //! ### Access operator
   /*!
    If _A_ is the instance calling the operator
    _A(j,k)_ returns the entry of _A_ located
@@ -156,6 +183,14 @@ public:
     const T& operator()(const int& j, const int& k) const {
         return this->mat[j+k*this->nr];
     }
+
+  //! ### Access operator
+	/*!
+	 If _A_ is the instance calling the operator
+	 _A.get_stridedslice(i,j,k)_ returns the slice of _A_ containing every element from _start_ to _start_+_lenght with a step of _stride_. Modification forbidden
+	 */
+
+   const std::vector<T>& get_mat(){return this->mat;}
 
   //! ### Access operator
 	/*!
@@ -424,14 +459,16 @@ class SubMatrix : public Matrix<T>{
 
 public:
 
-  SubMatrix(const IMatrix<T>& mat0, const std::vector<int>& ir0, const std::vector<int>& ic0):
-    ir(ir0), ic(ic0) {
-    this->nr =  ir0.size();
-    this->nc =  ic0.size();
-  	this->mat.resize(this->nr*this->nc);
-  	for (int i=0; i<this->nr; i++)
-  		for (int j=0; j<this->nc; j++)
-  			this->mat[i+j*this->nr] = mat0.get_coef(ir[i], ic[j]);
+  SubMatrix(const std::vector<int>& ir0, const std::vector<int>& ic0) : Matrix<T>(ir0.size(),ic0.size()), ir(ir0), ic(ic0) {}
+
+
+
+  SubMatrix(const IMatrix<T>& mat0, const std::vector<int>& ir0, const std::vector<int>& ic0): Matrix<T>(ir0.size(),ic0.size()), ir(ir0), ic(ic0) {
+
+    // Matrix<T> test ;
+    // std::cout << (&test)->mat << std::endl;
+    *this = mat0.get_submatrix(ir0,ic0);
+
   }
 
   SubMatrix(const SubMatrix& m) {

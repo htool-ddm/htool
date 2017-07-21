@@ -7,6 +7,7 @@
 
 namespace htool{
 
+
 template<typename T>
 class Preconditioner{
 private:
@@ -62,22 +63,29 @@ public:
   Preconditioner(const IMatrix<T>& mat0, const std::vector<int>&  ovr_subdomain_to_global0, const std::vector<int>& cluster_to_ovr_subdomain0, const std::vector<int>& neighbors0, const std::vector<std::vector<int> >& intersections0, MPI_Comm comm0=MPI_COMM_WORLD): n(ovr_subdomain_to_global0.size()), n_inside(cluster_to_ovr_subdomain0.size()), neighbors(neighbors0),fact(n*n), vec_ovr(n), comm(comm0) {
 
     std::vector<int> renum(n,-1);
+    std::vector<int> renum_to_global(n);
+
     for (int i=0;i<cluster_to_ovr_subdomain0.size();i++){
       renum[cluster_to_ovr_subdomain0[i]]=i;
+      renum_to_global[i]=ovr_subdomain_to_global0[cluster_to_ovr_subdomain0[i]];
     }
     int count =cluster_to_ovr_subdomain0.size();
     // std::cout << count << std::endl;
     for (int i=0;i<n;i++){
       if (renum[i]==-1){
-        renum[i]=count++;
+        renum[i]=count;
+        renum_to_global[count++]=ovr_subdomain_to_global0[i];
       }
     }
+
+
 // std::cout <<s count <<" "<<n<< std::endl;
-    for (int i=0;i<n;i++){
-      for (int j=0;j<n;j++){
-        fact[renum[i]*n+renum[j]]=mat0.get_coef(ovr_subdomain_to_global0[i],ovr_subdomain_to_global0[j]);
-      }
-    }
+    // for (int i=0;i<n;i++){
+    //   for (int j=0;j<n;j++){
+    //     fact[renum[i]+renum[j]*n]=mat0.get_coef(ovr_subdomain_to_global0[i],ovr_subdomain_to_global0[j]);
+    //   }
+    // }
+    fact = mat0.get_submatrix(renum_to_global,renum_to_global).get_mat();
 
     intersections.resize(neighbors.size());
     for (int i=0;i<neighbors.size();i++){

@@ -42,9 +42,10 @@ public:
     }
     //// Matrix assembling
     DenseMatrix M(this->nr,this->nc);
+    SubMatrix<T> submat = A.get_submatrix(this->ir,this->ic);
     for (int i=0; i<M.rows(); i++){
   		for (int j=0; j<M.cols(); j++){
-  			M(i,j) = A.get_coef(this->ir[i], this->ic[j]);
+  			M(i,j) = submat(i, j);
       }
     }
 
