@@ -54,13 +54,7 @@ public:
 		else{
 
 			// Matrix assembling
-			Matrix<T> M(this->ir.size(),this->ic.size());
-
-			for (int i=0; i<M.nb_rows(); i++){
-				for (int j=0; j<M.nb_cols(); j++){
-					M(i,j) = A.get_coef(this->ir[i], this->ic[j]);
-				}
-			}
+			Matrix<T> M=A.get_submatrix(this->ir,this->ic);
 
 			// Full pivot
 			int q=0;

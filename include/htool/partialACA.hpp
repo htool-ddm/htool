@@ -92,8 +92,9 @@ public:
 					//==================//
 					// Look for a column
 					double pivot = 0.;
+					SubMatrix<T> row = A.get_submatrix(std::vector<int> {I},this->ic);
 					for(int k=0; k<this->nc; k++){
-						r[k] = A.get_coef(this->ir[I],this->ic[k]);
+						r[k] = row(0,k);//A.get_coef(this->ir[I],this->ic[k]);
 						for(int j=0; j<uu.size(); j++){
 							r[k] += -uu[j][I]*vv[j][k];
 						}
@@ -106,8 +107,9 @@ public:
 					// Look for a line
 					if( std::abs(r[J]) > 1e-15 ){
 						double cmax = 0.;
+						SubMatrix<T> col = A.get_submatrix(this->ir,std::vector<int> {J});
 						for(int j=0; j<this->nr; j++){
-							c[j] = A.get_coef(this->ir[j],this->ic[J]);
+							c[j] = col(j,0);//A.get_coef(this->ir[j],this->ic[J]);
 							for(int k=0; k<uu.size(); k++){
 								c[j] += -uu[k][j]*vv[k][J];
 							}

@@ -80,6 +80,11 @@ void operator*=(std::array<T,dim> &a, const T &value) {
 }
 
 template <typename T, std::size_t dim>
+void operator/=(std::array<T,dim> &a, const T &value) {
+    std::transform (a.begin(), a.end() ,a.begin(), std::bind2nd(std::divides<T>(),value));
+}
+
+template <typename T, std::size_t dim>
 T dprod(const std::array<T,dim>& a,const std::array<T,dim>& b){
 	return std::inner_product(a.begin(),a.end(),b.begin(),T());
 }
@@ -103,6 +108,7 @@ T norm2(const std::array<T,dim>& u){return std::sqrt(std::abs(dprod(u,u)));}
 template <typename T, std::size_t dim>
 T norm2(const std::array<std::complex<T>,dim >& u){return std::sqrt(std::abs(dprod(u,u)));}
 
+R3 operator^(const R3 &N, const R3 &P) {R3 res; res[0] = N[1]*P[2]-N[2]*P[1] ; res[1] = N[2]*P[0]-N[0]*P[2]; res[2] = N[0]*P[1]-N[1]*P[0]; return res;}
 
 // template<typename T, std::size_t dim>
 

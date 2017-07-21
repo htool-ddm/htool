@@ -3,13 +3,14 @@
 
 #include <algorithm>
 #include <list>
+#include <htool/htool.hpp>
 
 namespace htool {
 
-void LoadMesh(std::string inputname, std::vector<R3>&  X, std::vector<N4>&  Elt, std::vector<int>& NbPt, std::vector<R3>& Normals, std::vector<R3>& ctrs, std::vector<Real>& rays) {
+void LoadMesh(std::string inputname, std::vector<R3>&  X, std::vector<N4>&  Elt, std::vector<int>& NbPt, std::vector<R3>& Normals, std::vector<R3>& ctrs, std::vector<double>& rays) {
 	int   num,NbElt,poubelle, NbTri, NbQuad;
 	R3    Pt, Ctr;
-	Real Rmax, Rad;	
+	double Rmax, Rad;	
 	R3 v1,v2;
 	
 	// Ouverture fichier
@@ -31,7 +32,7 @@ void LoadMesh(std::string inputname, std::vector<R3>&  X, std::vector<N4>&  Elt,
 		infile >> poubelle;
 		infile >> NbPt[e];
 		
-		Ctr = 0;
+		Ctr.fill(0);
 		
 		if(NbPt[e]==3){NbTri++;}
 		if(NbPt[e]==4){NbQuad++;}
@@ -43,19 +44,19 @@ void LoadMesh(std::string inputname, std::vector<R3>&  X, std::vector<N4>&  Elt,
 			Elt[e][j] = num;
 			X.push_back(Pt);
 			num++;
-			Ctr += (1./Real(NbPt[e]))*Pt;
+			Ctr += (1./double(NbPt[e]))*Pt;
 		}
 		
 		v1 = X[Elt[e][1]]-X[Elt[e][0]];
 		v2 = X[Elt[e][2]]-X[Elt[e][0]];
 		Normals[e] = v1^v2;
-		Normals[e] /= norm(Normals[e]);
+		Normals[e] = Normals[e]*(1./norm2(Normals[e]));
 		
 		ctrs.push_back(Ctr);
-		Rmax = norm(Ctr-X[Elt[e][0]]);
+		Rmax = norm2(Ctr-X[Elt[e][0]]);
 		
         for(int j=1; j<NbPt[e]; j++){
-        	Rad = norm(Ctr-X[Elt[e][j]]);
+        	Rad = norm2(Ctr-X[Elt[e][j]]);
 			if (Rad > Rmax)
              	Rmax=Rad;
         }
@@ -139,9 +140,9 @@ class Project{
 		GLMesh* mesh;
 		std::string name;
 		Camera cam;
-		VirtualMatrix* matrix;
+		IMatrix<K>* matrix;
 		std::vector<R3>* ctrs;
-		std::vector<Real>* rays;
+		std::vector<double>* rays;
 	public:
 		Project(const char* s);
 		
@@ -150,14 +151,14 @@ class Project{
 		GLMesh* get_mesh() const;		
 		void set_mesh(const GLMesh& m);
 		
-		VirtualMatrix* get_matrix() const;		
-		void set_matrix(VirtualMatrix* m);
+		IMatrix<K>* get_matrix() const;		
+		void set_matrix(IMatrix<K>* m);
 
 		std::vector<R3>* get_ctrs() const;		
 		void set_ctrs(const std::vector<R3>& m);
 
-		std::vector<Real>* get_rays() const;		
-		void set_rays(const std::vector<Real>& m);
+		std::vector<double>* get_rays() const;		
+		void set_rays(const std::vector<double>& m);
 
 		std::string& get_name();		
 		Camera& get_camera();
@@ -172,7 +173,7 @@ class statics{
 	public:
 		std::list<Project> projects;
 		Project* active_project;
-		Real motionx, motiony;
+		double motionx, motiony;
 		nanogui::Screen* screen;
 		GLFWwindow* glwindow;
 		GLint shaderProgram, blackshaderProgram, lightshaderProgram;
@@ -207,8 +208,8 @@ Palette::Palette(const unsigned int nb, const std::vector<R3>& cols) {
 
 R3 Palette::get_color(float z) const{
 	int i=(int)(z*(n-1));
-	float t=z*(n-1)-i;
-	R3 col = ((1-t)*colors[i]+t*colors[i])/255;
+	double t=z*(n-1)-i;
+	R3 col = ((1-t)*colors[i]+t*colors[i])*(1./255);
 	return col;
 }
 
@@ -243,8 +244,8 @@ GLMesh::GLMesh(std::vector<R3>& X0, std::vector<N4>&  Elts0, std::vector<int>& N
 	Elts = Elts0;
 	NbPts = NbPts0;
 	normals = normals0;
-	lbox = 1.e+30;
-	ubox = -1.e+30;
+	lbox.fill(1.e+30);
+	ubox.fill(-1.e+30);
 	for (int i=0; i<X.size(); i++){
 		if (X[i][0] < lbox[0]) lbox[0] = X[i][0];
 		if (X[i][0] > ubox[0]) ubox[0] = X[i][0];
@@ -286,17 +287,17 @@ void GLMesh::set_cluster(const Cluster* c) {
 }
 
 void GLMesh::TraversalBuildLabel(const Cluster& t, std::vector<int>& labeldofs){
-	if(depth_(t)<visudepth && !t.IsLeaf()){
-		TraversalBuildLabel(son_(t,0), labeldofs);
-		TraversalBuildLabel(son_(t,1), labeldofs);
+	if(t.get_depth()<visudepth && !t.IsLeaf()){
+		TraversalBuildLabel(t.get_son(0), labeldofs);
+		TraversalBuildLabel(t.get_son(1), labeldofs);
 	}
 	else {
 		/*
 		for(int i=0; i<num_(t).size(); i++)
 			labeldofs[num_(t)[i]] = nblabels;
 		*/
-		for(int i=0; i<num_(t).size()/GetNdofPerElt(); i++)
-			labeldofs[num_(t)[GetNdofPerElt()*i]/GetNdofPerElt()] = nblabels;
+		for(int i=0; i<t.get_num().size()/GetNdofPerElt(); i++)
+			labeldofs[t.get_num()[GetNdofPerElt()*i]/GetNdofPerElt()] = nblabels;
 		nblabels++;
 	}
 }
@@ -531,12 +532,12 @@ void GLMesh::draw(const Camera& cam) {
 }
 
 Camera::Camera() {
-	eye = 0;
-	center = 1;
-	up = 1;
-	x = 1;
-	y = 0;
-	z = 0;	
+	eye.fill(0);
+	center.fill(1);
+	up.fill(1);
+	x.fill(1);
+	y.fill(0);
+	z.fill(0);	
 }
 
 Camera::Camera(const R3& eye0, const R3& center0, const R3& up0){
@@ -545,10 +546,10 @@ Camera::Camera(const R3& eye0, const R3& center0, const R3& up0){
 	up = up0;
 	z = center-eye;
 	y = up;
-	z /= norm(z);
-	y /= norm(y);
+	z /= norm2(z);
+	y /= norm2(y);
 	x = y^z;
-	x /= norm(x);
+	x /= norm2(x);
 }
 
 void Camera::set(const R3& eye0, const R3& center0, const R3& up0){
@@ -557,24 +558,24 @@ void Camera::set(const R3& eye0, const R3& center0, const R3& up0){
 	up = up0;
 	z = center-eye;
 	y = up;
-	z /= norm(z);
-	y /= norm(y);
+	z /= norm2(z);
+	y /= norm2(y);
 	x = y^z;
-	x /= norm(x);
+	x /= norm2(x);
 }
 
 void Camera::center_on(const GLMesh& mesh){
 	center = 0.5*(mesh.get_lbox()+mesh.get_ubox());
-	up = 0;
+	up.fill(0);
 	up[2] = 1;
-	eye = center-2*mesh.get_lbox();
+	eye = center-2.*mesh.get_lbox();
 	eye[2] = 0;
 	z = center-eye;
 	y = up;
-	z /= norm(z);
-	y /= norm(y);
+	z /= norm2(z);
+	y /= norm2(y);
 	x = y^z;
-	x /= norm(x);
+	x /= norm2(x);
 }
 
 Project::Project(const char* s){
@@ -614,11 +615,11 @@ void Project::set_mesh(const GLMesh& m) {
 	mesh = new GLMesh(m);
 }
 
-VirtualMatrix* Project::get_matrix() const{
+IMatrix<K>* Project::get_matrix() const{
 	return matrix;
 }
 
-void Project::set_matrix(VirtualMatrix* m) {
+void Project::set_matrix(IMatrix<K>* m) {
 	if (matrix != NULL)
 		delete matrix;
 	matrix = m;
@@ -634,14 +635,14 @@ void Project::set_ctrs(const std::vector<R3>& m) {
 	ctrs = new std::vector<R3>(m);
 }
 
-std::vector<Real>* Project::get_rays() const{
+std::vector<double>* Project::get_rays() const{
 	return rays;
 }
 
-void Project::set_rays(const std::vector<Real>& m) {
+void Project::set_rays(const std::vector<double>& m) {
 	if (rays != NULL)
 		delete rays;
-	rays = new std::vector<Real>(m);
+	rays = new std::vector<double>(m);
 }		
 		
 
@@ -1014,21 +1015,22 @@ const GLchar* fragmentShaderSource = "#version 330 core\n"
 		else if (gv.active_project->get_matrix() == NULL)
 			std::cerr << "No matrix loaded" << std::endl;
 		else {
-			const VirtualMatrix& A = *(gv.active_project->get_matrix());
+			const IMatrix<K>& A = *(gv.active_project->get_matrix());
 			const std::vector<R3>& x = *(gv.active_project->get_ctrs());
-			const std::vector<Real>& r = *(gv.active_project->get_rays());
-			vectInt tab(nb_rows(A));
+			//const std::vector<double>& r = *(gv.active_project->get_rays());
+			std::vector<int> tab(A.nb_rows());
    			for (int j=0;j<x.size();j++){
    					tab[3*j]  = j;
        				tab[3*j+1]= j;
        				tab[3*j+2]= j;
    			}
    				 				
-			Cluster *t = new Cluster(x,r,tab);
+			Cluster *t = new Cluster(x,tab);
+			t->build();
 			gv.active_project->get_mesh()->set_cluster(t);
-			HMatrix B(A,x,r,tab);
-			int nr  = nb_rows(A);
-			vectCplx u(nr);
+			HMatrix<fullACA,K> B(A,x,tab);
+			int nr  = A.nb_rows();
+			std::vector<K> u(nr);
 			int NbSpl = 1000;
 			double du = 5./double(NbSpl);
 			srand (1);
@@ -1047,9 +1049,9 @@ const GLchar* fragmentShaderSource = "#version 330 core\n"
 			add_stats(B,"MvProd err",norm(ua-ub)/norm(ua));
 			*/
 			//Real normA = NormFrob(A);
-			add_stats(B,"Compression",CompressionRate(B));
-			add_stats(B,"Nb dense mats",nb_densemats(B));
-			add_stats(B,"Nb lr mats",nb_lrmats(B));
+			B.add_stats("Compression",B.compression());
+			B.add_stats("Nb dense mats",B.get_ndmat());
+			B.add_stats("Nb lr mats",B.get_nlrmat());
 			//add_stats(B,"Relative Frob error",sqrt(squared_absolute_error(B,A))/normA);
 		
 			nanogui::Window *popup = new nanogui::Window(Scene::gv.screen, "Stats");
@@ -1061,7 +1063,7 @@ const GLchar* fragmentShaderSource = "#version 330 core\n"
 			panel1->setLayout(new nanogui::BoxLayout(nanogui::Orientation::Horizontal,
 			nanogui::Alignment::Middle, 10, 15));
 			
-			std::map<std::string,double> stats = get_stats(B);
+			const std::map<std::string,double> stats = B.get_stats();
 			std::stringstream s;
 			
 			s << "eta" << "\t" << Parametres::eta << "\n";
@@ -1111,9 +1113,9 @@ const GLchar* fragmentShaderSource = "#version 330 core\n"
 			
 		Camera& cam = gv.active_project->get_camera();
 		R3 trans = cam.center;
-		cam.center = 0;
+		cam.center.fill(0);
 		cam.eye = cam.eye - trans;			
-		Real scale = norm(cam.eye);
+		double scale = norm2(cam.eye);
 		cam.eye /= scale;
 		
 		if (x != gv.motionx) {
@@ -1124,18 +1126,19 @@ const GLchar* fragmentShaderSource = "#version 330 core\n"
        		float yy = cam.eye[0]*sin(depl) + cam.eye[1]*cos(depl);
        		cam.eye[0] = xx;
        		cam.eye[1] = yy;
-			cam.center = 0;
+			cam.center.fill(0);
 		
-			R3 zz = 0;
+			R3 zz;
+			zz.fill(0);
 			zz[2] = cam.y[2];
-			zz /= norm(zz);
+			zz /= norm2(zz);
 			cam.z = cam.center-cam.eye;
-			cam.z /= norm(cam.z);
+			cam.z /= norm2(cam.z);
 			cam.x = zz^cam.z;
-			cam.x /= norm(cam.x);
+			cam.x /= norm2(cam.x);
 			cam.y = cam.x^cam.z;
-			cam.y *= -1;
-			cam.y /= norm(cam.y);
+			cam.y *= -1.;
+			cam.y /= norm2(cam.y);
 			
 			cam.center = cam.eye+cam.z;				
 			cam.up = cam.y;					
@@ -1149,19 +1152,19 @@ const GLchar* fragmentShaderSource = "#version 330 core\n"
 			R3 uu = cam.y;
 			uu /= -tan(std::abs(depl)/2);
 			uu += cam.z;
-			uu /= norm(uu);
-			float nor = 2*norm(cam.eye)*sin(depl/2);
+			uu /= norm2(uu);
+			double nor = 2*norm2(cam.eye)*sin(depl/2);
 			uu = nor*uu;
 			cam.eye += uu;
-			cam.center = 0;
-			nor = norm(oldeye);
-			cam.eye /= norm(cam.eye);
+			cam.center.fill(0);
+			nor = norm2(oldeye);
+			cam.eye /= norm2(cam.eye);
 			cam.eye = nor*cam.eye;
 			cam.z = cam.center-cam.eye;
-			cam.z /= norm(cam.z);
+			cam.z /= norm2(cam.z);
 			cam.y = cam.x^cam.z;
-			cam.y *= -1;
-			cam.y /= norm(cam.y);
+			cam.y *= -1.;
+			cam.y /= norm2(cam.y);
 			
 			cam.center = cam.eye+cam.z;
 			cam.up = cam.y;
@@ -1205,13 +1208,13 @@ const GLchar* fragmentShaderSource = "#version 330 core\n"
    			case 'W':case'w':			
   					if (gv.active_project != NULL){
    					Camera& cam = gv.active_project->get_camera();
-   					cam.eye += 10*cam.z;
+   					cam.eye += 10.*cam.z;
    				}
        			break;
    			case 'S':case's':
   					if (gv.active_project != NULL){
    					Camera& cam = gv.active_project->get_camera();
-   					cam.eye += -10*cam.z;
+   					cam.eye += -10.*cam.z;
    				}
        			break;
        		case 'Q':case'q':
