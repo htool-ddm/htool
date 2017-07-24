@@ -1,5 +1,5 @@
-#ifndef ACA_HPP
-#define ACA_HPP
+#ifndef PARTIALACA_HPP
+#define PARTIALACA_HPP
 
 #include <iostream>
 #include <fstream>
