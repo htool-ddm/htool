@@ -322,16 +322,30 @@ public:
   //! ### Matrix-Matrix product
 	/*!
   */
-	Matrix operator*(const Matrix& A){
-		assert(this->nc==A.nr);
-		Matrix R(this->nr,A.nc);
-		for (int i=0;i<this->nr;i++){
-			for (int j=0;j<A.nc;j++){
-				for (int k=0;k<A.nr;k++){
-					R(i,j)+=this->mat[i+k*this->nr]*A(k,j);
-				}
-			}
-		}
+	Matrix operator*(const Matrix& B) const{
+		assert(this->nc==B.nr);
+		Matrix R(this->nr,B.nc);
+		// for (int i=0;i<this->nr;i++){
+		// 	for (int j=0;j<B.nc;j++){
+		// 		for (int k=0;k<B.nr;k++){
+		// 			R(i,j)+=this->mat[i+k*this->nr]*B(k,j);
+		// 		}
+		// 	}
+		// }
+    char transa ='N';
+    char transb ='N';
+    int M = this->nr;
+    int N = B.nc;
+    int K = this->nc;
+    T alpha = 1;
+    int lda =  this->nr;
+    int ldb =  B.nr;
+    T beta = 0;
+    int ldc = this->nr;
+
+
+    Blas<T>::gemm(&transa, &transb, &M, &N, &K, &alpha, &(this->mat[0]),
+    &lda, &(B.mat[0]), &ldb, &beta, &(R.mat[0]),&ldc);
 		return R;
 	}
 
