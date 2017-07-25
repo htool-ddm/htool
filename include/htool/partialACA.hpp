@@ -102,7 +102,7 @@ public:
 							J=k; pivot=std::abs(r[k]);}
 					}
 					visited_row[I] = true;
-					double gamma = T(1.)/r[J];
+					T gamma = T(1.)/r[J];
 					//==================//
 					// Look for a line
 					if( std::abs(r[J]) > 1e-15 ){
