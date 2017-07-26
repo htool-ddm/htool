@@ -10,7 +10,7 @@ template<typename T>
 class ASM : public Preconditioner<T>{
 private:
 
-  int n_inside;
+  int n_local_ovr;
   const std::vector<int> neighbors;
   std::vector<std::vector<int> > intersections;
   std::vector<T> fact;
@@ -22,7 +22,7 @@ private:
 
   void synchronize(bool sum){
 
-    fill(vec_ovr.begin()+n_inside,vec_ovr.end(),0);
+    fill(vec_ovr.begin()+this->n_local,vec_ovr.end(),0);
     for (int i=0;i<neighbors.size();i++){
       for (int j=0;j<intersections[i].size();j++){
         snd[i][j]=vec_ovr[intersections[i][j]];
@@ -49,17 +49,17 @@ private:
   }
 
 public:
-  ASM(const IMatrix<T>& mat0, const std::vector<int>&  ovr_subdomain_to_global0, const std::vector<int>& cluster_to_ovr_subdomain0, const std::vector<int>& neighbors0, const std::vector<std::vector<int> >& intersections0, MPI_Comm comm0=MPI_COMM_WORLD):Preconditioner<T>(ovr_subdomain_to_global0.size()), n_inside(cluster_to_ovr_subdomain0.size()), neighbors(neighbors0),fact(ovr_subdomain_to_global0.size()*ovr_subdomain_to_global0.size()), vec_ovr(ovr_subdomain_to_global0.size()), comm(comm0) {
+  ASM(const IMatrix<T>& mat0, const std::vector<int>&  ovr_subdomain_to_global0, const std::vector<int>& cluster_to_ovr_subdomain0, const std::vector<int>& neighbors0, const std::vector<std::vector<int> >& intersections0, MPI_Comm comm0=MPI_COMM_WORLD):Preconditioner<T>(cluster_to_ovr_subdomain0.size()), n_local_ovr(ovr_subdomain_to_global0.size()), neighbors(neighbors0),fact(ovr_subdomain_to_global0.size()*ovr_subdomain_to_global0.size()), vec_ovr(ovr_subdomain_to_global0.size()), comm(comm0) {
 
-    std::vector<int> renum(this->n_local,-1);
-    std::vector<int> renum_to_global(this->n_local);
+    std::vector<int> renum(n_local_ovr,-1);
+    std::vector<int> renum_to_global(n_local_ovr);
 
     for (int i=0;i<cluster_to_ovr_subdomain0.size();i++){
       renum[cluster_to_ovr_subdomain0[i]]=i;
       renum_to_global[i]=ovr_subdomain_to_global0[cluster_to_ovr_subdomain0[i]];
     }
     int count =cluster_to_ovr_subdomain0.size();
-    for (int i=0;i<this->n_local;i++){
+    for (int i=0;i<n_local_ovr;i++){
       if (renum[i]==-1){
         renum[i]=count;
         renum_to_global[count++]=ovr_subdomain_to_global0[i];
@@ -87,31 +87,31 @@ public:
   }
   void num_fact(){
     const char l='L';
-    int lda=this->n_local;
+    int lda=n_local_ovr;
     int info;
-    Lapack<T>::potrf(&l,&(this->n_local),fact.data(),&lda,&info);
+    Lapack<T>::potrf(&l,&(n_local_ovr),fact.data(),&lda,&info);
   }
 
   void apply(const T* const in, T* const out) {
 
     // Without overlap to with overlap
-    std::copy_n(in,n_inside,vec_ovr.data());
+    std::copy_n(in,this->n_local,vec_ovr.data());
     // std::fill(vec_ovr.begin(),vec_ovr.end(),0);
-    // std::fill_n(vec_ovr.begin(),n_inside,1);
+    // std::fill_n(vec_ovr.begin(),this->n_local,1);
     synchronize(false);
     // std::cout << vec_ovr<<std::endl;
     //
     const char l='L';
-    int lda=this->n_local;
-    int ldb=this->n_local;
+    int lda=n_local_ovr;
+    int ldb=n_local_ovr;
     int nrhs =1 ;
     int info;
 
-    Lapack<T>::potrs(&l,&(this->n_local),&nrhs,fact.data(),&lda,vec_ovr.data(),&ldb,&info);
+    Lapack<T>::potrs(&l,&(n_local_ovr),&nrhs,fact.data(),&lda,vec_ovr.data(),&ldb,&info);
 
     //
     synchronize(true);
-    std::copy_n(vec_ovr.data(),n_inside,out);
+    std::copy_n(vec_ovr.data(),this->n_local,out);
 
   }
 
