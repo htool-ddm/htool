@@ -1,19 +1,18 @@
 # point.hpp
-add_subdirectory(point_tests)
+add_subdirectory(point)
 
 # matrix.hpp
-add_subdirectory(matrix_tests)
-add_subdirectory(matrix_file_tests)
+add_subdirectory(matrix)
 
 # vector.hpp
-add_subdirectory(vector_tests)
-add_subdirectory(vector_file_tests)
+add_subdirectory(vector)
+
 
 # geometry.hpp
-add_subdirectory(geometry_file_tests)
+add_subdirectory(geometry)
 
 # cluster.hpp
-add_subdirectory(cluster_tests)
+add_subdirectory(cluster)
 
 # lrmat.hpp
 add_subdirectory(lrmat)
@@ -22,4 +21,4 @@ add_subdirectory(lrmat)
 add_subdirectory(hmatrix)
 
 # wrapper_hpddm.hpp
-add_subdirectory(hpddm_solve_tests)
+add_subdirectory(hpddm)

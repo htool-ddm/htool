@@ -76,7 +76,8 @@ int main(int argc, char const *argv[]){
 	}
 
 	// Solve
-  HPDDMOperator<fullACA,complex<double>> A_HPDDM(HA,A);
+	Identity<Cplx> P(n_local);
+  HPDDMOperator<fullACA,complex<double>> A_HPDDM(HA,P);
   complex<double>* const rhs = &(f_local[0]);
   complex<double>* x = &(x_local[0]);
   HPDDM::IterativeMethod::solve(A_HPDDM, rhs, x, 1,HA.get_comm());
