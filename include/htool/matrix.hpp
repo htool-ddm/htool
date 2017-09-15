@@ -351,14 +351,17 @@ public:
     std::vector<T> lhs(nr);
 		Blas<T>::gemv(&n, &nr , &nc, &alpha, &(this->mat[0]) , &lda, &rhs[0], &incx, &beta, &lhs[0], &incy);
     return lhs;
-
- 		/*
- 		for(int j=0; j<m.nr; j++){
- 			for(int k=0; k<m.nc; k++){
- 				lhs[j]+= m.mat(j,k)*rhs[k];
- 			}
- 		}
- 		*/
+  }
+  void mvprod(const T* const in, T* const out) const{
+  		int nr = this->nr;
+  		int nc = this->nc;
+  		T alpha = 1;
+  		int lda = nr;
+  		int incx =1;
+  		T beta =0;
+  		int incy = 1;
+  		char n='N';
+  		Blas<T>::gemv(&n, &nr , &nc, &alpha, &(this->mat[0]) , &lda, in, &incx, &beta, out, &incy);
 	}
 
 	friend std::ostream& operator<<(std::ostream& out, const Matrix& m){
@@ -456,14 +459,23 @@ class SubMatrix : public Matrix<T>{
 
 	std::vector<int> ir;
 	std::vector<int> ic;
+  int offset_i;
+  int offset_j;
 
 public:
+  SubMatrix(const std::vector<int>& ir0, const std::vector<int>& ic0) : Matrix<T>(ir0.size(),ic0.size()), ir(ir0), ic(ic0),offset_i(0), offset_j(0) {}
 
-  SubMatrix(const std::vector<int>& ir0, const std::vector<int>& ic0) : Matrix<T>(ir0.size(),ic0.size()), ir(ir0), ic(ic0) {}
+  SubMatrix(const std::vector<int>& ir0, const std::vector<int>& ic0, const int& offset_i0, const int& offset_j0) : Matrix<T>(ir0.size(),ic0.size()), ir(ir0), ic(ic0),offset_i(offset_i0), offset_j(offset_j0) {}
 
+  SubMatrix(const IMatrix<T>& mat0, const std::vector<int>& ir0, const std::vector<int>& ic0): Matrix<T>(ir0.size(),ic0.size()), ir(ir0), ic(ic0), offset_i(0),offset_j(0) {
 
+    // Matrix<T> test ;
+    // std::cout << (&test)->mat << std::endl;
+    *this = mat0.get_submatrix(ir0,ic0);
 
-  SubMatrix(const IMatrix<T>& mat0, const std::vector<int>& ir0, const std::vector<int>& ic0): Matrix<T>(ir0.size(),ic0.size()), ir(ir0), ic(ic0) {
+  }
+
+  SubMatrix(const IMatrix<T>& mat0, const std::vector<int>& ir0, const std::vector<int>& ic0, const int& offset_i0, const int& offset_j0): Matrix<T>(ir0.size(),ic0.size()), ir(ir0), ic(ic0), offset_i(offset_i0),offset_j(offset_j0) {
 
     // Matrix<T> test ;
     // std::cout << (&test)->mat << std::endl;
@@ -475,6 +487,8 @@ public:
   	this->mat = m.mat;
     ir=m.ir;
     ic=m.ic;
+    offset_i=m.offset_i;
+    offset_j=m.offset_j;
     this->nr=m.nr;
     this->nc=m.nc;
   }
@@ -482,7 +496,8 @@ public:
   // Getters
   std::vector<int> get_ir() const{ return ir;}
   std::vector<int> get_ic() const{ return ic;}
-
+  std::vector<int> get_offset_i() const{ return offset_i;}
+  std::vector<int> get_offset_j() const{ return offset_j;}
 };
 } // namespace
 

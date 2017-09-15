@@ -48,20 +48,22 @@ private:
 	int max_depth;
 	int min_depth;
 
+	int offset;
+
 	Cluster(const Cluster& ); // Pas de recopie
 	Cluster & operator=(const Cluster& copy_from); // pas d'affectation
 
 
 public:
 
-	Cluster(const std::vector<R3>& x0, const std::vector<int>& tab0): x(x0), tab(tab0), ctr(), rad(0.), depth(0),max_depth(0),min_depth(-1) {
+	Cluster(const std::vector<R3>& x0, const std::vector<int>& tab0): x(x0), tab(tab0), ctr(), rad(0.), depth(0),max_depth(0),min_depth(-1),offset(0) {
 		son[0]=NULL;son[1]=NULL;
 		depth = 0; // ce constructeur est appele' juste pour la racine
 		assert(tab.size()==x.size()*ndofperelt);
 		for(int j=0; j<tab.size(); j++){num.push_back(j);}
 	}
 
-	Cluster(const std::vector<R3>& x0, const std::vector<int>& tab0, const int& dep): x(x0), tab(tab0), ctr(), rad(0.),max_depth(-1),min_depth(-1) {
+	Cluster(const std::vector<R3>& x0, const std::vector<int>& tab0, const int& dep): x(x0), tab(tab0), ctr(), rad(0.),max_depth(-1),min_depth(-1), offset(0) {
 		son[0]=0;son[1]=0; depth = dep;
 	}
 
@@ -84,7 +86,8 @@ public:
 	int											get_min_depth() const {return min_depth;}
 
 	//// Setters
-	void set_rank(const int& rank0){rank = rank0;}
+	void set_rank  (const int& rank0)   {rank = rank0;}
+	void set_offset(const int& offset0) {offset=offset0;}
 
 	void print()
 	{
@@ -226,6 +229,9 @@ void Cluster::build(){
 				curr->son[1]->num.push_back(curr->num[j]);
 			}
 		}
+		curr->son[0]->set_offset(offset);
+		curr->son[1]->set_offset(offset+curr->son[0]->num.size());
+
 
 		// Recursivite
 		if((curr->son[0]->num.size() >= minclustersize) && (curr->son[1]->num.size() >= minclustersize)) {

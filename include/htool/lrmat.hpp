@@ -19,6 +19,8 @@ protected:
   Matrix<T>  U,V;
   std::vector<int> ir;
   std::vector<int> ic;
+  int offset_i;
+  int offset_j;
 
 
   LowRankMatrix() = delete;
@@ -36,6 +38,8 @@ public:
   int rank_of() const {return this->rank;}
   std::vector<int> get_ir() const {return this->ir;}
   std::vector<int> get_ic() const {return this->ic;}
+  int get_offset_i() const {return this->offset_i;}
+  int get_offset_j() const {return this->offset_j;}
   T get_U(int i, int j) const {return this->U(i,j);}
   T get_V(int i, int j) const {return this->V(i,j);}
   std::vector<int> get_xr() const {return this->xr;}
@@ -46,7 +50,11 @@ public:
   std::vector<T> operator*(const std::vector<T>& a) const{
     return this->U*(this->V*a);
   }
-
+  void mvprod(const T* const in,  T* const out) const{
+    std::vector<T> a(this->rank);
+    V.mvprod(in,a.data());
+    U.mvprod(a.data(),out);
+  }
 
   double compression() const{
     return (1 - ( this->rank*( 1./double(this->nr) + 1./double(this->nc))));
