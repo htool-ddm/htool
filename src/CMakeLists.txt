@@ -28,9 +28,9 @@ target_compile_options(Test_freeGLUT PRIVATE -DHTOOL_WITH_GUI)
 add_executable(Test_ACA test_ACA.cpp)
 target_link_libraries (Test_ACA  htool)
 #
-# # Creation de l executable ErrDecrease a partir de err_decrease
-# add_executable(ErrDecrease err_decrease.cpp)
-# target_link_libraries (ErrDecrease ${EIGEN3_LIBRARIES})
+# Creation de l executable ErrDecrease a partir de err_decrease
+add_executable(ErrDecrease err_decrease.cpp)
+target_link_libraries (ErrDecrease htool)
 #
 # # Creation de l executable VisuCluster a partir de visucluster
 # add_executable(VisuCluster visucluster.cpp)
