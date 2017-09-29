@@ -12,6 +12,8 @@ namespace htool{
 template<template<typename> class LowRankMatrix, typename T>
 class DDM{
 private:
+  Preconditioner(const Preconditioner&) = default; // copy constructor
+  Preconditioner& operator=(const Preconditioner&) = default; // copy assignement operator
 
   int n;
   int n_inside;
@@ -25,6 +27,8 @@ private:
   std::vector<double> D;
   MPI_Comm comm;
 
+  Preconditioner() = delete;
+  Preconditioner(int n0):n_local(n0){}
 
 
   // void synchronize(bool sum){
@@ -124,6 +128,12 @@ public:
     T* sol = &(x_ref[0]);
     HPDDM::IterativeMethod::solve(hpddm_op, f, sol, 1,comm);
 
+template<typename T>
+class Identity : public Preconditioner<T>{
+public:
+  Identity(int n0):Preconditioner<T>(n0){};
+  void apply(const T* const in, T* const out){
+    std::copy_n(in, this->n_local, out);
   }
   // void num_fact(){
   //   const char l='L';
@@ -156,8 +166,8 @@ public:
   // }
 
 
-
 };
+
 
 }
 #endif

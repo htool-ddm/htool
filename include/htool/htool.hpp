@@ -1,6 +1,17 @@
 #ifndef HTOOL_HPP
 #define HTOOL_HPP
 
+
+
+#ifndef HTOOL_MKL
+# ifdef INTEL_MKL_VERSION
+#  define HTOOL_MKL           1
+# else
+#  define HTOOL_MKL           0
+# endif
+#endif
+
+#include "schwarz.hpp"
 #include "blas.hpp"
 #include "cluster.hpp"
 #include "export.hpp"
