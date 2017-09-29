@@ -64,7 +64,7 @@ int main(int argc, char const *argv[]) {
   cout<<"min depth : "<<t.get_min_depth()<<endl;
 
   test = test || !(t.get_max_depth()==4 && t.get_min_depth()==3);
-  t.print();
+  t.print_offset();
 
 
 
