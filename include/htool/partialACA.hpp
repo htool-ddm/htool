@@ -41,6 +41,7 @@ public:
     // otherwise, we use the required rank for the stopping criterion (!: at the end the rank could be lower)
 	partialACA(const std::vector<int>& ir0, const std::vector<int>& ic0, int rank0=-1): LowRankMatrix<T>(ir0,ic0,rank0){}
 
+	partialACA(const std::vector<int>& ir0, const std::vector<int>& ic0,int offset_i0, int offset_j0, int rank0=-1): LowRankMatrix<T>(ir0,ic0,offset_i0,offset_j0,rank0){}
 
 
 	void build(const IMatrix<T>& A, const Cluster& t, const Cluster& s){
@@ -102,7 +103,7 @@ public:
 							J=k; pivot=std::abs(r[k]);}
 					}
 					visited_row[I] = true;
-					double gamma = T(1.)/r[J];
+					T gamma = T(1.)/r[J];
 					//==================//
 					// Look for a line
 					if( std::abs(r[J]) > 1e-15 ){
@@ -140,6 +141,7 @@ public:
 					}
 					else{
 						std::cout << "There is a zero row in the starting submatrix and ACA didn't work" << std::endl;
+						q-=1;
 						break;
 					}
 				}

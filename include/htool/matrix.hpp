@@ -496,8 +496,8 @@ public:
   // Getters
   std::vector<int> get_ir() const{ return ir;}
   std::vector<int> get_ic() const{ return ic;}
-  std::vector<int> get_offset_i() const{ return offset_i;}
-  std::vector<int> get_offset_j() const{ return offset_j;}
+  int get_offset_i() const{ return offset_i;}
+  int get_offset_j() const{ return offset_j;}
 };
 } // namespace
 

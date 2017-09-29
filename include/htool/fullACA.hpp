@@ -46,6 +46,8 @@ public:
     // otherwise, we use the required rank for the stopping criterion (!: at the end the rank could be lower)
 	fullACA(const std::vector<int>& ir0, const std::vector<int>& ic0, int rank0=-1): LowRankMatrix<T>(ir0,ic0,rank0){}
 
+	fullACA(const std::vector<int>& ir0, const std::vector<int>& ic0,int offset_i0, int offset_j0, int rank0=-1): LowRankMatrix<T>(ir0,ic0,offset_i0,offset_j0,rank0){}
+
 	void build(const IMatrix<T>& A){
 		if(this->rank == 0){
 			this->U.resize(this->nr,1);
