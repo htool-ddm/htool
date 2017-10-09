@@ -47,7 +47,8 @@ int main(int argc, char const *argv[]) {
   SetNdofPerElt(1);
   SetEpsilon(1e-6);
   SetEta(0.1);
-  SetMinClusterSize(100);
+  SetMinClusterSize(2);
+	// SetMaxBlockSize(25);
 
   	for(int idist=0; idist<ndistance; idist++)
   	{
@@ -63,8 +64,9 @@ int main(int argc, char const *argv[]) {
   		vector<int> Ic(nc); // column indices for the lrmatrix
 
   		double z1 = 1;
-  		vector<R3>     p1(nr);
-  		vector<int>  tab1(nr);
+  		vector<R3>        p1(nr);
+			vector<double>  r1(nr,0);
+  		vector<int>     tab1(nr);
   		for(int j=0; j<nr; j++){
   			Ir[j] = j;
   			double rho = ((double) rand() / (double)(RAND_MAX)); // (double) otherwise integer division!
@@ -75,8 +77,9 @@ int main(int argc, char const *argv[]) {
   		}
   		// p2: points in a unit disk of the plane z=z2
   		double z2 = 1+distance[idist];
-  		vector<R3> p2(nc);
-  		vector<int> tab2(nc);
+  		vector<R3>       p2(nc);
+			vector<double> r2(nc,0);
+  		vector<int>    tab2(nc);
   		for(int j=0; j<nc; j++){
               Ic[j] = j;
   			double rho = ((double) rand() / (RAND_MAX)); // (double) otherwise integer division!
@@ -88,78 +91,32 @@ int main(int argc, char const *argv[]) {
   		MyMatrix A(p1,p2);
 
 
-  		HMatrix<fullACA,double> HA(A,p1,tab1,p2,tab2);
-  		int nbr_dmat = HA.get_ndmat();
-  		int nbr_lmat = HA.get_nlrmat();
-  		double comp = HA.compression();
-
-  		if (rank==0){
-  			cout << "nbr_dmat : "<<nbr_dmat<<endl;
-  			cout << "nbr_lmat : "<<nbr_lmat<<endl;
-  			cout << "compression : "<<comp<<endl;
-  		}
+  		// HMatrix<fullACA,double> HA(A,p1,r1,tab1,p2,r2,tab2);
+  		HMatrix<fullACA,double> HA(A,p1,r1,tab1,p2,r2,tab2);
   		HA.print_stats();
-    	double mytime, maxtime, meantime;
+
 
 
       // Global vectors
   		std::vector<double> x_global(nc,1),f_global(nr),f_global_test(nr);
-
-      // Local vectors
-  		int nr_local=HA.get_local_size_cluster();
-  		const std::vector<std::vector<int>>& MasterClusters = HA.get_MasterClusters();
-  		std::vector<double> x_local(nr_local,1),f_local(nr_local),f_local_test(nr_local);
-
+			f_global = A*x_global;
 
       // Global product
-      HA.mvprod_global(x_global.data(),f_global.data());
-
-  		// Local product
-      HA.mvprod_local(x_local.data(),f_local.data());
-
-
-
-      // Global to local
-  		for (int i=0; i< MasterClusters[rank].size(); i++) {
-  			f_local_test[i] = f_global[MasterClusters[rank][i]];
-  		}
-
-      // Local to global
-      std::vector<double> rcv;
-      rcv.resize(nr);
-
-      std::vector<int> recvcounts(size);
-      std::vector<int>  displs(size);
-
-      displs[0] = 0;
-
-      for (int i=0; i<size; i++) {
-      	recvcounts[i] = MasterClusters[i].size();
-      	if (i > 0)
-      		displs[i] = displs[i-1] + recvcounts[i-1];
-      }
-
-
-      MPI_Allgatherv(&(f_local.front()), recvcounts[rank], MPI_DOUBLE, &(rcv.front()), &(recvcounts.front()), &(displs.front()), MPI_DOUBLE, HA.get_comm());
-
-      for (int i=0; i<size; i++)
-      for (int j=0; j< MasterClusters[i].size(); j++)
-      	f_global_test[MasterClusters[i][j]] = rcv[displs[i]+j];
+      HA.mvprod_global(x_global.data(),f_global_test.data());
 
       // Errors
       double global_diff = norm2(f_global-f_global_test)/norm2(f_global);
-      double local_diff = norm2(f_local-f_local_test);
-      MPI_Allreduce(MPI_IN_PLACE, &local_diff, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-      local_diff/=norm2(f_global);
+
 
   		if (rank==0){
   			cout <<"difference on mat vec prod computed globally: "<<global_diff << endl;
-        cout <<"difference on mat vec prod computed locally: "<<local_diff << endl;
   		}
-
-  		test = test || !(local_diff<1.e-15 && global_diff<1.e-15); // default tol in hpddm
-
+			test = test || !(global_diff<GetEpsilon());
   	}
+		if (rank==0){
+			cout <<"test: "<<test << endl;
+
+		}
   	// Finalize the MPI environment.
   	MPI_Finalize();
 

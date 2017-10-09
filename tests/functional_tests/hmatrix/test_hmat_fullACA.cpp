@@ -71,7 +71,10 @@ int main(){
 
 		double z1 = 1;
 		vector<R3>     p1(nr);
-		vector<int>  tab1(nr);
+	  vector<double> r1(nr,0);
+	  vector<double> g1(nr,1);
+		vector<int>    tab1(nr);
+	  vector<int>    perm1(nr);
 		for(int j=0; j<nr; j++){
 			Ir[j] = j;
 			double rho = ((double) rand() / (double)(RAND_MAX)); // (double) otherwise integer division!
@@ -82,8 +85,11 @@ int main(){
 		}
 		// p2: points in a unit disk of the plane z=z2
 		double z2 = 1+distance[idist];
-		vector<R3> p2(nc);
-		vector<int> tab2(nc);
+		vector<R3> 		 p2(nc);
+		vector<double> r2(nc,0);
+	  vector<double> g2(nc,1);
+		vector<int>    tab2(nc);
+	  vector<int>    perm2(nc);
 		for(int j=0; j<nc; j++){
             Ic[j] = j;
 			double rho = ((double) rand() / (RAND_MAX)); // (double) otherwise integer division!
@@ -93,29 +99,25 @@ int main(){
 		}
 
 		MyMatrix A(p1,p2);
-		HMatrix<fullACA,double> HA(A,p1,tab1,p2,tab2);
+		HMatrix<fullACA,double> HA(A,p1,r1,tab1,g1,p2,r2,tab2,g2);
+		HA.print_stats();
 
 		std::vector<double> f(nc,1),result(nr,0);
 		result = HA*f;
 		double erreur2 = norm2(A*f-result);
 		double erreurFrob = Frobenius_absolute_error(HA,A);
-		double compression = HA.compression();
-		int nb_lrmat = HA.get_nlrmat();
-		int nb_dmat  = HA.get_ndmat();
 
 		test = test || !(erreurFrob<GetEpsilon());
 		test = test || !(erreur2<GetEpsilon()*10);
 
 		if (rank==0){
 			cout << "Errors with Frobenius norm: "<<erreurFrob<<endl;
-			cout << "Compression rate : "<<compression<<endl;
 			cout << "Errors on a mat vec prod : "<< erreur2<<endl;
-			cout << "nbr lr : "<<nb_lrmat<<endl;
-			cout << "nbr dense : "<<nb_dmat<<endl;
-
-
 		}
 
+	}
+	if (rank==0){
+		cout << "test: "<<test<<endl;
 	}
 	// Finalize the MPI environment.
 	MPI_Finalize();
