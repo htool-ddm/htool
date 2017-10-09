@@ -29,7 +29,7 @@ namespace htool {
 
 
 class Cluster: public Parametres{
-
+// TODO visualisation for cluster
 private:
 	// const std::vector<R3>&       x;     // Nuage complet des points
 	// const std::vector<double>&   r;
@@ -60,9 +60,11 @@ public:
 
 	// Root constructor
 	Cluster(const std::vector<R3>& x0, const std::vector<double>& r0,const std::vector<int>& tab0, const std::vector<double>& g0, std::vector<int>& perm);
+
 	Cluster(const std::vector<R3>& x0, const std::vector<int>& tab0, const std::vector<double>& g0, std::vector<int>& perm);
 	Cluster(const std::vector<R3>& x0, const std::vector<double>& r0, const std::vector<int>& tab0,std::vector<int>& perm);
-	Cluster(const std::vector<R3>& x0, const std::vector<int>& tab0,std::vector<int>& perm);
+	Cluster(const std::vector<R3>& x0, const std::vector<double>& r0, const std::vector<double>& g0, std::vector<int>& perm);
+
 	Cluster(const std::vector<R3>& x0, std::vector<int>& perm);
 
 	// Node constructor
@@ -294,19 +296,29 @@ void Cluster::build(const std::vector<R3>& x, const std::vector<double>& r, cons
 	}
 }
 
-// Constructors
+// Full constructor
 Cluster::Cluster(const std::vector<R3>& x0, const std::vector<double>& r0,const std::vector<int>& tab0, const std::vector<double>& g0, std::vector<int>& perm){
 	this->build(x0,r0,tab0,g0,perm);
 }
+
+// Constructor without radius
 Cluster::Cluster(const std::vector<R3>& x0, const std::vector<int>& tab0, const std::vector<double>& g0, std::vector<int>& perm){
 	this->build(x0,std::vector<double>(x0.size(),0),tab0,g0,perm);
 }
+
+// Constructor without mass
 Cluster::Cluster(const std::vector<R3>& x0, const std::vector<double>& r0, const std::vector<int>& tab0,std::vector<int>& perm){
 	this->build(x0,r0,tab0,std::vector<double>(x0.size(),1),perm);
 }
-Cluster::Cluster(const std::vector<R3>& x0, const std::vector<int>& tab0,std::vector<int>& perm){
+
+// Constructor without tab
+Cluster::Cluster(const std::vector<R3>& x0, const std::vector<double>& r0, const std::vector<double>& g0, std::vector<int>& perm){
+	std::vector<int> tab0(x0.size());
+	std::iota(tab0.begin(),tab0.end(),int(0));
 	this->build(x0,std::vector<double>(x0.size(),0),tab0,std::vector<double>(x0.size(),1),perm);
 }
+
+// Constructor without tab, mass and rad
 Cluster::Cluster(const std::vector<R3>& x0, std::vector<int>& perm){
 	std::vector<int> tab0(x0.size());
 	std::iota(tab0.begin(),tab0.end(),int(0));
@@ -315,7 +327,6 @@ Cluster::Cluster(const std::vector<R3>& x0, std::vector<int>& perm){
 
 
 // On utilise le fait qu'on a toujours ndofperelt dofs par element geometrique
-// TODO : faire un stack pour pas se trimballer perm
 // void TraversalBuildLabel(const Cluster& t, const std::vector<int>& perm, std::vector<int>& labelVisu, const unsigned int visudep, const unsigned int cnt){
 // 	if(t.depth<visudep){
 // 		assert( t.son[0]!=0 ); // check if visudep is too high!
@@ -344,6 +355,14 @@ void Cluster::print(const std::vector<int>& perm) const
 	if (this->son[0]!=NULL) (*this->son[0]).print(perm);
 	if (this->son[1]!=NULL) (*this->son[1]).print(perm);
 }
+
+// template<Input,Ouput>
+// void Cluster::output(std::string inputname, std::string outputname){
+// 	Input input(inputname);
+// 	std::vector<>
+//
+//
+// }
 
 // void (const Cluster& t, const std::vector<int>& perm, std::string inputname, std::string outputname, const unsigned int visudep){
 //
