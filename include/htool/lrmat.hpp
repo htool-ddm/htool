@@ -24,8 +24,9 @@ protected:
 
 
   LowRankMatrix() = delete;
-  LowRankMatrix(const std::vector<int>& ir0, const std::vector<int>& ic0, int rank0=-1):rank(rank0), nr(ir0.size()), nc(ic0.size()), U(ir0.size(),1),V(1,ic0.size()), ir(ir0),ic(ic0){}
+  LowRankMatrix(const std::vector<int>& ir0, const std::vector<int>& ic0, int rank0=-1):rank(rank0), nr(ir0.size()), nc(ic0.size()), U(ir0.size(),1),V(1,ic0.size()), ir(ir0), ic(ic0), offset_i(0), offset_j(0){}
 
+  LowRankMatrix(const std::vector<int>& ir0, const std::vector<int>& ic0, int offset_i0, int offset_j0, int rank0=-1):rank(rank0), nr(ir0.size()), nc(ic0.size()), U(ir0.size(),1),V(1,ic0.size()), ir(ir0),ic(ic0),offset_i(offset_i0), offset_j(offset_j0){}
 
 public:
 
@@ -51,9 +52,22 @@ public:
     return this->U*(this->V*a);
   }
   void mvprod(const T* const in,  T* const out) const{
-    std::vector<T> a(this->rank);
-    V.mvprod(in,a.data());
-    U.mvprod(a.data(),out);
+    if (rank==0){
+      std::fill(out,out+nr,0);
+    }
+    else{
+      std::vector<T> a(this->rank);
+      V.mvprod(in,a.data());
+      U.mvprod(a.data(),out);
+    }
+  }
+
+  void add_mvprod(const T* const in,  T* const out) const{
+    if (rank!=0){
+      std::vector<T> a(this->rank);
+      V.mvprod(in,a.data());
+      U.add_mvprod(a.data(),out);
+    }
   }
 
   double compression() const{
