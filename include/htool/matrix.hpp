@@ -41,7 +41,7 @@ public:
 
   virtual T get_coef(const int& j, const int& k) const =0;
 
-
+  // TODO improve interface (CRTP ?)
   virtual SubMatrix<T> get_submatrix(const std::vector<int>& J, const std::vector<int>& K) const {
     SubMatrix<T> mat(J,K);
   	for (int i=0; i<mat.nb_rows(); i++)
@@ -377,6 +377,17 @@ public:
   		char n='N';
   		Blas<T>::gemv(&n, &nr , &nc, &alpha, &(this->mat[0]) , &lda, in, &incx, &beta, out, &incy);
 	}
+  void add_mvprod(const T* const in, T* const out) const{
+      int nr = this->nr;
+      int nc = this->nc;
+      T alpha = 1;
+      int lda = nr;
+      int incx =1;
+      T beta =1;
+      int incy = 1;
+      char n='N';
+      Blas<T>::gemv(&n, &nr , &nc, &alpha, &(this->mat[0]) , &lda, in, &incx, &beta, out, &incy);
+  }
 
 	friend std::ostream& operator<<(std::ostream& out, const Matrix& m){
     if ( !(m.mat.empty()) ) {
@@ -477,7 +488,7 @@ class SubMatrix : public Matrix<T>{
   int offset_j;
 
 public:
-  SubMatrix(const std::vector<int>& ir0, const std::vector<int>& ic0) : Matrix<T>(ir0.size(),ic0.size()), ir(ir0), ic(ic0),offset_i(0), offset_j(0) {}
+  SubMatrix(const std::vector<int>& ir0, const std::vector<int>& ic0) : Matrix<T>(ir0.size(),ic0.size()), ir(ir0), ic(ic0),offset_i(50), offset_j(0) {}
 
   SubMatrix(const std::vector<int>& ir0, const std::vector<int>& ic0, const int& offset_i0, const int& offset_j0) : Matrix<T>(ir0.size(),ic0.size()), ir(ir0), ic(ic0),offset_i(offset_i0), offset_j(offset_j0) {}
 
@@ -486,32 +497,30 @@ public:
     // Matrix<T> test ;
     // std::cout << (&test)->mat << std::endl;
     *this = mat0.get_submatrix(ir0,ic0);
-
   }
 
-  SubMatrix(const IMatrix<T>& mat0, const std::vector<int>& ir0, const std::vector<int>& ic0, const int& offset_i0, const int& offset_j0): Matrix<T>(ir0.size(),ic0.size()), ir(ir0), ic(ic0), offset_i(offset_i0),offset_j(offset_j0) {
+  SubMatrix(const IMatrix<T>& mat0, const std::vector<int>& ir0, const std::vector<int>& ic0, const int& offset_i0, const int& offset_j0): Matrix<T>(ir0.size(),ic0.size()), ir(ir0), ic(ic0) {
 
-    // Matrix<T> test ;
-    // std::cout << (&test)->mat << std::endl;
     *this = mat0.get_submatrix(ir0,ic0);
-
+    offset_i=offset_i0;
+    offset_j=offset_j0;
   }
 
   SubMatrix(const SubMatrix& m) {
   	this->mat = m.mat;
-    ir=m.ir;
-    ic=m.ic;
-    offset_i=m.offset_i;
-    offset_j=m.offset_j;
+    this->ir=m.ir;
+    this->ic=m.ic;
+    this->offset_i=m.offset_i;
+    this->offset_j=m.offset_j;
     this->nr=m.nr;
     this->nc=m.nc;
   }
 
   // Getters
-  std::vector<int> get_ir() const{ return ir;}
-  std::vector<int> get_ic() const{ return ic;}
-  int get_offset_i() const{ return offset_i;}
-  int get_offset_j() const{ return offset_j;}
+  std::vector<int> get_ir() const{ return this->ir;}
+  std::vector<int> get_ic() const{ return this->ic;}
+  int get_offset_i() const{ return this->offset_i;}
+  int get_offset_j() const{ return this->offset_j;}
 };
 } // namespace
 
