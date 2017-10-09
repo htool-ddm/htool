@@ -108,6 +108,6 @@ int main(){
 
 
 	}
-
+	cout << "test : "<<test<<endl;
 	return test ;
 }

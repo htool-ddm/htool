@@ -33,7 +33,7 @@ public:
 int main(){
 	const int ndistance = 4;
 	double distance[ndistance];
-	distance[0] = 10; distance[1] = 20; distance[2] = 30; distance[3] = 40;
+	distance[0] = 15; distance[1] = 20; distance[2] = 30; distance[3] = 40;
 	SetNdofPerElt(1);
 	bool test = 0;
 	for(int idist=0; idist<ndistance; idist++)
@@ -78,7 +78,7 @@ int main(){
 		// ACA with fixed rank
 		int reqrank_max = 10;
 		partialACA<double> A_partialACA_fixed(Ir,Ic,reqrank_max);
-		A_partialACA_fixed.build(A,t,s);
+		A_partialACA_fixed.build(A,t,p1,tab1,s,p2,tab2);
 		std::vector<double> partialACA_fixed_errors;
 		for (int k = 0 ; k < A_partialACA_fixed.rank_of()+1 ; k++){
 			partialACA_fixed_errors.push_back(Frobenius_absolute_error(A_partialACA_fixed,A,k));
@@ -90,7 +90,7 @@ int main(){
 		test = test || !(A_partialACA_fixed.rank_of()==reqrank_max);
 
 		// Test Frobenius errors
-		test = test || !(partialACA_fixed_errors[partialACA_fixed_errors.size()-1]<1e-6);
+		test = test || !(partialACA_fixed_errors.back()<1e-9);
 		cout << "Errors with Frobenius norm : "<<partialACA_fixed_errors<<endl;
 
 		// Test compression
@@ -103,11 +103,9 @@ int main(){
 		test = test || !(error<1e-6);
 		cout << "Errors on a mat vec prod : "<< error<<endl<<endl;
 
-
-
 		// ACA automatic building
 		partialACA<double> A_partialACA(Ir,Ic);
-		A_partialACA.build(A,t,s);
+		A_partialACA.build(A,t,p1,tab1,s,p2,tab2);
 		std::vector<double> partialACA_errors;
 		for (int k = 0 ; k < A_partialACA.rank_of()+1 ; k++){
 			partialACA_errors.push_back(Frobenius_absolute_error(A_partialACA,A,k));
@@ -127,6 +125,6 @@ int main(){
 		test = test || !(error<GetEpsilon()*10);
 		cout << "Errors on a mat vec prod : "<< error<<endl<<endl<<endl;
 	}
-
+	cout << "test : "<<test<<endl;
 	return test;
 }

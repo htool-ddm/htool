@@ -1,5 +1,5 @@
-#ifndef FULLACA_HPP
-#define FULLACA_HPP
+#ifndef FULL_ACA_HPP
+#define FULL_ACA_HPP
 
 #include <iostream>
 #include <fstream>
@@ -66,7 +66,7 @@ public:
 			double Norm = normFrob(M);
 
 			while (((reqrank > 0) && (q < reqrank) ) ||
-			      ( (reqrank < 0) && ( normFrob(M)/Norm>this->epsilon ) )) {
+			      ( (reqrank < 0) && ( normFrob(M)/Norm>this->epsilon || q==0) )) {
 
 				q+=1;
 				if (q*(this->nr+this->nc) > (this->nr*this->nc)) { // the current rank would not be advantageous
@@ -76,7 +76,9 @@ public:
 				else{
 					std::pair<int , int > ind = argmax(M);
 					T pivot = M(ind.first,ind.second);
-					if (std::abs(pivot)<1e-15) break;
+                    if (std::abs(pivot)<1e-15) {
+                        q+=-1; break;
+                    }
 					uu.push_back(M.get_col(ind.second));
 					vv.push_back(M.get_row(ind.first)/pivot);
 
@@ -98,7 +100,7 @@ public:
 			}
 		}
 	}
-	void build(const IMatrix<T>& A, const Cluster& t, const Cluster& s){
+	void build(const IMatrix<T>& A, const Cluster& t, const Cluster& s, const std::vector<R3> xt,const std::vector<int> tabt, const std::vector<R3> xs, const std::vector<int>tabs){
     this->build(A);
   }
 };

@@ -44,7 +44,7 @@ public:
 	partialACA(const std::vector<int>& ir0, const std::vector<int>& ic0,int offset_i0, int offset_j0, int rank0=-1): LowRankMatrix<T>(ir0,ic0,offset_i0,offset_j0,rank0){}
 
 
-	void build(const IMatrix<T>& A, const Cluster& t, const Cluster& s){
+	void build(const IMatrix<T>& A, const Cluster& t, const std::vector<R3> xt,const std::vector<int> tabt, const Cluster& s, const std::vector<R3> xs, const std::vector<int>tabs){
 		if(this->rank == 0){
 			this->U.resize(this->nr,1);
 			this->V.resize(1,this->nc);
@@ -54,14 +54,13 @@ public:
 			//// Choice of the first row (see paragraph 3.4.3 page 151 Bebendorf)
 			double dist=1e30;
 			int I=0;
-			for (int i =0;i<int(this->nr/this->ndofperelt);i++){
-				double aux_dist= norm2(t.get_pts()[t.get_tab()[t.get_num()[i*this->ndofperelt]]]-t.get_ctr());
+			for (int i =0;i<int(this->nr/Parametres::ndofperelt);i++){
+				double aux_dist= norm2(xt[tabt[this->ir[i*Parametres::ndofperelt]]]-t.get_ctr());
 				if (dist>aux_dist){
 					dist=aux_dist;
-					I=i*this->ndofperelt;
+					I=i*Parametres::ndofperelt;
 				}
 			}
-
 			// Partial pivot
 			int J=0;
 			int q = 0;
@@ -77,7 +76,7 @@ public:
 			// Or it is negative and we have to check the relative error between two iterations.
 			//But to do that we need a least two iterations.
 			while (((reqrank > 0) && (q < reqrank) ) ||
-			       ((reqrank < 0) && (sqrt(aux/frob)>this->epsilon || q<=1))) {
+			       ((reqrank < 0) && (sqrt(aux/frob)>this->epsilon || q==0))) {
 
 				// Next current rank
 				q+=1;
@@ -93,7 +92,7 @@ public:
 					//==================//
 					// Look for a column
 					double pivot = 0.;
-					SubMatrix<T> row = A.get_submatrix(std::vector<int> {I},this->ic);
+					SubMatrix<T> row = A.get_submatrix(std::vector<int> {this->ir[I]},this->ic);
 					for(int k=0; k<this->nc; k++){
 						r[k] = row(0,k);//A.get_coef(this->ir[I],this->ic[k]);
 						for(int j=0; j<uu.size(); j++){
@@ -108,7 +107,7 @@ public:
 					// Look for a line
 					if( std::abs(r[J]) > 1e-15 ){
 						double cmax = 0.;
-						SubMatrix<T> col = A.get_submatrix(this->ir,std::vector<int> {J});
+						SubMatrix<T> col = A.get_submatrix(this->ir,std::vector<int> {this->ic[J]});
 						for(int j=0; j<this->nr; j++){
 							c[j] = col(j,0);//A.get_coef(this->ir[j],this->ic[J]);
 							for(int k=0; k<uu.size(); k++){
@@ -125,7 +124,7 @@ public:
 						if (reqrank<0){
 							// Error estimator
 							T frob_aux = 0.;
-							aux = std::pow(norm2(c)*norm2(r),2);
+							aux = std::abs(dprod(c,c)*dprod(r,r));
 							// aux: terme quadratiques du developpement du carre' de la norme de Frobenius de la matrice low rank
 							for(int j=0; j<uu.size(); j++){
 								frob_aux += dprod(r,vv[j])*dprod(c,uu[j]);
@@ -134,6 +133,9 @@ public:
 							frob += aux + 2*std::real(frob_aux); // frob: Frobenius norm of the low rank matrix
 							//==================//
 						}
+						// Matrix<T> M=A.get_submatrix(this->ir,this->ic);
+						// uu.push_back(M.get_col(J));
+						// vv.push_back(M.get_row(I)/M(I,J));
 						// New cross added
 						uu.push_back(c);
 						vv.push_back(r);
