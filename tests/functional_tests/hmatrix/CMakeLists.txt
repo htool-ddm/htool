@@ -34,9 +34,9 @@ add_test(NAME Test_hmat_partialACA_4 COMMAND  ${MPIEXEC} ${MPIEXEC_NUMPROC_FLAG}
 
 
 #=== hmat_vec_prod
-add_executable(Test_mat_vec_prod test_hmat_vec_prod.cpp)
-target_link_libraries(Test_mat_vec_prod htool)
-add_dependencies(build-tests Test_mat_vec_prod)
-add_test(NAME Test_mat_vec_prod_1 COMMAND  ${MPIEXEC} ${MPIEXEC_NUMPROC_FLAG} 1 ${CMAKE_CURRENT_BINARY_DIR}/Test_mat_vec_prod)
-add_test(NAME Test_mat_vec_prod_2 COMMAND  ${MPIEXEC} ${MPIEXEC_NUMPROC_FLAG} 2 ${CMAKE_CURRENT_BINARY_DIR}/Test_mat_vec_prod)
-add_test(NAME Test_mat_vec_prod_4 COMMAND  ${MPIEXEC} ${MPIEXEC_NUMPROC_FLAG} 4 ${CMAKE_CURRENT_BINARY_DIR}/Test_mat_vec_prod)
+add_executable(Test_hmat_vec_prod test_hmat_vec_prod.cpp)
+target_link_libraries(Test_hmat_vec_prod htool)
+add_dependencies(build-tests Test_hmat_vec_prod)
+add_test(NAME Test_hmat_vec_prod_1 COMMAND  ${MPIEXEC} ${MPIEXEC_NUMPROC_FLAG} 1 ${CMAKE_CURRENT_BINARY_DIR}/Test_hmat_vec_prod)
+add_test(NAME Test_hmat_vec_prod_2 COMMAND  ${MPIEXEC} ${MPIEXEC_NUMPROC_FLAG} 2 ${CMAKE_CURRENT_BINARY_DIR}/Test_hmat_vec_prod)
+add_test(NAME Test_hmat_vec_prod_4 COMMAND  ${MPIEXEC} ${MPIEXEC_NUMPROC_FLAG} 4 ${CMAKE_CURRENT_BINARY_DIR}/Test_hmat_vec_prod)
