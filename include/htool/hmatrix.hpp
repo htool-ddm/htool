@@ -34,6 +34,7 @@ private:
 	int nr;
 	int nc;
 	int reqrank;
+	int local_cluster_size;
 
 	std::vector<Block*>		   Tasks;
 	std::vector<Block*>		   MyBlocks;
@@ -46,8 +47,8 @@ private:
 	std::vector<int>               perms;
 	std::vector<int>               permt;
 
-	std::vector<std::pair<int,int>> MasterOffsetss;
-	std::vector<std::pair<int,int>> MasterOffsett;
+	std::vector<std::pair<int,int>> MasterOffset_s;
+	std::vector<std::pair<int,int>> MasterOffset_t;
 
 
 
@@ -109,7 +110,7 @@ public:
 	HMatrix(const IMatrix<T>&, const std::vector<R3>& xt, const int& reqrank=-1, MPI_Comm comm=MPI_COMM_WORLD); // To be used with one different clusters
 
 
-
+  // Destructor
 	~HMatrix() {
 		for (int i=0; i<Tasks.size(); i++)
 			delete Tasks[i];
@@ -127,22 +128,35 @@ public:
 		int res=MyNearFieldMats.size(); MPI_Allreduce(MPI_IN_PLACE, &res, 1, MPI_INT, MPI_SUM, comm); return res;
 	}
 	LowRankMatrix<T> get_lrmat(int i) const{return MyFarFieldMats[i];}
+	int get_local_cluster_size() const{return local_cluster_size;}
+	std::vector<std::pair<int,int>> get_MasterOffset_t() const {return MasterOffset_t;}
+	std::vector<std::pair<int,int>> get_MasterOffset_s() const {return MasterOffset_s;}
+	int get_rankworld() const {return rankWorld;}
+	int get_sizeworld() const {return sizeWorld;}
 
+
+	//
 	void compute_diag_block(T* diag_block);
 
+	// Stats - infos
 	const std::map<std::string,double>& get_stats () const { return stats;}
 	void add_stats(const std::string& keyname, const double& value){stats[keyname]=value;}
 	void print_stats();
+	double compression() const; // 1- !!!
+	friend double Frobenius_absolute_error<LowRankMatrix,T>(const HMatrix<LowRankMatrix,T>& B, const IMatrix<T>& A);
 
-	// void local_to_global(const T* const in, T* const out) const;
+	// Mat vec prod
 	void mvprod_global(const T* const in, T* const out) const;
 	void mvprod_local(const T* const in, T* const out) const;
 	std::vector<T> operator*( const std::vector<T>& x) const;
 
-	// 1- !!!
-	double compression() const;
+	// Permutations
+	void source_to_cluster_permutation(const T* const in, T* const out) const;
+	void cluster_to_target_permutation(const T* const in, T* const out) const;
 
-	friend double Frobenius_absolute_error<LowRankMatrix,T>(const HMatrix<LowRankMatrix,T>& B, const IMatrix<T>& A);
+	// local to global
+ 	void local_to_global(const T* const in, T* const out) const;
+
 
 };
 
@@ -162,6 +176,7 @@ void HMatrix<LowRankMatrix, T >::build(const IMatrix<T>& mat, const std::vector<
 	Cluster t(xt,rt,tabt,gt,permt); Cluster s(xs,rs,tabs,gs,perms);
 	assert(std::pow(2,t.get_min_depth())>sizeWorld);
 	SetRanks(t);
+	local_cluster_size=MasterOffset_t[rankWorld].second;
 
 	mytimes[0] = MPI_Wtime() - time;
 
@@ -239,7 +254,7 @@ void HMatrix<LowRankMatrix, T >::build(const IMatrix<T>& mat,
   perms=permt; // bof
 	assert(std::pow(2,t.get_min_depth())>sizeWorld);
 	SetRanks(t);
-
+	local_cluster_size=MasterOffset_t[rankWorld].second;
 	mytimes[0] = MPI_Wtime() - time;
 
 	// Construction arbre des blocs
@@ -275,7 +290,7 @@ HMatrix<LowRankMatrix, T >::HMatrix(const IMatrix<T>& mat,
 template< template<typename> class LowRankMatrix, typename T >
 HMatrix<LowRankMatrix, T >::HMatrix(const IMatrix<T>& mat,
 		 const std::vector<R3>& xt, const std::vector<int>& tabt, const std::vector<double>& gt, const int& reqrank0,  MPI_Comm comm0):nr(mat.nb_rows()),nc(mat.nb_cols()),reqrank(reqrank0){
-		this->build(mat,xt,std::vector<int>(xt.size(),0),tabt,gt,comm0);
+		this->build(mat,xt,std::vector<double>(xt.size(),0),tabt,gt,comm0);
 }
 
 
@@ -292,7 +307,7 @@ HMatrix<LowRankMatrix, T >::HMatrix(const IMatrix<T>& mat,
 template< template<typename> class LowRankMatrix, typename T >
 HMatrix<LowRankMatrix, T >::HMatrix(const IMatrix<T>& mat,
 		 const std::vector<R3>& xt, const std::vector<double>& rt, const std::vector<int>& tabt, const int& reqrank0,  MPI_Comm comm0):nr(mat.nb_rows()),nc(mat.nb_cols()),reqrank(reqrank0), comm(comm0){
-		this->build(mat,xt,rt,tabt,std::vector<int>(xt.size(),1),comm0);
+		this->build(mat,xt,rt,tabt,std::vector<double>(xt.size(),1),comm0);
 }
 
 // Symetric constructor without rt, tabt and gt
@@ -301,7 +316,7 @@ HMatrix<LowRankMatrix, T >::HMatrix(const IMatrix<T>& mat,
 		 const std::vector<R3>& xt, const int& reqrank0,  MPI_Comm comm0):nr(mat.nb_rows()),nc(mat.nb_cols()),reqrank(reqrank0){
 		std::vector<int> tabt(xt.size());
  		std::iota(tabt.begin(),tabt.end(),int(0));
-		this->build(mat,xt,std::vector<int>(xt.size(),0),tabt,std::vector<int>(xt.size(),1),comm0);
+		this->build(mat,xt,std::vector<double>(xt.size(),0),tabt,std::vector<double>(xt.size(),1),comm0);
 }
 
 
@@ -317,7 +332,7 @@ void HMatrix<LowRankMatrix, T >::SetRanksRec(Cluster& t, const unsigned int dept
 	else{
 		t.set_rank(cnt-pow(2,depth));
 		if (t.get_depth() == depth){
-			MasterOffsett[cnt-pow(2,depth)] = std::pair<int,int>(t.get_offset(),t.get_size());
+			MasterOffset_t[cnt-pow(2,depth)] = std::pair<int,int>(t.get_offset(),t.get_size());
 		}
 		if (!t.IsLeaf()){
 			SetRanksRec(t.get_son(0), depth, cnt);
@@ -331,7 +346,7 @@ void HMatrix<LowRankMatrix, T >::SetRanks(Cluster& t){
 	int rankWorld, sizeWorld;
   MPI_Comm_size(comm, &sizeWorld);
   MPI_Comm_rank(comm, &rankWorld);
-  MasterOffsett.resize(sizeWorld);
+  MasterOffset_t.resize(sizeWorld);
 
 	SetRanksRec(t, log2(sizeWorld), 1);
 }
@@ -735,7 +750,7 @@ template< template<typename> class LowRankMatrix, typename T>
 void HMatrix<LowRankMatrix,T >::mvprod_local(const T* const in, T* const out) const{
 
 	double time = MPI_Wtime();
-	std::fill(out,out+MasterOffsett[rankWorld].second,0);
+	std::fill(out,out+MasterOffset_t[rankWorld].second,0);
 
 	// Contribution champ lointain
 	for(int b=0; b<MyFarFieldMats.size(); b++){
@@ -743,7 +758,7 @@ void HMatrix<LowRankMatrix,T >::mvprod_local(const T* const in, T* const out) co
 		int offset_i     = M.get_offset_i();
 		int offset_j     = M.get_offset_j();
 
-		M.add_mvprod(in+offset_j,out+offset_i-MasterOffsett[rankWorld].first);
+		M.add_mvprod(in+offset_j,out+offset_i-MasterOffset_t[rankWorld].first);
 
 	}
 	// Contribution champ proche
@@ -752,45 +767,30 @@ void HMatrix<LowRankMatrix,T >::mvprod_local(const T* const in, T* const out) co
 		int offset_i     = M.get_offset_i();
 		int offset_j     = M.get_offset_j();
 
-		M.add_mvprod(in+offset_j,out+offset_i-MasterOffsett[rankWorld].first);
+		M.add_mvprod(in+offset_j,out+offset_i-MasterOffset_t[rankWorld].first);
 	}
 
 }
 
 
-// template< template<typename> class LowRankMatrix, typename T>
-// void HMatrix<LowRankMatrix,T >::local_to_global(const T* const in, T* const out) const{
-// 	//
-// 	int offset = MasterOffsett[rankWorld].first;
-// 	int size   = MasterOffsett[rankWorld].second;
-//
-// 	// Allgather
-// 	std::vector<T> rcv;
-// 	rcv.resize(nr);
-//
-// 	std::vector<int> recvcounts(sizeWorld);
-// 	std::vector<int>  displs(sizeWorld);
-//
-// 	displs[0] = 0;
-//
-// 	for (int i=0; i<sizeWorld; i++) {
-// 		recvcounts[i] = MasterOffsett[i].second;
-// 		if (i > 0)
-// 			displs[i] = displs[i-1] + recvcounts[i-1];
-// 	}
-//
-// 	MPI_Allgatherv(in, recvcounts[rankWorld], wrapper_mpi<T>::mpi_type(), &(rcv.front()), &(recvcounts.front()), &(displs.front()), wrapper_mpi<T>::mpi_type(), comm);
-//
-// 	// for (int i=0; i<sizeWorld; i++)
-// 	// for (int j=0; j< MasterClusters[i].size(); j++)
-// 	// 	out[MasterClusters[i][j]] = rcv[displs[i]+j];
-//
-//
-// 	// Permutation
-// 	for (int i = 0; i<permt.size();i++){
-// 		out[permt[i]]=rcv[i];
-// 	}
-// }
+template< template<typename> class LowRankMatrix, typename T>
+void HMatrix<LowRankMatrix,T >::local_to_global(const T* const in, T* const out) const{
+	// Allgather
+	std::vector<int> recvcounts(sizeWorld);
+	std::vector<int>  displs(sizeWorld);
+
+	displs[0] = 0;
+
+	for (int i=0; i<sizeWorld; i++) {
+		recvcounts[i] = MasterOffset_t[i].second;
+		if (i > 0)
+			displs[i] = displs[i-1] + recvcounts[i-1];
+	}
+
+	MPI_Allgatherv(in, recvcounts[rankWorld], wrapper_mpi<T>::mpi_type(), out, &(recvcounts.front()), &(displs.front()), wrapper_mpi<T>::mpi_type(), comm);
+
+
+}
 
 
 
@@ -806,17 +806,16 @@ void HMatrix<LowRankMatrix,T >::mvprod_local(const T* const in, T* const out) co
 template< template<typename> class LowRankMatrix, typename T>
 void HMatrix<LowRankMatrix,T >::mvprod_global(const T* const in, T* const out) const{
 	//
-	int offset = MasterOffsett[rankWorld].first;
-	int size   = MasterOffsett[rankWorld].second;
+	int offset = MasterOffset_t[rankWorld].first;
+	int size   = MasterOffset_t[rankWorld].second;
 
 	double time = MPI_Wtime();
 	std::vector<T> in_perm(nc);
 	std::vector<T> out_not_perm(nr);
 
 	// Permutation
-	for (int i = 0; i<perms.size();i++){
-		in_perm[i]=in[perms[i]];
-	}
+	this->source_to_cluster_permutation(in,in_perm.data());
+
 	// mvprod local
 	mvprod_local(in_perm.data(),out_not_perm.data()+offset);
 
@@ -829,7 +828,7 @@ void HMatrix<LowRankMatrix,T >::mvprod_global(const T* const in, T* const out) c
 	displs[0] = 0;
 
 	for (int i=0; i<sizeWorld; i++) {
-		recvcounts[i] = MasterOffsett[i].second;
+		recvcounts[i] = MasterOffset_t[i].second;
 		if (i > 0)
 			displs[i] = displs[i-1] + recvcounts[i-1];
 	}
@@ -839,11 +838,22 @@ void HMatrix<LowRankMatrix,T >::mvprod_global(const T* const in, T* const out) c
 	// MPI_Allgatherv(snd.data(), recvcounts[rankWorld], wrapper_mpi<T>::mpi_type(), out, &(recvcounts.front()), &(displs.front()), wrapper_mpi<T>::mpi_type(), comm);
 
 	// Permutation
-	for (int i = 0; i<permt.size();i++){
-		out[permt[i]]=out_not_perm[i];
+	this->cluster_to_target_permutation(out_not_perm.data(),out);
+}
+
+template< template<typename> class LowRankMatrix, typename T>
+void HMatrix<LowRankMatrix,T >::source_to_cluster_permutation(const T* const in, T* const out) const {
+	for (int i = 0; i<perms.size();i++){
+		out[i]=in[perms[i]];
 	}
 }
 
+template< template<typename> class LowRankMatrix, typename T>
+void HMatrix<LowRankMatrix,T >::cluster_to_target_permutation(const T* const in, T* const out) const{
+	for (int i = 0; i<permt.size();i++){
+		out[permt[i]]=in[i];
+	}
+}
 
 
 
