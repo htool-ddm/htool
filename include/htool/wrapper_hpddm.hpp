@@ -1,7 +1,12 @@
 #ifndef WRAPPER_HPDDM_HPP
 #define WRAPPER_HPDDM_HPP
 
-#define HPDDM_NUMBERING 'C'
+#define HPDDM_NUMBERING 'F'
+#define HPDDM_SCHWARZ 1
+#define HPDDM_FETI 0
+#define HPDDM_BDD 0
+#define LAPACKSUB
+#define DMUMPS
 #include <HPDDM.hpp>
 #include "hmatrix.hpp"
 #include "matrix.hpp"
@@ -70,25 +75,41 @@ void solve(const HMatrix<LowRankMatrix,T>& HA,const T* const rhs, T* const x){
 
 }
 
-
-
+template<template<typename> class LowRankMatrix, typename T>
+class DDM;
 
 template< template<typename> class LowRankMatrix, typename T>
 class HPDDMDense : public HpDense<T> {
 private:
   const HMatrix<LowRankMatrix,T>& HA;
+  std::vector<T>* in_global;
 
 public:
 
-  HPDDMDense(const HMatrix<LowRankMatrix,T>& A):HA(A){}
+  HPDDMDense(const HMatrix<LowRankMatrix,T>& A):HA(A){in_global = new std::vector<T> (HA.nb_cols());}
+  ~HPDDMDense(){delete in_global;}
 
   void GMV(const T* const in, T* const out, const int& mu = 1) const {
-    std::cout << "àk" << std::endl;
-    HA.mvprod_local(in,out);
+    // All gather
+    HA.local_to_global(in, in_global->data());
+
+
+    HA.mvprod_local(in_global->data(),out);
     this->super::scaledExchange(out, mu);
 
   }
 
+  void exchange(T* const out, const int& mu = 1){
+    MPI_Barrier(HA.get_comm());
+std::cout << "TEST  2"<<std::endl;
+    MPI_Barrier(HA.get_comm());
+    this->super::scaledExchange(out, mu);
+    MPI_Barrier(HA.get_comm());
+std::cout << "TEST  3"<<std::endl;
+    MPI_Barrier(HA.get_comm());
+  }
+
+  friend class DDM<LowRankMatrix,T>;
 
 
 };

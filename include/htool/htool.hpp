@@ -11,7 +11,7 @@
 # endif
 #endif
 
-#include "schwarz.hpp"
+// #include "schwarz.hpp"
 #include "blas.hpp"
 #include "cluster.hpp"
 #include "export.hpp"

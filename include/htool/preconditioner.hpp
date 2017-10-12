@@ -8,12 +8,9 @@
 
 namespace htool{
 
-
 template<template<typename> class LowRankMatrix, typename T>
 class DDM{
 private:
-  Preconditioner(const Preconditioner&) = default; // copy constructor
-  Preconditioner& operator=(const Preconditioner&) = default; // copy assignement operator
 
   int n;
   int n_inside;
@@ -27,44 +24,6 @@ private:
   std::vector<double> D;
   MPI_Comm comm;
 
-  Preconditioner() = delete;
-  Preconditioner(int n0):n_local(n0){}
-
-
-  // void synchronize(bool sum){
-  //
-  //   fill(vec_ovr.begin()+n_inside,vec_ovr.end(),0);
-  //   for (int i=0;i<neighbors.size();i++){
-  //     for (int j=0;j<intersections[i].size();j++){
-  //       snd[i][j]=vec_ovr[intersections[i][j]];
-  //       // if (!sum && intersections[i][j]>=n_inside)  snd[i][j]=0;
-  //     }
-  //   }
-  //
-  //   // Communications
-	// 	std::vector<MPI_Request> rq(2*neighbors.size());
-  //
-  //   for (int i=0;i<neighbors.size();i++){
-  //
-  //     MPI_Isend( snd[i].data(), snd[i].size(), wrapper_mpi<T>::mpi_type(), neighbors[i], 0, comm, &(rq[i]));
-  //
-	// 	  MPI_Irecv( rcv[i].data(), rcv[i].size(), wrapper_mpi<T>::mpi_type(), neighbors[i], MPI_ANY_TAG, comm, &(rq[i+neighbors.size()]));
-  //   }
-  //   MPI_Waitall(rq.size(),rq.data(),MPI_STATUSES_IGNORE);
-  //
-  //   for (int i=0;i<neighbors.size();i++){
-  //     for (int j=0;j<intersections[i].size();j++){
-  //       // if (sum){
-  //         vec_ovr[intersections[i][j]]+=rcv[i][j];
-  //       // }
-  //       // else {//if (intersections[i][j]>=n_inside){
-  //       //   vec_ovr[intersections[i][j]]+=rcv[i][j];
-  //       //   // if (rcv[i][j].real()==0) std::cout << "pouet "<< std::endl;
-  //       // }
-  //     }
-  //   }
-  //
-  // }
 
 public:
   DDM(const IMatrix<T>& mat0, const HMatrix<LowRankMatrix,T>& hmat_0,
@@ -91,13 +50,6 @@ public:
     }
 
 
-// std::cout <<s count <<" "<<n<< std::endl;
-    // for (int i=0;i<n;i++){
-    //   for (int j=0;j<n;j++){
-    //     fact[renum[i]+renum[j]*n]=mat0.get_coef(ovr_subdomain_to_global0[i],ovr_subdomain_to_global0[j]);
-    //   }
-    // }
-
     intersections.resize(neighbors.size());
     for (int i=0;i<neighbors.size();i++){
       intersections[i].resize(intersections0[i].size());
@@ -105,69 +57,88 @@ public:
         intersections[i][j]=renum[intersections0[i][j]];
       }
     }
-
-    snd.resize(neighbors.size());
-    rcv.resize(neighbors.size());
-
-    for (int i=0;i<neighbors.size();i++){
-      snd[i].resize(intersections[i].size());
-      rcv[i].resize(intersections[i].size());
+    MPI_Barrier(MPI_COMM_WORLD);
+    if (hmat_0.get_rankworld()==0){
+      std::cout << n << std::endl;
+      std::cout << n_inside << std::endl;
+      std::cout << intersections[0].size() << std::endl;
+      for (int i=0 ; i<intersections[0].size();i++){
+        std::cout << intersections[0][i] << " ";
+      }
+      for (int i =0;i<neighbors.size();i++){
+        std::cout << neighbors[i] << std::endl;
+      }
+      std::cout<<std::endl;
+      std::cout<<std::endl;
     }
+    MPI_Barrier(MPI_COMM_WORLD);
+    if (hmat_0.get_rankworld()==1){
+      std::cout << n << std::endl;
+      std::cout << n_inside << std::endl;
+      std::cout << intersections[0].size() << std::endl;
+      for (int i=0 ; i<intersections[0].size();i++){
+        std::cout << intersections[0][i] << " ";
+      }
+      for (int i =0;i<neighbors.size();i++){
+        std::cout << neighbors[i] << std::endl;
+      }
+      std::cout<<std::endl;
+      std::cout<<std::endl;
+    }
+    MPI_Barrier(MPI_COMM_WORLD);
+
 
     bool sym=false;
     mat_loc= mat0.get_submatrix(renum_to_global,renum_to_global).get_mat();
     hpddm_op.initialize(n, sym, mat_loc.data(), neighbors, intersections);
 
-    fill(D.begin(),D.begin()+n_inside-1,1);
+    fill(D.begin(),D.begin()+n_inside,1);
     fill(D.begin()+n_inside,D.end(),0);
 
     hpddm_op.super::initialize(D.data());
     hpddm_op.callNumfact();
-    std::vector<T> x_ref(n,1),f_global(n,1);
-    T* const f = &(f_global[0]);
-    T* sol = &(x_ref[0]);
-    HPDDM::IterativeMethod::solve(hpddm_op, f, sol, 1,comm);
 
-template<typename T>
-class Identity : public Preconditioner<T>{
-public:
-  Identity(int n0):Preconditioner<T>(n0){};
-  void apply(const T* const in, T* const out){
-    std::copy_n(in, this->n_local, out);
+
   }
-  // void num_fact(){
-  //   const char l='L';
-  //   int lda=n;
-  //   int info;
-  //   Lapack<T>::potrf(&l,&n,fact.data(),&lda,&info);
-  // }
 
-  // void apply(const T* const in, T* const out) {
-  //
-  //   // Without overlap to with overlap
-  //   std::copy_n(in,n_inside,vec_ovr.data());
-  //   // std::fill(vec_ovr.begin(),vec_ovr.end(),0);
-  //   // std::fill_n(vec_ovr.begin(),n_inside,1);
-  //   synchronize(false);
-  //   // std::cout << vec_ovr<<std::endl;
-  //   //
-  //   const char l='L';
-  //   int lda=n;
-  //   int ldb=n;
-  //   int nrhs =1 ;
-  //   int info;
-  //
-  //   Lapack<T>::potrs(&l,&n,&nrhs,fact.data(),&lda,vec_ovr.data(),&ldb,&info);
-  //
-  //   //
-  //   synchronize(true);
-  //   std::copy_n(vec_ovr.data(),n_inside,out);
-  //
-  // }
+  void solve(const T* const rhs, T* const x){
+    //
+    int rankWorld = hpddm_op.HA.get_rankworld();
+    int sizeWorld = hpddm_op.HA.get_sizeworld();
+    int offset = hpddm_op.HA.get_MasterOffset_t()[rankWorld].first;
+    int size   = hpddm_op.HA.get_MasterOffset_t()[rankWorld].second;
+
+    //
+    std::vector<T> rhs_perm(hpddm_op.HA.nb_cols());
+    std::vector<T> x_local(size);
+std::cout << n << " "<< n_inside<<" "<<size<<std::endl;
+    // Permutation
+    hpddm_op.HA.source_to_cluster_permutation(rhs,rhs_perm.data());
+    MPI_Barrier(comm);
+std::cout << "TEST  1"<<std::endl;
+    MPI_Barrier(comm);
+    // Local rhs
+    std::vector<T> local_rhs(n,0);
+    std::copy_n(rhs_perm.begin()+offset,n_inside,local_rhs.begin());
+    hpddm_op.exchange(local_rhs.data(), 1);
+
+    // T* sol = &(x_ref[0]);
+    HPDDM::IterativeMethod::solve(hpddm_op, local_rhs.data(), x_local.data(), 1,comm);
+    // Solve
+    // HPDDM::IterativeMethod::solve(A_HPDDM, rhs_perm.data()+offset, x_local.data(), 1,HA.get_comm());
+    for (size_t i = 0; i < x_local.size(); i++) {
+      std::cout << x_local[i] << std::endl;
+    }
+    // Local to global
+    hpddm_op.HA.local_to_global(x_local.data(),hpddm_op.in_global->data());
+
+    // Permutation
+    hpddm_op.HA.cluster_to_target_permutation(hpddm_op.in_global->data(),x);
+
+  }
 
 
 };
-
 
 }
 #endif
