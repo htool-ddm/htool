@@ -109,6 +109,23 @@ public:
 	// Constructor without radius, tab and mass
 	HMatrix(const IMatrix<T>&, const std::vector<R3>& xt, const int& reqrank=-1, MPI_Comm comm=MPI_COMM_WORLD); // To be used with one different clusters
 
+	// Build with precomputed clusters
+	void build(const IMatrix<T>& mat, const Cluster& t, const std::vector<R3>& xt, const std::vector<int>& tabt, const Cluster& s, const std::vector<R3>&xs, const std::vector<int>& tabs, MPI_Comm comm=MPI_COMM_WORLD); // To be used with two different clusters
+
+	// Full constructor with precomputed clusters
+	HMatrix(const IMatrix<T>&, const Cluster& t, const std::vector<R3>& xt, const std::vector<int>& tabt, const std::vector<int>& permt, const Cluster& s, const std::vector<R3>&xs, const std::vector<int>& tabs, const std::vector<int>& perms, const int& reqrank=-1, MPI_Comm comm=MPI_COMM_WORLD); // To be used with two different clusters
+
+	// Constructor without tab and with precomputed clusters
+	HMatrix(const IMatrix<T>&, const Cluster& t, const std::vector<R3>& xt, const std::vector<int>& permt, const Cluster& s, const std::vector<R3>&xs, const std::vector<int>& perms, const int& reqrank=-1, MPI_Comm comm=MPI_COMM_WORLD); // To be used with two different clusters
+
+	// Symetric build with precomputed cluster
+	void build(const IMatrix<T>& mat, const Cluster& t, const std::vector<R3>& xt, const std::vector<int>& tabt, MPI_Comm comm=MPI_COMM_WORLD); // To be used with one different clusters
+
+	// Full symetric constructor with precomputed cluster
+	HMatrix(const IMatrix<T>& mat, const Cluster& t, const std::vector<R3>& xt, const std::vector<int>& tabt, const std::vector<int>& permt, const int& reqrank=-1, MPI_Comm comm=MPI_COMM_WORLD); // To be used with one different clusters
+
+	// Constructor without tab and with precomputed cluster
+	HMatrix(const IMatrix<T>&, const Cluster& t, const std::vector<R3>& xt, const std::vector<int>& permt, const int& reqrank=-1, MPI_Comm comm=MPI_COMM_WORLD); // To be used with one different clusters
 
   // Destructor
 	~HMatrix() {
@@ -133,7 +150,8 @@ public:
 	std::vector<std::pair<int,int>> get_MasterOffset_s() const {return MasterOffset_s;}
 	int get_rankworld() const {return rankWorld;}
 	int get_sizeworld() const {return sizeWorld;}
-
+	std::vector<int> get_permt() const {return permt;}
+	std::vector<int> get_perms() const {return perms;}
 
 	//
 	void compute_diag_block(T* diag_block);
@@ -202,26 +220,26 @@ void HMatrix<LowRankMatrix, T >::build(const IMatrix<T>& mat, const std::vector<
 
 // Full constructor
 template< template<typename> class LowRankMatrix, typename T >
-HMatrix<LowRankMatrix, T >::HMatrix(const IMatrix<T>& mat, const std::vector<R3>& xt, const std::vector<double>& rt, const std::vector<int>& tabt, const std::vector<double>& gt, const std::vector<R3>&xs, const std::vector<double>& rs, const std::vector<int>& tabs, const std::vector<double>& gs, const int& reqrank0, MPI_Comm comm0): nr(mat.nb_rows()),nc(mat.nb_cols()), reqrank(reqrank0) {
+HMatrix<LowRankMatrix, T >::HMatrix(const IMatrix<T>& mat, const std::vector<R3>& xt, const std::vector<double>& rt, const std::vector<int>& tabt, const std::vector<double>& gt, const std::vector<R3>&xs, const std::vector<double>& rs, const std::vector<int>& tabs, const std::vector<double>& gs, const int& reqrank0, MPI_Comm comm0): nr(mat.nb_rows()),nc(mat.nb_cols()), permt(mat.nb_rows()), perms(mat.nb_cols()), reqrank(reqrank0) {
 	this->build(mat, xt, rt, tabt, gt, xs, rs, tabs, gs,comm0);
 }
 
 // Constructor without rt and rs
 template< template<typename> class LowRankMatrix, typename T >
-HMatrix<LowRankMatrix, T >::HMatrix(const IMatrix<T>& mat, const std::vector<R3>& xt, const std::vector<int>& tabt, const std::vector<double>& gt, const std::vector<R3>&xs, const std::vector<int>& tabs, const std::vector<double>& gs, const int& reqrank0, MPI_Comm comm0): nr(mat.nb_rows()),nc(mat.nb_cols()), reqrank(reqrank0) {
+HMatrix<LowRankMatrix, T >::HMatrix(const IMatrix<T>& mat, const std::vector<R3>& xt, const std::vector<int>& tabt, const std::vector<double>& gt, const std::vector<R3>&xs, const std::vector<int>& tabs, const std::vector<double>& gs, const int& reqrank0, MPI_Comm comm0): nr(mat.nb_rows()),nc(mat.nb_cols()), permt(mat.nb_rows()), perms(mat.nb_cols()), reqrank(reqrank0) {
 
 	this->build(mat, xt, std::vector<double>(xt.size(),0), tabt, gt, xs, std::vector<double>(xs.size(),0), tabs, gs, comm0);
 }
 
 // Constructor without gt and gs
 template< template<typename> class LowRankMatrix, typename T >
-HMatrix<LowRankMatrix, T >::HMatrix(const IMatrix<T>& mat, const std::vector<R3>& xt, const std::vector<double>& rt, const std::vector<int>& tabt, const std::vector<R3>&xs, const std::vector<double>& rs, const std::vector<int>& tabs, const int& reqrank0, MPI_Comm comm0): nr(mat.nb_rows()),nc(mat.nb_cols()), reqrank(reqrank0) {
+HMatrix<LowRankMatrix, T >::HMatrix(const IMatrix<T>& mat, const std::vector<R3>& xt, const std::vector<double>& rt, const std::vector<int>& tabt, const std::vector<R3>&xs, const std::vector<double>& rs, const std::vector<int>& tabs, const int& reqrank0, MPI_Comm comm0): nr(mat.nb_rows()),nc(mat.nb_cols()), permt(mat.nb_rows()), perms(mat.nb_cols()), reqrank(reqrank0) {
 	this->build(mat, xt, rt, tabt, std::vector<double>(xt.size(),1), xs, rs, tabs, std::vector<double>(xs.size(),1), comm0);
 }
 
 // Constructor without tabt and tabs
 template< template<typename> class LowRankMatrix, typename T >
-HMatrix<LowRankMatrix, T >::HMatrix(const IMatrix<T>& mat, const std::vector<R3>& xt, const std::vector<double>& rt, const std::vector<double>& gt, const std::vector<R3>&xs, const std::vector<double>& rs, const std::vector<double>& gs, const int& reqrank0, MPI_Comm comm0): nr(mat.nb_rows()),nc(mat.nb_cols()), reqrank(reqrank0) {
+HMatrix<LowRankMatrix, T >::HMatrix(const IMatrix<T>& mat, const std::vector<R3>& xt, const std::vector<double>& rt, const std::vector<double>& gt, const std::vector<R3>&xs, const std::vector<double>& rs, const std::vector<double>& gs, const int& reqrank0, MPI_Comm comm0): nr(mat.nb_rows()),nc(mat.nb_cols()), permt(mat.nb_rows()), perms(mat.nb_cols()), reqrank(reqrank0) {
 	std::vector<int> tabt(xt.size()), tabs(xs.size());
 	std::iota(tabt.begin(),tabt.end(),int(0));
 	std::iota(tabs.begin(),tabs.end(),int(0));
@@ -230,7 +248,7 @@ HMatrix<LowRankMatrix, T >::HMatrix(const IMatrix<T>& mat, const std::vector<R3>
 
 // Constructor without radius, mass and tab
 template< template<typename> class LowRankMatrix, typename T >
-HMatrix<LowRankMatrix, T >::HMatrix(const IMatrix<T>& mat, const std::vector<R3>& xt, const std::vector<R3>& xs, const int& reqrank0, MPI_Comm comm0): nr(mat.nb_rows()),nc(mat.nb_cols()), reqrank(reqrank0) {
+HMatrix<LowRankMatrix, T >::HMatrix(const IMatrix<T>& mat, const std::vector<R3>& xt, const std::vector<R3>& xs, const int& reqrank0, MPI_Comm comm0): nr(mat.nb_rows()),nc(mat.nb_cols()), permt(mat.nb_rows()), perms(mat.nb_cols()), reqrank(reqrank0) {
 	std::vector<int> tabt(xt.size()), tabs(xs.size());
 	std::iota(tabt.begin(),tabt.end(),int(0));
 	std::iota(tabs.begin(),tabs.end(),int(0));
@@ -252,7 +270,7 @@ void HMatrix<LowRankMatrix, T >::build(const IMatrix<T>& mat,
 	double time = MPI_Wtime();
 	Cluster t(xt,rt,tabt,gt,permt);
   perms=permt; // bof
-	assert(std::pow(2,t.get_min_depth())>sizeWorld);
+	assert(std::pow(2,t.get_min_depth())>=sizeWorld);
 	SetRanks(t);
 	local_cluster_size=MasterOffset_t[rankWorld].second;
 	mytimes[0] = MPI_Wtime() - time;
@@ -289,7 +307,7 @@ HMatrix<LowRankMatrix, T >::HMatrix(const IMatrix<T>& mat,
 // Symetric constructor without rt
 template< template<typename> class LowRankMatrix, typename T >
 HMatrix<LowRankMatrix, T >::HMatrix(const IMatrix<T>& mat,
-		 const std::vector<R3>& xt, const std::vector<int>& tabt, const std::vector<double>& gt, const int& reqrank0,  MPI_Comm comm0):nr(mat.nb_rows()),nc(mat.nb_cols()),reqrank(reqrank0){
+		 const std::vector<R3>& xt, const std::vector<int>& tabt, const std::vector<double>& gt, const int& reqrank0,  MPI_Comm comm0):nr(mat.nb_rows()),nc(mat.nb_cols()), permt(mat.nb_rows()),reqrank(reqrank0){
 		this->build(mat,xt,std::vector<double>(xt.size(),0),tabt,gt,comm0);
 }
 
@@ -297,7 +315,7 @@ HMatrix<LowRankMatrix, T >::HMatrix(const IMatrix<T>& mat,
 // Symetric constructor without tabt
 template< template<typename> class LowRankMatrix, typename T >
 HMatrix<LowRankMatrix, T >::HMatrix(const IMatrix<T>& mat,
-		 const std::vector<R3>& xt, const std::vector<double>& rt, const std::vector<double>& gt, const int& reqrank0,  MPI_Comm comm0):nr(mat.nb_rows()),nc(mat.nb_cols()),reqrank(reqrank0){
+		 const std::vector<R3>& xt, const std::vector<double>& rt, const std::vector<double>& gt, const int& reqrank0,  MPI_Comm comm0):nr(mat.nb_rows()),nc(mat.nb_cols()),permt(mat.nb_rows()),reqrank(reqrank0){
 		std::vector<int> tabt(xt.size());
  		std::iota(tabt.begin(),tabt.end(),int(0));
 		this->build(mat,xt,rt,tabt,gt,comm0);
@@ -306,19 +324,128 @@ HMatrix<LowRankMatrix, T >::HMatrix(const IMatrix<T>& mat,
 // Symetric constructor without gt
 template< template<typename> class LowRankMatrix, typename T >
 HMatrix<LowRankMatrix, T >::HMatrix(const IMatrix<T>& mat,
-		 const std::vector<R3>& xt, const std::vector<double>& rt, const std::vector<int>& tabt, const int& reqrank0,  MPI_Comm comm0):nr(mat.nb_rows()),nc(mat.nb_cols()),reqrank(reqrank0), comm(comm0){
+		 const std::vector<R3>& xt, const std::vector<double>& rt, const std::vector<int>& tabt, const int& reqrank0,  MPI_Comm comm0):nr(mat.nb_rows()),nc(mat.nb_cols()),permt(mat.nb_rows()),reqrank(reqrank0), comm(comm0){
 		this->build(mat,xt,rt,tabt,std::vector<double>(xt.size(),1),comm0);
 }
 
 // Symetric constructor without rt, tabt and gt
 template< template<typename> class LowRankMatrix, typename T >
 HMatrix<LowRankMatrix, T >::HMatrix(const IMatrix<T>& mat,
-		 const std::vector<R3>& xt, const int& reqrank0,  MPI_Comm comm0):nr(mat.nb_rows()),nc(mat.nb_cols()),reqrank(reqrank0){
+		 const std::vector<R3>& xt, const int& reqrank0,  MPI_Comm comm0):nr(mat.nb_rows()),nc(mat.nb_cols()),permt(mat.nb_rows()),reqrank(reqrank0){
 		std::vector<int> tabt(xt.size());
  		std::iota(tabt.begin(),tabt.end(),int(0));
 		this->build(mat,xt,std::vector<double>(xt.size(),0),tabt,std::vector<double>(xt.size(),1),comm0);
 }
 
+
+// build with input cluster
+template< template<typename> class LowRankMatrix, typename T >
+void HMatrix<LowRankMatrix, T >::build(const IMatrix<T>& mat, const Cluster& t, const std::vector<R3>& xt, const std::vector<int>& tabt, const Cluster& s, const std::vector<R3>&xs, const std::vector<int>& tabs, MPI_Comm comm0){
+
+	assert( mat.nb_rows()==tabt.size() && mat.nb_cols()==tabs.size() );
+
+	MPI_Comm_dup(comm0,&comm);
+  MPI_Comm_size(comm, &sizeWorld);
+  MPI_Comm_rank(comm, &rankWorld);
+  std::vector<double> mytimes(4), maxtime(4), meantime(4);
+
+	// Construction arbre des paquets
+	double time = MPI_Wtime();
+	assert(std::pow(2,t.get_min_depth())>sizeWorld);
+	SetRanks(t);
+	local_cluster_size=MasterOffset_t[rankWorld].second;
+
+	mytimes[0] = MPI_Wtime() - time;
+
+	// Construction arbre des blocs
+	time = MPI_Wtime();
+	Block* B = BuildBlockTree(t,s);
+	if (B != NULL) Tasks.push_back(B);
+	mytimes[1] = MPI_Wtime() - time;
+
+	// Repartition des blocs sur les processeurs
+	time = MPI_Wtime();
+	ScatterTasks();
+	mytimes[2] = MPI_Wtime() - time;
+
+	// Assemblage des sous-matrices
+	time = MPI_Wtime();
+	ComputeBlocks(mat,xt,tabt,xs,tabs);
+	mytimes[3] = MPI_Wtime() - time;
+
+	// Stats
+	ComputeStats(mytimes);
+}
+
+
+// Full constructor with precomputed clusters
+template< template<typename> class LowRankMatrix, typename T >
+HMatrix<LowRankMatrix, T >::HMatrix(const IMatrix<T>& mat, const Cluster& t, const std::vector<R3>& xt, const std::vector<int>& tabt, const std::vector<int>& permt0, const Cluster& s, const std::vector<R3>&xs, const std::vector<int>& tabs, const std::vector<int>& perms0, const int& reqrank0, MPI_Comm comm0): nr(mat.nb_rows()),nc(mat.nb_cols()), permt(permt0), perms(perms0), reqrank(reqrank0) {
+	this->build(mat, t, xt, tabt, s, xs, tabs, comm0);
+}
+
+// Constructor without tabt and tabs
+template< template<typename> class LowRankMatrix, typename T >
+HMatrix<LowRankMatrix, T >::HMatrix(const IMatrix<T>& mat, const Cluster& t, const std::vector<R3>& xt, const std::vector<int>& permt0, const Cluster& s, const std::vector<R3>&xs, const std::vector<int>& perms0, const int& reqrank0, MPI_Comm comm0): nr(mat.nb_rows()),nc(mat.nb_cols()), permt(permt0), perms(perms0), reqrank(reqrank0) {
+	std::vector<int> tabt(xt.size()), tabs(xs.size());
+	std::iota(tabt.begin(),tabt.end(),int(0));
+	std::iota(tabs.begin(),tabs.end(),int(0));
+	this->build(mat, t, xt, tabt, s, xs, tabs, comm0);
+}
+
+// Symetric build
+template< template<typename> class LowRankMatrix, typename T >
+void HMatrix<LowRankMatrix, T >::build(const IMatrix<T>& mat,
+		 const Cluster& t, const std::vector<R3>& xt, const std::vector<int>& tabt, MPI_Comm comm0){
+	assert( mat.nb_rows()==tabt.size() && mat.nb_cols()==tabt.size() );
+
+	MPI_Comm_dup(comm0,&comm);
+	MPI_Comm_size(comm, &sizeWorld);
+  MPI_Comm_rank(comm, &rankWorld);
+  std::vector<double> mytimes(4), maxtime(4), meantime(4);
+
+	// Construction arbre des paquets
+	double time = MPI_Wtime();
+	assert(std::pow(2,t.get_min_depth())>sizeWorld);
+	SetRanks(t);
+	local_cluster_size=MasterOffset_t[rankWorld].second;
+	mytimes[0] = MPI_Wtime() - time;
+
+	// Construction arbre des blocs
+	time = MPI_Wtime();
+	Block* B = BuildBlockTree(t,t);
+	if (B != NULL) Tasks.push_back(B);
+	mytimes[1] = MPI_Wtime() - time;
+
+	// Repartition des blocs sur les processeurs
+	time = MPI_Wtime();
+	ScatterTasks();
+	mytimes[2] = MPI_Wtime() - time;
+
+	// Assemblage des sous-matrices
+	time = MPI_Wtime();
+	ComputeBlocks(mat,xt,tabt,xt,tabt);
+	mytimes[3] = MPI_Wtime() - time;
+
+	// Stats info
+	ComputeStats(mytimes);
+
+}
+
+// Full symetric constructor
+template< template<typename> class LowRankMatrix, typename T >
+HMatrix<LowRankMatrix, T >::HMatrix(const IMatrix<T>& mat, const Cluster& t, const std::vector<R3>& xt, const std::vector<int>& tabt, const std::vector<int>& permt0, const int& reqrank0,  MPI_Comm comm0):nr(mat.nb_rows()),nc(mat.nb_cols()), permt(permt0), perms(permt0), reqrank(reqrank0){
+
+		this->build(mat,t,xt,tabt,comm0);
+}
+
+// Symetric constructor without tabt
+template< template<typename> class LowRankMatrix, typename T >
+HMatrix<LowRankMatrix, T >::HMatrix(const IMatrix<T>& mat, const Cluster& t, const std::vector<R3>& xt, const std::vector<int>& permt0, const int& reqrank0,  MPI_Comm comm0):nr(mat.nb_rows()),nc(mat.nb_cols()), permt(permt0), perms(permt0), reqrank(reqrank0){
+		std::vector<int> tabt(xt.size());
+ 		std::iota(tabt.begin(),tabt.end(),int(0));
+		this->build(mat,t,xt,tabt,comm0);
+}
 
 
 // Rank tags
