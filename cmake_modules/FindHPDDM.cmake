@@ -20,3 +20,7 @@ find_package_handle_standard_args(HPDDM DEFAULT_MSG
                                   HPDDM_INCLUDE_DIR)
 
 mark_as_advanced(HPDDM_INCLUDE_DIR)
+
+if (HPDDM_FOUND)
+    set(HPDDM_INCLUDE_DIRS ${HPDDM_INCLUDE_DIR} )
+endif()
