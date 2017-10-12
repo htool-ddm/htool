@@ -110,7 +110,7 @@ add_library(htool INTERFACE)
 target_include_directories(htool INTERFACE
 					${htool_include_dir}
 					${MPI_INCLUDE_PATH}
-					${HPDDM_INCLUDE_DIR})
+				${HPDDM_INCLUDE_DIRS})
 target_link_libraries(htool INTERFACE
 					${MPI_LIBRARIES}
 					${BLAS_LIBRARIES}
