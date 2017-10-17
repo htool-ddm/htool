@@ -57,35 +57,35 @@ public:
         intersections[i][j]=renum[intersections0[i][j]];
       }
     }
-    MPI_Barrier(MPI_COMM_WORLD);
-    if (hmat_0.get_rankworld()==0){
-      std::cout << n << std::endl;
-      std::cout << n_inside << std::endl;
-      std::cout << intersections[0].size() << std::endl;
-      for (int i=0 ; i<intersections[0].size();i++){
-        std::cout << intersections[0][i] << " ";
-      }
-      for (int i =0;i<neighbors.size();i++){
-        std::cout << neighbors[i] << std::endl;
-      }
-      std::cout<<std::endl;
-      std::cout<<std::endl;
-    }
-    MPI_Barrier(MPI_COMM_WORLD);
-    if (hmat_0.get_rankworld()==1){
-      std::cout << n << std::endl;
-      std::cout << n_inside << std::endl;
-      std::cout << intersections[0].size() << std::endl;
-      for (int i=0 ; i<intersections[0].size();i++){
-        std::cout << intersections[0][i] << " ";
-      }
-      for (int i =0;i<neighbors.size();i++){
-        std::cout << neighbors[i] << std::endl;
-      }
-      std::cout<<std::endl;
-      std::cout<<std::endl;
-    }
-    MPI_Barrier(MPI_COMM_WORLD);
+    // MPI_Barrier(MPI_COMM_WORLD);
+    // if (hmat_0.get_rankworld()==0){
+    //   std::cout << n << std::endl;
+    //   std::cout << n_inside << std::endl;
+    //   std::cout << intersections[0].size() << std::endl;
+    //   for (int i=0 ; i<intersections[0].size();i++){
+    //     std::cout << intersections[0][i] << " ";
+    //   }
+    //   for (int i =0;i<neighbors.size();i++){
+    //     std::cout << neighbors[i] << std::endl;
+    //   }
+    //   std::cout<<std::endl;
+    //   std::cout<<std::endl;
+    // }
+    // MPI_Barrier(MPI_COMM_WORLD);
+    // if (hmat_0.get_rankworld()==1){
+    //   std::cout << n << std::endl;
+    //   std::cout << n_inside << std::endl;
+    //   std::cout << intersections[0].size() << std::endl;
+    //   for (int i=0 ; i<intersections[0].size();i++){
+    //     std::cout << intersections[0][i] << " ";
+    //   }
+    //   for (int i =0;i<neighbors.size();i++){
+    //     std::cout << neighbors[i] << std::endl;
+    //   }
+    //   std::cout<<std::endl;
+    //   std::cout<<std::endl;
+    // }
+    // MPI_Barrier(MPI_COMM_WORLD);
 
 
     bool sym=false;
@@ -95,7 +95,7 @@ public:
     fill(D.begin(),D.begin()+n_inside,1);
     fill(D.begin()+n_inside,D.end(),0);
 
-    hpddm_op.super::initialize(D.data());
+    hpddm_op.HPDDMDense<LowRankMatrix,T>::super::super::initialize(D.data());
     hpddm_op.callNumfact();
 
 

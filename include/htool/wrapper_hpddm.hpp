@@ -85,6 +85,7 @@ private:
   std::vector<T>* in_global;
 
 public:
+  typedef  HpDense<T> super;
 
   HPDDMDense(const HMatrix<LowRankMatrix,T>& A):HA(A){in_global = new std::vector<T> (HA.nb_cols());}
   ~HPDDMDense(){delete in_global;}
@@ -95,15 +96,15 @@ public:
 
 
     HA.mvprod_local(in_global->data(),out);
-    this->super::scaledExchange(out, mu);
-
+    this->scaledExchange(out, mu);
+// std::copy_n(in, this->getDof(), out);
   }
 
   void exchange(T* const out, const int& mu = 1){
     MPI_Barrier(HA.get_comm());
 std::cout << "TEST  2"<<std::endl;
     MPI_Barrier(HA.get_comm());
-    this->super::scaledExchange(out, mu);
+    this->template scaledExchange<true>(out, mu);
     MPI_Barrier(HA.get_comm());
 std::cout << "TEST  3"<<std::endl;
     MPI_Barrier(HA.get_comm());
