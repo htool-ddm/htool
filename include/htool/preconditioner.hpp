@@ -57,35 +57,6 @@ public:
         intersections[i][j]=renum[intersections0[i][j]];
       }
     }
-    // MPI_Barrier(MPI_COMM_WORLD);
-    // if (hmat_0.get_rankworld()==0){
-    //   std::cout << n << std::endl;
-    //   std::cout << n_inside << std::endl;
-    //   std::cout << intersections[0].size() << std::endl;
-    //   for (int i=0 ; i<intersections[0].size();i++){
-    //     std::cout << intersections[0][i] << " ";
-    //   }
-    //   for (int i =0;i<neighbors.size();i++){
-    //     std::cout << neighbors[i] << std::endl;
-    //   }
-    //   std::cout<<std::endl;
-    //   std::cout<<std::endl;
-    // }
-    // MPI_Barrier(MPI_COMM_WORLD);
-    // if (hmat_0.get_rankworld()==1){
-    //   std::cout << n << std::endl;
-    //   std::cout << n_inside << std::endl;
-    //   std::cout << intersections[0].size() << std::endl;
-    //   for (int i=0 ; i<intersections[0].size();i++){
-    //     std::cout << intersections[0][i] << " ";
-    //   }
-    //   for (int i =0;i<neighbors.size();i++){
-    //     std::cout << neighbors[i] << std::endl;
-    //   }
-    //   std::cout<<std::endl;
-    //   std::cout<<std::endl;
-    // }
-    // MPI_Barrier(MPI_COMM_WORLD);
 
 
     bool sym=false;
@@ -110,25 +81,19 @@ public:
 
     //
     std::vector<T> rhs_perm(hpddm_op.HA.nb_cols());
-    std::vector<T> x_local(size);
-std::cout << n << " "<< n_inside<<" "<<size<<std::endl;
+    std::vector<T> x_local(n);
+
     // Permutation
     hpddm_op.HA.source_to_cluster_permutation(rhs,rhs_perm.data());
-    MPI_Barrier(comm);
-std::cout << "TEST  1"<<std::endl;
-    MPI_Barrier(comm);
+
     // Local rhs
     std::vector<T> local_rhs(n,0);
     std::copy_n(rhs_perm.begin()+offset,n_inside,local_rhs.begin());
     hpddm_op.exchange(local_rhs.data(), 1);
 
-    // T* sol = &(x_ref[0]);
-    HPDDM::IterativeMethod::solve(hpddm_op, local_rhs.data(), x_local.data(), 1,comm);
     // Solve
-    // HPDDM::IterativeMethod::solve(A_HPDDM, rhs_perm.data()+offset, x_local.data(), 1,HA.get_comm());
-    for (size_t i = 0; i < x_local.size(); i++) {
-      std::cout << x_local[i] << std::endl;
-    }
+    HPDDM::IterativeMethod::solve(hpddm_op, local_rhs.data(), x_local.data(), 1,comm);
+
     // Local to global
     hpddm_op.HA.local_to_global(x_local.data(),hpddm_op.in_global->data());
 
