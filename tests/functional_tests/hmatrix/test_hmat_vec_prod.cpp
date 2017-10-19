@@ -27,9 +27,10 @@ public:
 };
 
 
-int main(int argc, char const *argv[]) {
-  // Initialize the MPI environment
-  MPI_Init(NULL, NULL);
+int main(int argc, char *argv[]) {
+
+	// Initialize the MPI environment
+	MPI_Init(&argc,&argv);
 
   // Get the number of processes
   int size;

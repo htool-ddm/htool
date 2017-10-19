@@ -10,7 +10,7 @@ using namespace htool;
 
 
 
-int main(int argc, char const *argv[]){
+int main(int argc, char *argv[]){
 
 	// Input file
 	if ( argc < 5 ){ // argc should be 5 or more for correct execution
@@ -20,7 +20,7 @@ int main(int argc, char const *argv[]){
 	}
 
 	// Initialize the MPI environment
-	MPI_Init(NULL, NULL);
+	MPI_Init(&argc,&argv);
 
 	// Get the number of processes
 	int size;
@@ -61,48 +61,14 @@ int main(int argc, char const *argv[]){
 	for (int i=0;i<n;i++){
 		tab[i]=i;
 	}
-	HMatrix<fullACA,complex<double>> HA(A,p,tab);
+	HMatrix<fullACA,complex<double>> HA(A,p);
 
 	// Global vectors
 	std::vector<complex<double>> x_global(n,0),x_ref(n);
 	bytes_to_vector(x_ref,argv[4]);
 
-	// Local vectors
-	int n_local= HA.get_local_size_cluster();
-	const std::vector<std::vector<int>>& MasterClusters = HA.get_MasterClusters();
-	std::vector<complex<double>> x_local(n_local,0),f_local(n_local,1);
-	for (int i=0;i<n_local;i++){
-		f_local[i]=f_global[MasterClusters[rank][i]];
-	}
-
 	// Solve
-	solve(HA,x_local,f_local);
-  // HPDDMOperator<fullACA,complex<double>> A_HPDDM(HA,A);
-  // complex<double>* const rhs = &(f_local[0]);
-  // complex<double>* x = &(x_local[0]);
-  // HPDDM::IterativeMethod::solve(A_HPDDM, rhs, x, 1,HA.get_comm());
-
-
-	// Local to Global
-	std::vector<complex<double>> rcv(n);
-
-	std::vector<int> recvcounts(size);
-	std::vector<int>  displs(size);
-
-	displs[0] = 0;
-
-	for (int i=0; i<size; i++) {
-		recvcounts[i] = MasterClusters[i].size();
-		if (i > 0)
-			displs[i] = displs[i-1] + recvcounts[i-1];
-	}
-
-
-	MPI_Allgatherv(&(x_local.front()), recvcounts[rank], MPI_DOUBLE_COMPLEX, &(rcv.front()), &(recvcounts.front()), &(displs.front()), MPI_DOUBLE_COMPLEX, HA.get_comm());
-
-	for (int i=0; i<size; i++)
-	for (int j=0; j< MasterClusters[i].size(); j++)
-		x_global[MasterClusters[i][j]] = rcv[displs[i]+j];
+	solve(HA,f_global.data(),x_global.data());
 
 	// Error on inversion
 	double inv_error2=norm2(f_global-A*x_global)/norm2(f_global);
@@ -114,6 +80,7 @@ int main(int argc, char const *argv[]){
 
 	test = test || !(inv_error2<opt.val("tol",1e-6));
 	test = test || !(error2<1e-5);
+
 
 	//Finalize the MPI environment.
 	MPI_Finalize();
