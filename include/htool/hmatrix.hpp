@@ -5,6 +5,7 @@
 #include <fstream>
 #include <mpi.h>
 #include <map>
+#include <memory>
 #include "matrix.hpp"
 #include "parametres.hpp"
 #include "cluster_tree.hpp"
