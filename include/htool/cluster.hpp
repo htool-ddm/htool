@@ -72,7 +72,7 @@ public:
 		son[0]=0;son[1]=0; depth = dep;
 	}
 
-	~Cluster(){if (son[0]!=NULL){ delete son[0];}if (son[1]!=NULL){ delete son[1];}};
+    ~Cluster(){if (son[0]!=NULL){ delete son[0];son[0]=nullptr;}if (son[1]!=NULL){ delete son[1];son[1]=nullptr;}};
 
 
 	bool IsLeaf() const { if(son[0]==NULL){return true;} return false; }

@@ -56,6 +56,9 @@ endif()
 find_package(LAPACK REQUIRED QUIET)
 message("-- Found Lapack:" "${LAPACK_LIBRARIES}")
 
+# MUMPS
+find_package(MUMPS REQUIRED)
+
 # HPDDM
 find_package(HPDDM REQUIRED)
 
@@ -110,11 +113,13 @@ add_library(htool INTERFACE)
 target_include_directories(htool INTERFACE
 					${htool_include_dir}
 					${MPI_INCLUDE_PATH}
-				${HPDDM_INCLUDE_DIRS})
+					${HPDDM_INCLUDE_DIRS}
+					${MUMPS_INCLUDE_DIRS})
 target_link_libraries(htool INTERFACE
 					${MPI_LIBRARIES}
 					${BLAS_LIBRARIES}
-					${LAPACK_LIBRARIES})
+					${LAPACK_LIBRARIES}
+				  ${MUMPS_LIBRARIES})
 
 # For headers to show in IDE
 if (NOT "${CMAKE_VERSION}" VERSION_LESS 3.1)

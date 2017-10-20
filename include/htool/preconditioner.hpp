@@ -76,12 +76,12 @@ public:
     //
     int rankWorld = hpddm_op.HA.get_rankworld();
     int sizeWorld = hpddm_op.HA.get_sizeworld();
-    int offset = hpddm_op.HA.get_MasterOffset_t()[rankWorld].first;
-    int size   = hpddm_op.HA.get_MasterOffset_t()[rankWorld].second;
+    int offset = hpddm_op.HA.get_local_offset();
+    int size   = hpddm_op.HA.get_local_size();
 
     //
     std::vector<T> rhs_perm(hpddm_op.HA.nb_cols());
-    std::vector<T> x_local(n);
+    std::vector<T> x_local(n,0);
 
     // Permutation
     hpddm_op.HA.source_to_cluster_permutation(rhs,rhs_perm.data());
@@ -89,6 +89,10 @@ public:
     // Local rhs
     std::vector<T> local_rhs(n,0);
     std::copy_n(rhs_perm.begin()+offset,n_inside,local_rhs.begin());
+    // TODO avoid com here
+    // for (int i=0;i<n-n_inside;i++){
+    //   local_rhs[i]=rhs_perm[]
+    // }
     hpddm_op.exchange(local_rhs.data(), 1);
 
     // Solve

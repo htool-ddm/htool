@@ -28,15 +28,16 @@ private:
 
 public:
   // Constructor
-  HPDDMEmpty(const HMatrix<LowRankMatrix,T>& A) : HPDDM::EmptyOperator<T>(A.get_local_cluster_size()), HA(A) {in_global = new std::vector<T> (HA.nb_cols());}
+  HPDDMEmpty(const HMatrix<LowRankMatrix,T>& A) : HPDDM::EmptyOperator<T>(A.get_local_size()), HA(A) {in_global = new std::vector<T> (HA.nb_cols());}
   ~HPDDMEmpty(){delete in_global;}
 
   void GMV(const T* const in, T* const out, const int& mu = 1) const {
     // All gather
     HA.local_to_global(in, in_global->data());
 
-    //
+
     HA.mvprod_local(in_global->data(),out);
+    // std::copy_n(in, this->_n, out);
   }
 
   // Preconditioner
@@ -54,8 +55,8 @@ void solve(const HMatrix<LowRankMatrix,T>& HA,const T* const rhs, T* const x){
   //
   int rankWorld = HA.get_rankworld();
   int sizeWorld = HA.get_sizeworld();
-  int offset = HA.get_MasterOffset_t()[rankWorld].first;
-  int size   = HA.get_MasterOffset_t()[rankWorld].second;
+  int offset = HA.get_local_offset();
+  int size   = HA.get_local_size();
 
   //
   HPDDMEmpty<LowRankMatrix,T> A_HPDDM(HA);
@@ -66,6 +67,10 @@ void solve(const HMatrix<LowRankMatrix,T>& HA,const T* const rhs, T* const x){
   HA.source_to_cluster_permutation(rhs,rhs_perm.data());
 
   // Solve
+  std::cout << rhs_perm << std::endl;
+  std::cout << x_local << std::endl;
+  std::cout << x_local.size()<<" "<<rhs_perm.size()<<std::endl;
+  std::cout << offset << std::endl;
   HPDDM::IterativeMethod::solve(A_HPDDM, rhs_perm.data()+offset, x_local.data(), 1,HA.get_comm());
 
   // Local to global
@@ -93,21 +98,12 @@ public:
   void GMV(const T* const in, T* const out, const int& mu = 1) const {
     // All gather
     HA.local_to_global(in, in_global->data());
-
-
     HA.mvprod_local(in_global->data(),out);
     this->scaledExchange(out, mu);
-// std::copy_n(in, this->getDof(), out);
   }
 
   void exchange(T* const out, const int& mu = 1){
-    MPI_Barrier(HA.get_comm());
-std::cout << "TEST  2"<<std::endl;
-    MPI_Barrier(HA.get_comm());
     this->template scaledExchange<true>(out, mu);
-    MPI_Barrier(HA.get_comm());
-std::cout << "TEST  3"<<std::endl;
-    MPI_Barrier(HA.get_comm());
   }
 
   friend class DDM<LowRankMatrix,T>;

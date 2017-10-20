@@ -74,7 +74,7 @@ int main(int argc, char *argv[]) {
 	  vector<double> r1(nr,0);
 	  vector<double> g1(nr,1);
 		vector<int>    tab1(nr);
-	  vector<int>    perm1(nr);
+
 		for(int j=0; j<nr; j++){
 			Ir[j] = j;
 			double rho = ((double) rand() / (double)(RAND_MAX)); // (double) otherwise integer division!
@@ -89,7 +89,7 @@ int main(int argc, char *argv[]) {
 		vector<double> r2(nc,0);
 	  vector<double> g2(nc,1);
 		vector<int>    tab2(nc);
-	  vector<int>    perm2(nc);
+
 		for(int j=0; j<nc; j++){
             Ic[j] = j;
 			double rho = ((double) rand() / (RAND_MAX)); // (double) otherwise integer division!
