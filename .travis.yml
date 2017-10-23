@@ -36,6 +36,7 @@ matrix:
             - libmpich-dev
             - libblas-dev
             - liblapack-dev
+            - libmumps-dev
 
     - os: linux
       dist: trusty
@@ -54,6 +55,7 @@ matrix:
             - libmpich-dev
             - libblas-dev
             - liblapack-dev
+            - libmumps-dev
 
 
 # Git options
@@ -69,6 +71,7 @@ branches:
 install:
   - if [ "$TRAVIS_OS_NAME" == "osx" ]; then brew install gcc; fi
   - if [ "$TRAVIS_OS_NAME" == "osx" ]; then brew install mpich; fi
+  - if [ "$TRAVIS_OS_NAME" == "osx" ]; then HOMEBREW_BUILD_FROM_SOURCE=1 brew install mumps; fi
   - cd .. && git clone https://github.com/hpddm/hpddm.git && cd htool
 
 
