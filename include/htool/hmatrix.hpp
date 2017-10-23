@@ -754,7 +754,7 @@ void HMatrix<LowRankMatrix,T >::ComputeStats(const std::vector<double>& mytime){
 
 	if (rankWorld==0){
 		MPI_Reduce(MPI_IN_PLACE, &(maxstats[0]), 3, MPI_INT, MPI_MAX, 0,comm);
-		MPI_Reduce(MPI_IN_PLACE, &(minstats.[0]), 3, MPI_INT, MPI_MIN, 0,comm);
+		MPI_Reduce(MPI_IN_PLACE, &(minstats[0]), 3, MPI_INT, MPI_MIN, 0,comm);
 		MPI_Reduce(MPI_IN_PLACE, &(meanstats[0]),3, MPI_DOUBLE, MPI_SUM, 0,comm);
 	}
 	else{
@@ -773,8 +773,8 @@ void HMatrix<LowRankMatrix,T >::ComputeStats(const std::vector<double>& mytime){
 	minstats[2] = (nlrmat  == 0 ? 0 : minstats[2]);
 
 	// timing
-	MPI_Reduce(&(mytime[0]), &(maxstats[0]), 4, MPI_DOUBLE, MPI_MAX, 0,comm);
-	MPI_Reduce(&(mytime[0]), &(meanstats[0]), 4, MPI_DOUBLE, MPI_SUM, 0,comm);
+	MPI_Reduce(&(mytime[0]), &(maxtime[0]), 4, MPI_DOUBLE, MPI_MAX, 0,comm);
+	MPI_Reduce(&(mytime[0]), &(meantime[0]), 4, MPI_DOUBLE, MPI_SUM, 0,comm);
 
 	meantime /= sizeWorld;
 
@@ -887,7 +887,7 @@ void HMatrix<LowRankMatrix,T >::mvprod_global(const T* const in, T* const out) c
 	}
 
 	// std::copy_n(snd.data(),size,out+offset);
-	MPI_Allgatherv(MPI_IN_PLACE, recvcounts[rankWorld], wrapper_mpi<T>::mpi_type(), &(out_not_perm[0]), &(recvcounts[0]), &(displs[0]), wrapper_mpi<T>::mpi_type(), comm);
+	MPI_Allgatherv(MPI_IN_PLACE, recvcounts[rankWorld], wrapper_mpi<T>::mpi_type(), out_not_perm.data(), &(recvcounts[0]), &(displs[0]), wrapper_mpi<T>::mpi_type(), comm);
 	// MPI_Allgatherv(snd.data(), recvcounts[rankWorld], wrapper_mpi<T>::mpi_type(), out, &(recvcounts.front()), &(displs.front()), wrapper_mpi<T>::mpi_type(), comm);
 
 	// Permutation

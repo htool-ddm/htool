@@ -1,5 +1,10 @@
 sudo: false
 
+
+branches:
+  only:
+  - master
+  
 # Enable c++ support
 language: cpp
 
