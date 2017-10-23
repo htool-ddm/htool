@@ -41,7 +41,7 @@ public:
 
   virtual T get_coef(const int& j, const int& k) const =0;
 
-  // TODO improve interface (CRTP ?)
+  // TODO improve interface
   virtual SubMatrix<T> get_submatrix(const std::vector<int>& J, const std::vector<int>& K) const {
     SubMatrix<T> mat(J,K);
   	for (int i=0; i<mat.nb_rows(); i++)

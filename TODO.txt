@@ -1,8 +1,0 @@
-Propositions de choses à faire :
-- Possibilité de recycler les clusters (i.e. deux matrices d'interaction construites sur le même maillage)
-- visualisation hmat (PH)
-- éliminer eigen définitivement (voir SVD dans lapack)
-- visualisation cluster : policy-based design dans output_cluster.hpp
-- améliorer interface get_submatrix (return void et utilisateur passe un pointeur)
-- prendre en compte la structure symétrique
-- faire une stack dans compute block

@@ -1,5 +1,5 @@
-#ifndef LOADING_HPP
-#define LOADING_HPP
+#ifndef GEOMETRY_HPP
+#define GEOMETRY_HPP
 
 #include <fstream>
 #include <sstream>
@@ -9,64 +9,7 @@
 #include "point.hpp"
 
 namespace htool {
-//==================================================//
-//
-//  DESCRIPTION:
-//  Charge la matrice dense
-//
-//  INPUT:
-//  filename: nom du fichier de la matrice de Ibtihel
-//
-//  OUTPUT:
-//  m: matrice dense
-//
-//==================================================//
-//
-// void LoadMatrix(const char* filename, Matrix& m){
-//
-// 	int NbRow, NbCol;
-// 	std::string      line;
-// 	int        j0,k0;
-// 	Cplx         val;
-//
-// 	// Ouverture fichier
-// 	std::ifstream file; file.open(filename);
-// 	if(!file.good()){
-// 		std::cout << "LoadMatrix in loading.hpp: error opening the matrix file" << std::endl;
-//         std::cout << filename << std::endl;
-// 		abort();}
-//
-// 	// Lecture parametres
-// 	int ndofperelt=GetNdofPerElt();
-//
-// 	// Lecture nombre de lignes et de colonnes
-// 	file >> NbRow; file >> NbCol;
-// 	m.resize(NbRow,NbCol);
-//
-// 	std::getline(file,line);
-// 	std::getline(file,line);
-// 	while(!file.eof()){
-//
-// 		// Lecture de la ligne
-// 		std::istringstream iss(line);
-//
-// 		// Pour chaque ligne, stockage
-// 		// du bloc d'interaction
-// 		iss >> j0; j0 = ndofperelt*(j0-1);
-// 		iss >> k0; k0 = ndofperelt*(k0-1);
-//
-// 		for(int j=0; j<ndofperelt; j++){
-// 			for(int k=0; k<ndofperelt; k++){
-// 				iss >> val;
-// 				m(j0+j,k0+k) = val;
-// 			}
-// 		}
-// 		std::getline(file,line);
-// 	}
-//
-// 	file.close();
-// }
-//
+
 // //==================================================//
 // //
 // //  DESCRIPTION:

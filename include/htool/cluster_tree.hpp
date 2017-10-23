@@ -4,7 +4,6 @@
 #include "cluster.hpp"
 #include "mpi.h"
 
-// TODO cluster_tree qui assemble MasterOffset et perm
 namespace htool {
 
 class Cluster_tree {
