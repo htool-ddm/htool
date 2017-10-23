@@ -5,7 +5,7 @@
 #include <htool/cluster.hpp>
 #include <htool/lrmat.hpp>
 #include <htool/hmatrix.hpp>
-#include <htool/fullACA.hpp>
+#include <htool/partialACA.hpp>
 #include <htool/matrix.hpp>
 #include <mpi.h>
 
@@ -96,13 +96,15 @@ int main(int argc, char *argv[]) {
 			tab2[j]=j;
 		}
 
+		vector<double> rhs(p2.size(),1);
 		MyMatrix A(p1,p2);
-		HMatrix<fullACA,double> HA(A,p1,r1,tab1,g1,p2,r2,tab2,g2);
+		std::shared_ptr<Cluster_tree> t=make_shared<Cluster_tree>(p1,r1,tab1,g1);
+		std::shared_ptr<Cluster_tree> s=make_shared<Cluster_tree>(p2,r2,tab2,g2);
+		HMatrix<partialACA,double> HA(A,t,p1,tab1,s,p2,tab2);
 		HA.print_stats();
 
-		std::vector<double> f(nc,1),result(nr,0);
-		result = HA*f;
-		double erreur2 = norm2(A*f-result);
+		std::vector<double> f(nc,1);
+		double erreur2 = norm2(A*f-HA*f);
 		double erreurFrob = Frobenius_absolute_error(HA,A);
 
 		test = test || !(erreurFrob<GetEpsilon());
@@ -115,9 +117,8 @@ int main(int argc, char *argv[]) {
 
 	}
 	if (rank==0){
-		cout << "test: "<<test<<endl;
+		cout << "test :"<<test << endl;
 	}
 	// Finalize the MPI environment.
 	MPI_Finalize();
-	return test;
 }

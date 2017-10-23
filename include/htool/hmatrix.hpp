@@ -356,7 +356,7 @@ void HMatrix<LowRankMatrix, T >::build(const IMatrix<T>& mat, const std::vector<
 
 	// Construction arbre des blocs
 	time = MPI_Wtime();
-	Block* B = BuildBlockTree(cluster_tree_t->get_root(),cluster_tree_t->get_root());
+	Block* B = BuildBlockTree(cluster_tree_t->get_root(),cluster_tree_s->get_root());
 	if (B != NULL) Tasks.push_back(B);
 	mytimes[1] = MPI_Wtime() - time;
 
