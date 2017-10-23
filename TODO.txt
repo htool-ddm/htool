@@ -1,6 +1,0 @@
-Propositions de choses à faire :
-- Possibilité de recycler les clusters (i.e. deux matrices d'interaction construites sur le même maillage)
-- Niveau de verbose ET/OU méthode stats pour la hmat qui calcule et affiche les stats à la demande (done)
-- tester d'autres manières pour le clustering
-- output du cluster
-- required rank en donnée membre (done)

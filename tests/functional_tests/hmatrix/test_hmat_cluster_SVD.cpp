@@ -34,10 +34,10 @@ public:
 };
 
 
-int main(){
+int main(int argc, char *argv[]) {
 
 	// Initialize the MPI environment
-	MPI_Init(NULL, NULL);
+	MPI_Init(&argc,&argv);
 
 	// Get the number of processes
 	int size;
@@ -71,7 +71,10 @@ int main(){
 
 		double z1 = 1;
 		vector<R3>     p1(nr);
-		vector<int>  tab1(nr);
+	  vector<double> r1(nr,0);
+	  vector<double> g1(nr,1);
+		vector<int>    tab1(nr);
+
 		for(int j=0; j<nr; j++){
 			Ir[j] = j;
 			double rho = ((double) rand() / (double)(RAND_MAX)); // (double) otherwise integer division!
@@ -82,8 +85,11 @@ int main(){
 		}
 		// p2: points in a unit disk of the plane z=z2
 		double z2 = 1+distance[idist];
-		vector<R3> p2(nc);
-		vector<int> tab2(nc);
+		vector<R3> 		 p2(nc);
+		vector<double> r2(nc,0);
+	  vector<double> g2(nc,1);
+		vector<int>    tab2(nc);
+
 		for(int j=0; j<nc; j++){
             Ic[j] = j;
 			double rho = ((double) rand() / (RAND_MAX)); // (double) otherwise integer division!
@@ -94,25 +100,29 @@ int main(){
 
 		vector<double> rhs(p2.size(),1);
 		MyMatrix A(p1,p2);
-		HMatrix<SVD,double> HA(A,p1,tab1,p2,tab2);
+		std::shared_ptr<Cluster_tree> t=make_shared<Cluster_tree>(p1,r1,tab1,g1);
+		std::shared_ptr<Cluster_tree> s=make_shared<Cluster_tree>(p2,r2,tab2,g2);
+		HMatrix<SVD,double> HA(A,t,p1,tab1,s,p2,tab2);
+		HA.print_stats();
 
 		std::vector<double> f(nc,1),result(nr,0);
 		result = HA*f;
 		double erreur2 = norm2(A*f-result);
 		double erreurFrob = Frobenius_absolute_error(HA,A);
-		double compression = HA.compression();
 
 		test = test || !(erreurFrob<1e-10);
 		test = test || !(erreur2<1e-10);
 
 		if (rank==0){
 			cout << "Errors with Frobenius norm: "<<erreurFrob<<endl;
-			cout << "Compression rate : "<<compression<<endl;
 			cout << "Errors on a mat vec prod : "<< erreur2<<endl;
-
 		}
 
 	}
+	if (rank==0){
+		cout << "test: "<<test<<endl;
+	}
+
 	// Finalize the MPI environment.
 	MPI_Finalize();
 	return test;

@@ -16,6 +16,12 @@ namespace htool {
 //                         CLASS MATRIX
 //*****************************************************************//
 template<typename T>
+class Matrix;
+
+template<typename T>
+class SubMatrix;
+
+template<typename T>
 class IMatrix{
 protected:
   // Data members
@@ -34,6 +40,16 @@ protected:
 public:
 
   virtual T get_coef(const int& j, const int& k) const =0;
+
+  // TODO improve interface
+  virtual SubMatrix<T> get_submatrix(const std::vector<int>& J, const std::vector<int>& K) const {
+    SubMatrix<T> mat(J,K);
+  	for (int i=0; i<mat.nb_rows(); i++)
+  		for (int j=0; j<mat.nb_cols(); j++)
+  			mat(i,j) = this->get_coef(J[i], K[j]);
+    return mat;
+  }
+
 
 	//! ### Access to number of rows
 	/*!
@@ -135,6 +151,17 @@ public:
   }
 
   //! ### Access operator
+	/*!
+	 If _A_ is the instance calling the operator
+	 _A.get_coef(j,k)_ returns the entry of _A_ located
+	 jth row and kth column.
+	 */
+
+	// Matrix<T> get_submatrix(const std::vector<int>& J, const std::vector<int>& K) const{
+  //       return SubMatrix<T>(*this,J,K) ;
+  // }
+
+  //! ### Access operator
   /*!
    If _A_ is the instance calling the operator
    _A(j,k)_ returns the entry of _A_ located
@@ -156,6 +183,14 @@ public:
     const T& operator()(const int& j, const int& k) const {
         return this->mat[j+k*this->nr];
     }
+
+  //! ### Access operator
+	/*!
+	 If _A_ is the instance calling the operator
+	 _A.get_stridedslice(i,j,k)_ returns the slice of _A_ containing every element from _start_ to _start_+_lenght with a step of _stride_. Modification forbidden
+	 */
+
+   const std::vector<T>& get_mat(){return this->mat;}
 
   //! ### Access operator
 	/*!
@@ -287,16 +322,30 @@ public:
   //! ### Matrix-Matrix product
 	/*!
   */
-	Matrix operator*(const Matrix& A){
-		assert(this->nc==A.nr);
-		Matrix R(this->nr,A.nc);
-		for (int i=0;i<this->nr;i++){
-			for (int j=0;j<A.nc;j++){
-				for (int k=0;k<A.nr;k++){
-					R(i,j)+=this->mat[i+k*this->nr]*A(k,j);
-				}
-			}
-		}
+	Matrix operator*(const Matrix& B) const{
+		assert(this->nc==B.nr);
+		Matrix R(this->nr,B.nc);
+		// for (int i=0;i<this->nr;i++){
+		// 	for (int j=0;j<B.nc;j++){
+		// 		for (int k=0;k<B.nr;k++){
+		// 			R(i,j)+=this->mat[i+k*this->nr]*B(k,j);
+		// 		}
+		// 	}
+		// }
+    char transa ='N';
+    char transb ='N';
+    int M = this->nr;
+    int N = B.nc;
+    int K = this->nc;
+    T alpha = 1;
+    int lda =  this->nr;
+    int ldb =  B.nr;
+    T beta = 0;
+    int ldc = this->nr;
+
+
+    Blas<T>::gemm(&transa, &transb, &M, &N, &K, &alpha, &(this->mat[0]),
+    &lda, &(B.mat[0]), &ldb, &beta, &(R.mat[0]),&ldc);
 		return R;
 	}
 
@@ -316,15 +365,29 @@ public:
     std::vector<T> lhs(nr);
 		Blas<T>::gemv(&n, &nr , &nc, &alpha, &(this->mat[0]) , &lda, &rhs[0], &incx, &beta, &lhs[0], &incy);
     return lhs;
-
- 		/*
- 		for(int j=0; j<m.nr; j++){
- 			for(int k=0; k<m.nc; k++){
- 				lhs[j]+= m.mat(j,k)*rhs[k];
- 			}
- 		}
- 		*/
+  }
+  void mvprod(const T* const in, T* const out) const{
+  		int nr = this->nr;
+  		int nc = this->nc;
+  		T alpha = 1;
+  		int lda = nr;
+  		int incx =1;
+  		T beta =0;
+  		int incy = 1;
+  		char n='N';
+  		Blas<T>::gemv(&n, &nr , &nc, &alpha, &(this->mat[0]) , &lda, in, &incx, &beta, out, &incy);
 	}
+  void add_mvprod(const T* const in, T* const out) const{
+      int nr = this->nr;
+      int nc = this->nc;
+      T alpha = 1;
+      int lda = nr;
+      int incx =1;
+      T beta =1;
+      int incy = 1;
+      char n='N';
+      Blas<T>::gemv(&n, &nr , &nc, &alpha, &(this->mat[0]) , &lda, in, &incx, &beta, out, &incy);
+  }
 
 	friend std::ostream& operator<<(std::ostream& out, const Matrix& m){
     if ( !(m.mat.empty()) ) {
@@ -421,31 +484,43 @@ class SubMatrix : public Matrix<T>{
 
 	std::vector<int> ir;
 	std::vector<int> ic;
+  int offset_i;
+  int offset_j;
 
 public:
+  SubMatrix(const std::vector<int>& ir0, const std::vector<int>& ic0) : Matrix<T>(ir0.size(),ic0.size()), ir(ir0), ic(ic0),offset_i(50), offset_j(0) {}
 
-  SubMatrix(const IMatrix<T>& mat0, const std::vector<int>& ir0, const std::vector<int>& ic0):
-    ir(ir0), ic(ic0) {
-    this->nr =  ir0.size();
-    this->nc =  ic0.size();
-  	this->mat.resize(this->nr*this->nc);
-  	for (int i=0; i<this->nr; i++)
-  		for (int j=0; j<this->nc; j++)
-  			this->mat[i+j*this->nr] = mat0.get_coef(ir[i], ic[j]);
+  SubMatrix(const std::vector<int>& ir0, const std::vector<int>& ic0, const int& offset_i0, const int& offset_j0) : Matrix<T>(ir0.size(),ic0.size()), ir(ir0), ic(ic0),offset_i(offset_i0), offset_j(offset_j0) {}
+
+  SubMatrix(const IMatrix<T>& mat0, const std::vector<int>& ir0, const std::vector<int>& ic0): Matrix<T>(ir0.size(),ic0.size()), ir(ir0), ic(ic0), offset_i(0),offset_j(0) {
+
+    // Matrix<T> test ;
+    // std::cout << (&test)->mat << std::endl;
+    *this = mat0.get_submatrix(ir0,ic0);
+  }
+
+  SubMatrix(const IMatrix<T>& mat0, const std::vector<int>& ir0, const std::vector<int>& ic0, const int& offset_i0, const int& offset_j0): Matrix<T>(ir0.size(),ic0.size()), ir(ir0), ic(ic0) {
+
+    *this = mat0.get_submatrix(ir0,ic0);
+    offset_i=offset_i0;
+    offset_j=offset_j0;
   }
 
   SubMatrix(const SubMatrix& m) {
   	this->mat = m.mat;
-    ir=m.ir;
-    ic=m.ic;
+    this->ir=m.ir;
+    this->ic=m.ic;
+    this->offset_i=m.offset_i;
+    this->offset_j=m.offset_j;
     this->nr=m.nr;
     this->nc=m.nc;
   }
 
   // Getters
-  std::vector<int> get_ir() const{ return ir;}
-  std::vector<int> get_ic() const{ return ic;}
-
+  std::vector<int> get_ir() const{ return this->ir;}
+  std::vector<int> get_ic() const{ return this->ic;}
+  int get_offset_i() const{ return this->offset_i;}
+  int get_offset_j() const{ return this->offset_j;}
 };
 } // namespace
 

@@ -246,6 +246,6 @@ void LoadParam(std::string inputname){
 	}
 }
 
-Parametres Parametres_defauts(3,0.5,0.5,10000000,3);
+Parametres Parametres_defauts(1,0.5,0.5,10000000,3);
 }
 #endif

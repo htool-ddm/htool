@@ -1,5 +1,5 @@
-#ifndef ACA_HPP
-#define ACA_HPP
+#ifndef FULL_ACA_HPP
+#define FULL_ACA_HPP
 
 #include <iostream>
 #include <fstream>
@@ -46,6 +46,8 @@ public:
     // otherwise, we use the required rank for the stopping criterion (!: at the end the rank could be lower)
 	fullACA(const std::vector<int>& ir0, const std::vector<int>& ic0, int rank0=-1): LowRankMatrix<T>(ir0,ic0,rank0){}
 
+	fullACA(const std::vector<int>& ir0, const std::vector<int>& ic0,int offset_i0, int offset_j0, int rank0=-1): LowRankMatrix<T>(ir0,ic0,offset_i0,offset_j0,rank0){}
+
 	void build(const IMatrix<T>& A){
 		if(this->rank == 0){
 			this->U.resize(this->nr,1);
@@ -54,13 +56,7 @@ public:
 		else{
 
 			// Matrix assembling
-			Matrix<T> M(this->ir.size(),this->ic.size());
-
-			for (int i=0; i<M.nb_rows(); i++){
-				for (int j=0; j<M.nb_cols(); j++){
-					M(i,j) = A.get_coef(this->ir[i], this->ic[j]);
-				}
-			}
+			Matrix<T> M=A.get_submatrix(this->ir,this->ic);
 
 			// Full pivot
 			int q=0;
@@ -70,7 +66,7 @@ public:
 			double Norm = normFrob(M);
 
 			while (((reqrank > 0) && (q < reqrank) ) ||
-			      ( (reqrank < 0) && ( normFrob(M)/Norm>this->epsilon ) )) {
+			      ( (reqrank < 0) && ( normFrob(M)/Norm>this->epsilon || q==0) )) {
 
 				q+=1;
 				if (q*(this->nr+this->nc) > (this->nr*this->nc)) { // the current rank would not be advantageous
@@ -80,7 +76,9 @@ public:
 				else{
 					std::pair<int , int > ind = argmax(M);
 					T pivot = M(ind.first,ind.second);
-					if (std::abs(pivot)<1e-15) break;
+                    if (std::abs(pivot)<1e-15) {
+                        q+=-1; break;
+                    }
 					uu.push_back(M.get_col(ind.second));
 					vv.push_back(M.get_row(ind.first)/pivot);
 
@@ -102,7 +100,7 @@ public:
 			}
 		}
 	}
-	void build(const IMatrix<T>& A, const Cluster& t, const Cluster& s){
+	void build(const IMatrix<T>& A, const Cluster& t, const std::vector<R3> xt,const std::vector<int> tabt, const Cluster& s, const std::vector<R3> xs, const std::vector<int>tabs){
     this->build(A);
   }
 };

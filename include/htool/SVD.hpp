@@ -4,7 +4,7 @@
 #include "lrmat.hpp"
 #include <cassert>
 #include <Eigen/Dense>
-
+// TODO use lapack instead of eigen
 namespace htool{
 
 template< typename T >
@@ -26,6 +26,8 @@ private:
 public:
   SVD(const std::vector<int>& ir0, const std::vector<int>& ic0, int rank0=-1): LowRankMatrix<T>(ir0,ic0,rank0){}
 
+	SVD(const std::vector<int>& ir0, const std::vector<int>& ic0,int offset_i0, int offset_j0, int rank0=-1): LowRankMatrix<T>(ir0,ic0,offset_i0,offset_j0,rank0){}
+
   void build(const IMatrix<T>& A){
     int reqrank=0;
     if (this->rank==0){
@@ -42,9 +44,10 @@ public:
     }
     //// Matrix assembling
     DenseMatrix M(this->nr,this->nc);
+    SubMatrix<T> submat = A.get_submatrix(this->ir,this->ic);
     for (int i=0; i<M.rows(); i++){
   		for (int j=0; j<M.cols(); j++){
-  			M(i,j) = A.get_coef(this->ir[i], this->ic[j]);
+  			M(i,j) = submat(i, j);
       }
     }
 
@@ -72,7 +75,7 @@ public:
     }
   }
 
-  void build(const IMatrix<T>& A, const Cluster& t, const Cluster& s){
+	void build(const IMatrix<T>& A, const Cluster& t, const std::vector<R3> xt,const std::vector<int> tabt, const Cluster& s, const std::vector<R3> xs, const std::vector<int>tabs){
     this->build(A);
   }
   T get_singular_value(int i){return singular_values[i];}

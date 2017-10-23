@@ -1,0 +1,3 @@
+hmatrix -> policy-based design (strategy pattern compile time variant) with LowRankMatrix ; shared ressource with a shared pointer with cluster tree
+LowRankMatrix -> Base class for new "policies"
+IMatrix -> runtime polymorphism, we could use CRTP to do static polymorphism, but is it worth it ?

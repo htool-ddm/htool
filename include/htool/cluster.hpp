@@ -7,7 +7,6 @@
 #include <iomanip>
 
 namespace htool {
-
 //===============================//
 //           PAQUETS             //
 //===============================//
@@ -30,13 +29,14 @@ namespace htool {
 
 
 class Cluster: public Parametres{
-
+// TODO visualisation for cluster
 private:
-	const std::vector<R3>&       x;     // Nuage complet des points
-	const std::vector<int>&     tab;	  // Vecteur renvoyant pour chaque dof l'indice de l'entite geometrique correspondante dans x
+	// const std::vector<R3>&       x;     // Nuage complet des points
+	// const std::vector<double>&   r;
+	// const std::vector<int>&     tab;	  // Vecteur renvoyant pour chaque dof l'indice de l'entite geometrique correspondante dans x
 
-	std::vector<int>            num;     // Indices des dofs
-
+	// std::vector<int>            num;     // Indices des dofs
+	// std::vector<int>&					 perm;     // Permutation from original numbering to clustered numbering
 	Cluster*        son[2];  // Paquets enfants
 	R3              ctr;     // Centre du paquet
 	double            rad;     // Rayon du champ proche
@@ -48,104 +48,133 @@ private:
 	int max_depth;
 	int min_depth;
 
-	Cluster(const Cluster& ); // Pas de recopie
+	int offset;
+	int size;
+
 	Cluster & operator=(const Cluster& copy_from); // pas d'affectation
 
 
 public:
+	// build cluster tree
+	void build(const std::vector<R3>& x0, const std::vector<double>& r0,const std::vector<int>& tab0, const std::vector<double>& g0, std::vector<int>& perm);
 
-	Cluster(const std::vector<R3>& x0, const std::vector<int>& tab0): x(x0), tab(tab0), ctr(), rad(0.), depth(0),max_depth(0),min_depth(-1) {
-		son[0]=NULL;son[1]=NULL;
-		depth = 0; // ce constructeur est appele' juste pour la racine
-		assert(tab.size()==x.size()*ndofperelt);
-		for(int j=0; j<tab.size(); j++){num.push_back(j);}
-	}
+	// Root constructor
+	Cluster(const std::vector<R3>& x0, const std::vector<double>& r0,const std::vector<int>& tab0, const std::vector<double>& g0, std::vector<int>& perm);
 
-	Cluster(const std::vector<R3>& x0, const std::vector<int>& tab0, const int& dep): x(x0), tab(tab0), ctr(), rad(0.),max_depth(-1),min_depth(-1) {
+	Cluster(const std::vector<R3>& x0, const std::vector<int>& tab0, const std::vector<double>& g0, std::vector<int>& perm);
+	Cluster(const std::vector<R3>& x0, const std::vector<double>& r0, const std::vector<int>& tab0,std::vector<int>& perm);
+	Cluster(const std::vector<R3>& x0, const std::vector<double>& r0, const std::vector<double>& g0, std::vector<int>& perm);
+
+	Cluster(const std::vector<R3>& x0, std::vector<int>& perm);
+
+	// Node constructor
+	Cluster(const int& dep):ctr(), rad(0.),max_depth(-1),min_depth(-1), offset(0) {
 		son[0]=0;son[1]=0; depth = dep;
 	}
 
-	~Cluster(){if (son[0]!=NULL){ delete son[0];}if (son[1]!=NULL){ delete son[1];}};
+    ~Cluster(){if (son[0]!=NULL){ delete son[0];son[0]=nullptr;}if (son[1]!=NULL){ delete son[1];son[1]=nullptr;}};
 
-	void build();
+
 	bool IsLeaf() const { if(son[0]==NULL){return true;} return false; }
 
 	//// Getters
-  const std::vector<R3>&  get_pts() const {return x;}
-  const std::vector<int>& get_tab() const {return tab;}
 	const double&           get_rad() const {return rad;}
 	const R3&               get_ctr() const {return ctr;}
 	const Cluster&       		get_son(const int& j) const {return *(son[j]);}
 	Cluster&       					get_son(const int& j){return *(son[j]);}
-	const std::vector<int>& get_num() const {return num;}
 	int     								get_depth() const {return depth;}
 	int 										get_rank()const {return rank;}
 	int											get_max_depth() const {return max_depth;}
 	int											get_min_depth() const {return min_depth;}
+	int                     get_offset() const {return offset;}
+	int                     get_size() const {return size;}
 
 	//// Setters
-	void set_rank(const int& rank0){rank = rank0;}
+	void set_rank  (const int& rank0)   {rank = rank0;}
+	void set_offset(const int& offset0) {offset=offset0;}
+	void set_size(const int& size0) {size=size0;}
 
-	void print()
-	{
-	    std::cout << num << '\n';
-	    if (this->son[0]!=NULL) (*this->son[0]).print();
-	    if (this->son[1]!=NULL) (*this->son[1]).print();
-	}
-
-	friend std::ostream& operator<<(std::ostream& os, const Cluster& cl){
-		for(int j=0; j<(cl.num).size(); j++){os<<cl.num[j]<< "\t";}
-		os<<std::endl;
-		if (!cl.IsLeaf()){
-			os<<cl.get_son(0);
-		}
-		return os;
-	}
-
-
-	friend void TraversalBuildLabel(const Cluster& t, std::vector<int>& labelVisu, const unsigned int visudep, const unsigned int cnt);
-	friend void VisuPartitionedMesh(const Cluster& t, std::string inputname, std::string outputname, const unsigned int visudep);
-
-
+	void print(const std::vector<int>& perm) const;
 };
 
-void Cluster::build(){
+
+// Build cluster tree
+void Cluster::build(const std::vector<R3>& x, const std::vector<double>& r, const std::vector<int>& tab, const std::vector<double>& g, std::vector<int>& perm){
+	assert(tab.size()==x.size()*ndofperelt);
+	assert(x.size()==g.size());
+	assert(x.size()==r.size());
+	assert(tab.size()==perm.size());
+
+	// Initialisation
+	rad = 0;
+	depth = 0;
+	max_depth = 0;
+	min_depth = -1;
+	offset=0;
+	size = tab.size();
+	son[0]=NULL;son[1]=NULL;
+	depth = 0; // ce constructeur est appele' juste pour la racine
+	perm.resize(tab.size());
+	std::iota(perm.begin(),perm.end(),0); // perm[i]=i
+
+
+	// Recursion
 	std::stack<Cluster*> s;
+	std::stack<std::vector<int>> n;
 	s.push(this);
+	n.push(perm);
 
 	while(!s.empty()){
 		Cluster* curr = s.top();
+		std::vector<int> num = n.top();
 		s.pop();
+		n.pop();
 
-		// Calcul centre du paquet
-		int nb_pt = curr->num.size();
+		// Mass of the cluster
+		int nb_pt = curr->size;
+		double G=0;
+		for(int j=0; j<nb_pt; j++){
+			G += g[tab[num[j]]];
+		}
+
+		// Center of the cluster
 		R3 xc;
 		xc.fill(0);
 		for(int j=0; j<nb_pt; j++){
-			xc += curr->x[curr->tab[curr->num[j]]];}
-		// std::cout<<"xc "<<xc<<std::endl;
-		xc = (1./double(nb_pt))*xc;
+			xc += g[tab[num[j]]]*x[tab[num[j]]];
+		}
+		xc = (1./G)*xc;
 		curr->ctr = xc;
 
 		// Calcul matrice de covariance
 		Matrix<double> cov(3,3);
 		curr->rad=0.;
 		for(int j=0; j<nb_pt; j++){
-			R3 u = curr->x[curr->tab[curr->num[j]]] - xc;
-			curr->rad=std::max(curr->rad,norm2(u));
+			R3 u = x[tab[num[j]]] - xc;
+			curr->rad=std::max(curr->rad,norm2(u)+r[tab[num[j]]]);
 			for(int p=0; p<3; p++){
 				for(int q=0; q<3; q++){
-					cov(p,q) += u[p]*u[q];
+					cov(p,q) += g[tab[num[j]]]*u[p]*u[q];
 				}
 			}
 		}
+		// MatR3 cov; cov.setZero();
+		// curr->rad=0.;
+		// for(int j=0; j<nb_pt; j++){
+		// 	R3 u = curr->x[curr->tab[curr->num[j]]] - xc;
+		// 	curr->rad=std::max(curr->rad,norm2(u));
+		// 	for(int p=0; p<3; p++){
+		// 		for(int q=0; q<3; q++){
+		// 			cov(p,q) += u[p]*u[q];
+		// 		}
+		// 	}
+		// }
 
 		// Calcul direction principale
 		double p1 = pow(cov(0,1),2) + pow(cov(0,2),2) + pow(cov(1,2),2);
 		std::vector<double> eigs(3);
 		Matrix<double> I(3,3);I(0,0)=1;I(1,1)=1;I(2,2)=1;
 		R3 dir;
-
 
 		if (p1 < 1e-15) {
 	    	// cov is diagonal.
@@ -212,25 +241,45 @@ void Cluster::build(){
 				dir[2] /= dirnorm;
 			}
 		}
+		// Calcul direction principale
+		// EigenSolver eig(cov);
+		// EigenValue  lambda = eig.eigenvalues();
+		// EigenVector ev = eig.eigenvectors();
+		// int l = 0; double max=abs(lambda[0]);
+		// if( max<abs(lambda[1]) ){l=1; max=abs(lambda[1]);}
+		// if( max<abs(lambda[2]) ){l=2; }
+		// R3 dir;
+		// dir[0] = ev(0,l).real();
+		// dir[1] = ev(1,l).real();
+		// dir[2] = ev(2,l).real();
 
 		// Construction des paquets enfants
-		curr->son[0] = new Cluster(curr->x,curr->tab,curr->depth+1);
-		curr->son[1] = new Cluster(curr->x,curr->tab,curr->depth+1);
+		curr->son[0] = new Cluster(curr->depth+1);
+		curr->son[1] = new Cluster(curr->depth+1);
+		std::vector<int> num0;
+		std::vector<int> num1;
+
 		for(int j=0; j<nb_pt; j++){
-			R3 dx = curr->x[curr->tab[curr->num[j]]] - xc;
+			R3 dx = x[tab[num[j]]] - xc;
 			// std::cout <<(dir,dx) << std::endl;
 			if( (dir,dx)>0 ){
-				curr->son[0]->num.push_back(curr->num[j]);
+				num0.push_back(num[j]);
 			}
 			else{
-				curr->son[1]->num.push_back(curr->num[j]);
+				num1.push_back(num[j]);
 			}
 		}
+		curr->son[0]->set_offset(curr->offset);
+		curr->son[1]->set_offset(curr->offset+num0.size());
+		curr->son[0]->set_size(num0.size());
+		curr->son[1]->set_size(num1.size());
 
 		// Recursivite
-		if((curr->son[0]->num.size() >= minclustersize) && (curr->son[1]->num.size() >= minclustersize)) {
+		if((num0.size() >= Parametres::minclustersize) && (num1.size() >= Parametres::minclustersize)) {
 			s.push(curr->son[0]);
 			s.push(curr->son[1]);
+			n.push(num0);
+			n.push(num1);
 		}
 		else{
 			this->max_depth= std::max(this->max_depth,curr ->depth);
@@ -240,109 +289,186 @@ void Cluster::build(){
 
 			delete curr->son[0]; curr->son[0] = NULL;
 			delete curr->son[1]; curr->son[1] = NULL;
+
+			std::copy_n(num.begin(),num.size(),perm.begin()+curr->offset);
+
 		}
-// std::cout << "TEST"<<std::endl;
-// std::cout << curr->num << std::endl;
-// std::cout << curr->depth <<std::endl;
-// std::cout << curr->max_depth <<std::endl;
-// std::cout << "TEST"<< std::endl<<std::endl;
 	}
 }
+
+// Full constructor
+Cluster::Cluster(const std::vector<R3>& x0, const std::vector<double>& r0,const std::vector<int>& tab0, const std::vector<double>& g0, std::vector<int>& perm){
+	this->build(x0,r0,tab0,g0,perm);
+}
+
+// Constructor without radius
+Cluster::Cluster(const std::vector<R3>& x0, const std::vector<int>& tab0, const std::vector<double>& g0, std::vector<int>& perm){
+	this->build(x0,std::vector<double>(x0.size(),0),tab0,g0,perm);
+}
+
+// Constructor without mass
+Cluster::Cluster(const std::vector<R3>& x0, const std::vector<double>& r0, const std::vector<int>& tab0,std::vector<int>& perm){
+	this->build(x0,r0,tab0,std::vector<double>(x0.size(),1),perm);
+}
+
+// Constructor without tab
+Cluster::Cluster(const std::vector<R3>& x0, const std::vector<double>& r0, const std::vector<double>& g0, std::vector<int>& perm){
+	std::vector<int> tab0(x0.size());
+	std::iota(tab0.begin(),tab0.end(),int(0));
+	this->build(x0,std::vector<double>(x0.size(),0),tab0,std::vector<double>(x0.size(),1),perm);
+}
+
+// Constructor without tab, mass and rad
+Cluster::Cluster(const std::vector<R3>& x0, std::vector<int>& perm){
+	std::vector<int> tab0(x0.size());
+	std::iota(tab0.begin(),tab0.end(),int(0));
+	this->build(x0,std::vector<double>(x0.size(),0),tab0,std::vector<double>(x0.size(),1),perm);
+}
+
 
 // On utilise le fait qu'on a toujours ndofperelt dofs par element geometrique
-void TraversalBuildLabel(const Cluster& t, std::vector<int>& labelVisu, const unsigned int visudep, const unsigned int cnt){
-	if(t.depth<visudep){
-		assert( t.son[0]!=0 ); // check if visudep is too high!
-		TraversalBuildLabel(*(t.son[0]),labelVisu,visudep,2*cnt);
-		TraversalBuildLabel(*(t.son[1]),labelVisu,visudep,2*cnt+1);
-	}
-	else{
-		for(int i=0; i<(t.num).size()/GetNdofPerElt(); i++)
-		{
-			labelVisu[ t.num[GetNdofPerElt()*i]/GetNdofPerElt() ] = cnt-pow(2,visudep);
+// void TraversalBuildLabel(const Cluster& t, const std::vector<int>& perm, std::vector<int>& labelVisu, const unsigned int visudep, const unsigned int cnt){
+// 	if(t.depth<visudep){
+// 		assert( t.son[0]!=0 ); // check if visudep is too high!
+// 		TraversalBuildLabel(*(t.son[0]),perm,labelVisu,visudep,2*cnt);
+// 		TraversalBuildLabel(*(t.son[1]),perm,labelVisu,visudep,2*cnt+1);
+// 	}
+// 	else{
+// 		for(int i=t.offset; i<t.size/GetNdofPerElt(); i++)
+// 		{
+// 			labelVisu[ perm[GetNdofPerElt()*i]/GetNdofPerElt() ] = cnt-pow(2,visudep);
+//
+// 		}
+// 	}
+//
+// }
 
-		}
+void Cluster::print(const std::vector<int>& perm) const
+{
+	if ( !perm.empty() ) {
+		std::cout << '[';
+		for (std::vector<int>::const_iterator i = perm.begin()+offset; i != perm.begin()+offset+size; ++i)
+		std::cout << *i << ',';
+		std::cout << "\b]"<<std::endl;;
 	}
-
+	// std::cout << offset << " "<<size << std::endl;
+	if (this->son[0]!=NULL) (*this->son[0]).print(perm);
+	if (this->son[1]!=NULL) (*this->son[1]).print(perm);
 }
 
-void VisuPartitionedMesh(const Cluster& t, std::string inputname, std::string outputname, const unsigned int visudep){
+// template<Input,Ouput>
+// void Cluster::output(std::string inputname, std::string outputname){
+// 	Input input(inputname);
+// 	std::vector<>
+//
+//
+// }
 
-	assert(t.depth==0); // on peut l'appeler juste pour la racine
-	std::vector<R3>  X;
-	std::vector<N4>  Elt;
-	std::vector<int> NbPt;
-	int   num,NbElt,poubelle, NbTri, NbQuad;
-	R3    Pt;
-
-	// Ouverture fichier
-	std::ifstream infile;
-	infile.open(inputname.c_str());
-	if(!infile.good()){
-		std::cout << "LoadPoints in loading.hpp: error opening the geometry file" << std::endl;
-		abort();}
-
-	// Nombre d'elements
-	infile >> NbElt;
-	assert(NbElt==t.x.size()/GetNdofPerElt());
-	Elt.resize(NbElt);
-	NbPt.resize(NbElt);
-
-	num=0; NbTri=0; NbQuad=0;
-	// Lecture elements
-	for(int e=0; e<NbElt; e++){
-		infile >> poubelle;
-		infile >> NbPt[e];
-
-		if(NbPt[e]==3){NbTri++;}
-		if(NbPt[e]==4){NbQuad++;}
-
-		// Calcul centre element
-		for(int j=0; j<NbPt[e]; j++){
-			infile >> poubelle;
-			infile >> Pt;
-			Elt[e][j] = num;
-			X.push_back(Pt);
-			num++;
-		}
-
-		// Separateur inter-element
-		if(e<NbElt-1){infile >> poubelle;}
-
-	}
-	infile.close();
-
-	std::vector<int> labelVisu(NbElt);
-	TraversalBuildLabel(t,labelVisu,visudep,1);
-
-	// Ecriture fichier de sortie
-	std::ofstream outfile;
-	outfile.open((GetOutputPath()+"/"+outputname).c_str());
-	outfile << "$MeshFormat\n";
-	outfile << "2.2 0 8\n";
-	outfile << "$EndMeshFormat\n";
-	outfile << "$Nodes\n";
-	outfile << X.size() << std::endl;
-	for(int j=0; j<X.size(); j++){
-		outfile << j+1 << "\t" << X[j] << "\n";}
-	outfile << "$EndNodes\n";
-	outfile << "$Elements\n";
-	outfile << NbElt << std::endl;
-	for(int j=0; j<NbElt; j++){
-		outfile << j  << "\t";
-		if(NbPt[j]==3){outfile << 2  << "\t";}
-		if(NbPt[j]==4){outfile << 3  << "\t";}
-		outfile << 2  << "\t";
-		outfile << 99 << "\t";
-		outfile << labelVisu[j] << "\t";
-		for(int k=0; k<NbPt[j]; k++){
-			outfile << Elt[j][k]+1 << "\t";}
-		outfile << "\n";
-	}
-	outfile << "$EndElements\n";
-
-
-}
+// void (const Cluster& t, const std::vector<int>& perm, std::string inputname, std::string outputname, const unsigned int visudep){
+//
+// 	assert(t.depth==0); // on peut l'appeler juste pour la racine
+// 	std::vector<R3>  X;
+// 	std::vector<N4>  Elt;
+// 	std::vector<int> NbPt;
+// 	int   num,NbElt,poubelle, NbTri, NbQuad;
+// 	R3    Pt;
+//
+// 	// Ouverture fichier
+// 	std::ifstream infile;
+// 	infile.open(inputname.c_str());
+// 	if(!infile.good()){
+// 		std::cout << "LoadPoints in loading.hpp: error opening the geometry file" << std::endl;
+// 		abort();}
+//
+// 	// Nombre d'elements
+// 	infile >> NbElt;
+// 	assert(NbElt==t.x.size()/GetNdofPerElt());
+// 	Elt.resize(NbElt);
+// 	NbPt.resize(NbElt);
+//
+// 	num=0; NbTri=0; NbQuad=0;
+// 	// Lecture elements
+// 	for(int e=0; e<NbElt; e++){
+// 		infile >> poubelle;
+// 		infile >> NbPt[e];
+//
+// 		if(NbPt[e]==3){NbTri++;}
+// 		if(NbPt[e]==4){NbQuad++;}
+//
+// 		// Calcul centre element
+// 		for(int j=0; j<NbPt[e]; j++){
+// 			infile >> poubelle;
+// 			infile >> Pt;
+// 			Elt[e][j] = num;
+// 			X.push_back(Pt);
+// 			num++;
+// 		}
+//
+// 		// Separateur inter-element
+// 		if(e<NbElt-1){infile >> poubelle;}
+//
+// 	}
+// 	infile.close();
+//
+// 	// Cluster tree traversal
+// 	std::vector<int> labelVisu(NbElt);
+// 	// TraversalBuildLabel(t,perm,labelVisu,visudep,1);
+//
+// 	std::stack<Cluster*> s_cluster;
+// 	std::stack<int>      s_count;
+// 	s_cluster.push(&t);
+// 	s_count.push(1);
+// 	while (!(s.empty())) {
+// 		Cluster* curr = s_cluster.top();
+// 		int count     = s_count.top();
+// 		s_cluster.pop();
+// 		s_count.pop();
+//
+// 		if(curr->get_depth()<visudep){
+// 			assert( curr->get_son(0)!=0 ); // check if visudep is too high!
+// 			s_cluster.push(&(curr->get_son(0)));
+// 			s_count.push(2*count);
+// 			s_cluster.push(&(curr->get_son(1)));
+// 			s_count.push(2*count+1);
+// 		}
+// 		else{
+// 			for(int i=t->get_offset(); i<t.get_size()/GetNdofPerElt(); i++)
+// 			{
+// 				labelVisu[ perm[GetNdofPerElt()*i]/GetNdofPerElt() ] = count-pow(2,visudep);
+//
+// 			}
+// 		}
+//
+// 	}
+//
+// 	// Ecriture fichier de sortie
+// 	std::ofstream outfile;
+// 	outfile.open((GetOutputPath()+"/"+outputname).c_str());
+// 	outfile << "$MeshFormat\n";
+// 	outfile << "2.2 0 8\n";
+// 	outfile << "$EndMeshFormat\n";
+// 	outfile << "$Nodes\n";
+// 	outfile << X.size() << std::endl;
+// 	for(int j=0; j<X.size(); j++){
+// 		outfile << j+1 << "\t" << X[j] << "\n";}
+// 	outfile << "$EndNodes\n";
+// 	outfile << "$Elements\n";
+// 	outfile << NbElt << std::endl;
+// 	for(int j=0; j<NbElt; j++){
+// 		outfile << j  << "\t";
+// 		if(NbPt[j]==3){outfile << 2  << "\t";}
+// 		if(NbPt[j]==4){outfile << 3  << "\t";}
+// 		outfile << 2  << "\t";
+// 		outfile << 99 << "\t";
+// 		outfile << labelVisu[j] << "\t";
+// 		for(int k=0; k<NbPt[j]; k++){
+// 			outfile << Elt[j][k]+1 << "\t";}
+// 		outfile << "\n";
+// 	}
+// 	outfile << "$EndElements\n";
+//
+//
+// }
 
 
 //===============================//
@@ -370,8 +496,8 @@ public:
 		assert(Admissible != -1);
 		return Admissible;
 	}
-	friend std::ostream& operator<<(std::ostream& os, const Block& b){
-		os << "src:\t" << b.src_() << std::endl; os << "tgt:\t" << b.tgt_(); return os;}
+	// friend std::ostream& operator<<(std::ostream& os, const Block& b){
+	// 	os << "src:\t" << b.src_() << std::endl; os << "tgt:\t" << b.tgt_(); return os;}
 
 };
 }

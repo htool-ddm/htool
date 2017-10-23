@@ -10,6 +10,7 @@
 
 #include <mpi.h>
 #include <htool/htool.hpp>
+#include <htool/loading.hpp>
 using namespace std;
 using namespace htool;
 
@@ -24,10 +25,15 @@ int main(int argc, char const *argv[]) {
     return 1;
   }
   string matrixname = argv[1];
-
-  Matrix   A;
+  SetNdofPerElt(3);
+  Matrix<double>   A;
   LoadMatrix(matrixname.c_str(),A);
-  matrix_to_bytes(A, (matrixname.substr(0,matrixname.size()-4)+".bin").c_str());
+  for (int i=0;i<10;i++){
+    for(int j=0;j<10;j++){
+      cout << i <<" "<<j<< " "<<A(i,j) << endl;
+    }
+  }
+  A.matrix_to_bytes( (matrixname.substr(0,matrixname.size()-4)+".bin").c_str());
 
   return 0;
 }

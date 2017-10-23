@@ -4,23 +4,23 @@
 
 #=== lrmat_SVD
 if (EIGEN3_FOUND)
-  add_executable(Lrmat_SVD_tests lrmat_SVD_tests.cpp)
-  target_link_libraries(Lrmat_SVD_tests htool
+  add_executable(Test_lrmat_SVD test_lrmat_SVD.cpp)
+  target_link_libraries(Test_lrmat_SVD htool
                             ${EIGEN3_LIBRARIES})
-  target_include_directories(Lrmat_SVD_tests PUBLIC
+  target_include_directories(Test_lrmat_SVD PUBLIC
                             ${EIGEN3_INCLUDE_DIR})
-  add_dependencies(build-tests Lrmat_SVD_tests)
-  add_test(Lrmat_SVD_tests Lrmat_SVD_tests)
+  add_dependencies(build-tests Test_lrmat_SVD)
+  add_test(Test_lrmat_SVD Test_lrmat_SVD)
 endif()
 
 #=== lrmat_fullACA
-add_executable(Lrmat_fullACA_tests lrmat_fullACA_tests.cpp)
-target_link_libraries(Lrmat_fullACA_tests htool)
-add_dependencies(build-tests Lrmat_fullACA_tests)
-add_test(Lrmat_fullACA_tests Lrmat_fullACA_tests)
+add_executable(Test_lrmat_fullACA test_lrmat_fullACA.cpp)
+target_link_libraries(Test_lrmat_fullACA htool)
+add_dependencies(build-tests Test_lrmat_fullACA)
+add_test(Test_lrmat_fullACA Test_lrmat_fullACA)
 
 #=== lrmat_partialACA
-add_executable(Lrmat_partialACA_tests lrmat_partialACA_tests.cpp)
-target_link_libraries(Lrmat_partialACA_tests htool)
-add_dependencies(build-tests Lrmat_partialACA_tests)
-add_test(Lrmat_partialACA_tests Lrmat_partialACA_tests)
+add_executable(Test_lrmat_partialACA test_lrmat_partialACA.cpp)
+target_link_libraries(Test_lrmat_partialACA htool)
+add_dependencies(build-tests Test_lrmat_partialACA)
+add_test(Test_lrmat_partialACA Test_lrmat_partialACA)
