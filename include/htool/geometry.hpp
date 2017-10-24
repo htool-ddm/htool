@@ -156,9 +156,10 @@ void LoadPoints(const std::string& filename, std::vector<R3>& x, std::vector<dou
 //
 //==================================================//
 
-int LoadGMSHMesh(std::vector<R3>& x, const std::string& filename){
+int Load_GMSH_nodes(std::vector<R3>& x, const std::string& filename){
 
-	int size =0;
+	int size = 0;
+
   std::istringstream iss;
 	std::ifstream file;
 	std::string line;

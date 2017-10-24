@@ -134,7 +134,8 @@ endif()
 #=============================================================================#
 # Add sources file
 if (HTOOL_WITH_EXAMPLES)
-	add_subdirectory(src)
+	add_custom_target(build-examples)
+	add_subdirectory(examples)
 endif()
 
 # Add test files
