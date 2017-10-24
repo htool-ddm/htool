@@ -6,6 +6,7 @@ using namespace htool;
 int main(int argc, char const *argv[]) {
 
   SetMinClusterSize(1);
+  srand (1);
   bool test =0;
 
   int size = 10;
@@ -52,7 +53,7 @@ int main(int argc, char const *argv[]) {
   cout<<"max depth : "<<t.get_max_depth()<<endl;
   cout<<"min depth : "<<t.get_min_depth()<<endl;
 
-  test = test || !(t.get_max_depth()==4 && t.get_min_depth()==3);
+  test = test || !(t.get_max_depth()>=t.get_min_depth() && t.get_min_depth()>=0);
   t.print(perm);
 
 
