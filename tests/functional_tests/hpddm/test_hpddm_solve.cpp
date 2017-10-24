@@ -54,7 +54,7 @@ int main(int argc, char *argv[]){
 
 	// Mesh
 	std::vector<R3> p;
-	LoadGMSHMesh(p,argv[3]);
+	Load_GMSH_nodes(p,argv[3]);
 
 	// Hmatrix
 	std::vector<int> tab(n);

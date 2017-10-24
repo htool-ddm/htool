@@ -132,7 +132,6 @@ std::vector<int> Cluster_tree::get_labels(int visudep) const{
 			s_count.push(2*count+1);
     }
     else{
-      std::cout << curr -> get_depth() << std::endl;
       for(int i=curr->get_offset(); i<curr->get_offset()+curr->get_size(); i++){
         labels[ perm[i]] = count;
       }

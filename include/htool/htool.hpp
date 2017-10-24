@@ -21,6 +21,7 @@
 #include "lapack.hpp"
 #include "lrmat.hpp"
 #include "matrix.hpp"
+#include "output.hpp"
 #include "parametres.hpp"
 #include "partialACA.hpp"
 #include "point.hpp"

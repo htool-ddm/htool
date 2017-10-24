@@ -4,7 +4,7 @@ using namespace std;
 using namespace htool;
 
 int main(int argc, char *argv[]) {
-  MPI_Init(&argc,&argv),
+  MPI_Init(&argc,&argv);
   SetMinClusterSize(1);
   bool test =0;
 

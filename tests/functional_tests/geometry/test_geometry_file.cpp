@@ -19,7 +19,7 @@ int main(int argc, char const *argv[]) {
   std::vector<R3> points;
   std::vector<double> r;
 
-  test = test || (LoadGMSHMesh(points,argv[1]));
+  test = test || (Load_GMSH_nodes(points,argv[1]));
   test = test || !(norm2(points[0]-R3{1,0,0})<1e-16);
   test = test || !(norm2(points[1]-R3{0,1,0})<1e-16);
   test = test || !(norm2(points[2]-R3{-1,0,0})<1e-16);
