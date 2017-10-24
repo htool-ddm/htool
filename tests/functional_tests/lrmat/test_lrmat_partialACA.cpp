@@ -90,7 +90,7 @@ int main(){
 		test = test || !(A_partialACA_fixed.rank_of()==reqrank_max);
 
 		// Test Frobenius errors
-		test = test || !(partialACA_fixed_errors.back()<1e-9);
+		test = test || !(partialACA_fixed_errors.back()<1e-8);
 		cout << "Errors with Frobenius norm : "<<partialACA_fixed_errors<<endl;
 
 		// Test compression
