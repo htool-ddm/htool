@@ -4,10 +4,6 @@ sudo: false
 git:
   submodules: false
 
-branches:
-  only:
-  - master
-
 # Enable c++ support
 language: cpp
 
