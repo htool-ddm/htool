@@ -90,4 +90,4 @@ before_script:
 script:
   - CC=$C_COMPILER CXX=$CXX_COMPILER cmake ../
   - make -j build-tests
-  - make test
+  - ctest --output-on-failure
