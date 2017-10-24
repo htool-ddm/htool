@@ -29,14 +29,7 @@ namespace htool {
 
 
 class Cluster: public Parametres{
-// TODO visualisation for cluster
 private:
-	// const std::vector<R3>&       x;     // Nuage complet des points
-	// const std::vector<double>&   r;
-	// const std::vector<int>&     tab;	  // Vecteur renvoyant pour chaque dof l'indice de l'entite geometrique correspondante dans x
-
-	// std::vector<int>            num;     // Indices des dofs
-	// std::vector<int>&					 perm;     // Permutation from original numbering to clustered numbering
 	Cluster*        son[2];  // Paquets enfants
 	R3              ctr;     // Centre du paquet
 	double            rad;     // Rayon du champ proche
@@ -356,119 +349,6 @@ void Cluster::print(const std::vector<int>& perm) const
 	if (this->son[1]!=NULL) (*this->son[1]).print(perm);
 }
 
-// template<Input,Ouput>
-// void Cluster::output(std::string inputname, std::string outputname){
-// 	Input input(inputname);
-// 	std::vector<>
-//
-//
-// }
-
-// void (const Cluster& t, const std::vector<int>& perm, std::string inputname, std::string outputname, const unsigned int visudep){
-//
-// 	assert(t.depth==0); // on peut l'appeler juste pour la racine
-// 	std::vector<R3>  X;
-// 	std::vector<N4>  Elt;
-// 	std::vector<int> NbPt;
-// 	int   num,NbElt,poubelle, NbTri, NbQuad;
-// 	R3    Pt;
-//
-// 	// Ouverture fichier
-// 	std::ifstream infile;
-// 	infile.open(inputname.c_str());
-// 	if(!infile.good()){
-// 		std::cout << "LoadPoints in loading.hpp: error opening the geometry file" << std::endl;
-// 		abort();}
-//
-// 	// Nombre d'elements
-// 	infile >> NbElt;
-// 	assert(NbElt==t.x.size()/GetNdofPerElt());
-// 	Elt.resize(NbElt);
-// 	NbPt.resize(NbElt);
-//
-// 	num=0; NbTri=0; NbQuad=0;
-// 	// Lecture elements
-// 	for(int e=0; e<NbElt; e++){
-// 		infile >> poubelle;
-// 		infile >> NbPt[e];
-//
-// 		if(NbPt[e]==3){NbTri++;}
-// 		if(NbPt[e]==4){NbQuad++;}
-//
-// 		// Calcul centre element
-// 		for(int j=0; j<NbPt[e]; j++){
-// 			infile >> poubelle;
-// 			infile >> Pt;
-// 			Elt[e][j] = num;
-// 			X.push_back(Pt);
-// 			num++;
-// 		}
-//
-// 		// Separateur inter-element
-// 		if(e<NbElt-1){infile >> poubelle;}
-//
-// 	}
-// 	infile.close();
-//
-// 	// Cluster tree traversal
-// 	std::vector<int> labelVisu(NbElt);
-// 	// TraversalBuildLabel(t,perm,labelVisu,visudep,1);
-//
-// 	std::stack<Cluster*> s_cluster;
-// 	std::stack<int>      s_count;
-// 	s_cluster.push(&t);
-// 	s_count.push(1);
-// 	while (!(s.empty())) {
-// 		Cluster* curr = s_cluster.top();
-// 		int count     = s_count.top();
-// 		s_cluster.pop();
-// 		s_count.pop();
-//
-// 		if(curr->get_depth()<visudep){
-// 			assert( curr->get_son(0)!=0 ); // check if visudep is too high!
-// 			s_cluster.push(&(curr->get_son(0)));
-// 			s_count.push(2*count);
-// 			s_cluster.push(&(curr->get_son(1)));
-// 			s_count.push(2*count+1);
-// 		}
-// 		else{
-// 			for(int i=t->get_offset(); i<t.get_size()/GetNdofPerElt(); i++)
-// 			{
-// 				labelVisu[ perm[GetNdofPerElt()*i]/GetNdofPerElt() ] = count-pow(2,visudep);
-//
-// 			}
-// 		}
-//
-// 	}
-//
-// 	// Ecriture fichier de sortie
-// 	std::ofstream outfile;
-// 	outfile.open((GetOutputPath()+"/"+outputname).c_str());
-// 	outfile << "$MeshFormat\n";
-// 	outfile << "2.2 0 8\n";
-// 	outfile << "$EndMeshFormat\n";
-// 	outfile << "$Nodes\n";
-// 	outfile << X.size() << std::endl;
-// 	for(int j=0; j<X.size(); j++){
-// 		outfile << j+1 << "\t" << X[j] << "\n";}
-// 	outfile << "$EndNodes\n";
-// 	outfile << "$Elements\n";
-// 	outfile << NbElt << std::endl;
-// 	for(int j=0; j<NbElt; j++){
-// 		outfile << j  << "\t";
-// 		if(NbPt[j]==3){outfile << 2  << "\t";}
-// 		if(NbPt[j]==4){outfile << 3  << "\t";}
-// 		outfile << 2  << "\t";
-// 		outfile << 99 << "\t";
-// 		outfile << labelVisu[j] << "\t";
-// 		for(int k=0; k<NbPt[j]; k++){
-// 			outfile << Elt[j][k]+1 << "\t";}
-// 		outfile << "\n";
-// 	}
-// 	outfile << "$EndElements\n";
-//
-//
-// }
 
 
 //===============================//

@@ -38,10 +38,12 @@ int main(int argc, char *argv[]) {
   std::cout << vector_test_3 << std::endl;
   test = test || !(vector_test_1==vector_test_3);
 
+  std::cout << t.get_labels(2) << std::endl;
+
 
 
 
   MPI_Finalize();
-
+  std::cout << "test : "<<test << std::endl;
   return test;
 }

@@ -66,6 +66,9 @@ public:
   // Print
   void print(){root.print(perm);}
 
+  // Output
+  std::vector<int> get_labels(int visudep) const;
+
 };
 
 
@@ -108,6 +111,36 @@ void Cluster_tree::global_to_cluster(const T* const in, T* const out){
   for (int i = 0; i<perm.size();i++){
     out[i]=in[perm[i]];
   }
+}
+
+std::vector<int> Cluster_tree::get_labels(int visudep) const{
+  std::vector<int> labels(perm.size());
+  std::stack<const Cluster* const> s_cluster;
+	std::stack<int>      s_count;
+  s_cluster.push(&root);
+	s_count.push(0);
+  while (!(s_cluster.empty())) {
+		const Cluster* const curr = s_cluster.top();
+		int count     = s_count.top();
+		s_cluster.pop();
+		s_count.pop();
+    if(curr->get_depth()<visudep){
+      assert( curr->IsLeaf()!=true ); // check if visudep is too high!
+			s_cluster.push(&(curr->get_son(0)));
+			s_count.push(2*count);
+			s_cluster.push(&(curr->get_son(1)));
+			s_count.push(2*count+1);
+    }
+    else{
+      std::cout << curr -> get_depth() << std::endl;
+      for(int i=curr->get_offset(); i<curr->get_offset()+curr->get_size(); i++){
+        labels[ perm[i]] = count;
+      }
+    }
+  }
+
+
+  return labels;
 }
 
 } // namespace
