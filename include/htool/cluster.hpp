@@ -30,11 +30,6 @@ namespace htool {
 //=================================//
 
 
-// static const int Dynamic = Eigen::Dynamic;
-// typedef Eigen::Matrix3d               MatR3;
-// typedef Eigen::EigenSolver<MatR3>     EigenSolver;
-// typedef EigenSolver::EigenvectorsType EigenVector;
-// typedef EigenSolver::EigenvalueType   EigenValue;
 
 class Cluster: public Parametres{
 private:
@@ -160,18 +155,6 @@ void Cluster::build(const std::vector<R3>& x, const std::vector<double>& r, cons
 			}
 		}
 
-		// MatR3 cov_eigen; cov_eigen.setZero();
-		// curr->rad=0.;
-		// for(int j=0; j<nb_pt; j++){
-		// 	R3 u = x[tab[num[j]]] - xc;
-		// 	curr->rad=std::max(curr->rad,norm2(u));
-		// 	for(int p=0; p<3; p++){
-		// 		for(int q=0; q<3; q++){
-		// 			cov_eigen(p,q) = cov_eigen(p,q)+u[p]*u[q];
-		// 		}
-		// 	}
-		// }
-
 		// Calcul direction principale
 		double p1 = pow(cov(0,1),2) + pow(cov(0,2),2) + pow(cov(1,2),2);
 		std::vector<double> eigs(3);
@@ -180,7 +163,6 @@ void Cluster::build(const std::vector<R3>& x, const std::vector<double>& r, cons
 		R3 dir1;
 		R3 dir2;
 		if (p1 < 1e-15) {
-			// std::cout << "diag" << std::endl;
 	    	// cov is diagonal.
 	   		eigs[0] = cov(0,0);
 	   		eigs[1] = cov(1,1);
@@ -200,7 +182,6 @@ void Cluster::build(const std::vector<R3>& x, const std::vector<double>& r, cons
 	 		}
 		}
 		else {
-			// std::cout << "not diag" << std::endl;
 			double q = (cov(0,0)+cov(1,1)+cov(2,2))/3.;
 	   	double p2 = pow(cov(0,0) - q,2) + pow(cov(1,1) - q,2) + pow(cov(2,2) - q,2) + 2. * p1;
 	   	double p = sqrt(p2 / 6.);
@@ -225,19 +206,12 @@ void Cluster::build(const std::vector<R3>& x, const std::vector<double>& r, cons
    		eigs[0] = q + 2. * p * cos(phi);
    		eigs[2] = q + 2. * p * cos(phi + (2.*M_PI/3.));
    		eigs[1] = 3. * q - eigs[0] - eigs[2];     // since trace(cov) = eig1 + eig2 + eig3
-			//
-			// std::cout << I << std::endl;
-			// std::cout << eigs[0]<<std::endl;
-			// std::cout << eigs[0]*I<< std::endl;
-
-
 
 			if (std::abs(eigs[0]) < 1.e-15)
 				dir *= 0.;
 			else {
 				Matrix<double> prod(3,3);
 				prod = (cov - eigs[1] * I) * (cov - eigs[2] * I);
-				// std::cout << prod << std::endl;
 				int ind = 0;
 				double dirnorm = 0;
 				do {
@@ -246,8 +220,6 @@ void Cluster::build(const std::vector<R3>& x, const std::vector<double>& r, cons
 					dir[2] = prod(2,ind);
 					dirnorm = sqrt(dir[0]*dir[0]+dir[1]*dir[1]+dir[2]*dir[2]);
 					ind++;
-					if (dirnorm < 1.e-15)
-						std::cout << "pouet"<<std::endl;
 				}
 				while ((dirnorm < 1.e-15) || (ind < 3));
 				assert(dirnorm >= 1.e-15);
@@ -255,77 +227,8 @@ void Cluster::build(const std::vector<R3>& x, const std::vector<double>& r, cons
 				dir[1] /= dirnorm;
 				dir[2] /= dirnorm;
 			}
-		// 	if (std::abs(eigs[1]) < 1.e-15)
-		// 		dir *= 0.;
-		// 	else {
-		// 		Matrix<double> prod(3,3);
-		// 		prod = (cov - eigs[0] * I) * (cov - eigs[2] * I);
-		// 		// std::cout << prod << std::endl;
-		// 		int ind = 0;
-		// 		double dirnorm = 0;
-		// 		do {
-		// 			dir1[0] = prod(0,ind);
-		// 			dir1[1] = prod(1,ind);
-		// 			dir1[2] = prod(2,ind);
-		// 			dirnorm = sqrt(dir1[0]*dir1[0]+dir1[1]*dir1[1]+dir1[2]*dir1[2]);
-		// 			ind++;
-		// 			if (dirnorm < 1.e-15)
-		// 				std::cout << "pouet"<<std::endl;
-		// 		}
-		// 		while ((dirnorm < 1.e-15) || (ind < 3));
-		// 		assert(dirnorm >= 1.e-15);
-		// 		dir1[0] /= dirnorm;
-		// 		dir1[1] /= dirnorm;
-		// 		dir1[2] /= dirnorm;
-		// 	}
-		// 	if (std::abs(eigs[2]) < 1.e-15)
-		// 		dir *= 0.;
-		// 	else {
-		// 		Matrix<double> prod(3,3);
-		// 		prod = (cov - eigs[1] * I) * (cov - eigs[0] * I);
-		// 		// std::cout << prod << std::endl;
-		// 		int ind = 0;
-		// 		double dirnorm = 0;
-		// 		do {
-		// 			dir2[0] = prod(0,ind);
-		// 			dir2[1] = prod(1,ind);
-		// 			dir2[2] = prod(2,ind);
-		// 			dirnorm = sqrt(dir2[0]*dir2[0]+dir2[1]*dir2[1]+dir2[2]*dir2[2]);
-		// 			ind++;
-		// 			if (dirnorm < 1.e-15)
-		// 				std::cout << "pouet"<<std::endl;
-		// 		}
-		// 		while ((dirnorm < 1.e-15) || (ind < 3));
-		// 		assert(dirnorm >= 1.e-15);
-		// 		dir2[0] /= dirnorm;
-		// 		dir2[1] /= dirnorm;
-		// 		dir2[2] /= dirnorm;
-		// 	}
-		// }
-		// std::cout << curr->depth<<std::endl;
-		// std::cout << "principale : "<<dir  << std::endl;
-		// std::cout << "dir1 : "<<dir1  << std::endl;
-		// std::cout << "dir2 : "<<dir2  << std::endl;
-		// std::cout << "eigs : "<<eigs << std::endl;
 
-		// // Calcul direction principale
-		// EigenSolver eig(cov_eigen);
-		// EigenValue  lambda = eig.eigenvalues();
-		// EigenVector ev = eig.eigenvectors();
-		// int l = 0; double max=abs(lambda[0]);
-		// if( max<abs(lambda[1]) ){l=1; max=abs(lambda[1]);}
-		// if( max<abs(lambda[2]) ){l=2; }
-		// // R3 dir;
-		// dir[0] = ev(0,l).real();
-		// dir[1] = ev(1,l).real();
-		// dir[2] = ev(2,l).real();
-		//
-		// std::cout << "principale : "<<dir  << std::endl;
-		// for (int i =0 ;i<3;i++){
-		//
-		// 	std::cout << ev(0,i).real()<<" "<<ev(1,i).real()<<" "<<ev(2,i).real()<<std::endl;
 		}
-		// std::cout << lambda[0]<<" "<<lambda[1]<<" "<<lambda[2]<< std::endl<<std::endl;
 
 
 		// Construction des paquets enfants
