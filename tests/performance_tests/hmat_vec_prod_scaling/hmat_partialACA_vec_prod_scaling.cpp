@@ -42,10 +42,7 @@ int main(int argc, char const *argv[]){
 	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 
 	//
-	bool test = 0;
-	const int ndistance = 4;
 	double distance=3;
-
 	SetNdofPerElt(3);
 	SetEpsilon(1e-6);
 	SetEta(0.1);
@@ -63,109 +60,58 @@ int main(int argc, char const *argv[]){
 
 	double z1 = 1;
 	vector<R3>     p1(nr);
-	vector<int>  tab1(nr);
 	for(int j=0; j<nr; j++){
 		Ir[j] = j;
 		double rho = ((double) rand() / (double)(RAND_MAX)); // (double) otherwise integer division!
 		double theta = ((double) rand() / (double)(RAND_MAX));
 		p1[j][0] = sqrt(rho)*cos(2*M_PI*theta); p1[j][1] = sqrt(rho)*sin(2*M_PI*theta); p1[j][2] = z1;
 		// sqrt(rho) otherwise the points would be concentrated in the center of the disk
-		tab1[j]=j;
 	}
 	// p2: points in a unit disk of the plane z=z2
 	double z2 = 1+distance;
 	vector<R3> p2(nc);
-	vector<int> tab2(nc);
 	for(int j=0; j<nc; j++){
           Ic[j] = j;
 		double rho = ((double) rand() / (RAND_MAX)); // (double) otherwise integer division!
 		double theta = ((double) rand() / (RAND_MAX));
 		p2[j][0] = sqrt(rho)*cos(2*M_PI*theta); p2[j][1] = sqrt(rho)*sin(2*M_PI*theta); p2[j][2] = z2;
-		tab2[j]=j;
 	}
 
   // Matrix
 	MyMatrix A(p1,p2);
 
   // Hmatrix
-	HMatrix<partialACA,double> HA(A,p1,tab1,p2,tab2);
-	int nbr_dmat = HA.get_ndmat();
-	int nbr_lmat = HA.get_nlrmat();
-	double comp = HA.compression();
+	HMatrix<partialACA,double> HA(A,p1,p2);
 
-	if (rank==0){
-		cout << "nbr_dmat : "<<nbr_dmat<<endl;
-		cout << "nbr_lmat : "<<nbr_lmat<<endl;
-		cout << "compression : "<<comp<<endl;
-	}
 	HA.print_stats();
 	double mytime, maxtime, meantime;
+	double meanmax, meanmean;
 
   // Global vectors
-	std::vector<double> x_global(nc,1),f_ref_global(nr),f_global(nr),f_local_to_global(nr);
-	f_ref_global=A*x_global;
+	std::vector<double> x_global(nc,1),f_global(nr);
 
-  // Local vectors
-  int nr_local=HA.get_local_size_cluster();
-	const std::vector<std::vector<int>>& MasterClusters = HA.get_MasterClusters();
-	std::vector<double> x_local(nr_local,1),f_local(nr_local);
+
+	// Global products
 	for (int i =0;i<10;i++){
-	  // Global mvprod
 		MPI_Barrier(HA.get_comm());
 		mytime = MPI_Wtime();
-	  HA.mvprod_global(x_global.data(),f_global.data());
-		MPI_Barrier(HA.get_comm());
+		f_global=HA*x_global;
 		mytime= MPI_Wtime() - mytime;
 		MPI_Reduce(&mytime, &maxtime, 1, MPI_DOUBLE, MPI_MAX, 0,HA.get_comm());
 		MPI_Reduce(&mytime, &meantime, 1, MPI_DOUBLE, MPI_SUM, 0,HA.get_comm());
 		meantime/=size;
-		if (rank==0){
-			cout << maxtime<<" "<<meantime<<endl;
+		if (i>4){
+			meanmean += meantime;
+			meanmax  += maxtime;
 		}
-
-	  // Local mvprod
-		MPI_Barrier(HA.get_comm());
-		mytime = MPI_Wtime();
-	  HA.mvprod_local(x_local.data(),f_local.data());
-		MPI_Barrier(HA.get_comm());
-		mytime= MPI_Wtime() - mytime;
-		MPI_Reduce(&mytime, &maxtime, 1, MPI_DOUBLE, MPI_MAX, 0,HA.get_comm());
-		MPI_Reduce(&mytime, &meantime, 1, MPI_DOUBLE, MPI_SUM, 0,HA.get_comm());
-		meantime/=size;
-		if (rank==0){
-			cout << maxtime<<" "<<meantime<<endl;
-		}
-
-	  // Local to global
-	  std::vector<double> rcv(nr);
-
-	  std::vector<int> recvcounts(size);
-	  std::vector<int>  displs(size);
-
-	  displs[0] = 0;
-
-	  for (int i=0; i<size; i++) {
-	    recvcounts[i] = MasterClusters[i].size();
-	    if (i > 0)
-	      displs[i] = displs[i-1] + recvcounts[i-1];
-	  }
-
-
-	  MPI_Allgatherv(&(f_local.front()), recvcounts[rank], MPI_DOUBLE, &(rcv.front()), &(recvcounts.front()), &(displs.front()), MPI_DOUBLE, HA.get_comm());
-
-	  for (int i=0; i<size; i++)
-	    for (int j=0; j< MasterClusters[i].size(); j++)
-	      f_local_to_global[MasterClusters[i][j]] = rcv[displs[i]+j];
-
-
-	  // Errors
-	  if (rank==0){
-	  	cout << "Error on global mat vec prod : "<<norm2(f_global-f_ref_global)/norm2(f_ref_global)<<std::endl;
-	    cout << "Error on local mat vec prod : "<<norm2(f_local_to_global-f_ref_global)/norm2(f_ref_global)<<std::endl;
-
-	  }
 	}
+	meanmax /= 5;
+	meanmean /= 5;
+	if (rank==0){
+		std::cout <<"Five mvprod: "<<"max ="<<meanmax<<"\t"<<"mean = "<<meanmean<<std::endl;
+	}
+
 	// Finalize the MPI environment.
 	MPI_Finalize();
-	return test;
+	return 0;
 }
