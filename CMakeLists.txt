@@ -36,16 +36,16 @@ option(HTOOL_WITH_GUI      "Build htool visualization tools ?" OFF)
 #========================== External Libraries ===============================#
 #=============================================================================#
 # MPI
-find_package (MPI REQUIRED QUIET)
+find_package (MPI REQUIRED)
 message("-- MPI libraries found in " "${MPI_LIBRARIES}")
 message("-- MPI include files found in " "${MPI_INCLUDE_PATH}")
 
 # BLAS
-find_package(BLAS REQUIRED QUIET)
+find_package(BLAS REQUIRED)
 message("-- Found Blas implementation:" "${BLAS_LIBRARIES}")
 
 # EIGEN3
-find_package(EIGEN3 QUIET)
+find_package(EIGEN3)
 if (EIGEN3_FOUND)
 	message("-- Found Eigen3:" "${EIGEN3_INCLUDE_DIR}")
 else()
@@ -53,14 +53,14 @@ else()
 endif()
 
 # LAPACK
-find_package(LAPACK REQUIRED QUIET)
+find_package(LAPACK)
 message("-- Found Lapack:" "${LAPACK_LIBRARIES}")
 
 # SUITESPARSE
-find_package(SuiteSparse REQUIRED)
+find_package(SuiteSparse)
 
 # HPDDM
-find_package(HPDDM REQUIRED)
+find_package(HPDDM)
 
 
 if (HTOOL_WITH_GUI)
@@ -132,18 +132,20 @@ endif()
 #=============================================================================#
 #========================== Repertories ======================================#
 #=============================================================================#
-# Add sources file
+# Add examples
 if (HTOOL_WITH_EXAMPLES)
 	add_custom_target(build-examples)
-	add_subdirectory(examples)
+	add_subdirectory(examples EXCLUDE_FROM_ALL)
 endif()
 
-# Add test files
+# Add tests
 if (HTOOL_WITH_TESTS)
 	enable_testing()
 	add_custom_target(build-tests)
 	add_subdirectory(tests EXCLUDE_FROM_ALL)
 endif()
+
+add_subdirectory(src)
 
 #
 #
