@@ -778,7 +778,7 @@ void HMatrix<LowRankMatrix,T >::ComputeStats(const std::vector<double>& mytime){
 
 	meantime /= sizeWorld;
 
-	// save
+	// Times
 	stats["Cluster tree (mean)"]=meantime[0];
 	stats["Cluster tree  (max)"]=maxtime[0];
 	stats["Block tree   (mean)"]=meantime[1];
@@ -787,17 +787,23 @@ void HMatrix<LowRankMatrix,T >::ComputeStats(const std::vector<double>& mytime){
 	stats["Scatter tree  (max)"]=maxtime[2];
 	stats["Blocks       (mean)"]=meantime[3];
 	stats["Blocks           (max)"]  =maxtime[3];
+
+	// Size
+	stats["Source size"] = this->nc;
+	stats["Target size"] = this->nr;
 	stats["Dense block size (max)"]  =maxstats[0];
 	stats["Dense block size (mean)"] =meanstats[0];
 	stats["Dense block size (min)"]  =minstats[0];
 	stats["Low rank block size (max)"]   =maxstats[1];
 	stats["Low rank  block size (mean)"] =meanstats[1];
 	stats["Low rank  block size (min)"]  =minstats[1];
+
 	stats["Rank (max)"]  =maxstats[2];
 	stats["Rank (mean)"] =meanstats[2];
 	stats["Rank (min)"]  =minstats[2];
 	stats["Number of lrmat"] = nlrmat;
 	stats["Number of dmat"]  = ndmat;
+	stats["Compression"] = this->compression();
 }
 
 
