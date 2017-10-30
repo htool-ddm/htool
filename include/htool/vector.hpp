@@ -1,5 +1,5 @@
-#ifndef VECTOR_HPP
-#define VECTOR_HPP
+#ifndef HTOOL_VECTOR_HPP
+#define HTOOL_VECTOR_HPP
 
 #include <vector>
 #include <functional>

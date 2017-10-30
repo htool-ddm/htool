@@ -1,5 +1,5 @@
-#ifndef POINT_HPP
-#define POINT_HPP
+#ifndef HTOOL_POINT_HPP
+#define HTOOL_POINT_HPP
 
 #include <complex>
 #include <array>

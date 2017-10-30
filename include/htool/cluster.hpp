@@ -1,5 +1,5 @@
-#ifndef CLUSTER_HPP
-#define CLUSTER_HPP
+#ifndef HTOOL_CLUSTER_HPP
+#define HTOOL_CLUSTER_HPP
 
 #include "matrix.hpp"
 #include "point.hpp"

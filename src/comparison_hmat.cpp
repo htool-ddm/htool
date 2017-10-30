@@ -70,7 +70,7 @@ int main(int argc, char* argv[]){
 
 	A.bytes_to_matrix(GetMatrixPath().c_str());
 	toc();
-
+std::cout << "ok" << std::endl;
 	// // Vecteur pour le produit matrice vecteur
 	// int nr  = nb_rows(A);
 	// vector<Cplx> u(nr);
@@ -164,4 +164,6 @@ int main(int argc, char* argv[]){
 
   //Finalize the MPI environment.
 	MPI_Finalize();
+
+	return 0;
 }

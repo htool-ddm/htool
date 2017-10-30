@@ -1,5 +1,5 @@
-#ifndef LRMAT_HPP
-#define LRMAT_HPP
+#ifndef HTOOL_LRMAT_HPP
+#define HTOOL_LRMAT_HPP
 
 #include <vector>
 #include "cluster.hpp"

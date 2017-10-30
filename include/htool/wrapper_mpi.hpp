@@ -1,5 +1,5 @@
-#ifndef WRAPPER_MPI_HPP
-#define WRAPPER_MPI_HPP
+#ifndef HTOOL_WRAPPER_MPI_HPP
+#define HTOOL_WRAPPER_MPI_HPP
 
 #include <mpi.h>
 

@@ -1,5 +1,5 @@
-#ifndef USER_HPP
-#define USER_HPP
+#ifndef HTOOL_USER_HPP
+#define HTOOL_USER_HPP
 
 #include <ctime>
 #include <stack>
@@ -7,6 +7,7 @@
 #include <vector>
 #include <sstream>
 #include <iostream>
+#include <mpi.h>
 
 namespace htool {
 ////////////////========================================================////////////////
@@ -14,17 +15,28 @@ namespace htool {
 
 std::stack<clock_t> tictoc_stack;
 
-void tic() {
-	tictoc_stack.push(clock());
+inline void tic(MPI_Comm comm= MPI_COMM_WORLD) {
+	MPI_Barrier(comm);
+	int rank;
+	MPI_Comm_rank(comm, &rank);
+	if (rank){
+		tictoc_stack.push(clock());
+	}
 }
 
-void toc() {
-    double time =((double)(clock() - tictoc_stack.top())) / CLOCKS_PER_SEC;
-    std::cout << "Time elapsed: " << time << std::endl;
-    tictoc_stack.pop();
+inline void toc(MPI_Comm comm = MPI_COMM_WORLD) {
+		MPI_Barrier(comm);
+
+		int rank;
+		MPI_Comm_rank(comm, &rank);
+		if (rank){
+	    double time =((double)(clock() - tictoc_stack.top())) / CLOCKS_PER_SEC;
+	    std::cout << "Time elapsed: " << time << std::endl;
+	    tictoc_stack.pop();
+		}
 }
 
-void toc(std::vector<double>& times) {
+inline void toc(std::vector<double>& times) {
 	double time =((double)(clock() - tictoc_stack.top())) / CLOCKS_PER_SEC;
 	std::cout << "Time elapsed: " << time << std::endl;
 	times.push_back(time);

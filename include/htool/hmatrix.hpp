@@ -1,5 +1,5 @@
-#ifndef HMATRIX_HPP
-#define HMATRIX_HPP
+#ifndef HTOOL_HMATRIX_HPP
+#define HTOOL_HMATRIX_HPP
 
 #include <cassert>
 #include <fstream>

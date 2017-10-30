@@ -1,5 +1,5 @@
-#ifndef PRECONDITIONER_HPP
-#define PRECONDITIONER_HPP
+#ifndef HTOOL_PRECONDITIONER_HPP
+#define HTOOL_PRECONDITIONER_HPP
 
 #include "matrix.hpp"
 #include "lapack.hpp"

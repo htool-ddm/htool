@@ -1,7 +1,7 @@
-#include <complex>
-#ifndef BLAS_HPP
-#define BLAS_HPP
+#ifndef HTOOL_BLAS_HPP
+#define HTOOL_BLAS_HPP
 
+#include <complex>
 
 #if defined(__powerpc__) || defined(INTEL_MKL_VERSION)
 # define HTOOL_F77(func) func

@@ -1,5 +1,5 @@
-#ifndef PARTIALACA_HPP
-#define PARTIALACA_HPP
+#ifndef HTOOL_PARTIALACA_HPP
+#define HTOOL_PARTIALACA_HPP
 
 #include <iostream>
 #include <fstream>

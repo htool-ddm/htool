@@ -1,5 +1,5 @@
-#ifndef SVD_HPP
-#define SVD_HPP
+#ifndef HTOOL_SVD_HPP
+#define HTOOL_SVD_HPP
 
 #include "lrmat.hpp"
 #include <cassert>
