@@ -19,7 +19,7 @@ inline void tic(MPI_Comm comm= MPI_COMM_WORLD) {
 	MPI_Barrier(comm);
 	int rank;
 	MPI_Comm_rank(comm, &rank);
-	if (rank){
+	if (rank==0){
 		tictoc_stack.push(clock());
 	}
 }
@@ -29,7 +29,7 @@ inline void toc(MPI_Comm comm = MPI_COMM_WORLD) {
 
 		int rank;
 		MPI_Comm_rank(comm, &rank);
-		if (rank){
+		if (rank==0){
 	    double time =((double)(clock() - tictoc_stack.top())) / CLOCKS_PER_SEC;
 	    std::cout << "Time elapsed: " << time << std::endl;
 	    tictoc_stack.pop();
