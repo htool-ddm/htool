@@ -42,8 +42,8 @@ private:
 
 	std::vector<LowRankMatrix<T> > MyFarFieldMats;
 	std::vector<SubMatrix<T> >     MyNearFieldMats;
-	std::vector<LowRankMatrix<T>*> MyDiagFarFieldMats;
-	std::vector<SubMatrix<T>*>		 MyDiagNearFieldMats;
+	std::vector<int> MyDiagFarFieldMats;
+	std::vector<int> MyDiagNearFieldMats;
 
 
 	std::shared_ptr<Cluster_tree> cluster_tree_s;
@@ -147,9 +147,10 @@ public:
 	std::vector<std::pair<int,int>> get_MasterOffset_s() const {return cluster_tree_s->get_masteroffset();}
 	std::vector<int> get_permt() const {return cluster_tree_t->get_perm();}
 	std::vector<int> get_perms() const {return cluster_tree_s->get_perm();}
-
-	//
-	void compute_diag_block(T* diag_block);
+	const std::vector<SubMatrix<T>>& get_MyNearFieldMats() const {return MyNearFieldMats;}
+	const std::vector<LowRankMatrix<T>>& get_MyFarFieldMats() const {return MyFarFieldMats;}
+	const std::vector<int>& get_MyDiagNearFieldMats() const {return MyDiagNearFieldMats;}
+	const std::vector<int>& get_MyDiagFarFieldMats() const {return MyDiagFarFieldMats;}
 
 	// Stats - infos
 	const std::map<std::string,double>& get_stats () const { return stats;}
@@ -712,7 +713,8 @@ template< template<typename> class LowRankMatrix, typename T>
 void HMatrix<LowRankMatrix,T >::AddNearFieldMat(const IMatrix<T>& mat, const Cluster& t, const Cluster& s){
 	MyNearFieldMats.emplace_back(mat, std::vector<int>(cluster_tree_t->get_perm_start()+t.get_offset(),cluster_tree_t->get_perm_start()+t.get_offset()+t.get_size()), std::vector<int>(cluster_tree_s->get_perm_start()+s.get_offset(),cluster_tree_s->get_perm_start()+s.get_offset()+s.get_size()),t.get_offset(),s.get_offset());
 	if (s.get_rank()==rankWorld){
-		MyDiagNearFieldMats.push_back(&(MyNearFieldMats.back()));
+        MyDiagNearFieldMats.push_back(MyNearFieldMats.size()-1);
+				// std::cout <<"pouet"<<(*MyDiagNearFieldMats.back()).get_ir() << std::endl;
 	}
 }
 
@@ -722,7 +724,8 @@ void HMatrix<LowRankMatrix,T >::AddFarFieldMat(const IMatrix<T>& mat, const Clus
 	MyFarFieldMats.emplace_back(std::vector<int>(cluster_tree_t->get_perm_start()+t.get_offset(),cluster_tree_t->get_perm_start()+t.get_offset()+t.get_size()), std::vector<int>(cluster_tree_s->get_perm_start()+s.get_offset(),cluster_tree_s->get_perm_start()+s.get_offset()+s.get_size()),t.get_offset(),s.get_offset(),reqrank);
 	MyFarFieldMats.back().build(mat,t,xt,tabt,s,xs,tabs);
 	if (s.get_rank()==rankWorld){
-		MyDiagFarFieldMats.push_back(&(MyFarFieldMats.back()));
+        MyDiagFarFieldMats.push_back(MyFarFieldMats.size()-1);
+				// std::cout <<(*MyDiagFarFieldMats.back()).rank_of() << std::endl;
 	}
 }
 

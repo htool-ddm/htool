@@ -58,9 +58,54 @@ public:
       }
     }
 
-
+    // Building Ai
     bool sym=false;
-    mat_loc= mat0.get_submatrix(renum_to_global,renum_to_global).get_mat();
+    const std::vector<int>& MyDiagFarFieldMats = hpddm_op.HA.get_MyDiagFarFieldMats();
+    const std::vector<int>& MyDiagNearFieldMats= hpddm_op.HA.get_MyDiagNearFieldMats();
+
+    // Internal dense blocks
+    const std::vector<SubMatrix<T>>& MyNearFieldMats = hpddm_op.HA.get_MyNearFieldMats();
+    for (int i=0;i<MyDiagNearFieldMats.size();i++){
+      const SubMatrix<T>& submat = MyNearFieldMats[MyDiagNearFieldMats[i]];
+      int local_nr = submat.nb_rows();
+      int local_nc = submat.nb_cols();
+      int offset_i = submat.get_offset_i()-hpddm_op.HA.get_local_offset();;
+      int offset_j = submat.get_offset_j()-hpddm_op.HA.get_local_offset();
+      for (int i=0;i<local_nc;i++){
+        std::copy_n(&(submat(0,i)),local_nr,&mat_loc[offset_i+(offset_j+i)*n]);
+      }
+    }
+
+    // Internal compressed block
+    const std::vector<LowRankMatrix<T>>& MyFarFieldMats = hpddm_op.HA.get_MyFarFieldMats();
+    Matrix<T> FarFielBlock(n,n);
+    for (int i=0;i<MyDiagFarFieldMats.size();i++){
+      const LowRankMatrix<T>& lmat = MyFarFieldMats[MyDiagFarFieldMats[i]];
+      int local_nr = lmat.nb_rows();
+      int local_nc = lmat.nb_cols();
+      int offset_i = lmat.get_offset_i()-hpddm_op.HA.get_local_offset();
+      int offset_j = lmat.get_offset_j()-hpddm_op.HA.get_local_offset();;
+      FarFielBlock.resize(local_nr,local_nc);
+      lmat.get_whole_matrix(&(FarFielBlock(0,0)));
+      for (int i=0;i<local_nc;i++){
+        std::copy_n(&(FarFielBlock(0,i)),local_nr,&mat_loc[offset_i+(offset_j+i)*n]);
+      }
+    }
+
+
+    // Overlap
+    std::vector<T> horizontal_block(n-n_inside,n_inside),vertical_block(n,n-n_inside);
+    horizontal_block = mat0.get_submatrix(std::vector<int>(renum_to_global.begin()+n_inside,renum_to_global.end()),std::vector<int>(renum_to_global.begin(),renum_to_global.begin()+n_inside)).get_mat();
+    vertical_block = mat0.get_submatrix(renum_to_global,std::vector<int>(renum_to_global.begin()+n_inside,renum_to_global.end())).get_mat();
+    for (int j=0;j<n_inside;j++){
+      std::copy_n(horizontal_block.begin()+j*(n-n_inside),n-n_inside,&mat_loc[n_inside+j*n]);
+    }
+    for (int j=n_inside;j<n;j++){
+      std::copy_n(vertical_block.begin()+(j-n_inside)*n,n,&mat_loc[j*n]);
+    }
+
+    // mat_loc= mat0.get_submatrix(renum_to_global,renum_to_global).get_mat();
+
     hpddm_op.initialize(n, sym, mat_loc.data(), neighbors, intersections);
 
     fill(D.begin(),D.begin()+n_inside,1);

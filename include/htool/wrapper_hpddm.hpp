@@ -67,10 +67,10 @@ void solve(const HMatrix<LowRankMatrix,T>& HA,const T* const rhs, T* const x){
   HA.source_to_cluster_permutation(rhs,rhs_perm.data());
 
   // Solve
-  std::cout << rhs_perm << std::endl;
-  std::cout << x_local << std::endl;
-  std::cout << x_local.size()<<" "<<rhs_perm.size()<<std::endl;
-  std::cout << offset << std::endl;
+  // std::cout << rhs_perm << std::endl;
+  // std::cout << x_local << std::endl;
+  // std::cout << x_local.size()<<" "<<rhs_perm.size()<<std::endl;
+  // std::cout << offset << std::endl;
   HPDDM::IterativeMethod::solve(A_HPDDM, rhs_perm.data()+offset, x_local.data(), 1,HA.get_comm());
 
   // Local to global

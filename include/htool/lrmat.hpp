@@ -70,6 +70,23 @@ public:
     }
   }
 
+  void get_whole_matrix(T* const out) const {
+    char transa ='N';
+    char transb ='N';
+    int M = U.nb_rows();
+    int N = V.nb_cols();
+    int K = U.nb_cols();
+    T alpha = 1;
+    int lda =  U.nb_rows();
+    int ldb =  V.nb_rows();
+    T beta = 0;
+    int ldc = U.nb_rows();
+
+
+    Blas<T>::gemm(&transa, &transb, &M, &N, &K, &alpha, &(U(0,0)),
+    &lda, &(V(0,0)), &ldb, &beta, out,&ldc);
+  }
+
   double compression() const{
     return (1 - ( this->rank*( 1./double(this->nr) + 1./double(this->nc))));
   }
