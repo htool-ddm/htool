@@ -160,8 +160,6 @@ void Cluster::build(const std::vector<R3>& x, const std::vector<double>& r, cons
 		std::vector<double> eigs(3);
 		Matrix<double> I(3,3);I(0,0)=1;I(1,1)=1;I(2,2)=1;
 		R3 dir;
-		R3 dir1;
-		R3 dir2;
 		if (p1 < 1e-15) {
 	    	// cov is diagonal.
 	   		eigs[0] = cov(0,0);
