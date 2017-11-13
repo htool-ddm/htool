@@ -10,17 +10,15 @@
 #include <mpi.h>
 
 namespace htool {
-////////////////========================================================////////////////
-////////////////////////========  Gestion temps	========////////////////////////////////
-
-std::stack<clock_t> tictoc_stack;
+//  Timing
+std::stack<clock_t> htool_tictoc_stack;
 
 inline void tic(MPI_Comm comm= MPI_COMM_WORLD) {
 	MPI_Barrier(comm);
 	int rank;
 	MPI_Comm_rank(comm, &rank);
 	if (rank==0){
-		tictoc_stack.push(clock());
+		htool_tictoc_stack.push(clock());
 	}
 }
 
@@ -30,22 +28,20 @@ inline void toc(MPI_Comm comm = MPI_COMM_WORLD) {
 		int rank;
 		MPI_Comm_rank(comm, &rank);
 		if (rank==0){
-	    double time =((double)(clock() - tictoc_stack.top())) / CLOCKS_PER_SEC;
+	    double time =((double)(clock() - htool_tictoc_stack.top())) / CLOCKS_PER_SEC;
 	    std::cout << "Time elapsed: " << time << std::endl;
-	    tictoc_stack.pop();
+	    htool_tictoc_stack.pop();
 		}
 }
 
 inline void toc(std::vector<double>& times) {
-	double time =((double)(clock() - tictoc_stack.top())) / CLOCKS_PER_SEC;
+	double time =((double)(clock() - htool_tictoc_stack.top())) / CLOCKS_PER_SEC;
 	std::cout << "Time elapsed: " << time << std::endl;
 	times.push_back(time);
-	tictoc_stack.pop();
+	htool_tictoc_stack.pop();
 }
 
-////////////////========================================================////////////////
-////////////////////////========  Conversions	========////////////////////////////////
-
+// Conversions
 template <typename T>
 std::string NbrToStr ( T Number )
 {
@@ -63,8 +59,7 @@ T StrToNbr ( const std::string &Text )
 }
 
 
-////////////////========================================================////////////////
-////////////////////////========    String splitting	========////////////////////////
+//  String splitting
 
 std::vector<std::string> &split(const std::string &s, char delim, std::vector<std::string> &elems) {
     std::stringstream ss(s);
@@ -80,5 +75,25 @@ std::vector<std::string> split(const std::string &s, char delim) {
 	return elems;
 }
 }
+
+// Number of instances
+// http://www.drdobbs.com/cpp/counting-objects-in-c/184403484?pgno=2
+template<typename T>
+class Counter {
+public:
+    Counter() { ++count; }
+    Counter(const Counter&) { ++count; }
+    ~Counter() { --count; }
+
+    static size_t howMany()
+    { return count; }
+
+private:
+    static size_t count;
+};
+
+template<typename T>
+size_t
+Counter<T>::count = 0;
 
 #endif

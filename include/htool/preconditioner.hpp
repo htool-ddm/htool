@@ -33,6 +33,10 @@ public:
     const std::vector<std::vector<int> >& intersections0,
     MPI_Comm comm0=MPI_COMM_WORLD): hpddm_op(hmat_0), n(ovr_subdomain_to_global0.size()), n_inside(cluster_to_ovr_subdomain0.size()), neighbors(neighbors0), vec_ovr(n),mat_loc(n*n), D(n), comm(comm0) {
 
+    // Timing
+    std::vector<double> mytime(2), maxtime(2), meantime(2);
+    double time = MPI_Wtime();
+
     std::vector<int> renum(n,-1);
     std::vector<int> renum_to_global(n);
 
@@ -112,8 +116,20 @@ public:
     fill(D.begin()+n_inside,D.end(),0);
 
     hpddm_op.HPDDMDense<LowRankMatrix,T>::super::super::initialize(D.data());
+    mytime[0] =  MPI_Wtime() - time;
+    time = MPI_Wtime();
     hpddm_op.callNumfact();
+    mytime[1] = MPI_Wtime() - time;
 
+    // Timing
+    MPI_Reduce(&(mytime[0]), &(maxtime[0]), 2, MPI_DOUBLE, MPI_MAX, 0,comm);
+  	MPI_Reduce(&(mytime[0]), &(meantime[0]), 2, MPI_DOUBLE, MPI_SUM, 0,comm);
+    meantime /= hmat_0.get_sizeworld();
+
+    Add_info(hpddm_op.HA.get_name(),"DDM setup (mean)",meantime[0]);
+    Add_info(hpddm_op.HA.get_name(),"DDM setup (max)",  maxtime[0]);
+    Add_info(hpddm_op.HA.get_name(),"DDM facto (mean)",meantime[1]);
+    Add_info(hpddm_op.HA.get_name(),"DDM facto (max)",  maxtime[1]);
 
   }
 
@@ -123,6 +139,7 @@ public:
     int sizeWorld = hpddm_op.HA.get_sizeworld();
     int offset = hpddm_op.HA.get_local_offset();
     int size   = hpddm_op.HA.get_local_size();
+    double time = MPI_Wtime();
 
     //
     std::vector<T> rhs_perm(hpddm_op.HA.nb_cols());
@@ -149,6 +166,9 @@ public:
     // Permutation
     hpddm_op.HA.cluster_to_target_permutation(hpddm_op.in_global->data(),x);
 
+    // Timing
+    time = MPI_Wtime()-time;
+    Add_info(hpddm_op.HA.get_name(),"Solve ", time);
   }
 
 
