@@ -18,7 +18,6 @@
 #include "fullACA.hpp"
 #include "geometry.hpp"
 #include "hmatrix.hpp"
-#include "infos.hpp"
 #include "lapack.hpp"
 #include "lrmat.hpp"
 #include "matrix.hpp"

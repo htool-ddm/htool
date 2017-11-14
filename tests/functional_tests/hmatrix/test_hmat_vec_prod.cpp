@@ -93,7 +93,7 @@ int main(int argc, char *argv[]) {
 
   		// HMatrix<fullACA,double> HA(A,p1,r1,tab1,p2,r2,tab2);
   		HMatrix<fullACA,double> HA(A,p1,r1,tab1,p2,r2,tab2);
-  		HA.print_stats();
+  		HA.print_infos();
 
 
 

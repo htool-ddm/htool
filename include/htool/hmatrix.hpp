@@ -10,7 +10,6 @@
 #include "parametres.hpp"
 #include "cluster_tree.hpp"
 #include "wrapper_mpi.hpp"
-#include "infos.hpp"
 
 namespace htool {
 
@@ -28,7 +27,7 @@ double Frobenius_absolute_error(const HMatrix<LowRankMatrix,T>& B, const IMatrix
 
 // Class
 template< template<typename> class LowRankMatrix, typename T >
-class HMatrix: public Parametres, private Counter<HMatrix<LowRankMatrix,T>>{
+class HMatrix: public Parametres{
 
 private:
 	// Data members
@@ -50,12 +49,11 @@ private:
 	std::shared_ptr<Cluster_tree> cluster_tree_s;
 	std::shared_ptr<Cluster_tree> cluster_tree_t;
 
-	std::map<std::string, double> stats;
+	mutable std::map<std::string, double> infos;
 
 	MPI_Comm comm;
 	int rankWorld,sizeWorld;
 
-	std::string name;
 
 	// Internal methods
 	void ScatterTasks();
@@ -64,66 +62,63 @@ private:
 	bool UpdateBlocks(const IMatrix<T>&mat ,const Cluster&, const Cluster&, const std::vector<R3> xt,const std::vector<int> tabt, const std::vector<R3> xs, const std::vector<int>tabs);
 	void AddNearFieldMat(const IMatrix<T>& mat, const Cluster& t, const Cluster& s);
 	void AddFarFieldMat(const IMatrix<T>& mat, const Cluster& t, const Cluster& s, const std::vector<R3> xt,const std::vector<int> tabt, const std::vector<R3> xs, const std::vector<int>tabs, const int& reqrank=-1);
-	void ComputeStats(const std::vector<double>& mytimes);
+	void ComputeInfos(const std::vector<double>& mytimes);
 
 
 public:
-	// make howMany public
-	using Counter<HMatrix>::howMany;
-
 	// Build
 	void build(const IMatrix<T>& mat, const std::vector<R3>& xt, const std::vector<double>& rt, const std::vector<int>& tabt, const std::vector<double>& gt, const std::vector<R3>&xs, const std::vector<double>& rs, const std::vector<int>& tabs, const std::vector<double>& gs, MPI_Comm comm=MPI_COMM_WORLD); // To be used with two different clusters
 
 	// Full constructor
-	HMatrix(const IMatrix<T>&, const std::vector<R3>& xt, const std::vector<double>& rt, const std::vector<int>& tabt, const std::vector<double>& gt, const std::vector<R3>&xs, const std::vector<double>& rs, const std::vector<int>& tabs, const std::vector<double>& gs, const int& reqrank=-1, const std::string& name = "", MPI_Comm comm=MPI_COMM_WORLD); // To be used with two different clusters
+	HMatrix(const IMatrix<T>&, const std::vector<R3>& xt, const std::vector<double>& rt, const std::vector<int>& tabt, const std::vector<double>& gt, const std::vector<R3>&xs, const std::vector<double>& rs, const std::vector<int>& tabs, const std::vector<double>& gs, const int& reqrank=-1, MPI_Comm comm=MPI_COMM_WORLD); // To be used with two different clusters
 
 	// Constructor without radius
-	HMatrix(const IMatrix<T>&, const std::vector<R3>& xt, const std::vector<int>& tabt, const std::vector<double>& gt, const std::vector<R3>&xs, const std::vector<int>& tabs, const std::vector<double>& gs, const int& reqrank=-1, const std::string& name = "", MPI_Comm comm=MPI_COMM_WORLD); // To be used with two different clusters
+	HMatrix(const IMatrix<T>&, const std::vector<R3>& xt, const std::vector<int>& tabt, const std::vector<double>& gt, const std::vector<R3>&xs, const std::vector<int>& tabs, const std::vector<double>& gs, const int& reqrank=-1, MPI_Comm comm=MPI_COMM_WORLD); // To be used with two different clusters
 
 	// Constructor without mass
-	HMatrix(const IMatrix<T>&, const std::vector<R3>& xt, const std::vector<double>& rt, const std::vector<int>& tabt, const std::vector<R3>&xs, const std::vector<double>& rs, const std::vector<int>& tabs, const int& reqrank=-1, const std::string& name = "", MPI_Comm comm=MPI_COMM_WORLD); // To be used with two different clusters
+	HMatrix(const IMatrix<T>&, const std::vector<R3>& xt, const std::vector<double>& rt, const std::vector<int>& tabt, const std::vector<R3>&xs, const std::vector<double>& rs, const std::vector<int>& tabs, const int& reqrank=-1, MPI_Comm comm=MPI_COMM_WORLD); // To be used with two different clusters
 
 	// Constructor without tab
-	HMatrix(const IMatrix<T>&, const std::vector<R3>& xt, const std::vector<double>& rt, const std::vector<double>& gt, const std::vector<R3>&xs, const std::vector<double>& rs, const std::vector<double>& gs, const int& reqrank=-1, const std::string& name = "", MPI_Comm comm=MPI_COMM_WORLD); // To be used with two different clusters
+	HMatrix(const IMatrix<T>&, const std::vector<R3>& xt, const std::vector<double>& rt, const std::vector<double>& gt, const std::vector<R3>&xs, const std::vector<double>& rs, const std::vector<double>& gs, const int& reqrank=-1, MPI_Comm comm=MPI_COMM_WORLD); // To be used with two different clusters
 
 	// Constructor without radius, tab and mass
-	HMatrix(const IMatrix<T>&, const std::vector<R3>& xt, const std::vector<R3>&xs, const int& reqrank=-1, const std::string& name = "", MPI_Comm comm=MPI_COMM_WORLD); // To be used with two different clusters
+	HMatrix(const IMatrix<T>&, const std::vector<R3>& xt, const std::vector<R3>&xs, const int& reqrank=-1, MPI_Comm comm=MPI_COMM_WORLD); // To be used with two different clusters
 
 	// Symetric build
 	void build(const IMatrix<T>& mat, const std::vector<R3>& xt, const std::vector<double>& rt, const std::vector<int>& tabt, const std::vector<double>& gt, MPI_Comm comm=MPI_COMM_WORLD); // To be used with one different clusters
 
 	// Full symetric constructor
-	HMatrix(const IMatrix<T>&, const std::vector<R3>& xt, const std::vector<double>& rt, const std::vector<int>& tabt, const std::vector<double>& gt, const int& reqrank=-1, const std::string& name = "", MPI_Comm comm=MPI_COMM_WORLD); // To be used with one different clusters
+	HMatrix(const IMatrix<T>&, const std::vector<R3>& xt, const std::vector<double>& rt, const std::vector<int>& tabt, const std::vector<double>& gt, const int& reqrank=-1, MPI_Comm comm=MPI_COMM_WORLD); // To be used with one different clusters
 
 	// Symetric constructor without radius
-	HMatrix(const IMatrix<T>&, const std::vector<R3>& xt, const std::vector<int>& tabt, const std::vector<double>& gt, const int& reqrank=-1, const std::string& name = "", MPI_Comm comm=MPI_COMM_WORLD); // To be used with one different clusters
+	HMatrix(const IMatrix<T>&, const std::vector<R3>& xt, const std::vector<int>& tabt, const std::vector<double>& gt, const int& reqrank=-1, MPI_Comm comm=MPI_COMM_WORLD); // To be used with one different clusters
 
 	// Constructor without mass
-	HMatrix(const IMatrix<T>&, const std::vector<R3>& xt, const std::vector<double>& rt, const std::vector<int>& tabt, const int& reqrank=-1, const std::string& name = "", MPI_Comm comm=MPI_COMM_WORLD); // To be used with one different clusters
+	HMatrix(const IMatrix<T>&, const std::vector<R3>& xt, const std::vector<double>& rt, const std::vector<int>& tabt, const int& reqrank=-1, MPI_Comm comm=MPI_COMM_WORLD); // To be used with one different clusters
 
 	// Constructor without tab
-	HMatrix(const IMatrix<T>&, const std::vector<R3>& xt, const std::vector<double>& rt, const std::vector<double>& gt, const int& reqrank=-1, const std::string& name = "", MPI_Comm comm=MPI_COMM_WORLD); // To be used with one different clusters
+	HMatrix(const IMatrix<T>&, const std::vector<R3>& xt, const std::vector<double>& rt, const std::vector<double>& gt, const int& reqrank=-1, MPI_Comm comm=MPI_COMM_WORLD); // To be used with one different clusters
 
 	// Constructor without radius, tab and mass
-	HMatrix(const IMatrix<T>&, const std::vector<R3>& xt, const int& reqrank=-1, const std::string& name = "", MPI_Comm comm=MPI_COMM_WORLD); // To be used with one different clusters
+	HMatrix(const IMatrix<T>&, const std::vector<R3>& xt, const int& reqrank=-1, MPI_Comm comm=MPI_COMM_WORLD); // To be used with one different clusters
 
 	// Build with precomputed clusters
 	void build(const IMatrix<T>& mat, const std::vector<R3>& xt, const std::vector<int>& tabt, const std::vector<R3>&xs, const std::vector<int>& tabs, MPI_Comm comm=MPI_COMM_WORLD); // To be used with two different clusters
 
 	// Full constructor with precomputed clusters
-	HMatrix(const IMatrix<T>& mat,  const std::shared_ptr<Cluster_tree>& t, const std::vector<R3>& xt, const std::vector<int>& tabt,  const std::shared_ptr<Cluster_tree>& s, const std::vector<R3>&xs, const std::vector<int>& tabs, const int& reqrank=-1, const std::string& name = "", MPI_Comm comm=MPI_COMM_WORLD); // To be used with two different clusters
+	HMatrix(const IMatrix<T>& mat,  const std::shared_ptr<Cluster_tree>& t, const std::vector<R3>& xt, const std::vector<int>& tabt,  const std::shared_ptr<Cluster_tree>& s, const std::vector<R3>&xs, const std::vector<int>& tabs, const int& reqrank=-1, MPI_Comm comm=MPI_COMM_WORLD); // To be used with two different clusters
 
 	// Constructor without tab and with precomputed clusters
-	HMatrix(const IMatrix<T>&,  const std::shared_ptr<Cluster_tree>& t, const std::vector<R3>& xt,  const std::shared_ptr<Cluster_tree>& s, const std::vector<R3>&xs, const int& reqrank=-1, const std::string& name = "", MPI_Comm comm=MPI_COMM_WORLD); // To be used with two different clusters
+	HMatrix(const IMatrix<T>&,  const std::shared_ptr<Cluster_tree>& t, const std::vector<R3>& xt,  const std::shared_ptr<Cluster_tree>& s, const std::vector<R3>&xs, const int& reqrank=-1, MPI_Comm comm=MPI_COMM_WORLD); // To be used with two different clusters
 
 	// Symetric build with precomputed cluster
 	void build(const IMatrix<T>& mat,  const std::shared_ptr<Cluster_tree>& t, const std::vector<R3>& xt, const std::vector<int>& tabt, MPI_Comm comm=MPI_COMM_WORLD); // To be used with one different clusters
 
 	// Full symetric constructor with precomputed cluster
-	HMatrix(const IMatrix<T>& mat,  const std::shared_ptr<Cluster_tree>& t, const std::vector<R3>& xt, const std::vector<int>& tabt, const int& reqrank=-1, const std::string& name = "", MPI_Comm comm=MPI_COMM_WORLD); // To be used with one different clusters
+	HMatrix(const IMatrix<T>& mat,  const std::shared_ptr<Cluster_tree>& t, const std::vector<R3>& xt, const std::vector<int>& tabt, const int& reqrank=-1, MPI_Comm comm=MPI_COMM_WORLD); // To be used with one different clusters
 
 	// Constructor without tab and with precomputed cluster
-	HMatrix(const IMatrix<T>&,  const std::shared_ptr<Cluster_tree>& t, const std::vector<R3>& xt, const int& reqrank=-1, const std::string& name = "", MPI_Comm comm=MPI_COMM_WORLD); // To be used with one different clusters
+	HMatrix(const IMatrix<T>&,  const std::shared_ptr<Cluster_tree>& t, const std::vector<R3>& xt, const int& reqrank=-1, MPI_Comm comm=MPI_COMM_WORLD); // To be used with one different clusters
 
   // Destructor
 	~HMatrix() {
@@ -156,20 +151,21 @@ public:
 	const std::vector<LowRankMatrix<T>>& get_MyFarFieldMats() const {return MyFarFieldMats;}
 	const std::vector<int>& get_MyDiagNearFieldMats() const {return MyDiagNearFieldMats;}
 	const std::vector<int>& get_MyDiagFarFieldMats() const {return MyDiagFarFieldMats;}
-	std::string get_name() const {return name;}
 
 	// Infos
-	const std::map<std::string,double>& get_stats() const { return Get_infos(name);}
-	void add_stats(const std::string& keyname, const double& value){Add_info(name,keyname,value);}
-	void print_stats();
+	const std::map<std::string,double>& get_infos () const { return infos;}
+	void add_info(const std::string& keyname, const double& value) const {infos[keyname]=value;}
+	void print_infos() const;
+	void save_infos(const std::string& outputname) const;
 	double compression() const; // 1- !!!
 	friend double Frobenius_absolute_error<LowRankMatrix,T>(const HMatrix<LowRankMatrix,T>& B, const IMatrix<T>& A);
 
 	// Mat vec prod
 	void mvprod_global(const T* const in, T* const out) const;
 	void mvprod_local(const T* const in, T* const out, T* const work) const;
-	std::vector<T> operator*( const std::vector<T>& x) const;
 	void mymvprod_local(const T* const in, T* const out) const;
+	std::vector<T> operator*( const std::vector<T>& x) const;
+
 	// Permutations
 	void source_to_cluster_permutation(const T* const in, T* const out) const;
 	void cluster_to_target_permutation(const T* const in, T* const out) const;
@@ -189,9 +185,7 @@ void HMatrix<LowRankMatrix, T >::build(const IMatrix<T>& mat, const std::vector<
 	MPI_Comm_dup(comm0,&comm);
   MPI_Comm_size(comm, &sizeWorld);
   MPI_Comm_rank(comm, &rankWorld);
-  std::vector<double> mytimes(4);
-	if (name=="")
-		name = "hmat "+NbrToStr(this->howMany());
+  std::vector<double> mytimes(4), maxtime(4), meantime(4);
 
 	// Construction arbre des paquets
 	double time = MPI_Wtime();
@@ -219,32 +213,32 @@ void HMatrix<LowRankMatrix, T >::build(const IMatrix<T>& mat, const std::vector<
 	ComputeBlocks(mat,xt,tabt,xs,tabs);
 	mytimes[3] = MPI_Wtime() - time;
 
-	// Stats
-	ComputeStats(mytimes);
+	// Infos
+	ComputeInfos(mytimes);
 }
 
 // Full constructor
 template< template<typename> class LowRankMatrix, typename T >
-HMatrix<LowRankMatrix, T >::HMatrix(const IMatrix<T>& mat, const std::vector<R3>& xt, const std::vector<double>& rt, const std::vector<int>& tabt, const std::vector<double>& gt, const std::vector<R3>&xs, const std::vector<double>& rs, const std::vector<int>& tabs, const std::vector<double>& gs, const int& reqrank0, const std::string& name0, MPI_Comm comm0): nr(mat.nb_rows()),nc(mat.nb_cols()), cluster_tree_s(nullptr), cluster_tree_t(nullptr), reqrank(reqrank0), name(name0) {
+HMatrix<LowRankMatrix, T >::HMatrix(const IMatrix<T>& mat, const std::vector<R3>& xt, const std::vector<double>& rt, const std::vector<int>& tabt, const std::vector<double>& gt, const std::vector<R3>&xs, const std::vector<double>& rs, const std::vector<int>& tabs, const std::vector<double>& gs, const int& reqrank0, MPI_Comm comm0): nr(mat.nb_rows()),nc(mat.nb_cols()), cluster_tree_s(nullptr), cluster_tree_t(nullptr), reqrank(reqrank0) {
 	this->build(mat, xt, rt, tabt, gt, xs, rs, tabs, gs,comm0);
 }
 
 // Constructor without rt and rs
 template< template<typename> class LowRankMatrix, typename T >
-HMatrix<LowRankMatrix, T >::HMatrix(const IMatrix<T>& mat, const std::vector<R3>& xt, const std::vector<int>& tabt, const std::vector<double>& gt, const std::vector<R3>&xs, const std::vector<int>& tabs, const std::vector<double>& gs, const int& reqrank0, const std::string& name0, MPI_Comm comm0): nr(mat.nb_rows()),nc(mat.nb_cols()), cluster_tree_s(nullptr), cluster_tree_t(nullptr), reqrank(reqrank0), name(name0) {
+HMatrix<LowRankMatrix, T >::HMatrix(const IMatrix<T>& mat, const std::vector<R3>& xt, const std::vector<int>& tabt, const std::vector<double>& gt, const std::vector<R3>&xs, const std::vector<int>& tabs, const std::vector<double>& gs, const int& reqrank0, MPI_Comm comm0): nr(mat.nb_rows()),nc(mat.nb_cols()), cluster_tree_s(nullptr), cluster_tree_t(nullptr), reqrank(reqrank0) {
 
 	this->build(mat, xt, std::vector<double>(xt.size(),0), tabt, gt, xs, std::vector<double>(xs.size(),0), tabs, gs, comm0);
 }
 
 // Constructor without gt and gs
 template< template<typename> class LowRankMatrix, typename T >
-HMatrix<LowRankMatrix, T >::HMatrix(const IMatrix<T>& mat, const std::vector<R3>& xt, const std::vector<double>& rt, const std::vector<int>& tabt, const std::vector<R3>&xs, const std::vector<double>& rs, const std::vector<int>& tabs, const int& reqrank0, const std::string& name0, MPI_Comm comm0): nr(mat.nb_rows()),nc(mat.nb_cols()), cluster_tree_s(nullptr), cluster_tree_t(nullptr), reqrank(reqrank0), name(name0) {
+HMatrix<LowRankMatrix, T >::HMatrix(const IMatrix<T>& mat, const std::vector<R3>& xt, const std::vector<double>& rt, const std::vector<int>& tabt, const std::vector<R3>&xs, const std::vector<double>& rs, const std::vector<int>& tabs, const int& reqrank0, MPI_Comm comm0): nr(mat.nb_rows()),nc(mat.nb_cols()), cluster_tree_s(nullptr), cluster_tree_t(nullptr), reqrank(reqrank0) {
 	this->build(mat, xt, rt, tabt, std::vector<double>(xt.size(),1), xs, rs, tabs, std::vector<double>(xs.size(),1), comm0);
 }
 
 // Constructor without tabt and tabs
 template< template<typename> class LowRankMatrix, typename T >
-HMatrix<LowRankMatrix, T >::HMatrix(const IMatrix<T>& mat, const std::vector<R3>& xt, const std::vector<double>& rt, const std::vector<double>& gt, const std::vector<R3>&xs, const std::vector<double>& rs, const std::vector<double>& gs, const int& reqrank0, const std::string& name0, MPI_Comm comm0): nr(mat.nb_rows()),nc(mat.nb_cols()), cluster_tree_s(nullptr), cluster_tree_t(nullptr), reqrank(reqrank0), name(name0) {
+HMatrix<LowRankMatrix, T >::HMatrix(const IMatrix<T>& mat, const std::vector<R3>& xt, const std::vector<double>& rt, const std::vector<double>& gt, const std::vector<R3>&xs, const std::vector<double>& rs, const std::vector<double>& gs, const int& reqrank0, MPI_Comm comm0): nr(mat.nb_rows()),nc(mat.nb_cols()), cluster_tree_s(nullptr), cluster_tree_t(nullptr), reqrank(reqrank0) {
 	std::vector<int> tabt(xt.size()), tabs(xs.size());
 	std::iota(tabt.begin(),tabt.end(),int(0));
 	std::iota(tabs.begin(),tabs.end(),int(0));
@@ -253,7 +247,7 @@ HMatrix<LowRankMatrix, T >::HMatrix(const IMatrix<T>& mat, const std::vector<R3>
 
 // Constructor without radius, mass and tab
 template< template<typename> class LowRankMatrix, typename T >
-HMatrix<LowRankMatrix, T >::HMatrix(const IMatrix<T>& mat, const std::vector<R3>& xt, const std::vector<R3>& xs, const int& reqrank0, const std::string& name0, MPI_Comm comm0): nr(mat.nb_rows()),nc(mat.nb_cols()), cluster_tree_s(nullptr), cluster_tree_t(nullptr), reqrank(reqrank0), name(name0) {
+HMatrix<LowRankMatrix, T >::HMatrix(const IMatrix<T>& mat, const std::vector<R3>& xt, const std::vector<R3>& xs, const int& reqrank0, MPI_Comm comm0): nr(mat.nb_rows()),nc(mat.nb_cols()), cluster_tree_s(nullptr), cluster_tree_t(nullptr), reqrank(reqrank0) {
 	std::vector<int> tabt(xt.size()), tabs(xs.size());
 	std::iota(tabt.begin(),tabt.end(),int(0));
 	std::iota(tabs.begin(),tabs.end(),int(0));
@@ -270,8 +264,6 @@ void HMatrix<LowRankMatrix, T >::build(const IMatrix<T>& mat,
 	MPI_Comm_size(comm, &sizeWorld);
   MPI_Comm_rank(comm, &rankWorld);
   std::vector<double> mytimes(4), maxtime(4), meantime(4);
-	if (name=="")
-		name = "hmat "+NbrToStr(this->howMany());
 
 	// Construction arbre des paquets
 	double time = MPI_Wtime();
@@ -298,15 +290,15 @@ void HMatrix<LowRankMatrix, T >::build(const IMatrix<T>& mat,
 	ComputeBlocks(mat,xt,tabt,xt,tabt);
 	mytimes[3] = MPI_Wtime() - time;
 
-	// Stats info
-	ComputeStats(mytimes);
+	// Infos
+	ComputeInfos(mytimes);
 
 }
 
 // Full symetric constructor
 template< template<typename> class LowRankMatrix, typename T >
 HMatrix<LowRankMatrix, T >::HMatrix(const IMatrix<T>& mat,
-		 const std::vector<R3>& xt, const std::vector<double>& rt, const std::vector<int>& tabt, const std::vector<double>& gt, const int& reqrank0, const std::string& name0,  MPI_Comm comm0):nr(mat.nb_rows()),nc(mat.nb_cols()), cluster_tree_s(nullptr),cluster_tree_t(nullptr),reqrank(reqrank0), name(name0){
+		 const std::vector<R3>& xt, const std::vector<double>& rt, const std::vector<int>& tabt, const std::vector<double>& gt, const int& reqrank0,  MPI_Comm comm0):nr(mat.nb_rows()),nc(mat.nb_cols()), cluster_tree_s(nullptr),cluster_tree_t(nullptr),reqrank(reqrank0){
 
 		this->build(mat,xt,rt,tabt,gt,comm0);
 }
@@ -314,7 +306,7 @@ HMatrix<LowRankMatrix, T >::HMatrix(const IMatrix<T>& mat,
 // Symetric constructor without rt
 template< template<typename> class LowRankMatrix, typename T >
 HMatrix<LowRankMatrix, T >::HMatrix(const IMatrix<T>& mat,
-		 const std::vector<R3>& xt, const std::vector<int>& tabt, const std::vector<double>& gt, const int& reqrank0, const std::string& name0,  MPI_Comm comm0):nr(mat.nb_rows()),nc(mat.nb_cols()), cluster_tree_s(nullptr),cluster_tree_t(nullptr),reqrank(reqrank0), name(name0){
+		 const std::vector<R3>& xt, const std::vector<int>& tabt, const std::vector<double>& gt, const int& reqrank0,  MPI_Comm comm0):nr(mat.nb_rows()),nc(mat.nb_cols()), cluster_tree_s(nullptr),cluster_tree_t(nullptr),reqrank(reqrank0){
 		this->build(mat,xt,std::vector<double>(xt.size(),0),tabt,gt,comm0);
 }
 
@@ -322,7 +314,7 @@ HMatrix<LowRankMatrix, T >::HMatrix(const IMatrix<T>& mat,
 // Symetric constructor without tabt
 template< template<typename> class LowRankMatrix, typename T >
 HMatrix<LowRankMatrix, T >::HMatrix(const IMatrix<T>& mat,
-		 const std::vector<R3>& xt, const std::vector<double>& rt, const std::vector<double>& gt, const int& reqrank0, const std::string& name0,  MPI_Comm comm0):nr(mat.nb_rows()),nc(mat.nb_cols()),cluster_tree_s(nullptr),cluster_tree_t(nullptr),reqrank(reqrank0), name(name0){
+		 const std::vector<R3>& xt, const std::vector<double>& rt, const std::vector<double>& gt, const int& reqrank0,  MPI_Comm comm0):nr(mat.nb_rows()),nc(mat.nb_cols()),cluster_tree_s(nullptr),cluster_tree_t(nullptr),reqrank(reqrank0){
 		std::vector<int> tabt(xt.size());
  		std::iota(tabt.begin(),tabt.end(),int(0));
 		this->build(mat,xt,rt,tabt,gt,comm0);
@@ -331,14 +323,14 @@ HMatrix<LowRankMatrix, T >::HMatrix(const IMatrix<T>& mat,
 // Symetric constructor without gt
 template< template<typename> class LowRankMatrix, typename T >
 HMatrix<LowRankMatrix, T >::HMatrix(const IMatrix<T>& mat,
-		 const std::vector<R3>& xt, const std::vector<double>& rt, const std::vector<int>& tabt, const int& reqrank0, const std::string& name0,  MPI_Comm comm0):nr(mat.nb_rows()),nc(mat.nb_cols()),cluster_tree_s(nullptr),cluster_tree_t(nullptr),reqrank(reqrank0), name(name0), comm(comm0){
+		 const std::vector<R3>& xt, const std::vector<double>& rt, const std::vector<int>& tabt, const int& reqrank0,  MPI_Comm comm0):nr(mat.nb_rows()),nc(mat.nb_cols()),cluster_tree_s(nullptr),cluster_tree_t(nullptr),reqrank(reqrank0), comm(comm0){
 		this->build(mat,xt,rt,tabt,std::vector<double>(xt.size(),1),comm0);
 }
 
 // Symetric constructor without rt, tabt and gt
 template< template<typename> class LowRankMatrix, typename T >
 HMatrix<LowRankMatrix, T >::HMatrix(const IMatrix<T>& mat,
-		 const std::vector<R3>& xt, const int& reqrank0, const std::string& name0,  MPI_Comm comm0):nr(mat.nb_rows()),nc(mat.nb_cols()),cluster_tree_s(nullptr),cluster_tree_t(nullptr),reqrank(reqrank0), name(name0){
+		 const std::vector<R3>& xt, const int& reqrank0,  MPI_Comm comm0):nr(mat.nb_rows()),nc(mat.nb_cols()),cluster_tree_s(nullptr),cluster_tree_t(nullptr),reqrank(reqrank0){
 		std::vector<int> tabt(xt.size());
  		std::iota(tabt.begin(),tabt.end(),int(0));
 		this->build(mat,xt,std::vector<double>(xt.size(),0),tabt,std::vector<double>(xt.size(),1),comm0);
@@ -354,9 +346,7 @@ void HMatrix<LowRankMatrix, T >::build(const IMatrix<T>& mat, const std::vector<
 	MPI_Comm_dup(comm0,&comm);
   MPI_Comm_size(comm, &sizeWorld);
   MPI_Comm_rank(comm, &rankWorld);
-  std::vector<double> mytimes(4);
-	if (name=="")
-		name = "hmat "+NbrToStr(this->howMany());
+  std::vector<double> mytimes(4), maxtime(4), meantime(4);
 
 	// Construction arbre des paquets
 	double time = MPI_Wtime();
@@ -383,20 +373,20 @@ void HMatrix<LowRankMatrix, T >::build(const IMatrix<T>& mat, const std::vector<
 	ComputeBlocks(mat,xt,tabt,xs,tabs);
 	mytimes[3] = MPI_Wtime() - time;
 
-	// Stats
-	ComputeStats(mytimes);
+	// Infos
+	ComputeInfos(mytimes);
 }
 
 
 // Full constructor with precomputed clusters
 template< template<typename> class LowRankMatrix, typename T >
-HMatrix<LowRankMatrix, T >::HMatrix(const IMatrix<T>& mat,  const std::shared_ptr<Cluster_tree>& t, const std::vector<R3>& xt, const std::vector<int>& tabt, const std::shared_ptr<Cluster_tree>& s, const std::vector<R3>&xs, const std::vector<int>& tabs, const int& reqrank0, const std::string& name0, MPI_Comm comm0): nr(mat.nb_rows()),nc(mat.nb_cols()), cluster_tree_t(t), cluster_tree_s(s), reqrank(reqrank0), name(name0) {
+HMatrix<LowRankMatrix, T >::HMatrix(const IMatrix<T>& mat,  const std::shared_ptr<Cluster_tree>& t, const std::vector<R3>& xt, const std::vector<int>& tabt, const std::shared_ptr<Cluster_tree>& s, const std::vector<R3>&xs, const std::vector<int>& tabs, const int& reqrank0, MPI_Comm comm0): nr(mat.nb_rows()),nc(mat.nb_cols()), cluster_tree_t(t), cluster_tree_s(s), reqrank(reqrank0) {
 	this->build(mat, xt, tabt, xs, tabs, comm0);
 }
 
 // Constructor without tabt and tabs
 template< template<typename> class LowRankMatrix, typename T >
-HMatrix<LowRankMatrix, T >::HMatrix(const IMatrix<T>& mat, const std::shared_ptr<Cluster_tree>& t, const std::vector<R3>& xt, const std::shared_ptr<Cluster_tree>& s, const std::vector<R3>&xs, const int& reqrank0, const std::string& name0, MPI_Comm comm0): nr(mat.nb_rows()),nc(mat.nb_cols()), cluster_tree_t(t), cluster_tree_s(s), reqrank(reqrank0), name(name0) {
+HMatrix<LowRankMatrix, T >::HMatrix(const IMatrix<T>& mat, const std::shared_ptr<Cluster_tree>& t, const std::vector<R3>& xt, const std::shared_ptr<Cluster_tree>& s, const std::vector<R3>&xs, const int& reqrank0, MPI_Comm comm0): nr(mat.nb_rows()),nc(mat.nb_cols()), cluster_tree_t(t), cluster_tree_s(s), reqrank(reqrank0) {
 	std::vector<int> tabt(xt.size()), tabs(xs.size());
 	std::iota(tabt.begin(),tabt.end(),int(0));
 	std::iota(tabs.begin(),tabs.end(),int(0));
@@ -406,14 +396,14 @@ HMatrix<LowRankMatrix, T >::HMatrix(const IMatrix<T>& mat, const std::shared_ptr
 
 // Full symetric constructor
 template< template<typename> class LowRankMatrix, typename T >
-HMatrix<LowRankMatrix, T >::HMatrix(const IMatrix<T>& mat, const std::shared_ptr<Cluster_tree>& t, const std::vector<R3>& xt, const std::vector<int>& tabt, const int& reqrank0, const std::string& name0,  MPI_Comm comm0):nr(mat.nb_rows()),nc(mat.nb_cols()), cluster_tree_t(t), cluster_tree_s(t), reqrank(reqrank0), name(name0){
+HMatrix<LowRankMatrix, T >::HMatrix(const IMatrix<T>& mat, const std::shared_ptr<Cluster_tree>& t, const std::vector<R3>& xt, const std::vector<int>& tabt, const int& reqrank0,  MPI_Comm comm0):nr(mat.nb_rows()),nc(mat.nb_cols()), cluster_tree_t(t), cluster_tree_s(t), reqrank(reqrank0){
 
 		this->build(mat,xt,tabt,xt,tabt,comm0);
 }
 
 // Symetric constructor without tabt
 template< template<typename> class LowRankMatrix, typename T >
-HMatrix<LowRankMatrix, T >::HMatrix(const IMatrix<T>& mat, const std::shared_ptr<Cluster_tree>& t, const std::vector<R3>& xt, const int& reqrank0, const std::string& name0,  MPI_Comm comm0):nr(mat.nb_rows()),nc(mat.nb_cols()), cluster_tree_t(t), cluster_tree_s(t), reqrank(reqrank0), name(name0){
+HMatrix<LowRankMatrix, T >::HMatrix(const IMatrix<T>& mat, const std::shared_ptr<Cluster_tree>& t, const std::vector<R3>& xt, const int& reqrank0,  MPI_Comm comm0):nr(mat.nb_rows()),nc(mat.nb_cols()), cluster_tree_t(t), cluster_tree_s(t), reqrank(reqrank0){
 	std::vector<int> tabt(xt.size());
 	std::iota(tabt.begin(),tabt.end(),int(0));
 		this->build(mat,xt,tabt,xt,tabt,comm0);
@@ -741,51 +731,51 @@ void HMatrix<LowRankMatrix,T >::AddFarFieldMat(const IMatrix<T>& mat, const Clus
 	}
 }
 
-// Compute stats
+// Compute infos
 template< template<typename> class LowRankMatrix, typename T>
-void HMatrix<LowRankMatrix,T >::ComputeStats(const std::vector<double>& mytime){
+void HMatrix<LowRankMatrix,T >::ComputeInfos(const std::vector<double>& mytime){
 	// 0 : cluster tree ; 1 : block tree ; 2 : scatter tree ; 3 : compute blocks
 	std::vector<double> maxtime(4), meantime(4);
 	// 0 : dense mat ; 1 : lr mat ; 2 : rank
-	std::vector<int> maxstats(3,0),minstats(3,std::max(nc,nr));
-	std::vector<double> meanstats(3,0);
-	// stats
+	std::vector<int> maxinfos(3,0),mininfos(3,std::max(nc,nr));
+	std::vector<double> meaninfos(3,0);
+	// Infos
 	for (int i=0;i<MyNearFieldMats.size();i++){
 		int size = MyNearFieldMats[i].nb_rows()*MyNearFieldMats[i].nb_cols();
-		maxstats[0] = std::max(maxstats[0],size);
-		minstats[0] = std::min(minstats[0],size);
-		meanstats[0] += size;
+		maxinfos[0] = std::max(maxinfos[0],size);
+		mininfos[0] = std::min(mininfos[0],size);
+		meaninfos[0] += size;
 	}
 	for (int i=0;i<MyFarFieldMats.size();i++){
 		int size = MyFarFieldMats[i].nb_rows()*MyFarFieldMats[i].nb_cols();
 		int rank = MyFarFieldMats[i].rank_of();
-		maxstats[1] = std::max(maxstats[1],size);
-		minstats[1] = std::min(minstats[1],size);
-		meanstats[1] += size;
-		maxstats[2] = std::max(maxstats[2],rank);
-		minstats[2] = std::min(minstats[2],rank);
-		meanstats[2] += rank;
+		maxinfos[1] = std::max(maxinfos[1],size);
+		mininfos[1] = std::min(mininfos[1],size);
+		meaninfos[1] += size;
+		maxinfos[2] = std::max(maxinfos[2],rank);
+		mininfos[2] = std::min(mininfos[2],rank);
+		meaninfos[2] += rank;
 	}
 
 	if (rankWorld==0){
-		MPI_Reduce(MPI_IN_PLACE, &(maxstats[0]), 3, MPI_INT, MPI_MAX, 0,comm);
-		MPI_Reduce(MPI_IN_PLACE, &(minstats[0]), 3, MPI_INT, MPI_MIN, 0,comm);
-		MPI_Reduce(MPI_IN_PLACE, &(meanstats[0]),3, MPI_DOUBLE, MPI_SUM, 0,comm);
+		MPI_Reduce(MPI_IN_PLACE, &(maxinfos[0]), 3, MPI_INT, MPI_MAX, 0,comm);
+		MPI_Reduce(MPI_IN_PLACE, &(mininfos[0]), 3, MPI_INT, MPI_MIN, 0,comm);
+		MPI_Reduce(MPI_IN_PLACE, &(meaninfos[0]),3, MPI_DOUBLE, MPI_SUM, 0,comm);
 	}
 	else{
-		MPI_Reduce(&(maxstats[0]), &(maxstats[0]), 3, MPI_INT, MPI_MAX, 0,comm);
-		MPI_Reduce(&(minstats[0]), &(minstats[0]), 3, MPI_INT, MPI_MIN, 0,comm);
-		MPI_Reduce(&(meanstats[0]), &(meanstats[0]),3, MPI_DOUBLE, MPI_SUM, 0,comm);
+		MPI_Reduce(&(maxinfos[0]), &(maxinfos[0]), 3, MPI_INT, MPI_MAX, 0,comm);
+		MPI_Reduce(&(mininfos[0]), &(mininfos[0]), 3, MPI_INT, MPI_MIN, 0,comm);
+		MPI_Reduce(&(meaninfos[0]), &(meaninfos[0]),3, MPI_DOUBLE, MPI_SUM, 0,comm);
 	}
 
 	int nlrmat = this->get_nlrmat();
 	int ndmat = this->get_ndmat();
-	meanstats[0] = (ndmat  == 0 ? 0 : meanstats[0]/ndmat);
-	meanstats[1] = (nlrmat == 0 ? 0 : meanstats[1]/nlrmat);
-	meanstats[2] = (nlrmat == 0 ? 0 : meanstats[2]/nlrmat);
-	minstats[0] = (ndmat  == 0 ? 0 : minstats[0]);
-	minstats[1] = (nlrmat  == 0 ? 0 : minstats[1]);
-	minstats[2] = (nlrmat  == 0 ? 0 : minstats[2]);
+	meaninfos[0] = (ndmat  == 0 ? 0 : meaninfos[0]/ndmat);
+	meaninfos[1] = (nlrmat == 0 ? 0 : meaninfos[1]/nlrmat);
+	meaninfos[2] = (nlrmat == 0 ? 0 : meaninfos[2]/nlrmat);
+	mininfos[0] = (ndmat  == 0 ? 0 : mininfos[0]);
+	mininfos[1] = (nlrmat  == 0 ? 0 : mininfos[1]);
+	mininfos[2] = (nlrmat  == 0 ? 0 : mininfos[2]);
 
 	// timing
 	MPI_Reduce(&(mytime[0]), &(maxtime[0]), 4, MPI_DOUBLE, MPI_MAX, 0,comm);
@@ -794,35 +784,31 @@ void HMatrix<LowRankMatrix,T >::ComputeStats(const std::vector<double>& mytime){
 	meantime /= sizeWorld;
 
 	// Times
-	Add_info(name,"Cluster tree (mean)",meantime[0]);
-	Add_info(name,"Cluster tree  (max)",maxtime[0]);
-	Add_info(name,"Block tree   (mean)",meantime[1]);
-	Add_info(name,"Block tree    (max)",maxtime[1]);
-	Add_info(name,"Scatter tree (mean)",meantime[2]);
-	Add_info(name,"Scatter tree  (max)",maxtime[2]);
-	Add_info(name,"Blocks       (mean)",meantime[3]);
-	Add_info(name,"Blocks        (max)",maxtime[3]);
+	infos["Cluster tree (mean)"]=meantime[0];
+	infos["Cluster tree  (max)"]=maxtime[0];
+	infos["Block tree   (mean)"]=meantime[1];
+	infos["Block tree    (max)"]=maxtime[1];
+	infos["Scatter tree (mean)"]=meantime[2];
+	infos["Scatter tree  (max)"]=maxtime[2];
+	infos["Blocks       (mean)"]=meantime[3];
+	infos["Blocks           (max)"]  =maxtime[3];
 
 	// Size
-	Add_info(name,"Source size",this->nc);
-	Add_info(name,"Target size", this->nr);
-	Add_info(name,"Dense block size (max)", maxstats[0]);
-	Add_info(name,"Dense block size (mean)", meanstats[0]);
-	Add_info(name,"Dense block size (min)", minstats[0]);
-	Add_info(name,"Low rank block size (max)", maxstats[1]);
-	Add_info(name,"Low rank  block size (mean)", meanstats[1]);
-	Add_info(name,"Low rank  block size (min)", minstats[1]);
+	infos["Source size"] = this->nc;
+	infos["Target size"] = this->nr;
+	infos["Dense block size (max)"]  =maxinfos[0];
+	infos["Dense block size (mean)"] =meaninfos[0];
+	infos["Dense block size (min)"]  =mininfos[0];
+	infos["Low rank block size (max)"]   =maxinfos[1];
+	infos["Low rank  block size (mean)"] =meaninfos[1];
+	infos["Low rank  block size (min)"]  =mininfos[1];
 
-	Add_info(name,"Rank (max)", maxstats[2]);
-	Add_info(name,"Rank (mean)", meanstats[2]);
-	Add_info(name,"Rank (min)", minstats[2]);
-	Add_info(name,"Number of lrmat", nlrmat);
-	Add_info(name,"Number of dmat", ndmat);
-	Add_info(name,"Compression", this->compression());
-
-	Add_info(name,"nbr mat vec prod", 0);
-	Add_info(name,"total time mat vec prod", 0);
-
+	infos["Rank (max)"]  =maxinfos[2];
+	infos["Rank (mean)"] =meaninfos[2];
+	infos["Rank (min)"]  =mininfos[2];
+	infos["Number of lrmat"] = nlrmat;
+	infos["Number of dmat"]  = ndmat;
+	infos["Compression"] = this->compression();
 }
 
 
@@ -879,8 +865,8 @@ void HMatrix<LowRankMatrix,T >::mvprod_local(const T* const in, T* const out, T*
 	double time = MPI_Wtime();
 	this->local_to_global(in, work);
 	this->mymvprod_local(work,out);
-	Add_value(name, "nbr mat vec prod",1 );
-	Add_value(name,"total time mat vec prod", MPI_Wtime()-time);
+	infos["nbr mat vec prod"] +=1;
+	infos["total time mat vec prod"] += MPI_Wtime()-time;
 }
 
 
@@ -918,8 +904,9 @@ void HMatrix<LowRankMatrix,T >::mvprod_global(const T* const in, T* const out) c
 	// Permutation
 	cluster_tree_t->cluster_to_global(out_not_perm.data(),out);
 
-	Add_value(name, "nbr mat vec prod",1 );
-	Add_value(name,"total time mat vec prod", MPI_Wtime()-time);
+	// Timing
+	infos["nbr mat vec prod"] +=1;
+	infos["total time mat vec prod"] += MPI_Wtime()-time;
 }
 
 template< template<typename> class LowRankMatrix, typename T>
@@ -971,9 +958,34 @@ double HMatrix<LowRankMatrix,T >::compression() const{
 }
 
 template<template<typename> class LowRankMatrix,typename T >
-void HMatrix<LowRankMatrix,T >::print_stats(){
+void HMatrix<LowRankMatrix,T >::print_infos() const{
+	int rankWorld;
+    MPI_Comm_rank(comm, &rankWorld);
+
 	if (rankWorld==0){
-		Print_infos(name);
+		for (std::map<std::string,double>::const_iterator it = infos.begin() ; it != infos.end() ; ++it){
+			std::cout<<it->first<<"\t"<<it->second<<std::endl;
+		}
+	}
+	std::cout << std::endl;
+}
+
+template<template<typename> class LowRankMatrix,typename T >
+void HMatrix<LowRankMatrix,T >::save_infos(const std::string& outputname) const{
+	int rankWorld;
+  MPI_Comm_rank(comm, &rankWorld);
+
+	if (rankWorld==0){
+		std::ofstream outputfile(outputname);
+		if (outputfile){
+			for (std::map<std::string,double>::const_iterator it = infos.begin() ; it != infos.end() ; ++it){
+				outputfile<<it->first<<" : "<<it->second<<std::endl;
+			}
+			outputfile.close();
+		}
+		else{
+			std::cout << "Unable to create "<<outputname<<std::endl;
+		}
 	}
 }
 

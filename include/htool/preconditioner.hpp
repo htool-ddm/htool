@@ -23,6 +23,7 @@ private:
   std::vector<T> mat_loc;
   std::vector<double> D;
   MPI_Comm comm;
+  mutable std::map<std::string, double> infos;
 
 
 public:
@@ -126,10 +127,10 @@ public:
   	MPI_Reduce(&(mytime[0]), &(meantime[0]), 2, MPI_DOUBLE, MPI_SUM, 0,comm);
     meantime /= hmat_0.get_sizeworld();
 
-    Add_info(hpddm_op.HA.get_name(),"DDM setup (mean)",meantime[0]);
-    Add_info(hpddm_op.HA.get_name(),"DDM setup (max)",  maxtime[0]);
-    Add_info(hpddm_op.HA.get_name(),"DDM facto (mean)",meantime[1]);
-    Add_info(hpddm_op.HA.get_name(),"DDM facto (max)",  maxtime[1]);
+    stats["DDM setup (mean)"]= meantime[0];
+    stats["DDM setup (max)" ]= maxtime[0];
+    stats["DDM facto (mean)"]= meantime[1];
+    stats["DDM facto (max)" ]= maxtime[1];
 
   }
 
@@ -168,9 +169,32 @@ public:
 
     // Timing
     time = MPI_Wtime()-time;
-    Add_info(hpddm_op.HA.get_name(),"Solve ", time);
+    stats["Solve "] = time;
   }
 
+  	void print_infos() const{
+    	if (hpddm_op.HA.get_rankworld()==0){
+    		for (std::map<std::string,double>::const_iterator it = infos.begin() ; it != infos.end() ; ++it){
+    			std::cout<<it->first<<"\t"<<it->second<<std::endl;
+    		}
+    	}
+    	std::cout << std::endl;
+    }
+
+    void save_infos(const std::string& outputname) const{
+    	if (hpddm_op.HA.get_rankworld()==0){
+    		std::ofstream outputfile(outputname);
+    		if (outputfile){
+    			for (std::map<std::string,double>::const_iterator it = infos.begin() ; it != infos.end() ; ++it){
+    				outputfile<<it->first<<" : "<<it->second<<std::endl;
+    			}
+    			outputfile.close();
+    		}
+    		else{
+    			std::cout << "Unable to create "<<outputname<<std::endl;
+    		}
+    	}
+    }
 
 };
 

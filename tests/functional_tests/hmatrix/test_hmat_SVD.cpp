@@ -101,7 +101,7 @@ int main(int argc, char *argv[]) {
 		vector<double> rhs(p2.size(),1);
 		MyMatrix A(p1,p2);
 		HMatrix<SVD,double> HA(A,p1,r1,tab1,g1,p2,r2,tab2,g2);
-		HA.print_stats();
+		HA.print_infos();
 
 		std::vector<double> f(nc,1),result(nr,0);
 		result = HA*f;

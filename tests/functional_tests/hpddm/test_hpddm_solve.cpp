@@ -68,7 +68,9 @@ int main(int argc, char *argv[]){
 	bytes_to_vector(x_ref,argv[4]);
 
 	// Solve
-	solve(HA,f_global.data(),x_global.data());
+	HPDDMEmpty<fullACA,complex<double>> hpddm_operator(HA);
+	hpddm_operator.solve(f_global.data(),x_global.data());
+	HA.print_infos();
 
 	// Error on inversion
 	double inv_error2=norm2(f_global-A*x_global)/norm2(f_global);
