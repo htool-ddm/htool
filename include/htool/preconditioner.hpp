@@ -127,10 +127,10 @@ public:
   	MPI_Reduce(&(mytime[0]), &(meantime[0]), 2, MPI_DOUBLE, MPI_SUM, 0,comm);
     meantime /= hmat_0.get_sizeworld();
 
-    stats["DDM setup (mean)"]= meantime[0];
-    stats["DDM setup (max)" ]= maxtime[0];
-    stats["DDM facto (mean)"]= meantime[1];
-    stats["DDM facto (max)" ]= maxtime[1];
+    infos["DDM setup (mean)"]= meantime[0];
+    infos["DDM setup (max)" ]= maxtime[0];
+    infos["DDM facto (mean)"]= meantime[1];
+    infos["DDM facto (max)" ]= maxtime[1];
 
   }
 
@@ -169,7 +169,7 @@ public:
 
     // Timing
     time = MPI_Wtime()-time;
-    stats["Solve "] = time;
+    infos["Solve "] = time;
   }
 
   	void print_infos() const{
