@@ -784,31 +784,33 @@ void HMatrix<LowRankMatrix,T >::ComputeInfos(const std::vector<double>& mytime){
 	meantime /= sizeWorld;
 
 	// Times
-	infos["Cluster tree (mean)"]=meantime[0];
-	infos["Cluster tree  (max)"]=maxtime[0];
-	infos["Block tree   (mean)"]=meantime[1];
-	infos["Block tree    (max)"]=maxtime[1];
-	infos["Scatter tree (mean)"]=meantime[2];
-	infos["Scatter tree  (max)"]=maxtime[2];
-	infos["Blocks       (mean)"]=meantime[3];
-	infos["Blocks           (max)"]  =maxtime[3];
+	infos["Cluster_tree_mean"]=meantime[0];
+	infos["Cluster_tree_max"]=maxtime[0];
+	infos["Block_tree_mean"]=meantime[1];
+	infos["Block_tree_max"]=maxtime[1];
+	infos["Scatter_tree_mean"]=meantime[2];
+	infos["Scatter_tree_max"]=maxtime[2];
+	infos["Blocks_mean"]=meantime[3];
+	infos["Blocks_max"]=maxtime[3];
 
 	// Size
-	infos["Source size"] = this->nc;
-	infos["Target size"] = this->nr;
-	infos["Dense block size (max)"]  =maxinfos[0];
-	infos["Dense block size (mean)"] =meaninfos[0];
-	infos["Dense block size (min)"]  =mininfos[0];
-	infos["Low rank block size (max)"]   =maxinfos[1];
-	infos["Low rank  block size (mean)"] =meaninfos[1];
-	infos["Low rank  block size (min)"]  =mininfos[1];
+	infos["Source_size"] = this->nc;
+	infos["Target_size"] = this->nr;
+	infos["Dense_block_size_max"]  =maxinfos[0];
+	infos["Dense_block_size_mean"] =meaninfos[0];
+	infos["Dense_block_size_min"]  =mininfos[0];
+	infos["Low_rank_block_size_max"]   =maxinfos[1];
+	infos["Low_rank_block_size_mean"] =meaninfos[1];
+	infos["Low_rank_block_size_min"]  =mininfos[1];
 
-	infos["Rank (max)"]  =maxinfos[2];
-	infos["Rank (mean)"] =meaninfos[2];
-	infos["Rank (min)"]  =mininfos[2];
-	infos["Number of lrmat"] = nlrmat;
-	infos["Number of dmat"]  = ndmat;
+	infos["Rank_max"]  =maxinfos[2];
+	infos["Rank_mean"] =meaninfos[2];
+	infos["Rank_min"]  =mininfos[2];
+	infos["Number_of_lrmat"] = nlrmat;
+	infos["Number_of_dmat"]  = ndmat;
 	infos["Compression"] = this->compression();
+
+	infos["Nloc"]=sizeWorld;
 }
 
 

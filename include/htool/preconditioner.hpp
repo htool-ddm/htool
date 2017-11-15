@@ -127,10 +127,11 @@ public:
   	MPI_Reduce(&(mytime[0]), &(meantime[0]), 2, MPI_DOUBLE, MPI_SUM, 0,comm);
     meantime /= hmat_0.get_sizeworld();
 
-    infos["DDM setup (mean)"]= meantime[0];
-    infos["DDM setup (max)" ]= maxtime[0];
-    infos["DDM facto (mean)"]= meantime[1];
-    infos["DDM facto (max)" ]= maxtime[1];
+    infos["DDM_setup_mean"]= meantime[0];
+    infos["DDM_setup_max" ]= maxtime[0];
+    infos["DDM_facto_mean"]= meantime[1];
+    infos["DDM_facto_max" ]= maxtime[1];
+    infos["Nproc"]=hmat_0.get_sizeworld();
 
   }
 
