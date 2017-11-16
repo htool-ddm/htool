@@ -23,7 +23,7 @@ private:
   std::vector<T> mat_loc;
   std::vector<double> D;
   MPI_Comm comm;
-  mutable std::map<std::string, double> infos;
+  mutable std::map<std::string, std::string> infos;
 
 
 public:
@@ -127,11 +127,11 @@ public:
   	MPI_Reduce(&(mytime[0]), &(meantime[0]), 2, MPI_DOUBLE, MPI_SUM, 0,comm);
     meantime /= hmat_0.get_sizeworld();
 
-    infos["DDM_setup_mean"]= meantime[0];
-    infos["DDM_setup_max" ]= maxtime[0];
-    infos["DDM_facto_mean"]= meantime[1];
-    infos["DDM_facto_max" ]= maxtime[1];
-    infos["Nproc"]=hmat_0.get_sizeworld();
+    infos["DDM_setup_mean"]= NbrToStr(meantime[0]);
+    infos["DDM_setup_max" ]= NbrToStr(maxtime[0]);
+    infos["DDM_facto_mean"]= NbrToStr(meantime[1]);
+    infos["DDM_facto_max" ]= NbrToStr(maxtime[1]);
+    infos["Nproc"]=NbrToStr(hmat_0.get_sizeworld());
 
   }
 
@@ -160,7 +160,7 @@ public:
     hpddm_op.exchange(local_rhs.data(), 1);
 
     // Solve
-    HPDDM::IterativeMethod::solve(hpddm_op, local_rhs.data(), x_local.data(), 1,comm);
+    int nb_it = HPDDM::IterativeMethod::solve(hpddm_op, local_rhs.data(), x_local.data(), 1,comm);
 
     // Local to global
     hpddm_op.HA.local_to_global(x_local.data(),hpddm_op.in_global->data());
@@ -169,13 +169,27 @@ public:
     hpddm_op.HA.cluster_to_target_permutation(hpddm_op.in_global->data(),x);
 
     // Timing
+    HPDDM::Option& opt = *HPDDM::Option::get();
     time = MPI_Wtime()-time;
-    infos["Solve "] = time;
+    infos["Solve "] = NbrToStr(time);
+    infos["Nb_it "] = NbrToStr(nb_it);
+    switch (opt.val("schwarz_method",0)) {
+      case 0:
+      infos["Precond "] = "ras";
+      break;
+      case 3:
+      infos["Precond "] = "asm";
+      break;
+      case 5:
+      infos["Precond "] = "none";
+      break;
+
+    }
   }
 
   	void print_infos() const{
     	if (hpddm_op.HA.get_rankworld()==0){
-    		for (std::map<std::string,double>::const_iterator it = infos.begin() ; it != infos.end() ; ++it){
+    		for (std::map<std::string,std::string>::const_iterator it = infos.begin() ; it != infos.end() ; ++it){
     			std::cout<<it->first<<"\t"<<it->second<<std::endl;
     		}
     	}
@@ -186,7 +200,7 @@ public:
     	if (hpddm_op.HA.get_rankworld()==0){
     		std::ofstream outputfile(outputname,std::ios::app);
     		if (outputfile){
-    			for (std::map<std::string,double>::const_iterator it = infos.begin() ; it != infos.end() ; ++it){
+    			for (std::map<std::string,std::string>::const_iterator it = infos.begin() ; it != infos.end() ; ++it){
     				outputfile<<it->first<<" : "<<it->second<<std::endl;
     			}
     			outputfile.close();

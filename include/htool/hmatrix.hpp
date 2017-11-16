@@ -49,7 +49,7 @@ private:
 	std::shared_ptr<Cluster_tree> cluster_tree_s;
 	std::shared_ptr<Cluster_tree> cluster_tree_t;
 
-	mutable std::map<std::string, double> infos;
+	mutable std::map<std::string, std::string> infos;
 
 	MPI_Comm comm;
 	int rankWorld,sizeWorld;
@@ -154,7 +154,7 @@ public:
 
 	// Infos
 	const std::map<std::string,double>& get_infos () const { return infos;}
-	void add_info(const std::string& keyname, const double& value) const {infos[keyname]=value;}
+	void add_info(const std::string& keyname, const std::string& value) const {infos[keyname]=value;}
 	void print_infos() const;
 	void save_infos(const std::string& outputname) const;
 	double compression() const; // 1- !!!
@@ -784,33 +784,33 @@ void HMatrix<LowRankMatrix,T >::ComputeInfos(const std::vector<double>& mytime){
 	meantime /= sizeWorld;
 
 	// Times
-	infos["Cluster_tree_mean"]=meantime[0];
-	infos["Cluster_tree_max"]=maxtime[0];
-	infos["Block_tree_mean"]=meantime[1];
-	infos["Block_tree_max"]=maxtime[1];
-	infos["Scatter_tree_mean"]=meantime[2];
-	infos["Scatter_tree_max"]=maxtime[2];
-	infos["Blocks_mean"]=meantime[3];
-	infos["Blocks_max"]=maxtime[3];
+	infos["Cluster_tree_mean"]=NbrToStr(meantime[0]);
+	infos["Cluster_tree_max"]=NbrToStr(maxtime[0]);
+	infos["Block_tree_mean"]=NbrToStr(meantime[1]);
+	infos["Block_tree_max"]=NbrToStr(maxtime[1]);
+	infos["Scatter_tree_mean"]=NbrToStr(meantime[2]);
+	infos["Scatter_tree_max"]=NbrToStr(maxtime[2]);
+	infos["Blocks_mean"]=NbrToStr(meantime[3]);
+	infos["Blocks_max"]=NbrToStr(maxtime[3]);
 
 	// Size
-	infos["Source_size"] = this->nc;
-	infos["Target_size"] = this->nr;
-	infos["Dense_block_size_max"]  =maxinfos[0];
-	infos["Dense_block_size_mean"] =meaninfos[0];
-	infos["Dense_block_size_min"]  =mininfos[0];
-	infos["Low_rank_block_size_max"]   =maxinfos[1];
-	infos["Low_rank_block_size_mean"] =meaninfos[1];
-	infos["Low_rank_block_size_min"]  =mininfos[1];
+	infos["Source_size"] = NbrToStr(this->nc);
+	infos["Target_size"] = NbrToStr(this->nr);
+	infos["Dense_block_size_max"]  = NbrToStr(maxinfos[0]);
+	infos["Dense_block_size_mean"] = NbrToStr(meaninfos[0]);
+	infos["Dense_block_size_min"]  = NbrToStr(mininfos[0]);
+	infos["Low_rank_block_size_max"]  = NbrToStr(maxinfos[1]);
+	infos["Low_rank_block_size_mean"] = NbrToStr(meaninfos[1]);
+	infos["Low_rank_block_size_min"]  = NbrToStr(mininfos[1]);
 
-	infos["Rank_max"]  =maxinfos[2];
-	infos["Rank_mean"] =meaninfos[2];
-	infos["Rank_min"]  =mininfos[2];
-	infos["Number_of_lrmat"] = nlrmat;
-	infos["Number_of_dmat"]  = ndmat;
-	infos["Compression"] = this->compression();
+	infos["Rank_max"]  = NbrToStr(maxinfos[2]);
+	infos["Rank_mean"] = NbrToStr(meaninfos[2]);
+	infos["Rank_min"]  = NbrToStr(mininfos[2]);
+	infos["Number_of_lrmat"] = NbrToStr(nlrmat);
+	infos["Number_of_dmat"]  = NbrToStr(ndmat);
+	infos["Compression"] = NbrToStr(this->compression());
 
-	infos["Nloc"]=sizeWorld;
+	infos["Nloc"] = NbrToStr(sizeWorld);
 }
 
 
@@ -867,8 +867,8 @@ void HMatrix<LowRankMatrix,T >::mvprod_local(const T* const in, T* const out, T*
 	double time = MPI_Wtime();
 	this->local_to_global(in, work);
 	this->mymvprod_local(work,out);
-	infos["nbr mat vec prod"] +=1;
-	infos["total time mat vec prod"] += MPI_Wtime()-time;
+	infos["nbr_mat_vec_prod"] = NbrToStr(1+StrToNbr<int>(infos["nbr_mat_vec_prod"]));
+	infos["total_time_mat_vec_prod"] = NbrToStr(MPI_Wtime()-time+StrToNbr<double>(infos["total_time_mat_vec_prod"]));
 }
 
 
@@ -907,8 +907,8 @@ void HMatrix<LowRankMatrix,T >::mvprod_global(const T* const in, T* const out) c
 	cluster_tree_t->cluster_to_global(out_not_perm.data(),out);
 
 	// Timing
-	infos["nbr mat vec prod"] +=1;
-	infos["total time mat vec prod"] += MPI_Wtime()-time;
+	infos["nbr_mat_vec_prod"] = NbrToStr(1+StrToNbr<int>(infos["nbr_mat_vec_prod"]));
+	infos["total_time_mat_vec_prod"] = NbrToStr(MPI_Wtime()-time+StrToNbr<double>(infos["total_time_mat_vec_prod"]));
 }
 
 template< template<typename> class LowRankMatrix, typename T>
@@ -965,7 +965,7 @@ void HMatrix<LowRankMatrix,T >::print_infos() const{
     MPI_Comm_rank(comm, &rankWorld);
 
 	if (rankWorld==0){
-		for (std::map<std::string,double>::const_iterator it = infos.begin() ; it != infos.end() ; ++it){
+		for (std::map<std::string,std::string>::const_iterator it = infos.begin() ; it != infos.end() ; ++it){
 			std::cout<<it->first<<"\t"<<it->second<<std::endl;
 		}
 	}
@@ -980,7 +980,7 @@ void HMatrix<LowRankMatrix,T >::save_infos(const std::string& outputname) const{
 	if (rankWorld==0){
 		std::ofstream outputfile(outputname,std::ios::app);
 		if (outputfile){
-			for (std::map<std::string,double>::const_iterator it = infos.begin() ; it != infos.end() ; ++it){
+			for (std::map<std::string,std::string>::const_iterator it = infos.begin() ; it != infos.end() ; ++it){
 				outputfile<<it->first<<" : "<<it->second<<std::endl;
 			}
 			outputfile.close();
