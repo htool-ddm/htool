@@ -968,8 +968,8 @@ void HMatrix<LowRankMatrix,T >::print_infos() const{
 		for (std::map<std::string,std::string>::const_iterator it = infos.begin() ; it != infos.end() ; ++it){
 			std::cout<<it->first<<"\t"<<it->second<<std::endl;
 		}
+		std::cout << std::endl;
 	}
-	std::cout << std::endl;
 }
 
 template<template<typename> class LowRankMatrix,typename T >

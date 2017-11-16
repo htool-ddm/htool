@@ -192,8 +192,8 @@ public:
     		for (std::map<std::string,std::string>::const_iterator it = infos.begin() ; it != infos.end() ; ++it){
     			std::cout<<it->first<<"\t"<<it->second<<std::endl;
     		}
+        std::cout << std::endl;
     	}
-    	std::cout << std::endl;
     }
 
     void save_infos(const std::string& outputname) const{
