@@ -978,7 +978,7 @@ void HMatrix<LowRankMatrix,T >::save_infos(const std::string& outputname) const{
   MPI_Comm_rank(comm, &rankWorld);
 
 	if (rankWorld==0){
-		std::ofstream outputfile(outputname);
+		std::ofstream outputfile(outputname,std::ios::app);
 		if (outputfile){
 			for (std::map<std::string,double>::const_iterator it = infos.begin() ; it != infos.end() ; ++it){
 				outputfile<<it->first<<" : "<<it->second<<std::endl;
