@@ -171,19 +171,27 @@ public:
     // Timing
     HPDDM::Option& opt = *HPDDM::Option::get();
     time = MPI_Wtime()-time;
-    infos["Solve "] = NbrToStr(time);
-    infos["Nb_it "] = NbrToStr(nb_it);
+    infos["Solve"] = NbrToStr(time);
+    infos["Nb_it"] = NbrToStr(nb_it);
     switch (opt.val("schwarz_method",0)) {
-      case 0:
-      infos["Precond "] = "ras";
+      case HPDDM_SCHWARZ_METHOD_NONE:
+      infos["Precond"] = "none";
       break;
-      case 3:
-      infos["Precond "] = "asm";
+      case HPDDM_SCHWARZ_METHOD_RAS:
+      infos["Precond"] = "ras";
       break;
-      case 5:
-      infos["Precond "] = "none";
+      case HPDDM_SCHWARZ_METHOD_ASM:
+      infos["Precond"] = "asm";
       break;
-
+      case HPDDM_SCHWARZ_METHOD_OSM:
+      infos["Precond"] = "osm";
+      break;
+      case HPDDM_SCHWARZ_METHOD_ORAS:
+      infos["Precond"] = "asm";
+      break;
+      case HPDDM_SCHWARZ_METHOD_SORAS:
+      infos["Precond"] = "osm";
+      break;
     }
   }
 
