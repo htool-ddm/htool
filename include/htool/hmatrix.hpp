@@ -811,6 +811,10 @@ void HMatrix<LowRankMatrix,T >::ComputeInfos(const std::vector<double>& mytime){
 	infos["Compression"] = NbrToStr(this->compression());
 
 	infos["Nloc"] = NbrToStr(sizeWorld);
+
+	infos["Eta"] = NbrToStr(GetEta());
+	infos["Eps"] = NbrToStr(GetEpsilon());
+
 }
 
 
