@@ -832,7 +832,7 @@ void HMatrix<LowRankMatrix,T >::mymvprod_local(const T* const in, T* const out) 
 		int offset_j     = M.get_offset_j();
 
 		M.add_mvprod(in+offset_j,out+offset_i-local_offset);
-        std::cout << offset_i<<" "<<offset_i+M.nb_rows()<<"  "<<offset_j<<" "<<offset_j+M.nb_cols()<<std::endl;
+        // std::cout << offset_i<<" "<<offset_i+M.nb_rows()<<"  "<<offset_j<<" "<<offset_j+M.nb_cols()<<std::endl;
 
 	}
 	// Contribution champ proche
