@@ -363,5 +363,20 @@ public:
 	// 	os << "src:\t" << b.src_() << std::endl; os << "tgt:\t" << b.tgt_(); return os;}
 
 };
+
+struct comp_block
+{
+    inline bool operator() (const Block* block1, const Block* block2)
+    {
+        if (block1->tgt_().get_offset()==block2->tgt_().get_offset()){
+            return block1->src_().get_offset()<block2->src_().get_offset();
+        }
+        else {
+            return block1->tgt_().get_offset()<block2->tgt_().get_offset();
+        }
+    }
+};
+
+
 }
 #endif
