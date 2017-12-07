@@ -62,13 +62,21 @@ public:
     }
   }
 
-  void add_mvprod(const T* const in,  T* const out) const{
+  void add_mvprod_row_major(const T* const in,  T* const out, const int& mu) const{
     if (rank!=0){
-      std::vector<T> a(this->rank);
-      V.mvprod(in,a.data());
-      U.add_mvprod(a.data(),out);
+        std::vector<T> a(this->rank*mu);
+        if (mu==1){
+            V.mvprod_row_major(in,a.data(),1);
+            U.add_mvprod_row_major(a.data(),out,1);
+        }
+        else {
+            V.mvprod_row_major(in,a.data(),mu);
+            U.add_mvprod_row_major(a.data(),out,mu);
+        }
+
+
     }
-  }
+}
 
   void get_whole_matrix(T* const out) const {
     char transa ='N';

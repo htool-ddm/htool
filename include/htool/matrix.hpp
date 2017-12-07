@@ -366,29 +366,111 @@ public:
 		Blas<T>::gemv(&n, &nr , &nc, &alpha, &(this->mat[0]) , &lda, &rhs[0], &incx, &beta, &lhs[0], &incy);
     return lhs;
   }
-  void mvprod(const T* const in, T* const out) const{
-  		int nr = this->nr;
-  		int nc = this->nc;
-  		T alpha = 1;
-  		int lda = nr;
-  		int incx =1;
-  		T beta =0;
-  		int incy = 1;
-  		char n='N';
-  		Blas<T>::gemv(&n, &nr , &nc, &alpha, &(this->mat[0]) , &lda, in, &incx, &beta, out, &incy);
-	}
-  void add_mvprod(const T* const in, T* const out) const{
-      int nr = this->nr;
-      int nc = this->nc;
-      T alpha = 1;
-      int lda = nr;
-      int incx =1;
-      T beta =1;
-      int incy = 1;
-      char n='N';
-      Blas<T>::gemv(&n, &nr , &nc, &alpha, &(this->mat[0]) , &lda, in, &incx, &beta, out, &incy);
-  }
+  // void mvprod(const T* const in, T* const out, const int& mu, const int& ldb, const int& ldc) const{
+  //       int nr = this->nr;
+  //       int nc = this->nc;
+  //       T alpha = 1;
+  //       T beta =0;
+  //       int lda =  nr;
+  //
+  //       if (mu==1){
+  //           char n='N';
+  //           int incx =1;
+  //           int incy = 1;
+  //           Blas<T>::gemv(&n, &nr , &nc, &alpha, &(this->mat[0]) , &lda, in, &incx, &beta, out, &incy);
+  //       }
+  //       else{
+  //           char transa ='N';
+  //           char transb ='N';
+  //           int M = nr;
+  //           int N = mu;
+  //           int K = nc;
+  //           // int ldb =  64;
+  //           // int ldc = 64;
+  //           Blas<T>::gemm(&transa, &transb, &M, &N, &K, &alpha, in,
+  //           &lda, &(this->mat[0]), &ldb, &beta, out,&ldc);
+  //       }
+	// }
+  // void add_mvprod(const T* const in, T* const out, const int& mu, const int& ldb, const int& ldc) const{
+  //       int nr = this->nr;
+  //       int nc = this->nc;
+  //       T alpha = 1;
+  //       T beta =1;
+  //       int lda =  nr;
+  //
+  //       if (mu==1){
+  //           char n='N';
+  //           int incx =1;
+  //           int incy = 1;
+  //           Blas<T>::gemv(&n, &nr , &nc, &alpha, &(this->mat[0]) , &lda, in, &incx, &beta, out, &incy);
+  //       }
+  //       else{
+  //           char transa ='N';
+  //           char transb ='N';
+  //           int M = mu;
+  //           int N = nr;
+  //           int K = nc;
+  //
+  //           // int ldb =  64;
+  //           // int ldc = 64;
+  //           Blas<T>::gemm(&transa, &transb, &M, &N, &K, &alpha, in,
+  //           &lda, &(this->mat[0]), &ldb, &beta, out,&ldc);
+  //       }
+  // }
+  void mvprod_row_major(const T* const in, T* const out, const int& mu) const{
+        int nr = this->nr;
+        int nc = this->nc;
+        T alpha = 1;
+        T beta =0;
+        int lda =  nr;
 
+        if (mu==1){
+            char n='N';
+            int incx =1;
+            int incy = 1;
+            Blas<T>::gemv(&n, &nr , &nc, &alpha, &(this->mat[0]) , &lda, in, &incx, &beta, out, &incy);
+        }
+        else{
+            int lda =  mu;
+            char transa ='N';
+            char transb ='T';
+            int M = mu;
+            int N = nr;
+            int K = nc;
+            int ldb =  nr;
+            int ldc = mu;
+            Blas<T>::gemm(&transa, &transb, &M, &N, &K, &alpha, in,
+            &lda, &(this->mat[0]), &ldb, &beta, out,&ldc);
+        }
+    }
+  void add_mvprod_row_major(const T* const in, T* const out, const int& mu) const{
+        int nr = this->nr;
+        int nc = this->nc;
+        T alpha = 1;
+        T beta =1;
+
+
+        if (mu==1){
+            int lda =  nr;
+            char n='N';
+            int incx =1;
+            int incy = 1;
+            Blas<T>::gemv(&n, &nr , &nc, &alpha, &(this->mat[0]) , &lda, in, &incx, &beta, out, &incy);
+        }
+        else{
+            int lda =  mu;
+            char transa ='N';
+            char transb ='T';
+            int M = mu;
+            int N = nr;
+            int K = nc;
+            int ldb =  nr;
+            int ldc = mu;
+
+            Blas<T>::gemm(&transa, &transb, &M, &N, &K, &alpha, in,
+            &lda, &(this->mat[0]), &ldb, &beta, out,&ldc);
+        }
+  }
 	friend std::ostream& operator<<(std::ostream& out, const Matrix& m){
     if ( !(m.mat.empty()) ) {
       std::cout<< m.nr << " " << m.nc <<std::endl;

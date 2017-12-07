@@ -130,7 +130,7 @@ public:
 	// Getters
 	int nb_rows() const { return nr;}
 	int nb_cols() const { return nc;}
-	MPI_Comm get_comm() const {return comm;}
+	const MPI_Comm& get_comm() const {return comm;}
 	int get_nlrmat() const {
 		int res=MyFarFieldMats.size(); MPI_Allreduce(MPI_IN_PLACE, &res, 1, MPI_INT, MPI_SUM, comm); return res;
 	}
@@ -145,6 +145,8 @@ public:
 
 	std::vector<std::pair<int,int>> get_MasterOffset_t() const {return cluster_tree_t->get_masteroffset();}
 	std::vector<std::pair<int,int>> get_MasterOffset_s() const {return cluster_tree_s->get_masteroffset();}
+    std::pair<int,int> get_MasterOffset_t(int i) const {return cluster_tree_t->get_masteroffset(i);}
+    std::pair<int,int> get_MasterOffset_s(int i) const {return cluster_tree_s->get_masteroffset(i);}
 	std::vector<int> get_permt() const {return cluster_tree_t->get_perm();}
 	std::vector<int> get_perms() const {return cluster_tree_s->get_perm();}
 	const std::vector<SubMatrix<T>>& get_MyNearFieldMats() const {return MyNearFieldMats;}
@@ -161,9 +163,9 @@ public:
 	friend double Frobenius_absolute_error<LowRankMatrix,T>(const HMatrix<LowRankMatrix,T>& B, const IMatrix<T>& A);
 
 	// Mat vec prod
-	void mvprod_global(const T* const in, T* const out) const;
-	void mvprod_local(const T* const in, T* const out, T* const work) const;
-	void mymvprod_local(const T* const in, T* const out) const;
+	void mvprod_global(const T* const in, T* const out,const int& mu=1) const;
+	void mvprod_local(const T* const in, T* const out, T* const work, const int& mu) const;
+	void mymvprod_local(const T* const in, T* const out, const int& mu) const;
 	std::vector<T> operator*( const std::vector<T>& x) const;
 
 	// Permutations
@@ -171,7 +173,7 @@ public:
 	void cluster_to_target_permutation(const T* const in, T* const out) const;
 
 	// local to global
- 	void local_to_global(const T* const in, T* const out) const;
+ 	void local_to_global(const T* const in, T* const out, const int& mu) const;
 
 
 };
@@ -820,9 +822,9 @@ void HMatrix<LowRankMatrix,T >::ComputeInfos(const std::vector<double>& mytime){
 
 
 template< template<typename> class LowRankMatrix, typename T>
-void HMatrix<LowRankMatrix,T >::mymvprod_local(const T* const in, T* const out) const{
+void HMatrix<LowRankMatrix,T >::mymvprod_local(const T* const in, T* const out, const int& mu) const{
 
-	std::fill(out,out+local_size,0);
+	std::fill(out,out+local_size*mu,0);
 
 	// Contribution champ lointain
 	for(int b=0; b<MyFarFieldMats.size(); b++){
@@ -830,7 +832,7 @@ void HMatrix<LowRankMatrix,T >::mymvprod_local(const T* const in, T* const out) 
 		int offset_i     = M.get_offset_i();
 		int offset_j     = M.get_offset_j();
 
-		M.add_mvprod(in+offset_j,out+offset_i-local_offset);
+		M.add_mvprod_row_major(in+offset_j*mu,out+(offset_i-local_offset)*mu,mu);
 
 	}
 	// Contribution champ proche
@@ -839,77 +841,160 @@ void HMatrix<LowRankMatrix,T >::mymvprod_local(const T* const in, T* const out) 
 		int offset_i     = M.get_offset_i();
 		int offset_j     = M.get_offset_j();
 
-		M.add_mvprod(in+offset_j,out+offset_i-local_offset);
+		M.add_mvprod_row_major(in+offset_j*mu,out+(offset_i-local_offset)*mu,mu);
 	}
-
-}
-
-
-template< template<typename> class LowRankMatrix, typename T>
-void HMatrix<LowRankMatrix,T >::local_to_global(const T* const in, T* const out) const{
-	// Allgather
-	std::vector<int> recvcounts(sizeWorld);
-	std::vector<int>  displs(sizeWorld);
-
-	displs[0] = 0;
-
-	for (int i=0; i<sizeWorld; i++) {
-		recvcounts[i] = cluster_tree_t->get_masteroffset(i).second;
-		if (i > 0)
-			displs[i] = displs[i-1] + recvcounts[i-1];
-	}
-
-	MPI_Allgatherv(in, recvcounts[rankWorld], wrapper_mpi<T>::mpi_type(), out, &(recvcounts[0]), &(displs[0]), wrapper_mpi<T>::mpi_type(), comm);
 
 
 }
 
 
+// template< template<typename> class LowRankMatrix, typename T>
+// void HMatrix<LowRankMatrix,T >::local_to_global(const T* const in, T* const out, const int& mu) const{
+// 	// Allgather
+// 	std::vector<int> recvcounts(sizeWorld);
+// 	std::vector<int>  displs(sizeWorld);
+//
+// 	displs[0] = 0;
+//
+// 	for (int i=0; i<sizeWorld; i++) {
+// 		recvcounts[i] = (cluster_tree_t->get_masteroffset(i).second)*mu;
+// 		if (i > 0)
+// 			displs[i] = displs[i-1] + recvcounts[i-1];
+// 	}
+//
+// 	MPI_Allgatherv(in, recvcounts[rankWorld], wrapper_mpi<T>::mpi_type(), out + (mu==1 ? 0 : mu*nc), &(recvcounts[0]), &(displs[0]), wrapper_mpi<T>::mpi_type(), comm);
+//
+//     //
+//     if (mu!=1){
+//         for (int i=0 ;i<mu;i++){
+//             for (int j=0; j<sizeWorld;j++){
+//                 std::copy_n(out+mu*nc+displs[j]+i*recvcounts[j]/mu,recvcounts[j]/mu,out+i*nc+displs[j]/mu);
+//             }
+//         }
+//     }
+// }
 
 template< template<typename> class LowRankMatrix, typename T>
-void HMatrix<LowRankMatrix,T >::mvprod_local(const T* const in, T* const out, T* const work) const{
+void HMatrix<LowRankMatrix,T >::local_to_global(const T* const in, T* const out, const int& mu) const{
+  // Allgather
+  std::vector<int> recvcounts(sizeWorld);
+  std::vector<int>  displs(sizeWorld);
+
+
+  displs[0] = 0;
+
+  for (int i=0; i<sizeWorld; i++) {
+      recvcounts[i] = (cluster_tree_t->get_masteroffset(i).second)*mu;
+      if (i > 0)
+          displs[i] = displs[i-1] + recvcounts[i-1];
+  }
+
+
+
+  MPI_Allgatherv(in, recvcounts[rankWorld], wrapper_mpi<T>::mpi_type(), out, &(recvcounts[0]), &(displs[0]), wrapper_mpi<T>::mpi_type(), comm);
+
+
+}
+
+
+
+
+template< template<typename> class LowRankMatrix, typename T>
+void HMatrix<LowRankMatrix,T >::mvprod_local(const T* const in, T* const out, T* const work, const int& mu) const{
 	double time = MPI_Wtime();
-	this->local_to_global(in, work);
-	this->mymvprod_local(work,out);
+
+    this->local_to_global(in, work,mu);
+    this->mymvprod_local(work,out,mu);
+
 	infos["nbr_mat_vec_prod"] = NbrToStr(1+StrToNbr<int>(infos["nbr_mat_vec_prod"]));
 	infos["total_time_mat_vec_prod"] = NbrToStr(MPI_Wtime()-time+StrToNbr<double>(infos["total_time_mat_vec_prod"]));
 }
 
 
 template< template<typename> class LowRankMatrix, typename T>
-void HMatrix<LowRankMatrix,T >::mvprod_global(const T* const in, T* const out) const{
+void HMatrix<LowRankMatrix,T >::mvprod_global(const T* const in, T* const out, const int& mu) const{
+    double time = MPI_Wtime();
 
-	double time = MPI_Wtime();
-	std::vector<T> in_perm(nc);
-	std::vector<T> out_not_perm(nr);
+    if (mu==1){
+    	std::vector<T> out_perm(local_size);
+        std::vector<T> buffer(std::max(nc,nr));
 
-	// Permutation
-	cluster_tree_s->global_to_cluster(in,in_perm.data());
+        // Permutation
+        cluster_tree_s->global_to_cluster(in,buffer.data());
 
-	// mvprod local
-	mymvprod_local(in_perm.data(),out_not_perm.data()+local_offset);
+        //
+    	mymvprod_local(buffer.data(),out_perm.data(),1);
+
+        // Allgather
+    	std::vector<int> recvcounts(sizeWorld);
+    	std::vector<int>  displs(sizeWorld);
+
+    	displs[0] = 0;
+
+    	for (int i=0; i<sizeWorld; i++) {
+    		recvcounts[i] = cluster_tree_t->get_masteroffset(i).second*mu;
+    		if (i > 0)
+    			displs[i] = displs[i-1] + recvcounts[i-1];
+    	}
+
+    	MPI_Allgatherv(out_perm.data(), recvcounts[rankWorld], wrapper_mpi<T>::mpi_type(), buffer.data(), &(recvcounts[0]), &(displs[0]), wrapper_mpi<T>::mpi_type(), comm);
+
+        // Permutation
+        cluster_tree_t->cluster_to_global(buffer.data(),out);
+
+    }
+    else{
 
 
-	// Allgather
-	std::vector<T> snd(local_size);
-	std::vector<int> recvcounts(sizeWorld);
-	std::vector<int>  displs(sizeWorld);
+    	std::vector<T> in_perm(std::max(nr,nc)*mu*2);
+    	std::vector<T> out_perm(local_size*mu);
+        std::vector<T> buffer(nc);
 
-	displs[0] = 0;
+        for (int i=0;i<mu;i++){
+    	    // Permutation
+    	    cluster_tree_s->global_to_cluster(in+i*nc,buffer.data());
 
-	for (int i=0; i<sizeWorld; i++) {
-		recvcounts[i] = cluster_tree_t->get_masteroffset(i).second;
-		if (i > 0)
-			displs[i] = displs[i-1] + recvcounts[i-1];
-	}
 
-	// std::copy_n(snd.data(),size,out+offset);
-	MPI_Allgatherv(MPI_IN_PLACE, recvcounts[rankWorld], wrapper_mpi<T>::mpi_type(), out_not_perm.data(), &(recvcounts[0]), &(displs[0]), wrapper_mpi<T>::mpi_type(), comm);
-	// MPI_Allgatherv(snd.data(), recvcounts[rankWorld], wrapper_mpi<T>::mpi_type(), out, &(recvcounts.front()), &(displs.front()), wrapper_mpi<T>::mpi_type(), comm);
+            // Transpose
+            for (int j=0;j<nc;j++){
+                in_perm[i+j*mu]=buffer[j];
+            }
+        }
 
-	// Permutation
-	cluster_tree_t->cluster_to_global(out_not_perm.data(),out);
+    	mymvprod_local(in_perm.data(),in_perm.data()+nc*mu,mu);
 
+        // Tranpose
+        for (int i=0;i<mu;i++){
+            for (int j=0;j<local_size;j++){
+                out_perm[i*local_size+j]=in_perm[i+j*mu+nc*mu];
+            }
+        }
+
+
+
+    	// Allgather
+    	std::vector<int> recvcounts(sizeWorld);
+    	std::vector<int>  displs(sizeWorld);
+
+    	displs[0] = 0;
+
+    	for (int i=0; i<sizeWorld; i++) {
+    		recvcounts[i] = cluster_tree_t->get_masteroffset(i).second*mu;
+    		if (i > 0)
+    			displs[i] = displs[i-1] + recvcounts[i-1];
+    	}
+
+    	MPI_Allgatherv(out_perm.data(), recvcounts[rankWorld], wrapper_mpi<T>::mpi_type(), in_perm.data() + mu*nr, &(recvcounts[0]), &(displs[0]), wrapper_mpi<T>::mpi_type(), comm);
+
+        for (int i=0 ;i<mu;i++){
+            for (int j=0; j<sizeWorld;j++){
+                std::copy_n(in_perm.data()+mu*nr+displs[j]+i*recvcounts[j]/mu,recvcounts[j]/mu,in_perm.data()+i*nr+displs[j]/mu);
+            }
+
+            // Permutation
+            cluster_tree_t->cluster_to_global(in_perm.data()+i*nr,out+i*nr);
+        }
+    }
 	// Timing
 	infos["nbr_mat_vec_prod"] = NbrToStr(1+StrToNbr<int>(infos["nbr_mat_vec_prod"]));
 	infos["total_time_mat_vec_prod"] = NbrToStr(MPI_Wtime()-time+StrToNbr<double>(infos["total_time_mat_vec_prod"]));
@@ -932,7 +1017,7 @@ template< template<typename> class LowRankMatrix, typename T>
 std::vector<T> HMatrix<LowRankMatrix,T >::operator*(const std::vector<T>& x) const{
 	assert(x.size()==nc);
 	std::vector<T> result(nr,0);
-	mvprod_global(x.data(),result.data());
+	mvprod_global(x.data(),result.data(),1);
 	return result;
 }
 
