@@ -16,6 +16,20 @@ language: cpp
 # Compiler selection
 matrix:
   include:
+    # Tests on osx
+    - os: osx
+      env:
+        - CXX_COMPILER=clang++
+        - C_COMPILER=clang
+      install:
+        - brew install mpich
+    - os: osx
+      env:
+        - CXX_COMPILER=g++-7
+        - C_COMPILER=gcc-7
+      install:
+        - brew install gcc
+        - brew install mpich
     - os: osx
       env:
         - CXX_COMPILER=clang++
@@ -27,6 +41,47 @@ matrix:
         - C_COMPILER=gcc-7
       install:
         - brew install gcc
+
+    # Tests on linux
+    - os: linux
+      dist: trusty
+      env:
+        - CXX_COMPILER=g++-4.9
+        - C_COMPILER=gcc-4.9
+      addons:
+        apt:
+          sources:
+            - ubuntu-toolchain-r-test
+          packages:
+            - g++-4.9
+            - cmake
+            - openmpi-bin
+            - libopenmpi-dev
+            - libblas-dev
+            - liblapack-dev
+            # - libmumps-dev
+            - libsuitesparse-dev
+
+    - os: linux
+      dist: trusty
+      env:
+        - CXX_COMPILER=clang++-3.6
+        - C_COMPILER=clang-3.6
+      addons:
+        apt:
+          sources:
+            - ubuntu-toolchain-r-test
+            - llvm-toolchain-precise-3.6
+          packages:
+            - clang-3.6
+            - cmake
+            - openmpi-bin
+            - libopenmpi-dev
+            - libblas-dev
+            - liblapack-dev
+            # - libmumps-dev
+            - libsuitesparse-dev
+
     - os: linux
       dist: trusty
       env:
@@ -73,8 +128,8 @@ matrix:
 # Updates
 before_install:
   - if [ "$TRAVIS_OS_NAME" == "osx" ]; then brew update; fi
+  - if [ "$TRAVIS_OS_NAME" == "osx" ]; then brew cask uninstall oclint; fi # incompatibility with a previously installed oclint and gcc
   # - if [ "$TRAVIS_OS_NAME" == "osx" ]; then brew install gcc; fi
-  - if [ "$TRAVIS_OS_NAME" == "osx" ]; then brew install mpich; fi
   # - if [ "$TRAVIS_OS_NAME" == "osx" ]; then HOMEBREW_BUILD_FROM_SOURCE=1 brew install homebrew/science/mumps; fi
   - if [ "$TRAVIS_OS_NAME" == "osx" ]; then brew install suite-sparse; fi
   - cd .. && git clone https://github.com/hpddm/hpddm.git && cd htool

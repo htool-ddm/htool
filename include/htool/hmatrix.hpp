@@ -524,6 +524,7 @@ void HMatrix<LowRankMatrix, T >::ScatterTasks(){
     		MyBlocks.push_back(Tasks[b]);
 		}
 	}
+    std::sort(MyBlocks.begin(),MyBlocks.end(),comp_block());
 	// std::cout << "rank : "<<rankWorld<<" "<<"Block : "<<MyBlocks.size() <<std::endl;
 }
 

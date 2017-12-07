@@ -142,7 +142,7 @@ public:
 
 					}
 					else{
-						std::cout << "There is a zero row in the starting submatrix and ACA didn't work" << std::endl;
+						// std::cout << "There is a zero row in the starting submatrix and ACA didn't work" << std::endl;
 						q-=1;
 						break;
 					}
