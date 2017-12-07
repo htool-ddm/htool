@@ -4,6 +4,7 @@
 #include <cassert>
 #include <fstream>
 #include <mpi.h>
+#include <omp.h>
 #include <map>
 #include <memory>
 #include "matrix.hpp"
@@ -828,23 +829,32 @@ void HMatrix<LowRankMatrix,T >::mymvprod_local(const T* const in, T* const out, 
 	std::fill(out,out+local_size*mu,0);
 
 	// Contribution champ lointain
-	for(int b=0; b<MyFarFieldMats.size(); b++){
-		const LowRankMatrix<T>&  M  = MyFarFieldMats[b];
-		int offset_i     = M.get_offset_i();
-		int offset_j     = M.get_offset_j();
+    #pragma omp parallel
+    {
+        std::vector<T> temp(local_size*mu);
+        #pragma omp for
+    	for(int b=0; b<MyFarFieldMats.size(); b++){
+    		const LowRankMatrix<T>&  M  = MyFarFieldMats[b];
+    		int offset_i     = M.get_offset_i();
+    		int offset_j     = M.get_offset_j();
 
-		M.add_mvprod_row_major(in+offset_j*mu,out+(offset_i-local_offset)*mu,mu);
+    		M.add_mvprod_row_major(in+offset_j*mu,temp.data()+(offset_i-local_offset)*mu,mu);
 
-	}
-	// Contribution champ proche
-	for(int b=0; b<MyNearFieldMats.size(); b++){
-		const SubMatrix<T>&  M  = MyNearFieldMats[b];
-		int offset_i     = M.get_offset_i();
-		int offset_j     = M.get_offset_j();
+    	}
+    	// Contribution champ proche
+        #pragma omp for
+    	for(int b=0; b<MyNearFieldMats.size(); b++){
+    		const SubMatrix<T>&  M  = MyNearFieldMats[b];
+    		int offset_i     = M.get_offset_i();
+    		int offset_j     = M.get_offset_j();
 
-		M.add_mvprod_row_major(in+offset_j*mu,out+(offset_i-local_offset)*mu,mu);
-	}
+    		M.add_mvprod_row_major(in+offset_j*mu,temp.data()+(offset_i-local_offset)*mu,mu);
+    	}
 
+        #pragma omp critical
+        std::transform (temp.begin(), temp.end(), out, out, std::plus<T>());
+
+    }
 
 }
 
