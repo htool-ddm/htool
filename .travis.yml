@@ -56,7 +56,7 @@ matrix:
             - g++-4.9
             - cmake
             - openmpi-bin
-            - openmpi-dev
+            - libopenmpi-dev
             - libblas-dev
             - liblapack-dev
             # - libmumps-dev
@@ -76,7 +76,7 @@ matrix:
             - clang-3.6
             - cmake
             - openmpi-bin
-            - openmpi-dev
+            - libopenmpi-dev
             - libblas-dev
             - liblapack-dev
             # - libmumps-dev
