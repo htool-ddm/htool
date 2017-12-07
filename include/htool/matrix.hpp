@@ -186,11 +186,17 @@ public:
 
   //! ### Access operator
 	/*!
-	 If _A_ is the instance calling the operator
-	 _A.get_stridedslice(i,j,k)_ returns the slice of _A_ containing every element from _start_ to _start_+_lenght with a step of _stride_. Modification forbidden
 	 */
 
    const std::vector<T>& get_mat(){return this->mat;}
+
+
+   //! ### Access operator
+  /*!
+   */
+
+    T *  data() const{return this->mat.data();}
+    const T *  data() const{return this->mat.data();}
 
   //! ### Access operator
 	/*!
