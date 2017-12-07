@@ -53,7 +53,6 @@ int main(int argc, char *argv[]) {
 
   	for(int idist=0; idist<ndistance; idist++)
   	{
-  		cout << "Distance between the clusters: " << distance[idist] << endl;
 
   		srand (1);
   		// we set a constant seed for rand because we want always the same result if we run the check many times
@@ -94,7 +93,7 @@ int main(int argc, char *argv[]) {
 
   		// HMatrix<fullACA,double> HA(A,p1,r1,tab1,p2,r2,tab2);
   		HMatrix<fullACA,double> HA(A,p1,r1,tab1,p2,r2,tab2);
-  		HA.print_stats();
+  		HA.print_infos();
 
 
 

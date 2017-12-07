@@ -1,5 +1,5 @@
-#ifndef GEOMETRY_HPP
-#define GEOMETRY_HPP
+#ifndef HTOOL_GEOMETRY_HPP
+#define HTOOL_GEOMETRY_HPP
 
 #include <fstream>
 #include <sstream>

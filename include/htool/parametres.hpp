@@ -1,5 +1,5 @@
-#ifndef PARAMETRES_HPP
-#define PARAMETRES_HPP
+#ifndef HTOOL_PARAMETRES_HPP
+#define HTOOL_PARAMETRES_HPP
 
 #include <cassert>
 #include "user.hpp"

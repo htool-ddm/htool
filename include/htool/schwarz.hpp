@@ -1,5 +1,5 @@
-#ifndef SCHWARZ_HPP
-#define SCHWARZ_HPP
+#ifndef HTOOL_SCHWARZ_HPP
+#define HTOOL_SCHWARZ_HPP
 
 #include "preconditioner.hpp"
 

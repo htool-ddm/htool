@@ -1,5 +1,5 @@
-#ifndef PARTIALACA_HPP
-#define PARTIALACA_HPP
+#ifndef HTOOL_PARTIALACA_HPP
+#define HTOOL_PARTIALACA_HPP
 
 #include <iostream>
 #include <fstream>
@@ -142,7 +142,7 @@ public:
 
 					}
 					else{
-						std::cout << "There is a zero row in the starting submatrix and ACA didn't work" << std::endl;
+						// std::cout << "There is a zero row in the starting submatrix and ACA didn't work" << std::endl;
 						q-=1;
 						break;
 					}

@@ -30,6 +30,7 @@
 
 # Builds
 build*/
+bin*/
 
 # Data
 data/*

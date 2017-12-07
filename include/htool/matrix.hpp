@@ -1,5 +1,5 @@
-#ifndef MATRIX_HPP
-#define MATRIX_HPP
+#ifndef HTOOL_MATRIX_HPP
+#define HTOOL_MATRIX_HPP
 
 #include <cassert>
 #include <iostream>
@@ -280,7 +280,7 @@ public:
 		Matrix R(A.nr,A.nc);
 		for (int i=0;i<A.nr;i++){
 			for (int j=0;j<A.nc;j++){
-				R(i,j)=R(i,j)*a;
+				R(i,j)=A(i,j)*a;
 			}
 		}
 		return R;

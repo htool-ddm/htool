@@ -52,6 +52,21 @@ int main(int argc, char const *argv[]) {
   test = test || !(error<1e-16);
   cout << "Error on row and col setters : "<< error << endl;
 
+  // Matrix scalar product
+  Matrix<double> Md_test = 2*Md;
+  error = 0;
+  for (int i=0;i<Md.nb_rows();i++){
+    for (int j=0;j<Md.nb_cols();j++){
+      error += pow(2*Md(i,j)-Md_test(i,j),2);
+    }
+  }
+  error = sqrt(error);
+  test = test || !(error<1e-16);
+  cout << "Error on mat scal prod : "<< error<<endl;
+  error = normFrob(Md*2 - 2*Md);
+  test = test || !(error<1e-16);
+  cout << "Error on mat scal prod associativity : "<< error<<endl;
+
   // Matrix vector product
   std::vector <double> md(5,1);
   diff = {8, 10, 16, 20, 24, 28, 32, 36, 40, 44};
@@ -121,6 +136,21 @@ int main(int argc, char const *argv[]) {
   error = norm2(Mcd.get_col(4)-diffc);
   test = test || !(error<1e-16);
   cout << "Error on row and col setters : "<< error << endl;
+
+  // Matrix scalar product
+  Matrix<std::complex<double>> Mcd_test = 2*Mcd;
+  error = 0;
+  for (int i=0;i<Md.nb_rows();i++){
+    for (int j=0;j<Md.nb_cols();j++){
+      error += pow(abs(2*Md(i,j)-Md_test(i,j)),2);
+    }
+  }
+  error = sqrt(error);
+  test = test || !(error<1e-16);
+  cout << "Error on mat scal prod : "<< error<<endl;
+  error = normFrob(Md*2 - 2*Md);
+  test = test || !(error<1e-16);
+  cout << "Error on mat scal prod associativity : "<< error<<endl;
 
   // Matrix vector product
   std::vector <complex<double> > mcd(5,1);

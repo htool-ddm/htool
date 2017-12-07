@@ -1,5 +1,5 @@
-#ifndef HTOOL_HPP
-#define HTOOL_HPP
+#ifndef HTOOL_HTOOL_HPP
+#define HTOOL_HTOOL_HPP
 
 
 

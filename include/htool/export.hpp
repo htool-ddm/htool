@@ -1,5 +1,5 @@
-#ifndef EXPORT_HPP
-#define EXPORT_HPP
+#ifndef HTOOL_EXPORT_HPP
+#define HTOOL_EXPORT_HPP
 
 #include <fstream>
 #include <sstream>
@@ -29,34 +29,34 @@ namespace htool {
 //==================================================//
 
 void ExportMEDIT(std::string inputname, std::string outputname){
-	
+
 	std::vector<R3>  X;
 	std::vector<N4>  Elt;
 	std::vector<int> NbPt;
 	int   num,NbElt,poubelle, NbTri, NbQuad;
 	R3    Pt;
-	
+
 	// Ouverture fichier
 	std::ifstream infile;
 	infile.open(inputname.c_str());
 	if(!infile.good()){
 		std::cout << "LoadPoints in loading.hpp: error opening the geometry file" << std::endl;
 		abort();}
-	
+
 	// Nombre d'elements
 	infile >> NbElt;
 	Elt.resize(NbElt);
 	NbPt.resize(NbElt);
-	
+
 	num=0; NbTri=0; NbQuad=0;
 	// Lecture elements
 	for(int e=0; e<NbElt; e++){
 		infile >> poubelle;
 		infile >> NbPt[e];
-		
+
 		if(NbPt[e]==3){NbTri++;}
 		if(NbPt[e]==4){NbQuad++;}
-		
+
 		// Calcul centre element
 		for(int j=0; j<NbPt[e]; j++){
 			infile >> poubelle;
@@ -65,13 +65,13 @@ void ExportMEDIT(std::string inputname, std::string outputname){
 			X.push_back(Pt);
 			num++;
 		}
-		
+
 		// Separateur inter-element
 		if(e<NbElt-1){infile >> poubelle;}
-		
+
 	}
 	infile.close();
-	
+
 	// Ecriture fichier de sortie
 	std::ofstream outfile;
 	outfile.open((GetOutputPath()+"/"+outputname).c_str());
@@ -81,7 +81,7 @@ void ExportMEDIT(std::string inputname, std::string outputname){
 	outfile << X.size() << std::endl;
 	for(int j=0; j<X.size(); j++){
 		outfile << X[j] << "\t" << 0 << "\n";}
-	
+
 	if(NbQuad>0){
 		outfile << std::endl;
 		outfile << "Quadrilaterals\n";
@@ -95,7 +95,7 @@ void ExportMEDIT(std::string inputname, std::string outputname){
 			}
 		}
 	}
-	
+
 	if(NbTri>0){
 		outfile << std::endl;
 		outfile << "Triangles\n";
@@ -108,9 +108,9 @@ void ExportMEDIT(std::string inputname, std::string outputname){
 			}
 		}
 	}
-	
+
 	outfile.close();
-	
+
 }
 
 
@@ -136,34 +136,34 @@ void ExportMEDIT(std::string inputname, std::string outputname){
 //==================================================//
 
 void ExportGMSH(std::string inputname, std::string outputname){
-	
+
 	std::vector<R3>  X;
 	std::vector<N4>  Elt;
 	std::vector<int> NbPt;
 	int   num,NbElt,poubelle, NbTri, NbQuad;
 	R3    Pt;
-	
+
 	// Ouverture fichier
 	std::ifstream infile;
 	infile.open(inputname.c_str());
 	if(!infile.good()){
 		std::cout << "LoadPoints in loading.hpp: error opening the geometry file" << std::endl;
 		abort();}
-	
+
 	// Nombre d'elements
 	infile >> NbElt;
 	Elt.resize(NbElt);
 	NbPt.resize(NbElt);
-	
+
 	num=0; NbTri=0; NbQuad=0;
 	// Lecture elements
 	for(int e=0; e<NbElt; e++){
 		infile >> poubelle;
 		infile >> NbPt[e];
-		
+
 		if(NbPt[e]==3){NbTri++;}
 		if(NbPt[e]==4){NbQuad++;}
-		
+
 		// Calcul centre element
 		for(int j=0; j<NbPt[e]; j++){
 			infile >> poubelle;
@@ -172,14 +172,14 @@ void ExportGMSH(std::string inputname, std::string outputname){
 			X.push_back(Pt);
 			num++;
 		}
-		
+
 		// Separateur inter-element
 		if(e<NbElt-1){infile >> poubelle;}
-		
+
 	}
 	infile.close();
-	
-	
+
+
 	// Ecriture fichier de sortie
 	std::ofstream outfile;
 	outfile.open((GetOutputPath()+"/"+outputname).c_str());
@@ -205,7 +205,7 @@ void ExportGMSH(std::string inputname, std::string outputname){
 		outfile << "\n";
 	}
 	outfile << "$EndElements\n";
-	
+
 }
 }
 #endif

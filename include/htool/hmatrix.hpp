@@ -1,5 +1,5 @@
-#ifndef HMATRIX_HPP
-#define HMATRIX_HPP
+#ifndef HTOOL_HMATRIX_HPP
+#define HTOOL_HMATRIX_HPP
 
 #include <cassert>
 #include <fstream>
@@ -42,14 +42,14 @@ private:
 
 	std::vector<LowRankMatrix<T> > MyFarFieldMats;
 	std::vector<SubMatrix<T> >     MyNearFieldMats;
-	std::vector<LowRankMatrix<T>*> MyDiagFarFieldMats;
-	std::vector<SubMatrix<T>*>		 MyDiagNearFieldMats;
+	std::vector<int> MyDiagFarFieldMats;
+	std::vector<int> MyDiagNearFieldMats;
 
 
 	std::shared_ptr<Cluster_tree> cluster_tree_s;
 	std::shared_ptr<Cluster_tree> cluster_tree_t;
 
-	std::map<std::string, double> stats;
+	mutable std::map<std::string, std::string> infos;
 
 	MPI_Comm comm;
 	int rankWorld,sizeWorld;
@@ -62,7 +62,7 @@ private:
 	bool UpdateBlocks(const IMatrix<T>&mat ,const Cluster&, const Cluster&, const std::vector<R3> xt,const std::vector<int> tabt, const std::vector<R3> xs, const std::vector<int>tabs);
 	void AddNearFieldMat(const IMatrix<T>& mat, const Cluster& t, const Cluster& s);
 	void AddFarFieldMat(const IMatrix<T>& mat, const Cluster& t, const Cluster& s, const std::vector<R3> xt,const std::vector<int> tabt, const std::vector<R3> xs, const std::vector<int>tabs, const int& reqrank=-1);
-	void ComputeStats(const std::vector<double>& mytimes);
+	void ComputeInfos(const std::vector<double>& mytimes);
 
 
 public:
@@ -147,20 +147,23 @@ public:
 	std::vector<std::pair<int,int>> get_MasterOffset_s() const {return cluster_tree_s->get_masteroffset();}
 	std::vector<int> get_permt() const {return cluster_tree_t->get_perm();}
 	std::vector<int> get_perms() const {return cluster_tree_s->get_perm();}
+	const std::vector<SubMatrix<T>>& get_MyNearFieldMats() const {return MyNearFieldMats;}
+	const std::vector<LowRankMatrix<T>>& get_MyFarFieldMats() const {return MyFarFieldMats;}
+	const std::vector<int>& get_MyDiagNearFieldMats() const {return MyDiagNearFieldMats;}
+	const std::vector<int>& get_MyDiagFarFieldMats() const {return MyDiagFarFieldMats;}
 
-	//
-	void compute_diag_block(T* diag_block);
-
-	// Stats - infos
-	const std::map<std::string,double>& get_stats () const { return stats;}
-	void add_stats(const std::string& keyname, const double& value){stats[keyname]=value;}
-	void print_stats();
+	// Infos
+	const std::map<std::string,double>& get_infos () const { return infos;}
+	void add_info(const std::string& keyname, const std::string& value) const {infos[keyname]=value;}
+	void print_infos() const;
+	void save_infos(const std::string& outputname, std::ios_base::openmode mode = std::ios_base::out) const;
 	double compression() const; // 1- !!!
 	friend double Frobenius_absolute_error<LowRankMatrix,T>(const HMatrix<LowRankMatrix,T>& B, const IMatrix<T>& A);
 
 	// Mat vec prod
 	void mvprod_global(const T* const in, T* const out) const;
-	void mvprod_local(const T* const in, T* const out) const;
+	void mvprod_local(const T* const in, T* const out, T* const work) const;
+	void mymvprod_local(const T* const in, T* const out) const;
 	std::vector<T> operator*( const std::vector<T>& x) const;
 
 	// Permutations
@@ -210,8 +213,8 @@ void HMatrix<LowRankMatrix, T >::build(const IMatrix<T>& mat, const std::vector<
 	ComputeBlocks(mat,xt,tabt,xs,tabs);
 	mytimes[3] = MPI_Wtime() - time;
 
-	// Stats
-	ComputeStats(mytimes);
+	// Infos
+	ComputeInfos(mytimes);
 }
 
 // Full constructor
@@ -287,8 +290,8 @@ void HMatrix<LowRankMatrix, T >::build(const IMatrix<T>& mat,
 	ComputeBlocks(mat,xt,tabt,xt,tabt);
 	mytimes[3] = MPI_Wtime() - time;
 
-	// Stats info
-	ComputeStats(mytimes);
+	// Infos
+	ComputeInfos(mytimes);
 
 }
 
@@ -370,8 +373,8 @@ void HMatrix<LowRankMatrix, T >::build(const IMatrix<T>& mat, const std::vector<
 	ComputeBlocks(mat,xt,tabt,xs,tabs);
 	mytimes[3] = MPI_Wtime() - time;
 
-	// Stats
-	ComputeStats(mytimes);
+	// Infos
+	ComputeInfos(mytimes);
 }
 
 
@@ -512,14 +515,15 @@ Block* HMatrix<LowRankMatrix, T >::BuildBlockTree(const Cluster& t, const Cluste
 template< template<typename> class LowRankMatrix, typename T >
 void HMatrix<LowRankMatrix, T >::ScatterTasks(){
 
-	std::cout << "Tasks : "<<Tasks.size()<<std::endl;
+	// std::cout << "Tasks : "<<Tasks.size()<<std::endl;
   for(int b=0; b<Tasks.size(); b++){
     	//if (b%sizeWorld == rankWorld)
     if ((*(Tasks[b])).tgt_().get_rank() == rankWorld){
     		MyBlocks.push_back(Tasks[b]);
 		}
 	}
-	std::cout << "rank : "<<rankWorld<<" "<<"Block : "<<MyBlocks.size() <<std::endl;
+    std::sort(MyBlocks.begin(),MyBlocks.end(),comp_block());
+	// std::cout << "rank : "<<rankWorld<<" "<<"Block : "<<MyBlocks.size() <<std::endl;
 }
 
 // Compute blocks recursively
@@ -712,7 +716,8 @@ template< template<typename> class LowRankMatrix, typename T>
 void HMatrix<LowRankMatrix,T >::AddNearFieldMat(const IMatrix<T>& mat, const Cluster& t, const Cluster& s){
 	MyNearFieldMats.emplace_back(mat, std::vector<int>(cluster_tree_t->get_perm_start()+t.get_offset(),cluster_tree_t->get_perm_start()+t.get_offset()+t.get_size()), std::vector<int>(cluster_tree_s->get_perm_start()+s.get_offset(),cluster_tree_s->get_perm_start()+s.get_offset()+s.get_size()),t.get_offset(),s.get_offset());
 	if (s.get_rank()==rankWorld){
-		MyDiagNearFieldMats.push_back(&(MyNearFieldMats.back()));
+        MyDiagNearFieldMats.push_back(MyNearFieldMats.size()-1);
+				// std::cout <<"pouet"<<(*MyDiagNearFieldMats.back()).get_ir() << std::endl;
 	}
 }
 
@@ -722,55 +727,56 @@ void HMatrix<LowRankMatrix,T >::AddFarFieldMat(const IMatrix<T>& mat, const Clus
 	MyFarFieldMats.emplace_back(std::vector<int>(cluster_tree_t->get_perm_start()+t.get_offset(),cluster_tree_t->get_perm_start()+t.get_offset()+t.get_size()), std::vector<int>(cluster_tree_s->get_perm_start()+s.get_offset(),cluster_tree_s->get_perm_start()+s.get_offset()+s.get_size()),t.get_offset(),s.get_offset(),reqrank);
 	MyFarFieldMats.back().build(mat,t,xt,tabt,s,xs,tabs);
 	if (s.get_rank()==rankWorld){
-		MyDiagFarFieldMats.push_back(&(MyFarFieldMats.back()));
+        MyDiagFarFieldMats.push_back(MyFarFieldMats.size()-1);
+				// std::cout <<(*MyDiagFarFieldMats.back()).rank_of() << std::endl;
 	}
 }
 
-// Compute stats
+// Compute infos
 template< template<typename> class LowRankMatrix, typename T>
-void HMatrix<LowRankMatrix,T >::ComputeStats(const std::vector<double>& mytime){
+void HMatrix<LowRankMatrix,T >::ComputeInfos(const std::vector<double>& mytime){
 	// 0 : cluster tree ; 1 : block tree ; 2 : scatter tree ; 3 : compute blocks
 	std::vector<double> maxtime(4), meantime(4);
 	// 0 : dense mat ; 1 : lr mat ; 2 : rank
-	std::vector<int> maxstats(3,0),minstats(3,std::max(nc,nr));
-	std::vector<double> meanstats(3,0);
-	// stats
+	std::vector<int> maxinfos(3,0),mininfos(3,std::max(nc,nr));
+	std::vector<double> meaninfos(3,0);
+	// Infos
 	for (int i=0;i<MyNearFieldMats.size();i++){
 		int size = MyNearFieldMats[i].nb_rows()*MyNearFieldMats[i].nb_cols();
-		maxstats[0] = std::max(maxstats[0],size);
-		minstats[0] = std::min(minstats[0],size);
-		meanstats[0] += size;
+		maxinfos[0] = std::max(maxinfos[0],size);
+		mininfos[0] = std::min(mininfos[0],size);
+		meaninfos[0] += size;
 	}
 	for (int i=0;i<MyFarFieldMats.size();i++){
 		int size = MyFarFieldMats[i].nb_rows()*MyFarFieldMats[i].nb_cols();
 		int rank = MyFarFieldMats[i].rank_of();
-		maxstats[1] = std::max(maxstats[1],size);
-		minstats[1] = std::min(minstats[1],size);
-		meanstats[1] += size;
-		maxstats[2] = std::max(maxstats[2],rank);
-		minstats[2] = std::min(minstats[2],rank);
-		meanstats[2] += rank;
+		maxinfos[1] = std::max(maxinfos[1],size);
+		mininfos[1] = std::min(mininfos[1],size);
+		meaninfos[1] += size;
+		maxinfos[2] = std::max(maxinfos[2],rank);
+		mininfos[2] = std::min(mininfos[2],rank);
+		meaninfos[2] += rank;
 	}
 
 	if (rankWorld==0){
-		MPI_Reduce(MPI_IN_PLACE, &(maxstats[0]), 3, MPI_INT, MPI_MAX, 0,comm);
-		MPI_Reduce(MPI_IN_PLACE, &(minstats[0]), 3, MPI_INT, MPI_MIN, 0,comm);
-		MPI_Reduce(MPI_IN_PLACE, &(meanstats[0]),3, MPI_DOUBLE, MPI_SUM, 0,comm);
+		MPI_Reduce(MPI_IN_PLACE, &(maxinfos[0]), 3, MPI_INT, MPI_MAX, 0,comm);
+		MPI_Reduce(MPI_IN_PLACE, &(mininfos[0]), 3, MPI_INT, MPI_MIN, 0,comm);
+		MPI_Reduce(MPI_IN_PLACE, &(meaninfos[0]),3, MPI_DOUBLE, MPI_SUM, 0,comm);
 	}
 	else{
-		MPI_Reduce(&(maxstats[0]), &(maxstats[0]), 3, MPI_INT, MPI_MAX, 0,comm);
-		MPI_Reduce(&(minstats[0]), &(minstats[0]), 3, MPI_INT, MPI_MIN, 0,comm);
-		MPI_Reduce(&(meanstats[0]), &(meanstats[0]),3, MPI_DOUBLE, MPI_SUM, 0,comm);
+		MPI_Reduce(&(maxinfos[0]), &(maxinfos[0]), 3, MPI_INT, MPI_MAX, 0,comm);
+		MPI_Reduce(&(mininfos[0]), &(mininfos[0]), 3, MPI_INT, MPI_MIN, 0,comm);
+		MPI_Reduce(&(meaninfos[0]), &(meaninfos[0]),3, MPI_DOUBLE, MPI_SUM, 0,comm);
 	}
 
 	int nlrmat = this->get_nlrmat();
 	int ndmat = this->get_ndmat();
-	meanstats[0] = (ndmat  == 0 ? 0 : meanstats[0]/ndmat);
-	meanstats[1] = (nlrmat == 0 ? 0 : meanstats[1]/nlrmat);
-	meanstats[2] = (nlrmat == 0 ? 0 : meanstats[2]/nlrmat);
-	minstats[0] = (ndmat  == 0 ? 0 : minstats[0]);
-	minstats[1] = (nlrmat  == 0 ? 0 : minstats[1]);
-	minstats[2] = (nlrmat  == 0 ? 0 : minstats[2]);
+	meaninfos[0] = (ndmat  == 0 ? 0 : meaninfos[0]/ndmat);
+	meaninfos[1] = (nlrmat == 0 ? 0 : meaninfos[1]/nlrmat);
+	meaninfos[2] = (nlrmat == 0 ? 0 : meaninfos[2]/nlrmat);
+	mininfos[0] = (ndmat  == 0 ? 0 : mininfos[0]);
+	mininfos[1] = (nlrmat  == 0 ? 0 : mininfos[1]);
+	mininfos[2] = (nlrmat  == 0 ? 0 : mininfos[2]);
 
 	// timing
 	MPI_Reduce(&(mytime[0]), &(maxtime[0]), 4, MPI_DOUBLE, MPI_MAX, 0,comm);
@@ -778,34 +784,45 @@ void HMatrix<LowRankMatrix,T >::ComputeStats(const std::vector<double>& mytime){
 
 	meantime /= sizeWorld;
 
-	// save
-	stats["Cluster tree (mean)"]=meantime[0];
-	stats["Cluster tree  (max)"]=maxtime[0];
-	stats["Block tree   (mean)"]=meantime[1];
-	stats["Block tree    (max)"]=maxtime[1];
-	stats["Scatter tree (mean)"]=meantime[2];
-	stats["Scatter tree  (max)"]=maxtime[2];
-	stats["Blocks       (mean)"]=meantime[3];
-	stats["Blocks           (max)"]  =maxtime[3];
-	stats["Dense block size (max)"]  =maxstats[0];
-	stats["Dense block size (mean)"] =meanstats[0];
-	stats["Dense block size (min)"]  =minstats[0];
-	stats["Low rank block size (max)"]   =maxstats[1];
-	stats["Low rank  block size (mean)"] =meanstats[1];
-	stats["Low rank  block size (min)"]  =minstats[1];
-	stats["Rank (max)"]  =maxstats[2];
-	stats["Rank (mean)"] =meanstats[2];
-	stats["Rank (min)"]  =minstats[2];
-	stats["Number of lrmat"] = nlrmat;
-	stats["Number of dmat"]  = ndmat;
+	// Times
+	infos["Cluster_tree_mean"]=NbrToStr(meantime[0]);
+	infos["Cluster_tree_max"]=NbrToStr(maxtime[0]);
+	infos["Block_tree_mean"]=NbrToStr(meantime[1]);
+	infos["Block_tree_max"]=NbrToStr(maxtime[1]);
+	infos["Scatter_tree_mean"]=NbrToStr(meantime[2]);
+	infos["Scatter_tree_max"]=NbrToStr(maxtime[2]);
+	infos["Blocks_mean"]=NbrToStr(meantime[3]);
+	infos["Blocks_max"]=NbrToStr(maxtime[3]);
+
+	// Size
+	infos["Source_size"] = NbrToStr(this->nc);
+	infos["Target_size"] = NbrToStr(this->nr);
+	infos["Dense_block_size_max"]  = NbrToStr(maxinfos[0]);
+	infos["Dense_block_size_mean"] = NbrToStr(meaninfos[0]);
+	infos["Dense_block_size_min"]  = NbrToStr(mininfos[0]);
+	infos["Low_rank_block_size_max"]  = NbrToStr(maxinfos[1]);
+	infos["Low_rank_block_size_mean"] = NbrToStr(meaninfos[1]);
+	infos["Low_rank_block_size_min"]  = NbrToStr(mininfos[1]);
+
+	infos["Rank_max"]  = NbrToStr(maxinfos[2]);
+	infos["Rank_mean"] = NbrToStr(meaninfos[2]);
+	infos["Rank_min"]  = NbrToStr(mininfos[2]);
+	infos["Number_of_lrmat"] = NbrToStr(nlrmat);
+	infos["Number_of_dmat"]  = NbrToStr(ndmat);
+	infos["Compression"] = NbrToStr(this->compression());
+
+	infos["Nloc"] = NbrToStr(sizeWorld);
+
+	infos["Eta"] = NbrToStr(GetEta());
+	infos["Eps"] = NbrToStr(GetEpsilon());
+
 }
 
 
 
 template< template<typename> class LowRankMatrix, typename T>
-void HMatrix<LowRankMatrix,T >::mvprod_local(const T* const in, T* const out) const{
+void HMatrix<LowRankMatrix,T >::mymvprod_local(const T* const in, T* const out) const{
 
-	double time = MPI_Wtime();
 	std::fill(out,out+local_size,0);
 
 	// Contribution champ lointain
@@ -815,6 +832,7 @@ void HMatrix<LowRankMatrix,T >::mvprod_local(const T* const in, T* const out) co
 		int offset_j     = M.get_offset_j();
 
 		M.add_mvprod(in+offset_j,out+offset_i-local_offset);
+        // std::cout << offset_i<<" "<<offset_i+M.nb_rows()<<"  "<<offset_j<<" "<<offset_j+M.nb_cols()<<std::endl;
 
 	}
 	// Contribution champ proche
@@ -825,6 +843,7 @@ void HMatrix<LowRankMatrix,T >::mvprod_local(const T* const in, T* const out) co
 
 		M.add_mvprod(in+offset_j,out+offset_i-local_offset);
 	}
+
 
 }
 
@@ -850,13 +869,14 @@ void HMatrix<LowRankMatrix,T >::local_to_global(const T* const in, T* const out)
 
 
 
-
-
-
-
-
-
-
+template< template<typename> class LowRankMatrix, typename T>
+void HMatrix<LowRankMatrix,T >::mvprod_local(const T* const in, T* const out, T* const work) const{
+	double time = MPI_Wtime();
+	this->local_to_global(in, work);
+	this->mymvprod_local(work,out);
+	infos["nbr_mat_vec_prod"] = NbrToStr(1+StrToNbr<int>(infos["nbr_mat_vec_prod"]));
+	infos["total_time_mat_vec_prod"] = NbrToStr(MPI_Wtime()-time+StrToNbr<double>(infos["total_time_mat_vec_prod"]));
+}
 
 
 template< template<typename> class LowRankMatrix, typename T>
@@ -870,7 +890,7 @@ void HMatrix<LowRankMatrix,T >::mvprod_global(const T* const in, T* const out) c
 	cluster_tree_s->global_to_cluster(in,in_perm.data());
 
 	// mvprod local
-	mvprod_local(in_perm.data(),out_not_perm.data()+local_offset);
+	mymvprod_local(in_perm.data(),out_not_perm.data()+local_offset);
 
 
 	// Allgather
@@ -892,6 +912,10 @@ void HMatrix<LowRankMatrix,T >::mvprod_global(const T* const in, T* const out) c
 
 	// Permutation
 	cluster_tree_t->cluster_to_global(out_not_perm.data(),out);
+
+	// Timing
+	infos["nbr_mat_vec_prod"] = NbrToStr(1+StrToNbr<int>(infos["nbr_mat_vec_prod"]));
+	infos["total_time_mat_vec_prod"] = NbrToStr(MPI_Wtime()-time+StrToNbr<double>(infos["total_time_mat_vec_prod"]));
 }
 
 template< template<typename> class LowRankMatrix, typename T>
@@ -943,13 +967,33 @@ double HMatrix<LowRankMatrix,T >::compression() const{
 }
 
 template<template<typename> class LowRankMatrix,typename T >
-void HMatrix<LowRankMatrix,T >::print_stats(){
+void HMatrix<LowRankMatrix,T >::print_infos() const{
 	int rankWorld;
     MPI_Comm_rank(comm, &rankWorld);
 
 	if (rankWorld==0){
-		for (std::map<std::string,double>::const_iterator it = stats.begin() ; it != stats.end() ; ++it){
+		for (std::map<std::string,std::string>::const_iterator it = infos.begin() ; it != infos.end() ; ++it){
 			std::cout<<it->first<<"\t"<<it->second<<std::endl;
+		}
+		std::cout << std::endl;
+	}
+}
+
+template<template<typename> class LowRankMatrix,typename T >
+void HMatrix<LowRankMatrix,T >::save_infos(const std::string& outputname, std::ios_base::openmode mode) const{
+	int rankWorld;
+  MPI_Comm_rank(comm, &rankWorld);
+
+	if (rankWorld==0){
+		std::ofstream outputfile(outputname,mode);
+		if (outputfile){
+			for (std::map<std::string,std::string>::const_iterator it = infos.begin() ; it != infos.end() ; ++it){
+				outputfile<<it->first<<" : "<<it->second<<std::endl;
+			}
+			outputfile.close();
+		}
+		else{
+			std::cout << "Unable to create "<<outputname<<std::endl;
 		}
 	}
 }

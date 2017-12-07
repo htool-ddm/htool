@@ -100,7 +100,7 @@ int main(int argc, char *argv[]) {
 		std::shared_ptr<Cluster_tree> t=make_shared<Cluster_tree>(p1,r1,tab1,g1);
 		std::shared_ptr<Cluster_tree> s=make_shared<Cluster_tree>(p2,r2,tab2,g2);
 		HMatrix<fullACA,double> HA(A,t,p1,tab1,s,p2,tab2);
-		HA.print_stats();
+		HA.print_infos();
 
 		std::vector<double> f(nc,1),result(nr,0);
 		result = HA*f;

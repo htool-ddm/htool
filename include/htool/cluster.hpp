@@ -1,10 +1,12 @@
-#ifndef CLUSTER_HPP
-#define CLUSTER_HPP
+#ifndef HTOOL_CLUSTER_HPP
+#define HTOOL_CLUSTER_HPP
 
 #include "matrix.hpp"
 #include "point.hpp"
 #include "parametres.hpp"
 #include <iomanip>
+// #include <Eigen/Dense>
+// #include <Eigen/Eigenvalues>
 
 namespace htool {
 //===============================//
@@ -26,6 +28,7 @@ namespace htool {
 //           et en particulier le paragraphe 3.1
 //
 //=================================//
+
 
 
 class Cluster: public Parametres{
@@ -151,24 +154,12 @@ void Cluster::build(const std::vector<R3>& x, const std::vector<double>& r, cons
 				}
 			}
 		}
-		// MatR3 cov; cov.setZero();
-		// curr->rad=0.;
-		// for(int j=0; j<nb_pt; j++){
-		// 	R3 u = curr->x[curr->tab[curr->num[j]]] - xc;
-		// 	curr->rad=std::max(curr->rad,norm2(u));
-		// 	for(int p=0; p<3; p++){
-		// 		for(int q=0; q<3; q++){
-		// 			cov(p,q) += u[p]*u[q];
-		// 		}
-		// 	}
-		// }
 
 		// Calcul direction principale
 		double p1 = pow(cov(0,1),2) + pow(cov(0,2),2) + pow(cov(1,2),2);
 		std::vector<double> eigs(3);
 		Matrix<double> I(3,3);I(0,0)=1;I(1,1)=1;I(2,2)=1;
 		R3 dir;
-
 		if (p1 < 1e-15) {
 	    	// cov is diagonal.
 	   		eigs[0] = cov(0,0);
@@ -190,29 +181,30 @@ void Cluster::build(const std::vector<R3>& x, const std::vector<double>& r, cons
 		}
 		else {
 			double q = (cov(0,0)+cov(1,1)+cov(2,2))/3.;
-	   		double p2 = pow(cov(0,0) - q,2) + pow(cov(1,1) - q,2) + pow(cov(2,2) - q,2) + 2. * p1;
-	   		double p = sqrt(p2 / 6.);
-	   		Matrix<double> B(3,3);
-				B = (1. / p) * (cov - q * I);
-	   		double detB = B(0,0)*(B(1,1)*B(2,2)-B(1,2)*B(2,1))
+	   	double p2 = pow(cov(0,0) - q,2) + pow(cov(1,1) - q,2) + pow(cov(2,2) - q,2) + 2. * p1;
+	   	double p = sqrt(p2 / 6.);
+	   	Matrix<double> B(3,3);
+			B = (1. / p) * (cov - q * I);
+	   	double detB = B(0,0)*(B(1,1)*B(2,2)-B(1,2)*B(2,1))
 	   					- B(0,1)*(B(1,0)*B(2,2)-B(1,2)*B(2,0))
 	   					+ B(0,2)*(B(1,0)*B(2,1)-B(1,1)*B(2,0));
-	   		double r = detB / 2.;
+	   	double r = detB / 2.;
 
 			// In exact arithmetic for a symmetric matrix  -1 <= r <= 1
 			// but computation error can leave it slightly outside this range.
 			double phi;
-	   		if (r <= -1)
-	      		phi = M_PI / 3.;
-	   		else if (r >= 1)
-	      		phi = 0;
-	   		else
-	      		phi = acos(r) / 3.;
+   		if (r <= -1)
+      		phi = M_PI / 3.;
+   		else if (r >= 1)
+      		phi = 0;
+   		else
+      		phi = acos(r) / 3.;
 
 			// the eigenvalues satisfy eig3 <= eig2 <= eig1
-	   		eigs[0] = q + 2. * p * cos(phi);
-	   		eigs[2] = q + 2. * p * cos(phi + (2.*M_PI/3.));
-	   		eigs[1] = 3. * q - eigs[0] - eigs[2];     // since trace(cov) = eig1 + eig2 + eig3
+   		eigs[0] = q + 2. * p * cos(phi);
+   		eigs[2] = q + 2. * p * cos(phi + (2.*M_PI/3.));
+   		eigs[1] = 3. * q - eigs[0] - eigs[2];     // since trace(cov) = eig1 + eig2 + eig3
+
 			if (std::abs(eigs[0]) < 1.e-15)
 				dir *= 0.;
 			else {
@@ -233,18 +225,9 @@ void Cluster::build(const std::vector<R3>& x, const std::vector<double>& r, cons
 				dir[1] /= dirnorm;
 				dir[2] /= dirnorm;
 			}
+
 		}
-		// Calcul direction principale
-		// EigenSolver eig(cov);
-		// EigenValue  lambda = eig.eigenvalues();
-		// EigenVector ev = eig.eigenvectors();
-		// int l = 0; double max=abs(lambda[0]);
-		// if( max<abs(lambda[1]) ){l=1; max=abs(lambda[1]);}
-		// if( max<abs(lambda[2]) ){l=2; }
-		// R3 dir;
-		// dir[0] = ev(0,l).real();
-		// dir[1] = ev(1,l).real();
-		// dir[2] = ev(2,l).real();
+
 
 		// Construction des paquets enfants
 		curr->son[0] = new Cluster(curr->depth+1);
@@ -380,5 +363,20 @@ public:
 	// 	os << "src:\t" << b.src_() << std::endl; os << "tgt:\t" << b.tgt_(); return os;}
 
 };
+
+struct comp_block
+{
+    inline bool operator() (const Block* block1, const Block* block2)
+    {
+        if (block1->tgt_().get_offset()==block2->tgt_().get_offset()){
+            return block1->src_().get_offset()<block2->src_().get_offset();
+        }
+        else {
+            return block1->tgt_().get_offset()<block2->tgt_().get_offset();
+        }
+    }
+};
+
+
 }
 #endif

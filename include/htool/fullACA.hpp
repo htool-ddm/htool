@@ -1,5 +1,5 @@
-#ifndef FULL_ACA_HPP
-#define FULL_ACA_HPP
+#ifndef HTOOL_FULL_ACA_HPP
+#define HTOOL_FULL_ACA_HPP
 
 #include <iostream>
 #include <fstream>

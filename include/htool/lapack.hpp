@@ -1,5 +1,5 @@
-#ifndef LAPACK_HPP
-#define LAPACK_HPP
+#ifndef HTOOL_LAPACK_HPP
+#define HTOOL_LAPACK_HPP
 
 
 #if defined(__powerpc__) || defined(INTEL_MKL_VERSION)
