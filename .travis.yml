@@ -133,8 +133,8 @@ before_install:
   # - if [ "$TRAVIS_OS_NAME" == "osx" ]; then HOMEBREW_BUILD_FROM_SOURCE=1 brew install homebrew/science/mumps; fi
   - if [ "$TRAVIS_OS_NAME" == "osx" ]; then brew install suite-sparse; fi
   - if [ "$TRAVIS_OS_NAME" == "linux" ]; then sudo apt-get update;fi
-  - if [ "$TRAVIS_OS_NAME" == "linux" ]; then sudo apt-get upgrade -y;fi
-  - if [ "$TRAVIS_OS_NAME" == "linux" ]; then sudo apt-get dist-upgrade -y;fi
+  - if [ "$TRAVIS_OS_NAME" == "linux" ]; then sudo apt-get -y -o Dpkg::Options::="--force-confdef" upgrade; fi
+  - if [ "$TRAVIS_OS_NAME" == "linux" ]; then sudo apt-get -y -o Dpkg::Options::="--force-confdef" upgrade;fi
   - cd .. && git clone https://github.com/hpddm/hpddm.git && cd htool
 
 
