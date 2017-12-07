@@ -195,8 +195,7 @@ public:
   /*!
    */
 
-    T *  data() const{return this->mat.data();}
-    const T *  data() const{return this->mat.data();}
+    T *  data() {return this->mat.data();}
 
   //! ### Access operator
 	/*!

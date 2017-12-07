@@ -1,5 +1,5 @@
 #include <htool/point.hpp>
-#include <htool/wrapper_hpddm.hpp>
+#include <htool/preconditioner.hpp>
 #include <htool/fullACA.hpp>
 #include <htool/hmatrix.hpp>
 #include <htool/geometry.hpp>
@@ -68,8 +68,12 @@ int main(int argc, char *argv[]){
 	bytes_to_vector(x_ref,argv[4]);
 
 	// Solve
-	HPDDMEmpty<fullACA,complex<double>> hpddm_operator(HA);
-	hpddm_operator.solve(f_global.data(),x_global.data());
+    {
+        DDM<fullACA,complex<double>> hpddm_operator(HA);
+	    hpddm_operator.solve(f_global.data(),x_global.data());
+    }
+    // hpddm_operator.~DDM<fullACA,complex<double>>();
+
 	HA.print_infos();
 
 	// Error on inversion
