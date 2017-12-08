@@ -815,8 +815,8 @@ void HMatrix<LowRankMatrix,T >::ComputeInfos(const std::vector<double>& mytime){
 	infos["Compression"] = NbrToStr(this->compression());
 
 	infos["Number_of_MPI_tasks"] = NbrToStr(sizeWorld);
-    infos["Number_of_threads_per_tasks"] = omp_get_max_threads();
-    
+    infos["Number_of_threads_per_tasks"] = NbrToStr(omp_get_max_threads());
+
 	infos["Eta"] = NbrToStr(GetEta());
 	infos["Eps"] = NbrToStr(GetEpsilon());
 
