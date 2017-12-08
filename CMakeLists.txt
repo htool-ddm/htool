@@ -132,7 +132,8 @@ target_link_libraries(htool INTERFACE
 					${MPI_LIBRARIES}
 					${BLAS_LIBRARIES}
 					${LAPACK_LIBRARIES}
-				  ${SUITESPARSE_LIBRARIES})
+				    ${SUITESPARSE_LIBRARIES}
+                    ${OpenMP_CXX_FLAGS})
 
 # For headers to show in IDE
 if (NOT "${CMAKE_VERSION}" VERSION_LESS 3.1)
