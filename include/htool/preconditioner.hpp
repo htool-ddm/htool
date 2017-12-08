@@ -142,7 +142,6 @@ public:
     infos["DDM_setup_max" ]= NbrToStr(maxtime[0]);
     infos["DDM_facto_mean"]= NbrToStr(meantime[1]);
     infos["DDM_facto_max" ]= NbrToStr(maxtime[1]);
-    infos["Nproc"]=NbrToStr(hmat_0.get_sizeworld());
 
   }
 
