@@ -186,11 +186,16 @@ public:
 
   //! ### Access operator
 	/*!
-	 If _A_ is the instance calling the operator
-	 _A.get_stridedslice(i,j,k)_ returns the slice of _A_ containing every element from _start_ to _start_+_lenght with a step of _stride_. Modification forbidden
 	 */
 
    const std::vector<T>& get_mat(){return this->mat;}
+
+
+   //! ### Access operator
+  /*!
+   */
+
+    T *  data() {return this->mat.data();}
 
   //! ### Access operator
 	/*!
@@ -319,76 +324,116 @@ public:
 		return R;
 	}
 
+    //! ### Matrix-std::vector product
+	/*!
+  */
+
+	std::vector<T> operator*(const std::vector<T>& rhs) const{
+        std::vector<T> lhs(this->nr);
+		this->mvprod(rhs.data(),lhs.data(),1);
+        return lhs;
+    }
+
   //! ### Matrix-Matrix product
 	/*!
   */
 	Matrix operator*(const Matrix& B) const{
 		assert(this->nc==B.nr);
 		Matrix R(this->nr,B.nc);
-		// for (int i=0;i<this->nr;i++){
-		// 	for (int j=0;j<B.nc;j++){
-		// 		for (int k=0;k<B.nr;k++){
-		// 			R(i,j)+=this->mat[i+k*this->nr]*B(k,j);
-		// 		}
-		// 	}
-		// }
-    char transa ='N';
-    char transb ='N';
-    int M = this->nr;
-    int N = B.nc;
-    int K = this->nc;
-    T alpha = 1;
-    int lda =  this->nr;
-    int ldb =  B.nr;
-    T beta = 0;
-    int ldc = this->nr;
-
-
-    Blas<T>::gemm(&transa, &transb, &M, &N, &K, &alpha, &(this->mat[0]),
-    &lda, &(B.mat[0]), &ldb, &beta, &(R.mat[0]),&ldc);
+        this->mvprod(&(B.mat[0]),&(R.mat[0]),B.nc);
 		return R;
 	}
 
-	//! ### Matrix-std::vector product
-	/*!
-  */
+    //! ### Interface with blas gemm
+  	/*!
+    */
+  void mvprod(const T* const in, T* const out, const int& mu) const{
+        int nr = this->nr;
+        int nc = this->nc;
+        T alpha = 1;
+        T beta =0;
+        int lda =  nr;
 
-	std::vector<T> operator*(const std::vector<T>& rhs) const{
-		int nr = this->nr;
-		int nc = this->nc;
-		T alpha = 1;
-		int lda = nr;
-		int incx =1;
-		T beta =0;
-		int incy = 1;
-		char n='N';
-    std::vector<T> lhs(nr);
-		Blas<T>::gemv(&n, &nr , &nc, &alpha, &(this->mat[0]) , &lda, &rhs[0], &incx, &beta, &lhs[0], &incy);
-    return lhs;
-  }
-  void mvprod(const T* const in, T* const out) const{
-  		int nr = this->nr;
-  		int nc = this->nc;
-  		T alpha = 1;
-  		int lda = nr;
-  		int incx =1;
-  		T beta =0;
-  		int incy = 1;
-  		char n='N';
-  		Blas<T>::gemv(&n, &nr , &nc, &alpha, &(this->mat[0]) , &lda, in, &incx, &beta, out, &incy);
+        if (mu==1){
+            char n='N';
+            int incx =1;
+            int incy = 1;
+            Blas<T>::gemv(&n, &nr , &nc, &alpha, &(this->mat[0]) , &lda, in, &incx, &beta, out, &incy);
+        }
+        else{
+            char transa ='N';
+            char transb ='N';
+            int M = nr;
+            int N = mu;
+            int K = nc;
+            int ldb = nc;
+            int ldc = nr;
+            Blas<T>::gemm(&transa, &transb, &M, &N, &K, &alpha, &(this->mat[0]),
+            &lda, in , &ldb, &beta, out,&ldc);
+        }
 	}
-  void add_mvprod(const T* const in, T* const out) const{
-      int nr = this->nr;
-      int nc = this->nc;
-      T alpha = 1;
-      int lda = nr;
-      int incx =1;
-      T beta =1;
-      int incy = 1;
-      char n='N';
-      Blas<T>::gemv(&n, &nr , &nc, &alpha, &(this->mat[0]) , &lda, in, &incx, &beta, out, &incy);
-  }
 
+    //! ### Special mvprod
+  	/*!
+    */
+  void mvprod_row_major(const T* const in, T* const out, const int& mu) const{
+        int nr = this->nr;
+        int nc = this->nc;
+        T alpha = 1;
+        T beta =0;
+        int lda =  nr;
+
+        if (mu==1){
+            char n='N';
+            int incx =1;
+            int incy = 1;
+            Blas<T>::gemv(&n, &nr , &nc, &alpha, &(this->mat[0]) , &lda, in, &incx, &beta, out, &incy);
+        }
+        else{
+            int lda =  mu;
+            char transa ='N';
+            char transb ='T';
+            int M = mu;
+            int N = nr;
+            int K = nc;
+            int ldb =  nr;
+            int ldc = mu;
+            Blas<T>::gemm(&transa, &transb, &M, &N, &K, &alpha, in,
+            &lda, &(this->mat[0]), &ldb, &beta, out,&ldc);
+        }
+    }
+
+    //! ### Special add_mvprod
+  	/*!
+    */
+  void add_mvprod_row_major(const T* const in, T* const out, const int& mu) const{
+        int nr = this->nr;
+        int nc = this->nc;
+        T alpha = 1;
+        T beta =1;
+
+
+        if (mu==1){
+            int lda =  nr;
+            char n='N';
+            int incx =1;
+            int incy = 1;
+            Blas<T>::gemv(&n, &nr , &nc, &alpha, &(this->mat[0]) , &lda, in, &incx, &beta, out, &incy);
+        }
+        else{
+            int lda =  mu;
+            char transa ='N';
+            char transb ='T';
+            int M = mu;
+            int N = nr;
+            int K = nc;
+            int ldb =  nr;
+            int ldc = mu;
+
+            Blas<T>::gemm(&transa, &transb, &M, &N, &K, &alpha, in,
+            &lda, &(this->mat[0]), &ldb, &beta, out,&ldc);
+        }
+  }
 	friend std::ostream& operator<<(std::ostream& out, const Matrix& m){
     if ( !(m.mat.empty()) ) {
       std::cout<< m.nr << " " << m.nc <<std::endl;

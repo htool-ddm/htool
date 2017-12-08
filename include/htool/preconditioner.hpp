@@ -11,28 +11,39 @@ namespace htool{
 template<template<typename> class LowRankMatrix, typename T>
 class DDM{
 private:
-
-  int n;
-  int n_inside;
-  const std::vector<int> neighbors;
-  // const std::vector<int> cluster_to_ovr_subdomain;
-  std::vector<std::vector<int> > intersections;
-  std::vector<T> vec_ovr;
-  std::vector<std::vector<T>> snd,rcv;
-  HPDDMDense<LowRankMatrix,T> hpddm_op;
-  std::vector<T> mat_loc;
-  std::vector<double> D;
-  MPI_Comm comm;
-  mutable std::map<std::string, std::string> infos;
+    int n;
+    int n_inside;
+    const std::vector<int> neighbors;
+    // const std::vector<int> cluster_to_ovr_subdomain;
+    std::vector<std::vector<int> > intersections;
+    std::vector<T> vec_ovr;
+    HPDDMDense<LowRankMatrix,T> hpddm_op;
+    std::vector<T> mat_loc;
+    std::vector<double> D;
+    const MPI_Comm& comm;
+    mutable std::map<std::string, std::string> infos;
 
 
 public:
+
+    void test_dest(){
+        hpddm_op.~HPDDMDense<LowRankMatrix,T>();
+    }
+
+    DDM(const HMatrix<LowRankMatrix,T>& hmat_0):n(hmat_0.get_local_size()),n_inside(hmat_0.get_local_size()),D(n),hpddm_op(hmat_0),comm(hmat_0.get_comm()){
+        bool sym=false;
+        hpddm_op.initialize(n, sym, nullptr, neighbors, intersections);
+
+        fill(D.begin(),D.begin()+n_inside,1);
+
+        hpddm_op.HPDDMDense<LowRankMatrix,T>::super::super::initialize(D.data());
+    }
+
   DDM(const IMatrix<T>& mat0, const HMatrix<LowRankMatrix,T>& hmat_0,
     const std::vector<int>&  ovr_subdomain_to_global0,
     const std::vector<int>& cluster_to_ovr_subdomain0,
     const std::vector<int>& neighbors0,
-    const std::vector<std::vector<int> >& intersections0,
-    MPI_Comm comm0=MPI_COMM_WORLD): hpddm_op(hmat_0), n(ovr_subdomain_to_global0.size()), n_inside(cluster_to_ovr_subdomain0.size()), neighbors(neighbors0), vec_ovr(n),mat_loc(n*n), D(n), comm(comm0) {
+    const std::vector<std::vector<int> >& intersections0): hpddm_op(hmat_0), n(ovr_subdomain_to_global0.size()), n_inside(cluster_to_ovr_subdomain0.size()), neighbors(neighbors0), vec_ovr(n),mat_loc(n*n), D(n), comm(hmat_0.get_comm()) {
 
     // Timing
     std::vector<double> mytime(2), maxtime(2), meantime(2);
@@ -135,38 +146,73 @@ public:
 
   }
 
-  void solve(const T* const rhs, T* const x){
+  void solve(const T* const rhs, T* const x, const int& mu=1 ){
     //
     int rankWorld = hpddm_op.HA.get_rankworld();
     int sizeWorld = hpddm_op.HA.get_sizeworld();
-    int offset = hpddm_op.HA.get_local_offset();
-    int size   = hpddm_op.HA.get_local_size();
+    int offset  = hpddm_op.HA.get_local_offset();
+    int size    = hpddm_op.HA.get_local_size();
+    int nb_cols = hpddm_op.HA.nb_cols();
+    int nb_rows = hpddm_op.HA.nb_rows();
     double time = MPI_Wtime();
 
     //
-    std::vector<T> rhs_perm(hpddm_op.HA.nb_cols());
-    std::vector<T> x_local(n,0);
+    std::vector<T> rhs_perm(nb_cols);
+    std::vector<T> x_local(n*mu,0);
+    std::vector<T> local_rhs(n*mu,0);
+    hpddm_op.in_global->resize(nb_cols*(mu==1 ? 1 : 2*mu));
+    hpddm_op.buffer->resize(n_inside*(mu==1 ? 1 : 2*mu));
 
-    // Permutation
-    hpddm_op.HA.source_to_cluster_permutation(rhs,rhs_perm.data());
+    // TODO blocking ?
+    for (int i=0;i<mu;i++){
+        // Permutation
+        hpddm_op.HA.source_to_cluster_permutation(rhs+i*nb_cols,rhs_perm.data());
 
-    // Local rhs
-    std::vector<T> local_rhs(n,0);
-    std::copy_n(rhs_perm.begin()+offset,n_inside,local_rhs.begin());
+        std::copy_n(rhs_perm.begin()+offset,n_inside,local_rhs.begin()+i*n);
+    }
+
     // TODO avoid com here
     // for (int i=0;i<n-n_inside;i++){
     //   local_rhs[i]=rhs_perm[]
     // }
-    hpddm_op.exchange(local_rhs.data(), 1);
+    hpddm_op.exchange(local_rhs.data(), mu);
 
     // Solve
-    int nb_it = HPDDM::IterativeMethod::solve(hpddm_op, local_rhs.data(), x_local.data(), 1,comm);
+    int nb_it = HPDDM::IterativeMethod::solve(hpddm_op, local_rhs.data(), x_local.data(), mu,comm);
+
+    // Delete the overlap (useful only when mu>1 and n!=n_inside)
+    for (int i=0;i<mu;i++){
+        std::copy_n(x_local.data()+i*n,n_inside,local_rhs.data()+i*n_inside);
+    }
 
     // Local to global
-    hpddm_op.HA.local_to_global(x_local.data(),hpddm_op.in_global->data());
+    // hpddm_op.HA.local_to_global(x_local.data(),hpddm_op.in_global->data(),mu);
+	std::vector<int> recvcounts(sizeWorld);
+	std::vector<int>  displs(sizeWorld);
 
-    // Permutation
-    hpddm_op.HA.cluster_to_target_permutation(hpddm_op.in_global->data(),x);
+	displs[0] = 0;
+
+	for (int i=0; i<sizeWorld; i++) {
+		recvcounts[i] = (hpddm_op.HA.get_MasterOffset_t(i).second)*mu;
+		if (i > 0)
+			displs[i] = displs[i-1] + recvcounts[i-1];
+	}
+
+	MPI_Allgatherv(local_rhs.data(), recvcounts[rankWorld], wrapper_mpi<T>::mpi_type(), hpddm_op.in_global->data() + (mu==1 ? 0 : mu*nb_rows), &(recvcounts[0]), &(displs[0]), wrapper_mpi<T>::mpi_type(), comm);
+
+    //
+
+    for (int i=0 ;i<mu;i++){
+        if (mu!=1){
+            for (int j=0; j<sizeWorld;j++){
+                std::copy_n(hpddm_op.in_global->data()+mu*nb_rows+displs[j]+i*recvcounts[j]/mu,recvcounts[j]/mu,hpddm_op.in_global->data()+i*nb_rows+displs[j]/mu);
+            }
+        }
+
+        // Permutation
+        hpddm_op.HA.cluster_to_target_permutation(hpddm_op.in_global->data()+i*nb_rows,x+i*nb_rows);
+    }
+
 
     // Timing
     HPDDM::Option& opt = *HPDDM::Option::get();
