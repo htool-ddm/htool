@@ -76,10 +76,8 @@ int main(int argc, char *argv[]){
     }
 
 	// Solve
-    {
-	    DDM<fullACA,complex<double>> hpddm_operator(HA);
-	    hpddm_operator.solve(f_global.data(),x_global.data(),mu);
-    }
+    DDM<fullACA,complex<double>> hpddm_operator(HA);
+	hpddm_operator.solve(f_global.data(),x_global.data(),mu);
 	HA.print_infos();
 
 	// Error on inversion
