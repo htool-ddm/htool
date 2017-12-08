@@ -835,7 +835,7 @@ void HMatrix<LowRankMatrix,T >::mymvprod_local(const T* const in, T* const out, 
     #pragma omp parallel
     {
         std::vector<T> temp(local_size*mu);
-        #pragma omp for
+        #pragma omp for schedule(guided)
     	for(int b=0; b<MyFarFieldMats.size(); b++){
     		const LowRankMatrix<T>&  M  = MyFarFieldMats[b];
     		int offset_i     = M.get_offset_i();
@@ -845,7 +845,7 @@ void HMatrix<LowRankMatrix,T >::mymvprod_local(const T* const in, T* const out, 
 
     	}
     	// Contribution champ proche
-        #pragma omp for
+        #pragma omp for schedule(guided)
     	for(int b=0; b<MyNearFieldMats.size(); b++){
     		const SubMatrix<T>&  M  = MyNearFieldMats[b];
     		int offset_i     = M.get_offset_i();
