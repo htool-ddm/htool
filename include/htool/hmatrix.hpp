@@ -438,6 +438,7 @@ Block* HMatrix<LowRankMatrix, T >::BuildBlockTree(const Cluster& t, const Cluste
 					else {
 						if (r1 != NULL) Tasks.push_back(r1);
 						if (r2 != NULL) Tasks.push_back(r2);
+                        delete B;
 						return NULL;
 					}
 				}
@@ -454,6 +455,7 @@ Block* HMatrix<LowRankMatrix, T >::BuildBlockTree(const Cluster& t, const Cluste
 			else {
 				if (r3 != NULL) Tasks.push_back(r3);
 				if (r4 != NULL) Tasks.push_back(r4);
+                delete B;
 				return NULL;
 			}
 		}
@@ -492,6 +494,7 @@ Block* HMatrix<LowRankMatrix, T >::BuildBlockTree(const Cluster& t, const Cluste
 				else {
 					if (r1 != NULL) Tasks.push_back(r1);
 					if (r2 != NULL) Tasks.push_back(r2);
+                    delete B;
 					return NULL;
 				}
 			}
@@ -506,6 +509,7 @@ Block* HMatrix<LowRankMatrix, T >::BuildBlockTree(const Cluster& t, const Cluste
 				else {
 					if (r3 != NULL) Tasks.push_back(r3);
 					if (r4 != NULL) Tasks.push_back(r4);
+                    delete B;
 					return NULL;
 				}
 			}
