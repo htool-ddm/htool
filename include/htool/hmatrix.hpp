@@ -545,12 +545,12 @@ void HMatrix<LowRankMatrix, T >::ScatterTasks(){
 // Compute blocks recursively
 // TODO recursivity -> stack for compute blocks
 template< template<typename> class LowRankMatrix, typename T >
-void HMatrix<LowRankMatrix,T >::ComputeBlocks(IMatrix<T>& mat_local, const std::vector<R3> xt,const std::vector<int> tabt, const std::vector<R3> xs, const std::vector<int>tabs){
+void HMatrix<LowRankMatrix,T >::ComputeBlocks(IMatrix<T>& mat, const std::vector<R3> xt,const std::vector<int> tabt, const std::vector<R3> xs, const std::vector<int>tabs){
     #if _OPENMP
     #pragma omp parallel
     #endif
     {
-        IMatrix<T> mat_local = mat;
+        // IMatrix<T> mat = mat;
         std::vector<SubMatrix<T>*>     MyNearFieldMats_local;
         std::vector<LowRankMatrix<T>*> MyFarFieldMats_local;
         // int tid = omp_get_thread_num();
@@ -563,7 +563,7 @@ void HMatrix<LowRankMatrix,T >::ComputeBlocks(IMatrix<T>& mat_local, const std::
         	const Cluster& t = B.tgt_();
             const Cluster& s = B.src_();
             if( B.IsAdmissible() ){
-        	    AddFarFieldMat(mat_local,t,s,xt,tabt,xs,tabs,MyFarFieldMats_local,reqrank);
+        	    AddFarFieldMat(mat,t,s,xt,tabt,xs,tabs,MyFarFieldMats_local,reqrank);
             	if(MyFarFieldMats_local.back()->rank_of()==-1){
                     delete MyFarFieldMats_local.back();
             		MyFarFieldMats_local.pop_back();
@@ -572,69 +572,69 @@ void HMatrix<LowRankMatrix,T >::ComputeBlocks(IMatrix<T>& mat_local, const std::
             		if( s.IsLeaf() ){
             			if( t.IsLeaf() ){
             				// MyNearFieldMats.emplace_back(mat,I,J);
-            				AddNearFieldMat(mat_local,t,s,MyNearFieldMats_local);
+            				AddNearFieldMat(mat,t,s,MyNearFieldMats_local);
             			}
             			else{
-            				bool b1 = UpdateBlocks(mat_local,t.get_son(0),s,xt,tabt,xs,tabs,MyNearFieldMats_local,MyFarFieldMats_local);
-            				bool b2 = UpdateBlocks(mat_local,t.get_son(1),s,xt,tabt,xs,tabs,MyNearFieldMats_local,MyFarFieldMats_local);
+            				bool b1 = UpdateBlocks(mat,t.get_son(0),s,xt,tabt,xs,tabs,MyNearFieldMats_local,MyFarFieldMats_local);
+            				bool b2 = UpdateBlocks(mat,t.get_son(1),s,xt,tabt,xs,tabs,MyNearFieldMats_local,MyFarFieldMats_local);
             				if ((b1 != true) && (b2 != true))
             					// MyNearFieldMats.emplace_back(mat,I,J);
-            					AddNearFieldMat(mat_local,t,s,MyNearFieldMats_local);
+            					AddNearFieldMat(mat,t,s,MyNearFieldMats_local);
             				else {
             					if (b1 != true)
             						// 	MyNearFieldMats.emplace_back(mat,t.get_son(0).get_num(),J);
-            						AddNearFieldMat(mat_local,t.get_son(0),s,MyNearFieldMats_local);
+            						AddNearFieldMat(mat,t.get_son(0),s,MyNearFieldMats_local);
             					if (b2 != true)
             						// 	MyNearFieldMats.emplace_back(mat,t.get_son(1).get_num(),J);
-            						AddNearFieldMat(mat_local,t.get_son(1),s,MyNearFieldMats_local);
+            						AddNearFieldMat(mat,t.get_son(1),s,MyNearFieldMats_local);
             				}
             			}
             		}
             		else{
             			if( t.IsLeaf() ){
-            				bool b3 = UpdateBlocks(mat_local,t,s.get_son(0),xt,tabt,xs,tabs,MyNearFieldMats_local,MyFarFieldMats_local);
-            				bool b4 = UpdateBlocks(mat_local,t,s.get_son(1),xt,tabt,xs,tabs,MyNearFieldMats_local,MyFarFieldMats_local);
+            				bool b3 = UpdateBlocks(mat,t,s.get_son(0),xt,tabt,xs,tabs,MyNearFieldMats_local,MyFarFieldMats_local);
+            				bool b4 = UpdateBlocks(mat,t,s.get_son(1),xt,tabt,xs,tabs,MyNearFieldMats_local,MyFarFieldMats_local);
             				if ((b3 != true) && (b4 != true))
             					// MyNearFieldMats.emplace_back(mat,I,J);
-            					AddNearFieldMat(mat_local,t,s,MyNearFieldMats_local);
+            					AddNearFieldMat(mat,t,s,MyNearFieldMats_local);
             				else {
             					if (b3 != true)
             						// 	MyNearFieldMats.emplace_back(mat,I,s.get_son(0).get_num());
-            						AddNearFieldMat(mat_local,t,s.get_son(0),MyNearFieldMats_local);
+            						AddNearFieldMat(mat,t,s.get_son(0),MyNearFieldMats_local);
             					if (b4 != true)
             						// 	MyNearFieldMats.emplace_back(mat,I,s.get_son(1).get_num());
-            						AddNearFieldMat(mat_local,t,s.get_son(1),MyNearFieldMats_local);
+            						AddNearFieldMat(mat,t,s.get_son(1),MyNearFieldMats_local);
             				}
             			}
             			else{
             				if (t.get_size()>s.get_size()){
-            					bool b1 = UpdateBlocks(mat_local,t.get_son(0),s,xt,tabt,xs,tabs,MyNearFieldMats_local,MyFarFieldMats_local);
-            					bool b2 = UpdateBlocks(mat_local,t.get_son(1),s,xt,tabt,xs,tabs,MyNearFieldMats_local,MyFarFieldMats_local);
+            					bool b1 = UpdateBlocks(mat,t.get_son(0),s,xt,tabt,xs,tabs,MyNearFieldMats_local,MyFarFieldMats_local);
+            					bool b2 = UpdateBlocks(mat,t.get_son(1),s,xt,tabt,xs,tabs,MyNearFieldMats_local,MyFarFieldMats_local);
             					if ((b1 != true) && (b2 != true))
             						// MyNearFieldMats.emplace_back(mat,I,J);
-            						AddNearFieldMat(mat_local,t,s,MyNearFieldMats_local);
+            						AddNearFieldMat(mat,t,s,MyNearFieldMats_local);
             					else {
             						if (b1 != true)
             								// MyNearFieldMats.emplace_back(mat,t.get_son(0).get_num(),J);
-            								AddNearFieldMat(mat_local,t.get_son(0),s,MyNearFieldMats_local);
+            								AddNearFieldMat(mat,t.get_son(0),s,MyNearFieldMats_local);
             						if (b2 != true)
             								// MyNearFieldMats.emplace_back(mat,t.get_son(1).get_num(),J);
-            								AddNearFieldMat(mat_local,t.get_son(1),s,MyNearFieldMats_local);
+            								AddNearFieldMat(mat,t.get_son(1),s,MyNearFieldMats_local);
             					}
             				}
             				else{
-            					bool b3 = UpdateBlocks(mat_local,t,s.get_son(0),xt,tabt,xs,tabs,MyNearFieldMats_local,MyFarFieldMats_local);
-            					bool b4 = UpdateBlocks(mat_local,t,s.get_son(1),xt,tabt,xs,tabs,MyNearFieldMats_local,MyFarFieldMats_local);
+            					bool b3 = UpdateBlocks(mat,t,s.get_son(0),xt,tabt,xs,tabs,MyNearFieldMats_local,MyFarFieldMats_local);
+            					bool b4 = UpdateBlocks(mat,t,s.get_son(1),xt,tabt,xs,tabs,MyNearFieldMats_local,MyFarFieldMats_local);
             					if ((b3 != true) && (b4 != true))
             						// MyNearFieldMats.emplace_back(mat,I,J);
-            						AddNearFieldMat(mat_local,t,s,MyNearFieldMats_local);
+            						AddNearFieldMat(mat,t,s,MyNearFieldMats_local);
             					else {
             						if (b3 != true)
             								// MyNearFieldMats.emplace_back(mat,I,s.get_son(0).get_num());
-            								AddNearFieldMat(mat_local,t,s.get_son(0),MyNearFieldMats_local);
+            								AddNearFieldMat(mat,t,s.get_son(0),MyNearFieldMats_local);
             						if (b4 != true)
             								// MyNearFieldMats.emplace_back(mat,I,s.get_son(1).get_num());
-            								AddNearFieldMat(mat_local,t,s.get_son(1),MyNearFieldMats_local);
+            								AddNearFieldMat(mat,t,s.get_son(1),MyNearFieldMats_local);
             					}
             				}
             			}
@@ -643,7 +643,7 @@ void HMatrix<LowRankMatrix,T >::ComputeBlocks(IMatrix<T>& mat_local, const std::
             }
             else {
             	// MyNearFieldMats.emplace_back(mat,I,J);
-            	AddNearFieldMat(mat_local,t,s,MyNearFieldMats_local);
+            	AddNearFieldMat(mat,t,s,MyNearFieldMats_local);
             }
         }
         #if _OPENMP
