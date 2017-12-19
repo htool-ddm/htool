@@ -30,19 +30,23 @@ protected:
 
   // Constructors and cie
   IMatrix()                           = delete;  // no default constructor
-  IMatrix(IMatrix&&)                  = default; // move constructor
-  IMatrix& operator=(IMatrix&&)       = default; // move assignement operator
-  IMatrix(const IMatrix&)             = default; // copy constructor
-  IMatrix& operator= (const IMatrix&) = default; // copy assignement operator
+
 
   IMatrix(int nr0,int nc0): nr(nr0), nc(nc0){}
 
 public:
 
+    IMatrix(IMatrix&&)                  = default; // move constructor
+    IMatrix& operator=(IMatrix&&)       = default; // move assignement operator
+    IMatrix(const IMatrix&)             = default; // copy constructor
+    IMatrix& operator= (const IMatrix&) = default; // copy assignement operator
+
   virtual T get_coef(const int& j, const int& k) const =0;
 
   // TODO improve interface
-  virtual SubMatrix<T> get_submatrix(const std::vector<int>& J, const std::vector<int>& K) const {
+  virtual SubMatrix<T> get_submatrix(const std::vector<int>& J, const std::vector<int>& K) const
+  {
+      // std::cout << "coucou" << std::endl;
     SubMatrix<T> mat(J,K);
   	for (int i=0; i<mat.nb_rows(); i++)
   		for (int j=0; j<mat.nb_cols(); j++)
@@ -148,7 +152,15 @@ public:
 
 	T get_coef(const int& j, const int& k) const{
         return this->mat[j+k*this->nr];
-  }
+    }
+    // SubMatrix<T> get_submatrix(const std::vector<int>& J, const std::vector<int>& K) const
+    // {
+    //   SubMatrix<T> mat(J,K);
+    // 	for (int i=0; i<mat.nb_rows(); i++)
+    // 		for (int j=0; j<mat.nb_cols(); j++)
+    // 			mat(i,j) = this->get_coef(J[i], K[j]);
+    //   return mat;
+    // }
 
   //! ### Access operator
 	/*!
@@ -526,14 +538,14 @@ double normFrob (const Matrix<T>& A){
 //================================//
 template<typename T>
 class SubMatrix : public Matrix<T>{
-
+    // TODO remove ir and ic
 	std::vector<int> ir;
 	std::vector<int> ic;
   int offset_i;
   int offset_j;
 
 public:
-  SubMatrix(const std::vector<int>& ir0, const std::vector<int>& ic0) : Matrix<T>(ir0.size(),ic0.size()), ir(ir0), ic(ic0),offset_i(50), offset_j(0) {}
+  SubMatrix(const std::vector<int>& ir0, const std::vector<int>& ic0) : Matrix<T>(ir0.size(),ic0.size()), ir(ir0), ic(ic0),offset_i(0), offset_j(0) {}
 
   SubMatrix(const std::vector<int>& ir0, const std::vector<int>& ic0, const int& offset_i0, const int& offset_j0) : Matrix<T>(ir0.size(),ic0.size()), ir(ir0), ic(ic0),offset_i(offset_i0), offset_j(offset_j0) {}
 
@@ -544,7 +556,7 @@ public:
     *this = mat0.get_submatrix(ir0,ic0);
   }
 
-  SubMatrix(const IMatrix<T>& mat0, const std::vector<int>& ir0, const std::vector<int>& ic0, const int& offset_i0, const int& offset_j0): Matrix<T>(ir0.size(),ic0.size()), ir(ir0), ic(ic0) {
+  SubMatrix( const IMatrix<T>& mat0, const std::vector<int>& ir0, const std::vector<int>& ic0, const int& offset_i0, const int& offset_j0): Matrix<T>(ir0.size(),ic0.size()), ir(ir0), ic(ic0) {
 
     *this = mat0.get_submatrix(ir0,ic0);
     offset_i=offset_i0;
