@@ -165,7 +165,7 @@ public:
 	const std::vector<LowRankMatrix<T>*>& get_MyDiagFarFieldMats() const {return MyDiagFarFieldMats;}
 
 	// Infos
-	const std::map<std::string,double>& get_infos () const { return infos;}
+    std::string get_infos (const std::string& key) const { return infos[key];}
 	void add_info(const std::string& keyname, const std::string& value) const {infos[keyname]=value;}
 	void print_infos() const;
 	void save_infos(const std::string& outputname, std::ios_base::openmode mode = std::ios_base::out) const;

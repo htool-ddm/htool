@@ -217,6 +217,7 @@ public:
     time = MPI_Wtime()-time;
     infos["Solve"] = NbrToStr(time);
     infos["Nb_it"] = NbrToStr(nb_it);
+    infos["mean_time_mat_vec_prod"] = NbrToStr(StrToNbr<double>(hpddm_op.HA.get_infos("total_time_mat_vec_prod"))/StrToNbr<double>(hpddm_op.HA.get_infos("nbr_mat_vec_prod")));
     switch (opt.val("schwarz_method",0)) {
       case HPDDM_SCHWARZ_METHOD_NONE:
       infos["Precond"] = "none";
