@@ -520,6 +520,58 @@ public:
         return 0;
     }
 
+
+    int raw_save(const std::string& file){
+        std::ofstream out(file);
+
+        if(!out) {
+            std::cout << "Cannot open file."<<std::endl;
+            return 1;
+        }
+        int rows = this->nr;
+        int cols = this->nc;
+        out<<rows<<" "<<cols<<std::endl;
+        for (int i=0;i<rows;i++){
+            std::vector<T> row = this->get_row(i);
+            std::copy (row.begin(), row.end(), std::ostream_iterator<T>(out, "\t"));
+            out << std::endl;
+        }
+        out.close();
+        return 0;
+    }
+
+    // To be used with dlmread
+    int matlab_save(const std::string& file){
+        std::ofstream out(file);
+
+        if(!out) {
+            std::cout << "Cannot open file."<<std::endl;
+            return 1;
+        }
+        int rows = this->nr;
+        int cols = this->nc;
+        // out<<rows<<" "<<cols<<std::endl;
+        for (int i=0;i<rows;i++){
+            std::vector<T> row = this->get_row(i);
+            for (int j=0;j<cols;j++){
+                out<<std::real(row[j]);
+                if (std::imag(row[j])<0){
+                    out<<std::imag(row[j])<<"i\t";
+                }
+                else if (std::imag(row[j])==0){
+                    out<<"+"<<0<<"i\t";
+                }
+                else{
+                    out<<"+"<<std::imag(row[j])<<"i\t";
+                }
+            }
+            out << std::endl;
+        }
+        out.close();
+        return 0;
+    }
+
+
 };
 
 //! ### Computation of the Frobenius norm
