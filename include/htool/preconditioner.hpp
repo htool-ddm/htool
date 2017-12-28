@@ -31,6 +31,7 @@ public:
     }
 
     DDM(const HMatrix<LowRankMatrix,T>& hmat_0):n(hmat_0.get_local_size()),n_inside(hmat_0.get_local_size()),D(n),hpddm_op(hmat_0),comm(hmat_0.get_comm()){
+        // TODO block jacobi cf PH
         bool sym=false;
         hpddm_op.initialize(n, sym, nullptr, neighbors, intersections);
 
@@ -76,13 +77,12 @@ public:
 
     // Building Ai
     bool sym=false;
-    const std::vector<int>& MyDiagFarFieldMats = hpddm_op.HA.get_MyDiagFarFieldMats();
-    const std::vector<int>& MyDiagNearFieldMats= hpddm_op.HA.get_MyDiagNearFieldMats();
+    const std::vector<LowRankMatrix<T>*>& MyDiagFarFieldMats = hpddm_op.HA.get_MyDiagFarFieldMats();
+    const std::vector<SubMatrix<T>*>& MyDiagNearFieldMats= hpddm_op.HA.get_MyDiagNearFieldMats();
 
     // Internal dense blocks
-    const std::vector<SubMatrix<T>>& MyNearFieldMats = hpddm_op.HA.get_MyNearFieldMats();
     for (int i=0;i<MyDiagNearFieldMats.size();i++){
-      const SubMatrix<T>& submat = MyNearFieldMats[MyDiagNearFieldMats[i]];
+      const SubMatrix<T>& submat = *(MyDiagNearFieldMats[i]);
       int local_nr = submat.nb_rows();
       int local_nc = submat.nb_cols();
       int offset_i = submat.get_offset_i()-hpddm_op.HA.get_local_offset();;
@@ -93,10 +93,9 @@ public:
     }
 
     // Internal compressed block
-    const std::vector<LowRankMatrix<T>>& MyFarFieldMats = hpddm_op.HA.get_MyFarFieldMats();
     Matrix<T> FarFielBlock(n,n);
     for (int i=0;i<MyDiagFarFieldMats.size();i++){
-      const LowRankMatrix<T>& lmat = MyFarFieldMats[MyDiagFarFieldMats[i]];
+      const LowRankMatrix<T>& lmat = *(MyDiagFarFieldMats[i]);
       int local_nr = lmat.nb_rows();
       int local_nc = lmat.nb_cols();
       int offset_i = lmat.get_offset_i()-hpddm_op.HA.get_local_offset();
@@ -142,7 +141,6 @@ public:
     infos["DDM_setup_max" ]= NbrToStr(maxtime[0]);
     infos["DDM_facto_mean"]= NbrToStr(meantime[1]);
     infos["DDM_facto_max" ]= NbrToStr(maxtime[1]);
-    infos["Nproc"]=NbrToStr(hmat_0.get_sizeworld());
 
   }
 
@@ -219,6 +217,7 @@ public:
     time = MPI_Wtime()-time;
     infos["Solve"] = NbrToStr(time);
     infos["Nb_it"] = NbrToStr(nb_it);
+    infos["mean_time_mat_vec_prod"] = NbrToStr(StrToNbr<double>(hpddm_op.HA.get_infos("total_time_mat_vec_prod"))/StrToNbr<double>(hpddm_op.HA.get_infos("nbr_mat_vec_prod")));
     switch (opt.val("schwarz_method",0)) {
       case HPDDM_SCHWARZ_METHOD_NONE:
       infos["Precond"] = "none";

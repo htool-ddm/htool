@@ -40,6 +40,18 @@ find_package (MPI REQUIRED)
 message("-- MPI libraries found in " "${MPI_LIBRARIES}")
 message("-- MPI include files found in " "${MPI_INCLUDE_PATH}")
 
+# OPENMP
+find_package(OpenMP)
+if (OPENMP_FOUND)
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${OpenMP_C_FLAGS}")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
+    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${OpenMP_EXE_LINKER_FLAGS}")
+    message("-- OpenMP flags are " "${OpenMP_CXX_FLAGS}" )
+    message("-- OpenMP linker flags are " "${OpenMP_EXE_LINKER_FLAGS}" )
+else()
+    message("-- OpenMP not found")
+endif()
+
 # BLAS
 find_package(BLAS REQUIRED)
 message("-- Found Blas implementation:" "${BLAS_LIBRARIES}")
@@ -119,7 +131,8 @@ target_link_libraries(htool INTERFACE
 					${MPI_LIBRARIES}
 					${BLAS_LIBRARIES}
 					${LAPACK_LIBRARIES}
-				  ${SUITESPARSE_LIBRARIES})
+				    ${SUITESPARSE_LIBRARIES})
+
 
 # For headers to show in IDE
 if (NOT "${CMAKE_VERSION}" VERSION_LESS 3.1)

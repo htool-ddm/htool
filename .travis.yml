@@ -34,6 +34,7 @@ matrix:
       env:
         - CXX_COMPILER=clang++
         - C_COMPILER=clang
+        - MPIEXEC_PREFLAGS=-oversubscribe
       install:
         - brew install openmpi
     - os: osx
@@ -43,6 +44,7 @@ matrix:
       install:
         - brew install gcc
         - brew install openmpi
+        - MPIEXEC_PREFLAGS=-oversubscribe
 
     # Tests on linux
     # - os: linux
@@ -145,6 +147,7 @@ before_script:
 
 # Build steps
 script:
-  - CC=$C_COMPILER CXX=$CXX_COMPILER cmake ../
+  - CC=$C_COMPILER CXX=$CXX_COMPILER cmake ../ -DMPIEXEC_PREFLAGS=${MPIEXEC_PREFLAGS}
   - make -j build-tests
+  - export OMP_NUM_THREADS=2
   - ctest --output-on-failure
