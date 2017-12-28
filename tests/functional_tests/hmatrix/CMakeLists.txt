@@ -27,8 +27,7 @@ if (EIGEN3_FOUND)
   add_test(NAME Test_hmat_cluster_SVD_4 COMMAND  ${MPIEXEC} ${MPIEXEC_NUMPROC_FLAG} 4 ${MPIEXEC_PREFLAGS} ${CMAKE_CURRENT_BINARY_DIR}/Test_hmat_cluster_SVD)
 
 endif()
-message("coucou")
-message("${MPIEXEC_PREFLAGS}")
+
 #=== hmat_fullACA
 add_executable(Test_hmat_fullACA test_hmat_fullACA.cpp)
 target_link_libraries(Test_hmat_fullACA htool)

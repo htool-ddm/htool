@@ -42,8 +42,7 @@ message("-- MPI include files found in " "${MPI_INCLUDE_PATH}")
 
 # OPENMP
 find_package(OpenMP)
-message(OpenMP_CXX_FOUND)
-if (OpenMP_CXX_FOUND)
+if (OPENMP_FOUND)
     set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${OpenMP_C_FLAGS}")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
     set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${OpenMP_EXE_LINKER_FLAGS}")
@@ -132,8 +131,8 @@ target_link_libraries(htool INTERFACE
 					${MPI_LIBRARIES}
 					${BLAS_LIBRARIES}
 					${LAPACK_LIBRARIES}
-				    ${SUITESPARSE_LIBRARIES}
-                    ${OpenMP_CXX_FLAGS})
+				    ${SUITESPARSE_LIBRARIES})
+
 
 # For headers to show in IDE
 if (NOT "${CMAKE_VERSION}" VERSION_LESS 3.1)
