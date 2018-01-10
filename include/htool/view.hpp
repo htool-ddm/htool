@@ -25,7 +25,7 @@ namespace htool {
 	    MyGLCanvas(Widget *parent, const HMatrix<partialACA,K>& A) : nanogui::GLCanvas(parent) {
 	        using namespace nanogui;
 
-	        mShader.init(
+	        mShaderblocks.init(
 	            /* An identifying name */
 	            "a_simple_shader",
 
@@ -48,15 +48,44 @@ namespace htool {
 	            "    color = frag_color;\n"
 	            "}"
 	        );
+					
+					mShaderwireframe.init(
+							/* An identifying name */
+							"a_simple_shader",
+
+							/* Vertex shader */
+							"#version 330\n"
+							"uniform mat4 modelViewProj;\n"
+							"in vec3 position;\n"
+							"in vec3 color;\n"
+							"out vec4 frag_color;\n"
+							"void main() {\n"
+							"    frag_color = vec4(color, 1.0);\n"
+							"    gl_Position = modelViewProj * vec4(position, 1.0);\n"
+							"}",
+
+							/* Fragment shader */
+							"#version 330\n"
+							"out vec4 color;\n"
+							"in vec4 frag_color;\n"
+							"void main() {\n"
+							"    color = frag_color;\n"
+							"}"
+					);
 
 					const std::vector<partialACA<K>*>& lrmats = A.get_MyFarFieldMats();
 					const std::vector<SubMatrix<K>*>& dmats = A.get_MyNearFieldMats();
 
 					NbTri = 2*(dmats.size()+lrmats.size());
+					NbSeg = 4*(dmats.size()+lrmats.size());
 
 					MatrixXu indices(3, NbTri);
 					MatrixXf positions(3, 3*NbTri);
 					MatrixXf colors(3, 3*NbTri);
+
+					MatrixXu indices_seg(2, NbSeg);
+					MatrixXf positions_seg(3, 2*NbTri);
+					MatrixXf colors_seg(3, 2*NbTri);
 
 					for (int i=0;i<dmats.size();i++) {
 							const SubMatrix<K>& l = *(dmats[i]);
@@ -72,6 +101,20 @@ namespace htool {
 							positions.col(6*i+5) << (float)(l.get_offset_i()+l.nb_rows())/si, -(float)(l.get_offset_j()+l.nb_cols())/sj, 0;
 							for (int j=0; j<6;j++)
 								colors.col(6*i+j) << 1,0,0;
+									
+							for (int j=0; j<4;j++)
+								indices_seg.col(4*i+j) << 8*i+2*j, 8*i+2*j+1;							
+							positions_seg.col(8*i) << (float)l.get_offset_i()/si, -(float)l.get_offset_j()/sj, 0;
+							positions_seg.col(8*i+1) << (float)(l.get_offset_i()+l.nb_rows())/si, -(float)l.get_offset_j()/sj, 0;
+							positions_seg.col(8*i+2) << (float)(l.get_offset_i()+l.nb_rows())/si, -(float)l.get_offset_j()/sj, 0;
+							positions_seg.col(8*i+3) << (float)(l.get_offset_i()+l.nb_rows())/si, -(float)(l.get_offset_j()+l.nb_cols())/sj, 0;
+							positions_seg.col(8*i+4) << (float)(l.get_offset_i()+l.nb_rows())/si, -(float)(l.get_offset_j()+l.nb_cols())/sj, 0;
+							positions_seg.col(8*i+5) << (float)l.get_offset_i()/si, -(float)(l.get_offset_j()+l.nb_cols())/sj, 0;
+							positions_seg.col(8*i+6) << (float)l.get_offset_i()/si, -(float)(l.get_offset_j()+l.nb_cols())/sj, 0;
+							positions_seg.col(8*i+7) << (float)l.get_offset_i()/si, -(float)l.get_offset_j()/sj, 0;
+							
+							for (int j=0; j<8;j++)
+								colors_seg.col(8*i+j) << 0,0,0;
 					}
 
 					for (int i=0;i<lrmats.size();i++) {
@@ -89,23 +132,40 @@ namespace htool {
 							R3 col = bw_palette.get_color(l.compression());
 							for (int j=0; j<6;j++)
 								colors.col(6*dmats.size()+6*i+j) << col[0],col[1],col[2];
+							
+							for (int j=0; j<4;j++)
+								indices_seg.col(4*dmats.size()+4*i+j) << 8*dmats.size()+8*i+2*j, 8*dmats.size()+8*i+2*j+1;							
+							positions_seg.col(8*dmats.size()+8*i) << (float)l.get_offset_i()/si, -(float)l.get_offset_j()/sj, 0;
+							positions_seg.col(8*dmats.size()+8*i+1) << (float)(l.get_offset_i()+l.nb_rows())/si, -(float)l.get_offset_j()/sj, 0;
+							positions_seg.col(8*dmats.size()+8*i+2) << (float)(l.get_offset_i()+l.nb_rows())/si, -(float)l.get_offset_j()/sj, 0;
+							positions_seg.col(8*dmats.size()+8*i+3) << (float)(l.get_offset_i()+l.nb_rows())/si, -(float)(l.get_offset_j()+l.nb_cols())/sj, 0;
+							positions_seg.col(8*dmats.size()+8*i+4) << (float)(l.get_offset_i()+l.nb_rows())/si, -(float)(l.get_offset_j()+l.nb_cols())/sj, 0;
+							positions_seg.col(8*dmats.size()+8*i+5) << (float)l.get_offset_i()/si, -(float)(l.get_offset_j()+l.nb_cols())/sj, 0;
+							positions_seg.col(8*dmats.size()+8*i+6) << (float)l.get_offset_i()/si, -(float)(l.get_offset_j()+l.nb_cols())/sj, 0;
+							positions_seg.col(8*dmats.size()+8*i+7) << (float)l.get_offset_i()/si, -(float)l.get_offset_j()/sj, 0;
+							
+							for (int j=0; j<8;j++)
+								colors_seg.col(8*dmats.size()+8*i+j) << 0,0,0;
 					}
 
-	        mShader.bind();
-	        mShader.uploadIndices(indices);
-
-	        mShader.uploadAttrib("position", positions);
-	        mShader.uploadAttrib("color", colors);
+	        mShaderblocks.bind();
+	        mShaderblocks.uploadIndices(indices);
+	        mShaderblocks.uploadAttrib("position", positions);
+	        mShaderblocks.uploadAttrib("color", colors);
+					
+					mShaderwireframe.bind();
+					mShaderwireframe.uploadIndices(indices_seg);
+					mShaderwireframe.uploadAttrib("position", positions_seg);
+					mShaderwireframe.uploadAttrib("color", colors_seg);
 	    }
 
 	    ~MyGLCanvas() {
-	        mShader.free();
+	        mShaderblocks.free();
+					mShaderwireframe.free();
 	    }
 
 	    virtual void drawGL() override {
 	        using namespace nanogui;
-
-	        mShader.bind();
 
 	        Matrix4f mvp;
 	        mvp.setIdentity();
@@ -123,17 +183,23 @@ namespace htool {
 
 					mvp = sc*mvp;
 
-	        mShader.setUniform("modelViewProj", mvp);
+					mShaderblocks.bind();
+	        mShaderblocks.setUniform("modelViewProj", mvp);
 
 					//glEnable(GL_DEPTH_TEST);
 					//glPolygonMode( GL_FRONT_AND_BACK, GL_LINE );
-					mShader.drawIndexed(GL_TRIANGLES, 0, NbTri);
+					mShaderblocks.drawIndexed(GL_TRIANGLES, 0, NbTri);
 					//glDisable(GL_DEPTH_TEST);
+					
+					mShaderwireframe.bind();
+					mShaderwireframe.setUniform("modelViewProj", mvp);
+					mShaderwireframe.drawIndexed(GL_LINES, 0, NbSeg);
 	    }
 
 	private:
-		  int NbTri;
-	    nanogui::GLShader mShader;
+		  int NbTri, NbSeg;
+	    nanogui::GLShader mShaderblocks;
+			nanogui::GLShader mShaderwireframe;
 	};
 
 void LoadMesh(std::string inputname, std::vector<R3>&  X, std::vector<N4>&  Elt, std::vector<int>& NbPt, std::vector<R3>& Normals, std::vector<R3>& ctrs, std::vector<double>& rays) {
