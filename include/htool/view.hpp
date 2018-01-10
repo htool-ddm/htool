@@ -7,6 +7,135 @@
 
 namespace htool {
 
+	class Palette{
+		public:
+			unsigned int n;
+			std::vector<R3> colors;
+			Palette();
+			Palette(const unsigned int nb, const std::vector<R3>& cols);
+			R3 get_color(float z) const;
+	};
+
+	Palette default_palette;
+
+	Palette bw_palette;
+
+	class MyGLCanvas : public nanogui::GLCanvas {
+	public:
+	    MyGLCanvas(Widget *parent, const HMatrix<partialACA,K>& A) : nanogui::GLCanvas(parent) {
+	        using namespace nanogui;
+
+	        mShader.init(
+	            /* An identifying name */
+	            "a_simple_shader",
+
+	            /* Vertex shader */
+	            "#version 330\n"
+	            "uniform mat4 modelViewProj;\n"
+	            "in vec3 position;\n"
+	            "in vec3 color;\n"
+	            "out vec4 frag_color;\n"
+	            "void main() {\n"
+	            "    frag_color = vec4(color, 1.0);\n"
+	            "    gl_Position = modelViewProj * vec4(position, 1.0);\n"
+	            "}",
+
+	            /* Fragment shader */
+	            "#version 330\n"
+	            "out vec4 color;\n"
+	            "in vec4 frag_color;\n"
+	            "void main() {\n"
+	            "    color = frag_color;\n"
+	            "}"
+	        );
+
+					const std::vector<partialACA<K>*>& lrmats = A.get_MyFarFieldMats();
+					const std::vector<SubMatrix<K>*>& dmats = A.get_MyNearFieldMats();
+
+					NbTri = 2*(dmats.size()+lrmats.size());
+
+					MatrixXu indices(3, NbTri);
+					MatrixXf positions(3, 3*NbTri);
+					MatrixXf colors(3, 3*NbTri);
+
+					for (int i=0;i<dmats.size();i++) {
+							const SubMatrix<K>& l = *(dmats[i]);
+							int si = A.nb_rows();
+							int sj = A.nb_cols();
+							indices.col(2*i) << 6*i, 6*i+1, 6*i+2;
+							indices.col(2*i+1) << 6*i+3, 6*i+4, 6*i+5;
+							positions.col(6*i) << (float)l.get_offset_i()/si, -(float)l.get_offset_j()/sj, 0;
+							positions.col(6*i+1) << (float)(l.get_offset_i()+l.nb_rows())/si, -(float)l.get_offset_j()/sj, 0;
+							positions.col(6*i+2) << (float)(l.get_offset_i()+l.nb_rows())/si, -(float)(l.get_offset_j()+l.nb_cols())/sj, 0;
+							positions.col(6*i+3) << (float)l.get_offset_i()/si, -(float)l.get_offset_j()/sj, 0;
+							positions.col(6*i+4) << (float)l.get_offset_i()/si, -(float)(l.get_offset_j()+l.nb_cols())/sj, 0;
+							positions.col(6*i+5) << (float)(l.get_offset_i()+l.nb_rows())/si, -(float)(l.get_offset_j()+l.nb_cols())/sj, 0;
+							for (int j=0; j<6;j++)
+								colors.col(6*i+j) << 1,0,0;
+					}
+
+					for (int i=0;i<lrmats.size();i++) {
+						  const partialACA<K>& l = *(lrmats[i]);
+							int si = A.nb_rows();
+							int sj = A.nb_cols();
+							indices.col(2*dmats.size()+2*i) << 6*dmats.size()+6*i, 6*dmats.size()+6*i+1, 6*dmats.size()+6*i+2;
+							indices.col(2*dmats.size()+2*i+1) << 6*dmats.size()+6*i+3, 6*dmats.size()+6*i+4, 6*dmats.size()+6*i+5;
+							positions.col(6*dmats.size()+6*i) << (float)l.get_offset_i()/si, -(float)l.get_offset_j()/sj, 0;
+							positions.col(6*dmats.size()+6*i+1) << (float)(l.get_offset_i()+l.nb_rows())/si, -(float)l.get_offset_j()/sj, 0;
+							positions.col(6*dmats.size()+6*i+2) << (float)(l.get_offset_i()+l.nb_rows())/si, -(float)(l.get_offset_j()+l.nb_cols())/sj, 0;
+							positions.col(6*dmats.size()+6*i+3) << (float)l.get_offset_i()/si, -(float)l.get_offset_j()/sj, 0;
+							positions.col(6*dmats.size()+6*i+4) << (float)l.get_offset_i()/si, -(float)(l.get_offset_j()+l.nb_cols())/sj, 0;
+							positions.col(6*dmats.size()+6*i+5) << (float)(l.get_offset_i()+l.nb_rows())/si, -(float)(l.get_offset_j()+l.nb_cols())/sj, 0;
+							R3 col = bw_palette.get_color(l.compression());
+							for (int j=0; j<6;j++)
+								colors.col(6*dmats.size()+6*i+j) << col[0],col[1],col[2];
+					}
+
+	        mShader.bind();
+	        mShader.uploadIndices(indices);
+
+	        mShader.uploadAttrib("position", positions);
+	        mShader.uploadAttrib("color", colors);
+	    }
+
+	    ~MyGLCanvas() {
+	        mShader.free();
+	    }
+
+	    virtual void drawGL() override {
+	        using namespace nanogui;
+
+	        mShader.bind();
+
+	        Matrix4f mvp;
+	        mvp.setIdentity();
+	        //float fTime = (float)glfwGetTime();
+
+					Eigen::Affine3f transform(Eigen::Translation3f(Eigen::Vector3f(-0.165,0.165,0)));
+
+	        mvp = transform.matrix();/*Eigen::Matrix3f(Eigen::AngleAxisf(mRotation[0]*fTime, Vector3f::UnitX()) *
+	                                                   Eigen::AngleAxisf(mRotation[1]*fTime,  Vector3f::UnitY()) *
+	                                                   Eigen::AngleAxisf(mRotation[2]*fTime, Vector3f::UnitZ())) * 10.25f;*/
+
+					Matrix4f sc;
+					sc.setIdentity();
+					sc.topLeftCorner<3,3>() = Eigen::Scaling((float)5.5,(float)5.5,(float)1);
+
+					mvp = sc*mvp;
+
+	        mShader.setUniform("modelViewProj", mvp);
+
+					//glEnable(GL_DEPTH_TEST);
+					//glPolygonMode( GL_FRONT_AND_BACK, GL_LINE );
+					mShader.drawIndexed(GL_TRIANGLES, 0, NbTri);
+					//glDisable(GL_DEPTH_TEST);
+	    }
+
+	private:
+		  int NbTri;
+	    nanogui::GLShader mShader;
+	};
+
 void LoadMesh(std::string inputname, std::vector<R3>&  X, std::vector<N4>&  Elt, std::vector<int>& NbPt, std::vector<R3>& Normals, std::vector<R3>& ctrs, std::vector<double>& rays) {
 	int   num,NbElt,poubelle, NbTri, NbQuad;
 	R3    Pt, Ctr;
@@ -73,17 +202,6 @@ void LoadMesh(std::string inputname, std::vector<R3>&  X, std::vector<N4>&  Elt,
 	infile.close();
 }
 
-class Palette{
-	public:
-		unsigned int n;
-		std::vector<R3> colors;
-		Palette();
-		Palette(const unsigned int nb, const std::vector<R3>& cols);
-		R3 get_color(float z) const;
-};
-
-Palette default_palette;
-
 class GLMesh;
 
 class Camera{
@@ -110,22 +228,22 @@ class GLMesh {
 		unsigned int visudepth;
 		R3 lbox, ubox;
 		Palette& palette;
-		const Cluster* cluster;
+		std::shared_ptr<Cluster_tree> cluster;
 
 	public:
 		GLMesh(const GLMesh& m);
 
 		~GLMesh();
 
-		GLMesh(std::vector<R3>& X0, std::vector<N4>&  Elts0, std::vector<int>& NbPts0, std::vector<R3>& normals0, const Cluster* cluster0 = NULL, Palette& palette0 = default_palette);
+		GLMesh(std::vector<R3>& X0, std::vector<N4>&  Elts0, std::vector<int>& NbPts0, std::vector<R3>& normals0, const std::shared_ptr<Cluster_tree>& cluster0 = nullptr, Palette& palette0 = default_palette);
 
 		const R3& get_lbox() const;
 
 		const R3& get_ubox() const;
 
 		const unsigned int& get_visudepth() const;
-		const Cluster* get_cluster() const;
-		void set_cluster(const Cluster* c);
+		const std::shared_ptr<Cluster_tree> get_cluster() const;
+		void set_cluster(const std::shared_ptr<Cluster_tree>& c);
 
 		void TraversalBuildLabel(const Cluster& t, std::vector<int>& labeldofs);
 		void set_visudepth(const unsigned int depth);
@@ -209,7 +327,7 @@ Palette::Palette(const unsigned int nb, const std::vector<R3>& cols) {
 R3 Palette::get_color(float z) const{
 	int i=(int)(z*(n-1));
 	double t=z*(n-1)-i;
-	R3 col = ((1-t)*colors[i]+t*colors[i])*(1./255);
+	R3 col = ((1-t)*colors[i]+t*colors[i+1])*(1./255);
 	return col;
 }
 
@@ -232,13 +350,10 @@ GLMesh::~GLMesh() {
 	NbPts.clear();
 	normals.clear();
 	labels.clear();
-	if (cluster != NULL) {
-		delete cluster;
-		cluster = NULL;
-	}
+  //delete cluster;
 }
 
-GLMesh::GLMesh(std::vector<R3>& X0, std::vector<N4>&  Elts0, std::vector<int>& NbPts0, std::vector<R3>& normals0, const Cluster* cluster0, Palette& palette0)
+GLMesh::GLMesh(std::vector<R3>& X0, std::vector<N4>&  Elts0, std::vector<int>& NbPts0, std::vector<R3>& normals0, const std::shared_ptr<Cluster_tree>& cluster0, Palette& palette0)
 	: palette(palette0), cluster(cluster0){
 	X = X0;
 	Elts = Elts0;
@@ -276,13 +391,11 @@ const unsigned int& GLMesh::get_visudepth() const{
 	return visudepth;
 }
 
-const Cluster* GLMesh::get_cluster() const{
+const std::shared_ptr<Cluster_tree> GLMesh::get_cluster() const{
 	return cluster;
 }
 
-void GLMesh::set_cluster(const Cluster* c) {
-	if (cluster != NULL)
-		delete cluster;
+void GLMesh::set_cluster(const std::shared_ptr<Cluster_tree>& c) {
 	cluster = c;
 }
 
@@ -296,8 +409,10 @@ void GLMesh::TraversalBuildLabel(const Cluster& t, std::vector<int>& labeldofs){
 		for(int i=0; i<num_(t).size(); i++)
 			labeldofs[num_(t)[i]] = nblabels;
 		*/
-		for(int i=0; i<t.get_num().size()/GetNdofPerElt(); i++)
-			labeldofs[t.get_num()[GetNdofPerElt()*i]/GetNdofPerElt()] = nblabels;
+
+		for(int i=t.get_offset(); i<t.get_offset()+t.get_size(); i++)
+			labeldofs[ cluster->get_perm()[i]] = nblabels;
+
 		nblabels++;
 	}
 }
@@ -310,7 +425,7 @@ void GLMesh::set_visudepth(const unsigned int depth){
 		nblabels = 1;
 		int sizeg = Scene::gv.active_project->get_ctrs()->size();
 		std::vector<int> labeldofs(sizeg);
-		TraversalBuildLabel(*cluster, labeldofs);
+		TraversalBuildLabel(cluster->get_root(), labeldofs);
 		if (sizeg == Elts.size())
 			labels = labeldofs;
 		else {
@@ -702,7 +817,7 @@ void Scene::init(){
 	glfwWindowHint(GLFW_SAMPLES, 4);
 	glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
 
-	gv.glwindow = glfwCreateWindow(800, 800, "htool gui", nullptr, nullptr);
+	gv.glwindow = glfwCreateWindow(1024, 768, "htool gui", nullptr, nullptr);
 
 	int width, height;
 	glfwGetFramebufferSize(gv.glwindow, &width, &height);
@@ -1015,7 +1130,7 @@ const GLchar* fragmentShaderSource = "#version 330 core\n"
 		else if (gv.active_project->get_matrix() == NULL)
 			std::cerr << "No matrix loaded" << std::endl;
 		else {
-			const IMatrix<K>& A = *(gv.active_project->get_matrix());
+			IMatrix<K>& A = *(gv.active_project->get_matrix());
 			const std::vector<R3>& x = *(gv.active_project->get_ctrs());
 			//const std::vector<double>& r = *(gv.active_project->get_rays());
 			std::vector<int> tab(A.nb_rows());
@@ -1025,10 +1140,9 @@ const GLchar* fragmentShaderSource = "#version 330 core\n"
        				tab[3*j+2]= j;
    			}
 
-			Cluster *t = new Cluster(x,tab);
-			t->build();
+			std::shared_ptr<Cluster_tree> t=std::make_shared<Cluster_tree>(x);
 			gv.active_project->get_mesh()->set_cluster(t);
-			HMatrix<fullACA,K> B(A,x,tab);
+			HMatrix<partialACA,K> B(A,t,x);
 			int nr  = A.nb_rows();
 			std::vector<K> u(nr);
 			int NbSpl = 1000;
@@ -1049,9 +1163,10 @@ const GLchar* fragmentShaderSource = "#version 330 core\n"
 			add_stats(B,"MvProd err",norm(ua-ub)/norm(ua));
 			*/
 			//Real normA = NormFrob(A);
-			B.add_stats("Compression",B.compression());
-			B.add_stats("Nb dense mats",B.get_ndmat());
-			B.add_stats("Nb lr mats",B.get_nlrmat());
+
+			B.add_info("Compression",NbrToStr(B.compression()));
+			B.add_info("Nb dense mats",NbrToStr(B.get_ndmat()));
+			B.add_info("Nb lr mats",NbrToStr(B.get_nlrmat()));
 			//add_stats(B,"Relative Frob error",sqrt(squared_absolute_error(B,A))/normA);
 
 			nanogui::Window *popup = new nanogui::Window(Scene::gv.screen, "Stats");
@@ -1063,7 +1178,9 @@ const GLchar* fragmentShaderSource = "#version 330 core\n"
 			panel1->setLayout(new nanogui::BoxLayout(nanogui::Orientation::Horizontal,
 			nanogui::Alignment::Middle, 10, 15));
 
-			const std::map<std::string,double> stats = B.get_stats();
+			MyGLCanvas* mCanvas = new MyGLCanvas(panel1,B);
+
+			const std::map<std::string,std::string>& stats = B.get_infos();
 			std::stringstream s;
 
 			s << "eta" << "\t" << Parametres::eta << "\n";
@@ -1071,7 +1188,7 @@ const GLchar* fragmentShaderSource = "#version 330 core\n"
 			s << "max block size" << "\t" << Parametres::maxblocksize << "\n";
 			s << "min cluster size" << "\t" << Parametres::minclustersize << "\n";
 			s << "\n";
-			for (std::map<std::string,double>::const_iterator it = stats.begin() ; it != stats.end() ; ++it){
+			for (auto it = stats.begin() ; it != stats.end() ; ++it){
 				if (it->first.find("mean") == std::string::npos)
 				s << it->first << "\t" << it->second << "\n";
 			}
@@ -1085,7 +1202,26 @@ const GLchar* fragmentShaderSource = "#version 330 core\n"
 			nanogui::Button *b = new nanogui::Button(panel2, "Close", ENTYPO_ICON_CHECK);
 			b->setCallback([popup] {
 				popup->dispose();
+				/*
+				panel1->setFixedSize(Eigen::Vector2i(900,900));
+				panel1->setSize(Eigen::Vector2i(900,900));
+				panel1->setLayout(new nanogui::BoxLayout(nanogui::Orientation::Vertical,nanogui::Alignment::Maximum, 10, 15));
+				Scene::gv.screen->performLayout();
+				*/
 			});
+
+			nanogui::Button *bf = new nanogui::Button(panel2, "FullScreen", ENTYPO_ICON_CHECK);
+			bf->setCallback([popup,mCanvas,panel1,mMessageLabel] {
+  		  mCanvas->setSize(Scene::gv.screen->size()-Eigen::Vector2i(0,60));
+				popup->setPosition(Eigen::Vector2i(0,0));
+				popup->setLayout(new nanogui::BoxLayout(nanogui::Orientation::Vertical,
+				nanogui::Alignment::Middle, 0,0));
+				panel1->setLayout(new nanogui::BoxLayout(nanogui::Orientation::Horizontal,
+				nanogui::Alignment::Middle, 0,0));
+				mMessageLabel->setVisible(0);
+				Scene::gv.screen->performLayout();
+			});
+
 			Scene::gv.screen->performLayout();
 
 /*
@@ -1150,7 +1286,7 @@ const GLchar* fragmentShaderSource = "#version 330 core\n"
 			if (y > gv.motiony)
 				depl *= -1;
 			R3 uu = cam.y;
-			uu /= -tan(std::abs(depl)/2);
+			uu /= (double)-tan(std::abs(depl)/2);
 			uu += cam.z;
 			uu /= norm2(uu);
 			double nor = 2*norm2(cam.eye)*sin(depl/2);
@@ -1281,6 +1417,12 @@ const GLchar* fragmentShaderSource = "#version 330 core\n"
 		colors[19][0]=255;colors[19][1]=0;colors[19][2]=0;
 		default_palette.n = 20;
 		default_palette.colors = colors;
+
+		std::vector<R3> colorsbw(2);
+		colorsbw[0][0]=0;colorsbw[0][1]=0;colorsbw[0][2]=0;
+		colorsbw[1][0]=255;colorsbw[1][1]=255;colorsbw[1][2]=255;
+		bw_palette.n = 2;
+		bw_palette.colors = colorsbw;
 
 		/*
 		std::vector<R3> colors(3);
