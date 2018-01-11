@@ -33,6 +33,9 @@ public:
   // Constructor without tab
   Cluster_tree(const std::vector<R3>& x0, const std::vector<double>& r0, const std::vector<double>& g0, MPI_Comm comm0=MPI_COMM_WORLD):perm(x0.size()),root(x0,r0,g0,perm),comm(comm0){this->build();}
 
+  // Constructor without radius and mass
+  Cluster_tree(const std::vector<R3>& x0, const std::vector<int>& tab0, MPI_Comm comm0=MPI_COMM_WORLD):perm(tab0.size()),root(x0,tab0,perm),comm(comm0){this->build();}
+
   // Constructor without radius, mass and tab
   Cluster_tree(const std::vector<R3>& x0, MPI_Comm comm0=MPI_COMM_WORLD):perm(x0.size()),root(x0,perm),comm(comm0){this->build();}
 

@@ -61,6 +61,8 @@ public:
 	Cluster(const std::vector<R3>& x0, const std::vector<double>& r0, const std::vector<int>& tab0,std::vector<int>& perm);
 	Cluster(const std::vector<R3>& x0, const std::vector<double>& r0, const std::vector<double>& g0, std::vector<int>& perm);
 
+  Cluster(const std::vector<R3>& x0,const std::vector<int>& tab0, std::vector<int>& perm);
+
 	Cluster(const std::vector<R3>& x0, std::vector<int>& perm);
 
 	// Node constructor
@@ -291,6 +293,11 @@ Cluster::Cluster(const std::vector<R3>& x0, const std::vector<double>& r0, const
 Cluster::Cluster(const std::vector<R3>& x0, const std::vector<double>& r0, const std::vector<double>& g0, std::vector<int>& perm){
 	std::vector<int> tab0(x0.size());
 	std::iota(tab0.begin(),tab0.end(),int(0));
+	this->build(x0,std::vector<double>(x0.size(),0),tab0,std::vector<double>(x0.size(),1),perm);
+}
+
+// Constructor without mass and rad
+Cluster::Cluster(const std::vector<R3>& x0, const std::vector<int>& tab0, std::vector<int>& perm){
 	this->build(x0,std::vector<double>(x0.size(),0),tab0,std::vector<double>(x0.size(),1),perm);
 }
 

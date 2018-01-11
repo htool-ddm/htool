@@ -20,254 +20,6 @@ namespace htool {
 
 	Palette bw_palette;
 
-	class MyGLCanvas : public nanogui::GLCanvas {
-	public:
-	    MyGLCanvas(Widget *parent, const HMatrix<partialACA,K>& A) : nanogui::GLCanvas(parent) {
-	        using namespace nanogui;
-
-	        mShaderblocks.init(
-	            /* An identifying name */
-	            "a_simple_shader",
-
-	            /* Vertex shader */
-	            "#version 330\n"
-	            "uniform mat4 modelViewProj;\n"
-	            "in vec3 position;\n"
-	            "in vec3 color;\n"
-	            "out vec4 frag_color;\n"
-	            "void main() {\n"
-	            "    frag_color = vec4(color, 1.0);\n"
-	            "    gl_Position = modelViewProj * vec4(position, 1.0);\n"
-	            "}",
-
-	            /* Fragment shader */
-	            "#version 330\n"
-	            "out vec4 color;\n"
-	            "in vec4 frag_color;\n"
-	            "void main() {\n"
-	            "    color = frag_color;\n"
-	            "}"
-	        );
-					
-					mShaderwireframe.init(
-							/* An identifying name */
-							"a_simple_shader",
-
-							/* Vertex shader */
-							"#version 330\n"
-							"uniform mat4 modelViewProj;\n"
-							"in vec3 position;\n"
-							"in vec3 color;\n"
-							"out vec4 frag_color;\n"
-							"void main() {\n"
-							"    frag_color = vec4(color, 1.0);\n"
-							"    gl_Position = modelViewProj * vec4(position, 1.0);\n"
-							"}",
-
-							/* Fragment shader */
-							"#version 330\n"
-							"out vec4 color;\n"
-							"in vec4 frag_color;\n"
-							"void main() {\n"
-							"    color = frag_color;\n"
-							"}"
-					);
-
-					const std::vector<partialACA<K>*>& lrmats = A.get_MyFarFieldMats();
-					const std::vector<SubMatrix<K>*>& dmats = A.get_MyNearFieldMats();
-
-					NbTri = 2*(dmats.size()+lrmats.size());
-					NbSeg = 4*(dmats.size()+lrmats.size());
-
-					MatrixXu indices(3, NbTri);
-					MatrixXf positions(3, 3*NbTri);
-					MatrixXf colors(3, 3*NbTri);
-
-					MatrixXu indices_seg(2, NbSeg);
-					MatrixXf positions_seg(3, 2*NbTri);
-					MatrixXf colors_seg(3, 2*NbTri);
-
-					for (int i=0;i<dmats.size();i++) {
-							const SubMatrix<K>& l = *(dmats[i]);
-							int si = A.nb_rows();
-							int sj = A.nb_cols();
-							indices.col(2*i) << 6*i, 6*i+1, 6*i+2;
-							indices.col(2*i+1) << 6*i+3, 6*i+4, 6*i+5;
-							positions.col(6*i) << (float)l.get_offset_i()/si, -(float)l.get_offset_j()/sj, 0;
-							positions.col(6*i+1) << (float)(l.get_offset_i()+l.nb_rows())/si, -(float)l.get_offset_j()/sj, 0;
-							positions.col(6*i+2) << (float)(l.get_offset_i()+l.nb_rows())/si, -(float)(l.get_offset_j()+l.nb_cols())/sj, 0;
-							positions.col(6*i+3) << (float)l.get_offset_i()/si, -(float)l.get_offset_j()/sj, 0;
-							positions.col(6*i+4) << (float)l.get_offset_i()/si, -(float)(l.get_offset_j()+l.nb_cols())/sj, 0;
-							positions.col(6*i+5) << (float)(l.get_offset_i()+l.nb_rows())/si, -(float)(l.get_offset_j()+l.nb_cols())/sj, 0;
-							for (int j=0; j<6;j++)
-								colors.col(6*i+j) << 1,0,0;
-									
-							for (int j=0; j<4;j++)
-								indices_seg.col(4*i+j) << 8*i+2*j, 8*i+2*j+1;							
-							positions_seg.col(8*i) << (float)l.get_offset_i()/si, -(float)l.get_offset_j()/sj, 0;
-							positions_seg.col(8*i+1) << (float)(l.get_offset_i()+l.nb_rows())/si, -(float)l.get_offset_j()/sj, 0;
-							positions_seg.col(8*i+2) << (float)(l.get_offset_i()+l.nb_rows())/si, -(float)l.get_offset_j()/sj, 0;
-							positions_seg.col(8*i+3) << (float)(l.get_offset_i()+l.nb_rows())/si, -(float)(l.get_offset_j()+l.nb_cols())/sj, 0;
-							positions_seg.col(8*i+4) << (float)(l.get_offset_i()+l.nb_rows())/si, -(float)(l.get_offset_j()+l.nb_cols())/sj, 0;
-							positions_seg.col(8*i+5) << (float)l.get_offset_i()/si, -(float)(l.get_offset_j()+l.nb_cols())/sj, 0;
-							positions_seg.col(8*i+6) << (float)l.get_offset_i()/si, -(float)(l.get_offset_j()+l.nb_cols())/sj, 0;
-							positions_seg.col(8*i+7) << (float)l.get_offset_i()/si, -(float)l.get_offset_j()/sj, 0;
-							
-							for (int j=0; j<8;j++)
-								colors_seg.col(8*i+j) << 0,0,0;
-					}
-
-					for (int i=0;i<lrmats.size();i++) {
-						  const partialACA<K>& l = *(lrmats[i]);
-							int si = A.nb_rows();
-							int sj = A.nb_cols();
-							indices.col(2*dmats.size()+2*i) << 6*dmats.size()+6*i, 6*dmats.size()+6*i+1, 6*dmats.size()+6*i+2;
-							indices.col(2*dmats.size()+2*i+1) << 6*dmats.size()+6*i+3, 6*dmats.size()+6*i+4, 6*dmats.size()+6*i+5;
-							positions.col(6*dmats.size()+6*i) << (float)l.get_offset_i()/si, -(float)l.get_offset_j()/sj, 0;
-							positions.col(6*dmats.size()+6*i+1) << (float)(l.get_offset_i()+l.nb_rows())/si, -(float)l.get_offset_j()/sj, 0;
-							positions.col(6*dmats.size()+6*i+2) << (float)(l.get_offset_i()+l.nb_rows())/si, -(float)(l.get_offset_j()+l.nb_cols())/sj, 0;
-							positions.col(6*dmats.size()+6*i+3) << (float)l.get_offset_i()/si, -(float)l.get_offset_j()/sj, 0;
-							positions.col(6*dmats.size()+6*i+4) << (float)l.get_offset_i()/si, -(float)(l.get_offset_j()+l.nb_cols())/sj, 0;
-							positions.col(6*dmats.size()+6*i+5) << (float)(l.get_offset_i()+l.nb_rows())/si, -(float)(l.get_offset_j()+l.nb_cols())/sj, 0;
-							R3 col = bw_palette.get_color(l.compression());
-							for (int j=0; j<6;j++)
-								colors.col(6*dmats.size()+6*i+j) << col[0],col[1],col[2];
-							
-							for (int j=0; j<4;j++)
-								indices_seg.col(4*dmats.size()+4*i+j) << 8*dmats.size()+8*i+2*j, 8*dmats.size()+8*i+2*j+1;							
-							positions_seg.col(8*dmats.size()+8*i) << (float)l.get_offset_i()/si, -(float)l.get_offset_j()/sj, 0;
-							positions_seg.col(8*dmats.size()+8*i+1) << (float)(l.get_offset_i()+l.nb_rows())/si, -(float)l.get_offset_j()/sj, 0;
-							positions_seg.col(8*dmats.size()+8*i+2) << (float)(l.get_offset_i()+l.nb_rows())/si, -(float)l.get_offset_j()/sj, 0;
-							positions_seg.col(8*dmats.size()+8*i+3) << (float)(l.get_offset_i()+l.nb_rows())/si, -(float)(l.get_offset_j()+l.nb_cols())/sj, 0;
-							positions_seg.col(8*dmats.size()+8*i+4) << (float)(l.get_offset_i()+l.nb_rows())/si, -(float)(l.get_offset_j()+l.nb_cols())/sj, 0;
-							positions_seg.col(8*dmats.size()+8*i+5) << (float)l.get_offset_i()/si, -(float)(l.get_offset_j()+l.nb_cols())/sj, 0;
-							positions_seg.col(8*dmats.size()+8*i+6) << (float)l.get_offset_i()/si, -(float)(l.get_offset_j()+l.nb_cols())/sj, 0;
-							positions_seg.col(8*dmats.size()+8*i+7) << (float)l.get_offset_i()/si, -(float)l.get_offset_j()/sj, 0;
-							
-							for (int j=0; j<8;j++)
-								colors_seg.col(8*dmats.size()+8*i+j) << 0,0,0;
-					}
-
-	        mShaderblocks.bind();
-	        mShaderblocks.uploadIndices(indices);
-	        mShaderblocks.uploadAttrib("position", positions);
-	        mShaderblocks.uploadAttrib("color", colors);
-					
-					mShaderwireframe.bind();
-					mShaderwireframe.uploadIndices(indices_seg);
-					mShaderwireframe.uploadAttrib("position", positions_seg);
-					mShaderwireframe.uploadAttrib("color", colors_seg);
-	    }
-
-	    ~MyGLCanvas() {
-	        mShaderblocks.free();
-					mShaderwireframe.free();
-	    }
-
-	    virtual void drawGL() override {
-	        using namespace nanogui;
-
-	        Matrix4f mvp;
-	        mvp.setIdentity();
-	        //float fTime = (float)glfwGetTime();
-
-					Eigen::Affine3f transform(Eigen::Translation3f(Eigen::Vector3f(-0.165,0.165,0)));
-
-	        mvp = transform.matrix();/*Eigen::Matrix3f(Eigen::AngleAxisf(mRotation[0]*fTime, Vector3f::UnitX()) *
-	                                                   Eigen::AngleAxisf(mRotation[1]*fTime,  Vector3f::UnitY()) *
-	                                                   Eigen::AngleAxisf(mRotation[2]*fTime, Vector3f::UnitZ())) * 10.25f;*/
-
-					Matrix4f sc;
-					sc.setIdentity();
-					sc.topLeftCorner<3,3>() = Eigen::Scaling((float)5.5,(float)5.5,(float)1);
-
-					mvp = sc*mvp;
-
-					mShaderblocks.bind();
-	        mShaderblocks.setUniform("modelViewProj", mvp);
-
-					//glEnable(GL_DEPTH_TEST);
-					//glPolygonMode( GL_FRONT_AND_BACK, GL_LINE );
-					mShaderblocks.drawIndexed(GL_TRIANGLES, 0, NbTri);
-					//glDisable(GL_DEPTH_TEST);
-					
-					mShaderwireframe.bind();
-					mShaderwireframe.setUniform("modelViewProj", mvp);
-					mShaderwireframe.drawIndexed(GL_LINES, 0, NbSeg);
-	    }
-
-	private:
-		  int NbTri, NbSeg;
-	    nanogui::GLShader mShaderblocks;
-			nanogui::GLShader mShaderwireframe;
-	};
-
-void LoadMesh(std::string inputname, std::vector<R3>&  X, std::vector<N4>&  Elt, std::vector<int>& NbPt, std::vector<R3>& Normals, std::vector<R3>& ctrs, std::vector<double>& rays) {
-	int   num,NbElt,poubelle, NbTri, NbQuad;
-	R3    Pt, Ctr;
-	double Rmax, Rad;
-	R3 v1,v2;
-
-	// Ouverture fichier
-	std::ifstream infile;
-	infile.open(inputname.c_str());
-	if(!infile.good()){
-		std::cout << "LoadPoints in loading.hpp: error opening the geometry file" << std::endl;
-		abort();}
-
-	// Nombre d'elements
-	infile >> NbElt;
-	Elt.resize(NbElt);
-	NbPt.resize(NbElt);
-	Normals.resize(NbElt);
-
-	num=0; NbTri=0; NbQuad=0;
-	// Lecture elements
-	for(int e=0; e<NbElt; e++){
-		infile >> poubelle;
-		infile >> NbPt[e];
-
-		Ctr.fill(0);
-
-		if(NbPt[e]==3){NbTri++;}
-		if(NbPt[e]==4){NbQuad++;}
-
-		// Calcul centre element
-		for(int j=0; j<NbPt[e]; j++){
-			infile >> poubelle;
-			infile >> Pt;
-			Elt[e][j] = num;
-			X.push_back(Pt);
-			num++;
-			Ctr += (1./double(NbPt[e]))*Pt;
-		}
-
-		v1 = X[Elt[e][1]]-X[Elt[e][0]];
-		v2 = X[Elt[e][2]]-X[Elt[e][0]];
-		Normals[e] = v1^v2;
-		Normals[e] = Normals[e]*(1./norm2(Normals[e]));
-
-		ctrs.push_back(Ctr);
-		Rmax = norm2(Ctr-X[Elt[e][0]]);
-
-        for(int j=1; j<NbPt[e]; j++){
-        	Rad = norm2(Ctr-X[Elt[e][j]]);
-			if (Rad > Rmax)
-             	Rmax=Rad;
-        }
-
-        rays.push_back(Rmax);
-
-		// Separateur inter-element
-		if(e<NbElt-1){infile >> poubelle;}
-
-	}
-
-	std::cout << NbTri << " triangle(s) and " << NbQuad << " quad(s)" << std::endl;
-
-	infile.close();
-}
-
 class GLMesh;
 
 class Camera{
@@ -295,6 +47,7 @@ class GLMesh {
 		R3 lbox, ubox;
 		Palette& palette;
 		std::shared_ptr<Cluster_tree> cluster;
+		std::vector<int> tab;
 
 	public:
 		GLMesh(const GLMesh& m);
@@ -310,6 +63,12 @@ class GLMesh {
 		const unsigned int& get_visudepth() const;
 		const std::shared_ptr<Cluster_tree> get_cluster() const;
 		void set_cluster(const std::shared_ptr<Cluster_tree>& c);
+
+		const std::vector<int>& get_tab() const;
+		void set_tab(const std::vector<int>& t);
+		
+		void set_labels(std::vector<int>& l);
+		void set_nblabels(unsigned int n);
 
 		void TraversalBuildLabel(const Cluster& t, std::vector<int>& labeldofs);
 		void set_visudepth(const unsigned int depth);
@@ -391,10 +150,328 @@ Palette::Palette(const unsigned int nb, const std::vector<R3>& cols) {
 }
 
 R3 Palette::get_color(float z) const{
-	int i=(int)(z*(n-1));
+	unsigned int i=(int)(z*(n-1));
 	double t=z*(n-1)-i;
-	R3 col = ((1-t)*colors[i]+t*colors[i+1])*(1./255);
+	R3 col = ((1-t)*colors[i]+t*colors[std::min(n-1,i+1)])*(1./255);
 	return col;
+}
+
+class MyGLCanvas : public nanogui::GLCanvas {
+public:
+		MyGLCanvas(Widget *parent, const HMatrix<partialACA,K>* A) : nanogui::GLCanvas(parent), mat(A) {
+				using namespace nanogui;
+
+				mShaderblocks.init(
+						/* An identifying name */
+						"a_simple_shader",
+
+						/* Vertex shader */
+						"#version 330\n"
+						"uniform mat4 modelViewProj;\n"
+						"in vec3 position;\n"
+						"in vec3 color;\n"
+						"out vec4 frag_color;\n"
+						"void main() {\n"
+						"    frag_color = vec4(color, 1.0);\n"
+						"    gl_Position = modelViewProj * vec4(position, 1.0);\n"
+						"}",
+
+						/* Fragment shader */
+						"#version 330\n"
+						"out vec4 color;\n"
+						"in vec4 frag_color;\n"
+						"void main() {\n"
+						"    color = frag_color;\n"
+						"}"
+				);
+				
+				mShaderwireframe.init(
+						/* An identifying name */
+						"a_simple_shader",
+
+						/* Vertex shader */
+						"#version 330\n"
+						"uniform mat4 modelViewProj;\n"
+						"in vec3 position;\n"
+						"in vec3 color;\n"
+						"out vec4 frag_color;\n"
+						"void main() {\n"
+						"    frag_color = vec4(color, 1.0);\n"
+						"    gl_Position = modelViewProj * vec4(position, 1.0);\n"
+						"}",
+
+						/* Fragment shader */
+						"#version 330\n"
+						"out vec4 color;\n"
+						"in vec4 frag_color;\n"
+						"void main() {\n"
+						"    color = frag_color;\n"
+						"}"
+				);
+
+				const std::vector<partialACA<K>*>& lrmats = A->get_MyFarFieldMats();
+				const std::vector<SubMatrix<K>*>& dmats = A->get_MyNearFieldMats();
+
+				NbTri = 2*(dmats.size()+lrmats.size());
+				NbSeg = 4*(dmats.size()+lrmats.size());
+
+				MatrixXu indices(3, NbTri);
+				MatrixXf positions(3, 3*NbTri);
+				MatrixXf colors(3, 3*NbTri);
+
+				MatrixXu indices_seg(2, NbSeg);
+				MatrixXf positions_seg(3, 2*NbSeg);
+				MatrixXf colors_seg(3, 2*NbSeg);
+
+				int si = A->nb_rows();
+				int sj = A->nb_cols();
+
+				for (int i=0;i<dmats.size();i++) {
+						const SubMatrix<K>& l = *(dmats[i]);
+						indices.col(2*i) << 6*i, 6*i+1, 6*i+2;
+						indices.col(2*i+1) << 6*i+3, 6*i+4, 6*i+5;
+						positions.col(6*i) << (float)l.get_offset_i()/si, -(float)l.get_offset_j()/sj, 0;
+						positions.col(6*i+1) << (float)(l.get_offset_i()+l.nb_rows())/si, -(float)l.get_offset_j()/sj, 0;
+						positions.col(6*i+2) << (float)(l.get_offset_i()+l.nb_rows())/si, -(float)(l.get_offset_j()+l.nb_cols())/sj, 0;
+						positions.col(6*i+3) << (float)l.get_offset_i()/si, -(float)l.get_offset_j()/sj, 0;
+						positions.col(6*i+4) << (float)l.get_offset_i()/si, -(float)(l.get_offset_j()+l.nb_cols())/sj, 0;
+						positions.col(6*i+5) << (float)(l.get_offset_i()+l.nb_rows())/si, -(float)(l.get_offset_j()+l.nb_cols())/sj, 0;
+						for (int j=0; j<6;j++)
+							colors.col(6*i+j) << 1,0,0;
+								
+						for (int j=0; j<4;j++)
+							indices_seg.col(4*i+j) << 8*i+2*j, 8*i+2*j+1;							
+						positions_seg.col(8*i) << (float)l.get_offset_i()/si, -(float)l.get_offset_j()/sj, 0;
+						positions_seg.col(8*i+1) << (float)(l.get_offset_i()+l.nb_rows())/si, -(float)l.get_offset_j()/sj, 0;
+						positions_seg.col(8*i+2) << (float)(l.get_offset_i()+l.nb_rows())/si, -(float)l.get_offset_j()/sj, 0;
+						positions_seg.col(8*i+3) << (float)(l.get_offset_i()+l.nb_rows())/si, -(float)(l.get_offset_j()+l.nb_cols())/sj, 0;
+						positions_seg.col(8*i+4) << (float)(l.get_offset_i()+l.nb_rows())/si, -(float)(l.get_offset_j()+l.nb_cols())/sj, 0;
+						positions_seg.col(8*i+5) << (float)l.get_offset_i()/si, -(float)(l.get_offset_j()+l.nb_cols())/sj, 0;
+						positions_seg.col(8*i+6) << (float)l.get_offset_i()/si, -(float)(l.get_offset_j()+l.nb_cols())/sj, 0;
+						positions_seg.col(8*i+7) << (float)l.get_offset_i()/si, -(float)l.get_offset_j()/sj, 0;
+						
+						for (int j=0; j<8;j++)
+							colors_seg.col(8*i+j) << 0,0,0;
+				}
+
+				for (int i=0;i<lrmats.size();i++) {
+						const partialACA<K>& l = *(lrmats[i]);
+						indices.col(2*dmats.size()+2*i) << 6*dmats.size()+6*i, 6*dmats.size()+6*i+1, 6*dmats.size()+6*i+2;
+						indices.col(2*dmats.size()+2*i+1) << 6*dmats.size()+6*i+3, 6*dmats.size()+6*i+4, 6*dmats.size()+6*i+5;
+						positions.col(6*dmats.size()+6*i) << (float)l.get_offset_i()/si, -(float)l.get_offset_j()/sj, 0;
+						positions.col(6*dmats.size()+6*i+1) << (float)(l.get_offset_i()+l.nb_rows())/si, -(float)l.get_offset_j()/sj, 0;
+						positions.col(6*dmats.size()+6*i+2) << (float)(l.get_offset_i()+l.nb_rows())/si, -(float)(l.get_offset_j()+l.nb_cols())/sj, 0;
+						positions.col(6*dmats.size()+6*i+3) << (float)l.get_offset_i()/si, -(float)l.get_offset_j()/sj, 0;
+						positions.col(6*dmats.size()+6*i+4) << (float)l.get_offset_i()/si, -(float)(l.get_offset_j()+l.nb_cols())/sj, 0;
+						positions.col(6*dmats.size()+6*i+5) << (float)(l.get_offset_i()+l.nb_rows())/si, -(float)(l.get_offset_j()+l.nb_cols())/sj, 0;
+						R3 col = bw_palette.get_color(l.compression());
+						for (int j=0; j<6;j++)
+							colors.col(6*dmats.size()+6*i+j) << col[0],col[1],col[2];
+						
+						for (int j=0; j<4;j++)
+							indices_seg.col(4*dmats.size()+4*i+j) << 8*dmats.size()+8*i+2*j, 8*dmats.size()+8*i+2*j+1;							
+						positions_seg.col(8*dmats.size()+8*i) << (float)l.get_offset_i()/si, -(float)l.get_offset_j()/sj, 0;
+						positions_seg.col(8*dmats.size()+8*i+1) << (float)(l.get_offset_i()+l.nb_rows())/si, -(float)l.get_offset_j()/sj, 0;
+						positions_seg.col(8*dmats.size()+8*i+2) << (float)(l.get_offset_i()+l.nb_rows())/si, -(float)l.get_offset_j()/sj, 0;
+						positions_seg.col(8*dmats.size()+8*i+3) << (float)(l.get_offset_i()+l.nb_rows())/si, -(float)(l.get_offset_j()+l.nb_cols())/sj, 0;
+						positions_seg.col(8*dmats.size()+8*i+4) << (float)(l.get_offset_i()+l.nb_rows())/si, -(float)(l.get_offset_j()+l.nb_cols())/sj, 0;
+						positions_seg.col(8*dmats.size()+8*i+5) << (float)l.get_offset_i()/si, -(float)(l.get_offset_j()+l.nb_cols())/sj, 0;
+						positions_seg.col(8*dmats.size()+8*i+6) << (float)l.get_offset_i()/si, -(float)(l.get_offset_j()+l.nb_cols())/sj, 0;
+						positions_seg.col(8*dmats.size()+8*i+7) << (float)l.get_offset_i()/si, -(float)l.get_offset_j()/sj, 0;
+						
+						for (int j=0; j<8;j++)
+							colors_seg.col(8*dmats.size()+8*i+j) << 0,0,0;
+				}
+
+				mShaderblocks.bind();
+				mShaderblocks.uploadIndices(indices);
+				mShaderblocks.uploadAttrib("position", positions);
+				mShaderblocks.uploadAttrib("color", colors);
+				
+				mShaderwireframe.bind();
+				mShaderwireframe.uploadIndices(indices_seg);
+				mShaderwireframe.uploadAttrib("position", positions_seg);
+				mShaderwireframe.uploadAttrib("color", colors_seg);
+		}
+
+		~MyGLCanvas() {
+				mShaderblocks.free();
+				mShaderwireframe.free();
+		}
+
+		virtual void drawGL() override {
+				using namespace nanogui;
+				
+				float pixelRatio = Scene::gv.screen->pixelRatio();
+				Vector2f screenSize = Scene::gv.screen->size().cast<float>();
+				Vector2i positionInScreen = absolutePosition();
+
+				Vector2i size = (mSize.cast<float>() * pixelRatio).cast<int>(),
+				imagePosition = (Vector2f(positionInScreen[0],
+																	 screenSize[1] - positionInScreen[1] -
+																	 (float) mSize[1]) * pixelRatio).cast<int>();
+				
+				Matrix4f mvp;
+				mvp.setIdentity();
+				//float fTime = (float)glfwGetTime();
+				
+				//glViewport(-1,-1,2,2);
+
+				Eigen::Affine3f transform(Eigen::Translation3f(Eigen::Vector3f(-0.5,0.5,0)));
+
+				mvp = transform.matrix();/*Eigen::Matrix3f(Eigen::AngleAxisf(mRotation[0]*fTime, Vector3f::UnitX()) *
+																									 Eigen::AngleAxisf(mRotation[1]*fTime,  Vector3f::UnitY()) *
+																									 Eigen::AngleAxisf(mRotation[2]*fTime, Vector3f::UnitZ())) * 10.25f;*/
+
+				Matrix4f sc;
+				sc.setIdentity();
+				sc.topLeftCorner<3,3>() = Eigen::Scaling((float)2,(float)2,(float)1);
+
+				mvp = sc*mvp;
+				
+				mShaderblocks.bind();
+				mShaderblocks.setUniform("modelViewProj", mvp);
+
+				//glEnable(GL_DEPTH_TEST);
+				//glPolygonMode( GL_FRONT_AND_BACK, GL_LINE );
+				mShaderblocks.drawIndexed(GL_TRIANGLES, 0, NbTri);
+				//glDisable(GL_DEPTH_TEST);
+				
+				mShaderwireframe.bind();
+				mShaderwireframe.setUniform("modelViewProj", mvp);
+				mShaderwireframe.drawIndexed(GL_LINES, 0, NbSeg);
+				
+				NVGcontext *ctx = Scene::gv.screen->nvgContext();
+							
+				const std::vector<partialACA<K>*>& lrmats = mat->get_MyFarFieldMats();
+	
+				int si = mat->nb_rows();
+				int sj = mat->nb_cols();
+			
+				
+				for (int i=0;i<lrmats.size();i++) {
+						const partialACA<K>& l = *(lrmats[i]);
+						float scaling = l.rank_of()  < 10 ? 1.3 : (l.rank_of()  < 100 ? 1. : 0.7);	
+						nvgFontSize(ctx, scaling*std::min((float)l.nb_rows()/si,(float)l.nb_cols()/sj)*std::min(mSize.x(),mSize.y()));
+ 						nvgTextAlign(ctx, NVG_ALIGN_CENTER | NVG_ALIGN_MIDDLE);
+ 			  		nvgFillColor(ctx, Color(255, 192));
+ 						nvgText(ctx, mPos.x()+(float)(l.get_offset_i()+0.5*l.nb_rows())/si*mSize.x(), mPos.y()+(float)(l.get_offset_j()+0.5*l.nb_cols())/sj*mSize.y(), NbrToStr(l.rank_of()).c_str(), NULL);
+				}
+				
+		}
+		
+		virtual bool mouseButtonEvent(const Eigen::Vector2i &p, int button, bool down, int modifiers) override {
+			if (down) {
+				const std::vector<partialACA<K>*>& lrmats = mat->get_MyFarFieldMats();
+				const std::vector<SubMatrix<K>*>& dmats = mat->get_MyNearFieldMats();
+
+				int si = mat->nb_rows();
+				int sj = mat->nb_cols();
+				
+				Eigen::Vector2f fp((float)(p[0]-mPos.x())/mSize.x(),(float)(p[1]-mPos.y())/mSize.y());
+
+				int found = 0;
+
+				for (int i=0;i<dmats.size();i++) {
+						const SubMatrix<K>& l = *(dmats[i]);
+						if ((fp[0] > (float)l.get_offset_i()/si) && (fp[0] < (float)(l.get_offset_i()+l.nb_rows())/si))
+						if ((fp[1] > (float)l.get_offset_j()/sj) && (fp[1] < (float)(l.get_offset_j()+l.nb_cols())/sj)) {
+								std::cout << "Dense block of size " << l.nb_rows() << " x " << l.nb_cols() << " at (" << l.get_offset_i() << "," << l.get_offset_j() << ")" << std::endl;
+								found = 1;
+								break;
+						}
+				}
+	
+				if (!found)
+				for (int i=0;i<lrmats.size();i++) {
+						const LowRankMatrix<K>& l = *(lrmats[i]);
+						if ((fp[0] > (float)l.get_offset_i()/si) && (fp[0] < (float)(l.get_offset_i()+l.nb_rows())/si))
+						if ((fp[1] > (float)l.get_offset_j()/sj) && (fp[1] < (float)(l.get_offset_j()+l.nb_cols())/sj)) {
+								std::cout << "Low rank block of size " << l.nb_rows() << " x " << l.nb_cols() << " at (" << l.get_offset_i() << "," << l.get_offset_j() << "): rank = " << l.rank_of() << ", compression = " << l.compression() << std::endl;
+								found = 1;
+								break;
+						}
+				}
+				
+				std::vector<int> labs(1);
+				//Scene::gv.active_project->get_mesh()->get_labels();		
+				std::fill(labs.begin(), labs.end(), 0);
+				Scene::gv.active_project->get_mesh()->set_buffers();
+			}
+			return true;
+		}
+
+private:
+		const HMatrix<partialACA,K>* mat;
+		int NbTri, NbSeg;
+		nanogui::GLShader mShaderblocks;
+		nanogui::GLShader mShaderwireframe;
+};
+
+void LoadMesh(std::string inputname, std::vector<R3>&  X, std::vector<N4>&  Elt, std::vector<int>& NbPt, std::vector<R3>& Normals, std::vector<R3>& ctrs, std::vector<double>& rays) {
+int   num,NbElt,poubelle, NbTri, NbQuad;
+R3    Pt, Ctr;
+double Rmax, Rad;
+R3 v1,v2;
+
+// Ouverture fichier
+std::ifstream infile;
+infile.open(inputname.c_str());
+if(!infile.good()){
+	std::cout << "LoadPoints in loading.hpp: error opening the geometry file" << std::endl;
+	abort();}
+
+// Nombre d'elements
+infile >> NbElt;
+Elt.resize(NbElt);
+NbPt.resize(NbElt);
+Normals.resize(NbElt);
+
+num=0; NbTri=0; NbQuad=0;
+// Lecture elements
+for(int e=0; e<NbElt; e++){
+	infile >> poubelle;
+	infile >> NbPt[e];
+
+	Ctr.fill(0);
+
+	if(NbPt[e]==3){NbTri++;}
+	if(NbPt[e]==4){NbQuad++;}
+
+	// Calcul centre element
+	for(int j=0; j<NbPt[e]; j++){
+		infile >> poubelle;
+		infile >> Pt;
+		Elt[e][j] = num;
+		X.push_back(Pt);
+		num++;
+		Ctr += (1./double(NbPt[e]))*Pt;
+	}
+
+	v1 = X[Elt[e][1]]-X[Elt[e][0]];
+	v2 = X[Elt[e][2]]-X[Elt[e][0]];
+	Normals[e] = v1^v2;
+	Normals[e] = Normals[e]*(1./norm2(Normals[e]));
+
+	ctrs.push_back(Ctr);
+	Rmax = norm2(Ctr-X[Elt[e][0]]);
+
+			for(int j=1; j<NbPt[e]; j++){
+				Rad = norm2(Ctr-X[Elt[e][j]]);
+		if (Rad > Rmax)
+						Rmax=Rad;
+			}
+
+			rays.push_back(Rmax);
+
+	// Separateur inter-element
+	if(e<NbElt-1){infile >> poubelle;}
+
+}
+
+std::cout << NbTri << " triangle(s) and " << NbQuad << " quad(s)" << std::endl;
+
+infile.close();
 }
 
 GLMesh::GLMesh(const GLMesh& m) : palette(m.palette){
@@ -408,6 +485,7 @@ GLMesh::GLMesh(const GLMesh& m) : palette(m.palette){
 	lbox = m.lbox;
 	ubox = m.ubox;
 	cluster = m.cluster;
+	tab = m.tab;
 }
 
 GLMesh::~GLMesh() {
@@ -416,6 +494,7 @@ GLMesh::~GLMesh() {
 	NbPts.clear();
 	normals.clear();
 	labels.clear();
+	tab.clear();
   //delete cluster;
 }
 
@@ -465,6 +544,22 @@ void GLMesh::set_cluster(const std::shared_ptr<Cluster_tree>& c) {
 	cluster = c;
 }
 
+const std::vector<int>& GLMesh::get_tab() const{
+	return tab;
+}
+
+void GLMesh::set_tab(const std::vector<int>& t) {
+	tab = t;
+}
+
+void GLMesh::set_labels(std::vector<int>& l) {
+	labels = l;
+}
+
+void GLMesh::set_nblabels(unsigned int n) {
+	nblabels = n;
+}
+
 void GLMesh::TraversalBuildLabel(const Cluster& t, std::vector<int>& labeldofs){
 	if(t.get_depth()<visudepth && !t.IsLeaf()){
 		TraversalBuildLabel(t.get_son(0), labeldofs);
@@ -477,7 +572,7 @@ void GLMesh::TraversalBuildLabel(const Cluster& t, std::vector<int>& labeldofs){
 		*/
 
 		for(int i=t.get_offset(); i<t.get_offset()+t.get_size(); i++)
-			labeldofs[ cluster->get_perm()[i]] = nblabels;
+			labeldofs[tab[cluster->get_perm()[i]]] = nblabels;
 
 		nblabels++;
 	}
@@ -1198,25 +1293,13 @@ const GLchar* fragmentShaderSource = "#version 330 core\n"
 		else {
 			IMatrix<K>& A = *(gv.active_project->get_matrix());
 			const std::vector<R3>& x = *(gv.active_project->get_ctrs());
+			const std::vector<int>& tab = gv.active_project->get_mesh()->get_tab();
 			//const std::vector<double>& r = *(gv.active_project->get_rays());
-			std::vector<int> tab(A.nb_rows());
-   			for (int j=0;j<x.size();j++){
-   					tab[3*j]  = j;
-       				tab[3*j+1]= j;
-       				tab[3*j+2]= j;
-   			}
 
-			std::shared_ptr<Cluster_tree> t=std::make_shared<Cluster_tree>(x);
+			std::shared_ptr<Cluster_tree> t=std::make_shared<Cluster_tree>(x,tab);
 			gv.active_project->get_mesh()->set_cluster(t);
-			HMatrix<partialACA,K> B(A,t,x);
-			int nr  = A.nb_rows();
-			std::vector<K> u(nr);
-			int NbSpl = 1000;
-			double du = 5./double(NbSpl);
-			srand (1);
-			for(int j=0; j<nr; j++){
-				int n = rand()%(NbSpl+1);
-				u[j] = n*du;}
+			HMatrix<partialACA,K>* pB = new HMatrix<partialACA,K>(A,t,x,tab);
+			HMatrix<partialACA,K>& B = *pB;
 
 			/*
 			vectCplx ua(nr),ub(nr);
@@ -1244,7 +1327,8 @@ const GLchar* fragmentShaderSource = "#version 330 core\n"
 			panel1->setLayout(new nanogui::BoxLayout(nanogui::Orientation::Horizontal,
 			nanogui::Alignment::Middle, 10, 15));
 
-			MyGLCanvas* mCanvas = new MyGLCanvas(panel1,B);
+			MyGLCanvas* mCanvas = new MyGLCanvas(panel1,pB);
+			mCanvas->setSize(Eigen::Vector2i(300,300));
 
 			const std::map<std::string,std::string>& stats = B.get_infos();
 			std::stringstream s;
@@ -1277,15 +1361,28 @@ const GLchar* fragmentShaderSource = "#version 330 core\n"
 			});
 
 			nanogui::Button *bf = new nanogui::Button(panel2, "FullScreen", ENTYPO_ICON_CHECK);
-			bf->setCallback([popup,mCanvas,panel1,mMessageLabel] {
-  		  mCanvas->setSize(Scene::gv.screen->size()-Eigen::Vector2i(0,60));
-				popup->setPosition(Eigen::Vector2i(0,0));
-				popup->setLayout(new nanogui::BoxLayout(nanogui::Orientation::Vertical,
-				nanogui::Alignment::Middle, 0,0));
-				panel1->setLayout(new nanogui::BoxLayout(nanogui::Orientation::Horizontal,
-				nanogui::Alignment::Middle, 0,0));
-				mMessageLabel->setVisible(0);
-				Scene::gv.screen->performLayout();
+			bf->setFlags(nanogui::Button::ToggleButton);
+			bf->setChangeCallback([popup,mCanvas,panel1,mMessageLabel](bool state) { 
+			  if (state) {
+					mCanvas->setSize(Scene::gv.screen->size()-Eigen::Vector2i(0,60));
+					popup->setPosition(Eigen::Vector2i(0,0));
+					popup->setLayout(new nanogui::BoxLayout(nanogui::Orientation::Vertical,
+					nanogui::Alignment::Middle, 0,0));
+					panel1->setLayout(new nanogui::BoxLayout(nanogui::Orientation::Horizontal,
+					nanogui::Alignment::Middle, 0,0));
+					mMessageLabel->setVisible(0);
+					Scene::gv.screen->performLayout();					
+				}
+			  else {
+					mCanvas->setSize(Eigen::Vector2i(300,300));
+					popup->setPosition(Eigen::Vector2i(350, 250));
+					popup->setLayout(new nanogui::BoxLayout(nanogui::Orientation::Vertical,
+					nanogui::Alignment::Middle, 10, 10));
+					panel1->setLayout(new nanogui::BoxLayout(nanogui::Orientation::Horizontal,
+					nanogui::Alignment::Middle, 10, 15));
+					mMessageLabel->setVisible(1);
+					Scene::gv.screen->performLayout();					  
+				}
 			});
 
 			Scene::gv.screen->performLayout();
@@ -1485,8 +1582,8 @@ const GLchar* fragmentShaderSource = "#version 330 core\n"
 		default_palette.colors = colors;
 
 		std::vector<R3> colorsbw(2);
-		colorsbw[0][0]=0;colorsbw[0][1]=0;colorsbw[0][2]=0;
-		colorsbw[1][0]=255;colorsbw[1][1]=255;colorsbw[1][2]=255;
+		colorsbw[0][0]=20;colorsbw[0][1]=80;colorsbw[0][2]=20;
+		colorsbw[1][0]=100;colorsbw[1][1]=250;colorsbw[1][2]=100;
 		bw_palette.n = 2;
 		bw_palette.colors = colorsbw;
 

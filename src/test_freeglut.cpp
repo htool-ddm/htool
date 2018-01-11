@@ -67,6 +67,16 @@ void attach_ui(Scene& s) {
 				std::cout << "Loading mesh file " << str << " ..." << std::endl;
 				LoadMesh(str.c_str(),X,Elts,NbPts,Normals,Ctrs,Rays);
 				GLMesh m(X,Elts,NbPts,Normals);
+				
+				SetNdofPerElt(3);
+				std::vector<int> tab(3*Ctrs.size());
+				for (int j=0;j<Ctrs.size();j++){
+								tab[3*j]  = j;
+								tab[3*j+1]= j;
+								tab[3*j+2]= j;
+				}
+				m.set_tab(tab);
+
 				s.set_mesh(m);
 				gv.active_project->set_ctrs(Ctrs);
 				gv.active_project->set_rays(Rays);
@@ -132,20 +142,28 @@ int main(int argc, char **argv) {
 
 	statics& gv = Scene::gv;
 
-	// std::vector<R3>  X;
-	// std::vector<N4>  Elts;
-	// std::vector<int> NbPts;
-	// std::vector<R3> Normals;
-	// std::vector<R3>  Ctrs;
-	// std::vector<double> Rays;
-	// LoadMesh("/Users/pn/Documents/bem/htool/matrices/maillage450Fracs.txt",X,Elts,NbPts,Normals,Ctrs,Rays);
-	// GLMesh m(X,Elts,NbPts,Normals);
-	// s.set_mesh(m);
-	// gv.active_project->set_ctrs(Ctrs);
-	// gv.active_project->set_rays(Rays);
-	// Matrix<K> *A = new Matrix<K>;
-	// A->bytes_to_matrix("/Users/pn/Documents/bem/htool/matrices/matrice450Fracs.bin");
-	// gv.active_project->set_matrix(A);
+	std::vector<R3>  X;
+	std::vector<N4>  Elts;
+	std::vector<int> NbPts;
+	std::vector<R3> Normals;
+	std::vector<R3>  Ctrs;
+	std::vector<double> Rays;
+	LoadMesh("/Users/pn/Documents/bem/htool/matrices/maillage450Fracs.txt",X,Elts,NbPts,Normals,Ctrs,Rays);
+	GLMesh m(X,Elts,NbPts,Normals);
+	SetNdofPerElt(3);
+	std::vector<int> tab(3*Ctrs.size());
+	for (int j=0;j<Ctrs.size();j++){
+					tab[3*j]  = j;
+					tab[3*j+1]= j;
+					tab[3*j+2]= j;
+	}
+	m.set_tab(tab);
+	s.set_mesh(m);
+	gv.active_project->set_ctrs(Ctrs);
+	gv.active_project->set_rays(Rays);
+	Matrix<K> *A = new Matrix<K>;
+	A->bytes_to_matrix("/Users/pn/Documents/bem/htool/matrices/matrice450Fracs.bin");
+	gv.active_project->set_matrix(A);
 
 	s.run();
 
