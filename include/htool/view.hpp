@@ -45,7 +45,7 @@ class GLMesh {
 		unsigned int nblabels;
 		unsigned int visudepth;
 		R3 lbox, ubox;
-		Palette& palette;
+		Palette palette;
 		std::shared_ptr<Cluster_tree> cluster;
 		std::vector<int> tab;
 
@@ -54,7 +54,7 @@ class GLMesh {
 
 		~GLMesh();
 
-		GLMesh(std::vector<R3>& X0, std::vector<N4>&  Elts0, std::vector<int>& NbPts0, std::vector<R3>& normals0, const std::shared_ptr<Cluster_tree>& cluster0 = nullptr, Palette& palette0 = default_palette);
+		GLMesh(const std::vector<R3>& X0, const std::vector<N4>&  Elts0, const std::vector<int>& NbPts0, const std::vector<R3>& normals0, const std::shared_ptr<Cluster_tree>& cluster0 = nullptr, const Palette& palette0 = default_palette);
 
 		const R3& get_lbox() const;
 
@@ -69,6 +69,8 @@ class GLMesh {
 		
 		void set_labels(std::vector<int>& l);
 		void set_nblabels(unsigned int n);
+		
+		void set_palette(const Palette& p);
 
 		void TraversalBuildLabel(const Cluster& t, std::vector<int>& labeldofs);
 		void set_visudepth(const unsigned int depth);
@@ -371,12 +373,17 @@ public:
 				Eigen::Vector2f fp((float)(p[0]-mPos.x())/mSize.x(),(float)(p[1]-mPos.y())/mSize.y());
 
 				int found = 0;
+				
+				Eigen::Vector2i offsets;
+				Eigen::Vector2i dims;
 
 				for (int i=0;i<dmats.size();i++) {
 						const SubMatrix<K>& l = *(dmats[i]);
-						if ((fp[0] > (float)l.get_offset_i()/si) && (fp[0] < (float)(l.get_offset_i()+l.nb_rows())/si))
-						if ((fp[1] > (float)l.get_offset_j()/sj) && (fp[1] < (float)(l.get_offset_j()+l.nb_cols())/sj)) {
+						if ((fp[0] >= (float)l.get_offset_i()/si) && (fp[0] <= (float)(l.get_offset_i()+l.nb_rows())/si))
+						if ((fp[1] >= (float)l.get_offset_j()/sj) && (fp[1] <= (float)(l.get_offset_j()+l.nb_cols())/sj)) {
 								std::cout << "Dense block of size " << l.nb_rows() << " x " << l.nb_cols() << " at (" << l.get_offset_i() << "," << l.get_offset_j() << ")" << std::endl;
+								offsets = Eigen::Vector2i(l.get_offset_i(),l.get_offset_j());
+								dims = Eigen::Vector2i(l.nb_rows(),l.nb_cols());
 								found = 1;
 								break;
 						}
@@ -385,17 +392,36 @@ public:
 				if (!found)
 				for (int i=0;i<lrmats.size();i++) {
 						const LowRankMatrix<K>& l = *(lrmats[i]);
-						if ((fp[0] > (float)l.get_offset_i()/si) && (fp[0] < (float)(l.get_offset_i()+l.nb_rows())/si))
-						if ((fp[1] > (float)l.get_offset_j()/sj) && (fp[1] < (float)(l.get_offset_j()+l.nb_cols())/sj)) {
+						if ((fp[0] >= (float)l.get_offset_i()/si) && (fp[0] <= (float)(l.get_offset_i()+l.nb_rows())/si))
+						if ((fp[1] >= (float)l.get_offset_j()/sj) && (fp[1] <= (float)(l.get_offset_j()+l.nb_cols())/sj)) {
 								std::cout << "Low rank block of size " << l.nb_rows() << " x " << l.nb_cols() << " at (" << l.get_offset_i() << "," << l.get_offset_j() << "): rank = " << l.rank_of() << ", compression = " << l.compression() << std::endl;
-								found = 1;
+								offsets = Eigen::Vector2i(l.get_offset_i(),l.get_offset_j());
+								dims = Eigen::Vector2i(l.nb_rows(),l.nb_cols());
 								break;
 						}
 				}
 				
-				std::vector<int> labs(1);
-				//Scene::gv.active_project->get_mesh()->get_labels();		
+				int sizeg = Scene::gv.active_project->get_ctrs()->size();
+				std::vector<int> labs(sizeg);
 				std::fill(labs.begin(), labs.end(), 0);
+				for (int i=offsets[0]; i<offsets[0]+dims[0]-1; i++)
+				  labs[Scene::gv.active_project->get_mesh()->get_tab()[i]] = 1;		
+				for (int j=offsets[1]; j<offsets[1]+dims[1]-1; j++)
+					labs[Scene::gv.active_project->get_mesh()->get_tab()[j]] += 2;
+
+				Scene::gv.active_project->get_mesh()->set_labels(labs);
+				Scene::gv.active_project->get_mesh()->set_nblabels(4);
+				
+				Palette block_palette;
+				std::vector<R3> colorsblock(4);
+				colorsblock[0][0]=255;colorsblock[0][1]=0;colorsblock[0][2]=0;
+				colorsblock[1][0]=0;colorsblock[1][1]=0;colorsblock[1][2]=0;
+				colorsblock[2][0]=255;colorsblock[2][1]=255;colorsblock[2][2]=255;
+				colorsblock[3][0]=127;colorsblock[3][1]=127;colorsblock[3][2]=127;
+				block_palette.n = 4;
+				block_palette.colors = colorsblock;
+				Scene::gv.active_project->get_mesh()->set_palette(block_palette);
+				
 				Scene::gv.active_project->get_mesh()->set_buffers();
 			}
 			return true;
@@ -498,7 +524,7 @@ GLMesh::~GLMesh() {
   //delete cluster;
 }
 
-GLMesh::GLMesh(std::vector<R3>& X0, std::vector<N4>&  Elts0, std::vector<int>& NbPts0, std::vector<R3>& normals0, const std::shared_ptr<Cluster_tree>& cluster0, Palette& palette0)
+GLMesh::GLMesh(const std::vector<R3>& X0, const std::vector<N4>&  Elts0, const std::vector<int>& NbPts0, const std::vector<R3>& normals0, const std::shared_ptr<Cluster_tree>& cluster0, const Palette& palette0)
 	: palette(palette0), cluster(cluster0){
 	X = X0;
 	Elts = Elts0;
@@ -558,6 +584,10 @@ void GLMesh::set_labels(std::vector<int>& l) {
 
 void GLMesh::set_nblabels(unsigned int n) {
 	nblabels = n;
+}
+
+void GLMesh::set_palette(const Palette& p) {
+	palette = p;
 }
 
 void GLMesh::TraversalBuildLabel(const Cluster& t, std::vector<int>& labeldofs){
@@ -978,7 +1008,7 @@ void Scene::init(){
 	glfwWindowHint(GLFW_SAMPLES, 4);
 	glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
 
-	gv.glwindow = glfwCreateWindow(1024, 768, "htool gui", nullptr, nullptr);
+	gv.glwindow = glfwCreateWindow(1280, 1024, "htool gui", nullptr, nullptr);
 
 	int width, height;
 	glfwGetFramebufferSize(gv.glwindow, &width, &height);
