@@ -58,6 +58,7 @@ void attach_ui(Scene& s) {
 			else{
 				std::string str = nanogui::file_dialog(
                    {{"txt", "Mesh file"}}, false);
+        glfwFocusWindow(gv.glwindow);
 				std::vector<R3>  X;
 				std::vector<N4>  Elts;
 				std::vector<int> NbPts;
@@ -90,7 +91,8 @@ void attach_ui(Scene& s) {
 			else{
 				std::string strmat = nanogui::file_dialog(
                    {{"bin", "Matrix binary file"}}, false);
-                   std::cout << "Loading matrix file " << strmat << " ..." << std::endl;
+        glfwFocusWindow(gv.glwindow);
+          std::cout << "Loading matrix file " << strmat << " ..." << std::endl;
    				Matrix<K> *A = new Matrix<K>;
                 A->bytes_to_matrix(strmat);
                 gv.active_project->set_matrix(A);

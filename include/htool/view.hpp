@@ -1554,13 +1554,13 @@ const GLchar* fragmentShaderSource = "#version 330 core\n"
          case 'W':case'w':
             if (gv.active_project != NULL){
              Camera& cam = gv.active_project->get_camera();
-             cam.eye += 10.*cam.z;
+             cam.eye += 0.15*(cam.center-cam.eye);
            }
              break;
          case 'S':case's':
             if (gv.active_project != NULL){
              Camera& cam = gv.active_project->get_camera();
-             cam.eye += -10.*cam.z;
+             cam.eye += -0.15*(cam.center-cam.eye);
            }
              break;
            case 'Q':case'q':
