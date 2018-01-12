@@ -13,7 +13,7 @@ namespace htool {
       std::vector<R3> colors;
       Palette();
       Palette(const unsigned int nb, const std::vector<R3>& cols);
-      Palette(const Palette& p); 
+      Palette(const Palette& p);
       R3 get_color(float z) const;
   };
 
@@ -67,10 +67,10 @@ class GLMesh {
 
     const std::vector<int>& get_tab() const;
     void set_tab(const std::vector<int>& t);
-    
+
     void set_labels(std::vector<int>& l);
     void set_nblabels(unsigned int n);
-    
+
     void set_palette(const Palette& p);
 
     void TraversalBuildLabel(const Cluster& t, std::vector<int>& labeldofs);
@@ -193,7 +193,7 @@ public:
             "    color = frag_color;\n"
             "}"
         );
-        
+
         mShaderwireframe.init(
             /* An identifying name */
             "a_simple_shader",
@@ -247,9 +247,9 @@ public:
             positions.col(6*i+5) << (float)(l.get_offset_i()+l.nb_rows())/si, -(float)(l.get_offset_j()+l.nb_cols())/sj, 0;
             for (int j=0; j<6;j++)
               colors.col(6*i+j) << 1,0,0;
-                
+
             for (int j=0; j<4;j++)
-              indices_seg.col(4*i+j) << 8*i+2*j, 8*i+2*j+1;              
+              indices_seg.col(4*i+j) << 8*i+2*j, 8*i+2*j+1;
             positions_seg.col(8*i) << (float)l.get_offset_i()/si, -(float)l.get_offset_j()/sj, 0;
             positions_seg.col(8*i+1) << (float)(l.get_offset_i()+l.nb_rows())/si, -(float)l.get_offset_j()/sj, 0;
             positions_seg.col(8*i+2) << (float)(l.get_offset_i()+l.nb_rows())/si, -(float)l.get_offset_j()/sj, 0;
@@ -258,7 +258,7 @@ public:
             positions_seg.col(8*i+5) << (float)l.get_offset_i()/si, -(float)(l.get_offset_j()+l.nb_cols())/sj, 0;
             positions_seg.col(8*i+6) << (float)l.get_offset_i()/si, -(float)(l.get_offset_j()+l.nb_cols())/sj, 0;
             positions_seg.col(8*i+7) << (float)l.get_offset_i()/si, -(float)l.get_offset_j()/sj, 0;
-            
+
             for (int j=0; j<8;j++)
               colors_seg.col(8*i+j) << 0,0,0;
         }
@@ -276,9 +276,9 @@ public:
             R3 col = bw_palette.get_color(l.compression());
             for (int j=0; j<6;j++)
               colors.col(6*dmats.size()+6*i+j) << col[0],col[1],col[2];
-            
+
             for (int j=0; j<4;j++)
-              indices_seg.col(4*dmats.size()+4*i+j) << 8*dmats.size()+8*i+2*j, 8*dmats.size()+8*i+2*j+1;              
+              indices_seg.col(4*dmats.size()+4*i+j) << 8*dmats.size()+8*i+2*j, 8*dmats.size()+8*i+2*j+1;
             positions_seg.col(8*dmats.size()+8*i) << (float)l.get_offset_i()/si, -(float)l.get_offset_j()/sj, 0;
             positions_seg.col(8*dmats.size()+8*i+1) << (float)(l.get_offset_i()+l.nb_rows())/si, -(float)l.get_offset_j()/sj, 0;
             positions_seg.col(8*dmats.size()+8*i+2) << (float)(l.get_offset_i()+l.nb_rows())/si, -(float)l.get_offset_j()/sj, 0;
@@ -287,7 +287,7 @@ public:
             positions_seg.col(8*dmats.size()+8*i+5) << (float)l.get_offset_i()/si, -(float)(l.get_offset_j()+l.nb_cols())/sj, 0;
             positions_seg.col(8*dmats.size()+8*i+6) << (float)l.get_offset_i()/si, -(float)(l.get_offset_j()+l.nb_cols())/sj, 0;
             positions_seg.col(8*dmats.size()+8*i+7) << (float)l.get_offset_i()/si, -(float)l.get_offset_j()/sj, 0;
-            
+
             for (int j=0; j<8;j++)
               colors_seg.col(8*dmats.size()+8*i+j) << 0,0,0;
         }
@@ -296,7 +296,7 @@ public:
         mShaderblocks.uploadIndices(indices);
         mShaderblocks.uploadAttrib("position", positions);
         mShaderblocks.uploadAttrib("color", colors);
-        
+
         mShaderwireframe.bind();
         mShaderwireframe.uploadIndices(indices_seg);
         mShaderwireframe.uploadAttrib("position", positions_seg);
@@ -310,18 +310,18 @@ public:
 
     virtual void drawGL() override {
         using namespace nanogui;
-        
+
         float pixelRatio = Scene::gv.screen->pixelRatio();
         Vector2f screenSize = Scene::gv.screen->size().cast<float>();
         Vector2i positionInScreen = absolutePosition();
 
         Vector2i size = (mSize.cast<float>() * pixelRatio).cast<int>(),
         imagePosition = (Vector2f(positionInScreen[0],screenSize[1] - positionInScreen[1] -(float) mSize[1]) * pixelRatio).cast<int>();
-                
+
         Matrix4f mvp;
         mvp.setIdentity();
         //float fTime = (float)glfwGetTime();
-        
+
         //glViewport(-1,-1,2,2);
 
         Eigen::Affine3f transform(Eigen::Translation3f(Eigen::Vector3f(-0.5,0.5,0)));
@@ -335,7 +335,7 @@ public:
         sc.topLeftCorner<3,3>() = Eigen::Scaling((float)2,(float)2,(float)1);
 
         mvp = sc*mvp;
-        
+
         mShaderblocks.bind();
         mShaderblocks.setUniform("modelViewProj", mvp);
 
@@ -343,30 +343,30 @@ public:
         //glPolygonMode( GL_FRONT_AND_BACK, GL_LINE );
         mShaderblocks.drawIndexed(GL_TRIANGLES, 0, NbTri);
         //glDisable(GL_DEPTH_TEST);
-        
+
         mShaderwireframe.bind();
         mShaderwireframe.setUniform("modelViewProj", mvp);
         mShaderwireframe.drawIndexed(GL_LINES, 0, NbSeg);
-        
+
         NVGcontext *ctx = Scene::gv.screen->nvgContext();
-              
+
         const std::vector<partialACA<K>*>& lrmats = mat->get_MyFarFieldMats();
-  
+
         int si = mat->nb_rows();
         int sj = mat->nb_cols();
-      
-        
+
+
         for (int i=0;i<lrmats.size();i++) {
             const partialACA<K>& l = *(lrmats[i]);
-            float scaling = l.rank_of()  < 10 ? 1.3 : (l.rank_of()  < 100 ? 1. : 0.7);  
+            float scaling = l.rank_of()  < 10 ? 1.3 : (l.rank_of()  < 100 ? 1. : 0.7);
             nvgFontSize(ctx, scaling*std::min((float)l.nb_rows()/si,(float)l.nb_cols()/sj)*std::min(mSize.x(),mSize.y()));
              nvgTextAlign(ctx, NVG_ALIGN_CENTER | NVG_ALIGN_MIDDLE);
              nvgFillColor(ctx, Color(255, 192));
              nvgText(ctx, mPos.x()+(float)(l.get_offset_i()+0.5*l.nb_rows())/si*mSize.x(), mPos.y()+(float)(l.get_offset_j()+0.5*l.nb_cols())/sj*mSize.y(), NbrToStr(l.rank_of()).c_str(), NULL);
         }
-        
+
     }
-    
+
     virtual bool mouseButtonEvent(const Eigen::Vector2i &p, int button, bool down, int modifiers) override {
       if (down) {
         const std::vector<partialACA<K>*>& lrmats = mat->get_MyFarFieldMats();
@@ -374,11 +374,11 @@ public:
 
         int si = mat->nb_rows();
         int sj = mat->nb_cols();
-        
+
         Eigen::Vector2f fp((float)(p[0]-mPos.x())/mSize.x(),(float)(p[1]-mPos.y())/mSize.y());
 
         int found = 0;
-        
+
         Eigen::Vector2i offsets;
         Eigen::Vector2i dims;
 
@@ -393,7 +393,7 @@ public:
                 break;
             }
         }
-  
+
         if (!found)
         for (int i=0;i<lrmats.size();i++) {
             const LowRankMatrix<K>& l = *(lrmats[i]);
@@ -405,15 +405,15 @@ public:
                 break;
             }
         }
-        
+
         int sizeg = Scene::gv.active_project->get_ctrs()->size();
         const std::vector<int>& tab = Scene::gv.active_project->get_mesh()->get_tab();
         const std::vector<int>& perm = Scene::gv.active_project->get_mesh()->get_cluster()->get_perm();
-        
+
         std::vector<int> labs(sizeg);
         std::fill(labs.begin(), labs.end(), 0);
         for (int i=offsets[0]; i<offsets[0]+dims[0]; i++)
-          labs[tab[perm[i]]] = 1;    
+          labs[tab[perm[i]]] = 1;
         for (int j=offsets[1]; j<offsets[1]+dims[1]; j++){
           if (labs[tab[perm[j]]] == 1)
             labs[tab[perm[j]]] = 3;
@@ -423,7 +423,7 @@ public:
 
         Scene::gv.active_project->get_mesh()->set_labels(labs);
         Scene::gv.active_project->get_mesh()->set_nblabels(4);
-        
+
         Palette block_palette;
         std::vector<R3> colorsblock(4);
         colorsblock[0][0]=255;colorsblock[0][1]=0;colorsblock[0][2]=0;
@@ -433,7 +433,7 @@ public:
         block_palette.n = 4;
         block_palette.colors = colorsblock;
         Scene::gv.active_project->get_mesh()->set_palette(block_palette);
-        
+
         Scene::gv.active_project->get_mesh()->set_buffers();
       }
       return true;
@@ -629,25 +629,27 @@ void GLMesh::set_visudepth(const unsigned int depth){
     int sizeg = Scene::gv.active_project->get_ctrs()->size();
     std::vector<int> labeldofs(sizeg);
     TraversalBuildLabel(cluster->get_root(), labeldofs);
-    if (sizeg == Elts.size())
+    // P0
+    // if (sizeg == Elts.size())
       labels = labeldofs;
-    else {
-      for (int i=0; i<Elts.size(); i++) {
-        std::map<int,int> m;
-        for (int j=0; j<NbPts[i]; j++) {
-          auto search = m.find(labeldofs[Elts[i][j]]);
-            if(search != m.end())
-              search->second++;
-            else
-              m[labeldofs[Elts[i][j]]] = 1;
-        }
-
-        auto max = std::max_element(m.begin(), m.end(),
-    [](const std::pair<int,int>& p1, const std::pair<int,int>& p2) {
-        return p1.second < p2.second; });
-        labels[i] = max->first;
-      }
-    }
+    // else {
+    //   for (int i=0; i<Elts.size(); i++) {
+    //     std::map<int,int> m;
+    //     for (int j=0; j<NbPts[i]; j++) {
+    //       auto search = m.find(labeldofs[Elts[i][j]]);
+    //         if(search != m.end()){
+    //           search->second++;
+    //       }
+    //         else{
+    //           m[labeldofs[Elts[i][j]]] = 1;
+    //       }
+    //     }
+    //     auto max = std::max_element(m.begin(), m.end(),
+    // [](const std::pair<int,int>& p1, const std::pair<int,int>& p2) {
+    //     return p1.second < p2.second; });
+    //     labels[i] = max->first;
+    //   }
+    // }
     set_buffers();
     std::cout << "Depth set to " << depth << std::endl;
   }
@@ -656,15 +658,18 @@ void GLMesh::set_visudepth(const unsigned int depth){
 void GLMesh::set_buffers() {
   int np = NbPts[0];
   int sz = (np == 3 ? np : 6);
-
+  R3 col;
   GLfloat vertices[9*sz*Elts.size()];
   for (int i=0; i<9*sz*Elts.size(); i++)
     vertices[i] = 0;
 
   if (np == 3) {
     for (int i=0; i<Elts.size(); i++) {
-      R3 col = palette.get_color(1.*(labels[i])/(nblabels > 1 ? nblabels-1 : 1));
       for (int j=0; j<3; j++){
+        if (labels.size()==Elts.size())
+          col = palette.get_color(1.*(labels[i])/(nblabels > 1 ? nblabels-1 : 1));
+        else
+          col = palette.get_color(1.*(labels[Elts[i][j]])/(nblabels > 1 ? nblabels-1 : 1));
         for (int k=0; k<3; k++) {
           vertices[9*sz*i+9*j+k] = X[Elts[i][j]][k];
           // Normals
@@ -678,7 +683,7 @@ void GLMesh::set_buffers() {
   else if (np == 4) {
     for (int i=0; i<Elts.size(); i++) {
       //R3 col = palette.get_color(1.*(labels[i]%32)/32);
-      R3 col = palette.get_color(1.*(labels[i])/(nblabels > 1 ? nblabels-1 : 1));
+      col = palette.get_color(1.*(labels[i])/(nblabels > 1 ? nblabels-1 : 1));
       for (int k=0; k<3; k++) {
         vertices[9*sz*i+9*0+k] = X[Elts[i][0]][k];
         vertices[9*sz*i+9*1+k] = X[Elts[i][1]][k];
@@ -1338,11 +1343,10 @@ const GLchar* fragmentShaderSource = "#version 330 core\n"
       const std::vector<R3>& x = *(gv.active_project->get_ctrs());
       const std::vector<int>& tab = gv.active_project->get_mesh()->get_tab();
       //const std::vector<double>& r = *(gv.active_project->get_rays());
-
       std::shared_ptr<Cluster_tree> t=std::make_shared<Cluster_tree>(x,tab);
       gv.active_project->get_mesh()->set_cluster(t);
-      HMatrix<partialACA,K>* pB = new HMatrix<partialACA,K>(A,t,x,tab);
-      HMatrix<partialACA,K>& B = *pB;
+      // HMatrix<partialACA,K> pB(A,t,x,tab);
+      HMatrix<partialACA,K>* B = new HMatrix<partialACA,K>(A,t,x,tab);
 
       /*
       vectCplx ua(nr),ub(nr);
@@ -1356,9 +1360,9 @@ const GLchar* fragmentShaderSource = "#version 330 core\n"
       */
       //Real normA = NormFrob(A);
 
-      B.add_info("Compression",NbrToStr(B.compression()));
-      B.add_info("Nb dense mats",NbrToStr(B.get_ndmat()));
-      B.add_info("Nb lr mats",NbrToStr(B.get_nlrmat()));
+      B->add_info("Compression",NbrToStr(B->compression()));
+      B->add_info("Nb dense mats",NbrToStr(B->get_ndmat()));
+      B->add_info("Nb lr mats",NbrToStr(B->get_nlrmat()));
       //add_stats(B,"Relative Frob error",sqrt(squared_absolute_error(B,A))/normA);
 
       nanogui::Window *popup = new nanogui::Window(Scene::gv.screen, "Stats");
@@ -1370,10 +1374,10 @@ const GLchar* fragmentShaderSource = "#version 330 core\n"
       panel1->setLayout(new nanogui::BoxLayout(nanogui::Orientation::Horizontal,
       nanogui::Alignment::Middle, 10, 15));
 
-      MyGLCanvas* mCanvas = new MyGLCanvas(panel1,pB);
+      MyGLCanvas* mCanvas = new MyGLCanvas(panel1,B);
       mCanvas->setSize(Eigen::Vector2i(300,300));
 
-      const std::map<std::string,std::string>& stats = B.get_infos();
+      const std::map<std::string,std::string>& stats = B->get_infos();
       std::stringstream s;
 
       s << "eta" << "\t" << Parametres::eta << "\n";
@@ -1405,7 +1409,7 @@ const GLchar* fragmentShaderSource = "#version 330 core\n"
 
       nanogui::Button *bf = new nanogui::Button(panel2, "FullScreen", ENTYPO_ICON_CHECK);
       bf->setFlags(nanogui::Button::ToggleButton);
-      bf->setChangeCallback([popup,mCanvas,panel1,mMessageLabel](bool state) { 
+      bf->setChangeCallback([popup,mCanvas,panel1,mMessageLabel](bool state) {
         if (state) {
           mCanvas->setSize(Scene::gv.screen->size()-Eigen::Vector2i(0,60));
           popup->setPosition(Eigen::Vector2i(0,0));
@@ -1414,7 +1418,7 @@ const GLchar* fragmentShaderSource = "#version 330 core\n"
           panel1->setLayout(new nanogui::BoxLayout(nanogui::Orientation::Horizontal,
           nanogui::Alignment::Middle, 0,0));
           mMessageLabel->setVisible(0);
-          Scene::gv.screen->performLayout();          
+          Scene::gv.screen->performLayout();
         }
         else {
           mCanvas->setSize(Eigen::Vector2i(300,300));
@@ -1424,7 +1428,7 @@ const GLchar* fragmentShaderSource = "#version 330 core\n"
           panel1->setLayout(new nanogui::BoxLayout(nanogui::Orientation::Horizontal,
           nanogui::Alignment::Middle, 10, 15));
           mMessageLabel->setVisible(1);
-          Scene::gv.screen->performLayout();            
+          Scene::gv.screen->performLayout();
         }
       });
 
@@ -1440,7 +1444,7 @@ const GLchar* fragmentShaderSource = "#version 330 core\n"
             */
 
 
-    }
+     }
    });
 
    gv.screen->setVisible(true);
