@@ -659,10 +659,10 @@ void GLMesh::set_buffers() {
   int np = NbPts[0];
   int sz = (np == 3 ? np : 6);
   R3 col;
-  GLfloat vertices[9*sz*Elts.size()];
-  for (int i=0; i<9*sz*Elts.size(); i++)
+  GLfloat* vertices= new GLfloat[9*sz*Elts.size()];
+  for (int i=0; i<9*sz*Elts.size(); i++){
     vertices[i] = 0;
-
+  }
   if (np == 3) {
     for (int i=0; i<Elts.size(); i++) {
       for (int j=0; j<3; j++){
@@ -749,7 +749,7 @@ void GLMesh::set_buffers() {
   //glGenBuffers(1, &EBO);
 
   glBindBuffer(GL_ARRAY_BUFFER, VBO);
-  glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
+  glBufferData(GL_ARRAY_BUFFER, 9*sz*Elts.size() * sizeof(GLfloat), vertices, GL_STATIC_DRAW);
 
   glBindVertexArray(VAO);
 
@@ -772,6 +772,7 @@ void GLMesh::set_buffers() {
   glBindBuffer(GL_ARRAY_BUFFER, 0);
 
   glBindVertexArray(0);
+  delete [] vertices;
 }
 
 void GLMesh::draw(const Camera& cam) {
