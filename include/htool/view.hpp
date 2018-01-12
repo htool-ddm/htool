@@ -892,7 +892,7 @@ void Camera::center_on(const GLMesh& mesh){
   center = 0.5*(mesh.get_lbox()+mesh.get_ubox());
   up.fill(0);
   up[2] = 1;
-  eye = center-2.*mesh.get_lbox();
+  eye = center-2.*(mesh.get_ubox()-mesh.get_lbox());
   eye[2] = 0;
   z = center-eye;
   y = up;
