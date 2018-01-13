@@ -162,7 +162,7 @@ void Cluster::build(const std::vector<R3>& x, const std::vector<double>& r, cons
 		std::vector<double> eigs(3);
 		Matrix<double> I(3,3);I(0,0)=1;I(1,1)=1;I(2,2)=1;
 		R3 dir;
-		if (p1 < 1e-15) {
+		if (p1 < 1e-16) {
 	    	// cov is diagonal.
 	   		eigs[0] = cov(0,0);
 	   		eigs[1] = cov(1,1);
@@ -207,7 +207,7 @@ void Cluster::build(const std::vector<R3>& x, const std::vector<double>& r, cons
    		eigs[2] = q + 2. * p * cos(phi + (2.*M_PI/3.));
    		eigs[1] = 3. * q - eigs[0] - eigs[2];     // since trace(cov) = eig1 + eig2 + eig3
 
-			if (std::abs(eigs[0]) < 1.e-15)
+			if (std::abs(eigs[0]) < 1.e-16)
 				dir *= 0.;
 			else {
 				Matrix<double> prod(3,3);
@@ -221,8 +221,8 @@ void Cluster::build(const std::vector<R3>& x, const std::vector<double>& r, cons
 					dirnorm = sqrt(dir[0]*dir[0]+dir[1]*dir[1]+dir[2]*dir[2]);
 					ind++;
 				}
-				while ((dirnorm < 1.e-15) && (ind < 3));
-				assert(dirnorm >= 1.e-15);
+				while ((dirnorm < 1.e-10) && (ind < 3));
+				assert(dirnorm >= 1.e-10);
 				dir[0] /= dirnorm;
 				dir[1] /= dirnorm;
 				dir[2] /= dirnorm;
