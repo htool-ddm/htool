@@ -29,7 +29,7 @@ If you need help or have questions regarding Htool, feel free to contact [Pierre
 [Inria](http://www.inria.fr/en/) Paris, France  
 [Laboratoire Jacque-Louis Lions](https://www.ljll.math.upmc.fr/en/) Paris, France  
 
-##### Collaborators/contributors
+#### Collaborators/contributors
 [Xavier Claeys](https://www.ljll.math.upmc.fr/~claeys/)  
 [Pierre Jolivet](http://jolivet.perso.enseeiht.fr/)  
 [Frédéric Nataf](https://www.ljll.math.upmc.fr/nataf/)
