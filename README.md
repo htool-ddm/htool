@@ -27,9 +27,11 @@ If you need help or have questions regarding Htool, feel free to contact [Pierre
 #### Acknowledgements
 [ANR NonlocalDD](https://www.ljll.math.upmc.fr/~claeys/nonlocaldd/index.html), (grant ANR-15-CE23-0017-01), France  
 [Inria](http://www.inria.fr/en/) Paris, France  
-[Laboratoire Jacque-Louis Lions](https://www.ljll.math.upmc.fr/en/) Paris, France  
+[Laboratoire Jacques-Louis Lions](https://www.ljll.math.upmc.fr/en/) Paris, France  
 
 #### Collaborators/contributors
 [Xavier Claeys](https://www.ljll.math.upmc.fr/~claeys/)  
 [Pierre Jolivet](http://jolivet.perso.enseeiht.fr/)  
 [Frédéric Nataf](https://www.ljll.math.upmc.fr/nataf/)
+
+![ANR NonlocalDD](figures/anr_nonlocaldd.png)
