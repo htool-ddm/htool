@@ -22,28 +22,28 @@ matrix:
         - CXX_COMPILER=clang++
         - C_COMPILER=clang
       install:
-        - brew install mpich
+        - brew install --cc=clang mpich
     - os: osx
       env:
         - CXX_COMPILER=g++-7
         - C_COMPILER=gcc-7
       install:
         - brew install gcc
-        - brew install mpich
+        - brew install --cc=gcc-7 mpich
     - os: osx
       env:
         - CXX_COMPILER=clang++
         - C_COMPILER=clang
         - MPIEXEC_PREFLAGS=-oversubscribe
       install:
-        - brew install openmpi
+        - brew install --cc=clang openmpi
     - os: osx
       env:
         - CXX_COMPILER=g++-7
         - C_COMPILER=gcc-7
       install:
         - brew install gcc
-        - brew install openmpi
+        - brew install --cc=gcc-7 openmpi
         - MPIEXEC_PREFLAGS=-oversubscribe
 
     # Tests on linux
