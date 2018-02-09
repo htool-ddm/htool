@@ -51,46 +51,46 @@ matrix:
         - MPIEXEC_PREFLAGS=-oversubscribe
 
     # Tests on linux
-    - os: linux
-      dist: trusty
-      group: travis_latest
-      env:
-        - CXX_COMPILER=g++-4.9
-        - C_COMPILER=gcc-4.9
-      addons:
-        apt:
-          sources:
-            - ubuntu-toolchain-r-test
-          packages:
-            - g++-4.9
-            - cmake
-            - openmpi-bin
-            - libopenmpi-dev
-            - libblas-dev
-            - liblapack-dev
-            # - libmumps-dev
-            - libsuitesparse-dev
-
-    - os: linux
-      dist: trusty
-      group: travis_latest
-      env:
-        - CXX_COMPILER=clang++-3.6
-        - C_COMPILER=clang-3.6
-      addons:
-        apt:
-          sources:
-            - ubuntu-toolchain-r-test
-            - llvm-toolchain-precise-3.6
-          packages:
-            - clang-3.6
-            - cmake
-            - openmpi-bin
-            - libopenmpi-dev
-            - libblas-dev
-            - liblapack-dev
-            # - libmumps-dev
-            - libsuitesparse-dev
+    # - os: linux
+    #   dist: trusty
+    #   group: travis_latest
+    #   env:
+    #     - CXX_COMPILER=g++-4.9
+    #     - C_COMPILER=gcc-4.9
+    #   addons:
+    #     apt:
+    #       sources:
+    #         - ubuntu-toolchain-r-test
+    #       packages:
+    #         - g++-4.9
+    #         - cmake
+    #         - openmpi-bin
+    #         - libopenmpi-dev
+    #         - libblas-dev
+    #         - liblapack-dev
+    #         # - libmumps-dev
+    #         - libsuitesparse-dev
+    #
+    # - os: linux
+    #   dist: trusty
+    #   group: travis_latest
+    #   env:
+    #     - CXX_COMPILER=clang++-3.6
+    #     - C_COMPILER=clang-3.6
+    #   addons:
+    #     apt:
+    #       sources:
+    #         - ubuntu-toolchain-r-test
+    #         - llvm-toolchain-precise-3.6
+    #       packages:
+    #         - clang-3.6
+    #         - cmake
+    #         - openmpi-bin
+    #         - libopenmpi-dev
+    #         - libblas-dev
+    #         - liblapack-dev
+    #         # - libmumps-dev
+    #         - libsuitesparse-dev
 
     - os: linux
       dist: trusty
