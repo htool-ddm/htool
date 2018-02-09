@@ -19,10 +19,9 @@ matrix:
     # Tests on osx
     - os: osx
       env:
-        - CXX_COMPILER=/usr/local/opt/llvm/bin/clang++
-        - C_COMPILER=/usr/local/opt/llvm/bin/clang
+        - CXX_COMPILER=clang++
+        - C_COMPILER=clang
       install:
-        - brew install llvm
         - brew install mpich
     ## mpich does not work anymore with gcc
     ## it would need to be compiled with gcc...
@@ -35,11 +34,10 @@ matrix:
     #     - brew install mpich
     - os: osx
       env:
-        - CXX_COMPILER=/usr/local/opt/llvm/bin/clang++
-        - C_COMPILER=/usr/local/opt/llvm/bin/clang
+        - CXX_COMPILER=clang++
+        - C_COMPILER=clang
         - MPIEXEC_PREFLAGS=-oversubscribe
       install:
-        - brew install llvm
         - brew install openmpi
     - os: osx
       env:
