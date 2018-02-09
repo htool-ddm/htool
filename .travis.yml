@@ -24,13 +24,15 @@ matrix:
       install:
         - brew install llvm
         - brew install mpich
-    - os: osx
-      env:
-        - CXX_COMPILER=g++-7
-        - C_COMPILER=gcc-7
-      install:
-        - brew install gcc
-        - brew install mpich
+    ## mpich does not work anymore with gcc
+    ## it would need to be compiled with gcc...
+    # - os: osx
+    #   env:
+    #     - CXX_COMPILER=g++-7
+    #     - C_COMPILER=gcc-7
+    #   install:
+    #     - brew install gcc
+    #     - brew install mpich
     - os: osx
       env:
         - CXX_COMPILER=/usr/local/opt/llvm/bin/clang++
@@ -49,47 +51,50 @@ matrix:
         - MPIEXEC_PREFLAGS=-oversubscribe
 
     # Tests on linux
-    # - os: linux
-    #   dist: trusty
-    #   env:
-    #     - CXX_COMPILER=g++-4.9
-    #     - C_COMPILER=gcc-4.9
-    #   addons:
-    #     apt:
-    #       sources:
-    #         - ubuntu-toolchain-r-test
-    #       packages:
-    #         - g++-4.9
-    #         - cmake
-    #         - openmpi-bin
-    #         - libopenmpi-dev
-    #         - libblas-dev
-    #         - liblapack-dev
-    #         # - libmumps-dev
-    #         - libsuitesparse-dev
-
-    # - os: linux
-    #   dist: trusty
-    #   env:
-    #     - CXX_COMPILER=clang++-3.6
-    #     - C_COMPILER=clang-3.6
-    #   addons:
-    #     apt:
-    #       sources:
-    #         - ubuntu-toolchain-r-test
-    #         - llvm-toolchain-precise-3.6
-    #       packages:
-    #         - clang-3.6
-    #         - cmake
-    #         - openmpi-bin
-    #         - libopenmpi-dev
-    #         - libblas-dev
-    #         - liblapack-dev
-    #         # - libmumps-dev
-    #         - libsuitesparse-dev
+    - os: linux
+      dist: trusty
+      group: travis_latest
+      env:
+        - CXX_COMPILER=g++-4.9
+        - C_COMPILER=gcc-4.9
+      addons:
+        apt:
+          sources:
+            - ubuntu-toolchain-r-test
+          packages:
+            - g++-4.9
+            - cmake
+            - openmpi-bin
+            - libopenmpi-dev
+            - libblas-dev
+            - liblapack-dev
+            # - libmumps-dev
+            - libsuitesparse-dev
 
     - os: linux
       dist: trusty
+      group: travis_latest
+      env:
+        - CXX_COMPILER=clang++-3.6
+        - C_COMPILER=clang-3.6
+      addons:
+        apt:
+          sources:
+            - ubuntu-toolchain-r-test
+            - llvm-toolchain-precise-3.6
+          packages:
+            - clang-3.6
+            - cmake
+            - openmpi-bin
+            - libopenmpi-dev
+            - libblas-dev
+            - liblapack-dev
+            # - libmumps-dev
+            - libsuitesparse-dev
+
+    - os: linux
+      dist: trusty
+      group: travis_latest
       env:
         - CXX_COMPILER=g++-4.9
         - C_COMPILER=gcc-4.9
@@ -109,6 +114,7 @@ matrix:
 
     - os: linux
       dist: trusty
+      group: travis_latest
       env:
         - CXX_COMPILER=clang++-3.6
         - C_COMPILER=clang-3.6
