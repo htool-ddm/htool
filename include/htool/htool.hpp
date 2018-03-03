@@ -16,18 +16,19 @@
 #include "clustering/cluster_tree.hpp"
 
 #include "input_output/export.hpp"
-#include "input_output/geometry.hpp.hpp"
-#include "input_output/output.hpp.hpp"
+#include "input_output/geometry.hpp"
+#include "input_output/output.hpp"
 
 #include "lrmat/lrmat.hpp"
-#include "lrmat/fullACA.hpp.hpp"
-#include "lrmat/partialACA.hpp.hpp"
+#include "lrmat/fullACA.hpp"
+#include "lrmat/partialACA.hpp"
 
 #include "misc/infos.hpp"
 #include "misc/parametres.hpp"
 #include "misc/user.hpp"
 
-#include "solvers/preconditioner.hpp"
+#include "solvers/solver.hpp"
+#include "solvers/schwarz.hpp"
 
 #include "types/hmatrix.hpp"
 #include "types/matrix.hpp"
