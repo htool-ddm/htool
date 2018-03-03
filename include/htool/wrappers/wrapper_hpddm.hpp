@@ -114,7 +114,7 @@ namespace htool{
 // }
 
 template<template<typename> class LowRankMatrix, typename T>
-class DDM;
+class Schwarz;
 
 template< template<typename> class LowRankMatrix, typename T>
 class HPDDMDense : public HpDense<T> {
@@ -195,7 +195,7 @@ public:
     this->template scaledExchange<true>(out, mu);
   }
 
-  friend class DDM<LowRankMatrix,T>;
+  friend class Schwarz<LowRankMatrix,T>;
 
 
 };

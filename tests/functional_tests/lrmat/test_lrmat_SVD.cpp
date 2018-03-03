@@ -2,9 +2,7 @@
 #include <complex>
 #include <vector>
 
-#include <htool/cluster.hpp>
-#include <htool/lrmat.hpp>
-#include <htool/SVD.hpp>
+#include <htool/lrmat/SVD.hpp>
 
 
 using namespace std;

@@ -13,14 +13,10 @@ if (EIGEN3_FOUND)
   add_test(Test_lrmat_SVD Test_lrmat_SVD)
 endif()
 
-#=== lrmat_fullACA
-add_executable(Test_lrmat_fullACA test_lrmat_fullACA.cpp)
-target_link_libraries(Test_lrmat_fullACA htool)
-add_dependencies(build-tests Test_lrmat_fullACA)
-add_test(Test_lrmat_fullACA Test_lrmat_fullACA)
 
-#=== lrmat_partialACA
-add_executable(Test_lrmat_partialACA test_lrmat_partialACA.cpp)
-target_link_libraries(Test_lrmat_partialACA htool)
-add_dependencies(build-tests Test_lrmat_partialACA)
-add_test(Test_lrmat_partialACA Test_lrmat_partialACA)
+foreach(compression ${compressions})
+    add_executable(Test_lrmat_${compression} test_lrmat_${compression}.cpp)
+    target_link_libraries(Test_lrmat_${compression} htool)
+    add_dependencies(build-tests Test_lrmat_${compression})
+    add_test(Test_lrmat_${compression} Test_lrmat_${compression})
+endforeach()

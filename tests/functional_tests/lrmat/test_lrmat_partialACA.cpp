@@ -2,9 +2,7 @@
 #include <complex>
 #include <vector>
 
-#include <htool/cluster.hpp>
-#include <htool/lrmat.hpp>
-#include <htool/partialACA.hpp>
+#include <htool/lrmat/partialACA.hpp>
 
 
 using namespace std;
