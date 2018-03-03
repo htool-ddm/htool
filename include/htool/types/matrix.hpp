@@ -6,7 +6,7 @@
 #include <fstream>
 #include <vector>
 #include <iterator>
-#include "blas.hpp"
+#include "../wrappers/wrapper_blas.hpp"
 #include "vector.hpp"
 
 namespace htool {

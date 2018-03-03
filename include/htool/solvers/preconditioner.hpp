@@ -1,10 +1,9 @@
 #ifndef HTOOL_PRECONDITIONER_HPP
 #define HTOOL_PRECONDITIONER_HPP
 
-#include "matrix.hpp"
-#include "lapack.hpp"
-#include "wrapper_mpi.hpp"
-#include "wrapper_hpddm.hpp"
+#include "../types/matrix.hpp"
+#include "../wrappers/wrapper_mpi.hpp"
+#include "../wrappers/wrapper_hpddm.hpp"
 
 namespace htool{
 

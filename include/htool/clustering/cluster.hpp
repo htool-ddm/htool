@@ -1,9 +1,9 @@
 #ifndef HTOOL_CLUSTER_HPP
 #define HTOOL_CLUSTER_HPP
 
-#include "matrix.hpp"
-#include "point.hpp"
-#include "parametres.hpp"
+#include "../types/matrix.hpp"
+#include "../types/point.hpp"
+#include "../misc/parametres.hpp"
 #include <iomanip>
 // #include <Eigen/Dense>
 // #include <Eigen/Eigenvalues>

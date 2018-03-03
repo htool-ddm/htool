@@ -2,7 +2,7 @@
 #define HTOOL_CLUSTER_TREE_HPP
 
 #include "cluster.hpp"
-#include "mpi.h"
+#include <mpi.h>
 
 namespace htool {
 

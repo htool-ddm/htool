@@ -5,8 +5,8 @@
 #include <sstream>
 #include <string>
 #include <stdlib.h>
-#include "parametres.hpp"
-#include "point.hpp"
+#include "../misc/parametres.hpp"
+#include "../types/point.hpp"
 
 namespace htool {
 

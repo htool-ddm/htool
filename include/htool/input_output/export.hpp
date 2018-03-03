@@ -5,8 +5,8 @@
 #include <sstream>
 #include <string>
 #include <stdlib.h>
-#include "matrix.hpp"
-#include "parametres.hpp"
+#include "../types/matrix.hpp"
+#include "../misc/parametres.hpp"
 
 namespace htool {
 //==================================================//

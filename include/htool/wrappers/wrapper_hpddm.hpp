@@ -8,8 +8,8 @@
 #define LAPACKSUB
 #define DSUITESPARSE
 #include <HPDDM.hpp>
-#include "hmatrix.hpp"
-#include "matrix.hpp"
+#include "../types/hmatrix.hpp"
+#include "../types/matrix.hpp"
 
 namespace htool{
 

@@ -3,7 +3,7 @@
 
 #include <algorithm>
 #include <list>
-#include <htool/htool.hpp>
+#include "../htool.hpp"
 
 namespace htool {
 

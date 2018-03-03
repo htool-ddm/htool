@@ -12,9 +12,9 @@
 #include <map>
 #include <memory>
 #include "matrix.hpp"
-#include "parametres.hpp"
-#include "cluster_tree.hpp"
-#include "wrapper_mpi.hpp"
+#include "../misc/parametres.hpp"
+#include "../clustering/cluster_tree.hpp"
+#include "../wrappers/wrapper_mpi.hpp"
 
 namespace htool {
 

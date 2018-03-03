@@ -11,24 +11,33 @@
 # endif
 #endif
 
-// #include "schwarz.hpp"
-#include "blas.hpp"
-#include "cluster.hpp"
-#include "export.hpp"
-#include "fullACA.hpp"
-#include "geometry.hpp"
-#include "hmatrix.hpp"
-#include "lapack.hpp"
-#include "lrmat.hpp"
-#include "matrix.hpp"
-#include "output.hpp"
-#include "parametres.hpp"
-#include "partialACA.hpp"
-#include "point.hpp"
-#include "preconditioner.hpp"
-#include "user.hpp"
-#include "vector.hpp"
-#include "wrapper_hpddm.hpp"
-#include "wrapper_mpi.hpp"
+
+#include "clustering/cluster.hpp"
+#include "clustering/cluster_tree.hpp"
+
+#include "input_output/export.hpp"
+#include "input_output/geometry.hpp.hpp"
+#include "input_output/output.hpp.hpp"
+
+#include "lrmat/lrmat.hpp"
+#include "lrmat/fullACA.hpp.hpp"
+#include "lrmat/partialACA.hpp.hpp"
+
+#include "misc/infos.hpp"
+#include "misc/parametres.hpp"
+#include "misc/user.hpp"
+
+#include "solvers/preconditioner.hpp"
+
+#include "types/hmatrix.hpp"
+#include "types/matrix.hpp"
+#include "types/point.hpp"
+#include "types/vector.hpp"
+
+#include "wrappers/wrapper_blas.hpp"
+#include "wrappers/wrapper_hpddm.hpp"
+#include "wrappers/wrapper_mpi.hpp"
+#include "wrappers/wrapper_lapack.hpp"
+
 
 #endif

@@ -2,8 +2,8 @@
 #define HTOOL_LRMAT_HPP
 
 #include <vector>
-#include "cluster.hpp"
-#include "matrix.hpp"
+#include "../clustering/cluster.hpp"
+#include "../types/matrix.hpp"
 namespace htool{
 
 template<typename T>
