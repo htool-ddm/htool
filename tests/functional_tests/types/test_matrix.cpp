@@ -1,4 +1,4 @@
-#include "htool/matrix.hpp"
+#include "htool/types/matrix.hpp"
 
 using namespace std;
 using namespace htool;

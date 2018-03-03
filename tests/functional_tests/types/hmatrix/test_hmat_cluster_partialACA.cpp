@@ -2,12 +2,9 @@
 #include <complex>
 #include <vector>
 
-#include <htool/cluster.hpp>
-#include <htool/lrmat.hpp>
-#include <htool/hmatrix.hpp>
-#include <htool/partialACA.hpp>
-#include <htool/matrix.hpp>
-#include <mpi.h>
+#include <htool/clustering/cluster.hpp>
+#include <htool/types/hmatrix.hpp>
+#include <htool/lrmat/partialACA.hpp>
 
 
 

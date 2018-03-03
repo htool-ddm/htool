@@ -1,4 +1,4 @@
-#include "htool/vector.hpp"
+#include "htool/types/vector.hpp"
 
 using namespace std;
 using namespace htool;

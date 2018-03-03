@@ -1,8 +1,8 @@
-#include <htool/point.hpp>
-#include <htool/preconditioner.hpp>
-#include <htool/fullACA.hpp>
-#include <htool/hmatrix.hpp>
-#include <htool/geometry.hpp>
+#include <htool/types/point.hpp>
+#include <htool/solvers/schwarz.hpp>
+#include <htool/lrmat/fullACA.hpp>
+#include <htool/types/hmatrix.hpp>
+#include <htool/input_output/geometry.hpp>
 
 
 using namespace std;
@@ -41,6 +41,7 @@ int main(int argc, char *argv[]){
 	// HPDDM verbosity
 	HPDDM::Option& opt = *HPDDM::Option::get();
 	opt.parse(argc, argv, rank == 0);
+    opt["schwarz_method"]=HPDDM_SCHWARZ_METHOD_NONE;
 	if(rank != 0)
 		opt.remove("verbosity");
 
@@ -76,7 +77,7 @@ int main(int argc, char *argv[]){
     }
 
 	// Solve
-    DDM<fullACA,complex<double>> hpddm_operator(HA);
+    Schwarz<fullACA,complex<double>> hpddm_operator(HA);
 	hpddm_operator.solve(f_global.data(),x_global.data(),mu);
 	HA.print_infos();
 

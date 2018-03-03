@@ -1,5 +1,5 @@
-#include <htool/fullACA.hpp>
-#include <htool/hmatrix.hpp>
+#include <htool/types/hmatrix.hpp>
+#include <htool/lrmat/fullACA.hpp>
 
 using namespace std;
 using namespace htool;

@@ -1,4 +1,4 @@
-#include "htool/point.hpp"
+#include "htool/types/point.hpp"
 #include <iostream>
 using namespace std;
 using namespace htool;

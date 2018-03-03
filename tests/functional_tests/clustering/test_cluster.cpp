@@ -1,4 +1,4 @@
-#include "htool/cluster.hpp"
+#include <htool/clustering/cluster.hpp>
 
 using namespace std;
 using namespace htool;
