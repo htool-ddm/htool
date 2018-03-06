@@ -2,7 +2,7 @@
 #=========================== Executables =====================================#
 #=============================================================================#
 
-set(cases "schwarz")
+set(cases "ddm")
 
 set(Test_solvers_ARGS ${CMAKE_SOURCE_DIR}/data/data_test/SPD_mat_example.bin
                               ${CMAKE_SOURCE_DIR}/data/data_test/rhs.bin
