@@ -14,10 +14,7 @@
 namespace htool{
 
 template<template<typename> class LowRankMatrix, typename T>
-class ISolver;
-
-template<template<typename> class LowRankMatrix, typename T>
-class Schwarz;
+class DDM;
 
 template< template<typename> class LowRankMatrix, typename T>
 class HPDDMDense : public HpDense<T> {
@@ -73,9 +70,7 @@ public:
     this->template scaledExchange<true>(out, mu);
   }
 
-  friend class ISolver<LowRankMatrix,T>;
-  friend class Schwarz<LowRankMatrix,T>;
-
+  friend class DDM<LowRankMatrix,T>;
 
 };
 

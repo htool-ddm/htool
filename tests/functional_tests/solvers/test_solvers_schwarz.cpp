@@ -1,5 +1,5 @@
 #include <htool/types/point.hpp>
-#include <htool/solvers/schwarz.hpp>
+#include <htool/solvers/ddm.hpp>
 #include <htool/lrmat/fullACA.hpp>
 #include <htool/types/hmatrix.hpp>
 #include <htool/input_output/geometry.hpp>
@@ -56,7 +56,7 @@ int main(int argc, char *argv[]){
 	// Mesh
 	std::vector<R3> p;
 	Load_GMSH_nodes(p,argv[3]);
-
+std::cout << p << std::endl;
 	// Hmatrix
 	std::vector<int> tab(n);
 	for (int i=0;i<n;i++){
@@ -70,7 +70,7 @@ int main(int argc, char *argv[]){
 
 	// Solve
 
-    Schwarz<fullACA,complex<double>> hpddm_operator(HA);
+    DDM<fullACA,complex<double>> hpddm_operator(HA);
 	hpddm_operator.solve(f_global.data(),x_global.data());
 
     // hpddm_operator.~DDM<fullACA,complex<double>>();

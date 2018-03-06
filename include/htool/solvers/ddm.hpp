@@ -1,5 +1,5 @@
-#ifndef HTOOL_PRECONDITIONER_HPP
-#define HTOOL_PRECONDITIONER_HPP
+#ifndef HTOOL_DDM_HPP
+#define HTOOL_DDM_HPP
 
 #include "../types/matrix.hpp"
 #include "../wrappers/wrapper_mpi.hpp"
@@ -29,14 +29,65 @@ public:
         hpddm_op.~HPDDMDense<LowRankMatrix,T>();
     }
 
-    DDM(const HMatrix<LowRankMatrix,T>& hmat_0):n(hmat_0.get_local_size()),n_inside(hmat_0.get_local_size()),D(n),hpddm_op(hmat_0),comm(hmat_0.get_comm()){
-        // TODO block jacobi cf PH
+    DDM(const HMatrix<LowRankMatrix,T>& hmat_0):n(hmat_0.get_local_size()),n_inside(hmat_0.get_local_size()),hpddm_op(hmat_0),mat_loc(n*n),D(n),comm(hmat_0.get_comm()){
+        // Timing
+        std::vector<double> mytime(2), maxtime(2), meantime(2);
+        double time = MPI_Wtime();
+
+        // Building Ai
         bool sym=false;
-        hpddm_op.initialize(n, sym, nullptr, neighbors, intersections);
+        const std::vector<LowRankMatrix<T>*>& MyDiagFarFieldMats = hpddm_op.HA.get_MyDiagFarFieldMats();
+        const std::vector<SubMatrix<T>*>& MyDiagNearFieldMats= hpddm_op.HA.get_MyDiagNearFieldMats();
+
+        // Internal dense blocks
+        for (int i=0;i<MyDiagNearFieldMats.size();i++){
+            const SubMatrix<T>& submat = *(MyDiagNearFieldMats[i]);
+            int local_nr = submat.nb_rows();
+            int local_nc = submat.nb_cols();
+            int offset_i = submat.get_offset_i()-hpddm_op.HA.get_local_offset();;
+            int offset_j = submat.get_offset_j()-hpddm_op.HA.get_local_offset();
+            for (int i=0;i<local_nc;i++){
+                std::copy_n(&(submat(0,i)),local_nr,&mat_loc[offset_i+(offset_j+i)*n]);
+            }
+        }
+
+        // Internal compressed block
+        Matrix<T> FarFielBlock(n,n);
+        for (int i=0;i<MyDiagFarFieldMats.size();i++){
+            const LowRankMatrix<T>& lmat = *(MyDiagFarFieldMats[i]);
+            int local_nr = lmat.nb_rows();
+            int local_nc = lmat.nb_cols();
+            int offset_i = lmat.get_offset_i()-hpddm_op.HA.get_local_offset();
+            int offset_j = lmat.get_offset_j()-hpddm_op.HA.get_local_offset();;
+            FarFielBlock.resize(local_nr,local_nc);
+            lmat.get_whole_matrix(&(FarFielBlock(0,0)));
+            for (int i=0;i<local_nc;i++){
+                std::copy_n(&(FarFielBlock(0,i)),local_nr,&mat_loc[offset_i+(offset_j+i)*n]);
+            }
+        }
+
+        std::vector<int> neighbors;
+        std::vector<std::vector<int> > intersections;
+        hpddm_op.initialize(n, sym, mat_loc.data(), neighbors, intersections);
 
         fill(D.begin(),D.begin()+n_inside,1);
+        fill(D.begin()+n_inside,D.end(),0);
 
         hpddm_op.HPDDMDense<LowRankMatrix,T>::super::super::initialize(D.data());
+        mytime[0] =  MPI_Wtime() - time;
+        time = MPI_Wtime();
+        hpddm_op.callNumfact();
+        mytime[1] = MPI_Wtime() - time;
+
+        // Timing
+        MPI_Reduce(&(mytime[0]), &(maxtime[0]), 2, MPI_DOUBLE, MPI_MAX, 0,this->comm);
+        MPI_Reduce(&(mytime[0]), &(meantime[0]), 2, MPI_DOUBLE, MPI_SUM, 0,this->comm);
+        meantime /= hmat_0.get_sizeworld();
+
+        infos["DDM_setup_mean"]= NbrToStr(meantime[0]);
+        infos["DDM_setup_max" ]= NbrToStr(maxtime[0]);
+        infos["DDM_facto_mean"]= NbrToStr(meantime[1]);
+        infos["DDM_facto_max" ]= NbrToStr(maxtime[1]);
     }
 
   DDM(const IMatrix<T>& mat0, const HMatrix<LowRankMatrix,T>& hmat_0,
