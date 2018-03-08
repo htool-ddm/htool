@@ -14,6 +14,8 @@ if (EIGEN3_FOUND)
 endif()
 
 
+set(compressions "fullACA")
+list(APPEND compressions "partialACA")
 foreach(compression ${compressions})
     add_executable(Test_lrmat_${compression} test_lrmat_${compression}.cpp)
     target_link_libraries(Test_lrmat_${compression} htool)
