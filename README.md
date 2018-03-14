@@ -11,15 +11,15 @@ Htool is an implementation of hierarchical matrices (cf. this [reference](http:/
 * GUI and several service functions to display informations about matrix structures and timing.
 
 #### How to use Htool ?
-Htool is a header library written in C++11 with MPI and OpenMP, but you can use it without the latter if needed. Then, Htool needs to be linked against :
+Htool is a header library written in C++11 with MPI and OpenMP, but it can be used without the latter if needed. Then, Htool needs to be linked against :
 * BLAS, to perform algebraic operations (dense matrix-matrix or matrix-vector operations),
 * HPDDM and its dependencies (BLAS, LAPACK and a direct solver like [MUMPS](http://mumps.enseeiht.fr/), [SuiteSparse](http://faculty.cse.tamu.edu/davis/suitesparse.html), [MKL PARDISO](https://software.intel.com/en-us/articles/intel-mkl-pardiso), or [PaStiX](http://pastix.gforge.inria.fr/)) to use iterative solvers and DDM preconditioners,
 * Eigen, to use SVD compressors (to be modified),
 * Nanogui and its dependency (use `git submodule` in this repository to use it, see `Tests_view`), to use the GUI.
 
-In any case, you need to provide Htool with a function that generates the coefficients. You just need to define a structure inheriting from `IMatrix<T>` and also a method called `T get_coef(const int& i, const int& j) const`, where `T` is the type of your coefficients. In this method, you need to return the coefficient (i,j) of your problem. You can also define `get_submatrix` to provide a more efficient way to build a sub-block of the matrix. An example of such interface is given in `test_hmat_partialACA.hpp` or  [BemTool](https://github.com/xclaeys/BemTool) (see `bemtool/miscellaneous/htool_wrap.hpp`).
+In any case, a function that generates the coefficients must be provided to Htool. To do so, a structure inheriting from `IMatrix<T>` must be defined with a method called `T get_coef(const int& i, const int& j) const`, where `T` is the type of your coefficients. This method will return the coefficient (i,j) of the considered problem. A method `get_submatrix` can also be defined to provide a more efficient way to build a sub-block of the matrix. An example of such interface is given in `test_hmat_partialACA.hpp` or  [BemTool](https://github.com/xclaeys/BemTool) (see `bemtool/miscellaneous/htool_wrap.hpp`).
 
-You can also add a type of compressor defining a structure inheriting from `LowRankMatrix` with a method called `build` which populates the data members needed (see `partialACA.hpp`).
+A new type of compressor can also be added by defining a structure inheriting from `LowRankMatrix` with a method called `build` which populates the data members needed (see `partialACA.hpp`).
 
 #### Who is behind Htool?
 If you need help or have questions regarding Htool, feel free to contact [Pierre Marchand](https://www.ljll.math.upmc.fr/marchandp/) and Pierre-Henri Tournier.
