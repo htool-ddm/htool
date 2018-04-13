@@ -28,6 +28,7 @@
 #include "misc/user.hpp"
 
 #include "solvers/ddm.hpp"
+#include "solvers/proto_ddm.hpp"
 
 #include "types/hmatrix.hpp"
 #include "types/matrix.hpp"
