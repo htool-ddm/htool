@@ -7,6 +7,7 @@
 #define HPDDM_BDD 0
 #define LAPACKSUB
 #define DSUITESPARSE
+#define EIGENSOLVER 1
 #include <HPDDM.hpp>
 #include "../types/hmatrix.hpp"
 #include "../types/matrix.hpp"
@@ -84,6 +85,7 @@ private:
     const HMatrix<LowRankMatrix,T>& HA;
     std::vector<T>* in_global;
     htool::Proto_DDM<LowRankMatrix,T>& P;
+    mutable std::map<std::string, std::string> infos;
 
 public:
 
@@ -156,6 +158,41 @@ public:
         // Permutation
         HA.cluster_to_target_permutation(in_global->data(),x);
 
+        // Timing
+        HPDDM::Option& opt = *HPDDM::Option::get();
+        time = MPI_Wtime()-time;
+        infos["Solve"] = NbrToStr(time);
+        infos["Nb_it"] = NbrToStr(nb_it);
+        infos["mean_time_mat_vec_prod"] = NbrToStr(StrToNbr<double>(HA.get_infos("total_time_mat_vec_prod"))/StrToNbr<double>(HA.get_infos("nbr_mat_vec_prod")));
+        switch (opt.val("schwarz_method",0)) {
+            case HPDDM_SCHWARZ_METHOD_NONE:
+            infos["Precond"] = "none";
+            break;
+            case HPDDM_SCHWARZ_METHOD_RAS:
+            infos["Precond"] = "ras";
+            break;
+            case HPDDM_SCHWARZ_METHOD_ASM:
+            infos["Precond"] = "asm";
+            break;
+            case HPDDM_SCHWARZ_METHOD_OSM:
+            infos["Precond"] = "osm";
+            break;
+            case HPDDM_SCHWARZ_METHOD_ORAS:
+            infos["Precond"] = "asm";
+            break;
+            case HPDDM_SCHWARZ_METHOD_SORAS:
+            infos["Precond"] = "osm";
+            break;
+        }
+    }
+
+    void print_infos() const{
+        if (HA.get_rankworld()==0){
+            for (std::map<std::string,std::string>::const_iterator it = infos.begin() ; it != infos.end() ; ++it){
+                std::cout<<it->first<<"\t"<<it->second<<std::endl;
+            }
+        std::cout << std::endl;
+        }
     }
 
 };
