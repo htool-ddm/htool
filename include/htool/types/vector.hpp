@@ -10,6 +10,7 @@
 #include <complex>
 #include <cassert>
 #include <iterator>
+#include <iomanip>
 #include "point.hpp"
 
 namespace htool {
