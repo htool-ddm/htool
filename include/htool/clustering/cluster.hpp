@@ -221,8 +221,8 @@ void Cluster::build(const std::vector<R3>& x, const std::vector<double>& r, cons
 					dirnorm = sqrt(dir[0]*dir[0]+dir[1]*dir[1]+dir[2]*dir[2]);
 					ind++;
 				}
-				while ((dirnorm < 1.e-10) && (ind < 3));
-				assert(dirnorm >= 1.e-10);
+				while ((dirnorm < 1.e-15) && (ind < 3));
+				assert(dirnorm >= 1.e-15);
 				dir[0] /= dirnorm;
 				dir[1] /= dirnorm;
 				dir[2] /= dirnorm;

@@ -543,7 +543,7 @@ public:
     // To be used with dlmread
     int matlab_save(const std::string& file){
         std::ofstream out(file);
-
+        out << std::setprecision(18);
         if(!out) {
             std::cout << "Cannot open file."<<std::endl;
             return 1;
@@ -556,7 +556,7 @@ public:
             for (int j=0;j<cols;j++){
                 out<<std::real(row[j]);
                 if (std::imag(row[j])<0){
-                    out<<std::imag(row[j])<<"i\t";
+                    out<<"+"<<std::imag(row[j])<<"i\t";
                 }
                 else if (std::imag(row[j])==0){
                     out<<"+"<<0<<"i\t";

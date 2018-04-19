@@ -150,6 +150,34 @@ int bytes_to_vector(std::vector<T>& vect, const std::string& file){
     return 0;
 }
 
+// To be used with dlmread
+template<typename T>
+int matlab_save(std::vector<T> vector, const std::string& file){
+    std::ofstream out(file);
+    out << std::setprecision(18);
+    if(!out) {
+        std::cout << "Cannot open file."<<std::endl;
+        return 1;
+    }
+
+    // out<<rows<<" "<<cols<<std::endl;
+    for (int i=0;i<vector.size();i++){
+        out<<std::real(vector[i]);
+        if (std::imag(vector[i])<0){
+            out<<"+"<<std::imag(vector[i])<<"i\t";
+        }
+        else if (std::imag(vector[i])==0){
+            out<<"+"<<0<<"i\t";
+        }
+        else{
+            out<<"+"<<std::imag(vector[i])<<"i\t";
+        }
+        out << std::endl;
+    }
+    out.close();
+    return 0;
+}
+
 //================================//
 //      CLASSE SUBVECTOR          //
 //================================//

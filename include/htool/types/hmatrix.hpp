@@ -157,8 +157,10 @@ public:
 	std::vector<std::pair<int,int>> get_MasterOffset_s() const {return cluster_tree_s->get_masteroffset();}
     std::pair<int,int> get_MasterOffset_t(int i) const {return cluster_tree_t->get_masteroffset(i);}
     std::pair<int,int> get_MasterOffset_s(int i) const {return cluster_tree_s->get_masteroffset(i);}
-	std::vector<int> get_permt() const {return cluster_tree_t->get_perm();}
-	std::vector<int> get_perms() const {return cluster_tree_s->get_perm();}
+	const std::vector<int>& get_permt() const {return cluster_tree_t->get_perm();}
+	const std::vector<int>& get_perms() const {return cluster_tree_s->get_perm();}
+    int get_permt(int i) const {return cluster_tree_t->get_perm(i);}
+	int get_perms(int i) const {return cluster_tree_s->get_perm(i);}
 	const std::vector<SubMatrix<T>*>& get_MyNearFieldMats() const {return MyNearFieldMats;}
 	const std::vector<LowRankMatrix<T>*>& get_MyFarFieldMats() const {return MyFarFieldMats;}
 	const std::vector<SubMatrix<T>*>& get_MyDiagNearFieldMats() const {return MyDiagNearFieldMats;}

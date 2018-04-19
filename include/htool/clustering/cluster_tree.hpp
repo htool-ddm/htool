@@ -54,9 +54,9 @@ public:
   int get_local_offset() const {return MasterOffset[rankWorld].first;}
   int get_local_size() const {return MasterOffset[rankWorld].second;}
   std::pair<int,int> get_masteroffset(int i)const {return MasterOffset[i];}
-  std::vector<int> get_perm(){return perm;};
+  const std::vector<int>& get_perm() const{return perm;};
   std::vector<std::pair<int,int>> get_masteroffset(){return MasterOffset;}
-  int get_perm(int i){return perm[i];}
+  int get_perm(int i) const{return perm[i];}
   const Cluster& get_root() const {return root;}
   std::vector<int>::const_iterator get_perm_start() const {return perm.begin();}
 
