@@ -184,6 +184,33 @@ public:
             infos["Precond"] = "osm";
             break;
         }
+
+        //
+        if (infos["Precond"]=="none"){
+            infos["GenEO_nu"]="0";
+            infos["Coarse_correction"]="None";
+        }
+        else{
+            infos["GenEO_nu"]=NbrToStr(opt.val("geneo_nu",0));
+            std::cout << opt.val("schwarz_coarse_correction",42)<<std::endl;
+            switch (opt.val("schwarz_coarse_correction",42)) {
+                case HPDDM_SCHWARZ_COARSE_CORRECTION_BALANCED:
+                infos["Coarse_correction"] = "Balanced";
+                break;
+                case HPDDM_SCHWARZ_COARSE_CORRECTION_ADDITIVE:
+                infos["Coarse_correction"] = "Additive";
+                break;
+                case HPDDM_SCHWARZ_COARSE_CORRECTION_DEFLATED:
+                infos["Coarse_correction"] = "Deflated";
+                break;
+                default:
+                infos["Coarse_correction"] = "None";
+                break;
+            }
+
+        }
+
+
     }
 
     void print_infos() const{

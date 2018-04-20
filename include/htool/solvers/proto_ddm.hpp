@@ -280,8 +280,15 @@ public:
         HPDDM::Lapack<T>::getrs(&l,&n,&nrhs,mat_loc.data(),&lda,_ipiv.data(),vec_ovr.data(),&ldb,&info);
 
 // std::cout << info << std::endl;
-        //
-        synchronize(false);
+        HPDDM::Option& opt = *HPDDM::Option::get();
+        int schwarz_method = opt.val("schwarz_method",HPDDM_SCHWARZ_METHOD_RAS);
+        if (schwarz_method==HPDDM_SCHWARZ_METHOD_RAS){
+            synchronize(true);
+        }
+        else if (schwarz_method==HPDDM_SCHWARZ_METHOD_ASM) {
+            synchronize(false);
+        }
+
         std::copy_n(vec_ovr.data(),n_inside,out);
 
     }
@@ -339,36 +346,41 @@ public:
         std::vector<T> ptm1p(n_inside);
 
         HPDDM::Option& opt = *HPDDM::Option::get();
+        int schwarz_method = opt.val("schwarz_method",HPDDM_SCHWARZ_METHOD_RAS);
+        if (schwarz_method==HPDDM_SCHWARZ_METHOD_NONE){
+            std::copy_n(in,n_inside,out);
+        }
+        else{
+            switch (opt.val("schwarz_coarse_correction",42)) {
+                case HPDDM_SCHWARZ_COARSE_CORRECTION_BALANCED:
+                    Q(in,out_Q.data());
+                    hmat.mvprod_local(out_Q.data(),aq.data(),buffer.data(),1);
+                    std::transform(in, in+n_inside , aq.begin(),p.begin(),std::minus<T>());
 
-        switch (opt.val("schwarz_coarse_correction",42)) {
-            case HPDDM_SCHWARZ_COARSE_CORRECTION_BALANCED:
-                Q(in,out_Q.data());
-                hmat.mvprod_local(out_Q.data(),aq.data(),buffer.data(),1);
-                std::transform(in, in+n_inside , aq.begin(),p.begin(),std::minus<T>());
+                    one_level(p.data(),out_one_level.data());
+                    hmat.mvprod_local(out_one_level.data(),am1p.data(),buffer.data(),1);
+                    Q(am1p.data(),qam1p.data());
 
-                one_level(p.data(),out_one_level.data());
-                hmat.mvprod_local(out_one_level.data(),am1p.data(),buffer.data(),1);
-                Q(am1p.data(),qam1p.data());
+                    std::transform(out_one_level.begin(),out_one_level.begin()+n_inside,qam1p.begin(),ptm1p.data(),std::minus<T>());
+                    std::transform(out_Q.begin(),out_Q.begin()+n_inside,ptm1p.begin(),out,std::plus<T>());
+                    break;
+                case HPDDM_SCHWARZ_COARSE_CORRECTION_DEFLATED:
+                    Q(in,out_Q.data());
+                    hmat.mvprod_local(out_Q.data(),aq.data(),buffer.data(),1);
+                    std::transform(in, in+n_inside , aq.begin(),p.begin(),std::minus<T>());
+                    one_level(p.data(),out_one_level.data());
+                    std::transform(out_one_level.begin(),out_one_level.begin()+n_inside,out_Q.begin(),out,std::plus<T>());
+                    break;
+                case HPDDM_SCHWARZ_COARSE_CORRECTION_ADDITIVE:
+                    one_level(in,out_one_level.data());
+                    Q(in,out_Q.data());
+                    std::transform(out_one_level.begin(),out_one_level.begin()+n_inside,out_Q.begin(),out,std::plus<T>());
+                    break;
+                default:
+                    one_level(in,out);
+                    break;
 
-                std::transform(out_one_level.begin(),out_one_level.begin()+n_inside,qam1p.begin(),ptm1p.data(),std::minus<T>());
-                std::transform(out_Q.begin(),out_Q.begin()+n_inside,ptm1p.begin(),out,std::plus<T>());
-                break;
-            case HPDDM_SCHWARZ_COARSE_CORRECTION_DEFLATED:
-                Q(in,out_Q.data());
-                hmat.mvprod_local(out_Q.data(),aq.data(),buffer.data(),1);
-                std::transform(in, in+n_inside , aq.begin(),p.begin(),std::minus<T>());
-                one_level(p.data(),out_one_level.data());
-                std::transform(out_one_level.begin(),out_one_level.begin()+n_inside,out_Q.begin(),out,std::plus<T>());
-                break;
-            case HPDDM_SCHWARZ_COARSE_CORRECTION_ADDITIVE:
-                one_level(in,out_one_level.data());
-                Q(in,out_Q.data());
-                std::transform(out_one_level.begin(),out_one_level.begin()+n_inside,out_Q.begin(),out,std::plus<T>());
-                break;
-            default:
-                one_level(in,out);
-                break;
-
+            }
         }
         // ASM
         // one_level(in,out);
