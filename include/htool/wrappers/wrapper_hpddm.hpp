@@ -221,7 +221,20 @@ public:
         std::cout << std::endl;
         }
     }
-
+    void save_infos(const std::string& outputname, std::ios_base::openmode mode = std::ios_base::out) const{
+    	if (HA.get_rankworld()==0){
+    		std::ofstream outputfile(outputname, mode);
+    		if (outputfile){
+    			for (std::map<std::string,std::string>::const_iterator it = infos.begin() ; it != infos.end() ; ++it){
+    				outputfile<<it->first<<" : "<<it->second<<std::endl;
+    			}
+    			outputfile.close();
+    		}
+    		else{
+    			std::cout << "Unable to create "<<outputname<<std::endl;
+    		}
+    	}
+    }
 };
 
 }
