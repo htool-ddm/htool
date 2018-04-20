@@ -36,8 +36,8 @@ extern "C" {
 HTOOL_GENERATE_EXTERN_BLAS_COMPLEX(c, std::complex<float>, s, float)
 HTOOL_GENERATE_EXTERN_BLAS_COMPLEX(z, std::complex<double>, d, double)
 #if HTOOL_MKL
-HPDDM_GENERATE_EXTERN_MKL_EXTENSIONS(c, std::complex<float>, s, float)
-HPDDM_GENERATE_EXTERN_MKL_EXTENSIONS(z, std::complex<double>, d, double)
+HTOOL_GENERATE_EXTERN_MKL_EXTENSIONS(c, std::complex<float>, s, float)
+HTOOL_GENERATE_EXTERN_MKL_EXTENSIONS(z, std::complex<double>, d, double)
 #endif
 }
 
