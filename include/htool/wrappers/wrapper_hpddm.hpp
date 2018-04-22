@@ -192,7 +192,6 @@ public:
         }
         else{
             infos["GenEO_nu"]=NbrToStr(opt.val("geneo_nu",0));
-            std::cout << opt.val("schwarz_coarse_correction",42)<<std::endl;
             switch (opt.val("schwarz_coarse_correction",42)) {
                 case HPDDM_SCHWARZ_COARSE_CORRECTION_BALANCED:
                 infos["Coarse_correction"] = "Balanced";
