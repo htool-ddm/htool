@@ -204,6 +204,7 @@ public:
                 break;
                 default:
                 infos["Coarse_correction"] = "None";
+                infos["GenEO_nu"] = "0";
                 break;
             }
 
