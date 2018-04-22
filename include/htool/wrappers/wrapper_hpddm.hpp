@@ -115,6 +115,8 @@ public:
         double time = MPI_Wtime();
         int n = P.get_n();
         int n_inside = P.get_n_inside();
+        int time_vec_prod = StrToNbr<double>(HA.get_infos("total_time_mat_vec_prod"));
+        int nb_vec_prod =  StrToNbr<double>(HA.get_infos("nbr_mat_vec_prod"));
 
         //
         std::vector<T> rhs_perm(nb_cols);
@@ -163,7 +165,8 @@ public:
         time = MPI_Wtime()-time;
         infos["Solve"] = NbrToStr(time);
         infos["Nb_it"] = NbrToStr(nb_it);
-        infos["mean_time_mat_vec_prod"] = NbrToStr(StrToNbr<double>(HA.get_infos("total_time_mat_vec_prod"))/StrToNbr<double>(HA.get_infos("nbr_mat_vec_prod")));
+        infos["nb_mat_vec_prod"] = NbrToStr(StrToNbr<int>(HA.get_infos("nbr_mat_vec_prod"))-nb_vec_prod);
+        infos["mean_time_mat_vec_prod"] = NbrToStr((StrToNbr<double>(HA.get_infos("total_time_mat_vec_prod"))-time_vec_prod)/(StrToNbr<double>(HA.get_infos("nbr_mat_vec_prod"))-nb_vec_prod));
         switch (opt.val("schwarz_method",0)) {
             case HPDDM_SCHWARZ_METHOD_NONE:
             infos["Precond"] = "none";
