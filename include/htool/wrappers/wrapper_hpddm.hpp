@@ -191,7 +191,7 @@ public:
             infos["Coarse_correction"]="None";
         }
         else{
-            infos["GenEO_nu"]=NbrToStr(opt.val("geneo_nu",0));
+            infos["GenEO_nu"]=NbrToStr(opt.val("geneo_nu",2));
             switch (opt.val("schwarz_coarse_correction",42)) {
                 case HPDDM_SCHWARZ_COARSE_CORRECTION_BALANCED:
                 infos["Coarse_correction"] = "Balanced";
