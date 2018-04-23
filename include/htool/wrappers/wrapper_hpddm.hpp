@@ -116,7 +116,7 @@ public:
         int n = P.get_n();
         int n_inside = P.get_n_inside();
         double time_vec_prod = StrToNbr<double>(HA.get_infos("total_time_mat_vec_prod"));
-        int nb_vec_prod =  StrToNbr<double>(HA.get_infos("nbr_mat_vec_prod"));
+        int nb_vec_prod =  StrToNbr<int>(HA.get_infos("nbr_mat_vec_prod"));
 
         //
         std::vector<T> rhs_perm(nb_cols);
@@ -181,10 +181,10 @@ public:
             infos["Precond"] = "osm";
             break;
             case HPDDM_SCHWARZ_METHOD_ORAS:
-            infos["Precond"] = "asm";
+            infos["Precond"] = "oras";
             break;
             case HPDDM_SCHWARZ_METHOD_SORAS:
-            infos["Precond"] = "osm";
+            infos["Precond"] = "soras";
             break;
         }
 
@@ -213,6 +213,23 @@ public:
 
         }
 
+        double timing_one_level=P.get_timing_one_level();
+        double timing_Q=P.get_timing_Q();
+        double maxtiming_one_level, meantiming_one_level,maxtiming_Q,meantiming_Q;
+        // Timing
+        MPI_Reduce(&(timing_one_level), &(maxtiming_one_level), 1, MPI_DOUBLE, MPI_MAX, 0,HA.get_comm());
+        MPI_Reduce(&(timing_one_level), &(meantiming_one_level), 1, MPI_DOUBLE, MPI_SUM, 0,HA.get_comm());
+        MPI_Reduce(&(timing_Q), &(maxtiming_Q), 1, MPI_DOUBLE, MPI_MAX, 0,HA.get_comm());
+        MPI_Reduce(&(timing_Q), &(meantiming_Q), 1, MPI_DOUBLE, MPI_SUM, 0,HA.get_comm());
+
+        meantiming_one_level /= HA.get_sizeworld();
+        meantiming_Q /= HA.get_sizeworld();
+
+        infos["DDM_apply_one_level_mean"]= NbrToStr(meantiming_one_level);
+        infos["DDM_apply_one_level_max" ]= NbrToStr(maxtiming_one_level);
+
+        infos["DDM_apply_Q_mean"]= NbrToStr(meantiming_Q);
+        infos["DDM_apply_Q_max" ]= NbrToStr(maxtiming_Q);
 
     }
 

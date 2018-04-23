@@ -28,6 +28,8 @@ private:
     std::vector<T> E;
     Matrix<T>& evp;
     const HMatrix<LowRankMatrix,T>& hmat;
+    double timing_one_level;
+    double timing_Q;
 
     void synchronize(bool scaled){
 
@@ -333,23 +335,14 @@ public:
 
         std::copy_n(vec_ovr.data(),n_inside,out);
 
-        mytime = MPI_Wtime() - time;
+        timing_one_level += MPI_Wtime() - time;
 
-        // Timing
-        MPI_Reduce(&(mytime), &(maxtime), 1, MPI_DOUBLE, MPI_MAX, 0,this->comm);
-        MPI_Reduce(&(mytime), &(meantime), 1, MPI_DOUBLE, MPI_SUM, 0,this->comm);
-        meantime /= sizeWorld;
-
-        infos["DDM_apply_one_level_mean"]= NbrToStr(meantime);
-        infos["DDM_apply_one_level_max" ]= NbrToStr(maxtime);
     }
 
     void Q(const T* const in, T* const out){
         // Timing
         double mytime, maxtime, meantime;
         double time = MPI_Wtime();
-        int sizeWorld;
-        MPI_Comm_size(comm, &sizeWorld);
 
         std::copy_n(in,n_inside,vec_ovr.data());
         synchronize(true);
@@ -389,15 +382,7 @@ public:
         synchronize(true);
         std::copy_n(vec_ovr.data(),n_inside,out);
 
-        mytime = MPI_Wtime() - time;
-
-        // Timing
-        MPI_Reduce(&(mytime), &(maxtime), 1, MPI_DOUBLE, MPI_MAX, 0,this->comm);
-        MPI_Reduce(&(mytime), &(meantime), 1, MPI_DOUBLE, MPI_SUM, 0,this->comm);
-        meantime /= sizeWorld;
-
-        infos["DDM_apply_one_level_mean"]= NbrToStr(meantime);
-        infos["DDM_apply_one_level_max" ]= NbrToStr(maxtime);
+        timing_Q += MPI_Wtime() - time;
 
     }
 
@@ -483,7 +468,8 @@ public:
     int get_n() const {return n;}
     int get_n_inside() const {return n_inside;}
     std::map<std::string, std::string>& get_infos() const{return infos;}
-
+    double get_timing_one_level() const {return timing_one_level;}
+    double get_timing_Q() const {return timing_Q;}
 
 
 };
