@@ -299,6 +299,11 @@ public:
 
 
     void one_level(const T* const in, T* const out){
+        // Timing
+        double mytime, maxtime, meantime;
+        double time = MPI_Wtime();
+
+
         // Without overlap to with overlap
         std::copy_n(in,n_inside,vec_ovr.data());
         // std::cout << n<<" "<<n_inside <<std::endl;
@@ -327,10 +332,22 @@ public:
 
         std::copy_n(vec_ovr.data(),n_inside,out);
 
+        mytime = MPI_Wtime() - time;
+
+        // Timing
+        MPI_Reduce(&(mytime), &(maxtime), 1, MPI_DOUBLE, MPI_MAX, 0,this->comm);
+        MPI_Reduce(&(mytime), &(meantime), 1, MPI_DOUBLE, MPI_SUM, 0,this->comm);
+        meantime /= hmat_0.get_sizeworld();
+
+        infos["DDM_apply_one_level_mean"]= NbrToStr(meantime);
+        infos["DDM_apply_one_level_max" ]= NbrToStr(maxtime);
     }
 
     void Q(const T* const in, T* const out){
-
+        // Timing
+        double mytime, maxtime, meantime;
+        double time = MPI_Wtime();
+        
         std::copy_n(in,n_inside,vec_ovr.data());
         synchronize(true);
         std::vector<T> zti(nevi);
@@ -368,6 +385,16 @@ public:
         }
         synchronize(true);
         std::copy_n(vec_ovr.data(),n_inside,out);
+
+        mytime = MPI_Wtime() - time;
+
+        // Timing
+        MPI_Reduce(&(mytime), &(maxtime), 1, MPI_DOUBLE, MPI_MAX, 0,this->comm);
+        MPI_Reduce(&(mytime), &(meantime), 1, MPI_DOUBLE, MPI_SUM, 0,this->comm);
+        meantime /= hmat_0.get_sizeworld();
+
+        infos["DDM_apply_one_level_mean"]= NbrToStr(meantime);
+        infos["DDM_apply_one_level_max" ]= NbrToStr(maxtime);
 
     }
 
