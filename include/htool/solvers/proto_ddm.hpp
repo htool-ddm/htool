@@ -302,7 +302,8 @@ public:
         // Timing
         double mytime, maxtime, meantime;
         double time = MPI_Wtime();
-
+        int sizeWorld;
+        MPI_Comm_size(comm, &sizeWorld);
 
         // Without overlap to with overlap
         std::copy_n(in,n_inside,vec_ovr.data());
@@ -337,7 +338,7 @@ public:
         // Timing
         MPI_Reduce(&(mytime), &(maxtime), 1, MPI_DOUBLE, MPI_MAX, 0,this->comm);
         MPI_Reduce(&(mytime), &(meantime), 1, MPI_DOUBLE, MPI_SUM, 0,this->comm);
-        meantime /= hmat_0.get_sizeworld();
+        meantime /= sizeWorld;
 
         infos["DDM_apply_one_level_mean"]= NbrToStr(meantime);
         infos["DDM_apply_one_level_max" ]= NbrToStr(maxtime);
@@ -347,7 +348,9 @@ public:
         // Timing
         double mytime, maxtime, meantime;
         double time = MPI_Wtime();
-        
+        int sizeWorld;
+        MPI_Comm_size(comm, &sizeWorld);
+
         std::copy_n(in,n_inside,vec_ovr.data());
         synchronize(true);
         std::vector<T> zti(nevi);
@@ -391,7 +394,7 @@ public:
         // Timing
         MPI_Reduce(&(mytime), &(maxtime), 1, MPI_DOUBLE, MPI_MAX, 0,this->comm);
         MPI_Reduce(&(mytime), &(meantime), 1, MPI_DOUBLE, MPI_SUM, 0,this->comm);
-        meantime /= hmat_0.get_sizeworld();
+        meantime /= sizeWorld;
 
         infos["DDM_apply_one_level_mean"]= NbrToStr(meantime);
         infos["DDM_apply_one_level_max" ]= NbrToStr(maxtime);
