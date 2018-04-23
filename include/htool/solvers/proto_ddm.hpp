@@ -186,6 +186,7 @@ public:
 
 
         mytime[2] = MPI_Wtime() - time;
+        MPI_Barrier(hmat.get_comm());
         time = MPI_Wtime();
 
         // std::cout << w[2]<<std::endl;
@@ -269,6 +270,7 @@ public:
         //     std::cout << E << std::endl;
         // }
         mytime[3] = MPI_Wtime() - time;
+        MPI_Barrier(hmat.get_comm());
         time = MPI_Wtime();
 
         int n_coarse = nevi*sizeWorld;
