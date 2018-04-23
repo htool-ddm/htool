@@ -115,7 +115,7 @@ public:
         double time = MPI_Wtime();
         int n = P.get_n();
         int n_inside = P.get_n_inside();
-        int time_vec_prod = StrToNbr<double>(HA.get_infos("total_time_mat_vec_prod"));
+        double time_vec_prod = StrToNbr<double>(HA.get_infos("total_time_mat_vec_prod"));
         int nb_vec_prod =  StrToNbr<double>(HA.get_infos("nbr_mat_vec_prod"));
 
         //
