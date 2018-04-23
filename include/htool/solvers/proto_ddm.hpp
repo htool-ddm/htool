@@ -450,6 +450,8 @@ public:
 
     int get_n() const {return n;}
     int get_n_inside() const {return n_inside;}
+    std::map<std::string, std::string>& get_infos() const{return infos;}
+
 
 
 };
