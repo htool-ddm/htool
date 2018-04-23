@@ -64,6 +64,12 @@ public:
     const std::vector<int>& neighbors0,
     const std::vector<std::vector<int> >& intersections0, Matrix<T>& evp0):  n(ovr_subdomain_to_global0.size()), n_inside(cluster_to_ovr_subdomain0.size()), neighbors(neighbors0), vec_ovr(n),mat_loc(n*n), D(n), comm(hmat_0.get_comm()), _ipiv(n), evp(evp0), hmat(hmat_0) {
 
+        // Timing
+        std::vector<double> mytime(5), maxtime(5), meantime(5);
+        double time = MPI_Wtime();
+
+
+
 
         std::vector<int> renum(n,-1);
         std::vector<int> renum_to_global(n);
@@ -133,6 +139,10 @@ public:
         for (int j=n_inside;j<n;j++){
           std::copy_n(vertical_block.begin()+(j-n_inside)*n,n,&mat_loc[j*n]);
         }
+
+
+        mytime[0] =  MPI_Wtime() - time;
+
         // for (int i=0;i<n;i++){
         //     for (int j=0;j<n;j++){
         //         mat_loc[i+j*n]=(i==j);
@@ -144,6 +154,9 @@ public:
         int info;
 
         HPDDM::Lapack<T>::getrf(&n,&n,mat_loc.data(),&lda,_ipiv.data(),&info);
+
+        mytime[1] = MPI_Wtime() - time;
+        time = MPI_Wtime();
         // delete [] _ipiv;
 // std::cout << "info : " << info <<std::endl;
 
@@ -170,6 +183,10 @@ public:
         lwork = (int)std::real(work[0]);
         work.resize(lwork);
         HPDDM::Lapack<T>::geev( "N", "Vectors", &n, evp.data(), &lda, w.data(),nullptr , vl.data(), &ldvl, vr.data(), &ldvr, work.data(), &lwork, rwork.data(), &info );
+
+
+        mytime[2] = MPI_Wtime() - time;
+        time = MPI_Wtime();
 
         // std::cout << w[2]<<std::endl;
         // if (hmat_0.get_rankworld())
@@ -251,13 +268,31 @@ public:
         // if (rankWorld==0){
         //     std::cout << E << std::endl;
         // }
+        mytime[3] = MPI_Wtime() - time;
+        time = MPI_Wtime();
 
         int n_coarse = nevi*sizeWorld;
         _ipiv_coarse.resize(E.size());
 
         HPDDM::Lapack<T>::getrf(&n_coarse,&n_coarse,E.data(),&n_coarse,_ipiv_coarse.data(),&info);
+        mytime[4] = MPI_Wtime() - time;
+        time = MPI_Wtime();
 
+        // Timing
+        MPI_Reduce(&(mytime[0]), &(maxtime[0]), 5, MPI_DOUBLE, MPI_MAX, 0,this->comm);
+        MPI_Reduce(&(mytime[0]), &(meantime[0]), 5, MPI_DOUBLE, MPI_SUM, 0,this->comm);
+        meantime /= hmat_0.get_sizeworld();
 
+        infos["DDM_setup_one_level_mean"]= NbrToStr(meantime[0]);
+        infos["DDM_setup_one_level_max" ]= NbrToStr(maxtime[0]);
+        infos["DDM_facto_one_level_mean"]= NbrToStr(meantime[1]);
+        infos["DDM_facto_one_level_max" ]= NbrToStr(maxtime[1]);
+        infos["DDM_geev_mean"]= NbrToStr(meantime[2]);
+        infos["DDM_geev_max" ]= NbrToStr(maxtime[2]);
+        infos["DDM_setup_ZtAZ_mean"]= NbrToStr(meantime[3]);
+        infos["DDM_setup_ZtAZ_max" ]= NbrToStr(maxtime[3]);
+        infos["DDM_facto_ZtAZ_mean"]= NbrToStr(meantime[4]);
+        infos["DDM_facto_ZtAZ_max" ]= NbrToStr(maxtime[4]);
     }
 
 

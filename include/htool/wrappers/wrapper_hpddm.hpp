@@ -221,6 +221,9 @@ public:
             for (std::map<std::string,std::string>::const_iterator it = infos.begin() ; it != infos.end() ; ++it){
                 std::cout<<it->first<<"\t"<<it->second<<std::endl;
             }
+            for (std::map<std::string,std::string>::const_iterator it = P.get_infos().begin() ; it != P.get_infos().end() ; ++it){
+                std::cout<<it->first<<"\t"<<it->second<<std::endl;
+            }
         std::cout << std::endl;
         }
     }
@@ -231,12 +234,22 @@ public:
     			for (std::map<std::string,std::string>::const_iterator it = infos.begin() ; it != infos.end() ; ++it){
     				outputfile<<it->first<<" : "<<it->second<<std::endl;
     			}
+                for (std::map<std::string,std::string>::const_iterator it = P.get_infos().begin() ; it != P.get_infos().end() ; ++it){
+                    outputfile<<it->first<<" : "<<it->second<<std::endl;
+                }
     			outputfile.close();
     		}
     		else{
     			std::cout << "Unable to create "<<outputname<<std::endl;
     		}
     	}
+    }
+
+
+    void add_infos(std::string key, std::string value) const{
+        if (HA.get_rankworld()==0){
+            infos[key]=value;
+        }
     }
 };
 
