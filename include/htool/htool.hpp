@@ -38,7 +38,6 @@
 #include "wrappers/wrapper_blas.hpp"
 #include "wrappers/wrapper_hpddm.hpp"
 #include "wrappers/wrapper_mpi.hpp"
-#include "wrappers/wrapper_lapack.hpp"
 
 
 #endif

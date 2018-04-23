@@ -5,7 +5,6 @@
 #include "../types/hmatrix.hpp"
 #include "../wrappers/wrapper_mpi.hpp"
 #include "../wrappers/wrapper_hpddm.hpp"
-#include "../wrappers/wrapper_lapack.hpp"
 
 namespace htool{
 
