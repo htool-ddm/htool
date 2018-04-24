@@ -28,8 +28,7 @@ private:
     std::vector<T> E;
     Matrix<T>& evp;
     const HMatrix<LowRankMatrix,T>& hmat;
-    double timing_one_level;
-    double timing_Q;
+
 
     void synchronize(bool scaled){
 
@@ -60,13 +59,17 @@ private:
 
 public:
 
+    double timing_one_level;
+    double timing_Q;
+
     Proto_DDM(const IMatrix<T>& mat0, const HMatrix<LowRankMatrix,T>& hmat_0,
     const std::vector<int>&  ovr_subdomain_to_global0,
     const std::vector<int>& cluster_to_ovr_subdomain0,
     const std::vector<int>& neighbors0,
-    const std::vector<std::vector<int> >& intersections0, Matrix<T>& evp0):  n(ovr_subdomain_to_global0.size()), n_inside(cluster_to_ovr_subdomain0.size()), neighbors(neighbors0), vec_ovr(n),mat_loc(n*n), D(n), comm(hmat_0.get_comm()), _ipiv(n), evp(evp0), hmat(hmat_0) {
+    const std::vector<std::vector<int> >& intersections0, Matrix<T>& evp0):  n(ovr_subdomain_to_global0.size()), n_inside(cluster_to_ovr_subdomain0.size()), neighbors(neighbors0), vec_ovr(n),mat_loc(n*n), D(n), comm(hmat_0.get_comm()), _ipiv(n), evp(evp0), hmat(hmat_0), timing_Q(0), timing_one_level(0) {
 
         // Timing
+        MPI_Barrier(hmat.get_comm());
         std::vector<double> mytime(5), maxtime(5), meantime(5);
         double time = MPI_Wtime();
 
@@ -144,7 +147,7 @@ public:
 
 
         mytime[0] =  MPI_Wtime() - time;
-
+        MPI_Barrier(hmat.get_comm());
         // for (int i=0;i<n;i++){
         //     for (int j=0;j<n;j++){
         //         mat_loc[i+j*n]=(i==j);
@@ -158,6 +161,7 @@ public:
         HPDDM::Lapack<T>::getrf(&n,&n,mat_loc.data(),&lda,_ipiv.data(),&info);
 
         mytime[1] = MPI_Wtime() - time;
+        MPI_Barrier(hmat.get_comm());
         time = MPI_Wtime();
         // delete [] _ipiv;
 // std::cout << "info : " << info <<std::endl;
@@ -280,6 +284,7 @@ public:
 
         HPDDM::Lapack<T>::getrf(&n_coarse,&n_coarse,E.data(),&n_coarse,_ipiv_coarse.data(),&info);
         mytime[4] = MPI_Wtime() - time;
+        MPI_Barrier(hmat.get_comm());
         time = MPI_Wtime();
 
         // Timing
@@ -301,9 +306,6 @@ public:
 
 
     void one_level(const T* const in, T* const out){
-        // Timing
-        double mytime, maxtime, meantime;
-        double time = MPI_Wtime();
         int sizeWorld;
         MPI_Comm_size(comm, &sizeWorld);
 
@@ -313,6 +315,12 @@ public:
         // std::fill(vec_ovr.begin(),vec_ovr.end(),0);
         // std::fill_n(vec_ovr.begin(),n_inside,1);
         synchronize(true);
+
+        // Timing
+        MPI_Barrier(hmat.get_comm());
+        double time = MPI_Wtime();
+
+
         // std::cout << n_inside<<std::endl;
         // std::cout << n<<std::endl;
         const char l='N';
@@ -322,6 +330,10 @@ public:
         int info;
         // std::cout << n <<" "<<n_inside<<" "<<mat_loc.size()<<" "<<vec_ovr.size()<<std::endl;
         HPDDM::Lapack<T>::getrs(&l,&n,&nrhs,mat_loc.data(),&lda,_ipiv.data(),vec_ovr.data(),&ldb,&info);
+
+
+
+        timing_one_level += MPI_Wtime() - time;
 
 // std::cout << info << std::endl;
         HPDDM::Option& opt = *HPDDM::Option::get();
@@ -335,15 +347,10 @@ public:
 
         std::copy_n(vec_ovr.data(),n_inside,out);
 
-        timing_one_level += MPI_Wtime() - time;
 
     }
 
     void Q(const T* const in, T* const out){
-        // Timing
-        double mytime, maxtime, meantime;
-        double time = MPI_Wtime();
-
         std::copy_n(in,n_inside,vec_ovr.data());
         synchronize(true);
         std::vector<T> zti(nevi);
@@ -351,6 +358,11 @@ public:
         int rankWorld;
         MPI_Comm_size(comm,&sizeWorld);
         MPI_Comm_rank(comm,&rankWorld);
+
+
+        // Timing
+        MPI_Barrier(hmat.get_comm());
+        double time = MPI_Wtime();
 
         for (int i=0;i<nevi;i++){
             zti[i]=std::inner_product(evi.begin()+i*n,evi.begin()+i*n+n,vec_ovr.begin(),T(0),std::plus<T>(), [](T u,T v){return u*std::conj(v);});
@@ -379,10 +391,13 @@ public:
 
             std::transform(vec_ovr.begin(),vec_ovr.begin()+n,evi.begin()+n*i,vec_ovr.begin(),[&i,&zti](T u, T v){return u+v*zti[i];});
         }
+
+        timing_Q += MPI_Wtime() - time;
+
         synchronize(true);
         std::copy_n(vec_ovr.data(),n_inside,out);
 
-        timing_Q += MPI_Wtime() - time;
+
 
     }
 

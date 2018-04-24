@@ -117,6 +117,8 @@ public:
         int n_inside = P.get_n_inside();
         double time_vec_prod = StrToNbr<double>(HA.get_infos("total_time_mat_vec_prod"));
         int nb_vec_prod =  StrToNbr<int>(HA.get_infos("nbr_mat_vec_prod"));
+        P.timing_Q=0;
+        P.timing_one_level=0;
 
         //
         std::vector<T> rhs_perm(nb_cols);
@@ -230,6 +232,8 @@ public:
 
         infos["DDM_apply_Q_mean"]= NbrToStr(meantiming_Q);
         infos["DDM_apply_Q_max" ]= NbrToStr(maxtiming_Q);
+
+        infos["DDM_total_time_max"]=NbrToStr(maxtiming_one_level+maxtiming_Q+(StrToNbr<double>(HA.get_infos("total_time_mat_vec_prod"))-time_vec_prod));
 
     }
 
