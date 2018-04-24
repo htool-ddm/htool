@@ -70,7 +70,7 @@ public:
 
         // Timing
         MPI_Barrier(hmat.get_comm());
-        std::vector<double> mytime(5), maxtime(5), meantime(5);
+        std::vector<double> mytime(5), maxtime(5);
         double time = MPI_Wtime();
 
 
@@ -289,18 +289,11 @@ public:
 
         // Timing
         MPI_Reduce(&(mytime[0]), &(maxtime[0]), 5, MPI_DOUBLE, MPI_MAX, 0,this->comm);
-        MPI_Reduce(&(mytime[0]), &(meantime[0]), 5, MPI_DOUBLE, MPI_SUM, 0,this->comm);
-        meantime /= hmat_0.get_sizeworld();
 
-        infos["DDM_setup_one_level_mean"]= NbrToStr(meantime[0]);
         infos["DDM_setup_one_level_max" ]= NbrToStr(maxtime[0]);
-        infos["DDM_facto_one_level_mean"]= NbrToStr(meantime[1]);
         infos["DDM_facto_one_level_max" ]= NbrToStr(maxtime[1]);
-        infos["DDM_geev_mean"]= NbrToStr(meantime[2]);
         infos["DDM_geev_max" ]= NbrToStr(maxtime[2]);
-        infos["DDM_setup_ZtAZ_mean"]= NbrToStr(meantime[3]);
         infos["DDM_setup_ZtAZ_max" ]= NbrToStr(maxtime[3]);
-        infos["DDM_facto_ZtAZ_mean"]= NbrToStr(meantime[4]);
         infos["DDM_facto_ZtAZ_max" ]= NbrToStr(maxtime[4]);
     }
 

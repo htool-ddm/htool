@@ -217,22 +217,13 @@ public:
 
         double timing_one_level=P.get_timing_one_level();
         double timing_Q=P.get_timing_Q();
-        double maxtiming_one_level, meantiming_one_level,maxtiming_Q,meantiming_Q;
+        double maxtiming_one_level,maxtiming_Q;
         // Timing
         MPI_Reduce(&(timing_one_level), &(maxtiming_one_level), 1, MPI_DOUBLE, MPI_MAX, 0,HA.get_comm());
-        MPI_Reduce(&(timing_one_level), &(meantiming_one_level), 1, MPI_DOUBLE, MPI_SUM, 0,HA.get_comm());
         MPI_Reduce(&(timing_Q), &(maxtiming_Q), 1, MPI_DOUBLE, MPI_MAX, 0,HA.get_comm());
-        MPI_Reduce(&(timing_Q), &(meantiming_Q), 1, MPI_DOUBLE, MPI_SUM, 0,HA.get_comm());
 
-        meantiming_one_level /= HA.get_sizeworld();
-        meantiming_Q /= HA.get_sizeworld();
-
-        infos["DDM_apply_one_level_mean"]= NbrToStr(meantiming_one_level);
         infos["DDM_apply_one_level_max" ]= NbrToStr(maxtiming_one_level);
-
-        infos["DDM_apply_Q_mean"]= NbrToStr(meantiming_Q);
         infos["DDM_apply_Q_max" ]= NbrToStr(maxtiming_Q);
-
         infos["DDM_total_time_max"]=NbrToStr(maxtiming_one_level+maxtiming_Q+(StrToNbr<double>(HA.get_infos("total_time_mat_vec_prod"))-time_vec_prod));
 
     }
