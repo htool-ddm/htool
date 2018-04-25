@@ -22,14 +22,14 @@ template<template<typename> class LowRankMatrix, typename T>
 class Proto_DDM;
 
 template< template<typename> class LowRankMatrix, typename T>
-class HPDDMDense : public HpDense<T> {
+class HPDDMDense : public HpDense<T, 'G'> {
 private:
     const HMatrix<LowRankMatrix,T>& HA;
     std::vector<T>* in_global,*buffer;
 
 
 public:
-    typedef  HpDense<T> super;
+    typedef  HpDense<T, 'G'> super;
 
     HPDDMDense(const HMatrix<LowRankMatrix,T>& A):HA(A){
         in_global = new std::vector<T> ;
