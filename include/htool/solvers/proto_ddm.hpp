@@ -9,6 +9,9 @@
 namespace htool{
 
 template<template<typename> class LowRankMatrix, typename T>
+class Proto_HPDDM;
+
+template<template<typename> class LowRankMatrix, typename T>
 class Proto_DDM{
 private:
     int n;
@@ -25,9 +28,11 @@ private:
     std::vector<int> _ipiv_coarse;
     int nevi;
     std::vector<T> evi;
+    std::vector<int> renum_to_global;
     std::vector<T> E;
-    Matrix<T>& evp;
+    // Matrix<T>& evp;
     const HMatrix<LowRankMatrix,T>& hmat;
+    const T* const* Z;
 
 
     void synchronize(bool scaled){
@@ -66,7 +71,7 @@ public:
     const std::vector<int>&  ovr_subdomain_to_global0,
     const std::vector<int>& cluster_to_ovr_subdomain0,
     const std::vector<int>& neighbors0,
-    const std::vector<std::vector<int> >& intersections0, Matrix<T>& evp0):  n(ovr_subdomain_to_global0.size()), n_inside(cluster_to_ovr_subdomain0.size()), neighbors(neighbors0), vec_ovr(n),mat_loc(n*n), D(n), comm(hmat_0.get_comm()), _ipiv(n), evp(evp0), hmat(hmat_0), timing_Q(0), timing_one_level(0) {
+    const std::vector<std::vector<int> >& intersections0):  n(ovr_subdomain_to_global0.size()), n_inside(cluster_to_ovr_subdomain0.size()), neighbors(neighbors0), vec_ovr(n),mat_loc(n*n), D(n), comm(hmat_0.get_comm()), _ipiv(n), hmat(hmat_0), timing_Q(0), timing_one_level(0) {
 
         // Timing
         MPI_Barrier(hmat.get_comm());
@@ -77,7 +82,7 @@ public:
 
 
         std::vector<int> renum(n,-1);
-        std::vector<int> renum_to_global(n);
+        renum_to_global.resize(n);
 
         for (int i=0;i<cluster_to_ovr_subdomain0.size();i++){
           renum[cluster_to_ovr_subdomain0[i]]=i;
@@ -163,6 +168,15 @@ public:
         mytime[1] = MPI_Wtime() - time;
         MPI_Barrier(hmat.get_comm());
         time = MPI_Wtime();
+
+
+        // Timing
+        MPI_Reduce(&(mytime[0]), &(maxtime[0]), 2, MPI_DOUBLE, MPI_MAX, 0,this->comm);
+
+        infos["DDM_setup_one_level_max" ]= NbrToStr(maxtime[0]);
+        infos["DDM_facto_one_level_max" ]= NbrToStr(maxtime[1]);
+
+
         // delete [] _ipiv;
 // std::cout << "info : " << info <<std::endl;
 
@@ -175,12 +189,26 @@ public:
           snd[i].resize(intersections[i].size());
           rcv[i].resize(intersections[i].size());
         }
+    }
+
+    void build_coarse_space( Proto_HPDDM<LowRankMatrix,T>& hpddm_op, Matrix<T>& evp){
+
+        // Timing
+        MPI_Barrier(hmat.get_comm());
+        std::vector<double> mytime(3), maxtime(3);
+        double time = MPI_Wtime();
+
+
 
         // Local eigenvalue problem
-        int n_global= hmat_0.nb_cols();
-        int sizeWorld = hmat_0.get_sizeworld();
-        int rankWorld = hmat_0.get_rankworld();
+        int n_global= hmat.nb_cols();
+        int sizeWorld = hmat.get_sizeworld();
+        int rankWorld = hmat.get_rankworld();
+        if (rankWorld==0)
+            std::cout << evp << std::endl;
         int ldvl = n, ldvr = n, lwork=-1;
+        int lda=n;
+        int info;
         std::vector<T> work(n);
         std::vector<double> rwork(2*n);
         std::vector<T> w(n);
@@ -190,23 +218,17 @@ public:
         work.resize(lwork);
         HPDDM::Lapack<T>::geev( "N", "Vectors", &n, evp.data(), &lda, w.data(),nullptr , vl.data(), &ldvl, vr.data(), &ldvr, work.data(), &lwork, rwork.data(), &info );
 
+        // hpddm_op.solveEVP(evp.data());
+        // Z = hpddm_op.getVectors();
 
-        mytime[2] = MPI_Wtime() - time;
+        mytime[0] = MPI_Wtime() - time;
         MPI_Barrier(hmat.get_comm());
         time = MPI_Wtime();
 
-        // std::cout << w[2]<<std::endl;
-        // if (hmat_0.get_rankworld())
-        // if (rankWorld==1){
-        //     int select = 2;
-        //     for (int i=0;i<n;i++){
-        //         std::cout << vr[i+n*select] << " ";
-        //     }
-        // }
-        // std::cout << std::endl;
-        std::vector<int> perm1(hmat_0.nb_cols());
-        for (int i=0;i<hmat_0.nb_cols();i++){
-            perm1[hmat_0.get_permt(i)]=i;
+
+        std::vector<int> perm1(hmat.nb_cols());
+        for (int i=0;i<hmat.nb_cols();i++){
+            perm1[hmat.get_permt(i)]=i;
         }
 
         HPDDM::Option& opt = *HPDDM::Option::get();
@@ -215,8 +237,6 @@ public:
         // nevi = 2;
         int mynev = nevi;
         evi.resize(nevi*n,0);
-        // fill_n(evi.data(),n_inside,1);
-        // std::copy_n(vr.data()+(n-n_inside)*n,nevi*n-(n-n_ins),evi.data());
         for (int i=0;i<nevi;i++){
             std::copy_n(vr.data()+(n-n_inside)*n+n*i,n_inside,evi.data()+i*n);
         }
@@ -234,14 +254,15 @@ public:
                 for (int j=0;j<nevi;j++){
                     // std::copy_n(vr.data()+j*n,n_inside,buffer.data()+j*n_global+hmat_0.get_local_offset());
                     for (int k=0;k<n;k++){
-                        buffer[nevi*perm1[renum_to_global[k]]+j]=evi[j*n+k]; // On décale du noyau
+                        buffer[nevi*perm1[renum_to_global[k]]+j]=evi[j*n+k];
+                        // buffer[nevi*perm1[renum_to_global[k]]+j]=Z[j][k];
                     }
                 }
             }
 
             MPI_Bcast(&nevi,1,MPI_INT,i,comm);
             MPI_Bcast(buffer.data(),nevi*n_global,wrapper_mpi<T>::mpi_type(),i,comm);
-            hmat_0.mymvprod_local(buffer.data(),AZ.data(),nevi);
+            hmat.mymvprod_local(buffer.data(),AZ.data(),nevi);
             // if (rankWorld==0){
             //     std::cout << i << std::endl;
             //     for (int j=0;j<buffer.size();j++){
@@ -263,6 +284,7 @@ public:
                     int coord_E_i = nevi*i+j;
                     int coord_E_j = nevi*rankWorld+jj;
                     E[coord_E_i+coord_E_j*nevi*sizeWorld]=std::inner_product(evi.data()+jj*n,evi.data()+jj*n+n,vec_ovr.data(),T(0),std::plus<T >(), [](T u,T v){return u*std::conj(v);});
+                    // E[coord_E_i+coord_E_j*nevi*sizeWorld]=std::inner_product(Z[jj],Z[jj+1],vec_ovr.data(),T(0),std::plus<T >(), [](T u,T v){return u*std::conj(v);});
                 }
 
             }
@@ -272,10 +294,10 @@ public:
         else
             MPI_Reduce(E.data(), E.data(), E.size(), wrapper_mpi<T>::mpi_type(),MPI_SUM, 0,comm);
 
-        // if (rankWorld==0){
-        //     std::cout << E << std::endl;
-        // }
-        mytime[3] = MPI_Wtime() - time;
+        if (rankWorld==0){
+            std::cout << E << std::endl;
+        }
+        mytime[1] = MPI_Wtime() - time;
         MPI_Barrier(hmat.get_comm());
         time = MPI_Wtime();
 
@@ -283,18 +305,16 @@ public:
         _ipiv_coarse.resize(E.size());
 
         HPDDM::Lapack<T>::getrf(&n_coarse,&n_coarse,E.data(),&n_coarse,_ipiv_coarse.data(),&info);
-        mytime[4] = MPI_Wtime() - time;
+        mytime[2] = MPI_Wtime() - time;
         MPI_Barrier(hmat.get_comm());
         time = MPI_Wtime();
 
         // Timing
-        MPI_Reduce(&(mytime[0]), &(maxtime[0]), 5, MPI_DOUBLE, MPI_MAX, 0,this->comm);
+        MPI_Reduce(&(mytime[0]), &(maxtime[0]), 3, MPI_DOUBLE, MPI_MAX, 0,this->comm);
 
-        infos["DDM_setup_one_level_max" ]= NbrToStr(maxtime[0]);
-        infos["DDM_facto_one_level_max" ]= NbrToStr(maxtime[1]);
-        infos["DDM_geev_max" ]= NbrToStr(maxtime[2]);
-        infos["DDM_setup_ZtAZ_max" ]= NbrToStr(maxtime[3]);
-        infos["DDM_facto_ZtAZ_max" ]= NbrToStr(maxtime[4]);
+        infos["DDM_geev_max" ]= NbrToStr(maxtime[0]);
+        infos["DDM_setup_ZtAZ_max" ]= NbrToStr(maxtime[1]);
+        infos["DDM_facto_ZtAZ_max" ]= NbrToStr(maxtime[2]);
     }
 
 
@@ -359,6 +379,7 @@ public:
 
         for (int i=0;i<nevi;i++){
             zti[i]=std::inner_product(evi.begin()+i*n,evi.begin()+i*n+n,vec_ovr.begin(),T(0),std::plus<T>(), [](T u,T v){return u*std::conj(v);});
+            // zti[i]=std::inner_product(Z[i],Z[i+1],vec_ovr.begin(),T(0),std::plus<T>(), [](T u,T v){return u*std::conj(v);});
         }
         std::vector<T> zt(nevi*sizeWorld,0);
         // if (rankWorld==0){
@@ -383,6 +404,7 @@ public:
         for (int i=0;i<nevi;i++){
 
             std::transform(vec_ovr.begin(),vec_ovr.begin()+n,evi.begin()+n*i,vec_ovr.begin(),[&i,&zti](T u, T v){return u+v*zti[i];});
+            // std::transform(vec_ovr.begin(),vec_ovr.begin()+n,Z[i],vec_ovr.begin(),[&i,&zti](T u, T v){return u+v*zti[i];});
         }
 
         timing_Q += MPI_Wtime() - time;
@@ -473,6 +495,10 @@ public:
         // std::transform(out_Q.begin(),out_Q.begin()+n_inside,ptm1p.begin(),out,std::plus<T>());
     }
 
+    void init_hpddm(Proto_HPDDM<LowRankMatrix,T>& hpddm_op){
+        bool sym=false;
+        hpddm_op.initialize(n, sym, nullptr, neighbors, intersections);
+    }
     int get_n() const {return n;}
     int get_n_inside() const {return n_inside;}
     std::map<std::string, std::string>& get_infos() const{return infos;}
