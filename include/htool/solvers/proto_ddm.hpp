@@ -199,25 +199,26 @@ public:
         double time = MPI_Wtime();
 
 
-
-        // Local eigenvalue problem
         int n_global= hmat.nb_cols();
         int sizeWorld = hmat.get_sizeworld();
         int rankWorld = hmat.get_rankworld();
+        int info;
+
+
+        // Local eigenvalue problem
         int ldvl = n, ldvr = n, lwork=-1;
         int lda=n;
-        int info;
-        // std::vector<T> work(n);
-        // std::vector<double> rwork(2*n);
-        // std::vector<T> w(n);
-        // std::vector<T> vl(n*n), vr(n*n);
-        // HPDDM::Lapack<T>::geev( "N", "Vectors", &n, evp.data(), &lda, w.data(),nullptr , vl.data(), &ldvl, vr.data(), &ldvr, work.data(), &lwork, rwork.data(), &info );
-        // lwork = (int)std::real(work[0]);
-        // work.resize(lwork);
-        // HPDDM::Lapack<T>::geev( "N", "Vectors", &n, evp.data(), &lda, w.data(),nullptr , vl.data(), &ldvl, vr.data(), &ldvr, work.data(), &lwork, rwork.data(), &info );
+        std::vector<T> work(n);
+        std::vector<double> rwork(2*n);
+        std::vector<T> w(n);
+        std::vector<T> vl(n*n), vr(n*n);
+        HPDDM::Lapack<T>::geev( "N", "Vectors", &n, evp.data(), &lda, w.data(),nullptr , vl.data(), &ldvl, vr.data(), &ldvr, work.data(), &lwork, rwork.data(), &info );
+        lwork = (int)std::real(work[0]);
+        work.resize(lwork);
+        HPDDM::Lapack<T>::geev( "N", "Vectors", &n, evp.data(), &lda, w.data(),nullptr , vl.data(), &ldvl, vr.data(), &ldvr, work.data(), &lwork, rwork.data(), &info );
 
-        hpddm_op.solveEVP(evp.data());
-        Z = hpddm_op.getVectors();
+        // hpddm_op.solveEVP(evp.data());
+        // Z = hpddm_op.getVectors();
 
         mytime[0] = MPI_Wtime() - time;
         MPI_Barrier(hmat.get_comm());
@@ -236,10 +237,11 @@ public:
         int mynev = nevi;
         evi.resize(nevi*n,0);
         for (int i=0;i<nevi;i++){
-            std::copy_n(Z[i],n_inside,evi.data()+i*n);
+            // std::copy_n(Z[i],n_inside,evi.data()+i*n);
+            std::copy_n(vr.data()+(n-n_inside)*n+n*i,n_inside,evi.data()+i*n);
         }
-        if (rankWorld==0)
-            std::cout << evi << std::endl;
+        // if (rankWorld==0)
+        //     std::cout << evi << std::endl;
 
         std::vector<T> buffer(nevi*n_global,0);
         std::vector<T> AZ(nevi*n_inside,0);
@@ -293,9 +295,9 @@ public:
         else
             MPI_Reduce(E.data(), E.data(), E.size(), wrapper_mpi<T>::mpi_type(),MPI_SUM, 0,comm);
 
-        if (rankWorld==0){
-            std::cout << E << std::endl;
-        }
+        // if (rankWorld==0){
+        //     std::cout << E << std::endl;
+        // }
         mytime[1] = MPI_Wtime() - time;
         MPI_Barrier(hmat.get_comm());
         time = MPI_Wtime();
