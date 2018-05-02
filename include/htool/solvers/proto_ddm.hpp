@@ -217,8 +217,23 @@ public:
         work.resize(lwork);
         HPDDM::Lapack<T>::geev( "N", "Vectors", &n, evp.data(), &lda, w.data(),nullptr , vl.data(), &ldvl, vr.data(), &ldvr, work.data(), &lwork, rwork.data(), &info );
 
-        // hpddm_op.solveEVP(evp.data());
-        // Z = hpddm_op.getVectors();
+        std::vector<int> index(n, 0);
+        for (int i = 0 ; i != index.size() ; i++) {
+            index[i] = i;
+        }
+        std::sort(index.begin(), index.end(),
+            [&](const int& a, const int& b) {
+                return (std::abs(w[a]) > std::abs(w[b]));
+            }
+        );
+        // if (rankWorld==0){
+        //     std::cout << index << std::endl;
+        //     std::cout << w << std::endl;
+        // }
+
+        hpddm_op.solveEVP(evp.data());
+        Z = hpddm_op.getVectors();
+
 
         mytime[0] = MPI_Wtime() - time;
         MPI_Barrier(hmat.get_comm());
@@ -232,16 +247,30 @@ public:
 
         HPDDM::Option& opt = *HPDDM::Option::get();
         nevi = opt.val("geneo_nu",2);
+
+        // std::vector<double> norms(nevi,0);
+        // for (int i=0;i<nevi;i++){
+        //     for (int j=0;j<n;j++){
+        //         norms[i]+= std::abs(Z[i][j]*std::conj(Z[i][j]));
+        //     }
+        // }
 // std::cout << nevi << std::endl;
         // nevi = 2;
         int mynev = nevi;
         evi.resize(nevi*n,0);
         for (int i=0;i<nevi;i++){
-            // std::copy_n(Z[i],n_inside,evi.data()+i*n);
-            std::copy_n(vr.data()+(n-n_inside)*n+n*i,n_inside,evi.data()+i*n);
+            std::copy_n(Z[i],n_inside,evi.data()+i*n);
+            // std::copy_n(vr.data()+index[i]*n,n_inside,evi.data()+i*n);
         }
-        // if (rankWorld==0)
-        //     std::cout << evi << std::endl;
+        // for (int i=0;i<nevi;i++){
+        //     for (int j=0;j<n;j++){
+        //         evi[i*n+j]/= norms[i];
+        //     }
+        // }
+
+
+        if (rankWorld==0)
+            std::cout << evi << std::endl;
 
         std::vector<T> buffer(nevi*n_global,0);
         std::vector<T> AZ(nevi*n_inside,0);
