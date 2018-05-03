@@ -206,26 +206,27 @@ public:
 
 
         // Local eigenvalue problem
-        int ldvl = n, ldvr = n, lwork=-1;
-        int lda=n;
-        std::vector<T> work(n);
-        std::vector<double> rwork(2*n);
-        std::vector<T> w(n);
-        std::vector<T> vl(n*n), vr(n*n);
-        HPDDM::Lapack<T>::geev( "N", "Vectors", &n, evp.data(), &lda, w.data(),nullptr , vl.data(), &ldvl, vr.data(), &ldvr, work.data(), &lwork, rwork.data(), &info );
-        lwork = (int)std::real(work[0]);
-        work.resize(lwork);
-        HPDDM::Lapack<T>::geev( "N", "Vectors", &n, evp.data(), &lda, w.data(),nullptr , vl.data(), &ldvl, vr.data(), &ldvr, work.data(), &lwork, rwork.data(), &info );
+        // int ldvl = n, ldvr = n, lwork=-1;
+        // int lda=n;
+        // std::vector<T> work(n);
+        // std::vector<double> rwork(2*n);
+        // std::vector<T> w(n);
+        // std::vector<T> vl(n*n), vr(n*n);
+        // HPDDM::Lapack<T>::geev( "N", "Vectors", &n, evp.data(), &lda, w.data(),nullptr , vl.data(), &ldvl, vr.data(), &ldvr, work.data(), &lwork, rwork.data(), &info );
+        // lwork = (int)std::real(work[0]);
+        // work.resize(lwork);
+        // HPDDM::Lapack<T>::geev( "N", "Vectors", &n, evp.data(), &lda, w.data(),nullptr , vl.data(), &ldvl, vr.data(), &ldvr, work.data(), &lwork, rwork.data(), &info );
+        // std::vector<int> index(n, 0);
+        // for (int i = 0 ; i != index.size() ; i++) {
+        //     index[i] = i;
+        // }
+        // std::sort(index.begin(), index.end(),
+        //     [&](const int& a, const int& b) {
+        //         return (std::abs(w[a]) > std::abs(w[b]));
+        //     }
+        // );
 
-        std::vector<int> index(n, 0);
-        for (int i = 0 ; i != index.size() ; i++) {
-            index[i] = i;
-        }
-        std::sort(index.begin(), index.end(),
-            [&](const int& a, const int& b) {
-                return (std::abs(w[a]) > std::abs(w[b]));
-            }
-        );
+
         // if (rankWorld==0){
         //     std::cout << index << std::endl;
         //     std::cout << w << std::endl;
@@ -267,10 +268,43 @@ public:
         //         evi[i*n+j]/= norms[i];
         //     }
         // }
+        // if (rankWorld==0){
+        //     for (int i=0;i<nevi;i++){
+        //         for (int j=0;j<n;j++){
+        //             // std::cout << Z[i][j]<<" ";
+        //             std::cout << vr[index[i]*n+j]<<" ";
+        //         }
+        //         std::cout << std::endl;
+        //     }
+        // }
 
 
-        if (rankWorld==0)
-            std::cout << evi << std::endl;
+        // for (int i=0;i<nevi;i++){
+        //     double norm_i = 0;
+        //     for (int j=0;j<n;j++){
+        //         norm_i += std::sqrt(std::abs(evi[i*n+j]*std::conj(evi[i*n+j])));
+        //     }
+        //     for (int j=0;j<n;j++){
+        //         evi[i*n+j] /= norm_i;
+        //     }
+        // }
+
+        // for (int i=0;i<sizeWorld;i++){
+        //     MPI_Barrier(comm);
+        //     if (rankWorld==i){
+        //         std::cout << "proc "<<i<< std::endl;
+        //         std::cout << evi << std::endl;
+        //     }
+        //     MPI_Barrier(comm);
+        // }
+        // MPI_Barrier(comm);
+
+        // if (rankWorld==0){
+        //     for (int i=0;i<nevi;i++){
+        //         std::cout << w[index[i]]<<" ";
+        //     }
+        //     std::cout << std::endl;
+        // }
 
         std::vector<T> buffer(nevi*n_global,0);
         std::vector<T> AZ(nevi*n_inside,0);
@@ -288,11 +322,24 @@ public:
                         // buffer[nevi*perm1[renum_to_global[k]]+j]=Z[j][k];
                     }
                 }
+                // std::cout << "proc "<<rankWorld<< std::endl;
+                // std::cout << buffer << std::endl;
             }
 
+
+
+            // MPI_Barrier(comm);
+            // if (rankWorld==0){
+            //     std::cout << "avant "<< std::endl;
+            //     std::cout << buffer << std::endl;
+            // }
             MPI_Bcast(&nevi,1,MPI_INT,i,comm);
             MPI_Bcast(buffer.data(),nevi*n_global,wrapper_mpi<T>::mpi_type(),i,comm);
             hmat.mymvprod_local(buffer.data(),AZ.data(),nevi);
+            // if (rankWorld==0){
+            //     std::cout << "après "<< std::endl;
+            //     std::cout << buffer << std::endl;
+            // }
             // if (rankWorld==0){
             //     std::cout << i << std::endl;
             //     for (int j=0;j<buffer.size();j++){
@@ -325,7 +372,13 @@ public:
             MPI_Reduce(E.data(), E.data(), E.size(), wrapper_mpi<T>::mpi_type(),MPI_SUM, 0,comm);
 
         // if (rankWorld==0){
-        //     std::cout << E << std::endl;
+        //     std::cout << "size E :"<<E.size() << std::endl;
+        //     for (int i=0;i<nevi*sizeWorld;i++){
+        //         for (int j=0;j<nevi*sizeWorld;j++){
+        //             std::cout << E[i+j*nevi*sizeWorld] << " ";
+        //         }
+        //         std::cout << std::endl;
+        //     }
         // }
         mytime[1] = MPI_Wtime() - time;
         MPI_Barrier(hmat.get_comm());
