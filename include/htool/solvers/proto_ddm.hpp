@@ -241,13 +241,27 @@ public:
         time = MPI_Wtime();
 
 
-        std::vector<int> perm1(hmat.nb_cols());
-        for (int i=0;i<hmat.nb_cols();i++){
-            perm1[hmat.get_permt(i)]=i;
-        }
+        // std::vector<int> perm1(hmat.nb_cols());
+        // for (int i=0;i<hmat.nb_cols();i++){
+        //     perm1[hmat.get_permt(i)]=i;
+        // }
 
         HPDDM::Option& opt = *HPDDM::Option::get();
         nevi = opt.val("geneo_nu",2);
+
+        // Allgather
+        std::vector<int> recvcounts(sizeWorld);
+
+        std::vector<int>  displs(sizeWorld);
+        MPI_Allgather(&nevi,1,MPI_INT,recvcounts.data(),1,MPI_INT,comm);
+
+        displs[0] = 0;
+
+        for (int i=1; i<sizeWorld; i++) {
+            displs[i] = displs[i-1] + recvcounts[i-1];
+        }
+
+
 
         // std::vector<double> norms(nevi,0);
         // for (int i=0;i<nevi;i++){
@@ -257,7 +271,9 @@ public:
         // }
 // std::cout << nevi << std::endl;
         // nevi = 2;
-        int mynev = nevi;
+
+        int size_E   =  std::accumulate(recvcounts.begin(),recvcounts.end(),0);
+        int nevi_max = *std::max_element(recvcounts.begin(),recvcounts.end());
         evi.resize(nevi*n,0);
         for (int i=0;i<nevi;i++){
             std::copy_n(Z[i],n_inside,evi.data()+i*n);
@@ -306,25 +322,31 @@ public:
         //     std::cout << std::endl;
         // }
 
-        std::vector<T> buffer(nevi*n_global,0);
-        std::vector<T> AZ(nevi*n_inside,0);
-        E.resize(nevi*sizeWorld*sizeWorld*nevi,0);
+        std::vector<T> buffer(nevi_max*n_global,0);
+        std::vector<T> AZ(nevi_max*n_inside,0);
+        E.resize(size_E*size_E,0);
 
         for (int i=0;i<sizeWorld;i++){
-            std::fill_n(buffer.data(),buffer.size(),0);
-            std::fill_n(AZ.data(),AZ.size(),0);
+            std::fill_n(buffer.data(),recvcounts[i]*n_global,0);
+            std::fill_n(AZ.data(),recvcounts[i]*n_inside,0);
 
-            if (i==rankWorld){
-                for (int j=0;j<nevi;j++){
-                    // std::copy_n(vr.data()+j*n,n_inside,buffer.data()+j*n_global+hmat_0.get_local_offset());
-                    for (int k=0;k<n;k++){
-                        buffer[nevi*perm1[renum_to_global[k]]+j]=evi[j*n+k];
-                        // buffer[nevi*perm1[renum_to_global[k]]+j]=Z[j][k];
-                    }
-                }
-                // std::cout << "proc "<<rankWorld<< std::endl;
-                // std::cout << buffer << std::endl;
+            for (int j=0;j<recvcounts[i];j++){
+                MPI_Bcast(rankWorld==i ? evi.data()+j*n : buffer.data()+j*n_global+hmat.get_MasterOffset_t(i).first,hmat.get_MasterOffset_t(i).second,wrapper_mpi<T>::mpi_type(),i,comm);
+
+                if (rankWorld==i)
+                    std::copy_n(evi.data()+j*n,n_inside,buffer.data()+j*n_global+hmat.get_local_offset());
             }
+            // if (i==rankWorld){
+            //     for (int j=0;j<nevi;j++){
+            //         // std::copy_n(vr.data()+j*n,n_inside,buffer.data()+j*n_global+hmat_0.get_local_offset());
+            //         for (int k=0;k<n;k++){
+            //             buffer[nevi*perm1[renum_to_global[k]]+j]=evi[j*n+k];
+            //             // buffer[nevi*perm1[renum_to_global[k]]+j]=Z[j][k];
+            //         }
+            //     }
+            //     // std::cout << "proc "<<rankWorld<< std::endl;
+            //     // std::cout << buffer << std::endl;
+            // }
 
 
 
@@ -333,9 +355,9 @@ public:
             //     std::cout << "avant "<< std::endl;
             //     std::cout << buffer << std::endl;
             // }
-            MPI_Bcast(&nevi,1,MPI_INT,i,comm);
-            MPI_Bcast(buffer.data(),nevi*n_global,wrapper_mpi<T>::mpi_type(),i,comm);
-            hmat.mymvprod_local(buffer.data(),AZ.data(),nevi);
+
+            // MPI_Bcast(buffer.data(),nevi*n_global,wrapper_mpi<T>::mpi_type(),i,comm);
+            hmat.mymvprod_local(buffer.data(),AZ.data(),recvcounts[i]);
             // if (rankWorld==0){
             //     std::cout << "après "<< std::endl;
             //     std::cout << buffer << std::endl;
@@ -350,17 +372,18 @@ public:
             // for (int j=0;j<n_inside;j++){
             //     std::copy_n(buffer.data()+(hmat_0.get_local_offset()+j)*nevi,nevi,AZ.data()+j*nevi);
             // }
-            for (int j=0;j<nevi;j++){
+            for (int j=0;j<recvcounts[i];j++){
                 // std::fill_n(vec_ovr.data(),vec_ovr.size(),0);
                 // std::copy_n(AZ.data()+j*n_inside+hmat_0.get_local_offset(),n_inside,vec_ovr.data());
                 for (int k=0;k<n_inside;k++){
-                    vec_ovr[k]=AZ[j+nevi*k];
+                    vec_ovr[k]=AZ[j+recvcounts[i]*k];
                 }
-                synchronize(true);
-                for (int jj=0;jj<mynev;jj++){
-                    int coord_E_i = nevi*i+j;
-                    int coord_E_j = nevi*rankWorld+jj;
-                    E[coord_E_i+coord_E_j*nevi*sizeWorld]=std::inner_product(evi.data()+jj*n,evi.data()+jj*n+n,vec_ovr.data(),T(0),std::plus<T >(), [](T u,T v){return u*std::conj(v);});
+                // Parce que partition de l'unité...
+                // synchronize(true);
+                for (int jj=0;jj<nevi;jj++){
+                    int coord_E_i = displs[i]+j;
+                    int coord_E_j = displs[rankWorld]+jj;
+                    E[coord_E_i+coord_E_j*size_E]=std::inner_product(evi.data()+jj*n,evi.data()+jj*n+n_inside,vec_ovr.data(),T(0),std::plus<T >(), [](T u,T v){return u*std::conj(v);});
                     // E[coord_E_i+coord_E_j*nevi*sizeWorld]=std::inner_product(Z[jj],Z[jj+1],vec_ovr.data(),T(0),std::plus<T >(), [](T u,T v){return u*std::conj(v);});
                 }
 
@@ -384,8 +407,8 @@ public:
         MPI_Barrier(hmat.get_comm());
         time = MPI_Wtime();
 
-        int n_coarse = nevi*sizeWorld;
-        _ipiv_coarse.resize(E.size());
+        int n_coarse = size_E;
+        _ipiv_coarse.resize(n_coarse);
 
         HPDDM::Lapack<T>::getrf(&n_coarse,&n_coarse,E.data(),&n_coarse,_ipiv_coarse.data(),&info);
         mytime[2] = MPI_Wtime() - time;
