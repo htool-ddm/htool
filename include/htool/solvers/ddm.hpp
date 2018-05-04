@@ -133,29 +133,29 @@ public:
         const std::vector<SubMatrix<T>*>& MyDiagNearFieldMats= hpddm_op.HA.get_MyDiagNearFieldMats();
 
         // Internal dense blocks
-        for (int i=0;i<MyDiagNearFieldMats.size();i++){
-          const SubMatrix<T>& submat = *(MyDiagNearFieldMats[i]);
+        for (int l=0;l<MyDiagNearFieldMats.size();l++){
+          const SubMatrix<T>& submat = *(MyDiagNearFieldMats[l]);
           int local_nr = submat.nb_rows();
           int local_nc = submat.nb_cols();
           int offset_i = submat.get_offset_i()-hpddm_op.HA.get_local_offset();;
           int offset_j = submat.get_offset_j()-hpddm_op.HA.get_local_offset();
-          for (int i=0;i<local_nc;i++){
-            std::copy_n(&(submat(0,i)),local_nr,&mat_loc[offset_i+(offset_j+i)*n]);
+          for (int k=0;k<local_nc;k++){
+            std::copy_n(&(submat(0,k)),local_nr,&mat_loc[offset_i+(offset_j+k)*n]);
           }
         }
 
         // Internal compressed block
         Matrix<T> FarFielBlock(n,n);
-        for (int i=0;i<MyDiagFarFieldMats.size();i++){
-          const LowRankMatrix<T>& lmat = *(MyDiagFarFieldMats[i]);
+        for (int l=0;l<MyDiagFarFieldMats.size();l++){
+          const LowRankMatrix<T>& lmat = *(MyDiagFarFieldMats[l]);
           int local_nr = lmat.nb_rows();
           int local_nc = lmat.nb_cols();
           int offset_i = lmat.get_offset_i()-hpddm_op.HA.get_local_offset();
           int offset_j = lmat.get_offset_j()-hpddm_op.HA.get_local_offset();;
           FarFielBlock.resize(local_nr,local_nc);
           lmat.get_whole_matrix(&(FarFielBlock(0,0)));
-          for (int i=0;i<local_nc;i++){
-            std::copy_n(&(FarFielBlock(0,i)),local_nr,&mat_loc[offset_i+(offset_j+i)*n]);
+          for (int k=0;k<local_nc;k++){
+            std::copy_n(&(FarFielBlock(0,k)),local_nr,&mat_loc[offset_i+(offset_j+k)*n]);
           }
         }
 
