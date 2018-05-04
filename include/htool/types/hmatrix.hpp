@@ -1215,12 +1215,10 @@ Matrix<T> HMatrix<LowRankMatrix,T >::to_dense() const{
     // Internal dense blocks
     for (int l=0;l<MyNearFieldMats.size();l++){
       const SubMatrix<T>& submat = *(MyNearFieldMats[l]);
-      std::cout << submat << std::endl;
       int local_nr = submat.nb_rows();
       int local_nc = submat.nb_cols();
       int offset_i = submat.get_offset_i();
       int offset_j = submat.get_offset_j();
-      std::cout << offset_i << " "<<offset_j<<std::endl<<std::endl;
       for (int k=0;k<local_nc;k++){
         std::copy_n(&(submat(0,k)),local_nr,Dense.data()+offset_i+(offset_j+k)*local_size);
       }
