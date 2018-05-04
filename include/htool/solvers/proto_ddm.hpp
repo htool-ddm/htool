@@ -231,10 +231,17 @@ public:
 
         HPDDM::Option& opt = *HPDDM::Option::get();
         nevi=0;
-        // nevi = opt.val("geneo_nu",2);
-        while (std::abs(w[index[nevi]])>opt.val("geneo_threshold",1e30) && nevi< index.size()){
-            nevi++;}
+        double threshold = opt.val("geneo_threshold",-1.0);
+        if (threshold > 0.0){
+            while (std::abs(w[index[nevi]])>threshold && nevi< index.size()){
+                nevi++;}
+
+        }
+        else {
+            nevi = opt.val("geneo_nu",2);
+        }
         evi.resize(nevi*n);
+
 
         // if (rankWorld==0){
         //     std::cout << index << std::endl;
