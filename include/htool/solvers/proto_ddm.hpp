@@ -209,60 +209,67 @@ public:
 
 
         // Local eigenvalue problem
-        int ldvl = n, ldvr = n, lwork=-1;
-        int lda=n;
-        std::vector<T> work(n);
-        std::vector<double> rwork(2*n);
-        std::vector<T> w(n);
-        std::vector<T> vl(n*n), vr(n*n);
-        HPDDM::Lapack<T>::geev( "N", "Vectors", &n, evp.data(), &lda, w.data(),nullptr , vl.data(), &ldvl, vr.data(), &ldvr, work.data(), &lwork, rwork.data(), &info );
-        lwork = (int)std::real(work[0]);
-        work.resize(lwork);
-        HPDDM::Lapack<T>::geev( "N", "Vectors", &n, evp.data(), &lda, w.data(),nullptr , vl.data(), &ldvl, vr.data(), &ldvr, work.data(), &lwork, rwork.data(), &info );
-        std::vector<int> index(n, 0);
-        for (int i = 0 ; i != index.size() ; i++) {
-            index[i] = i;
-        }
-        std::sort(index.begin(), index.end(),
-            [&](const int& a, const int& b) {
-                return (std::abs(w[a]) > std::abs(w[b]));
-            }
-        );
-
-        HPDDM::Option& opt = *HPDDM::Option::get();
-        nevi=0;
-        double threshold = opt.val("geneo_threshold",-1.0);
-        if (threshold > 0.0){
-            while (std::abs(w[index[nevi]])>threshold && nevi< index.size()){
-                nevi++;}
-
-        }
-        else {
-            nevi = opt.val("geneo_nu",2);
-        }
-        evi.resize(nevi*n);
-
-
-        // if (rankWorld==0){
-        //     std::cout << index << std::endl;
-        //     std::cout << w << std::endl;
+        // int ldvl = n, ldvr = n, lwork=-1;
+        // int lda=n;
+        // std::vector<T> work(n);
+        // std::vector<double> rwork(2*n);
+        // std::vector<T> w(n);
+        // std::vector<T> vl(n*n), vr(n*n);
+        // HPDDM::Lapack<T>::geev( "N", "Vectors", &n, evp.data(), &lda, w.data(),nullptr , vl.data(), &ldvl, vr.data(), &ldvr, work.data(), &lwork, rwork.data(), &info );
+        // lwork = (int)std::real(work[0]);
+        // work.resize(lwork);
+        // HPDDM::Lapack<T>::geev( "N", "Vectors", &n, evp.data(), &lda, w.data(),nullptr , vl.data(), &ldvl, vr.data(), &ldvr, work.data(), &lwork, rwork.data(), &info );
+        // std::vector<int> index(n, 0);
+        // for (int i = 0 ; i != index.size() ; i++) {
+        //     index[i] = i;
         // }
-
-        // hpddm_op.solveEVP(evp.data());
-        // Z = hpddm_op.getVectors();
+        // std::sort(index.begin(), index.end(),
+        //     [&](const int& a, const int& b) {
+        //         return (std::abs(w[a]) > std::abs(w[b]));
+        //     }
+        // );
+        //
+        // HPDDM::Option& opt = *HPDDM::Option::get();
+        // nevi=0;
+        // double threshold = opt.val("geneo_threshold",-1.0);
+        // if (threshold > 0.0){
+        //     while (std::abs(w[index[nevi]])>threshold && nevi< index.size()){
+        //         nevi++;}
+        //
+        // }
+        // else {
+        //     nevi = opt.val("geneo_nu",2);
+        // }
+        // evi.resize(nevi*n);
+        //
+        //
+        // for (int i=0;i<sizeWorld;i++){
+        //     MPI_Barrier(comm);
+        //     if (rankWorld==i){
+        //         std::cout << "proc "<<i<< std::endl;
+        //         for (int i =0;i<nevi;i++){
+        //             std::cout << w[index[i]]<<" ";
+        //         }
+        //         std::cout << std::endl;
+        //     }
+        //     MPI_Barrier(comm);
+        // }
+        // MPI_Barrier(comm);
+        hpddm_op.solveEVP(evp.data());
+        Z = hpddm_op.getVectors();
+        HPDDM::Option& opt = *HPDDM::Option::get();
+        nevi = opt.val("geneo_nu",2);
+        // std::vector<double> norms(nevi,0);
+        // for (int i=0;i<nevi;i++){
+        //     for (int j=0;j<n;j++){
+        //         norms[i]+= std::abs(Z[i][j]*std::conj(Z[i][j]));
+        //     }
+        // }
 
 
         mytime[0] = MPI_Wtime() - time;
         MPI_Barrier(hmat.get_comm());
         time = MPI_Wtime();
-
-
-        // std::vector<int> perm1(hmat.nb_cols());
-        // for (int i=0;i<hmat.nb_cols();i++){
-        //     perm1[hmat.get_permt(i)]=i;
-        // }
-
-
 
 
         // Allgather
@@ -274,14 +281,9 @@ public:
             displs[i] = displs[i-1] + recvcounts[i-1];
         }
 
-        std::cout << recvcounts << std::endl;
+        // std::cout << recvcounts << std::endl;
 
-        // std::vector<double> norms(nevi,0);
-        // for (int i=0;i<nevi;i++){
-        //     for (int j=0;j<n;j++){
-        //         norms[i]+= std::abs(Z[i][j]*std::conj(Z[i][j]));
-        //     }
-        // }
+
 // std::cout << nevi << std::endl;
         // nevi = 2;
 
@@ -290,14 +292,15 @@ public:
         evi.resize(nevi*n,0);
         for (int i=0;i<nevi;i++){
             // std::fill_n(evi.data()+i*n,n_inside,rankWorld+1);
-            // std::copy_n(Z[i],n_inside,evi.data()+i*n);
-            std::copy_n(vr.data()+index[i]*n,n_inside,evi.data()+i*n);
+            std::copy_n(Z[i],n_inside,evi.data()+i*n);
+            // std::copy_n(vr.data()+index[i]*n,n_inside,evi.data()+i*n);
         }
-        // for (int i=0;i<nevi;i++){
-        //     for (int j=0;j<n;j++){
-        //         evi[i*n+j]/= norms[i];
+        // for (int i=0;i<n;i++){
+        //     for (int j=0;j<nevi;j++){
+        //         evi[i+j*nevi]/= std::sqrt(norms[j]);
         //     }
         // }
+
         // if (rankWorld==0){
         //     for (int i=0;i<nevi;i++){
         //         for (int j=0;j<n;j++){
