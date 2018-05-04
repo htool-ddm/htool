@@ -33,6 +33,9 @@ private:
     // Matrix<T>& evp;
     const HMatrix<LowRankMatrix,T>& hmat;
     const T* const* Z;
+    std::vector<int> recvcounts;
+    std::vector<int> displs;
+    int size_E;
 
 
     void synchronize(bool scaled){
@@ -71,7 +74,7 @@ public:
     const std::vector<int>&  ovr_subdomain_to_global0,
     const std::vector<int>& cluster_to_ovr_subdomain0,
     const std::vector<int>& neighbors0,
-    const std::vector<std::vector<int> >& intersections0):  n(ovr_subdomain_to_global0.size()), n_inside(cluster_to_ovr_subdomain0.size()), neighbors(neighbors0), vec_ovr(n),mat_loc(n*n), D(n), comm(hmat_0.get_comm()), _ipiv(n), hmat(hmat_0), timing_Q(0), timing_one_level(0) {
+    const std::vector<std::vector<int> >& intersections0):  n(ovr_subdomain_to_global0.size()), n_inside(cluster_to_ovr_subdomain0.size()), neighbors(neighbors0), vec_ovr(n),mat_loc(n*n), D(n), comm(hmat_0.get_comm()), _ipiv(n), hmat(hmat_0), timing_Q(0), timing_one_level(0), recvcounts(hmat_0.get_sizeworld()), displs(hmat_0.get_sizeworld()) {
 
         // Timing
         MPI_Barrier(hmat.get_comm());
@@ -206,34 +209,40 @@ public:
 
 
         // Local eigenvalue problem
-        // int ldvl = n, ldvr = n, lwork=-1;
-        // int lda=n;
-        // std::vector<T> work(n);
-        // std::vector<double> rwork(2*n);
-        // std::vector<T> w(n);
-        // std::vector<T> vl(n*n), vr(n*n);
-        // HPDDM::Lapack<T>::geev( "N", "Vectors", &n, evp.data(), &lda, w.data(),nullptr , vl.data(), &ldvl, vr.data(), &ldvr, work.data(), &lwork, rwork.data(), &info );
-        // lwork = (int)std::real(work[0]);
-        // work.resize(lwork);
-        // HPDDM::Lapack<T>::geev( "N", "Vectors", &n, evp.data(), &lda, w.data(),nullptr , vl.data(), &ldvl, vr.data(), &ldvr, work.data(), &lwork, rwork.data(), &info );
-        // std::vector<int> index(n, 0);
-        // for (int i = 0 ; i != index.size() ; i++) {
-        //     index[i] = i;
-        // }
-        // std::sort(index.begin(), index.end(),
-        //     [&](const int& a, const int& b) {
-        //         return (std::abs(w[a]) > std::abs(w[b]));
-        //     }
-        // );
+        int ldvl = n, ldvr = n, lwork=-1;
+        int lda=n;
+        std::vector<T> work(n);
+        std::vector<double> rwork(2*n);
+        std::vector<T> w(n);
+        std::vector<T> vl(n*n), vr(n*n);
+        HPDDM::Lapack<T>::geev( "N", "Vectors", &n, evp.data(), &lda, w.data(),nullptr , vl.data(), &ldvl, vr.data(), &ldvr, work.data(), &lwork, rwork.data(), &info );
+        lwork = (int)std::real(work[0]);
+        work.resize(lwork);
+        HPDDM::Lapack<T>::geev( "N", "Vectors", &n, evp.data(), &lda, w.data(),nullptr , vl.data(), &ldvl, vr.data(), &ldvr, work.data(), &lwork, rwork.data(), &info );
+        std::vector<int> index(n, 0);
+        for (int i = 0 ; i != index.size() ; i++) {
+            index[i] = i;
+        }
+        std::sort(index.begin(), index.end(),
+            [&](const int& a, const int& b) {
+                return (std::abs(w[a]) > std::abs(w[b]));
+            }
+        );
 
+        HPDDM::Option& opt = *HPDDM::Option::get();
+        nevi=0;
+        // nevi = opt.val("geneo_nu",2);
+        while (std::abs(w[index[nevi]])>opt.val("geneo_threshold",1e30) && nevi< index.size()){
+            nevi++;}
+        evi.resize(nevi*n);
 
         // if (rankWorld==0){
         //     std::cout << index << std::endl;
         //     std::cout << w << std::endl;
         // }
 
-        hpddm_op.solveEVP(evp.data());
-        Z = hpddm_op.getVectors();
+        // hpddm_op.solveEVP(evp.data());
+        // Z = hpddm_op.getVectors();
 
 
         mytime[0] = MPI_Wtime() - time;
@@ -246,13 +255,10 @@ public:
         //     perm1[hmat.get_permt(i)]=i;
         // }
 
-        HPDDM::Option& opt = *HPDDM::Option::get();
-        nevi = opt.val("geneo_nu",2);
+
+
 
         // Allgather
-        std::vector<int> recvcounts(sizeWorld);
-
-        std::vector<int>  displs(sizeWorld);
         MPI_Allgather(&nevi,1,MPI_INT,recvcounts.data(),1,MPI_INT,comm);
 
         displs[0] = 0;
@@ -261,7 +267,7 @@ public:
             displs[i] = displs[i-1] + recvcounts[i-1];
         }
 
-
+        std::cout << recvcounts << std::endl;
 
         // std::vector<double> norms(nevi,0);
         // for (int i=0;i<nevi;i++){
@@ -272,12 +278,13 @@ public:
 // std::cout << nevi << std::endl;
         // nevi = 2;
 
-        int size_E   =  std::accumulate(recvcounts.begin(),recvcounts.end(),0);
+        size_E   =  std::accumulate(recvcounts.begin(),recvcounts.end(),0);
         int nevi_max = *std::max_element(recvcounts.begin(),recvcounts.end());
         evi.resize(nevi*n,0);
         for (int i=0;i<nevi;i++){
-            std::copy_n(Z[i],n_inside,evi.data()+i*n);
-            // std::copy_n(vr.data()+index[i]*n,n_inside,evi.data()+i*n);
+            // std::fill_n(evi.data()+i*n,n_inside,rankWorld+1);
+            // std::copy_n(Z[i],n_inside,evi.data()+i*n);
+            std::copy_n(vr.data()+index[i]*n,n_inside,evi.data()+i*n);
         }
         // for (int i=0;i<nevi;i++){
         //     for (int j=0;j<n;j++){
@@ -322,20 +329,23 @@ public:
         //     std::cout << std::endl;
         // }
 
-        std::vector<T> buffer(nevi_max*n_global,0);
         std::vector<T> AZ(nevi_max*n_inside,0);
         E.resize(size_E*size_E,0);
 
         for (int i=0;i<sizeWorld;i++){
-            std::fill_n(buffer.data(),recvcounts[i]*n_global,0);
+            std::vector<T> buffer(hmat.get_MasterOffset_t(i).second*recvcounts[i],0);
             std::fill_n(AZ.data(),recvcounts[i]*n_inside,0);
 
-            for (int j=0;j<recvcounts[i];j++){
-                MPI_Bcast(rankWorld==i ? evi.data()+j*n : buffer.data()+j*n_global+hmat.get_MasterOffset_t(i).first,hmat.get_MasterOffset_t(i).second,wrapper_mpi<T>::mpi_type(),i,comm);
-
-                if (rankWorld==i)
-                    std::copy_n(evi.data()+j*n,n_inside,buffer.data()+j*n_global+hmat.get_local_offset());
+            if (rankWorld==i){
+                for (int j=0;j<recvcounts[i];j++){
+                    for (int k=0;k<n_inside;k++){
+                        buffer[recvcounts[i]*k+j]=evi[j*n+k];
+                    }
+                }
             }
+            MPI_Bcast(buffer.data(),hmat.get_MasterOffset_t(i).second*recvcounts[i],wrapper_mpi<T>::mpi_type(),i,comm);
+
+
             // if (i==rankWorld){
             //     for (int j=0;j<nevi;j++){
             //         // std::copy_n(vr.data()+j*n,n_inside,buffer.data()+j*n_global+hmat_0.get_local_offset());
@@ -352,12 +362,16 @@ public:
 
             // MPI_Barrier(comm);
             // if (rankWorld==0){
-            //     std::cout << "avant "<< std::endl;
+            //     // std::cout << "avant "<< std::endl;
             //     std::cout << buffer << std::endl;
             // }
 
             // MPI_Bcast(buffer.data(),nevi*n_global,wrapper_mpi<T>::mpi_type(),i,comm);
-            hmat.mymvprod_local(buffer.data(),AZ.data(),recvcounts[i]);
+            hmat.mvprod_subrhs(buffer.data(),AZ.data(),recvcounts[i],hmat.get_MasterOffset_t(i).first,hmat.get_MasterOffset_t(i).second);
+            // if (rankWorld==0){
+            //     std::cout << recvcounts[i]<< std::endl;
+            //     std::cout << AZ << std::endl;
+            // }
             // if (rankWorld==0){
             //     std::cout << "après "<< std::endl;
             //     std::cout << buffer << std::endl;
@@ -385,8 +399,8 @@ public:
                     int coord_E_j = displs[rankWorld]+jj;
                     E[coord_E_i+coord_E_j*size_E]=std::inner_product(evi.data()+jj*n,evi.data()+jj*n+n_inside,vec_ovr.data(),T(0),std::plus<T >(), [](T u,T v){return u*std::conj(v);});
                     // E[coord_E_i+coord_E_j*nevi*sizeWorld]=std::inner_product(Z[jj],Z[jj+1],vec_ovr.data(),T(0),std::plus<T >(), [](T u,T v){return u*std::conj(v);});
-                }
 
+                }
             }
         }
         if (rankWorld==0)
@@ -487,11 +501,11 @@ public:
             zti[i]=std::inner_product(evi.begin()+i*n,evi.begin()+i*n+n,vec_ovr.begin(),T(0),std::plus<T>(), [](T u,T v){return u*std::conj(v);});
             // zti[i]=std::inner_product(Z[i],Z[i+1],vec_ovr.begin(),T(0),std::plus<T>(), [](T u,T v){return u*std::conj(v);});
         }
-        std::vector<T> zt(nevi*sizeWorld,0);
+        std::vector<T> zt(size_E,0);
         // if (rankWorld==0){
         //     // std::cout << zt.size() <<" " << zti.size() << std::endl;
         // }
-        MPI_Gather(zti.data(),zti.size(),wrapper_mpi<T>::mpi_type(),zt.data(),zti.size(),wrapper_mpi<T>::mpi_type(),0,comm);
+        MPI_Gatherv(zti.data(),zti.size(),wrapper_mpi<T>::mpi_type(),zt.data(),recvcounts.data(),displs.data(),wrapper_mpi<T>::mpi_type(),0,comm);
 
         if (rankWorld==0){
             const char l='N';
@@ -504,7 +518,7 @@ public:
             HPDDM::Lapack<T>::getrs(&l,&zt_size,&nrhs,E.data(),&lda,_ipiv_coarse.data(),zt.data(),&ldb,&info);
         }
 
-        MPI_Scatter(zt.data(),zti.size(),wrapper_mpi<T>::mpi_type(),zti.data(),zti.size(),wrapper_mpi<T>::mpi_type(),0,comm);
+        MPI_Scatterv(zt.data(),recvcounts.data(),displs.data(),wrapper_mpi<T>::mpi_type(),zti.data(),zti.size(),wrapper_mpi<T>::mpi_type(),0,comm);
 
         std::fill_n(vec_ovr.data(),n,0);
         for (int i=0;i<nevi;i++){

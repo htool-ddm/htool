@@ -179,6 +179,7 @@ public:
 	void mvprod_global(const T* const in, T* const out,const int& mu=1) const;
 	void mvprod_local(const T* const in, T* const out, T* const work, const int& mu) const;
 	void mymvprod_local(const T* const in, T* const out, const int& mu) const;
+    void mvprod_subrhs(const T* const in, T* const out, const int& mu, const int& offset, const int& size) const;
 	std::vector<T> operator*( const std::vector<T>& x) const;
 
 	// Permutations
@@ -1065,6 +1066,50 @@ void HMatrix<LowRankMatrix,T >::mvprod_global(const T* const in, T* const out, c
 	// Timing
 	infos["nbr_mat_vec_prod"] = NbrToStr(1+StrToNbr<int>(infos["nbr_mat_vec_prod"]));
 	infos["total_time_mat_vec_prod"] = NbrToStr(MPI_Wtime()-time+StrToNbr<double>(infos["total_time_mat_vec_prod"]));
+}
+
+template< template<typename> class LowRankMatrix, typename T>
+void HMatrix<LowRankMatrix,T >::mvprod_subrhs(const T* const in, T* const out, const int& mu, const int& offset, const int& size) const{
+    std::fill(out,out+local_size*mu,0);
+
+	// Contribution champ lointain
+    #if _OPENMP
+    #pragma omp parallel
+    #endif
+    {
+        std::vector<T> temp(local_size*mu);
+        #if _OPENMP
+        #pragma omp for schedule(guided)
+        #endif
+    	for(int b=0; b<MyFarFieldMats.size(); b++){
+            const LowRankMatrix<T>&  M  = *(MyFarFieldMats[b]);
+            int offset_i     = M.get_offset_i();
+            int offset_j     = M.get_offset_j();
+
+            if (offset_j>=offset && offset_j<offset+size){// cas général pas fait (ou ça dépasse)
+        		M.add_mvprod_row_major(in+(offset_j-offset)*mu,temp.data()+(offset_i-local_offset)*mu,mu);
+            }
+    	}
+    	// Contribution champ proche
+        #if _OPENMP
+        #pragma omp for schedule(guided)
+        #endif
+    	for(int b=0; b<MyNearFieldMats.size(); b++){
+            const SubMatrix<T>&  M  = *(MyNearFieldMats[b]);
+            int offset_i     = M.get_offset_i();
+            int offset_j     = M.get_offset_j();
+
+            if (offset_j>=offset && offset_j<offset+size){
+    		    M.add_mvprod_row_major(in+(offset_j-offset)*mu,temp.data()+(offset_i-local_offset)*mu,mu);
+    		}
+    	}
+        #if _OPENMP
+        #pragma omp critical
+        #endif
+        std::transform (temp.begin(), temp.end(), out, out, std::plus<T>());
+
+    }
+
 }
 
 template< template<typename> class LowRankMatrix, typename T>
