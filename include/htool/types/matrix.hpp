@@ -362,7 +362,7 @@ public:
     //! ### Interface with blas gemm
     /*!
     */
-    void mvprod(const T* const in, T* const out, const int& mu) const{
+    void mvprod(const T* const in, T* const out, const int& mu=1) const{
         int nr = this->nr;
         int nc = this->nc;
         T alpha = 1;

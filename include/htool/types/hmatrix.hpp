@@ -189,6 +189,9 @@ public:
 	// local to global
  	void local_to_global(const T* const in, T* const out, const int& mu) const;
 
+    // Convert
+    Matrix<T> to_dense() const;
+
 
 };
 
@@ -1205,6 +1208,39 @@ double Frobenius_absolute_error(const HMatrix<LowRankMatrix,T>& B, const IMatrix
 	MPI_Allreduce(&myerr, &err, 1, MPI_DOUBLE, MPI_SUM, B.comm);
 
 	return std::sqrt(err);
+}
+template< template<typename> class LowRankMatrix, typename T >
+Matrix<T> HMatrix<LowRankMatrix,T >::to_dense() const{
+    Matrix<T> Dense(nr,nc);
+    // Internal dense blocks
+    for (int l=0;l<MyNearFieldMats.size();l++){
+      const SubMatrix<T>& submat = *(MyNearFieldMats[l]);
+      std::cout << submat << std::endl;
+      int local_nr = submat.nb_rows();
+      int local_nc = submat.nb_cols();
+      int offset_i = submat.get_offset_i();
+      int offset_j = submat.get_offset_j();
+      std::cout << offset_i << " "<<offset_j<<std::endl<<std::endl;
+      for (int k=0;k<local_nc;k++){
+        std::copy_n(&(submat(0,k)),local_nr,Dense.data()+offset_i+(offset_j+k)*local_size);
+      }
+    }
+
+    // Internal compressed block
+    Matrix<T> FarFielBlock(local_size,local_size);
+    for (int l=0;l<MyFarFieldMats.size();l++){
+      const LowRankMatrix<T>& lmat = *(MyFarFieldMats[l]);
+      int local_nr = lmat.nb_rows();
+      int local_nc = lmat.nb_cols();
+      int offset_i = lmat.get_offset_i();
+      int offset_j = lmat.get_offset_j();
+      FarFielBlock.resize(local_nr,local_nc);
+      lmat.get_whole_matrix(&(FarFielBlock(0,0)));
+      for (int k=0;k<local_nc;k++){
+        std::copy_n(&(FarFielBlock(0,k)),local_nr,Dense.data()+offset_i+(offset_j+k)*local_size);
+      }
+    }
+    return Dense;
 }
 
 } //namespace
