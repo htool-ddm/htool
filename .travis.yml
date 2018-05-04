@@ -41,8 +41,8 @@ matrix:
         - brew install openmpi
     - os: osx
       env:
-        - CXX_COMPILER=g++-7
-        - C_COMPILER=gcc-7
+        - CXX_COMPILER=g++-8
+        - C_COMPILER=gcc-8
       install:
         - brew install gcc
         - brew install openmpi
