@@ -208,8 +208,8 @@ void HMatrix<LowRankMatrix, T >::build(IMatrix<T>& mat, const std::vector<R3>& x
 
 	// Construction arbre des paquets
 	double time = MPI_Wtime();
-	cluster_tree_t = std::make_shared<Cluster_tree>(xt,rt,tabt,gt); // target
-	cluster_tree_s = std::make_shared<Cluster_tree>(xs,rs,tabs,gs); // source
+	cluster_tree_t = std::make_shared<Cluster_tree>(xt,rt,tabt,gt,comm); // target
+	cluster_tree_s = std::make_shared<Cluster_tree>(xs,rs,tabs,gs,comm); // source
 
 	local_size   = cluster_tree_t->get_local_size();
 	local_offset = cluster_tree_t->get_local_offset();
@@ -286,7 +286,7 @@ void HMatrix<LowRankMatrix, T >::build(IMatrix<T>& mat,
 
 	// Construction arbre des paquets
 	double time = MPI_Wtime();
-	cluster_tree_t = std::make_shared<Cluster_tree>(xt,rt,tabt,gt);
+	cluster_tree_t = std::make_shared<Cluster_tree>(xt,rt,tabt,gt,comm);
 	cluster_tree_s = cluster_tree_t;
 	local_size   = cluster_tree_t->get_local_size();
 	local_offset = cluster_tree_t->get_local_offset();
