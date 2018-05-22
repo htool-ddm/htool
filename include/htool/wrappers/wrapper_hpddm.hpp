@@ -2,7 +2,7 @@
 #define HTOOL_WRAPPER_HPDDM_HPP
 
 #define HPDDM_NUMBERING 'F'
-#define HPDDM_SCHWARZ 1
+#define HPDDM_DENSE 1
 #define HPDDM_FETI 0
 #define HPDDM_BDD 0
 // #define HPDDM_DENSE 1
@@ -36,10 +36,10 @@ public:
         in_global = new std::vector<T> ;
         buffer = new std::vector<T>;
     }
-    ~HPDDMDense(){delete in_global;delete buffer;}
+    ~HPDDMDense(){delete in_global;in_global=nullptr;delete buffer;buffer=nullptr;}
 
 
-    void GMV(const T* const in, T* const out, const int& mu = 1) const {
+    virtual void GMV(const T* const in, T* const out, const int& mu = 1) const override {
         int local_size = HA.get_local_size();
 
         // Tranpose without overlap
@@ -69,7 +69,10 @@ public:
                 }
             }
         }
+        bool allocate = this->getMap().size() > 0 && this->getBuffer()[0] == nullptr ? this->setBuffer() : false;
         this->scaledExchange(out, mu);
+        if(allocate)
+            this->clearBuffer(allocate);
     }
 
     void exchange(T* const out, const int& mu = 1){
