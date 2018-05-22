@@ -5,6 +5,7 @@
 #define HPDDM_SCHWARZ 1
 #define HPDDM_FETI 0
 #define HPDDM_BDD 0
+// #define HPDDM_DENSE 1
 #define LAPACKSUB
 #define DSUITESPARSE
 #define EIGENSOLVER 1
@@ -106,11 +107,14 @@ public:
         // std::copy_n(in, this->_n, out);
     }
 
-    void build_coarse_space(Matrix<T>& Ci){
+    void build_coarse_space(Matrix<T>& mass, Matrix<T>& Bi){
         // Coarse space
-        P.build_coarse_space(*this,Ci);
+        P.build_coarse_space(mass,Bi);
     }
 
+    void facto_one_level(){
+        P.facto_one_level();
+    }
     void solve(const T* const rhs, T* const x, const int& mu=1 ){
         //
         int rankWorld = HA.get_rankworld();

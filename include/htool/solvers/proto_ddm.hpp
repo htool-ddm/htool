@@ -78,7 +78,7 @@ public:
 
         // Timing
         MPI_Barrier(hmat.get_comm());
-        std::vector<double> mytime(5), maxtime(5);
+        double mytime, maxtime;
         double time = MPI_Wtime();
 
 
@@ -154,34 +154,24 @@ public:
         }
 
 
-        mytime[0] =  MPI_Wtime() - time;
-        MPI_Barrier(hmat.get_comm());
-        // for (int i=0;i<n;i++){
-        //     for (int j=0;j<n;j++){
-        //         mat_loc[i+j*n]=(i==j);
-        //     }
-        // }
-        // LU
-        // const char l='L';
-        int lda=n;
-        int info;
-
-        HPDDM::Lapack<T>::getrf(&n,&n,mat_loc.data(),&lda,_ipiv.data(),&info);
-
-        mytime[1] = MPI_Wtime() - time;
-        MPI_Barrier(hmat.get_comm());
-        time = MPI_Wtime();
+        mytime =  MPI_Wtime() - time;
+        // MPI_Barrier(hmat.get_comm());
+        // int lda=n;
+        // int info;
+        //
+        // HPDDM::Lapack<T>::getrf(&n,&n,mat_loc.data(),&lda,_ipiv.data(),&info);
+        //
+        // mytime[1] = MPI_Wtime() - time;
+        // MPI_Barrier(hmat.get_comm());
+        // time = MPI_Wtime();
 
 
         // Timing
-        MPI_Reduce(&(mytime[0]), &(maxtime[0]), 2, MPI_DOUBLE, MPI_MAX, 0,this->comm);
+        MPI_Reduce(&(mytime), &(maxtime), 1, MPI_DOUBLE, MPI_MAX, 0,this->comm);
 
-        infos["DDM_setup_one_level_max" ]= NbrToStr(maxtime[0]);
-        infos["DDM_facto_one_level_max" ]= NbrToStr(maxtime[1]);
+        infos["DDM_setup_one_level_max" ]= NbrToStr(maxtime);
+        // infos["DDM_facto_one_level_max" ]= NbrToStr(maxtime[1]);
 
-
-        // delete [] _ipiv;
-// std::cout << "info : " << info <<std::endl;
 
         //
 
@@ -194,71 +184,104 @@ public:
         }
     }
 
-    void build_coarse_space( Proto_HPDDM<LowRankMatrix,T>& hpddm_op, Matrix<T>& evp){
+    void facto_one_level(){
+        double time = MPI_Wtime();
+        double mytime, maxtime;
+        int lda=n;
+        int info;
 
+        HPDDM::Lapack<T>::getrf(&n,&n,mat_loc.data(),&lda,_ipiv.data(),&info);
+
+        mytime = MPI_Wtime() - time;
+        MPI_Barrier(hmat.get_comm());
+
+
+        // Timing
+        MPI_Reduce(&(mytime), &(maxtime), 1, MPI_DOUBLE, MPI_MAX, 0,this->comm);
+
+        infos["DDM_facto_one_level_max" ]= NbrToStr(maxtime);
+    }
+
+    void build_coarse_space( Matrix<T>& Mi, Matrix<T>& evp){
         // Timing
         MPI_Barrier(hmat.get_comm());
         std::vector<double> mytime(3), maxtime(3);
         double time = MPI_Wtime();
 
-
+        // Data
         int n_global= hmat.nb_cols();
         int sizeWorld = hmat.get_sizeworld();
         int rankWorld = hmat.get_rankworld();
         int info;
+        //
+        // // LU facto for mass matrix
+        // int lda=n;
+        // std::vector<int> _ipiv_mass(n);
+        // HPDDM::Lapack<Cplx>::getrf(&n,&n,Mi.data(),&lda,_ipiv_mass.data(),&info);
+        //
+        // // Partition of unity
+        // Matrix<T> DAiD(n,n);
+        // for (int i =0 ;i < n_inside;i++){
+        //     std::copy_n(&(mat_loc[i*n]),n_inside,&(DAiD(0,i)));
+        // }
+        //
+        // // M^-1
+        // const char l='N';
+        // lda=n;
+        // int ldb=n;
+        // int nrhs = 1;
+        // HPDDM::Lapack<Cplx>::getrs(&l,&n,&n,Mi.data(),&lda,_ipiv_mass.data(),DAiD.data(),&ldb,&info);
+        // HPDDM::Lapack<Cplx>::getrs(&l,&n,&n,Mi.data(),&lda,_ipiv_mass.data(),Bi.data(),&ldb,&info);
+        //
+        // // Build local eigenvalue problem
+        // Matrix<T> evp(n,n);
+        // Bi.mvprod(DAiD.data(),evp.data(),n);
 
 
         // Local eigenvalue problem
-        // int ldvl = n, ldvr = n, lwork=-1;
-        // int lda=n;
-        // std::vector<T> work(n);
-        // std::vector<double> rwork(2*n);
-        // std::vector<T> w(n);
-        // std::vector<T> vl(n*n), vr(n*n);
-        // HPDDM::Lapack<T>::geev( "N", "Vectors", &n, evp.data(), &lda, w.data(),nullptr , vl.data(), &ldvl, vr.data(), &ldvr, work.data(), &lwork, rwork.data(), &info );
-        // lwork = (int)std::real(work[0]);
-        // work.resize(lwork);
-        // HPDDM::Lapack<T>::geev( "N", "Vectors", &n, evp.data(), &lda, w.data(),nullptr , vl.data(), &ldvl, vr.data(), &ldvr, work.data(), &lwork, rwork.data(), &info );
-        // std::vector<int> index(n, 0);
-        // for (int i = 0 ; i != index.size() ; i++) {
-        //     index[i] = i;
-        // }
-        // std::sort(index.begin(), index.end(),
-        //     [&](const int& a, const int& b) {
-        //         return (std::abs(w[a]) > std::abs(w[b]));
-        //     }
-        // );
-        //
-        // HPDDM::Option& opt = *HPDDM::Option::get();
-        // nevi=0;
-        // double threshold = opt.val("geneo_threshold",-1.0);
-        // if (threshold > 0.0){
-        //     while (std::abs(w[index[nevi]])>threshold && nevi< index.size()){
-        //         nevi++;}
-        //
-        // }
-        // else {
-        //     nevi = opt.val("geneo_nu",2);
-        // }
-        // evi.resize(nevi*n);
-        //
-        //
-        // for (int i=0;i<sizeWorld;i++){
-        //     MPI_Barrier(comm);
-        //     if (rankWorld==i){
-        //         std::cout << "proc "<<i<< std::endl;
-        //         for (int i =0;i<nevi;i++){
-        //             std::cout << w[index[i]]<<" ";
-        //         }
-        //         std::cout << std::endl;
-        //     }
-        //     MPI_Barrier(comm);
-        // }
-        // MPI_Barrier(comm);
-        hpddm_op.solveEVP(evp.data());
-        Z = hpddm_op.getVectors();
+        int ldvl = n, ldvr = n, lwork=-1;
+        int lda=n;
+        std::vector<T> work(n);
+        std::vector<double> rwork(2*n);
+        std::vector<T> w(n);
+        std::vector<T> vl(n*n), vr(n*n);
+        HPDDM::Lapack<T>::geev( "N", "Vectors", &n, evp.data(), &lda, w.data(),nullptr , vl.data(), &ldvl, vr.data(), &ldvr, work.data(), &lwork, rwork.data(), &info );
+        lwork = (int)std::real(work[0]);
+        work.resize(lwork);
+        HPDDM::Lapack<T>::geev( "N", "Vectors", &n, evp.data(), &lda, w.data(),nullptr , vl.data(), &ldvl, vr.data(), &ldvr, work.data(), &lwork, rwork.data(), &info );
+        std::vector<int> index(n, 0);
+        for (int i = 0 ; i != index.size() ; i++) {
+            index[i] = i;
+        }
+        std::sort(index.begin(), index.end(),
+            [&](const int& a, const int& b) {
+                return (std::abs(w[a]) > std::abs(w[b]));
+            }
+        );
+
         HPDDM::Option& opt = *HPDDM::Option::get();
-        nevi = opt.val("geneo_nu",2);
+        nevi=0;
+        double threshold = opt.val("geneo_threshold",-1.0);
+        if (threshold > 0.0){
+            while (std::abs(w[index[nevi]])>threshold && nevi< index.size()){
+                nevi++;}
+
+        }
+        else {
+            nevi = opt.val("geneo_nu",2);
+        }
+        evi.resize(nevi*n);
+
+        for (int i=0 ;i<sizeWorld;i++){
+            if (rankWorld==i)
+                std::cout << nevi << std::endl;
+            MPI_Barrier(MPI_COMM_WORLD);
+        }
+
+        // hpddm_op.solveEVP(evp.data());
+        // Z = hpddm_op.getVectors();
+        // HPDDM::Option& opt = *HPDDM::Option::get();
+        // nevi = opt.val("geneo_nu",2);
         // std::vector<double> norms(nevi,0);
         // for (int i=0;i<nevi;i++){
         //     for (int j=0;j<n;j++){
@@ -281,19 +304,14 @@ public:
             displs[i] = displs[i-1] + recvcounts[i-1];
         }
 
-        // std::cout << recvcounts << std::endl;
-
-
-// std::cout << nevi << std::endl;
-        // nevi = 2;
-
+        //
         size_E   =  std::accumulate(recvcounts.begin(),recvcounts.end(),0);
         int nevi_max = *std::max_element(recvcounts.begin(),recvcounts.end());
         evi.resize(nevi*n,0);
         for (int i=0;i<nevi;i++){
             // std::fill_n(evi.data()+i*n,n_inside,rankWorld+1);
-            std::copy_n(Z[i],n_inside,evi.data()+i*n);
-            // std::copy_n(vr.data()+index[i]*n,n_inside,evi.data()+i*n);
+            // std::copy_n(Z[i],n_inside,evi.data()+i*n);
+            std::copy_n(vr.data()+index[i]*n,n_inside,evi.data()+i*n);
         }
         // for (int i=0;i<n;i++){
         //     for (int j=0;j<nevi;j++){
