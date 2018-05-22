@@ -154,19 +154,8 @@ public:
         }
 
 
-        mytime =  MPI_Wtime() - time;
-        // MPI_Barrier(hmat.get_comm());
-        // int lda=n;
-        // int info;
-        //
-        // HPDDM::Lapack<T>::getrf(&n,&n,mat_loc.data(),&lda,_ipiv.data(),&info);
-        //
-        // mytime[1] = MPI_Wtime() - time;
-        // MPI_Barrier(hmat.get_comm());
-        // time = MPI_Wtime();
-
-
         // Timing
+        mytime =  MPI_Wtime() - time;
         MPI_Reduce(&(mytime), &(maxtime), 1, MPI_DOUBLE, MPI_MAX, 0,this->comm);
 
         infos["DDM_setup_one_level_max" ]= NbrToStr(maxtime);
@@ -202,54 +191,56 @@ public:
         infos["DDM_facto_one_level_max" ]= NbrToStr(maxtime);
     }
 
-    void build_coarse_space( Matrix<T>& Mi, Matrix<T>& evp){
+    void build_coarse_space( Matrix<T>& Mi, Matrix<T>& Bi){
         // Timing
-        MPI_Barrier(hmat.get_comm());
-        std::vector<double> mytime(3), maxtime(3);
+        std::vector<double> mytime(4), maxtime(4);
         double time = MPI_Wtime();
-
         // Data
         int n_global= hmat.nb_cols();
         int sizeWorld = hmat.get_sizeworld();
         int rankWorld = hmat.get_rankworld();
         int info;
-        //
-        // // LU facto for mass matrix
-        // int lda=n;
-        // std::vector<int> _ipiv_mass(n);
-        // HPDDM::Lapack<Cplx>::getrf(&n,&n,Mi.data(),&lda,_ipiv_mass.data(),&info);
-        //
-        // // Partition of unity
-        // Matrix<T> DAiD(n,n);
-        // for (int i =0 ;i < n_inside;i++){
-        //     std::copy_n(&(mat_loc[i*n]),n_inside,&(DAiD(0,i)));
-        // }
-        //
-        // // M^-1
-        // const char l='N';
-        // lda=n;
-        // int ldb=n;
-        // int nrhs = 1;
-        // HPDDM::Lapack<Cplx>::getrs(&l,&n,&n,Mi.data(),&lda,_ipiv_mass.data(),DAiD.data(),&ldb,&info);
-        // HPDDM::Lapack<Cplx>::getrs(&l,&n,&n,Mi.data(),&lda,_ipiv_mass.data(),Bi.data(),&ldb,&info);
-        //
-        // // Build local eigenvalue problem
-        // Matrix<T> evp(n,n);
-        // Bi.mvprod(DAiD.data(),evp.data(),n);
 
+        // LU facto for mass matrix
+        int lda=n;
+        std::vector<int> _ipiv_mass(n);
+        HPDDM::Lapack<Cplx>::getrf(&n,&n,Mi.data(),&lda,_ipiv_mass.data(),&info);
+
+        // Partition of unity
+        Matrix<T> DAiD(n,n);
+        for (int i =0 ;i < n_inside;i++){
+            std::copy_n(&(mat_loc[i*n]),n_inside,&(DAiD(0,i)));
+        }
+
+        // M^-1
+        const char l='N';
+        lda=n;
+        int ldb=n;
+        HPDDM::Lapack<Cplx>::getrs(&l,&n,&n,Mi.data(),&lda,_ipiv_mass.data(),DAiD.data(),&ldb,&info);
+        HPDDM::Lapack<Cplx>::getrs(&l,&n,&n,Mi.data(),&lda,_ipiv_mass.data(),Bi.data(),&ldb,&info);
+
+        // Build local eigenvalue problem
+        Matrix<T> evp(n,n);
+        Bi.mvprod(DAiD.data(),evp.data(),n);
+
+        mytime[0] = MPI_Wtime() - time;
+        MPI_Barrier(hmat.get_comm());
+        time = MPI_Wtime();
 
         // Local eigenvalue problem
         int ldvl = n, ldvr = n, lwork=-1;
-        int lda=n;
+        lda=n;
         std::vector<T> work(n);
         std::vector<double> rwork(2*n);
         std::vector<T> w(n);
         std::vector<T> vl(n*n), vr(n*n);
+
         HPDDM::Lapack<T>::geev( "N", "Vectors", &n, evp.data(), &lda, w.data(),nullptr , vl.data(), &ldvl, vr.data(), &ldvr, work.data(), &lwork, rwork.data(), &info );
         lwork = (int)std::real(work[0]);
         work.resize(lwork);
         HPDDM::Lapack<T>::geev( "N", "Vectors", &n, evp.data(), &lda, w.data(),nullptr , vl.data(), &ldvl, vr.data(), &ldvr, work.data(), &lwork, rwork.data(), &info );
         std::vector<int> index(n, 0);
+
         for (int i = 0 ; i != index.size() ; i++) {
             index[i] = i;
         }
@@ -258,7 +249,6 @@ public:
                 return (std::abs(w[a]) > std::abs(w[b]));
             }
         );
-
         HPDDM::Option& opt = *HPDDM::Option::get();
         nevi=0;
         double threshold = opt.val("geneo_threshold",-1.0);
@@ -272,28 +262,10 @@ public:
         }
         evi.resize(nevi*n);
 
-        for (int i=0 ;i<sizeWorld;i++){
-            if (rankWorld==i)
-                std::cout << nevi << std::endl;
-            MPI_Barrier(MPI_COMM_WORLD);
-        }
 
-        // hpddm_op.solveEVP(evp.data());
-        // Z = hpddm_op.getVectors();
-        // HPDDM::Option& opt = *HPDDM::Option::get();
-        // nevi = opt.val("geneo_nu",2);
-        // std::vector<double> norms(nevi,0);
-        // for (int i=0;i<nevi;i++){
-        //     for (int j=0;j<n;j++){
-        //         norms[i]+= std::abs(Z[i][j]*std::conj(Z[i][j]));
-        //     }
-        // }
-
-
-        mytime[0] = MPI_Wtime() - time;
+        mytime[1] = MPI_Wtime() - time;
         MPI_Barrier(hmat.get_comm());
         time = MPI_Wtime();
-
 
         // Allgather
         MPI_Allgather(&nevi,1,MPI_INT,recvcounts.data(),1,MPI_INT,comm);
@@ -445,7 +417,7 @@ public:
         //         std::cout << std::endl;
         //     }
         // }
-        mytime[1] = MPI_Wtime() - time;
+        mytime[2] = MPI_Wtime() - time;
         MPI_Barrier(hmat.get_comm());
         time = MPI_Wtime();
 
@@ -453,16 +425,17 @@ public:
         _ipiv_coarse.resize(n_coarse);
 
         HPDDM::Lapack<T>::getrf(&n_coarse,&n_coarse,E.data(),&n_coarse,_ipiv_coarse.data(),&info);
-        mytime[2] = MPI_Wtime() - time;
+        mytime[3] = MPI_Wtime() - time;
         MPI_Barrier(hmat.get_comm());
         time = MPI_Wtime();
 
         // Timing
-        MPI_Reduce(&(mytime[0]), &(maxtime[0]), 3, MPI_DOUBLE, MPI_MAX, 0,this->comm);
+        MPI_Reduce(&(mytime[0]), &(maxtime[0]), 4, MPI_DOUBLE, MPI_MAX, 0,this->comm);
 
-        infos["DDM_geev_max" ]= NbrToStr(maxtime[0]);
-        infos["DDM_setup_ZtAZ_max" ]= NbrToStr(maxtime[1]);
-        infos["DDM_facto_ZtAZ_max" ]= NbrToStr(maxtime[2]);
+        infos["DDM_setup_geev" ]= NbrToStr(maxtime[0]);
+        infos["DDM_geev_max" ]= NbrToStr(maxtime[1]);
+        infos["DDM_setup_ZtAZ_max" ]= NbrToStr(maxtime[2]);
+        infos["DDM_facto_ZtAZ_max" ]= NbrToStr(maxtime[3]);
     }
 
 
