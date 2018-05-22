@@ -32,7 +32,7 @@ public:
     // Without overlap
     DDM(const HMatrix<LowRankMatrix,T>& hmat_0):n(hmat_0.get_local_size()),n_inside(hmat_0.get_local_size()),hpddm_op(hmat_0),mat_loc(n*n),D(n),comm(hmat_0.get_comm()){
         // Timing
-        std::vector<double> mytime(2), maxtime(2), meantime(2);
+        double mytime, maxtime, meantime;
         double time = MPI_Wtime();
 
         // Building Ai
@@ -75,20 +75,15 @@ public:
         fill(D.begin()+n_inside,D.end(),0);
 
         hpddm_op.HPDDMDense<LowRankMatrix,T>::super::super::initialize(D.data());
-        mytime[0] =  MPI_Wtime() - time;
-        time = MPI_Wtime();
-        hpddm_op.callNumfact();
-        mytime[1] = MPI_Wtime() - time;
+        mytime =  MPI_Wtime() - time;
 
         // Timing
-        MPI_Reduce(&(mytime[0]), &(maxtime[0]), 2, MPI_DOUBLE, MPI_MAX, 0,this->comm);
-        MPI_Reduce(&(mytime[0]), &(meantime[0]), 2, MPI_DOUBLE, MPI_SUM, 0,this->comm);
+        MPI_Reduce(&(mytime), &(maxtime), 1, MPI_DOUBLE, MPI_MAX, 0,this->comm);
+        MPI_Reduce(&(mytime), &(meantime), 1, MPI_DOUBLE, MPI_SUM, 0,this->comm);
         meantime /= hmat_0.get_sizeworld();
 
-        infos["DDM_setup_mean"]= NbrToStr(meantime[0]);
-        infos["DDM_setup_max" ]= NbrToStr(maxtime[0]);
-        infos["DDM_facto_mean"]= NbrToStr(meantime[1]);
-        infos["DDM_facto_max" ]= NbrToStr(maxtime[1]);
+        infos["DDM_setup_mean"]= NbrToStr(meantime);
+        infos["DDM_setup_max" ]= NbrToStr(maxtime);
     }
 
     // With overlap
@@ -99,7 +94,7 @@ public:
     const std::vector<std::vector<int> >& intersections0): hpddm_op(hmat_0), n(ovr_subdomain_to_global0.size()), n_inside(cluster_to_ovr_subdomain0.size()), neighbors(neighbors0), vec_ovr(n),mat_loc(n*n), D(n), comm(hmat_0.get_comm()) {
 
         // Timing
-        std::vector<double> mytime(2), maxtime(2), meantime(2);
+        double mytime, maxtime, meantime;
         double time = MPI_Wtime();
 
         std::vector<int> renum(n,-1);
@@ -179,20 +174,164 @@ public:
         fill(D.begin()+n_inside,D.end(),0);
 
         hpddm_op.HPDDMDense<LowRankMatrix,T>::super::super::initialize(D.data());
-        mytime[0] =  MPI_Wtime() - time;
-        time = MPI_Wtime();
-        hpddm_op.callNumfact();
-        mytime[1] = MPI_Wtime() - time;
+        mytime =  MPI_Wtime() - time;
 
         // Timing
-        MPI_Reduce(&(mytime[0]), &(maxtime[0]), 2, MPI_DOUBLE, MPI_MAX, 0,comm);
-      	MPI_Reduce(&(mytime[0]), &(meantime[0]), 2, MPI_DOUBLE, MPI_SUM, 0,comm);
+        MPI_Reduce(&(mytime), &(maxtime), 1, MPI_DOUBLE, MPI_MAX, 0,comm);
+      	MPI_Reduce(&(mytime), &(meantime), 1, MPI_DOUBLE, MPI_SUM, 0,comm);
         meantime /= hmat_0.get_sizeworld();
 
-        infos["DDM_setup_mean"]= NbrToStr(meantime[0]);
-        infos["DDM_setup_max" ]= NbrToStr(maxtime[0]);
-        infos["DDM_facto_mean"]= NbrToStr(meantime[1]);
-        infos["DDM_facto_max" ]= NbrToStr(maxtime[1]);
+        infos["DDM_setup_mean"]= NbrToStr(meantime);
+        infos["DDM_setup_max" ]= NbrToStr(maxtime);
+
+    }
+
+    void facto_one_level(){
+        double time = MPI_Wtime();
+        double mytime, maxtime,meantime;
+        hpddm_op.callNumfact();
+        mytime = MPI_Wtime() - time;
+
+        // Timing
+        MPI_Reduce(&(mytime), &(maxtime), 1, MPI_DOUBLE, MPI_MAX, 0,this->comm);
+        MPI_Reduce(&(mytime), &(meantime), 1, MPI_DOUBLE, MPI_SUM, 0,comm);
+        meantime /= hpddm_op.HA.get_sizeworld();
+
+        infos["DDM_facto_one_level_max" ]= NbrToStr(maxtime);
+        infos["DDM_facto_one_level_mean" ]= NbrToStr(meantime);
+    }
+
+    void build_coarse_space(Matrix<T>&  Mi, Matrix<T>&  Bi){
+
+        // Timing
+        std::vector<double> mytime(4), maxtime(4);
+        double time = MPI_Wtime();
+
+        //
+        int n_global= hpddm_op.HA.nb_cols();
+        int sizeWorld = hpddm_op.HA.get_sizeworld();
+        int rankWorld = hpddm_op.HA.get_rankworld();
+        int info;
+
+        // LU facto for mass matrix
+        int lda=n;
+        std::vector<int> _ipiv_mass(n);
+        HPDDM::Lapack<Cplx>::getrf(&n,&n,Mi.data(),&lda,_ipiv_mass.data(),&info);
+
+        // Partition of unity
+        Matrix<T> DAiD(n,n);
+        for (int i =0 ;i < n_inside;i++){
+            std::copy_n(&(mat_loc[i*n]),n_inside,&(DAiD(0,i)));
+        }
+
+        // M^-1
+        const char l='N';
+        lda=n;
+        int ldb=n;
+        HPDDM::Lapack<Cplx>::getrs(&l,&n,&n,Mi.data(),&lda,_ipiv_mass.data(),DAiD.data(),&ldb,&info);
+        HPDDM::Lapack<Cplx>::getrs(&l,&n,&n,Mi.data(),&lda,_ipiv_mass.data(),Bi.data(),&ldb,&info);
+
+        // Build local eigenvalue problem
+        Matrix<T> evp(n,n);
+        Bi.mvprod(DAiD.data(),evp.data(),n);
+
+        mytime[0] = MPI_Wtime() - time;
+        MPI_Barrier(hpddm_op.HA.get_comm());
+        time = MPI_Wtime();
+
+        // eigenvalue problem
+        hpddm_op.solveEVP(evp.data());
+        const T* const* Z = hpddm_op.getVectors();
+        HPDDM::Option& opt = *HPDDM::Option::get();
+        int nevi = opt.val("geneo_nu",2);
+
+
+
+        mytime[1] = MPI_Wtime() - time;
+        MPI_Barrier(hpddm_op.HA.get_comm());
+        time = MPI_Wtime();
+
+
+        // Allgather
+        std::vector<int> recvcounts;
+        std::vector<int> displs;
+        MPI_Allgather(&nevi,1,MPI_INT,recvcounts.data(),1,MPI_INT,comm);
+
+        displs[0] = 0;
+
+        for (int i=1; i<sizeWorld; i++) {
+            displs[i] = displs[i-1] + recvcounts[i-1];
+        }
+
+
+        int size_E   =  std::accumulate(recvcounts.begin(),recvcounts.end(),0);
+        int nevi_max = *std::max_element(recvcounts.begin(),recvcounts.end());
+        std::vector<T >evi(nevi*n,0);
+        for (int i=0;i<nevi;i++){
+            // std::fill_n(evi.data()+i*n,n_inside,rankWorld+1);
+            std::copy_n(Z[i],n_inside,evi.data()+i*n);
+            // std::copy_n(vr.data()+index[i]*n,n_inside,evi.data()+i*n);
+        }
+
+        std::vector<T> AZ(nevi_max*n_inside,0);
+        std::vector<T> E;
+        E.resize(size_E*size_E,0);
+
+        for (int i=0;i<sizeWorld;i++){
+            std::vector<T> buffer(hpddm_op.HA.get_MasterOffset_t(i).second*recvcounts[i],0);
+            std::fill_n(AZ.data(),recvcounts[i]*n_inside,0);
+
+            if (rankWorld==i){
+                for (int j=0;j<recvcounts[i];j++){
+                    for (int k=0;k<n_inside;k++){
+                        buffer[recvcounts[i]*k+j]=evi[j*n+k];
+                    }
+                }
+            }
+            MPI_Bcast(buffer.data(),hpddm_op.HA.get_MasterOffset_t(i).second*recvcounts[i],wrapper_mpi<T>::mpi_type(),i,comm);
+
+
+            hpddm_op.HA.mvprod_subrhs(buffer.data(),AZ.data(),recvcounts[i],hpddm_op.HA.get_MasterOffset_t(i).first,hpddm_op.HA.get_MasterOffset_t(i).second);
+
+            for (int j=0;j<recvcounts[i];j++){
+                // std::fill_n(vec_ovr.data(),vec_ovr.size(),0);
+                // std::copy_n(AZ.data()+j*n_inside+hmat_0.get_local_offset(),n_inside,vec_ovr.data());
+                for (int k=0;k<n_inside;k++){
+                    vec_ovr[k]=AZ[j+recvcounts[i]*k];
+                }
+                // Parce que partition de l'unité...
+                // synchronize(true);
+                for (int jj=0;jj<nevi;jj++){
+                    int coord_E_i = displs[i]+j;
+                    int coord_E_j = displs[rankWorld]+jj;
+                    E[coord_E_i+coord_E_j*size_E]=std::inner_product(evi.data()+jj*n,evi.data()+jj*n+n_inside,vec_ovr.data(),T(0),std::plus<T >(), [](T u,T v){return u*std::conj(v);});
+
+                }
+            }
+        }
+        if (rankWorld==0)
+            MPI_Reduce(MPI_IN_PLACE, E.data(), E.size(), wrapper_mpi<T>::mpi_type(),MPI_SUM, 0,comm);
+        else
+            MPI_Reduce(E.data(), E.data(), E.size(), wrapper_mpi<T>::mpi_type(),MPI_SUM, 0,comm);
+
+
+        mytime[2] = MPI_Wtime() - time;
+        MPI_Barrier(hpddm_op.HA.get_comm());
+        time = MPI_Wtime();
+
+        // hpddm_op.buildTwo(MPI_COMM_WORLD, E.data());
+
+        mytime[3] = 0;//MPI_Wtime() - time;
+        // MPI_Barrier(hmat.get_comm());
+        // time = MPI_Wtime();
+
+        // Timing
+        MPI_Reduce(&(mytime[0]), &(maxtime[0]), 4, MPI_DOUBLE, MPI_MAX, 0,this->comm);
+
+        infos["DDM_setup_geev" ]= NbrToStr(maxtime[0]);
+        infos["DDM_geev_max" ]= NbrToStr(maxtime[1]);
+        infos["DDM_setup_ZtAZ_max" ]= NbrToStr(maxtime[2]);
+        infos["DDM_facto_ZtAZ_max" ]= NbrToStr(maxtime[3]);
 
     }
 
