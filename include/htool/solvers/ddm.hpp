@@ -25,7 +25,7 @@ private:
 
 public:
 
-    void test_dest(){
+    void clean(){
         hpddm_op.~HPDDMDense<LowRankMatrix,T>();
     }
 
@@ -253,8 +253,9 @@ public:
 
 
         // Allgather
-        std::vector<int> recvcounts;
-        std::vector<int> displs;
+        std::vector<int> recvcounts(sizeWorld);
+        std::vector<int> displs(sizeWorld);
+        // std::cout << rankWorld << " " <<nevi <<std::endl;
         MPI_Allgather(&nevi,1,MPI_INT,recvcounts.data(),1,MPI_INT,comm);
 
         displs[0] = 0;
@@ -319,9 +320,9 @@ public:
         MPI_Barrier(hpddm_op.HA.get_comm());
         time = MPI_Wtime();
 
-        // hpddm_op.buildTwo(MPI_COMM_WORLD, E.data());
+        hpddm_op.buildTwo(MPI_COMM_WORLD, E.data());
 
-        mytime[3] = 0;//MPI_Wtime() - time;
+        mytime[3] = MPI_Wtime() - time;
         // MPI_Barrier(hmat.get_comm());
         // time = MPI_Wtime();
 
