@@ -199,11 +199,11 @@ public:
 
         //
         if (infos["Precond"]=="none"){
-            infos["GenEO_nu"]="0";
+            infos["GenEO_nu"]="None";
             infos["Coarse_correction"]="None";
         }
         else{
-            infos["GenEO_nu"]=NbrToStr(opt.val("geneo_nu",2));
+            infos["GenEO_nu"]=NbrToStr(P.get_nevi());
             switch (opt.val("schwarz_coarse_correction",42)) {
                 case HPDDM_SCHWARZ_COARSE_CORRECTION_BALANCED:
                 infos["Coarse_correction"] = "Balanced";
@@ -216,7 +216,7 @@ public:
                 break;
                 default:
                 infos["Coarse_correction"] = "None";
-                infos["GenEO_nu"] = "0";
+                infos["GenEO_nu"] = "None";
                 break;
             }
 
@@ -267,7 +267,12 @@ public:
 
     void add_infos(std::string key, std::string value) const{
         if (HA.get_rankworld()==0){
-            infos[key]=value;
+            if (infos.find(key)==infos.end()){
+                infos[key]=value;
+            }
+            else{
+                infos[key]+= value;
+            }
         }
     }
 };

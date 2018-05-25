@@ -20,6 +20,7 @@ private:
     std::vector<T> mat_loc;
     std::vector<double> D;
     const MPI_Comm& comm;
+    int nevi;
     mutable std::map<std::string, std::string> infos;
 
 
@@ -30,7 +31,7 @@ public:
     }
 
     // Without overlap
-    DDM(const HMatrix<LowRankMatrix,T>& hmat_0):n(hmat_0.get_local_size()),n_inside(hmat_0.get_local_size()),hpddm_op(hmat_0),mat_loc(n*n),D(n),comm(hmat_0.get_comm()){
+    DDM(const HMatrix<LowRankMatrix,T>& hmat_0):n(hmat_0.get_local_size()),n_inside(hmat_0.get_local_size()),hpddm_op(hmat_0),mat_loc(n*n),D(n),nevi(0),comm(hmat_0.get_comm()){
         // Timing
         double mytime, maxtime, meantime;
         double time = MPI_Wtime();
@@ -404,7 +405,7 @@ public:
         }
 
 
-        // Timing
+        // Infos
         HPDDM::Option& opt = *HPDDM::Option::get();
         time = MPI_Wtime()-time;
         infos["Solve"] = NbrToStr(time);
@@ -430,6 +431,25 @@ public:
             infos["Precond"] = "osm";
             break;
         }
+
+        switch (opt.val("schwarz_coarse_correction",-1)) {
+            case HPDDM_SCHWARZ_COARSE_CORRECTION_BALANCED:
+            infos["Coarse_correction"] = "Balanced";
+            break;
+            case HPDDM_SCHWARZ_COARSE_CORRECTION_DEFLATED:
+            infos["Coarse_correction"] = "Deflated";
+            break;
+            case HPDDM_SCHWARZ_COARSE_CORRECTION_ADDITIVE:
+            infos["Coarse_correction"] = "Additive";
+            break;
+            default:
+            infos["Coarse_correction"] = "None";
+        }
+
+        if (infos["Coarse_correction"] != "None")
+            infos["GenEO_nu"]=NbrToStr(nevi);
+        else
+            infos["GenEO_nu"]="None";
     }
 
   	void print_infos() const{
@@ -454,6 +474,17 @@ public:
     			std::cout << "Unable to create "<<outputname<<std::endl;
     		}
     	}
+    }
+
+    void add_infos(std::string key, std::string value) const{
+        if (hpddm_op.HA.get_rankworld()==0){
+            if (infos.find(key)==infos.end()){
+                infos[key]=value;
+            }
+            else{
+                infos[key]+= value;
+            }
+        }
     }
 
 };

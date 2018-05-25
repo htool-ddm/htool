@@ -256,6 +256,7 @@ public:
             while (std::abs(w[index[nevi]])>threshold && nevi< index.size()){
                 nevi++;}
 
+
         }
         else {
             nevi = opt.val("geneo_nu",2);
@@ -432,7 +433,7 @@ public:
         // Timing
         MPI_Reduce(&(mytime[0]), &(maxtime[0]), 4, MPI_DOUBLE, MPI_MAX, 0,this->comm);
 
-        infos["DDM_setup_geev" ]= NbrToStr(maxtime[0]);
+        infos["DDM_setup_geev_max" ]= NbrToStr(maxtime[0]);
         infos["DDM_geev_max" ]= NbrToStr(maxtime[1]);
         infos["DDM_setup_ZtAZ_max" ]= NbrToStr(maxtime[2]);
         infos["DDM_facto_ZtAZ_max" ]= NbrToStr(maxtime[3]);
@@ -622,6 +623,7 @@ public:
     }
     int get_n() const {return n;}
     int get_n_inside() const {return n_inside;}
+    int get_nevi() const {return nevi;}
     std::map<std::string, std::string>& get_infos() const{return infos;}
     double get_timing_one_level() const {return timing_one_level;}
     double get_timing_Q() const {return timing_Q;}
