@@ -244,7 +244,7 @@ public:
         hpddm_op.solveEVP(evp.data());
         const T* const* Z = hpddm_op.getVectors();
         HPDDM::Option& opt = *HPDDM::Option::get();
-        int nevi = opt.val("geneo_nu",2);
+        nevi = opt.val("geneo_nu",2);
 
 
 
