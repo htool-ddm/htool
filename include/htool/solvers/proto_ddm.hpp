@@ -623,7 +623,7 @@ public:
     }
     int get_n() const {return n;}
     int get_n_inside() const {return n_inside;}
-    int get_nevi() const {return nevi;}
+    int get_size_E() const {return size_E;}
     std::map<std::string, std::string>& get_infos() const{return infos;}
     double get_timing_one_level() const {return timing_one_level;}
     double get_timing_Q() const {return timing_Q;}

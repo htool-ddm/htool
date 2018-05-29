@@ -21,6 +21,7 @@ private:
     std::vector<double> D;
     const MPI_Comm& comm;
     int nevi;
+    int size_E;
     mutable std::map<std::string, std::string> infos;
 
 
@@ -31,7 +32,7 @@ public:
     }
 
     // Without overlap
-    DDM(const HMatrix<LowRankMatrix,T>& hmat_0):n(hmat_0.get_local_size()),n_inside(hmat_0.get_local_size()),hpddm_op(hmat_0),mat_loc(n*n),D(n),nevi(0),comm(hmat_0.get_comm()){
+    DDM(const HMatrix<LowRankMatrix,T>& hmat_0):n(hmat_0.get_local_size()),n_inside(hmat_0.get_local_size()),hpddm_op(hmat_0),mat_loc(n*n),D(n),nevi(0),size_E(0),comm(hmat_0.get_comm()){
         // Timing
         double mytime, maxtime, meantime;
         double time = MPI_Wtime();
@@ -266,7 +267,7 @@ public:
         }
 
 
-        int size_E   =  std::accumulate(recvcounts.begin(),recvcounts.end(),0);
+        size_E   =  std::accumulate(recvcounts.begin(),recvcounts.end(),0);
         int nevi_max = *std::max_element(recvcounts.begin(),recvcounts.end());
         std::vector<T >evi(nevi*n,0);
         for (int i=0;i<nevi;i++){
@@ -447,9 +448,9 @@ public:
         }
 
         if (infos["Coarse_correction"] != "None")
-            infos["GenEO_nu"]=NbrToStr(nevi);
+            infos["GenEO_coarse_size"]=NbrToStr(size_E);
         else
-            infos["GenEO_nu"]="None";
+            infos["GenEO_coarse_size"]="None";
     }
 
   	void print_infos() const{

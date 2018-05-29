@@ -199,11 +199,11 @@ public:
 
         //
         if (infos["Precond"]=="none"){
-            infos["GenEO_nu"]="None";
+            infos["GenEO_coarse_size"]="None";
             infos["Coarse_correction"]="None";
         }
         else{
-            infos["GenEO_nu"]=NbrToStr(P.get_nevi());
+            infos["GenEO_coarse_size"]=NbrToStr(P.get_size_E());
             switch (opt.val("schwarz_coarse_correction",42)) {
                 case HPDDM_SCHWARZ_COARSE_CORRECTION_BALANCED:
                 infos["Coarse_correction"] = "Balanced";
@@ -216,7 +216,7 @@ public:
                 break;
                 default:
                 infos["Coarse_correction"] = "None";
-                infos["GenEO_nu"] = "None";
+                infos["GenEO_coarse_size"] = "None";
                 break;
             }
 
