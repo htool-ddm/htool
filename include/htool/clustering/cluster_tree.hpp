@@ -15,6 +15,7 @@ private:
   int sizeWorld;
   int rankWorld;
   MPI_Comm comm;
+  mutable std::map<std::string, std::string> infos;
 
   // Tag ranks
   void SetRanksRec(Cluster& t, const unsigned int depth, const unsigned int cnt);
@@ -43,11 +44,32 @@ public:
   void build(){
     MPI_Comm_size(comm, &sizeWorld);
     MPI_Comm_rank(comm, &rankWorld);
-    SetRanks(root);
+
     // TODO better handling of this case
     if (std::pow(2,root.get_min_depth())<sizeWorld){
       std::cout << "WARNING : too many procs for the cluster tree"<< std::endl;
     }
+
+    // Infos
+    infos["max_depth"]=NbrToStr<int>(root.get_max_depth());
+    infos["min_depth"]=NbrToStr<int>(root.get_min_depth());
+    infos["master_depth"]=NbrToStr<int>(log2(sizeWorld));
+
+
+    SetRanks(root);
+    int max_size=MasterOffset[0].second;
+    int min_size=MasterOffset[0].second;
+    for (int i=0;i<MasterOffset.size();i++){
+        if (MasterOffset[i].second<min_size)
+            min_size=MasterOffset[i].second;
+        if (MasterOffset[i].second>max_size)
+            max_size=MasterOffset[i].second;
+    }
+
+    infos["master_max_size"]=NbrToStr<int>(max_size);
+    infos["master_min_size"]=NbrToStr<int>(min_size);
+
+
   }
 
   // Getters
@@ -71,6 +93,8 @@ public:
 
   // Output
   std::vector<int> get_labels(int visudep) const;
+  void print_infos() const;
+  void save_infos(const std::string& outputname, std::ios_base::openmode mode = std::ios_base::out) const;
 
 };
 
@@ -96,9 +120,9 @@ void Cluster_tree::SetRanksRec(Cluster& t, const unsigned int depth, const unsig
 
 void Cluster_tree::SetRanks(Cluster& t){
 	int rankWorld, sizeWorld;
-  MPI_Comm_size(comm, &sizeWorld);
-  MPI_Comm_rank(comm, &rankWorld);
-  MasterOffset.resize(sizeWorld);
+    MPI_Comm_size(comm, &sizeWorld);
+    MPI_Comm_rank(comm, &rankWorld);
+    MasterOffset.resize(sizeWorld);
 
 	SetRanksRec(t, log2(sizeWorld), 1);
 }
@@ -144,6 +168,30 @@ std::vector<int> Cluster_tree::get_labels(int visudep) const{
 
   return labels;
 }
+void Cluster_tree::print_infos() const{
+    if (rankWorld==0){
+        for (std::map<std::string,std::string>::const_iterator it = infos.begin() ; it != infos.end() ; ++it){
+            std::cout<<it->first<<"\t"<<it->second<<std::endl;
+        }
+    std::cout << std::endl;
+    }
+}
+
+void Cluster_tree::save_infos(const std::string& outputname, std::ios_base::openmode mode ) const{
+    if (rankWorld==0){
+        std::ofstream outputfile(outputname, mode);
+        if (outputfile){
+            for (std::map<std::string,std::string>::const_iterator it = infos.begin() ; it != infos.end() ; ++it){
+                outputfile<<it->first<<" : "<<it->second<<std::endl;
+            }
+            outputfile.close();
+        }
+        else{
+            std::cout << "Unable to create "<<outputname<<std::endl;
+        }
+    }
+}
+
 
 } // namespace
 
