@@ -3,6 +3,7 @@
 
 #include "cluster.hpp"
 #include <mpi.h>
+#include <map>
 
 namespace htool {
 
