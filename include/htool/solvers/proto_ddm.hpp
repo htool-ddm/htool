@@ -302,25 +302,27 @@ public:
         //     }
         // }
 
-
-        // for (int i=0;i<nevi;i++){
-        //     double norm_i = 0;
-        //     for (int j=0;j<n;j++){
-        //         norm_i += std::sqrt(std::abs(evi[i*n+j]*std::conj(evi[i*n+j])));
+        // for (int l=0;l<sizeWorld;l++){
+        //      MPI_Barrier(comm);
+        //      if (rankWorld==l){
+        //         for (int i=0;i<nevi;i++){
+        //             double norm_i = 0;
+        //             for (int j=0;j<n;j++){
+        //                 norm_i += std::abs(evi[i*n+j]*std::conj(evi[i*n+j]));
+        //             }
+        //             std::cout << std::sqrt(norm_i)<<std::endl;
+        //         }
         //     }
-        //     for (int j=0;j<n;j++){
-        //         evi[i*n+j] /= norm_i;
-        //     }
+        //      MPI_Barrier(comm);
         // }
-
-        // for (int i=0;i<sizeWorld;i++){
-        //     MPI_Barrier(comm);
-        //     if (rankWorld==i){
-        //         std::cout << "proc "<<i<< std::endl;
-        //         std::cout << evi << std::endl;
-        //     }
-        //     MPI_Barrier(comm);
-        // }
+        // // for (int i=0;i<sizeWorld;i++){
+        // //     MPI_Barrier(comm);
+        // //     if (rankWorld==i){
+        // //         std::cout << "proc "<<i<< std::endl;
+        // //         std::cout << evi << std::endl;
+        // //     }
+        // //     MPI_Barrier(comm);
+        // // }
         // MPI_Barrier(comm);
 
         // if (rankWorld==0){
@@ -369,6 +371,11 @@ public:
 
             // MPI_Bcast(buffer.data(),nevi*n_global,wrapper_mpi<T>::mpi_type(),i,comm);
             hmat.mvprod_subrhs(buffer.data(),AZ.data(),recvcounts[i],hmat.get_MasterOffset_t(i).first,hmat.get_MasterOffset_t(i).second);
+            // double norme=0;
+            // for (int j=0;j<recvcounts[i]*n_inside;j++){
+            //     norme+=std::abs(AZ[j]*std::conj(AZ[j]));
+            // }
+            // std::cout <<i<< " "<<norme<<" "<<recvcounts[i]<<" "<<buffer.size()<<std::endl;
             // if (rankWorld==0){
             //     std::cout << recvcounts[i]<< std::endl;
             //     std::cout << AZ << std::endl;
@@ -410,14 +417,21 @@ public:
             MPI_Reduce(E.data(), E.data(), E.size(), wrapper_mpi<T>::mpi_type(),MPI_SUM, 0,comm);
 
         // if (rankWorld==0){
+        //     double norme=0;
         //     std::cout << "size E :"<<E.size() << std::endl;
+        //     std::cout << "[";
         //     for (int i=0;i<nevi*sizeWorld;i++){
+        //         std::cout << "[";
         //         for (int j=0;j<nevi*sizeWorld;j++){
-        //             std::cout << E[i+j*nevi*sizeWorld] << " ";
+        //             std::cout << std::real(E[i+j*nevi*sizeWorld])<<"+"<<std::imag(E[i+j*nevi*sizeWorld]) << "i,";
+        //             norme+=std::abs(E[i+j*nevi*sizeWorld]*std::conj(E[i+j*nevi*sizeWorld]));
         //         }
-        //         std::cout << std::endl;
+        //         std::cout << "];";
         //     }
+        //     std::cout << "]"<<std::endl;
+        //     std::cout << "NORME : "<<norme<<std::endl;
         // }
+        // E.matlab_save("E.txt");
         mytime[2] = MPI_Wtime() - time;
         MPI_Barrier(hmat.get_comm());
         time = MPI_Wtime();

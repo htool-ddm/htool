@@ -436,7 +436,7 @@ Block* HMatrix<LowRankMatrix, T >::BuildBlockTree(const Cluster& t, const Cluste
 	Block* B = new Block(t,s);
 	int bsize = t.get_size()*s.get_size();
 	B->ComputeAdmissibility();
-	if( B->IsAdmissible() && t.get_rank()>=0){
+	if( B->IsAdmissible() && t.get_rank()>=0 && s.get_rank()>=0){
 		Tasks.push_back(B);
 		return NULL;
 	}
@@ -886,7 +886,7 @@ void HMatrix<LowRankMatrix,T >::mymvprod_local(const T* const in, T* const out, 
     #pragma omp parallel
     #endif
     {
-        std::vector<T> temp(local_size*mu);
+        std::vector<T> temp(local_size*mu,0);
         #if _OPENMP
         #pragma omp for schedule(guided)
         #endif
@@ -1080,7 +1080,7 @@ void HMatrix<LowRankMatrix,T >::mvprod_subrhs(const T* const in, T* const out, c
     #pragma omp parallel
     #endif
     {
-        std::vector<T> temp(local_size*mu);
+        std::vector<T> temp(local_size*mu,0);
         #if _OPENMP
         #pragma omp for schedule(guided)
         #endif

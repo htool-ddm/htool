@@ -447,7 +447,7 @@ public:
 
             Blas<T>::gemm(&transa, &transb, &M, &N, &K, &alpha, in,
                 &lda, &(this->mat[0]), &ldb, &beta, out,&ldc);
-            }
+        }
     }
 
 
