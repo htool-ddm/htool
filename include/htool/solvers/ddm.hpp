@@ -451,6 +451,37 @@ public:
             infos["GenEO_coarse_size"]=NbrToStr(size_E);
         else
             infos["GenEO_coarse_size"]="None";
+
+        switch (opt.val("krylov_method",8)) {
+            case HPDDM_KRYLOV_METHOD_GMRES:
+            infos["krylov_method"] = "gmres";
+            break;
+            case HPDDM_KRYLOV_METHOD_BGMRES:
+            infos["krylov_method"] = "bgmres";
+            break;
+            case HPDDM_KRYLOV_METHOD_CG:
+            infos["krylov_method"] = "cg";
+            break;
+            case HPDDM_KRYLOV_METHOD_BCG:
+            infos["krylov_method"] = "bcg";
+            break;
+            case HPDDM_KRYLOV_METHOD_GCRODR:
+            infos["krylov_method"] = "gcrodr";
+            break;
+            case HPDDM_KRYLOV_METHOD_BGCRODR:
+            infos["krylov_method"] = "bgcrodr";
+            break;
+            case HPDDM_KRYLOV_METHOD_BFBCG:
+            infos["krylov_method"] = "bfbcg";
+            break;
+            case HPDDM_KRYLOV_METHOD_RICHARDSON:
+            infos["krylov_method"] = "richardson";
+            break;
+            case HPDDM_KRYLOV_METHOD_NONE:
+            infos["krylov_method"] = "none";
+            break;
+        }
+
     }
 
   	void print_infos() const{
