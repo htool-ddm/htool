@@ -346,6 +346,7 @@ public:
         int size    = hpddm_op.HA.get_local_size();
         int nb_cols = hpddm_op.HA.nb_cols();
         int nb_rows = hpddm_op.HA.nb_rows();
+        int nb_vec_prod =  StrToNbr<int>(hpddm_op.HA.get_infos("nb_mat_vec_prod"));
         double time = MPI_Wtime();
 
         //
@@ -411,7 +412,9 @@ public:
         time = MPI_Wtime()-time;
         infos["Solve"] = NbrToStr(time);
         infos["Nb_it"] = NbrToStr(nb_it);
-        infos["mean_time_mat_vec_prod"] = NbrToStr(StrToNbr<double>(hpddm_op.HA.get_infos("total_time_mat_vec_prod"))/StrToNbr<double>(hpddm_op.HA.get_infos("nbr_mat_vec_prod")));
+        infos["Nb_subdomains"] = NbrToStr(sizeWorld);
+        infos["nb_mat_vec_prod"] = NbrToStr(StrToNbr<int>(hpddm_op.HA.get_infos("nb_mat_vec_prod"))-nb_vec_prod);
+        infos["mean_time_mat_vec_prod"] = NbrToStr(StrToNbr<double>(hpddm_op.HA.get_infos("total_time_mat_vec_prod"))/StrToNbr<double>(hpddm_op.HA.get_infos("nb_mat_vec_prod")));
         switch (opt.val("schwarz_method",0)) {
             case HPDDM_SCHWARZ_METHOD_NONE:
             infos["Precond"] = "none";
@@ -481,6 +484,7 @@ public:
             infos["krylov_method"] = "none";
             break;
         }
+        infos["htool_solver"]="ddm";
 
     }
 

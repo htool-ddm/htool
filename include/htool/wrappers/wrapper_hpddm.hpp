@@ -129,7 +129,7 @@ public:
         int n = P.get_n();
         int n_inside = P.get_n_inside();
         double time_vec_prod = StrToNbr<double>(HA.get_infos("total_time_mat_vec_prod"));
-        int nb_vec_prod =  StrToNbr<int>(HA.get_infos("nbr_mat_vec_prod"));
+        int nb_vec_prod =  StrToNbr<int>(HA.get_infos("nb_mat_vec_prod"));
         P.timing_Q=0;
         P.timing_one_level=0;
 
@@ -174,8 +174,8 @@ public:
         time = MPI_Wtime()-time;
         infos["Solve"] = NbrToStr(time);
         infos["Nb_it"] = NbrToStr(nb_it);
-        infos["nb_mat_vec_prod"] = NbrToStr(StrToNbr<int>(HA.get_infos("nbr_mat_vec_prod"))-nb_vec_prod);
-        infos["mean_time_mat_vec_prod"] = NbrToStr((StrToNbr<double>(HA.get_infos("total_time_mat_vec_prod"))-time_vec_prod)/(StrToNbr<double>(HA.get_infos("nbr_mat_vec_prod"))-nb_vec_prod));
+        infos["nb_mat_vec_prod"] = NbrToStr(StrToNbr<int>(HA.get_infos("nb_mat_vec_prod"))-nb_vec_prod);
+        infos["mean_time_mat_vec_prod"] = NbrToStr((StrToNbr<double>(HA.get_infos("total_time_mat_vec_prod"))-time_vec_prod)/(StrToNbr<double>(HA.get_infos("nb_mat_vec_prod"))-nb_vec_prod));
         switch (opt.val("schwarz_method",0)) {
             case HPDDM_SCHWARZ_METHOD_NONE:
             infos["Precond"] = "none";
@@ -196,7 +196,7 @@ public:
             infos["Precond"] = "soras";
             break;
         }
-        
+
         switch (opt.val("krylov_method",8)) {
             case HPDDM_KRYLOV_METHOD_GMRES:
             infos["krylov_method"] = "gmres";
@@ -251,6 +251,7 @@ public:
             }
 
         }
+        infos["htool_solver"]="protoddm";
 
         double timing_one_level=P.get_timing_one_level();
         double timing_Q=P.get_timing_Q();
@@ -261,7 +262,6 @@ public:
 
         infos["DDM_apply_one_level_max" ]= NbrToStr(maxtiming_one_level);
         infos["DDM_apply_Q_max" ]= NbrToStr(maxtiming_Q);
-        infos["DDM_total_time_max"]=NbrToStr(maxtiming_one_level+maxtiming_Q+(StrToNbr<double>(HA.get_infos("total_time_mat_vec_prod"))-time_vec_prod));
 
     }
 
@@ -425,7 +425,7 @@ public:
         int n_local = this->_n;
         double time = MPI_Wtime();
         double time_vec_prod = StrToNbr<double>(HA.get_infos("total_time_mat_vec_prod"));
-        int nb_vec_prod =  StrToNbr<int>(HA.get_infos("nbr_mat_vec_prod"));
+        int nb_vec_prod =  StrToNbr<int>(HA.get_infos("nb_mat_vec_prod"));
         in_global->resize(nb_cols*2*mu);
         buffer->resize(n_local*(mu==1 ? 1 : 2*mu));
 
@@ -474,9 +474,10 @@ public:
         HPDDM::Option& opt = *HPDDM::Option::get();
         time = MPI_Wtime()-time;
         infos["Solve"] = NbrToStr(time);
+        infos["Nb_subdomains"] = NbrToStr(sizeWorld);
         infos["Nb_it"] = NbrToStr(nb_it);
-        infos["nb_mat_vec_prod"] = NbrToStr(StrToNbr<int>(HA.get_infos("nbr_mat_vec_prod"))-nb_vec_prod);
-        infos["mean_time_mat_vec_prod"] = NbrToStr((StrToNbr<double>(HA.get_infos("total_time_mat_vec_prod"))-time_vec_prod)/(StrToNbr<double>(HA.get_infos("nbr_mat_vec_prod"))-nb_vec_prod));
+        infos["nb_mat_vec_prod"] = NbrToStr(StrToNbr<int>(HA.get_infos("nb_mat_vec_prod"))-nb_vec_prod);
+        infos["mean_time_mat_vec_prod"] = NbrToStr((StrToNbr<double>(HA.get_infos("total_time_mat_vec_prod"))-time_vec_prod)/(StrToNbr<double>(HA.get_infos("nb_mat_vec_prod"))-nb_vec_prod));
 
 
     }

@@ -977,7 +977,7 @@ void HMatrix<LowRankMatrix,T >::mvprod_local(const T* const in, T* const out, T*
     this->local_to_global(in, work,mu);
     this->mymvprod_local(work,out,mu);
 
-	infos["nbr_mat_vec_prod"] = NbrToStr(1+StrToNbr<int>(infos["nbr_mat_vec_prod"]));
+	infos["nb_mat_vec_prod"] = NbrToStr(1+StrToNbr<int>(infos["nb_mat_vec_prod"]));
 	infos["total_time_mat_vec_prod"] = NbrToStr(MPI_Wtime()-time+StrToNbr<double>(infos["total_time_mat_vec_prod"]));
 }
 
@@ -1067,7 +1067,7 @@ void HMatrix<LowRankMatrix,T >::mvprod_global(const T* const in, T* const out, c
         }
     }
 	// Timing
-	infos["nbr_mat_vec_prod"] = NbrToStr(1+StrToNbr<int>(infos["nbr_mat_vec_prod"]));
+	infos["nb_mat_vec_prod"] = NbrToStr(1+StrToNbr<int>(infos["nb_mat_vec_prod"]));
 	infos["total_time_mat_vec_prod"] = NbrToStr(MPI_Wtime()-time+StrToNbr<double>(infos["total_time_mat_vec_prod"]));
 }
 
