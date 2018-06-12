@@ -465,7 +465,7 @@ public:
         if (infos["Coarse_correction"] != "None")
             infos["GenEO_coarse_size"]=NbrToStr(size_E);
         else
-            infos["GenEO_coarse_size"]="None";
+            infos["GenEO_coarse_size"]="0";
 
         switch (opt.val("krylov_method",8)) {
             case HPDDM_KRYLOV_METHOD_GMRES:

@@ -230,7 +230,7 @@ public:
 
         //
         if (infos["Precond"]=="none"){
-            infos["GenEO_coarse_size"]="None";
+            infos["GenEO_coarse_size"]="0";
             infos["Coarse_correction"]="None";
         }
         else{
