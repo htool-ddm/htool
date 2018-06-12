@@ -179,7 +179,7 @@ public:
 	void mvprod_global(const T* const in, T* const out,const int& mu=1) const;
 	void mvprod_local(const T* const in, T* const out, T* const work, const int& mu) const;
 	void mymvprod_local(const T* const in, T* const out, const int& mu) const;
-    void mvprod_subrhs(const T* const in, T* const out, const int& mu, const int& offset, const int& size) const;
+    void mvprod_subrhs(const T* const in, T* const out, const int& mu, const int& offset, const int& size, const int& local_max_size_j) const;
 	std::vector<T> operator*( const std::vector<T>& x) const;
 
 	// Permutations
@@ -436,7 +436,7 @@ Block* HMatrix<LowRankMatrix, T >::BuildBlockTree(const Cluster& t, const Cluste
 	Block* B = new Block(t,s);
 	int bsize = t.get_size()*s.get_size();
 	B->ComputeAdmissibility();
-	if( B->IsAdmissible() && t.get_rank()>=0 && s.get_rank()>=0){
+	if( B->IsAdmissible() && t.get_rank()>=0){
 		Tasks.push_back(B);
 		return NULL;
 	}
@@ -1072,7 +1072,7 @@ void HMatrix<LowRankMatrix,T >::mvprod_global(const T* const in, T* const out, c
 }
 
 template< template<typename> class LowRankMatrix, typename T>
-void HMatrix<LowRankMatrix,T >::mvprod_subrhs(const T* const in, T* const out, const int& mu, const int& offset, const int& size) const{
+void HMatrix<LowRankMatrix,T >::mvprod_subrhs(const T* const in, T* const out, const int& mu, const int& offset, const int& size, const int& local_max_size_j) const{
     std::fill(out,out+local_size*mu,0);
 
 	// Contribution champ lointain
@@ -1088,9 +1088,10 @@ void HMatrix<LowRankMatrix,T >::mvprod_subrhs(const T* const in, T* const out, c
             const LowRankMatrix<T>&  M  = *(MyFarFieldMats[b]);
             int offset_i     = M.get_offset_i();
             int offset_j     = M.get_offset_j();
+            int size_j       = M.nb_cols();
 
-            if (offset_j>=offset && offset_j<offset+size){// cas général pas fait (ou ça dépasse)
-        		M.add_mvprod_row_major(in+(offset_j-offset)*mu,temp.data()+(offset_i-local_offset)*mu,mu);
+            if (offset_j <= offset+size && offset<= offset_j+size_j){
+        		M.add_mvprod_row_major(in+(offset_j-offset+local_max_size_j)*mu,temp.data()+(offset_i-local_offset)*mu,mu);
             }
     	}
     	// Contribution champ proche
@@ -1101,9 +1102,10 @@ void HMatrix<LowRankMatrix,T >::mvprod_subrhs(const T* const in, T* const out, c
             const SubMatrix<T>&  M  = *(MyNearFieldMats[b]);
             int offset_i     = M.get_offset_i();
             int offset_j     = M.get_offset_j();
+            int size_j       = M.nb_cols();
 
-            if (offset_j>=offset && offset_j<offset+size){
-    		    M.add_mvprod_row_major(in+(offset_j-offset)*mu,temp.data()+(offset_i-local_offset)*mu,mu);
+            if (offset_j <= offset+size && offset<= offset_j+size_j){
+    		    M.add_mvprod_row_major(in+(offset_j-offset+local_max_size_j)*mu,temp.data()+(offset_i-local_offset)*mu,mu);
     		}
     	}
         #if _OPENMP

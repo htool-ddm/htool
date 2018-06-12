@@ -331,22 +331,33 @@ public:
         //     }
         //     std::cout << std::endl;
         // }
+        int local_max_size_j=0;
+        const std::vector<LowRankMatrix<T>*>& MyFarFieldMats = hmat.get_MyFarFieldMats();
+        const std::vector<SubMatrix<T>*>& MyNearFieldMats= hmat.get_MyNearFieldMats();
+        for (int i=0;i<MyFarFieldMats.size();i++){
+            if (local_max_size_j<(*MyFarFieldMats[i]).nb_cols())
+                local_max_size_j=(*MyFarFieldMats[i]).nb_cols();
+        }
+        for (int i=0;i<MyNearFieldMats.size();i++){
+            if (local_max_size_j<(*MyNearFieldMats[i]).nb_cols())
+                local_max_size_j=(*MyNearFieldMats[i]).nb_cols();
+        }
 
         std::vector<T> AZ(nevi_max*n_inside,0);
         E.resize(size_E*size_E,0);
 
         for (int i=0;i<sizeWorld;i++){
-            std::vector<T> buffer(hmat.get_MasterOffset_t(i).second*recvcounts[i],0);
+            std::vector<T> buffer((hmat.get_MasterOffset_t(i).second+2*local_max_size_j)*recvcounts[i],0);
             std::fill_n(AZ.data(),recvcounts[i]*n_inside,0);
 
             if (rankWorld==i){
                 for (int j=0;j<recvcounts[i];j++){
                     for (int k=0;k<n_inside;k++){
-                        buffer[recvcounts[i]*k+j]=evi[j*n+k];
+                        buffer[recvcounts[i]*(k+local_max_size_j)+j]=evi[j*n+k];
                     }
                 }
             }
-            MPI_Bcast(buffer.data(),hmat.get_MasterOffset_t(i).second*recvcounts[i],wrapper_mpi<T>::mpi_type(),i,comm);
+            MPI_Bcast(buffer.data()+local_max_size_j*recvcounts[i],hmat.get_MasterOffset_t(i).second*recvcounts[i],wrapper_mpi<T>::mpi_type(),i,comm);
 
 
             // if (i==rankWorld){
@@ -370,7 +381,7 @@ public:
             // }
 
             // MPI_Bcast(buffer.data(),nevi*n_global,wrapper_mpi<T>::mpi_type(),i,comm);
-            hmat.mvprod_subrhs(buffer.data(),AZ.data(),recvcounts[i],hmat.get_MasterOffset_t(i).first,hmat.get_MasterOffset_t(i).second);
+            hmat.mvprod_subrhs(buffer.data(),AZ.data(),recvcounts[i],hmat.get_MasterOffset_t(i).first,hmat.get_MasterOffset_t(i).second,local_max_size_j);
             // double norme=0;
             // for (int j=0;j<recvcounts[i]*n_inside;j++){
             //     norme+=std::abs(AZ[j]*std::conj(AZ[j]));
