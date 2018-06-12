@@ -174,6 +174,7 @@ public:
         time = MPI_Wtime()-time;
         infos["Solve"] = NbrToStr(time);
         infos["Nb_it"] = NbrToStr(nb_it);
+        infos["Nb_subdomains"] = NbrToStr(sizeWorld);
         infos["nb_mat_vec_prod"] = NbrToStr(StrToNbr<int>(HA.get_infos("nb_mat_vec_prod"))-nb_vec_prod);
         infos["mean_time_mat_vec_prod"] = NbrToStr((StrToNbr<double>(HA.get_infos("total_time_mat_vec_prod"))-time_vec_prod)/(StrToNbr<double>(HA.get_infos("nb_mat_vec_prod"))-nb_vec_prod));
         switch (opt.val("schwarz_method",0)) {
@@ -474,7 +475,6 @@ public:
         HPDDM::Option& opt = *HPDDM::Option::get();
         time = MPI_Wtime()-time;
         infos["Solve"] = NbrToStr(time);
-        infos["Nb_subdomains"] = NbrToStr(sizeWorld);
         infos["Nb_it"] = NbrToStr(nb_it);
         infos["nb_mat_vec_prod"] = NbrToStr(StrToNbr<int>(HA.get_infos("nb_mat_vec_prod"))-nb_vec_prod);
         infos["mean_time_mat_vec_prod"] = NbrToStr((StrToNbr<double>(HA.get_infos("total_time_mat_vec_prod"))-time_vec_prod)/(StrToNbr<double>(HA.get_infos("nb_mat_vec_prod"))-nb_vec_prod));
