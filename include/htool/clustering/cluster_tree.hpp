@@ -48,7 +48,8 @@ public:
 
     // TODO better handling of this case
     if (std::pow(2,root.get_min_depth())<sizeWorld){
-      std::cout << "WARNING : too many procs for the cluster tree"<< std::endl;
+      std::cout << "WARNING: too many procs for the cluster tree"<< std::endl;
+      std::cout << "(min_deph,sizeworld): ("<<root.get_min_depth()<<","<<sizeWorld<<")"<< std::endl;
     }
 
     // Infos
