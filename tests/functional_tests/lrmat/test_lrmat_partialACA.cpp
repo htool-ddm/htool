@@ -70,12 +70,14 @@ int main(){
 			tab2[j]=j;
 		}
 
-		Cluster t(p1,tab1); Cluster s(p2,tab2);
+        // Clustering
+        std::vector<int> permt,perms;
+		Cluster t(p1,permt); Cluster s(p2,perms); // We avoid cluster_tree and MPI here
 		MyMatrix A(p1,p2);
 
 		// ACA with fixed rank
 		int reqrank_max = 10;
-		partialACA<double> A_partialACA_fixed(Ir,Ic,reqrank_max);
+		partialACA<double> A_partialACA_fixed(permt,perms,reqrank_max);
 		A_partialACA_fixed.build(A,t,p1,tab1,s,p2,tab2);
 		std::vector<double> partialACA_fixed_errors;
 		for (int k = 0 ; k < A_partialACA_fixed.rank_of()+1 ; k++){
@@ -96,13 +98,17 @@ int main(){
 		cout << "Compression rate : "<<A_partialACA_fixed.compression()<<endl;
 
 		// Test mat vec prod
-		std::vector<double> f(nc,1);
-		double error=norm2(A*f-A_partialACA_fixed*f);
-		test = test || !(error<1e-6);
+		std::vector<double> f(nc,1),out_perm(nr);
+        std::vector<double> out=A_partialACA_fixed*f;
+        for (int i = 0; i<permt.size();i++){
+            out_perm[permt[i]]=out[i];
+        }
+		double error=norm2(A*f-out_perm);
+		test = test || !(error<1e-8);
 		cout << "Errors on a mat vec prod : "<< error<<endl<<endl;
 
 		// ACA automatic building
-		partialACA<double> A_partialACA(Ir,Ic);
+		partialACA<double> A_partialACA(permt,perms);
 		A_partialACA.build(A,t,p1,tab1,s,p2,tab2);
 		std::vector<double> partialACA_errors;
 		for (int k = 0 ; k < A_partialACA.rank_of()+1 ; k++){
@@ -119,8 +125,12 @@ int main(){
 		cout << "Compression rate : "<<A_partialACA.compression()<<endl;
 
 		// Test mat vec prod
-		error = norm2(A*f-A_partialACA*f);
-		test = test || !(error<GetEpsilon()*10);
+        out=A_partialACA*f;
+        for (int i = 0; i<permt.size();i++){
+            out_perm[permt[i]]=out[i];
+        }
+		error = norm2(A*f-out_perm);
+		test = test || !(error<GetEpsilon());
 		cout << "Errors on a mat vec prod : "<< error<<endl<<endl<<endl;
 	}
 	cout << "test : "<<test<<endl;
