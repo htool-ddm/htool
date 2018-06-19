@@ -247,7 +247,7 @@ public:
                 break;
                 default:
                 infos["Coarse_correction"] = "None";
-                infos["GenEO_coarse_size"] = "None";
+                infos["GenEO_coarse_size"] = "0";
                 break;
             }
 
