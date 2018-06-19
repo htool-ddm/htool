@@ -9,134 +9,107 @@ namespace htool{
 template<typename T>
 class LowRankMatrix: public Parametres{
 private:
-  LowRankMatrix(const LowRankMatrix&) = default; // copy constructor
-  LowRankMatrix& operator=(const LowRankMatrix&) = default; // copy assignement operator
+    LowRankMatrix(const LowRankMatrix&) = default; // copy constructor
+    LowRankMatrix& operator=(const LowRankMatrix&) = default; // copy assignement operator
 
 
 protected:
-  // Data member
-  int rank, nr, nc;
-  Matrix<T>  U,V;
-  std::vector<int> ir;
-  std::vector<int> ic;
-  int offset_i;
-  int offset_j;
+    // Data member
+    int rank, nr, nc;
+    Matrix<T>  U,V;
+    std::vector<int> ir;
+    std::vector<int> ic;
+    int offset_i;
+    int offset_j;
 
 
-  LowRankMatrix() = delete;
-  LowRankMatrix(const std::vector<int>& ir0, const std::vector<int>& ic0, int rank0=-1):rank(rank0), nr(ir0.size()), nc(ic0.size()), U(ir0.size(),1),V(1,ic0.size()), ir(ir0), ic(ic0), offset_i(0), offset_j(0){}
+    LowRankMatrix() = delete;
+    LowRankMatrix(const std::vector<int>& ir0, const std::vector<int>& ic0, int rank0=-1):rank(rank0), nr(ir0.size()), nc(ic0.size()), U(ir0.size(),1),V(1,ic0.size()), ir(ir0), ic(ic0), offset_i(0), offset_j(0){}
 
-  LowRankMatrix(const std::vector<int>& ir0, const std::vector<int>& ic0, int offset_i0, int offset_j0, int rank0=-1):rank(rank0), nr(ir0.size()), nc(ic0.size()), U(ir0.size(),1),V(1,ic0.size()), ir(ir0),ic(ic0),offset_i(offset_i0), offset_j(offset_j0){}
+    LowRankMatrix(const std::vector<int>& ir0, const std::vector<int>& ic0, int offset_i0, int offset_j0, int rank0=-1):rank(rank0), nr(ir0.size()), nc(ic0.size()), U(ir0.size(),1),V(1,ic0.size()), ir(ir0),ic(ic0),offset_i(offset_i0), offset_j(offset_j0){}
 
 public:
 
-  LowRankMatrix(LowRankMatrix&&) = default; // move constructor
-  LowRankMatrix& operator=(LowRankMatrix&&) = default; // move assignement operator
+    LowRankMatrix(LowRankMatrix&&) = default; // move constructor
+    LowRankMatrix& operator=(LowRankMatrix&&) = default; // move assignement operator
 
-  // Getters
-  int nb_rows() const {return this->nr;}
-  int nb_cols() const{return this->nc;}
-  int rank_of() const {return this->rank;}
-  std::vector<int> get_ir() const {return this->ir;}
-  std::vector<int> get_ic() const {return this->ic;}
-  int get_offset_i() const {return this->offset_i;}
-  int get_offset_j() const {return this->offset_j;}
-  T get_U(int i, int j) const {return this->U(i,j);}
-  T get_V(int i, int j) const {return this->V(i,j);}
-  std::vector<int> get_xr() const {return this->xr;}
-  std::vector<int> get_xc() const {return this->xc;}
-  std::vector<int> get_tabr() const {return this->tabr;}
-  std::vector<int> get_tabc() const {return this->tabc;}
+    // Getters
+    int nb_rows() const {return this->nr;}
+    int nb_cols() const{return this->nc;}
+    int rank_of() const {return this->rank;}
+    std::vector<int> get_ir() const {return this->ir;}
+    std::vector<int> get_ic() const {return this->ic;}
+    int get_offset_i() const {return this->offset_i;}
+    int get_offset_j() const {return this->offset_j;}
+    T get_U(int i, int j) const {return this->U(i,j);}
+    T get_V(int i, int j) const {return this->V(i,j);}
+    std::vector<int> get_xr() const {return this->xr;}
+    std::vector<int> get_xc() const {return this->xc;}
+    std::vector<int> get_tabr() const {return this->tabr;}
+    std::vector<int> get_tabc() const {return this->tabc;}
 
-  std::vector<T> operator*(const std::vector<T>& a) const{
-    return this->U*(this->V*a);
-  }
-  void mvprod(const T* const in,  T* const out) const{
-    if (rank==0){
-      std::fill(out,out+nr,0);
+    std::vector<T> operator*(const std::vector<T>& a) const{
+        return this->U*(this->V*a);
     }
-    else{
-      std::vector<T> a(this->rank);
-      V.mvprod(in,a.data());
-      U.mvprod(a.data(),out);
-    }
-  }
-
-  void add_mvprod_row_major(const T* const in,  T* const out, const int& mu) const{
-    if (rank!=0){
-        std::vector<T> a(this->rank*mu);
-        if (mu==1){
-            V.mvprod_row_major(in,a.data(),1);
-            U.add_mvprod_row_major(a.data(),out,1);
+    void mvprod(const T* const in,  T* const out) const{
+        if (rank==0){
+          std::fill(out,out+nr,0);
         }
-        else {
-            V.mvprod_row_major(in,a.data(),mu);
-            U.add_mvprod_row_major(a.data(),out,mu);
+        else{
+          std::vector<T> a(this->rank);
+          V.mvprod(in,a.data());
+          U.mvprod(a.data(),out);
         }
-
-
     }
-}
 
-  void get_whole_matrix(T* const out) const {
-    char transa ='N';
-    char transb ='N';
-    int M = U.nb_rows();
-    int N = V.nb_cols();
-    int K = U.nb_cols();
-    T alpha = 1;
-    int lda =  U.nb_rows();
-    int ldb =  V.nb_rows();
-    T beta = 0;
-    int ldc = U.nb_rows();
+    void add_mvprod_row_major(const T* const in,  T* const out, const int& mu) const{
+        if (rank!=0){
+            std::vector<T> a(this->rank*mu);
+            if (mu==1){
+                V.mvprod_row_major(in,a.data(),1);
+                U.add_mvprod_row_major(a.data(),out,1);
+            }
+            else {
+                V.mvprod_row_major(in,a.data(),mu);
+                U.add_mvprod_row_major(a.data(),out,mu);
+            }
 
 
-    Blas<T>::gemm(&transa, &transb, &M, &N, &K, &alpha, &(U(0,0)),
-    &lda, &(V(0,0)), &ldb, &beta, out,&ldc);
-  }
+        }
+    }
 
-  double compression() const{
-    return (1 - ( this->rank*( 1./double(this->nr) + 1./double(this->nc))));
-  }
+    void get_whole_matrix(T* const out) const {
+        char transa ='N';
+        char transb ='N';
+        int M = U.nb_rows();
+        int N = V.nb_cols();
+        int K = U.nb_cols();
+        T alpha = 1;
+        int lda =  U.nb_rows();
+        int ldb =  V.nb_rows();
+        T beta = 0;
+        int ldc = U.nb_rows();
 
-  // friend Real NormFrob(const ACA& m){
-	// 	/*
-	// 	const std::vector<vectCplx>& u = m.u;
-	// 	const std::vector<vectCplx>& v = m.v;
-	// 	const int& rank = m.rank;
-	// 	*/
-  //
-	// 	Cplx frob = 0.;
-  //
-	// 	for (int j=0;j<m.nr;j++)
-	// 	for (int k=0;k<m.nc;k++){
-	// 		Cplx aux=0;
-	// 			for (int l=0;l<m.rank;l++){
-	// 				aux += m.U(j,l) * m.V(l,k);
-	// 			}
-	// 		frob+=pow(abs(aux),2);
-	// 	}
-  //
-	// 	/*
-	// 	for(int j=0; j<rank; j++){
-	// 		for(int k=0; k<rank; k++){
-	// 			frob += dprod(v[k],v[j])*dprod(u[k],u[j]) ;
-	// 		}
-	// 	}
-	// 	*/
-	// 	return sqrt(abs(frob));
-	// }
 
-  friend std::ostream& operator<<(std::ostream& os, const LowRankMatrix& m){
-    os << "rank:\t" << m.rank << std::endl;
-    os << "nr:\t"   << m.nr << std::endl;
-    os << "nc:\t"   << m.nc << std::endl;
-    os << "U:\n";
-    os<< m.U << std::endl;
-    os<< m.V << std::endl;
+        Blas<T>::gemm(&transa, &transb, &M, &N, &K, &alpha, &(U(0,0)),
+        &lda, &(V(0,0)), &ldb, &beta, out,&ldc);
+    }
 
-    return os;
-  }
+    double compression() const{
+        return (1 - ( this->rank*( 1./double(this->nr) + 1./double(this->nc))));
+    }
+
+
+    friend std::ostream& operator<<(std::ostream& os, const LowRankMatrix& m){
+        os << "rank:\t" << m.rank << std::endl;
+        os << "nr:\t"   << m.nr << std::endl;
+        os << "nc:\t"   << m.nc << std::endl;
+        os << "U:\n";
+        os<< m.U << std::endl;
+        os<< m.V << std::endl;
+
+        return os;
+    }
 };
 
 template<typename T>
