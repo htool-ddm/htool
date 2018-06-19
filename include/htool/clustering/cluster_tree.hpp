@@ -23,80 +23,80 @@ private:
   void SetRanks(Cluster& t);
 
 public:
-  // Full Constructor
-  Cluster_tree(const std::vector<R3>& x0, const std::vector<double>& r0,const std::vector<int>& tab0, const std::vector<double>& g0, MPI_Comm comm0=MPI_COMM_WORLD):perm(tab0.size()),root(x0,r0,tab0,g0,perm),comm(comm0){this->build();}
+    // Full Constructor
+    Cluster_tree(const std::vector<R3>& x0, const std::vector<double>& r0,const std::vector<int>& tab0, const std::vector<double>& g0, MPI_Comm comm0=MPI_COMM_WORLD):perm(tab0.size()),root(x0,r0,tab0,g0,perm),comm(comm0){this->build();}
 
-  // Constructor without radius
-  Cluster_tree(const std::vector<R3>& x0,const std::vector<int>& tab0, const std::vector<double>& g0, MPI_Comm comm0=MPI_COMM_WORLD):perm(tab0.size()),root(x0,tab0,g0,perm),comm(comm0){this->build();}
+    // Constructor without radius
+    Cluster_tree(const std::vector<R3>& x0,const std::vector<int>& tab0, const std::vector<double>& g0, MPI_Comm comm0=MPI_COMM_WORLD):perm(tab0.size()),root(x0,tab0,g0,perm),comm(comm0){this->build();}
 
-  // Constructor without mass
-  Cluster_tree(const std::vector<R3>& x0, const std::vector<double>& r0,const std::vector<int>& tab0, MPI_Comm comm0=MPI_COMM_WORLD):perm(tab0.size()),root(x0,r0,tab0,perm),comm(comm0){this->build();}
+    // Constructor without mass
+    Cluster_tree(const std::vector<R3>& x0, const std::vector<double>& r0,const std::vector<int>& tab0, MPI_Comm comm0=MPI_COMM_WORLD):perm(tab0.size()),root(x0,r0,tab0,perm),comm(comm0){this->build();}
 
-  // Constructor without tab
-  Cluster_tree(const std::vector<R3>& x0, const std::vector<double>& r0, const std::vector<double>& g0, MPI_Comm comm0=MPI_COMM_WORLD):perm(x0.size()),root(x0,r0,g0,perm),comm(comm0){this->build();}
+    // Constructor without tab
+    Cluster_tree(const std::vector<R3>& x0, const std::vector<double>& r0, const std::vector<double>& g0, MPI_Comm comm0=MPI_COMM_WORLD):perm(x0.size()),root(x0,r0,g0,perm),comm(comm0){this->build();}
 
-  // Constructor without radius and mass
-  Cluster_tree(const std::vector<R3>& x0, const std::vector<int>& tab0, MPI_Comm comm0=MPI_COMM_WORLD):perm(tab0.size()),root(x0,tab0,perm),comm(comm0){this->build();}
+    // Constructor without radius and mass
+    Cluster_tree(const std::vector<R3>& x0, const std::vector<int>& tab0, MPI_Comm comm0=MPI_COMM_WORLD):perm(tab0.size()),root(x0,tab0,perm),comm(comm0){this->build();}
 
-  // Constructor without radius, mass and tab
-  Cluster_tree(const std::vector<R3>& x0, MPI_Comm comm0=MPI_COMM_WORLD):perm(x0.size()),root(x0,perm),comm(comm0){this->build();}
+    // Constructor without radius, mass and tab
+    Cluster_tree(const std::vector<R3>& x0, MPI_Comm comm0=MPI_COMM_WORLD):perm(x0.size()),root(x0,perm),comm(comm0){this->build();}
 
-  // Build
-  void build(){
-    MPI_Comm_size(comm, &sizeWorld);
-    MPI_Comm_rank(comm, &rankWorld);
+    // Build
+    void build(){
+        MPI_Comm_size(comm, &sizeWorld);
+        MPI_Comm_rank(comm, &rankWorld);
 
-    // TODO better handling of this case
-    if (std::pow(2,root.get_min_depth())<sizeWorld){
-      std::cout << "WARNING: too many procs for the cluster tree"<< std::endl;
-      std::cout << "(min_deph,sizeworld): ("<<root.get_min_depth()<<","<<sizeWorld<<")"<< std::endl;
+        // TODO better handling of this case
+        if (std::pow(2,root.get_min_depth())<sizeWorld){
+          std::cout << "WARNING: too many procs for the cluster tree"<< std::endl;
+          std::cout << "(min_deph,sizeworld): ("<<root.get_min_depth()<<","<<sizeWorld<<")"<< std::endl;
+        }
+
+        // Infos
+        infos["max_depth"]=NbrToStr<int>(root.get_max_depth());
+        infos["min_depth"]=NbrToStr<int>(root.get_min_depth());
+        infos["master_depth"]=NbrToStr<int>(log2(sizeWorld));
+
+
+        SetRanks(root);
+        int max_size=MasterOffset[0].second;
+        int min_size=MasterOffset[0].second;
+        for (int i=0;i<MasterOffset.size();i++){
+            if (MasterOffset[i].second<min_size)
+                min_size=MasterOffset[i].second;
+            if (MasterOffset[i].second>max_size)
+                max_size=MasterOffset[i].second;
+        }
+
+        infos["master_max_size"]=NbrToStr<int>(max_size);
+        infos["master_min_size"]=NbrToStr<int>(min_size);
+
+
     }
 
-    // Infos
-    infos["max_depth"]=NbrToStr<int>(root.get_max_depth());
-    infos["min_depth"]=NbrToStr<int>(root.get_min_depth());
-    infos["master_depth"]=NbrToStr<int>(log2(sizeWorld));
+    // Getters
+    int get_local_offset() const {return MasterOffset[rankWorld].first;}
+    int get_local_size() const {return MasterOffset[rankWorld].second;}
+    std::pair<int,int> get_masteroffset(int i)const {return MasterOffset[i];}
+    const std::vector<int>& get_perm() const{return perm;};
+    std::vector<std::pair<int,int>> get_masteroffset(){return MasterOffset;}
+    int get_perm(int i) const{return perm[i];}
+    const Cluster& get_root() const {return root;}
+    std::vector<int>::const_iterator get_perm_start() const {return perm.begin();}
 
+    // Permutations
+    template<typename T>
+    void cluster_to_global(const T* const in, T* const out);
+    template<typename T>
+    void global_to_cluster(const T* const in, T* const out);
 
-    SetRanks(root);
-    int max_size=MasterOffset[0].second;
-    int min_size=MasterOffset[0].second;
-    for (int i=0;i<MasterOffset.size();i++){
-        if (MasterOffset[i].second<min_size)
-            min_size=MasterOffset[i].second;
-        if (MasterOffset[i].second>max_size)
-            max_size=MasterOffset[i].second;
-    }
+    // Print
+    void print(){root.print(perm);}
 
-    infos["master_max_size"]=NbrToStr<int>(max_size);
-    infos["master_min_size"]=NbrToStr<int>(min_size);
-
-
-  }
-
-  // Getters
-  int get_local_offset() const {return MasterOffset[rankWorld].first;}
-  int get_local_size() const {return MasterOffset[rankWorld].second;}
-  std::pair<int,int> get_masteroffset(int i)const {return MasterOffset[i];}
-  const std::vector<int>& get_perm() const{return perm;};
-  std::vector<std::pair<int,int>> get_masteroffset(){return MasterOffset;}
-  int get_perm(int i) const{return perm[i];}
-  const Cluster& get_root() const {return root;}
-  std::vector<int>::const_iterator get_perm_start() const {return perm.begin();}
-
-  // Permutations
-  template<typename T>
-  void cluster_to_global(const T* const in, T* const out);
-  template<typename T>
-  void global_to_cluster(const T* const in, T* const out);
-
-  // Print
-  void print(){root.print(perm);}
-
-  // Output
-  std::vector<int> get_labels(int visudep) const;
-  void print_infos() const;
-  void save_infos(const std::string& outputname, std::ios_base::openmode mode = std::ios_base::out) const;
+    // Output
+    std::vector<int> get_labels(int visudep) const;
+    void print_infos() const;
+    void save_infos(const std::string& outputname, std::ios_base::openmode mode = std::ios_base::out) const;
 
 };
 
