@@ -104,7 +104,7 @@ int main(){
             out_perm[permt[i]]=out[i];
         }
 		double error=norm2(A*f-out_perm);
-		test = test || !(error<1e-8);
+		test = test || !(error<1e-7);
 		cout << "Errors on a mat vec prod : "<< error<<endl<<endl;
 
 		// ACA automatic building
@@ -130,7 +130,7 @@ int main(){
             out_perm[permt[i]]=out[i];
         }
 		error = norm2(A*f-out_perm);
-		test = test || !(error<GetEpsilon());
+		test = test || !(error<GetEpsilon()*10);
 		cout << "Errors on a mat vec prod : "<< error<<endl<<endl<<endl;
 	}
 	cout << "test : "<<test<<endl;
