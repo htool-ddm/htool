@@ -92,6 +92,7 @@ public:
 
     // Print
     void print(){root.print(perm);}
+    void print_size(int required_depth){root.print_size(perm,required_depth);}
 
     // Output
     std::vector<int> get_labels(int visudep) const;

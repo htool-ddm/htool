@@ -9,6 +9,10 @@
 // #include <Eigen/Eigenvalues>
 
 namespace htool {
+//     typedef Eigen::Matrix3d               MatR3;
+// typedef Eigen::EigenSolver<MatR3>     EigenSolver;
+// typedef EigenSolver::EigenvectorsType EigenVector;
+// typedef EigenSolver::EigenvalueType   EigenValue;
 //===============================//
 //           PAQUETS             //
 //===============================//
@@ -61,7 +65,7 @@ public:
 	Cluster(const std::vector<R3>& x0, const std::vector<double>& r0, const std::vector<int>& tab0,std::vector<int>& perm);
 	Cluster(const std::vector<R3>& x0, const std::vector<double>& r0, const std::vector<double>& g0, std::vector<int>& perm);
 
-  Cluster(const std::vector<R3>& x0,const std::vector<int>& tab0, std::vector<int>& perm);
+    Cluster(const std::vector<R3>& x0,const std::vector<int>& tab0, std::vector<int>& perm);
 
 	Cluster(const std::vector<R3>& x0, std::vector<int>& perm);
 
@@ -93,6 +97,7 @@ public:
 	void set_size(const int& size0) {size=size0;}
 
 	void print(const std::vector<int>& perm) const;
+    void print_size(const std::vector<int>& perm, int required_depth) const;
 };
 
 
@@ -162,6 +167,7 @@ void Cluster::build(const std::vector<R3>& x, const std::vector<double>& r, cons
 		std::vector<double> eigs(3);
 		Matrix<double> I(3,3);I(0,0)=1;I(1,1)=1;I(2,2)=1;
 		R3 dir;
+        Matrix<double> prod(3,3);
 		if (p1 < 1e-16) {
 	    	// cov is diagonal.
 	   		eigs[0] = cov(0,0);
@@ -210,7 +216,6 @@ void Cluster::build(const std::vector<R3>& x, const std::vector<double>& r, cons
 			if (std::abs(eigs[0]) < 1.e-16)
 				dir *= 0.;
 			else {
-				Matrix<double> prod(3,3);
 				prod = (cov - eigs[1] * I) * (cov - eigs[2] * I);
 				int ind = 0;
 				double dirnorm = 0;
@@ -221,8 +226,8 @@ void Cluster::build(const std::vector<R3>& x, const std::vector<double>& r, cons
 					dirnorm = sqrt(dir[0]*dir[0]+dir[1]*dir[1]+dir[2]*dir[2]);
 					ind++;
 				}
-				while ((dirnorm < 1.e-15) && (ind < 3));
-				assert(dirnorm >= 1.e-15);
+				while ((dirnorm < 1.e-10) && (ind < 3));
+				assert(dirnorm >= 1.e-10);
 				dir[0] /= dirnorm;
 				dir[1] /= dirnorm;
 				dir[2] /= dirnorm;
@@ -230,6 +235,28 @@ void Cluster::build(const std::vector<R3>& x, const std::vector<double>& r, cons
 
 		}
 
+        // // Test eigen
+        // MatR3 cov_eigen; cov_eigen.setZero();
+        // curr->rad=0.;
+		// for(int j=0; j<nb_pt; j++){
+		// 	R3 u = x[tab[num[j]]] - xc;
+		// 	curr->rad=std::max(curr->rad,norm2(u)+r[tab[num[j]]]);
+		// 	for(int p=0; p<3; p++){
+		// 		for(int q=0; q<3; q++){
+		// 			cov_eigen(p,q) += g[tab[num[j]]]*u[p]*u[q];
+		// 		}
+		// 	}
+		// }
+		// EigenSolver eig(cov_eigen);
+		// EigenValue  lambda = eig.eigenvalues();
+		// EigenVector ev = eig.eigenvectors();
+		// int l = 0; double max=abs(lambda[0]);
+		// if( max<abs(lambda[1]) ){l=1; max=abs(lambda[1]);}
+		// if( max<abs(lambda[2]) ){l=2; }
+		// R3 w;
+		// w[0] = ev(0,l).real();
+		// w[1] = ev(1,l).real();
+		// w[2] = ev(2,l).real();
 
 		// Construction des paquets enfants
 		curr->son[0] = new Cluster(curr->depth+1);
@@ -264,7 +291,7 @@ void Cluster::build(const std::vector<R3>& x, const std::vector<double>& r, cons
 			if (this->min_depth<0) {this->min_depth=curr->depth;}
 			else{
 			this->min_depth= std::min(this->min_depth,curr ->depth);}
-
+            
 			delete curr->son[0]; curr->son[0] = NULL;
 			delete curr->son[1]; curr->son[1] = NULL;
 
@@ -339,6 +366,17 @@ void Cluster::print(const std::vector<int>& perm) const
 	if (this->son[1]!=NULL) (*this->son[1]).print(perm);
 }
 
+void Cluster::print_size(const std::vector<int>& perm,int required_depth) const
+{
+	if ( !perm.empty() ) {
+		std::cout << depth <<" "<<size <<std::endl;;
+	}
+	// std::cout << offset << " "<<size << std::endl;
+    if (required_depth>depth){
+	    if (this->son[0]!=NULL) (*this->son[0]).print_size(perm,required_depth);
+	    if (this->son[1]!=NULL) (*this->son[1]).print_size(perm,required_depth);
+    }
+}
 
 
 //===============================//
