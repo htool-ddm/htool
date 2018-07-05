@@ -155,7 +155,6 @@ void Cluster_tree::SetRanksRec(Cluster& t, const unsigned int depth, const unsig
 			MasterOffset[cnt-pow(2,depth)] = std::pair<int,int>(t.get_offset(),t.get_size());
             if (rankWorld==cnt-pow(2,depth)){
                 local_cluster=&t;
-            std::cout<<"WARNING "<<rankWorld<<" "<<t.get_offset()<<std::endl;}
 		}
 		if (!t.IsLeaf()){
 			SetRanksRec(t.get_son(0), depth, cnt);
