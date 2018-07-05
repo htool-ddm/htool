@@ -6,7 +6,7 @@
 #define HPDDM_FETI 0
 #define HPDDM_BDD 0
 #define LAPACKSUB
-#define DELEMENTAL
+#define DSUITESPARSE
 #define EIGENSOLVER 1
 #include <HPDDM.hpp>
 #include "../types/hmatrix.hpp"
