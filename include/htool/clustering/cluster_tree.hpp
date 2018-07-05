@@ -5,6 +5,7 @@
 #include "cluster_tree_base.hpp"
 #include <mpi.h>
 #include <map>
+#include <memory>
 
 namespace htool {
 
