@@ -185,17 +185,14 @@ public:
 
     void facto_one_level(){
         double time = MPI_Wtime();
-        double mytime, maxtime,meantime;
+        double mytime, maxtime;
         hpddm_op.callNumfact();
         mytime = MPI_Wtime() - time;
 
         // Timing
         MPI_Reduce(&(mytime), &(maxtime), 1, MPI_DOUBLE, MPI_MAX, 0,this->comm);
-        MPI_Reduce(&(mytime), &(meantime), 1, MPI_DOUBLE, MPI_SUM, 0,comm);
-        meantime /= hpddm_op.HA.get_sizeworld();
 
         infos["DDM_facto_one_level_max" ]= NbrToStr(maxtime);
-        infos["DDM_facto_one_level_mean" ]= NbrToStr(meantime);
     }
 
     void build_coarse_space( Matrix<T>& Mi, IMatrix<T>& generator_Bi, const std::vector<R3>& x ){
