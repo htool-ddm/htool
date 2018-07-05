@@ -291,7 +291,7 @@ void Cluster::build(const std::vector<R3>& x, const std::vector<double>& r, cons
 			if (this->min_depth<0) {this->min_depth=curr->depth;}
 			else{
 			this->min_depth= std::min(this->min_depth,curr ->depth);}
-            
+
 			delete curr->son[0]; curr->son[0] = NULL;
 			delete curr->son[1]; curr->son[1] = NULL;
 
@@ -398,7 +398,7 @@ public:
 	const Cluster& src_() const {return *(s);}
 	void ComputeAdmissibility() {
 		// Rjasanow - Steinbach (3.15) p111 Chap Approximation of Boundary Element Matrices
-		Admissible =  2*std::min((*t).get_rad(),(*s).get_rad()) < eta* (norm2((*t).get_ctr()-(*s).get_ctr())-(*t).get_rad()-(*s).get_rad() )  ;
+		Admissible =  2*std::min((*t).get_rad(),(*s).get_rad()) < eta* std::max((norm2((*t).get_ctr()-(*s).get_ctr())-(*t).get_rad()-(*s).get_rad() ),0.)  ;
 	}
 	bool IsAdmissible() const{
 		assert(Admissible != -1);
