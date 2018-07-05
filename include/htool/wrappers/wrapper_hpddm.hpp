@@ -5,9 +5,8 @@
 #define HPDDM_DENSE 1
 #define HPDDM_FETI 0
 #define HPDDM_BDD 0
-// #define HPDDM_DENSE 1
 #define LAPACKSUB
-#define DSUITESPARSE
+#define DELEMENTAL
 #define EIGENSOLVER 1
 #include <HPDDM.hpp>
 #include "../types/hmatrix.hpp"
@@ -110,9 +109,9 @@ public:
         // std::copy_n(in, this->_n, out);
     }
 
-    void build_coarse_space(Matrix<T>& mass, Matrix<T>& Bi){
+    void build_coarse_space(Matrix<T>& Mi, IMatrix<T>& generator_Bi, const std::vector<R3>& x){
         // Coarse space
-        P.build_coarse_space(mass,Bi);
+        P.build_coarse_space(Mi,generator_Bi,x);
     }
 
     void facto_one_level(){

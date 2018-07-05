@@ -191,7 +191,7 @@ public:
         infos["DDM_facto_one_level_max" ]= NbrToStr(maxtime);
     }
 
-    void build_coarse_space( Matrix<T>& Mi, Matrix<T>& Bi){
+    void build_coarse_space( Matrix<T>& Mi, IMatrix<T>& generator_Bi, const std::vector<R3>& x ){
         // Timing
         std::vector<double> mytime(4), maxtime(4);
         double time = MPI_Wtime();
@@ -200,6 +200,68 @@ public:
         int sizeWorld = hmat.get_sizeworld();
         int rankWorld = hmat.get_rankworld();
         int info;
+
+        // Building Neumann matrix
+        htool::HMatrix<LowRankMatrix,T> HBi(generator_Bi,std::make_shared<Cluster_tree>(hmat.get_cluster_tree_t().create_local_cluster_tree()),x,-1,MPI_COMM_SELF);
+
+        Matrix<T> Bi(n,n);
+
+        // Building Bi
+        bool sym=false;
+        const std::vector<LowRankMatrix<T>*>& MyLocalFarFieldMats = HBi.get_MyFarFieldMats();
+        const std::vector<SubMatrix<T>*>& MyLocalNearFieldMats= HBi.get_MyNearFieldMats();
+        // std::cout << MyLocalNearFieldMats.size()<<std::endl;
+        // std::cout << MyLocalFarFieldMats.size()<<std::endl;
+
+        // Internal dense blocks
+        for (int i=0;i<MyLocalNearFieldMats.size();i++){
+          const SubMatrix<T>& submat = *(MyLocalNearFieldMats[i]);
+          int local_nr = submat.nb_rows();
+          int local_nc = submat.nb_cols();
+          int offset_i = submat.get_offset_i()-hmat.get_local_offset();
+          int offset_j = submat.get_offset_j()-hmat.get_local_offset();
+          for (int i=0;i<local_nc;i++){
+            std::copy_n(&(submat(0,i)),local_nr,Bi.data()+offset_i+(offset_j+i)*n);
+          }
+        }
+
+        // Internal compressed block
+        Matrix<T> FarFielBlock(n,n);
+        for (int i=0;i<MyLocalFarFieldMats.size();i++){
+          const LowRankMatrix<T>& lmat = *(MyLocalFarFieldMats[i]);
+          int local_nr = lmat.nb_rows();
+          int local_nc = lmat.nb_cols();
+          int offset_i = lmat.get_offset_i()-hmat.get_local_offset();
+          int offset_j = lmat.get_offset_j()-hmat.get_local_offset();;
+          FarFielBlock.resize(local_nr,local_nc);
+          lmat.get_whole_matrix(&(FarFielBlock(0,0)));
+          for (int i=0;i<local_nc;i++){
+            std::copy_n(&(FarFielBlock(0,i)),local_nr,Bi.data()+offset_i+(offset_j+i)*n);
+          }
+        }
+
+
+        // Overlap
+        std::vector<T> horizontal_block(n-n_inside,n_inside),vertical_block(n,n-n_inside);
+        horizontal_block = generator_Bi.get_submatrix(std::vector<int>(renum_to_global.begin()+n_inside,renum_to_global.end()),std::vector<int>(renum_to_global.begin(),renum_to_global.begin()+n_inside)).get_mat();
+        vertical_block = generator_Bi.get_submatrix(renum_to_global,std::vector<int>(renum_to_global.begin()+n_inside,renum_to_global.end())).get_mat();
+        for (int j=0;j<n_inside;j++){
+          std::copy_n(horizontal_block.begin()+j*(n-n_inside),n-n_inside,Bi.data()+n_inside+j*n);
+        }
+        for (int j=n_inside;j<n;j++){
+          std::copy_n(vertical_block.begin()+(j-n_inside)*n,n,Bi.data()+j*n);
+        }
+
+        // test
+        // double error=0;
+        // double norm_frob=0;
+        // for (int i=0;i<n;i++){
+        //     for (int j=0;j<n;j++){
+        //         error+=abs(pow(Bi(i,j)-Bi_test[i+j*n],2));
+        //         norm_frob+=abs(pow(Bi(i,j),2));
+        //     }
+        // }
+        // std::cout << "COUCOU "<<normFrob(Bi-Bi_test)/normFrob(Bi)<<std::endl;
 
         // LU facto for mass matrix
         int lda=n;
@@ -240,6 +302,7 @@ public:
         work.resize(lwork);
         HPDDM::Lapack<T>::geev( "N", "Vectors", &n, evp.data(), &lda, w.data(),nullptr , vl.data(), &ldvl, vr.data(), &ldvr, work.data(), &lwork, rwork.data(), &info );
         std::vector<int> index(n, 0);
+        // std::cout << "geev : "<< info << std::endl;
 
         for (int i = 0 ; i != index.size() ; i++) {
             index[i] = i;
@@ -427,6 +490,8 @@ public:
         else
             MPI_Reduce(E.data(), E.data(), E.size(), wrapper_mpi<T>::mpi_type(),MPI_SUM, 0,comm);
 
+        // if (rankWorld==0)
+            // matlab_save(E,"E_protoddm.txt");
         // if (rankWorld==0){
         //     double norme=0;
         //     std::cout << "size E :"<<E.size() << std::endl;
@@ -451,6 +516,7 @@ public:
         _ipiv_coarse.resize(n_coarse);
 
         HPDDM::Lapack<T>::getrf(&n_coarse,&n_coarse,E.data(),&n_coarse,_ipiv_coarse.data(),&info);
+        // std::cout << "getrf : "<< info << std::endl;
         mytime[3] = MPI_Wtime() - time;
         MPI_Barrier(hmat.get_comm());
         time = MPI_Wtime();
@@ -543,6 +609,7 @@ public:
             int info;
             // std::cout << n <<" "<<n_inside<<" "<<mat_loc.size()<<" "<<vec_ovr.size()<<std::endl;
             HPDDM::Lapack<T>::getrs(&l,&zt_size,&nrhs,E.data(),&lda,_ipiv_coarse.data(),zt.data(),&ldb,&info);
+            // std::cout << "GETRS : "<<info << std::endl;
         }
 
         MPI_Scatterv(zt.data(),recvcounts.data(),displs.data(),wrapper_mpi<T>::mpi_type(),zti.data(),zti.size(),wrapper_mpi<T>::mpi_type(),0,comm);
@@ -600,8 +667,8 @@ public:
                     std::transform(out_one_level.begin(),out_one_level.begin()+n_inside,out_Q.begin(),out,std::plus<T>());
                     break;
                 case HPDDM_SCHWARZ_COARSE_CORRECTION_ADDITIVE:
-                    one_level(in,out_one_level.data());
                     Q(in,out_Q.data());
+                    one_level(in,out_one_level.data());
                     std::transform(out_one_level.begin(),out_one_level.begin()+n_inside,out_Q.begin(),out,std::plus<T>());
                     break;
                 default:

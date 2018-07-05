@@ -13,6 +13,7 @@ private:
     int n;
     int n_inside;
     const std::vector<int> neighbors;
+    std::vector<int> renum_to_global;
     // const std::vector<int> cluster_to_ovr_subdomain;
     std::vector<std::vector<int> > intersections;
     std::vector<T> vec_ovr;
@@ -81,11 +82,8 @@ public:
 
         // Timing
         MPI_Reduce(&(mytime), &(maxtime), 1, MPI_DOUBLE, MPI_MAX, 0,this->comm);
-        MPI_Reduce(&(mytime), &(meantime), 1, MPI_DOUBLE, MPI_SUM, 0,this->comm);
-        meantime /= hmat_0.get_sizeworld();
 
-        infos["DDM_setup_mean"]= NbrToStr(meantime);
-        infos["DDM_setup_max" ]= NbrToStr(maxtime);
+        infos["DDM_setup_one_level_max" ]= NbrToStr(maxtime);
     }
 
     // With overlap
@@ -100,7 +98,7 @@ public:
         double time = MPI_Wtime();
 
         std::vector<int> renum(n,-1);
-        std::vector<int> renum_to_global(n);
+        renum_to_global.resize(n);
 
         for (int i=0;i<cluster_to_ovr_subdomain0.size();i++){
           renum[cluster_to_ovr_subdomain0[i]]=i;
@@ -180,11 +178,8 @@ public:
 
         // Timing
         MPI_Reduce(&(mytime), &(maxtime), 1, MPI_DOUBLE, MPI_MAX, 0,comm);
-      	MPI_Reduce(&(mytime), &(meantime), 1, MPI_DOUBLE, MPI_SUM, 0,comm);
-        meantime /= hmat_0.get_sizeworld();
 
-        infos["DDM_setup_mean"]= NbrToStr(meantime);
-        infos["DDM_setup_max" ]= NbrToStr(maxtime);
+        infos["DDM_setup_one_level_max" ]= NbrToStr(maxtime);
 
     }
 
@@ -203,7 +198,7 @@ public:
         infos["DDM_facto_one_level_mean" ]= NbrToStr(meantime);
     }
 
-    void build_coarse_space(Matrix<T>&  Mi, Matrix<T>&  Bi){
+    void build_coarse_space( Matrix<T>& Mi, IMatrix<T>& generator_Bi, const std::vector<R3>& x ){
 
         // Timing
         std::vector<double> mytime(4), maxtime(4);
@@ -214,6 +209,56 @@ public:
         int sizeWorld = hpddm_op.HA.get_sizeworld();
         int rankWorld = hpddm_op.HA.get_rankworld();
         int info;
+
+        // Building Neumann matrix
+        htool::HMatrix<LowRankMatrix,T> HBi(generator_Bi,std::make_shared<Cluster_tree>(hpddm_op.HA.get_cluster_tree_t().create_local_cluster_tree()),x,-1,MPI_COMM_SELF);
+        Matrix<T> Bi(n,n);
+
+        // Building Bi
+        bool sym=false;
+        const std::vector<LowRankMatrix<T>*>& MyLocalFarFieldMats = HBi.get_MyFarFieldMats();
+        const std::vector<SubMatrix<T>*>& MyLocalNearFieldMats= HBi.get_MyNearFieldMats();
+        // std::cout << MyLocalNearFieldMats.size()<<std::endl;
+        // std::cout << MyLocalFarFieldMats.size()<<std::endl;
+
+        // Internal dense blocks
+        for (int i=0;i<MyLocalNearFieldMats.size();i++){
+          const SubMatrix<T>& submat = *(MyLocalNearFieldMats[i]);
+          int local_nr = submat.nb_rows();
+          int local_nc = submat.nb_cols();
+          int offset_i = submat.get_offset_i()-hpddm_op.HA.get_local_offset();
+          int offset_j = submat.get_offset_j()-hpddm_op.HA.get_local_offset();
+          for (int i=0;i<local_nc;i++){
+            std::copy_n(&(submat(0,i)),local_nr,Bi.data()+offset_i+(offset_j+i)*n);
+          }
+        }
+
+        // Internal compressed block
+        Matrix<T> FarFielBlock(n,n);
+        for (int i=0;i<MyLocalFarFieldMats.size();i++){
+          const LowRankMatrix<T>& lmat = *(MyLocalFarFieldMats[i]);
+          int local_nr = lmat.nb_rows();
+          int local_nc = lmat.nb_cols();
+          int offset_i = lmat.get_offset_i()-hpddm_op.HA.get_local_offset();
+          int offset_j = lmat.get_offset_j()-hpddm_op.HA.get_local_offset();;
+          FarFielBlock.resize(local_nr,local_nc);
+          lmat.get_whole_matrix(&(FarFielBlock(0,0)));
+          for (int i=0;i<local_nc;i++){
+            std::copy_n(&(FarFielBlock(0,i)),local_nr,Bi.data()+offset_i+(offset_j+i)*n);
+          }
+        }
+
+
+        // Overlap
+        std::vector<T> horizontal_block(n-n_inside,n_inside),vertical_block(n,n-n_inside);
+        horizontal_block = generator_Bi.get_submatrix(std::vector<int>(renum_to_global.begin()+n_inside,renum_to_global.end()),std::vector<int>(renum_to_global.begin(),renum_to_global.begin()+n_inside)).get_mat();
+        vertical_block = generator_Bi.get_submatrix(renum_to_global,std::vector<int>(renum_to_global.begin()+n_inside,renum_to_global.end())).get_mat();
+        for (int j=0;j<n_inside;j++){
+          std::copy_n(horizontal_block.begin()+j*(n-n_inside),n-n_inside,Bi.data()+n_inside+j*n);
+        }
+        for (int j=n_inside;j<n;j++){
+          std::copy_n(vertical_block.begin()+(j-n_inside)*n,n,Bi.data()+j*n);
+        }
 
         // LU facto for mass matrix
         int lda=n;
@@ -243,11 +288,21 @@ public:
 
         // eigenvalue problem
         hpddm_op.solveEVP(evp.data());
-        const T* const* Z = hpddm_op.getVectors();
+        T* const* Z = const_cast <T* const*> (hpddm_op.getVectors()) ;
         HPDDM::Option& opt = *HPDDM::Option::get();
         nevi = opt.val("geneo_nu",2);
 
-
+        // for (int i=0;i<nevi;i++){
+        //     double norm_i=0;
+        //     for (int j=0;j<n;j++){
+        //         norm_i+=std::abs(Z[i][j]*std::conj(Z[i][j]));
+        //     }
+        //     norm_i=std::sqrt(norm_i);
+        //     for (int j=0;j<n;j++){
+        //         Z[i][j]=Z[i][j]/norm_i;
+        //     }
+        //
+        // }
 
         mytime[1] = MPI_Wtime() - time;
         MPI_Barrier(hpddm_op.HA.get_comm());
@@ -329,7 +384,8 @@ public:
         else
             MPI_Reduce(E.data(), E.data(), E.size(), wrapper_mpi<T>::mpi_type(),MPI_SUM, 0,comm);
 
-
+        // if (rankWorld==0)
+        //     matlab_save(E,"E_ddm.txt");
         mytime[2] = MPI_Wtime() - time;
         MPI_Barrier(hpddm_op.HA.get_comm());
         time = MPI_Wtime();
@@ -343,7 +399,7 @@ public:
         // Timing
         MPI_Reduce(&(mytime[0]), &(maxtime[0]), 4, MPI_DOUBLE, MPI_MAX, 0,this->comm);
 
-        infos["DDM_setup_geev" ]= NbrToStr(maxtime[0]);
+        infos["DDM_setup_geev_max" ]= NbrToStr(maxtime[0]);
         infos["DDM_geev_max" ]= NbrToStr(maxtime[1]);
         infos["DDM_setup_ZtAZ_max" ]= NbrToStr(maxtime[2]);
         infos["DDM_facto_ZtAZ_max" ]= NbrToStr(maxtime[3]);
@@ -530,7 +586,7 @@ public:
                 infos[key]=value;
             }
             else{
-                infos[key]+= value;
+                infos[key]=NbrToStr( StrToNbr<double>(infos[key])+StrToNbr<double>(value));
             }
         }
     }

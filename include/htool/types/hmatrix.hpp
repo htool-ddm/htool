@@ -153,6 +153,8 @@ public:
 	int get_local_size() const {return local_size;}
 	int get_local_offset() const {return local_offset;}
 
+    const Cluster_tree& get_cluster_tree_t() const{return *(cluster_tree_t.get());}
+    const Cluster_tree& get_cluster_tree_s() const{return *(cluster_tree_s.get());}
 	std::vector<std::pair<int,int>> get_MasterOffset_t() const {return cluster_tree_t->get_masteroffset();}
 	std::vector<std::pair<int,int>> get_MasterOffset_s() const {return cluster_tree_s->get_masteroffset();}
     std::pair<int,int> get_MasterOffset_t(int i) const {return cluster_tree_t->get_masteroffset(i);}
@@ -218,7 +220,7 @@ void HMatrix<LowRankMatrix, T >::build(IMatrix<T>& mat, const std::vector<R3>& x
 
 	// Construction arbre des blocs
 	time = MPI_Wtime();
-	Block* B = BuildBlockTree(cluster_tree_t->get_root(),cluster_tree_s->get_root());
+	Block* B = BuildBlockTree(cluster_tree_t->get_head(),cluster_tree_s->get_head());
 	if (B != NULL) Tasks.push_back(B);
 	mytimes[1] = MPI_Wtime() - time;
 
@@ -295,7 +297,7 @@ void HMatrix<LowRankMatrix, T >::build(IMatrix<T>& mat,
 
 	// Construction arbre des blocs
 	time = MPI_Wtime();
-	Block* B = BuildBlockTree(cluster_tree_t->get_root(),cluster_tree_t->get_root());
+	Block* B = BuildBlockTree(cluster_tree_t->get_head(),cluster_tree_t->get_head());
 	if (B != NULL) Tasks.push_back(B);
 	mytimes[1] = MPI_Wtime() - time;
 
@@ -378,7 +380,7 @@ void HMatrix<LowRankMatrix, T >::build(IMatrix<T>& mat, const std::vector<R3>& x
 
 	// Construction arbre des blocs
 	time = MPI_Wtime();
-	Block* B = BuildBlockTree(cluster_tree_t->get_root(),cluster_tree_s->get_root());
+	Block* B = BuildBlockTree(cluster_tree_t->get_head(),cluster_tree_s->get_head());
 	if (B != NULL) Tasks.push_back(B);
 	mytimes[1] = MPI_Wtime() - time;
 
@@ -541,7 +543,7 @@ void HMatrix<LowRankMatrix, T >::ScatterTasks(){
 	// std::cout << "Tasks : "<<Tasks.size()<<std::endl;
   for(int b=0; b<Tasks.size(); b++){
     	//if (b%sizeWorld == rankWorld)
-    if ((*(Tasks[b])).tgt_().get_rank() == rankWorld){
+    if ((*(Tasks[b])).tgt_().get_rank() == cluster_tree_t->get_local_cluster().get_rank()){
     		MyBlocks.push_back(Tasks[b]);
 		}
 	}
@@ -1242,6 +1244,7 @@ Matrix<T> HMatrix<LowRankMatrix,T >::to_dense() const{
     }
     return Dense;
 }
+
 
 } //namespace
 #endif
