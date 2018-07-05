@@ -2,6 +2,7 @@
 #define HTOOL_CLUSTER_TREE_HPP
 
 #include "cluster.hpp"
+#include "cluster_tree_base.hpp"
 #include <mpi.h>
 #include <map>
 
@@ -9,10 +10,14 @@ namespace htool {
 
 class Cluster_tree {
 private:
+
   // Data
-  std::vector<int> perm;
+  std::shared_ptr<Cluster_tree_base> base;
+
   std::vector<std::pair<int,int>> MasterOffset;
-  Cluster root;
+  const Cluster* head;
+  const Cluster* local_cluster;
+
   int sizeWorld;
   int rankWorld;
   MPI_Comm comm;
@@ -22,43 +27,72 @@ private:
   void SetRanksRec(Cluster& t, const unsigned int depth, const unsigned int cnt);
   void SetRanks(Cluster& t);
 
+
+  Cluster_tree(const Cluster_tree& c):base(c.base),head(c.local_cluster),local_cluster(c.local_cluster),sizeWorld(1),rankWorld(0),comm(MPI_COMM_SELF){
+      MasterOffset.push_back(std::make_pair(c.MasterOffset[c.rankWorld].first,c.MasterOffset[c.rankWorld].second));
+  }
+
 public:
     // Full Constructor
-    Cluster_tree(const std::vector<R3>& x0, const std::vector<double>& r0,const std::vector<int>& tab0, const std::vector<double>& g0, MPI_Comm comm0=MPI_COMM_WORLD):perm(tab0.size()),root(x0,r0,tab0,g0,perm),comm(comm0){this->build();}
+    Cluster_tree(const std::vector<R3>& x0, const std::vector<double>& r0,const std::vector<int>& tab0, const std::vector<double>& g0, MPI_Comm comm0=MPI_COMM_WORLD):comm(comm0){
+        base=std::make_shared<Cluster_tree_base>(x0,r0,tab0,g0);
+        head = &(base->root);
+        this->build();}
 
     // Constructor without radius
-    Cluster_tree(const std::vector<R3>& x0,const std::vector<int>& tab0, const std::vector<double>& g0, MPI_Comm comm0=MPI_COMM_WORLD):perm(tab0.size()),root(x0,tab0,g0,perm),comm(comm0){this->build();}
+    Cluster_tree(const std::vector<R3>& x0,const std::vector<int>& tab0, const std::vector<double>& g0, MPI_Comm comm0=MPI_COMM_WORLD):comm(comm0){
+        base=std::make_shared<Cluster_tree_base>(x0,tab0,g0);
+        head = &(base->root);
+        this->build();}
 
     // Constructor without mass
-    Cluster_tree(const std::vector<R3>& x0, const std::vector<double>& r0,const std::vector<int>& tab0, MPI_Comm comm0=MPI_COMM_WORLD):perm(tab0.size()),root(x0,r0,tab0,perm),comm(comm0){this->build();}
+    Cluster_tree(const std::vector<R3>& x0, const std::vector<double>& r0,const std::vector<int>& tab0, MPI_Comm comm0=MPI_COMM_WORLD):comm(comm0){
+        base=std::make_shared<Cluster_tree_base>(x0,r0,tab0);
+        head = &(base->root);
+        this->build();}
 
     // Constructor without tab
-    Cluster_tree(const std::vector<R3>& x0, const std::vector<double>& r0, const std::vector<double>& g0, MPI_Comm comm0=MPI_COMM_WORLD):perm(x0.size()),root(x0,r0,g0,perm),comm(comm0){this->build();}
+    Cluster_tree(const std::vector<R3>& x0, const std::vector<double>& r0, const std::vector<double>& g0, MPI_Comm comm0=MPI_COMM_WORLD):comm(comm0){
+        base=std::make_shared<Cluster_tree_base>(x0,r0,g0);
+        head = &(base->root);
+        this->build();}
 
     // Constructor without radius and mass
-    Cluster_tree(const std::vector<R3>& x0, const std::vector<int>& tab0, MPI_Comm comm0=MPI_COMM_WORLD):perm(tab0.size()),root(x0,tab0,perm),comm(comm0){this->build();}
+    Cluster_tree(const std::vector<R3>& x0, const std::vector<int>& tab0, MPI_Comm comm0=MPI_COMM_WORLD):comm(comm0){
+        base=std::make_shared<Cluster_tree_base>(x0,tab0);
+        head = &(base->root);
+        this->build();}
 
     // Constructor without radius, mass and tab
-    Cluster_tree(const std::vector<R3>& x0, MPI_Comm comm0=MPI_COMM_WORLD):perm(x0.size()),root(x0,perm),comm(comm0){this->build();}
+    Cluster_tree(const std::vector<R3>& x0, MPI_Comm comm0=MPI_COMM_WORLD):comm(comm0){
+        base=std::make_shared<Cluster_tree_base>(x0);
+        head = &(base->root);
+        this->build();}
+
+    Cluster_tree(Cluster_tree&&)                  = default; // move constructor
+    Cluster_tree& operator=(Cluster_tree&&)       = default; // move assignement operator
+
+
 
     // Build
     void build(){
+
         MPI_Comm_size(comm, &sizeWorld);
         MPI_Comm_rank(comm, &rankWorld);
 
         // TODO better handling of this case
-        if (std::pow(2,root.get_min_depth())<sizeWorld){
+        if (std::pow(2,head->get_min_depth())<sizeWorld){
           std::cout << "WARNING: too many procs for the cluster tree"<< std::endl;
-          std::cout << "(min_deph,sizeworld): ("<<root.get_min_depth()<<","<<sizeWorld<<")"<< std::endl;
+          std::cout << "(min_deph,sizeworld): ("<<head->get_min_depth()<<","<<sizeWorld<<")"<< std::endl;
         }
 
         // Infos
-        infos["max_depth"]=NbrToStr<int>(root.get_max_depth());
-        infos["min_depth"]=NbrToStr<int>(root.get_min_depth());
+        infos["max_depth"]=NbrToStr<int>(head->get_max_depth());
+        infos["min_depth"]=NbrToStr<int>(head->get_min_depth());
         infos["master_depth"]=NbrToStr<int>(log2(sizeWorld));
 
 
-        SetRanks(root);
+        SetRanks(base->root);
         int max_size=MasterOffset[0].second;
         int min_size=MasterOffset[0].second;
         for (int i=0;i<MasterOffset.size();i++){
@@ -74,15 +108,20 @@ public:
 
     }
 
+    Cluster_tree create_local_cluster_tree() const{
+        return Cluster_tree(*this);
+    }
+
     // Getters
     int get_local_offset() const {return MasterOffset[rankWorld].first;}
     int get_local_size() const {return MasterOffset[rankWorld].second;}
     std::pair<int,int> get_masteroffset(int i)const {return MasterOffset[i];}
-    const std::vector<int>& get_perm() const{return perm;};
+    const std::vector<int>& get_perm() const{return base->perm;};
     std::vector<std::pair<int,int>> get_masteroffset(){return MasterOffset;}
-    int get_perm(int i) const{return perm[i];}
-    const Cluster& get_root() const {return root;}
-    std::vector<int>::const_iterator get_perm_start() const {return perm.begin();}
+    int get_perm(int i) const{return base->perm[i];}
+    const Cluster& get_head() const {return *head;}
+    const Cluster& get_local_cluster() const {return *local_cluster;}
+    std::vector<int>::const_iterator get_perm_start() const {return base->perm.begin();}
 
     // Permutations
     template<typename T>
@@ -91,8 +130,8 @@ public:
     void global_to_cluster(const T* const in, T* const out);
 
     // Print
-    void print(){root.print(perm);}
-    void print_size(int required_depth){root.print_size(perm,required_depth);}
+    void print(){head->print(base->perm);}
+    void print_size(int required_depth){head->print_size(base->perm,required_depth);}
 
     // Output
     std::vector<int> get_labels(int visudep) const;
@@ -113,6 +152,9 @@ void Cluster_tree::SetRanksRec(Cluster& t, const unsigned int depth, const unsig
 		t.set_rank(cnt-pow(2,depth));
 		if (t.get_depth() == depth){
 			MasterOffset[cnt-pow(2,depth)] = std::pair<int,int>(t.get_offset(),t.get_size());
+            if (rankWorld==cnt-pow(2,depth)){
+                local_cluster=&t;
+            std::cout<<"WARNING "<<rankWorld<<" "<<t.get_offset()<<std::endl;}
 		}
 		if (!t.IsLeaf()){
 			SetRanksRec(t.get_son(0), depth, cnt);
@@ -132,22 +174,22 @@ void Cluster_tree::SetRanks(Cluster& t){
 
 template<typename T>
 void Cluster_tree::cluster_to_global(const T* const in, T* const out){
-  for (int i = 0; i<perm.size();i++){
-		out[perm[i]]=in[i];
+  for (int i = 0; i<base->perm.size();i++){
+		out[base->perm[i]]=in[i];
 	}
 }
 template<typename T>
 void Cluster_tree::global_to_cluster(const T* const in, T* const out){
-  for (int i = 0; i<perm.size();i++){
-    out[i]=in[perm[i]];
+  for (int i = 0; i<base->perm.size();i++){
+    out[i]=in[base->perm[i]];
   }
 }
 
 std::vector<int> Cluster_tree::get_labels(int visudep) const{
-  std::vector<int> labels(perm.size());
+  std::vector<int> labels(base->perm.size());
   std::stack<const Cluster*> s_cluster;
 	std::stack<int>      s_count;
-  s_cluster.push(&root);
+  s_cluster.push(head);
 	s_count.push(0);
   while (!(s_cluster.empty())) {
 		const Cluster* const curr = s_cluster.top();
@@ -163,7 +205,7 @@ std::vector<int> Cluster_tree::get_labels(int visudep) const{
     }
     else{
       for(int i=curr->get_offset(); i<curr->get_offset()+curr->get_size(); i++){
-        labels[ perm[i]] = count;
+        labels[ base->perm[i]] = count;
       }
     }
   }
@@ -171,6 +213,7 @@ std::vector<int> Cluster_tree::get_labels(int visudep) const{
 
   return labels;
 }
+
 void Cluster_tree::print_infos() const{
     if (rankWorld==0){
         for (std::map<std::string,std::string>::const_iterator it = infos.begin() ; it != infos.end() ; ++it){
