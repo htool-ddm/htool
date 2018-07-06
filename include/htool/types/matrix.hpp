@@ -557,7 +557,7 @@ public:
             for (int j=0;j<cols;j++){
                 out<<std::real(row[j]);
                 if (std::imag(row[j])<0){
-                    out<<"+"<<std::imag(row[j])<<"i\t";
+                    out<<std::imag(row[j])<<"i\t";
                 }
                 else if (std::imag(row[j])==0){
                     out<<"+"<<0<<"i\t";

@@ -165,7 +165,7 @@ int matlab_save(std::vector<T> vector, const std::string& file){
     for (int i=0;i<vector.size();i++){
         out<<std::real(vector[i]);
         if (std::imag(vector[i])<0){
-            out<<"+"<<std::imag(vector[i])<<"i\t";
+            out<<std::imag(vector[i])<<"i\t";
         }
         else if (std::imag(vector[i])==0){
             out<<"+"<<0<<"i\t";
