@@ -784,11 +784,11 @@ void HMatrix<LowRankMatrix,T >::AddFarFieldMat(IMatrix<T>& mat, const Cluster& t
 // Compute infos
 template< template<typename> class LowRankMatrix, typename T>
 void HMatrix<LowRankMatrix,T >::ComputeInfos(const std::vector<double>& mytime){
-	// 0 : cluster tree ; 1 : block tree ; 2 : scatter tree ; 3 : compute blocks
+	// 0 : cluster tree ; 1 : block tree ; 2 : scatter tree ; 3 : compute blocks ;
 	std::vector<double> maxtime(4), meantime(4);
-	// 0 : dense mat ; 1 : lr mat ; 2 : rank
-	std::vector<int> maxinfos(3,0),mininfos(3,std::max(nc,nr));
-	std::vector<double> meaninfos(3,0);
+	// 0 : dense mat ; 1 : lr mat ; 2 : rank ; 3 : local_size
+	std::vector<int> maxinfos(4,0),mininfos(4,std::max(nc,nr));
+	std::vector<double> meaninfos(4,0);
 	// Infos
 	for (int i=0;i<MyNearFieldMats.size();i++){
 		int size = MyNearFieldMats[i]->nb_rows()*MyNearFieldMats[i]->nb_cols();
@@ -806,16 +806,19 @@ void HMatrix<LowRankMatrix,T >::ComputeInfos(const std::vector<double>& mytime){
 		mininfos[2] = std::min(mininfos[2],rank);
 		meaninfos[2] += rank;
 	}
+    maxinfos[3]=local_size;
+    mininfos[3]=local_size;
+    meaninfos[3]=local_size;
 
 	if (rankWorld==0){
-		MPI_Reduce(MPI_IN_PLACE, &(maxinfos[0]), 3, MPI_INT, MPI_MAX, 0,comm);
-		MPI_Reduce(MPI_IN_PLACE, &(mininfos[0]), 3, MPI_INT, MPI_MIN, 0,comm);
-		MPI_Reduce(MPI_IN_PLACE, &(meaninfos[0]),3, MPI_DOUBLE, MPI_SUM, 0,comm);
+		MPI_Reduce(MPI_IN_PLACE, &(maxinfos[0]), 4, MPI_INT, MPI_MAX, 0,comm);
+		MPI_Reduce(MPI_IN_PLACE, &(mininfos[0]), 4, MPI_INT, MPI_MIN, 0,comm);
+		MPI_Reduce(MPI_IN_PLACE, &(meaninfos[0]),4, MPI_DOUBLE, MPI_SUM, 0,comm);
 	}
 	else{
-		MPI_Reduce(&(maxinfos[0]), &(maxinfos[0]), 3, MPI_INT, MPI_MAX, 0,comm);
-		MPI_Reduce(&(mininfos[0]), &(mininfos[0]), 3, MPI_INT, MPI_MIN, 0,comm);
-		MPI_Reduce(&(meaninfos[0]), &(meaninfos[0]),3, MPI_DOUBLE, MPI_SUM, 0,comm);
+		MPI_Reduce(&(maxinfos[0]), &(maxinfos[0]), 4, MPI_INT, MPI_MAX, 0,comm);
+		MPI_Reduce(&(mininfos[0]), &(mininfos[0]), 4, MPI_INT, MPI_MIN, 0,comm);
+		MPI_Reduce(&(meaninfos[0]), &(meaninfos[0]),4, MPI_DOUBLE, MPI_SUM, 0,comm);
 	}
 
 	int nlrmat = this->get_nlrmat();
@@ -823,6 +826,7 @@ void HMatrix<LowRankMatrix,T >::ComputeInfos(const std::vector<double>& mytime){
 	meaninfos[0] = (ndmat  == 0 ? 0 : meaninfos[0]/ndmat);
 	meaninfos[1] = (nlrmat == 0 ? 0 : meaninfos[1]/nlrmat);
 	meaninfos[2] = (nlrmat == 0 ? 0 : meaninfos[2]/nlrmat);
+    meaninfos[3] = meaninfos[3]/sizeWorld;
 	mininfos[0] = (ndmat  == 0 ? 0 : mininfos[0]);
 	mininfos[1] = (nlrmat  == 0 ? 0 : mininfos[1]);
 	mininfos[2] = (nlrmat  == 0 ? 0 : mininfos[2]);
@@ -859,6 +863,10 @@ void HMatrix<LowRankMatrix,T >::ComputeInfos(const std::vector<double>& mytime){
 	infos["Number_of_lrmat"] = NbrToStr(nlrmat);
 	infos["Number_of_dmat"]  = NbrToStr(ndmat);
 	infos["Compression"] = NbrToStr(this->compression());
+    infos["Local_size_max"]  = NbrToStr(maxinfos[3]);
+    infos["Local_size_mean"] = NbrToStr(meaninfos[3]);
+    infos["Local_size_min"]  = NbrToStr(mininfos[3]);
+
 
 	infos["Number_of_MPI_tasks"] = NbrToStr(sizeWorld);
     #if _OPENMP
