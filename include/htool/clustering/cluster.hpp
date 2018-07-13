@@ -106,7 +106,6 @@ void Cluster::build(const std::vector<R3>& x, const std::vector<double>& r, cons
 	assert(tab.size()==x.size()*ndofperelt);
 	assert(x.size()==g.size());
 	assert(x.size()==r.size());
-	assert(tab.size()==perm.size());
 
 	// Initialisation
 	rad = 0;
