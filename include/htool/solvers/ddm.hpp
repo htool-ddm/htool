@@ -23,6 +23,7 @@ private:
     const MPI_Comm& comm;
     int nevi;
     int size_E;
+    bool one_level;
     mutable std::map<std::string, std::string> infos;
 
 
@@ -33,7 +34,7 @@ public:
     }
 
     // Without overlap
-    DDM(const HMatrix<LowRankMatrix,T>& hmat_0):n(hmat_0.get_local_size()),n_inside(hmat_0.get_local_size()),hpddm_op(hmat_0),mat_loc(n*n),D(n),nevi(0),size_E(0),comm(hmat_0.get_comm()){
+    DDM(const HMatrix<LowRankMatrix,T>& hmat_0):n(hmat_0.get_local_size()),n_inside(hmat_0.get_local_size()),hpddm_op(hmat_0),mat_loc(n*n),D(n),nevi(0),size_E(0),comm(hmat_0.get_comm()),one_level(0){
         // Timing
         double mytime, maxtime, meantime;
         double time = MPI_Wtime();
@@ -193,6 +194,7 @@ public:
         MPI_Reduce(&(mytime), &(maxtime), 1, MPI_DOUBLE, MPI_MAX, 0,this->comm);
 
         infos["DDM_facto_one_level_max" ]= NbrToStr(maxtime);
+        one_level=1;
     }
 
     void build_coarse_space( Matrix<T>& Mi, IMatrix<T>& generator_Bi, const std::vector<R3>& x ){
@@ -404,6 +406,12 @@ public:
     }
 
     void solve(const T* const rhs, T* const x, const int& mu=1 ){
+        // Check facto
+        if (!one_level){
+            std::cout << "ERROR: FACTO FOR ONE LEVEL MISSING"<< std::endl;
+            exit(1);
+        }
+
         //
         int rankWorld = hpddm_op.HA.get_rankworld();
         int sizeWorld = hpddm_op.HA.get_sizeworld();
