@@ -90,6 +90,10 @@ public:
 	int											get_min_depth() const {return min_depth;}
 	int                     get_offset() const {return offset;}
 	int                     get_size() const {return size;}
+    void 										get_offset(std::vector<int> & J, int i) const;
+	void 										get_size(std::vector<int> & J, int i) const;
+	void 										get_ctr(std::vector<R3> & ctrs, int i) const;
+
 
 	//// Setters
 	void set_rank  (const int& rank0)   {rank = rank0;}
@@ -334,6 +338,32 @@ Cluster::Cluster(const std::vector<R3>& x0, std::vector<int>& perm){
 	this->build(x0,std::vector<double>(x0.size(),0),tab0,std::vector<double>(x0.size(),1),perm);
 }
 
+void Cluster::get_offset(std::vector<int>& offsets,int depth0)const {
+    if (this->son[0]!=NULL) (*this->son[0]).get_offset(offsets,depth0-1);
+        if (this->son[1]!=NULL) (*this->son[1]).get_offset(offsets,depth0-1);
+    if (depth0==0){
+        offsets.push_back(offset);
+
+    }
+}
+
+void Cluster::get_size(std::vector<int>& sizes,int depth0)const {
+    if (this->son[0]!=NULL) (*this->son[0]).get_size(sizes,depth0-1);
+        if (this->son[1]!=NULL) (*this->son[1]).get_size(sizes,depth0-1);
+    if (depth0==0){
+        sizes.push_back(size);
+
+    }
+}
+
+void Cluster::get_ctr(std::vector<R3>& ctrs,int depth0)const {
+    if (this->son[0]!=NULL) (*this->son[0]).get_ctr(ctrs,depth0-1);
+        if (this->son[1]!=NULL) (*this->son[1]).get_ctr(ctrs,depth0-1);
+    if (depth0==0){
+        ctrs.push_back(ctr);
+
+    }
+}
 
 // On utilise le fait qu'on a toujours ndofperelt dofs par element geometrique
 // void TraversalBuildLabel(const Cluster& t, const std::vector<int>& perm, std::vector<int>& labelVisu, const unsigned int visudep, const unsigned int cnt){
