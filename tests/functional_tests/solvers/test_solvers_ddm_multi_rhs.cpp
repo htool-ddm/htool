@@ -78,6 +78,7 @@ int main(int argc, char *argv[]){
 
 	// Solve
     DDM<fullACA,complex<double>> hpddm_operator(HA);
+    hpddm_operator.facto_one_level();
 	hpddm_operator.solve(f_global.data(),x_global.data(),mu);
 	HA.print_infos();
 

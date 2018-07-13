@@ -56,7 +56,7 @@ int main(int argc, char *argv[]){
 	// Mesh
 	std::vector<R3> p;
 	Load_GMSH_nodes(p,argv[3]);
-std::cout << p << std::endl;
+
 	// Hmatrix
 	std::vector<int> tab(n);
 	for (int i=0;i<n;i++){
@@ -71,6 +71,7 @@ std::cout << p << std::endl;
 	// Solve
 
     DDM<fullACA,complex<double>> hpddm_operator(HA);
+    hpddm_operator.facto_one_level();
 	hpddm_operator.solve(f_global.data(),x_global.data());
 
     // hpddm_operator.~DDM<fullACA,complex<double>>();
