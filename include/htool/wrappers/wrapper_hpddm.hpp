@@ -114,6 +114,11 @@ public:
         P.build_coarse_space(Mi,generator_Bi,x);
     }
 
+    void build_coarse_space(Matrix<T>& Mi, const std::vector<R3>& x){
+        // Coarse space
+        P.build_coarse_space(Mi,x);
+    }
+
     void facto_one_level(){
         P.facto_one_level();
     }
