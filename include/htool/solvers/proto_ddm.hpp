@@ -574,7 +574,7 @@ public:
             zti[i]=std::inner_product(evi.begin()+i*n,evi.begin()+i*n+n,vec_ovr.begin(),T(0),std::plus<T>(), [](T u,T v){return u*std::conj(v);});
             // zti[i]=std::inner_product(Z[i],Z[i+1],vec_ovr.begin(),T(0),std::plus<T>(), [](T u,T v){return u*std::conj(v);});
         }
-        std::vector<T> zt(size_E,0);
+        std::vector<T> zt(E.nb_cols(),0);
         // if (rankWorld==0){
         //     // std::cout << zt.size() <<" " << zti.size() << std::endl;
         // }
@@ -695,7 +695,7 @@ public:
     }
     int get_n() const {return n;}
     int get_n_inside() const {return n_inside;}
-    int get_size_E() const {return size_E;}
+    int get_size_E() const {return E.nb_cols();} // E is not rectangular...
     std::map<std::string, std::string>& get_infos() const{return infos;}
     double get_timing_one_level() const {return timing_one_level;}
     double get_timing_Q() const {return timing_Q;}
