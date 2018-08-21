@@ -310,6 +310,8 @@ public:
             }
         }
     }
+
+    std::string get_infos (const std::string& key) const { return infos[key];}
 };
 
 template< template<typename> class LowRankMatrix, typename T>
