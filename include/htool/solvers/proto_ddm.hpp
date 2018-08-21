@@ -384,7 +384,7 @@ public:
         nevi=0;
         double threshold = opt.val("geneo_threshold",-1.0);
         if (threshold > 0.0){
-            while (std::abs(alpha[index[nevi]]/beta[index[nevi]])>threshold && nevi< index.size()){
+            while (std::abs(beta[index[nevi]])<1e-15 || (std::abs(alpha[index[nevi]]/beta[index[nevi]])>threshold && nevi< index.size())){
                 nevi++;}
 
 
