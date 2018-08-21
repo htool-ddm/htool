@@ -39,14 +39,14 @@ matrix:
         - MPIEXEC_PREFLAGS=-oversubscribe
       install:
         - brew install openmpi
-    - os: osx
-      env:
-        - CXX_COMPILER=g++-8
-        - C_COMPILER=gcc-8
-      install:
-        - brew install gcc
-        - brew install openmpi
-        - MPIEXEC_PREFLAGS=-oversubscribe
+    # - os: osx
+    #   env:
+    #     - CXX_COMPILER=g++-8
+    #     - C_COMPILER=gcc-8
+    #   install:
+    #     - brew install gcc
+    #     - brew install openmpi
+    #     - MPIEXEC_PREFLAGS=-oversubscribe
 
     # Tests on linux
     # - os: linux
