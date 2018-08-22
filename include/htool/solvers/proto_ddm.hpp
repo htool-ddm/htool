@@ -356,6 +356,9 @@ public:
             std::copy_n(&(mat_loc[i*n]),n_inside,&(DAiD(0,i)));
         }
 
+        mytime[0] = MPI_Wtime() - time;
+        MPI_Barrier(hmat.get_comm());
+        time = MPI_Wtime();
 
         // Local eigenvalue problem
         int ldvl = n, ldvr = n, lwork=-1;
