@@ -285,6 +285,9 @@ public:
         MPI_Barrier(hpddm_op.HA.get_comm());
         time = MPI_Wtime();
 
+        // if (rankWorld==0)
+        //     evp.matlab_save("evp_ddm.txt");
+
         // eigenvalue problem
         hpddm_op.solveEVP(evp.data());
         T* const* Z = const_cast <T* const*> (hpddm_op.getVectors()) ;
@@ -329,6 +332,21 @@ public:
             std::copy_n(Z[i],n_inside,evi.data()+i*n);
             // std::copy_n(vr.data()+index[i]*n,n_inside,evi.data()+i*n);
         }
+
+        // Matrix<T> out_test(n,nevi);
+        // for (int i=0;i<nevi;i++){
+        //     std::vector<T> transvase(n);
+        //     std::copy_n(Z[i],n,transvase.data());
+        //     double norme=norm2(transvase);
+        //     for (int i=0;i<n;i++){
+        //         transvase[i]=transvase[i]/norme;
+        //     }
+        //     out_test.set_col(i,transvase);
+        // }
+        // if (rankWorld==0)
+        //     out_test.matlab_save("evi_ddm.txt");
+
+
 
         int local_max_size_j=0;
         const std::vector<LowRankMatrix<T>*>& MyFarFieldMats = hpddm_op.HA.get_MyFarFieldMats();
@@ -382,7 +400,21 @@ public:
             MPI_Reduce(MPI_IN_PLACE, E.data(), E.size(), wrapper_mpi<T>::mpi_type(),MPI_SUM, 0,comm);
         else
             MPI_Reduce(E.data(), E.data(), E.size(), wrapper_mpi<T>::mpi_type(),MPI_SUM, 0,comm);
-
+        // if (rankWorld==0){
+        //     double norme=0;
+        //     std::cout << "size E :"<<E.size() << std::endl;
+        //     std::cout << "[";
+        //     for (int i=0;i<nevi*sizeWorld;i++){
+        //         std::cout << "[";
+        //         for (int j=0;j<nevi*sizeWorld;j++){
+        //             std::cout << std::real(E[i+j*nevi*sizeWorld])<<"+"<<std::imag(E[i+j*nevi*sizeWorld]) << "i,";
+        //             norme+=std::abs(E[i+j*nevi*sizeWorld]*std::conj(E[i+j*nevi*sizeWorld]));
+        //         }
+        //         std::cout << "];";
+        //     }
+        //     std::cout << "]"<<std::endl;
+        //     std::cout << "NORME : "<<norme<<std::endl;
+        // }
         // if (rankWorld==0)
         //     matlab_save(E,"E_ddm.txt");
         mytime[2] = MPI_Wtime() - time;

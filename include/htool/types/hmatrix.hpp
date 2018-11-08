@@ -49,6 +49,8 @@ private:
 	std::vector<SubMatrix<T>* >     MyNearFieldMats;
 	std::vector<LowRankMatrix<T>*> MyDiagFarFieldMats;
 	std::vector<SubMatrix<T>*> MyDiagNearFieldMats;
+    std::vector<LowRankMatrix<T>*> MyStrictlyDiagFarFieldMats;
+	std::vector<SubMatrix<T>*> MyStrictlyDiagNearFieldMats;
 
 
 	std::shared_ptr<Cluster_tree> cluster_tree_s;
@@ -194,6 +196,8 @@ public:
     // Convert
     Matrix<T> to_dense() const;
 
+    // Apply Dirichlet condition
+    void apply_dirichlet(const std::vector<int>& boundary);
 
 };
 
@@ -666,12 +670,18 @@ void HMatrix<LowRankMatrix,T >::ComputeBlocks(IMatrix<T>& mat, const std::vector
 
     // Build vectors of pointers for diagonal blocks
     for (int i=0;i<MyFarFieldMats.size();i++){
-        if (local_offset<=MyFarFieldMats[i]->get_offset_j() && MyFarFieldMats[i]->get_offset_j()<local_offset+local_size)
+        if (local_offset<=MyFarFieldMats[i]->get_offset_j() && MyFarFieldMats[i]->get_offset_j()<local_offset+local_size){
             MyDiagFarFieldMats.push_back(MyFarFieldMats[i]);
+            if (MyFarFieldMats[i]->get_offset_j()==MyFarFieldMats[i]->get_offset_i())
+                MyStrictlyDiagFarFieldMats.push_back(MyFarFieldMats[i]);
+        }
     }
     for (int i=0;i<MyNearFieldMats.size();i++){
-        if (local_offset<=MyNearFieldMats[i]->get_offset_j() && MyNearFieldMats[i]->get_offset_j()<local_offset+local_size)
+        if (local_offset<=MyNearFieldMats[i]->get_offset_j() && MyNearFieldMats[i]->get_offset_j()<local_offset+local_size){
             MyDiagNearFieldMats.push_back(MyNearFieldMats[i]);
+            if (MyNearFieldMats[i]->get_offset_j()==MyNearFieldMats[i]->get_offset_i())
+                MyStrictlyDiagNearFieldMats.push_back(MyNearFieldMats[i]);
+        }
     }
 }
 
@@ -1253,6 +1263,25 @@ Matrix<T> HMatrix<LowRankMatrix,T >::to_dense() const{
     return Dense;
 }
 
+template< template<typename> class LowRankMatrix, typename T >
+void HMatrix<LowRankMatrix,T >::apply_dirichlet(const std::vector<int>& boundary){
+    // Renum
+    std::vector<int> boundary_renum(boundary.size());
+    cluster_tree_t->global_to_cluster(boundary.data(),boundary_renum.data());
+
+    //
+    for (int j=0;j<MyStrictlyDiagNearFieldMats.size();j++){
+        SubMatrix<T>& submat = *(MyStrictlyDiagNearFieldMats[j]);
+        int local_nr = submat.nb_rows();
+        int local_nc = submat.nb_cols();
+        int offset_i = submat.get_offset_i();
+        int offset_j = submat.get_offset_j();
+        for (int i=offset_i;i<offset_i+std::min(local_nr,local_nc);i++){
+            if (boundary_renum[i])
+                submat(i-offset_i,i-offset_i)=1e30;
+        }
+    }
+}
 
 } //namespace
 #endif
