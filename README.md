@@ -1,8 +1,9 @@
-## HTOOL [![Build Status](https://travis-ci.org/PierreMarchand20/htool.svg?branch=master)](https://travis-ci.org/PierreMarchand20/htool.svg?branch=master)
+# HTOOL [![Build Status](https://travis-ci.org/PierreMarchand20/htool.svg?branch=master)](https://travis-ci.org/PierreMarchand20/htool.svg?branch=master)
 
-#### What is Htool ?
+## What is Htool?
 
 Htool is an implementation of hierarchical matrices (cf. this [reference](http://www.springer.com/gp/book/9783662473238) or this [one](http://www.springer.com/gp/book/9783540771463)), it was written to test Domain Decomposition Methods (DDM) applied to Boundary Element Method (BEM). It provides:
+
 * routines to build hierarchical matrix structures (cluster trees, block trees, low-rank matrices and block matrices),
 * parallel matrix-vector and matrix-matrix product using MPI and OpenMP,
 * preconditioning techniques using domain decomposition methods,
@@ -10,8 +11,10 @@ Htool is an implementation of hierarchical matrices (cf. this [reference](http:/
 * an interface with [HPDDM](https://github.com/hpddm/hpddm) for iterative solvers,
 * GUI and several service functions to display informations about matrix structures and timing.
 
-#### How to use Htool ?
+## How to use Htool?
+
 Htool is a header library written in C++11 with MPI and OpenMP, but it can be used without the latter if needed. Then, Htool needs to be linked against :
+
 * BLAS, to perform algebraic operations (dense matrix-matrix or matrix-vector operations),
 * HPDDM and its dependencies (BLAS, LAPACK and a direct solver like [MUMPS](http://mumps.enseeiht.fr/), [SuiteSparse](http://faculty.cse.tamu.edu/davis/suitesparse.html), [MKL PARDISO](https://software.intel.com/en-us/articles/intel-mkl-pardiso), or [PaStiX](http://pastix.gforge.inria.fr/)) to use iterative solvers and DDM preconditioners,
 * Eigen, to use SVD compressors (to be modified),
@@ -21,15 +24,18 @@ In any case, a function that generates the coefficients must be provided to Htoo
 
 A new type of compressor can also be added by defining a structure inheriting from `LowRankMatrix` with a method called `build` which populates the data members needed (see `partialACA.hpp`).
 
-#### Who is behind Htool?
+## Who is behind Htool?
+
 If you need help or have questions regarding Htool, feel free to contact [Pierre Marchand](https://www.ljll.math.upmc.fr/marchandp/) and Pierre-Henri Tournier.
 
-#### Acknowledgements
+## Acknowledgements
+
 [ANR NonlocalDD](https://www.ljll.math.upmc.fr/~claeys/nonlocaldd/index.html), (grant ANR-15-CE23-0017-01), France  
 [Inria](http://www.inria.fr/en/) Paris, France  
 [Laboratoire Jacques-Louis Lions](https://www.ljll.math.upmc.fr/en/) Paris, France  
 
-#### Collaborators/contributors
+## Collaborators/contributors
+
 [Alan Ayala](https://www.ljll.math.upmc.fr/~ayala/)  
 [Xavier Claeys](https://www.ljll.math.upmc.fr/~claeys/)  
 [Pierre Jolivet](http://jolivet.perso.enseeiht.fr/)  
