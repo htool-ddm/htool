@@ -1,6 +1,6 @@
-#include <htool/cluster_tree.hpp>
-#include <htool/geometry.hpp>
-#include <htool/output.hpp>
+#include <htool/clustering/cluster_tree.hpp>
+#include <htool/input_output/geometry.hpp>
+#include <htool/input_output/output.hpp>
 
 
 
@@ -30,6 +30,8 @@ int main(int argc, char* argv[]){
 	Load_GMSH_nodes(x,inputname);
 
 	Cluster_tree t(x);
+    t.print_size(depth);
+    t.print_infos();
 
 	Write_gmsh_nodes(t.get_labels(depth),inputname,outputname);
 
