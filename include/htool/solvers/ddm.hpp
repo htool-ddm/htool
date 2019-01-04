@@ -602,7 +602,7 @@ public:
     	}
     }
 
-    void save_infos(const std::string& outputname, const std::string& sep=" sep ",std::ios_base::openmode mode = std::ios_base::out) const{
+    void save_infos(const std::string& outputname,std::ios_base::openmode mode = std::ios_base::app, const std::string& sep=" = ") const{
     	if (hpddm_op.HA.get_rankworld()==0){
     		std::ofstream outputfile(outputname, mode);
     		if (outputfile){

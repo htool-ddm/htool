@@ -175,7 +175,7 @@ public:
   std::string get_infos (const std::string& key) const { return infos[key];}
 	void add_info(const std::string& keyname, const std::string& value) const {infos[keyname]=value;}
 	void print_infos() const;
-	void save_infos(const std::string& outputname, const std::string& sep = " = ", std::ios_base::openmode mode = std::ios_base::out) const;
+	void save_infos(const std::string& outputname, std::ios_base::openmode mode = std::ios_base::app, const std::string& sep = " = ") const;
 	double compression() const; // 1- !!!
 	friend double Frobenius_absolute_error<LowRankMatrix,T>(const HMatrix<LowRankMatrix,T>& B, const IMatrix<T>& A);
 
@@ -1199,7 +1199,7 @@ void HMatrix<LowRankMatrix,T >::print_infos() const{
 }
 
 template<template<typename> class LowRankMatrix,typename T >
-void HMatrix<LowRankMatrix,T >::save_infos(const std::string& outputname, const std::string& sep,std::ios_base::openmode mode) const{
+void HMatrix<LowRankMatrix,T >::save_infos(const std::string& outputname,std::ios_base::openmode mode, const std::string& sep) const{
 	int rankWorld;
   MPI_Comm_rank(comm, &rankWorld);
 

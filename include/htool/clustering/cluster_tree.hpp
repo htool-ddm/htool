@@ -137,7 +137,7 @@ public:
     // Output
     std::vector<int> get_labels(int visudep) const;
     void print_infos() const;
-    void save_infos(const std::string& outputname, std::ios_base::openmode mode = std::ios_base::out) const;
+    void save_infos(const std::string& outputname, std::ios_base::openmode mode = std::ios_base::app, const std::string& sep = " = ") const;
 
 };
 
@@ -224,12 +224,12 @@ void Cluster_tree::print_infos() const{
     }
 }
 
-void Cluster_tree::save_infos(const std::string& outputname, std::ios_base::openmode mode ) const{
+void Cluster_tree::save_infos(const std::string& outputname, std::ios_base::openmode mode, const std::string& sep ) const{
     if (rankWorld==0){
         std::ofstream outputfile(outputname, mode);
         if (outputfile){
             for (std::map<std::string,std::string>::const_iterator it = infos.begin() ; it != infos.end() ; ++it){
-                outputfile<<it->first<<" : "<<it->second<<std::endl;
+                outputfile<<it->first<<sep<<it->second<<std::endl;
             }
             outputfile.close();
         }
