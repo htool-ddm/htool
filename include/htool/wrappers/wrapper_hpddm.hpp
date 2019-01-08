@@ -88,7 +88,6 @@ private:
     const HMatrix<LowRankMatrix,T>& HA;
     std::vector<T>* in_global;
     Proto_DDM<LowRankMatrix,T>& P;
-    mutable std::map<std::string, std::string> infos;
 
 public:
     typedef  HpDense<T, 'G'> super;
@@ -176,87 +175,87 @@ public:
         // Timing
         HPDDM::Option& opt = *HPDDM::Option::get();
         time = MPI_Wtime()-time;
-        infos["Solve"] = NbrToStr(time);
-        infos["Nb_it"] = NbrToStr(nb_it);
-        infos["Nb_subdomains"] = NbrToStr(sizeWorld);
-        infos["nb_mat_vec_prod"] = NbrToStr(StrToNbr<int>(HA.get_infos("nb_mat_vec_prod"))-nb_vec_prod);
-        infos["mean_time_mat_vec_prod"] = NbrToStr((StrToNbr<double>(HA.get_infos("total_time_mat_vec_prod"))-time_vec_prod)/(StrToNbr<double>(HA.get_infos("nb_mat_vec_prod"))-nb_vec_prod));
+        P.set_infos("Solve",NbrToStr(time));
+        P.set_infos("Nb_it",NbrToStr(nb_it));
+        P.set_infos("Nb_subdomains",NbrToStr(sizeWorld));
+        P.set_infos("nb_mat_vec_prod",NbrToStr(StrToNbr<int>(HA.get_infos("nb_mat_vec_prod"))-nb_vec_prod));
+        P.set_infos("mean_time_mat_vec_prod",NbrToStr((StrToNbr<double>(HA.get_infos("total_time_mat_vec_prod"))-time_vec_prod)/(StrToNbr<double>(HA.get_infos("nb_mat_vec_prod"))-nb_vec_prod)));
         switch (opt.val("schwarz_method",0)) {
             case HPDDM_SCHWARZ_METHOD_NONE:
-            infos["Precond"] = "None";
+            P.set_infos("Precond","None");
             break;
             case HPDDM_SCHWARZ_METHOD_RAS:
-            infos["Precond"] = "RAS";
+            P.set_infos("Precond","RAS");
             break;
             case HPDDM_SCHWARZ_METHOD_ASM:
-            infos["Precond"] = "ASM";
+            P.set_infos("Precond","ASM");
             break;
             case HPDDM_SCHWARZ_METHOD_OSM:
-            infos["Precond"] = "OSM";
+            P.set_infos("Precond","OSM");
             break;
             case HPDDM_SCHWARZ_METHOD_ORAS:
-            infos["Precond"] = "ORAS";
+            P.set_infos("Precond","ORAS");
             break;
             case HPDDM_SCHWARZ_METHOD_SORAS:
-            infos["Precond"] = "SORAS";
+            P.set_infos("Precond","SORAS");
             break;
         }
 
         switch (opt.val("krylov_method",8)) {
             case HPDDM_KRYLOV_METHOD_GMRES:
-            infos["krylov_method"] = "gmres";
+            P.set_infos("krylov_method","gmres");
             break;
             case HPDDM_KRYLOV_METHOD_BGMRES:
-            infos["krylov_method"] = "bgmres";
+            P.set_infos("krylov_method","bgmres");
             break;
             case HPDDM_KRYLOV_METHOD_CG:
-            infos["krylov_method"] = "cg";
+            P.set_infos("krylov_method","cg");
             break;
             case HPDDM_KRYLOV_METHOD_BCG:
-            infos["krylov_method"] = "bcg";
+            P.set_infos("krylov_method","bcg");
             break;
             case HPDDM_KRYLOV_METHOD_GCRODR:
-            infos["krylov_method"] = "gcrodr";
+            P.set_infos("krylov_method","gcrodr");
             break;
             case HPDDM_KRYLOV_METHOD_BGCRODR:
-            infos["krylov_method"] = "bgcrodr";
+            P.set_infos("krylov_method","bgcrodr");
             break;
             case HPDDM_KRYLOV_METHOD_BFBCG:
-            infos["krylov_method"] = "bfbcg";
+            P.set_infos("krylov_method","bfbcg");
             break;
             case HPDDM_KRYLOV_METHOD_RICHARDSON:
-            infos["krylov_method"] = "richardson";
+            P.set_infos("krylov_method","richardson");
             break;
             case HPDDM_KRYLOV_METHOD_NONE:
-            infos["krylov_method"] = "none";
+            P.set_infos("krylov_method","none");
             break;
         }
 
         //
-        if (infos["Precond"]=="None"){
-            infos["GenEO_coarse_size"]="0";
-            infos["Coarse_correction"]="None";
+        if (P.get_infos("Precond")=="None"){
+            P.set_infos("GenEO_coarse_size","0");
+            P.set_infos("Coarse_correction","None");
         }
         else{
-            infos["GenEO_coarse_size"]=NbrToStr(P.get_size_E());
+            P.set_infos("GenEO_coarse_size",NbrToStr(P.get_size_E()));
             switch (opt.val("schwarz_coarse_correction",42)) {
                 case HPDDM_SCHWARZ_COARSE_CORRECTION_BALANCED:
-                infos["Coarse_correction"] = "Balanced";
+                P.set_infos("Coarse_correction","Balanced");
                 break;
                 case HPDDM_SCHWARZ_COARSE_CORRECTION_ADDITIVE:
-                infos["Coarse_correction"] = "Additive";
+                P.set_infos("Coarse_correction","Additive");
                 break;
                 case HPDDM_SCHWARZ_COARSE_CORRECTION_DEFLATED:
-                infos["Coarse_correction"] = "Deflated";
+                P.set_infos("Coarse_correction","Deflated");
                 break;
                 default:
-                infos["Coarse_correction"] = "None";
-                infos["GenEO_coarse_size"] = "0";
+                P.set_infos("Coarse_correction","None");
+                P.set_infos("GenEO_coarse_size","0");
                 break;
             }
 
         }
-        infos["htool_solver"]="protoddm";
+        P.set_infos("htool_solver","protoddm");
 
         double timing_one_level=P.get_timing_one_level();
         double timing_Q=P.get_timing_Q();
@@ -265,16 +264,13 @@ public:
         MPI_Reduce(&(timing_one_level), &(maxtiming_one_level), 1, MPI_DOUBLE, MPI_MAX, 0,HA.get_comm());
         MPI_Reduce(&(timing_Q), &(maxtiming_Q), 1, MPI_DOUBLE, MPI_MAX, 0,HA.get_comm());
 
-        infos["DDM_apply_one_level_max" ]= NbrToStr(maxtiming_one_level);
-        infos["DDM_apply_Q_max" ]= NbrToStr(maxtiming_Q);
+        P.set_infos("DDM_apply_one_level_max", NbrToStr(maxtiming_one_level));
+        P.set_infos("DDM_apply_Q_max", NbrToStr(maxtiming_Q));
 
     }
 
     void print_infos() const{
         if (HA.get_rankworld()==0){
-            for (std::map<std::string,std::string>::const_iterator it = infos.begin() ; it != infos.end() ; ++it){
-                std::cout<<it->first<<"\t"<<it->second<<std::endl;
-            }
             for (std::map<std::string,std::string>::const_iterator it = P.get_infos().begin() ; it != P.get_infos().end() ; ++it){
                 std::cout<<it->first<<"\t"<<it->second<<std::endl;
             }
@@ -285,9 +281,6 @@ public:
     	if (HA.get_rankworld()==0){
     		std::ofstream outputfile(outputname, mode);
     		if (outputfile){
-    			for (std::map<std::string,std::string>::const_iterator it = infos.begin() ; it != infos.end() ; ++it){
-    				outputfile<<it->first<<sep<<it->second<<std::endl;
-    			}
                 for (std::map<std::string,std::string>::const_iterator it = P.get_infos().begin() ; it != P.get_infos().end() ; ++it){
                     outputfile<<it->first<<sep<<it->second<<std::endl;
                 }
@@ -302,16 +295,16 @@ public:
 
     void add_infos(std::string key, std::string value) const{
         if (HA.get_rankworld()==0){
-            if (infos.find(key)==infos.end()){
-                infos[key]=value;
+            if (P.get_infos().find(key)==P.get_infos().end()){
+                P.set_infos(key,value);
             }
             else{
-                infos[key]+= value;
+                P.set_infos(key,value);
             }
         }
     }
 
-    std::string get_infos (const std::string& key) const { return infos[key];}
+    std::string get_infos (const std::string& key) const { return P.get_infos(key);}
 };
 
 template< template<typename> class LowRankMatrix, typename T>

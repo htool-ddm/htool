@@ -324,6 +324,7 @@ public:
         }
 
 
+        infos["DDM_local_coarse_size" ]= NbrToStr(nevi);
         mytime[1] = MPI_Wtime() - time;
         MPI_Barrier(hmat.get_comm());
         time = MPI_Wtime();
@@ -700,6 +701,8 @@ public:
     int get_n_inside() const {return n_inside;}
     int get_size_E() const {return E.nb_cols();} // E is not rectangular...
     std::map<std::string, std::string>& get_infos() const{return infos;}
+    std::string get_infos(const std::string& key) const{return infos[key];}
+    void set_infos(const std::string& key, const std::string& value) const{infos[key]=value;}
     double get_timing_one_level() const {return timing_one_level;}
     double get_timing_Q() const {return timing_Q;}
 
