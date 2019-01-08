@@ -135,12 +135,16 @@ matrix:
     - os: linux
       dist: xenial
       group: travis_latest
-      compiler: clang
+      env:
+        - CXX=clang++
+        - CC=clang
       addons:
         apt:
           sources:
             - ubuntu-toolchain-r-test
+            - llvm-toolchain-precise-3.6
           packages:
+            - clang-3.6
             - mpich
             - libmpich-dev
             - libblas-dev
@@ -157,6 +161,40 @@ matrix:
             - ubuntu-toolchain-r-test
           packages:
             - mpich
+            - libmpich-dev
+            - libblas-dev
+            - liblapack-dev
+            - libsuitesparse-dev
+
+    - os: linux
+      dist: xenial
+      group: travis_latest
+      env:
+        - CXX=clang++
+        - CC=clang
+      addons:
+        apt:
+          sources:
+            - ubuntu-toolchain-r-test
+            - llvm-toolchain-precise-3.6
+          packages:
+            - clang-3.6
+            - openmpi-bin
+            - libmpich-dev
+            - libblas-dev
+            - liblapack-dev
+            - libsuitesparse-dev
+
+    - os: linux
+      dist: xenial
+      group: travis_latest
+      compiler: gcc
+      addons:
+        apt:
+          sources:
+            - ubuntu-toolchain-r-test
+          packages:
+            - openmpi-bin
             - libmpich-dev
             - libblas-dev
             - liblapack-dev
