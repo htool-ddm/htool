@@ -183,22 +183,22 @@ public:
         infos["mean_time_mat_vec_prod"] = NbrToStr((StrToNbr<double>(HA.get_infos("total_time_mat_vec_prod"))-time_vec_prod)/(StrToNbr<double>(HA.get_infos("nb_mat_vec_prod"))-nb_vec_prod));
         switch (opt.val("schwarz_method",0)) {
             case HPDDM_SCHWARZ_METHOD_NONE:
-            infos["Precond"] = "none";
+            infos["Precond"] = "None";
             break;
             case HPDDM_SCHWARZ_METHOD_RAS:
-            infos["Precond"] = "ras";
+            infos["Precond"] = "RAS";
             break;
             case HPDDM_SCHWARZ_METHOD_ASM:
-            infos["Precond"] = "asm";
+            infos["Precond"] = "ASM";
             break;
             case HPDDM_SCHWARZ_METHOD_OSM:
-            infos["Precond"] = "osm";
+            infos["Precond"] = "OSM";
             break;
             case HPDDM_SCHWARZ_METHOD_ORAS:
-            infos["Precond"] = "oras";
+            infos["Precond"] = "ORAS";
             break;
             case HPDDM_SCHWARZ_METHOD_SORAS:
-            infos["Precond"] = "soras";
+            infos["Precond"] = "SORAS";
             break;
         }
 
@@ -233,7 +233,7 @@ public:
         }
 
         //
-        if (infos["Precond"]=="none"){
+        if (infos["Precond"]=="None"){
             infos["GenEO_coarse_size"]="0";
             infos["Coarse_correction"]="None";
         }
