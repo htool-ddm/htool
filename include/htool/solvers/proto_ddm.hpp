@@ -396,7 +396,7 @@ public:
             nevi = opt.val("geneo_nu",2);
         }
 
-
+        infos["DDM_local_coarse_size" ]= NbrToStr(nevi);
         mytime[1] = MPI_Wtime() - time;
         MPI_Barrier(hmat.get_comm());
         time = MPI_Wtime();
