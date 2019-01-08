@@ -94,15 +94,15 @@ matrix:
       dist: trusty
       group: travis_latest
       env:
-        - CXX_COMPILER=g++-4.9
-        - C_COMPILER=gcc-4.9
+        - CXX_COMPILER=g++
+        - C_COMPILER=gcc
       addons:
         apt:
           sources:
             - ubuntu-toolchain-r-test
           packages:
-            - g++-4.9
-            - cmake
+            # - g++
+            # - cmake
             - mpich
             - libmpich-dev
             - libblas-dev
@@ -114,16 +114,16 @@ matrix:
       dist: trusty
       group: travis_latest
       env:
-        - CXX_COMPILER=clang++-3.6
-        - C_COMPILER=clang-3.6
+        - CXX_COMPILER=clang++
+        - C_COMPILER=clang
       addons:
         apt:
           sources:
             - ubuntu-toolchain-r-test
-            - llvm-toolchain-precise-3.6
+            # - llvm-toolchain-precise-3.6
           packages:
-            - clang-3.6
-            - cmake
+            # - clang-3.6
+            # - cmake
             - mpich
             - libmpich-dev
             - libblas-dev
