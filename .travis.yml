@@ -90,45 +90,63 @@ matrix:
     #         # - libmumps-dev
     #         - libsuitesparse-dev
 
-    - os: linux
-      dist: trusty
-      group: travis_latest
-      env:
-        - CXX_COMPILER=g++
-        - C_COMPILER=gcc
-      addons:
-        apt:
-          sources:
-            - ubuntu-toolchain-r-test
-          packages:
-            # - g++
-            # - cmake
-            - mpich
-            - libmpich-dev
-            - libblas-dev
-            - liblapack-dev
-            # - libmumps-dev
-            - libsuitesparse-dev
+    # - os: linux
+    #   dist: trusty
+    #   group: travis_latest
+    #   env:
+    #     - CXX_COMPILER=g++
+    #     - C_COMPILER=gcc
+    #   addons:
+    #     apt:
+    #       sources:
+    #         - ubuntu-toolchain-r-test
+    #       packages:
+    #         # - g++
+    #         # - cmake
+    #         - mpich
+    #         - libmpich-dev
+    #         - libblas-dev
+    #         - liblapack-dev
+    #         # - libmumps-dev
+    #         - libsuitesparse-dev
+
+    # - os: linux
+    #   dist: trusty
+    #   group: travis_latest
+    #   env:
+    #     - CXX_COMPILER=clang++
+    #     - C_COMPILER=clang
+    #   addons:
+    #     apt:
+    #       sources:
+    #         - ubuntu-toolchain-r-test
+    #         # - llvm-toolchain-precise-3.6
+    #       packages:
+    #         # - clang-3.6
+    #         # - cmake
+    #         - mpich
+    #         - libmpich-dev
+    #         - libblas-dev
+    #         - liblapack-dev
+    #         # - libmumps-dev
+    #         - libsuitesparse-dev
+
 
     - os: linux
-      dist: trusty
+      dist: xenial
       group: travis_latest
-      env:
-        - CXX_COMPILER=clang++
-        - C_COMPILER=clang
+      compiler:
+        - clang
+        - gcc
       addons:
         apt:
           sources:
             - ubuntu-toolchain-r-test
-            # - llvm-toolchain-precise-3.6
           packages:
-            # - clang-3.6
-            # - cmake
             - mpich
             - libmpich-dev
             - libblas-dev
             - liblapack-dev
-            # - libmumps-dev
             - libsuitesparse-dev
 
 
