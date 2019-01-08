@@ -19,8 +19,8 @@ matrix:
     # Tests on osx
     - os: osx
       env:
-        - CXX_COMPILER=clang++
-        - C_COMPILER=clang
+        - CXX=clang++
+        - CC=clang
       install:
         - brew install mpich
     ## mpich does not work anymore with gcc
@@ -34,8 +34,8 @@ matrix:
     #     - brew install mpich
     - os: osx
       env:
-        - CXX_COMPILER=clang++
-        - C_COMPILER=clang
+        - CXX=clang++
+        - CC=clang
         - MPIEXEC_PREFLAGS=-oversubscribe
       install:
         - brew install openmpi
@@ -176,13 +176,13 @@ before_install:
 
 
 before_script:
-  - which $CXX_COMPILER
+  - which $CXX
   - mkdir build
   - cd build
 
 # Build steps
 script:
-  - CC=$C_COMPILER CXX=$CXX_COMPILER cmake ../ -DMPIEXEC_PREFLAGS=${MPIEXEC_PREFLAGS}
+  - cmake ../ -DMPIEXEC_PREFLAGS=${MPIEXEC_PREFLAGS}
   - make -j build-tests
   - export OMP_NUM_THREADS=2
   - ctest --output-on-failure
