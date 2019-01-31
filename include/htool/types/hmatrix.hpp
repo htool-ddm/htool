@@ -187,8 +187,10 @@ public:
 	std::vector<T> operator*( const std::vector<T>& x) const;
 
 	// Permutations
-	void source_to_cluster_permutation(const T* const in, T* const out) const;
-	void cluster_to_target_permutation(const T* const in, T* const out) const;
+	template<typename U>
+	void source_to_cluster_permutation(const U* const in, U* const out) const;
+	template<typename U>
+	void cluster_to_target_permutation(const U* const in, U* const out) const;
 
 	// local to global
  	void local_to_global(const T* const in, T* const out, const int& mu) const;
@@ -1138,12 +1140,14 @@ void HMatrix<LowRankMatrix,T >::mvprod_subrhs(const T* const in, T* const out, c
 }
 
 template< template<typename> class LowRankMatrix, typename T>
-void HMatrix<LowRankMatrix,T >::source_to_cluster_permutation(const T* const in, T* const out) const {
+template<typename U>
+void HMatrix<LowRankMatrix,T >::source_to_cluster_permutation(const U* const in, U* const out) const {
 	cluster_tree_s->global_to_cluster(in,out);
 }
 
 template< template<typename> class LowRankMatrix, typename T>
-void HMatrix<LowRankMatrix,T >::cluster_to_target_permutation(const T* const in, T* const out) const{
+template<typename U>
+void HMatrix<LowRankMatrix,T >::cluster_to_target_permutation(const U* const in, U* const out) const{
 	cluster_tree_t->cluster_to_global(in,out);
 }
 

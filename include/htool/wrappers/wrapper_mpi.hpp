@@ -10,6 +10,8 @@ struct wrapper_mpi{
 };
 
 template<>
+inline MPI_Datatype wrapper_mpi<int>::mpi_type() { return MPI_INT; }
+template<>
 inline MPI_Datatype wrapper_mpi<float>::mpi_type() { return MPI_FLOAT; }
 template<>
 inline MPI_Datatype wrapper_mpi<double>::mpi_type() { return MPI_DOUBLE; }
