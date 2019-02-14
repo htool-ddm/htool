@@ -226,13 +226,13 @@ void HMatrix<LowRankMatrix, T >::build(IMatrix<T>& mat, const std::vector<R3>& x
 
 	// Construction arbre des blocs
 	time = MPI_Wtime();
-	Block* B = BuildBlockTree(cluster_tree_t->get_head(),cluster_tree_s->get_head());
+	Block* B = BuildBlockTree(cluster_tree_t->get_local_cluster(),cluster_tree_s->get_head());
 	if (B != NULL) Tasks.push_back(B);
 	mytimes[1] = MPI_Wtime() - time;
 
 	// Repartition des blocs sur les processeurs
 	time = MPI_Wtime();
-	ScatterTasks();
+	std::sort(MyBlocks.begin(),MyBlocks.end(),comp_block());
 	mytimes[2] = MPI_Wtime() - time;
 
 	// Assemblage des sous-matrices
@@ -303,13 +303,13 @@ void HMatrix<LowRankMatrix, T >::build(IMatrix<T>& mat,
 
 	// Construction arbre des blocs
 	time = MPI_Wtime();
-	Block* B = BuildBlockTree(cluster_tree_t->get_head(),cluster_tree_t->get_head());
+	Block* B = BuildBlockTree(cluster_tree_t->get_local_cluster(),cluster_tree_t->get_head());
 	if (B != NULL) Tasks.push_back(B);
 	mytimes[1] = MPI_Wtime() - time;
 
 	// Repartition des blocs sur les processeurs
 	time = MPI_Wtime();
-	ScatterTasks();
+	std::sort(MyBlocks.begin(),MyBlocks.end(),comp_block());
 	mytimes[2] = MPI_Wtime() - time;
 
 	// Assemblage des sous-matrices
@@ -386,13 +386,13 @@ void HMatrix<LowRankMatrix, T >::build(IMatrix<T>& mat, const std::vector<R3>& x
 
 	// Construction arbre des blocs
 	time = MPI_Wtime();
-	Block* B = BuildBlockTree(cluster_tree_t->get_head(),cluster_tree_s->get_head());
+	Block* B = BuildBlockTree(cluster_tree_t->get_local_cluster(),cluster_tree_s->get_head());
 	if (B != NULL) Tasks.push_back(B);
 	mytimes[1] = MPI_Wtime() - time;
 
 	// Repartition des blocs sur les processeurs
 	time = MPI_Wtime();
-	ScatterTasks();
+	std::sort(MyBlocks.begin(),MyBlocks.end(),comp_block());
 	mytimes[2] = MPI_Wtime() - time;
 
 	// Assemblage des sous-matrices
@@ -444,8 +444,8 @@ Block* HMatrix<LowRankMatrix, T >::BuildBlockTree(const Cluster& t, const Cluste
 	Block* B = new Block(t,s);
 	int bsize = t.get_size()*s.get_size();
 	B->ComputeAdmissibility();
-	if( B->IsAdmissible() && t.get_rank()>=0){
-		Tasks.push_back(B);
+	if( B->IsAdmissible() && t.get_depth()>=GetMinTargetDepth()){
+		MyBlocks.push_back(B);
 		return NULL;
 	}
 	else if( s.IsLeaf() ){
@@ -455,14 +455,14 @@ Block* HMatrix<LowRankMatrix, T >::BuildBlockTree(const Cluster& t, const Cluste
 				else{
 					Block* r1 = BuildBlockTree(t.get_son(0),s);
 					Block* r2 = BuildBlockTree(t.get_son(1),s);
-					if ((bsize <= maxblocksize) && (r1 != NULL) && (r2 != NULL) && t.get_rank()>=0) {
+					if ((bsize <= maxblocksize) && (r1 != NULL) && (r2 != NULL) && t.get_depth()>=GetMinTargetDepth()) {
 						delete r1;
 						delete r2;
 						return B;
 					}
 					else {
-						if (r1 != NULL) Tasks.push_back(r1);
-						if (r2 != NULL) Tasks.push_back(r2);
+						if (r1 != NULL) MyBlocks.push_back(r1);
+						if (r2 != NULL) MyBlocks.push_back(r2);
                         delete B;
 						return NULL;
 					}
@@ -472,14 +472,14 @@ Block* HMatrix<LowRankMatrix, T >::BuildBlockTree(const Cluster& t, const Cluste
 		if( t.IsLeaf() ){
 			Block* r3 = BuildBlockTree(t,s.get_son(0));
 			Block* r4 = BuildBlockTree(t,s.get_son(1));
-			if ((bsize <= maxblocksize) && (r3 != NULL) && (r4 != NULL)&& t.get_rank()>=0) {
+			if ((bsize <= maxblocksize) && (r3 != NULL) && (r4 != NULL)&& t.get_depth()>=GetMinTargetDepth()) {
 				delete r3;
 				delete r4;
 				return B;
 			}
 			else {
-				if (r3 != NULL) Tasks.push_back(r3);
-				if (r4 != NULL) Tasks.push_back(r4);
+				if (r3 != NULL) MyBlocks.push_back(r3);
+				if (r4 != NULL) MyBlocks.push_back(r4);
                 delete B;
 				return NULL;
 			}
@@ -491,7 +491,7 @@ Block* HMatrix<LowRankMatrix, T >::BuildBlockTree(const Cluster& t, const Cluste
 				// Block* r2 = BuildBlockTree(t.get_son(1),s.get_son(1));
 				// Block* r3 = BuildBlockTree(t.get_son(1),s.get_son(0));
 				// Block* r4 = BuildBlockTree(t.get_son(0),s.get_son(1));
-				// if ((bsize <= maxblocksize) && (r1 != NULL) && (r2 != NULL) && (r3 != NULL) && (r4 != NULL) && t.get_rank()>=0) {
+				// if ((bsize <= maxblocksize) && (r1 != NULL) && (r2 != NULL) && (r3 != NULL) && (r4 != NULL) && t.get_depth()>=GetMinTargetDepth()) {
 				// 	delete r1;
 				// 	delete r2;
 				// 	delete r3;
@@ -511,14 +511,14 @@ Block* HMatrix<LowRankMatrix, T >::BuildBlockTree(const Cluster& t, const Cluste
 			if (t.get_size()>s.get_size()){
 				Block* r1 = BuildBlockTree(t.get_son(0),s);
 				Block* r2 = BuildBlockTree(t.get_son(1),s);
-				if ((bsize <= maxblocksize) && (r1 != NULL) && (r2 != NULL)&& t.get_rank()>=0) {
+				if ((bsize <= maxblocksize) && (r1 != NULL) && (r2 != NULL)&& t.get_depth()>=GetMinTargetDepth()) {
 					delete r1;
 					delete r2;
 					return B;
 				}
 				else {
-					if (r1 != NULL) Tasks.push_back(r1);
-					if (r2 != NULL) Tasks.push_back(r2);
+					if (r1 != NULL) MyBlocks.push_back(r1);
+					if (r2 != NULL) MyBlocks.push_back(r2);
                     delete B;
 					return NULL;
 				}
@@ -526,14 +526,14 @@ Block* HMatrix<LowRankMatrix, T >::BuildBlockTree(const Cluster& t, const Cluste
 			else{
 				Block* r3 = BuildBlockTree(t,s.get_son(0));
 				Block* r4 = BuildBlockTree(t,s.get_son(1));
-				if ((bsize <= maxblocksize) && (r3 != NULL) && (r4 != NULL)&& t.get_rank()>=0) {
+				if ((bsize <= maxblocksize) && (r3 != NULL) && (r4 != NULL)&& t.get_depth()>=GetMinTargetDepth()) {
 					delete r3;
 					delete r4;
 					return B;
 				}
 				else {
-					if (r3 != NULL) Tasks.push_back(r3);
-					if (r4 != NULL) Tasks.push_back(r4);
+					if (r3 != NULL) MyBlocks.push_back(r3);
+					if (r4 != NULL) MyBlocks.push_back(r4);
                     delete B;
 					return NULL;
 				}
@@ -542,20 +542,21 @@ Block* HMatrix<LowRankMatrix, T >::BuildBlockTree(const Cluster& t, const Cluste
 	}
 }
 
-// Scatter tasks
-template< template<typename> class LowRankMatrix, typename T >
-void HMatrix<LowRankMatrix, T >::ScatterTasks(){
+// // Scatter tasks
+// template< template<typename> class LowRankMatrix, typename T >
+// void HMatrix<LowRankMatrix, T >::ScatterTasks(){
 
-	// std::cout << "Tasks : "<<Tasks.size()<<std::endl;
-  for(int b=0; b<Tasks.size(); b++){
-    	//if (b%sizeWorld == rankWorld)
-    if ((*(Tasks[b])).tgt_().get_rank() == cluster_tree_t->get_local_cluster().get_rank()){
-    		MyBlocks.push_back(Tasks[b]);
-		}
-	}
-    std::sort(MyBlocks.begin(),MyBlocks.end(),comp_block());
-	// std::cout << "rank : "<<rankWorld<<" "<<"Block : "<<MyBlocks.size() <<std::endl;
-}
+// 	// std::cout << "Tasks : "<<Tasks.size()<<std::endl;
+//   for(int b=0; b<Tasks.size(); b++){
+//     	//if (b%sizeWorld == rankWorld)
+//     if ((*(Tasks[b])).tgt_().get_rank() == cluster_tree_t->get_local_cluster().get_rank()){
+//     		MyBlocks.push_back(Tasks[b]);
+// 		}
+// 	}
+// 	std::cout << Tasks.size()<<" "<<MyBlocks.size()<<std::endl;
+//     std::sort(MyBlocks.begin(),MyBlocks.end(),comp_block());
+// 	// std::cout << "rank : "<<rankWorld<<" "<<"Block : "<<MyBlocks.size() <<std::endl;
+// }
 
 // Compute blocks recursively
 // TODO recursivity -> stack for compute blocks
