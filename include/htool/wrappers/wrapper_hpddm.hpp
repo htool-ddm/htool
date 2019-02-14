@@ -172,7 +172,7 @@ public:
         // Permutation
         HA.cluster_to_target_permutation(in_global->data(),x);
 
-        // Timing
+        // Infos
         HPDDM::Option& opt = *HPDDM::Option::get();
         time = MPI_Wtime()-time;
         P.set_infos("Solve",NbrToStr(time));
@@ -235,9 +235,19 @@ public:
         if (P.get_infos("Precond")=="None"){
             P.set_infos("GenEO_coarse_size","0");
             P.set_infos("Coarse_correction","None");
+            P.set_infos("DDM_local_coarse_size","0");
         }
         else{
             P.set_infos("GenEO_coarse_size",NbrToStr(P.get_size_E()));
+            int nevi = P.get_nevi();
+            P.set_infos("DDM_local_coarse_size",NbrToStr(nevi));
+            if (rankWorld==0){
+                MPI_Reduce(MPI_IN_PLACE, &(nevi),1, MPI_INT, MPI_SUM, 0,HA.get_comm());
+            }
+            else{
+                MPI_Reduce(&(nevi), &(nevi),1, MPI_INT, MPI_SUM, 0,HA.get_comm());
+            }
+            P.set_infos("DDM_local_coarse_size_mean",NbrToStr((double)nevi/(double)sizeWorld));
             switch (opt.val("schwarz_coarse_correction",42)) {
                 case HPDDM_SCHWARZ_COARSE_CORRECTION_BALANCED:
                 P.set_infos("Coarse_correction","Balanced");
@@ -251,15 +261,19 @@ public:
                 default:
                 P.set_infos("Coarse_correction","None");
                 P.set_infos("GenEO_coarse_size","0");
+                P.set_infos("DDM_local_coarse_size","0");
                 break;
             }
 
+
+
         }
         P.set_infos("htool_solver","protoddm");
-
+        
         double timing_one_level=P.get_timing_one_level();
         double timing_Q=P.get_timing_Q();
         double maxtiming_one_level,maxtiming_Q;
+
         // Timing
         MPI_Reduce(&(timing_one_level), &(maxtiming_one_level), 1, MPI_DOUBLE, MPI_MAX, 0,HA.get_comm());
         MPI_Reduce(&(timing_Q), &(maxtiming_Q), 1, MPI_DOUBLE, MPI_MAX, 0,HA.get_comm());

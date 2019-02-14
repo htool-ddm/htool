@@ -323,8 +323,6 @@ public:
             nevi = opt.val("geneo_nu",2);
         }
 
-
-        infos["DDM_local_coarse_size" ]= NbrToStr(nevi);
         mytime[1] = MPI_Wtime() - time;
         MPI_Barrier(hmat.get_comm());
         time = MPI_Wtime();
@@ -397,7 +395,6 @@ public:
             nevi = opt.val("geneo_nu",2);
         }
 
-        infos["DDM_local_coarse_size" ]= NbrToStr(nevi);
         mytime[1] = MPI_Wtime() - time;
         MPI_Barrier(hmat.get_comm());
         time = MPI_Wtime();
@@ -699,6 +696,7 @@ public:
     }
     int get_n() const {return n;}
     int get_n_inside() const {return n_inside;}
+    int get_nevi() const {return nevi;}
     int get_size_E() const {return E.nb_cols();} // E is not rectangular...
     std::map<std::string, std::string>& get_infos() const{return infos;}
     std::string get_infos(const std::string& key) const{return infos[key];}

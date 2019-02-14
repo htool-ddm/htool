@@ -541,25 +541,6 @@ public:
             break;
         }
 
-        switch (opt.val("schwarz_coarse_correction",-1)) {
-            case HPDDM_SCHWARZ_COARSE_CORRECTION_BALANCED:
-            infos["Coarse_correction"] = "Balanced";
-            break;
-            case HPDDM_SCHWARZ_COARSE_CORRECTION_DEFLATED:
-            infos["Coarse_correction"] = "Deflated";
-            break;
-            case HPDDM_SCHWARZ_COARSE_CORRECTION_ADDITIVE:
-            infos["Coarse_correction"] = "Additive";
-            break;
-            default:
-            infos["Coarse_correction"] = "None";
-        }
-
-        if (infos["Coarse_correction"] != "None")
-            infos["GenEO_coarse_size"]=NbrToStr(size_E);
-        else
-            infos["GenEO_coarse_size"]="0";
-
         switch (opt.val("krylov_method",8)) {
             case HPDDM_KRYLOV_METHOD_GMRES:
             infos["krylov_method"] = "gmres";
@@ -588,6 +569,39 @@ public:
             case HPDDM_KRYLOV_METHOD_NONE:
             infos["krylov_method"] = "none";
             break;
+        }
+
+        if (infos["Precond"]=="None"){
+            infos["GenEO_coarse_size"]="0";
+            infos["Coarse_correction"] = "None";
+            infos["DDM_local_coarse_size"] = "0";
+        }
+        else {
+            infos["DDM_local_coarse_size"]=NbrToStr(nevi);
+            int sum_nevi=nevi;
+            if (rankWorld==0){
+                MPI_Reduce(MPI_IN_PLACE, &(sum_nevi),1, MPI_INT, MPI_SUM, 0,this->comm);
+            }
+            else{
+                MPI_Reduce(&(sum_nevi), &(sum_nevi),1, MPI_INT, MPI_SUM, 0,this->comm);
+            }
+            infos["DDM_local_coarse_size_mean"]=NbrToStr((double)nevi/(double)sizeWorld);
+            infos["GenEO_coarse_size"]=NbrToStr(size_E);
+            switch (opt.val("schwarz_coarse_correction",-1)) {
+                case HPDDM_SCHWARZ_COARSE_CORRECTION_BALANCED:
+                infos["Coarse_correction"] = "Balanced";
+                break;
+                case HPDDM_SCHWARZ_COARSE_CORRECTION_DEFLATED:
+                infos["Coarse_correction"] = "Deflated";
+                break;
+                case HPDDM_SCHWARZ_COARSE_CORRECTION_ADDITIVE:
+                infos["Coarse_correction"] = "Additive";
+                break;
+                default:
+                infos["Coarse_correction"] = "None";
+                infos["GenEO_coarse_size"]="0";
+                infos["DDM_local_coarse_size_mean"]="0";
+            }
         }
         infos["htool_solver"]="ddm";
 
