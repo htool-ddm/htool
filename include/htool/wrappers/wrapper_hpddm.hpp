@@ -69,13 +69,13 @@ public:
             }
         }
         bool allocate = this->getMap().size() > 0 && this->getBuffer()[0] == nullptr ? this->setBuffer() : false;
-        this->scaledExchange(out, mu);
+        this->exchange(out, mu);
         if(allocate)
             this->clearBuffer(allocate);
     }
 
-    void exchange(T* const out, const int& mu = 1){
-    this->template scaledExchange<true>(out, mu);
+    void scaledexchange(T* const out, const int& mu = 1) const{
+    this->template exchange<true>(out, mu);
     }
 
     friend class DDM<LowRankMatrix,T>;
@@ -438,12 +438,6 @@ public:
         HA.source_to_cluster_permutation(rhs,rhs_perm.data());
         std::copy_n(rhs_perm.begin()+offset,n_local,local_rhs.begin());
 
-        // TODO avoid com here
-        // for (int i=0;i<n-n_inside;i++){
-        //   local_rhs[i]=rhs_perm[]
-        // }
-        // this->exchange(local_rhs.data(), mu);
-
         // Solve
         int nb_it = HPDDM::IterativeMethod::solve(*this, local_rhs.data(), x_local.data(), mu,HA.get_comm());
 
@@ -486,16 +480,16 @@ public:
             for (std::map<std::string,std::string>::const_iterator it = infos.begin() ; it != infos.end() ; ++it){
                 std::cout<<it->first<<"\t"<<it->second<<std::endl;
             }
-            std::cout << std::endl;
+        std::cout << std::endl;
         }
     }
     void save_infos(const std::string& outputname, std::ios_base::openmode mode = std::ios_base::app, const std::string& sep= " = ") const{
     	if (HA.get_rankworld()==0){
     		std::ofstream outputfile(outputname, mode);
     		if (outputfile){
-    			for (std::map<std::string,std::string>::const_iterator it = infos.begin() ; it != infos.end() ; ++it){
-    				outputfile<<it->first<<sep<<it->second<<std::endl;
-    			}
+                for (std::map<std::string,std::string>::const_iterator it = infos.begin() ; it != infos.end() ; ++it){
+                    outputfile<<it->first<<sep<<it->second<<std::endl;
+                }
     			outputfile.close();
     		}
     		else{
@@ -503,6 +497,19 @@ public:
     		}
     	}
     }
+
+    void add_infos(std::string key, std::string value) const{
+        if (HA.get_rankworld()==0){
+            if (infos.find(key)==infos.end()){
+                infos[key]=infos[key]+value;
+            }
+            else{
+                infos[key]=infos[key]+value;
+            }
+        }
+    }
+
+    std::string get_infos(const std::string& key) const { return infos;}
 };
 
 }

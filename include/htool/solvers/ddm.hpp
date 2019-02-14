@@ -473,7 +473,7 @@ public:
         // for (int i=0;i<n-n_inside;i++){
         //   local_rhs[i]=rhs_perm[]
         // }
-        hpddm_op.exchange(local_rhs.data(), mu);
+        hpddm_op.scaledexchange(local_rhs.data(), mu);
 
         // Solve
         int nb_it = HPDDM::IterativeMethod::solve(hpddm_op, local_rhs.data(), x_local.data(), mu,comm);
