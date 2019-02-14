@@ -42,7 +42,6 @@ private:
 	int local_size;
 	int local_offset;
 
-	std::vector<Block*>		   Tasks;
 	std::vector<Block*>		   MyBlocks;
 
 	std::vector<LowRankMatrix<T>* > MyFarFieldMats;
@@ -63,7 +62,6 @@ private:
 
 
 	// Internal methods
-	void ScatterTasks();
 	Block* BuildBlockTree(const Cluster&, const Cluster&);
 	void ComputeBlocks(IMatrix<T>& mat, const std::vector<R3> xt,const std::vector<int> tabt, const std::vector<R3> xs, const std::vector<int>tabs);
 	bool UpdateBlocks(IMatrix<T>&mat ,const Cluster&, const Cluster&, const std::vector<R3> xt,const std::vector<int> tabt, const std::vector<R3> xs, const std::vector<int>tabs, std::vector<SubMatrix<T>*>&, std::vector<LowRankMatrix<T>*>&);
@@ -129,8 +127,8 @@ public:
 
   // Destructor
 	~HMatrix() {
-		for (int i=0; i<Tasks.size(); i++)
-			delete Tasks[i];
+		for (int i=0; i<MyBlocks.size(); i++)
+			delete MyBlocks[i];
         for (int i=0; i<MyNearFieldMats.size();i++)
             delete MyNearFieldMats[i];
         for (int i=0; i<MyFarFieldMats.size();i++)
@@ -227,7 +225,7 @@ void HMatrix<LowRankMatrix, T >::build(IMatrix<T>& mat, const std::vector<R3>& x
 	// Construction arbre des blocs
 	time = MPI_Wtime();
 	Block* B = BuildBlockTree(cluster_tree_t->get_local_cluster(),cluster_tree_s->get_head());
-	if (B != NULL) Tasks.push_back(B);
+	if (B != NULL) MyBlocks.push_back(B);
 	mytimes[1] = MPI_Wtime() - time;
 
 	// Repartition des blocs sur les processeurs
@@ -304,7 +302,7 @@ void HMatrix<LowRankMatrix, T >::build(IMatrix<T>& mat,
 	// Construction arbre des blocs
 	time = MPI_Wtime();
 	Block* B = BuildBlockTree(cluster_tree_t->get_local_cluster(),cluster_tree_t->get_head());
-	if (B != NULL) Tasks.push_back(B);
+	if (B != NULL) MyBlocks.push_back(B);
 	mytimes[1] = MPI_Wtime() - time;
 
 	// Repartition des blocs sur les processeurs
@@ -387,7 +385,7 @@ void HMatrix<LowRankMatrix, T >::build(IMatrix<T>& mat, const std::vector<R3>& x
 	// Construction arbre des blocs
 	time = MPI_Wtime();
 	Block* B = BuildBlockTree(cluster_tree_t->get_local_cluster(),cluster_tree_s->get_head());
-	if (B != NULL) Tasks.push_back(B);
+	if (B != NULL) MyBlocks.push_back(B);
 	mytimes[1] = MPI_Wtime() - time;
 
 	// Repartition des blocs sur les processeurs
