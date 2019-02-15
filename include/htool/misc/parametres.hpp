@@ -15,9 +15,10 @@ public:
 	static int maxblocksize;
  	static int minclustersize;
 	static int mintargetdepth; 
+	static int minsourcedepth; 
 
 	Parametres();
-	Parametres(int, double, double, int, int,int);
+	Parametres(int, double, double, int, int, int, int);
 
 	friend void LoadParam(std::string inputname);
 	friend double GetEta();
@@ -32,6 +33,8 @@ public:
 	friend void SetMinClusterSize(int);
 	friend int GetMinTargetDepth();
 	friend void SetMinTargetDepth(int);
+	friend int GetMinSourceDepth();
+	friend void SetMinSourceDepth(int);
 
 };
 
@@ -42,18 +45,20 @@ int Parametres::ndofperelt;
 int Parametres::maxblocksize;
 int Parametres::minclustersize;
 int Parametres::mintargetdepth;
+int Parametres::minsourcedepth;
 
 Parametres::Parametres(){
 
 }
 
-Parametres::Parametres(int ndofperelt0, double eta0, double epsilon0, int maxblocksize0, int minclustersize0,int mintargetdepth0){
+Parametres::Parametres(int ndofperelt0, double eta0, double epsilon0, int maxblocksize0, int minclustersize0,int mintargetdepth0,int minsourcedepth0){
 	ndofperelt=ndofperelt0;
 	eta=eta0;
 	epsilon=epsilon0;
 	maxblocksize=maxblocksize0;
 	minclustersize=minclustersize0;
 	mintargetdepth=mintargetdepth0;
+	minsourcedepth=minsourcedepth0;
 }
 
 
@@ -100,6 +105,14 @@ void SetMinTargetDepth(int mintargetdepth0){
 	Parametres::mintargetdepth=mintargetdepth0;
 }
 
-Parametres Parametres_defauts(1,0.5,0.5,10000000,3,1);
+int GetMinSourceDepth(){
+	return Parametres::minsourcedepth;
+}
+
+void SetMinSourceDepth(int minsourcedepth0){
+	Parametres::minsourcedepth=minsourcedepth0;
+}
+
+Parametres Parametres_defauts(1,0.5,0.5,10000000,3,1,1);
 }
 #endif

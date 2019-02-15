@@ -442,7 +442,7 @@ Block* HMatrix<LowRankMatrix, T >::BuildBlockTree(const Cluster& t, const Cluste
 	Block* B = new Block(t,s);
 	int bsize = t.get_size()*s.get_size();
 	B->ComputeAdmissibility();
-	if( B->IsAdmissible() && t.get_depth()>=GetMinTargetDepth()){
+	if( B->IsAdmissible() && t.get_depth()>=GetMinTargetDepth() && s.get_depth()>=GetMinSourceDepth()){
 		MyBlocks.push_back(B);
 		return NULL;
 	}
@@ -453,7 +453,7 @@ Block* HMatrix<LowRankMatrix, T >::BuildBlockTree(const Cluster& t, const Cluste
 				else{
 					Block* r1 = BuildBlockTree(t.get_son(0),s);
 					Block* r2 = BuildBlockTree(t.get_son(1),s);
-					if ((bsize <= maxblocksize) && (r1 != NULL) && (r2 != NULL) && t.get_depth()>=GetMinTargetDepth()) {
+					if ((bsize <= maxblocksize) && (r1 != NULL) && (r2 != NULL) && t.get_depth()>=GetMinTargetDepth() && s.get_depth()>=GetMinSourceDepth()) {
 						delete r1;
 						delete r2;
 						return B;
@@ -470,7 +470,7 @@ Block* HMatrix<LowRankMatrix, T >::BuildBlockTree(const Cluster& t, const Cluste
 		if( t.IsLeaf() ){
 			Block* r3 = BuildBlockTree(t,s.get_son(0));
 			Block* r4 = BuildBlockTree(t,s.get_son(1));
-			if ((bsize <= maxblocksize) && (r3 != NULL) && (r4 != NULL)&& t.get_depth()>=GetMinTargetDepth()) {
+			if ((bsize <= maxblocksize) && (r3 != NULL) && (r4 != NULL)&& t.get_depth()>=GetMinTargetDepth() && s.get_depth()>=GetMinSourceDepth()) {
 				delete r3;
 				delete r4;
 				return B;
@@ -509,7 +509,7 @@ Block* HMatrix<LowRankMatrix, T >::BuildBlockTree(const Cluster& t, const Cluste
 			if (t.get_size()>s.get_size()){
 				Block* r1 = BuildBlockTree(t.get_son(0),s);
 				Block* r2 = BuildBlockTree(t.get_son(1),s);
-				if ((bsize <= maxblocksize) && (r1 != NULL) && (r2 != NULL)&& t.get_depth()>=GetMinTargetDepth()) {
+				if ((bsize <= maxblocksize) && (r1 != NULL) && (r2 != NULL)&& t.get_depth()>=GetMinTargetDepth() && s.get_depth()>=GetMinSourceDepth()) {
 					delete r1;
 					delete r2;
 					return B;
@@ -524,7 +524,7 @@ Block* HMatrix<LowRankMatrix, T >::BuildBlockTree(const Cluster& t, const Cluste
 			else{
 				Block* r3 = BuildBlockTree(t,s.get_son(0));
 				Block* r4 = BuildBlockTree(t,s.get_son(1));
-				if ((bsize <= maxblocksize) && (r3 != NULL) && (r4 != NULL)&& t.get_depth()>=GetMinTargetDepth()) {
+				if ((bsize <= maxblocksize) && (r3 != NULL) && (r4 != NULL)&& t.get_depth()>=GetMinTargetDepth() && s.get_depth()>=GetMinSourceDepth()) {
 					delete r3;
 					delete r4;
 					return B;
