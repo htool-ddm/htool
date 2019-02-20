@@ -523,7 +523,7 @@ public:
         }
     }
 
-    std::string get_infos(const std::string& key) const { return infos;}
+    std::string get_infos(const std::string& key) const { return infos[key];}
 };
 
 }
