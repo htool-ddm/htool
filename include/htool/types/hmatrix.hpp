@@ -890,7 +890,8 @@ void HMatrix<LowRankMatrix,T >::ComputeInfos(const std::vector<double>& mytime){
 
 	infos["Eta"] = NbrToStr(GetEta());
 	infos["Eps"] = NbrToStr(GetEpsilon());
-
+	infos["MinTargetDepth"] = NbrToStr(GetMinTargetDepth());
+	infos["MinSourceDepth"] = NbrToStr(GetMinSourceDepth());
 
 
 }
