@@ -88,6 +88,7 @@ matrix:
           packages:
             - clang-3.6
             - openmpi-bin
+            - libopenmpi-dev
             - libblas-dev
             - liblapack-dev
             - libsuitesparse-dev
@@ -102,6 +103,7 @@ matrix:
             - ubuntu-toolchain-r-test
           packages:
             - openmpi-bin
+            - libopenmpi-dev
             - libblas-dev
             - liblapack-dev
             - libsuitesparse-dev
