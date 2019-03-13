@@ -6,7 +6,7 @@
 #define HPDDM_FETI 0
 #define HPDDM_BDD 0
 #define LAPACKSUB
-#define DLAPACK
+#define DELEMENTAL
 #define EIGENSOLVER 1
 #include <HPDDM.hpp>
 #include "../types/hmatrix.hpp"
@@ -235,19 +235,29 @@ public:
         if (P.get_infos("Precond")=="None"){
             P.set_infos("GenEO_coarse_size","0");
             P.set_infos("Coarse_correction","None");
-            P.set_infos("DDM_local_coarse_size","0");
+            P.set_infos("DDM_local_coarse_size_mean","0");
+            P.set_infos("DDM_local_coarse_size_max","0");
+            P.set_infos("DDM_local_coarse_size_min","0");
         }
         else{
             P.set_infos("GenEO_coarse_size",NbrToStr(P.get_size_E()));
             int nevi = P.get_nevi();
-            P.set_infos("DDM_local_coarse_size",NbrToStr(nevi));
+            int nevi_max = P.get_nevi();
+            int nevi_min = P.get_nevi();
+
             if (rankWorld==0){
                 MPI_Reduce(MPI_IN_PLACE, &(nevi),1, MPI_INT, MPI_SUM, 0,HA.get_comm());
+                MPI_Reduce(MPI_IN_PLACE, &(nevi_max),1, MPI_INT, MPI_MAX, 0,HA.get_comm());
+                MPI_Reduce(MPI_IN_PLACE, &(nevi_min),1, MPI_INT, MPI_MIN, 0,HA.get_comm());
             }
             else{
                 MPI_Reduce(&(nevi), &(nevi),1, MPI_INT, MPI_SUM, 0,HA.get_comm());
+                MPI_Reduce(&(nevi_max), &(nevi_max),1, MPI_INT, MPI_MAX, 0,HA.get_comm());
+                MPI_Reduce(&(nevi_min), &(nevi_min),1, MPI_INT, MPI_MIN, 0,HA.get_comm());
             }
             P.set_infos("DDM_local_coarse_size_mean",NbrToStr((double)nevi/(double)sizeWorld));
+            P.set_infos("DDM_local_coarse_size_max",NbrToStr(nevi_max));
+            P.set_infos("DDM_local_coarse_size_min",NbrToStr(nevi_min));
             switch (opt.val("schwarz_coarse_correction",42)) {
                 case HPDDM_SCHWARZ_COARSE_CORRECTION_BALANCED:
                 P.set_infos("Coarse_correction","Balanced");
@@ -261,7 +271,9 @@ public:
                 default:
                 P.set_infos("Coarse_correction","None");
                 P.set_infos("GenEO_coarse_size","0");
-                P.set_infos("DDM_local_coarse_size","0");
+                P.set_infos("DDM_local_coarse_size_mean","0");
+                P.set_infos("DDM_local_coarse_size_max","0");
+                P.set_infos("DDM_local_coarse_size_min","0");
                 break;
             }
 
