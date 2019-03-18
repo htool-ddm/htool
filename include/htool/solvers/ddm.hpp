@@ -24,6 +24,7 @@ private:
     int nevi;
     int size_E;
     bool one_level;
+    bool two_level;
     mutable std::map<std::string, std::string> infos;
 
 
@@ -34,7 +35,7 @@ public:
     }
 
     // Without overlap
-    DDM(const HMatrix<LowRankMatrix,T>& hmat_0):n(hmat_0.get_local_size()),n_inside(hmat_0.get_local_size()),hpddm_op(hmat_0),mat_loc(n*n),D(n),nevi(0),size_E(0),comm(hmat_0.get_comm()),one_level(0){
+    DDM(const HMatrix<LowRankMatrix,T>& hmat_0):n(hmat_0.get_local_size()),n_inside(hmat_0.get_local_size()),hpddm_op(hmat_0),mat_loc(n*n),D(n),nevi(0),size_E(0),comm(hmat_0.get_comm()),one_level(0),two_level(0){
         // Timing
         double mytime, maxtime, meantime;
         double time = MPI_Wtime();
@@ -92,7 +93,7 @@ public:
     const std::vector<int>&  ovr_subdomain_to_global0,
     const std::vector<int>& cluster_to_ovr_subdomain0,
     const std::vector<int>& neighbors0,
-    const std::vector<std::vector<int> >& intersections0): hpddm_op(hmat_0), n(ovr_subdomain_to_global0.size()), n_inside(cluster_to_ovr_subdomain0.size()), neighbors(neighbors0), vec_ovr(n),mat_loc(n*n), D(n), comm(hmat_0.get_comm()) {
+    const std::vector<std::vector<int> >& intersections0): hpddm_op(hmat_0), n(ovr_subdomain_to_global0.size()), n_inside(cluster_to_ovr_subdomain0.size()), neighbors(neighbors0), vec_ovr(n),mat_loc(n*n), D(n), comm(hmat_0.get_comm()),one_level(0),two_level(0) {
 
         // Timing
         double mytime, maxtime, meantime;
@@ -435,6 +436,7 @@ public:
         infos["DDM_setup_ZtAZ_max" ]= NbrToStr(maxtime[2]);
         infos["DDM_facto_ZtAZ_max" ]= NbrToStr(maxtime[3]);
 
+        two_level = 1;
     }
 
 void build_coarse_space( Matrix<T>& Ki, const std::vector<R3>& x ){
@@ -619,12 +621,12 @@ void build_coarse_space( Matrix<T>& Ki, const std::vector<R3>& x ){
         infos["DDM_geev_max" ]= NbrToStr(maxtime[0]);
         infos["DDM_setup_ZtAZ_max" ]= NbrToStr(maxtime[1]);
         infos["DDM_facto_ZtAZ_max" ]= NbrToStr(maxtime[2]);
-
+        two_level =1;
     }
 
     void solve(const T* const rhs, T* const x, const int& mu=1 ){
         // Check facto
-        if (!one_level){
+        if (!one_level && two_level){
             std::cout << "ERROR: FACTO FOR ONE LEVEL MISSING"<< std::endl;
             exit(1);
         }

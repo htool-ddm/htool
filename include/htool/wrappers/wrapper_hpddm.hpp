@@ -331,6 +331,8 @@ public:
     }
 
     std::string get_infos (const std::string& key) const { return P.get_infos(key);}
+
+    int get_nevi() const {return P.get_nevi();}
 };
 
 template< template<typename> class LowRankMatrix, typename T>
