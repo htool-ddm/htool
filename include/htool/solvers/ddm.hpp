@@ -27,6 +27,7 @@ private:
     bool two_level;
     mutable std::map<std::string, std::string> infos;
 
+    T** Z;
 
 public:
 
