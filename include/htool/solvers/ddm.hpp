@@ -495,7 +495,18 @@ void build_coarse_space( Matrix<T>& Ki, const std::vector<R3>& x ){
         }
         
         opt["geneo_nu"]=nevi;
-        std::cout << rankWorld<<" "<< nevi<<" "<<opt.val("geneo_nu",2)<<std::endl;
+        Z = new T*[nevi];
+        for (int i=0;i<nevi;i++){
+            Z[i]=new T[n];
+            std::copy_n(vr.data()+index[i]*n,n_inside,Z[i]);
+            for (int j=n_inside;j<n;j++){
+                Z[i][j]=0;
+            }
+            // Z[i]=vr.data()+index[i]*n;
+        }
+
+        hpddm_op.setVectors(Z);
+
         mytime[0] = MPI_Wtime() - time;
         MPI_Barrier(hpddm_op.HA.get_comm());
         time = MPI_Wtime();
@@ -504,7 +515,6 @@ void build_coarse_space( Matrix<T>& Ki, const std::vector<R3>& x ){
         // Allgather
         std::vector<int> recvcounts(sizeWorld);
         std::vector<int> displs(sizeWorld);
-        // std::cout << rankWorld << " " <<nevi <<std::endl;
         MPI_Allgather(&nevi,1,MPI_INT,recvcounts.data(),1,MPI_INT,comm);
 
         displs[0] = 0;
@@ -522,21 +532,6 @@ void build_coarse_space( Matrix<T>& Ki, const std::vector<R3>& x ){
             // std::copy_n(Z[i],n_inside,evi.data()+i*n);
             std::copy_n(vr.data()+index[i]*n,n_inside,evi.data()+i*n);
         }
-
-        // Matrix<T> out_test(n,nevi);
-        // for (int i=0;i<nevi;i++){
-        //     std::vector<T> transvase(n);
-        //     std::copy_n(Z[i],n,transvase.data());
-        //     double norme=norm2(transvase);
-        //     for (int i=0;i<n;i++){
-        //         transvase[i]=transvase[i]/norme;
-        //     }
-        //     out_test.set_col(i,transvase);
-        // }
-        // if (rankWorld==0)
-        //     out_test.matlab_save("evi_ddm.txt");
-
-
 
         int local_max_size_j=0;
         const std::vector<LowRankMatrix<T>*>& MyFarFieldMats = hpddm_op.HA.get_MyFarFieldMats();
@@ -571,8 +566,6 @@ void build_coarse_space( Matrix<T>& Ki, const std::vector<R3>& x ){
             hpddm_op.HA.mvprod_subrhs(buffer.data(),AZ.data(),recvcounts[i],hpddm_op.HA.get_MasterOffset_t(i).first,hpddm_op.HA.get_MasterOffset_t(i).second,local_max_size_j);
 
             for (int j=0;j<recvcounts[i];j++){
-                // std::fill_n(vec_ovr.data(),vec_ovr.size(),0);
-                // std::copy_n(AZ.data()+j*n_inside+hmat_0.get_local_offset(),n_inside,vec_ovr.data());
                 for (int k=0;k<n_inside;k++){
                     vec_ovr[k]=AZ[j+recvcounts[i]*k];
                 }
@@ -590,23 +583,7 @@ void build_coarse_space( Matrix<T>& Ki, const std::vector<R3>& x ){
             MPI_Reduce(MPI_IN_PLACE, E.data(), E.size(), wrapper_mpi<T>::mpi_type(),MPI_SUM, 0,comm);
         else
             MPI_Reduce(E.data(), E.data(), E.size(), wrapper_mpi<T>::mpi_type(),MPI_SUM, 0,comm);
-        // if (rankWorld==0){
-        //     double norme=0;
-        //     std::cout << "size E :"<<E.size() << std::endl;
-        //     std::cout << "[";
-        //     for (int i=0;i<nevi*sizeWorld;i++){
-        //         std::cout << "[";
-        //         for (int j=0;j<nevi*sizeWorld;j++){
-        //             std::cout << std::real(E[i+j*nevi*sizeWorld])<<"+"<<std::imag(E[i+j*nevi*sizeWorld]) << "i,";
-        //             norme+=std::abs(E[i+j*nevi*sizeWorld]*std::conj(E[i+j*nevi*sizeWorld]));
-        //         }
-        //         std::cout << "];";
-        //     }
-        //     std::cout << "]"<<std::endl;
-        //     std::cout << "NORME : "<<norme<<std::endl;
-        // }
-        // if (rankWorld==0)
-        //     matlab_save(E,"E_ddm.txt");
+
         mytime[1] = MPI_Wtime() - time;
         MPI_Barrier(hpddm_op.HA.get_comm());
         time = MPI_Wtime();
