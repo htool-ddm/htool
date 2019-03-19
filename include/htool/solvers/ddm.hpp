@@ -493,7 +493,9 @@ void build_coarse_space( Matrix<T>& Ki, const std::vector<R3>& x ){
         else {
             nevi = opt.val("geneo_nu",2);
         }
-
+        
+        opt["geneo_nu"]=nevi;
+        std::cout << rankWorld<<" "<< nevi<<" "<<opt.val("geneo_nu",2)<<std::endl;
         mytime[0] = MPI_Wtime() - time;
         MPI_Barrier(hpddm_op.HA.get_comm());
         time = MPI_Wtime();
