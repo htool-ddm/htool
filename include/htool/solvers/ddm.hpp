@@ -29,6 +29,7 @@ private:
 
     T** Z;
 
+
 public:
 
     void clean(){
@@ -497,13 +498,14 @@ void build_coarse_space( Matrix<T>& Ki, const std::vector<R3>& x ){
         
         opt["geneo_nu"]=nevi;
         Z = new T*[nevi];
+        *Z = new T[nevi*n];
         for (int i=0;i<nevi;i++){
-            Z[i]=new T[n];
+            Z[i] = *Z + i * n;
             std::copy_n(vr.data()+index[i]*n,n_inside,Z[i]);
             for (int j=n_inside;j<n;j++){
+                
                 Z[i][j]=0;
             }
-            // Z[i]=vr.data()+index[i]*n;
         }
 
         hpddm_op.setVectors(Z);
@@ -592,8 +594,6 @@ void build_coarse_space( Matrix<T>& Ki, const std::vector<R3>& x ){
         hpddm_op.buildTwo(MPI_COMM_WORLD, E.data());
 
         mytime[2] = MPI_Wtime() - time;
-        // MPI_Barrier(hmat.get_comm());
-        // time = MPI_Wtime();
 
         // Timing
         MPI_Reduce(&(mytime[0]), &(maxtime[0]), 3, MPI_DOUBLE, MPI_MAX, 0,this->comm);
@@ -741,19 +741,32 @@ void build_coarse_space( Matrix<T>& Ki, const std::vector<R3>& x ){
         if (infos["Precond"]=="None"){
             infos["GenEO_coarse_size"]="0";
             infos["Coarse_correction"] = "None";
-            infos["DDM_local_coarse_size"] = "0";
+            infos["DDM_local_coarse_size_mean"] = "0";
+            infos["DDM_local_coarse_size_max"] = "0";
+            infos["DDM_local_coarse_size_min"] = "0";
         }
         else {
-            infos["DDM_local_coarse_size"]=NbrToStr(nevi);
-            int sum_nevi=nevi;
+            infos["GenEO_coarse_size"]=NbrToStr(size_E);
+            int nevi_mean = nevi;
+            int nevi_max = nevi;
+            int nevi_min = nevi;
+
+
             if (rankWorld==0){
-                MPI_Reduce(MPI_IN_PLACE, &(sum_nevi),1, MPI_INT, MPI_SUM, 0,this->comm);
+                MPI_Reduce(MPI_IN_PLACE, &(nevi_mean),1, MPI_INT, MPI_SUM, 0,this->comm);
+                MPI_Reduce(MPI_IN_PLACE, &(nevi_max),1, MPI_INT, MPI_MAX, 0,this->comm);
+                MPI_Reduce(MPI_IN_PLACE, &(nevi_min),1, MPI_INT, MPI_MIN, 0,this->comm);
             }
             else{
-                MPI_Reduce(&(sum_nevi), &(sum_nevi),1, MPI_INT, MPI_SUM, 0,this->comm);
+                MPI_Reduce(&(nevi_mean), &(nevi_mean),1, MPI_INT, MPI_SUM, 0,this->comm);
+                MPI_Reduce(&(nevi_max), &(nevi_max),1, MPI_INT, MPI_MAX, 0,this->comm);
+                MPI_Reduce(&(nevi_min), &(nevi_min),1, MPI_INT, MPI_MIN, 0,this->comm);
             }
-            infos["DDM_local_coarse_size_mean"]=NbrToStr((double)nevi/(double)sizeWorld);
-            infos["GenEO_coarse_size"]=NbrToStr(size_E);
+
+            infos["DDM_local_coarse_size_mean"] = NbrToStr((double)nevi_mean/(double)sizeWorld);
+            infos["DDM_local_coarse_size_max"] = NbrToStr(nevi_max);
+            infos["DDM_local_coarse_size_min"] = NbrToStr(nevi_min);
+
             switch (opt.val("schwarz_coarse_correction",-1)) {
                 case HPDDM_SCHWARZ_COARSE_CORRECTION_BALANCED:
                 infos["Coarse_correction"] = "Balanced";
@@ -768,6 +781,8 @@ void build_coarse_space( Matrix<T>& Ki, const std::vector<R3>& x ){
                 infos["Coarse_correction"] = "None";
                 infos["GenEO_coarse_size"]="0";
                 infos["DDM_local_coarse_size_mean"]="0";
+                infos["DDM_local_coarse_size_max"]="0";
+                infos["DDM_local_coarse_size_min"]="0";
             }
         }
         infos["htool_solver"]="ddm";
@@ -808,6 +823,9 @@ void build_coarse_space( Matrix<T>& Ki, const std::vector<R3>& x ){
             }
         }
     }
+
+
+    int get_nevi() const {return nevi;}
 
 };
 
