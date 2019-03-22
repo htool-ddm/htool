@@ -121,7 +121,7 @@ int vector_to_bytes(const std::vector<T> vect, const std::string& file){
   std::ofstream out(file,std::ios::out | std::ios::binary | std::ios::trunc);
 
   if(!out) {
-    std::cout << "Cannot open file."<<std::endl;
+    std::cout << "Cannot open file: "<<file<<std::endl;
     return 1;
   }
   int size = vect.size();
@@ -138,7 +138,7 @@ int bytes_to_vector(std::vector<T>& vect, const std::string& file){
   std::ifstream in(file,std::ios::in | std::ios::binary);
 
     if(!in) {
-      std::cout << "Cannot open file."<<std::endl;
+      std::cout << "Cannot open file: "<<file<<std::endl;
       return 1;
     }
 
@@ -157,7 +157,7 @@ int matlab_save(std::vector<T> vector, const std::string& file){
     std::ofstream out(file);
     out << std::setprecision(18);
     if(!out) {
-        std::cout << "Cannot open file."<<std::endl;
+        std::cout << "Cannot open file: "<<file<<std::endl;
         return 1;
     }
 
