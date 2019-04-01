@@ -405,6 +405,54 @@ public:
         infos["DDM_setup_geev_max" ]= NbrToStr(maxtime[0]);
         infos["DDM_geev_max" ]= NbrToStr(maxtime[1]);
 
+        // Cleaning eigenvectors associated with kernel of Ki
+        int count = 0;
+        std::vector<int> nb_comp_conn;
+        
+        while (std::abs(beta[index[count]])<1e-15){
+            std::cout << std::setprecision(18);
+            std::vector<T> values;
+            std::vector<T> temp(n,0);
+
+            // Find values
+           for (int i=0;i<n;i++){
+                bool in =0;
+                for (int j=0;j<values.size();j++){
+                    if (std::abs(values[j]-vr[i+index[count]*n])<1e-6 ){
+                        in =1;
+                        break;
+                    }
+
+                }
+                if (!in){
+                    values.push_back(vr[i+index[count]*n]);
+                }
+            }
+
+            // Find connex component
+            for (int i=0;i<n;i++){
+                if (std::abs(values[count]-vr[i+index[count]*n])<1e-6){
+                    temp[i]=1;
+                }
+            }
+            std::copy_n(temp.data(),n,vr.data()+index[count]*n);
+            nb_comp_conn.push_back(values.size());
+
+            count++;
+        }
+
+        count = 0;
+        std::vector<T> test_comp(n,0);
+        while (std::abs(beta[index[count]])<1e-15){         
+            for (int i=0;i<n;i++){
+                test_comp[i]=test_comp[i]+vr[i+index[count]*n];
+            }
+            count++;
+        }
+        if (std::abs(std::accumulate(test_comp.begin(),test_comp.end(),std::complex<double>(0))-test_comp.size()*1.0)>1e-10 && std::abs(beta[index[0]])<1e-15){
+            std::cout <<"WARNING: something wrong happened computing the eigenvectors in the kernel of the Neumann matrix"<<std::endl;
+        }
+            
         // build the coarse space
         build_ZtAZ(vr,index);
 

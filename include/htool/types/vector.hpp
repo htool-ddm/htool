@@ -44,12 +44,24 @@ std::vector<T> operator+(const std::vector<T>& a,const std::vector<T>& b){
 }
 
 template<typename T>
+std::vector<T> plus(const std::vector<T>& a,const std::vector<T>& b){
+
+	return a+b;
+}
+
+template<typename T>
 std::vector<T> operator-(const std::vector<T>& a,const std::vector<T>& b){
 	assert(a.size()==b.size());
 	std::vector<T> result(a.size(),0);
 	std::transform (a.begin(), a.end(), b.begin(), result.begin(), std::minus<T>());
 
 	return result;
+}
+
+template<typename T>
+std::vector<T> minus(const std::vector<T>& a,const std::vector<T>& b){
+
+	return a-b;
 }
 
 // template<typename T>
