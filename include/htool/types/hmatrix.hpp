@@ -195,6 +195,7 @@ public:
 
     // Convert
     Matrix<T> to_dense() const;
+    Matrix<T> to_dense_perm() const;
 
     // Apply Dirichlet condition
     void apply_dirichlet(const std::vector<int>& boundary);
@@ -1265,6 +1266,38 @@ Matrix<T> HMatrix<LowRankMatrix,T >::to_dense() const{
       }
     }
     return Dense;
+}
+
+template< template<typename> class LowRankMatrix, typename T >
+Matrix<T> HMatrix<LowRankMatrix,T >::to_dense_perm() const{
+	Matrix<T> Dense(nr,nc);
+	// Internal dense blocks
+	for (int l=0;l<MyNearFieldMats.size();l++){
+		const SubMatrix<T>& submat = *(MyNearFieldMats[l]);
+		int local_nr = submat.nb_rows();
+		int local_nc = submat.nb_cols();
+		int offset_i = submat.get_offset_i();
+		int offset_j = submat.get_offset_j();
+		for (int k=0;k<local_nc;k++)
+			for (int j=0;j<local_nr;j++)
+				Dense(get_permt(j+offset_i),get_perms(k+offset_j))=submat(j,k);
+	}
+
+	// Internal compressed block
+	Matrix<T> FarFielBlock(local_size,local_size);
+	for (int l=0;l<MyFarFieldMats.size();l++){
+		const LowRankMatrix<T>& lmat = *(MyFarFieldMats[l]);
+		int local_nr = lmat.nb_rows();
+		int local_nc = lmat.nb_cols();
+		int offset_i = lmat.get_offset_i();
+		int offset_j = lmat.get_offset_j();
+		FarFielBlock.resize(local_nr,local_nc);
+		lmat.get_whole_matrix(&(FarFielBlock(0,0)));
+		for (int k=0;k<local_nc;k++)
+			for (int j=0;j<local_nr;j++)
+				Dense(get_permt(j+offset_i),get_perms(k+offset_j))=FarFielBlock(j,k);
+	}
+	return Dense;
 }
 
 template< template<typename> class LowRankMatrix, typename T >
