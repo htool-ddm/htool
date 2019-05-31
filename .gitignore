@@ -39,3 +39,6 @@ data/*
 # Temporary files
 *~
 *.DS_Store
+
+# VScode
+.vscode
