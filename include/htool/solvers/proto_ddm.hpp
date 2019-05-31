@@ -178,6 +178,8 @@ public:
         int info;
 
         HPDDM::Lapack<T>::getrf(&n,&n,mat_loc.data(),&lda,_ipiv.data(),&info);
+        if (info!=0)
+            std::cout<< "Error in getrf from Lapack for mat_loc: info="<<info<<std::endl;
 
         mytime = MPI_Wtime() - time;
         MPI_Barrier(hmat.get_comm());
@@ -265,6 +267,8 @@ public:
         int lda=n;
         std::vector<int> _ipiv_mass(n);
         HPDDM::Lapack<Cplx>::getrf(&n,&n,Mi.data(),&lda,_ipiv_mass.data(),&info);
+        if (info!=0)
+            std::cout<< "Error in getrf from Lapack for Mi: info="<<info<<std::endl;
 
         // Partition of unity
         Matrix<T> DAiD(n,n);
@@ -277,7 +281,11 @@ public:
         lda=n;
         int ldb=n;
         HPDDM::Lapack<Cplx>::getrs(&l,&n,&n,Mi.data(),&lda,_ipiv_mass.data(),DAiD.data(),&ldb,&info);
+        if (info!=0)
+            std::cout<< "Error in getrs from Lapack for Mi: info="<<info<<std::endl;
         HPDDM::Lapack<Cplx>::getrs(&l,&n,&n,Mi.data(),&lda,_ipiv_mass.data(),Bi.data(),&ldb,&info);
+        if (info!=0)
+            std::cout<< "Error in getrs from Lapack for Bi: info="<<info<<std::endl;
 
         // Build local eigenvalue problem
         Matrix<T> evp(n,n);
@@ -300,7 +308,8 @@ public:
         work.resize(lwork);
         HPDDM::Lapack<T>::geev( "N", "V", &n, evp.data(), &lda, w.data(),nullptr , vl.data(), &ldvl, vr.data(), &ldvr, work.data(), &lwork, rwork.data(), &info );
         std::vector<int> index(n, 0);
-
+        if (info!=0)
+            std::cout<< "Error in geev from Lapack: info="<<info<<std::endl;
 
         for (int i = 0 ; i != index.size() ; i++) {
             index[i] = i;
@@ -372,6 +381,8 @@ public:
         lwork = (int)std::real(work[0]);
         work.resize(lwork);
         HPDDM::Lapack<T>::ggev( "N", "V", &n, DAiD.data(), &lda, Ki.data(), &ldb, alpha.data(),nullptr ,beta.data(), vl.data(), &ldvl, vr.data(), &ldvr, work.data(), &lwork, rwork.data(), &info );
+        if (info!=0)
+            std::cout<< "Error in ggev from Lapack: info="<<info<<std::endl;
 
         for (int i = 0 ; i != index.size() ; i++) {
             index[i] = i;
@@ -546,6 +557,9 @@ public:
         _ipiv_coarse.resize(n_coarse);
 
         HPDDM::Lapack<T>::getrf(&n_coarse,&n_coarse,E.data(),&n_coarse,_ipiv_coarse.data(),&info);
+        if (info!=0)
+            std::cout<< "Error in getrf from Lapack for E: info="<<info<<std::endl;
+
         mytime[1] = MPI_Wtime() - time;
         MPI_Barrier(hmat.get_comm());
         time = MPI_Wtime();
@@ -585,7 +599,8 @@ public:
         int info;
         // std::cout << n <<" "<<n_inside<<" "<<mat_loc.size()<<" "<<vec_ovr.size()<<std::endl;
         HPDDM::Lapack<T>::getrs(&l,&n,&nrhs,mat_loc.data(),&lda,_ipiv.data(),vec_ovr.data(),&ldb,&info);
-
+        if (info!=0)
+            std::cout<< "Error in getrs from Lapack for mat_loc: info="<<info<<std::endl;
 
 
         timing_one_level += MPI_Wtime() - time;
@@ -638,6 +653,8 @@ public:
             int info;
             // std::cout << n <<" "<<n_inside<<" "<<mat_loc.size()<<" "<<vec_ovr.size()<<std::endl;
             HPDDM::Lapack<T>::getrs(&l,&zt_size,&nrhs,E.data(),&lda,_ipiv_coarse.data(),zt.data(),&ldb,&info);
+            if (info!=0)
+                std::cout<< "Error in getrs from Lapack for E: info="<<info<<std::endl;
             // std::cout << "GETRS : "<<info << std::endl;
         }
 
