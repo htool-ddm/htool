@@ -191,7 +191,7 @@ public:
         infos["DDM_facto_one_level_max" ]= NbrToStr(maxtime);
     }
 
-    void build_coarse_space( Matrix<T>& Mi, IMatrix<T>& generator_Bi, const std::vector<R3>& x ){
+    void build_coarse_space_geev( Matrix<T>& Mi, IMatrix<T>& generator_Bi, const std::vector<R3>& x ){
         // Timing
         std::vector<double> mytime(2), maxtime(2);
         double time = MPI_Wtime();
@@ -346,7 +346,7 @@ public:
 
     }
 
-void build_coarse_space(IMatrix<T>& generator_Bi, const std::vector<R3>& x ){
+void build_coarse_space(Matrix<T>& Mi, IMatrix<T>& generator_Bi, const std::vector<R3>& x ){
         // Timing
         std::vector<double> mytime(2), maxtime(2);
         double time = MPI_Wtime();
@@ -411,6 +411,11 @@ void build_coarse_space(IMatrix<T>& generator_Bi, const std::vector<R3>& x ){
             std::copy_n(&(mat_loc[i*n]),n_inside,&(DAiD(0,i)));
         }
 
+        // Build local eigenvalue problem
+        Matrix<T> evp(n,n);
+        evp=Mi+Bi;
+
+
         mytime[0] = MPI_Wtime() - time;
         MPI_Barrier(hmat.get_comm());
         time = MPI_Wtime();
@@ -424,10 +429,10 @@ void build_coarse_space(IMatrix<T>& generator_Bi, const std::vector<R3>& x ){
         std::vector<T> vl(n*n), vr(n*n);
         std::vector<int> index(n, 0);
 
-        HPDDM::Lapack<T>::ggev( "N", "V", &n, DAiD.data(), &lda, Bi.data(), &ldb, alpha.data(),nullptr ,beta.data(), vl.data(), &ldvl, vr.data(), &ldvr, work.data(), &lwork, rwork.data(), &info );
+        HPDDM::Lapack<T>::ggev( "N", "V", &n, DAiD.data(), &lda, evp.data(), &ldb, alpha.data(),nullptr ,beta.data(), vl.data(), &ldvl, vr.data(), &ldvr, work.data(), &lwork, rwork.data(), &info );
         lwork = (int)std::real(work[0]);
         work.resize(lwork);
-        HPDDM::Lapack<T>::ggev( "N", "V", &n, DAiD.data(), &lda, Bi.data(), &ldb, alpha.data(),nullptr ,beta.data(), vl.data(), &ldvl, vr.data(), &ldvr, work.data(), &lwork, rwork.data(), &info );
+        HPDDM::Lapack<T>::ggev( "N", "V", &n, DAiD.data(), &lda, evp.data(), &ldb, alpha.data(),nullptr ,beta.data(), vl.data(), &ldvl, vr.data(), &ldvr, work.data(), &lwork, rwork.data(), &info );
         if (info!=0)
             std::cout<< "Error in ggev from Lapack: info="<<info<<std::endl;
 

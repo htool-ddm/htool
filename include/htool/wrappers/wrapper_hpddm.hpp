@@ -108,14 +108,19 @@ public:
         // std::copy_n(in, this->_n, out);
     }
 
+    void build_coarse_space_geev(Matrix<T>& Mi, IMatrix<T>& generator_Bi, const std::vector<R3>& x){
+        // Coarse space
+        P.build_coarse_space_geev(Mi,generator_Bi,x);
+    }
+
     void build_coarse_space(Matrix<T>& Mi, IMatrix<T>& generator_Bi, const std::vector<R3>& x){
         // Coarse space
         P.build_coarse_space(Mi,generator_Bi,x);
     }
 
-    void build_coarse_space(IMatrix<T>& generator_Bi, const std::vector<R3>& x){
+    void build_coarse_space(Matrix<T>& Mi, const std::vector<R3>& x){
         // Coarse space
-        P.build_coarse_space(generator_Bi,x);
+        P.build_coarse_space(Mi,x);
     }
 
     void build_coarse_space(Matrix<T>& Mi, const std::vector<R3>& x){
