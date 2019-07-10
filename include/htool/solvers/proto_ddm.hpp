@@ -596,60 +596,60 @@ void build_coarse_space(Matrix<T>& Mi, IMatrix<T>& generator_Bi, const std::vect
         build_ZtAZ(vr,index);
 
     }
-    // Not working
-    void build_coarse_space_arpack( Matrix<T>& Ki, const std::vector<R3>& x ){
-        // Timing
-        std::vector<double> mytime(2), maxtime(2);
-        double time = MPI_Wtime();
-        // Data
-        int n_global= hmat.nb_cols();
-        int sizeWorld = hmat.get_sizeworld();
-        int rankWorld = hmat.get_rankworld();
-        int info;
+    // // Not working
+    // void build_coarse_space_arpack( Matrix<T>& Ki, const std::vector<R3>& x ){
+    //     // Timing
+    //     std::vector<double> mytime(2), maxtime(2);
+    //     double time = MPI_Wtime();
+    //     // Data
+    //     int n_global= hmat.nb_cols();
+    //     int sizeWorld = hmat.get_sizeworld();
+    //     int rankWorld = hmat.get_rankworld();
+    //     int info;
 
 
 
-        // Partition of unity
-        Matrix<T> DAiD(n,n);
-        for (int i =0 ;i < n_inside;i++){
-            std::copy_n(&(mat_loc[i*n]),n_inside,&(DAiD(0,i)));
-        }
+    //     // Partition of unity
+    //     Matrix<T> DAiD(n,n);
+    //     for (int i =0 ;i < n_inside;i++){
+    //         std::copy_n(&(mat_loc[i*n]),n_inside,&(DAiD(0,i)));
+    //     }
 
-        mytime[0] = MPI_Wtime() - time;
-        MPI_Barrier(hmat.get_comm());
-        time = MPI_Wtime();
+    //     mytime[0] = MPI_Wtime() - time;
+    //     MPI_Barrier(hmat.get_comm());
+    //     time = MPI_Wtime();
 
-        // Local eigenvalue problem
-        HPDDM::Option& opt = *HPDDM::Option::get();
-        int nu = opt.val("geneo_nu",2);
-        int threshold = opt.val("geneo_threshold",2);
-        bool sym= false;
-        T** Z;
-        HPDDM::MatrixCSR<T>* A = new HPDDM::MatrixCSR<T>(n, n, n * n, DAiD.data(), nullptr, nullptr, sym);
-        HPDDM::MatrixCSR<T>* B = new HPDDM::MatrixCSR<T>(n, n, n * n, Ki.data(), nullptr, nullptr, sym);
+    //     // Local eigenvalue problem
+    //     HPDDM::Option& opt = *HPDDM::Option::get();
+    //     int nu = opt.val("geneo_nu",2);
+    //     int threshold = opt.val("geneo_threshold",2);
+    //     bool sym= false;
+    //     T** Z;
+    //     HPDDM::MatrixCSR<T>* A = new HPDDM::MatrixCSR<T>(n, n, n * n, DAiD.data(), nullptr, nullptr, sym);
+    //     HPDDM::MatrixCSR<T>* B = new HPDDM::MatrixCSR<T>(n, n, n * n, Ki.data(), nullptr, nullptr, sym);
 
-        HPDDM::Arpack<T> eps(threshold, n, nu);
-        std::cout <<"Warning"<<std::endl;
-        eps.template solve<HPDDM::LapackTRSub>(A,B,Z,hmat.get_comm());
-
-
-        int nevi = eps._nu;
-        std::cout << "(rankWorld,nevi): "<<rankWorld<<" "<<nevi<<std::endl;
-
-        mytime[1] = MPI_Wtime() - time;
-        MPI_Barrier(hmat.get_comm());
-        time = MPI_Wtime();
+    //     HPDDM::Arpack<T> eps(threshold, n, nu);
+    //     std::cout <<"Warning"<<std::endl;
+    //     eps.template solve<HPDDM::LapackTRSub>(A,B,Z,hmat.get_comm());
 
 
-        // Timing
-        MPI_Reduce(&(mytime[0]), &(maxtime[0]), 2, MPI_DOUBLE, MPI_MAX, 0,this->comm);
-        infos["DDM_setup_geev_max" ]= NbrToStr(maxtime[0]);
-        infos["DDM_geev_max" ]= NbrToStr(maxtime[1]);
+    //     int nevi = eps._nu;
+    //     std::cout << "(rankWorld,nevi): "<<rankWorld<<" "<<nevi<<std::endl;
 
-        // build the coarse space
-        build_ZtAZ_arpack(Z,nevi);
+    //     mytime[1] = MPI_Wtime() - time;
+    //     MPI_Barrier(hmat.get_comm());
+    //     time = MPI_Wtime();
 
-    }
+
+    //     // Timing
+    //     MPI_Reduce(&(mytime[0]), &(maxtime[0]), 2, MPI_DOUBLE, MPI_MAX, 0,this->comm);
+    //     infos["DDM_setup_geev_max" ]= NbrToStr(maxtime[0]);
+    //     infos["DDM_geev_max" ]= NbrToStr(maxtime[1]);
+
+    //     // build the coarse space
+    //     build_ZtAZ_arpack(Z,nevi);
+
+    // }
 
     void build_ZtAZ(const std::vector<T>& vr, const std::vector<int>& index){
         // Timing
