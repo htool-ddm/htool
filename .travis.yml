@@ -50,7 +50,7 @@ matrix:
         apt:
           sources:
             - ubuntu-toolchain-r-test
-            - llvm-toolchain-xenial-
+            - llvm-toolchain-xenial-7
           packages:
             - mpich
             - libmpich-dev
@@ -83,7 +83,7 @@ matrix:
         apt:
           sources:
             - ubuntu-toolchain-r-test
-            - llvm-toolchain-xenial
+            - llvm-toolchain-xenial-7
           packages:
             - openmpi-bin
             - libopenmpi-dev
