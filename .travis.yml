@@ -50,9 +50,8 @@ matrix:
         apt:
           sources:
             - ubuntu-toolchain-r-test
-            - llvm-toolchain-precise-3.6
+            - llvm-toolchain-xenial-
           packages:
-            - clang-3.6
             - mpich
             - libmpich-dev
             - libblas-dev
@@ -84,9 +83,8 @@ matrix:
         apt:
           sources:
             - ubuntu-toolchain-r-test
-            - llvm-toolchain-precise-3.6
+            - llvm-toolchain-xenial
           packages:
-            - clang-3.6
             - openmpi-bin
             - libopenmpi-dev
             - libblas-dev
