@@ -7,8 +7,7 @@
 #define HPDDM_BDD 0
 #define LAPACKSUB
 #define DLAPACK
-#define MU_ARPACK
-// #define EIGENSOLVER 1
+#define EIGENSOLVER 1
 #include <HPDDM.hpp>
 #include "../types/hmatrix.hpp"
 #include "../types/matrix.hpp"
@@ -122,11 +121,6 @@ public:
     void build_coarse_space(Matrix<T>& Mi, const std::vector<R3>& x){
         // Coarse space
         P.build_coarse_space(Mi,x);
-    }
-
-    void build_coarse_space_arpack(Matrix<T>& Mi, const std::vector<R3>& x){
-        // Coarse space
-        P.build_coarse_space_arpack(Mi,x);
     }
 
     void facto_one_level(){

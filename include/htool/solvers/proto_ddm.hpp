@@ -596,7 +596,7 @@ void build_coarse_space(Matrix<T>& Mi, IMatrix<T>& generator_Bi, const std::vect
         build_ZtAZ(vr,index);
 
     }
-
+    // Not working
     void build_coarse_space_arpack( Matrix<T>& Ki, const std::vector<R3>& x ){
         // Timing
         std::vector<double> mytime(2), maxtime(2);
