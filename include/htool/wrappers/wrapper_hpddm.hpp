@@ -78,6 +78,8 @@ public:
     this->template exchange<true>(out, mu);
     }
 
+    void setType(typename super::Prcndtnr type) { this->_type = type; };
+
     friend class DDM<LowRankMatrix,T>;
 
 };

@@ -611,6 +611,29 @@ void build_coarse_space( Matrix<T>& Ki, const std::vector<R3>& x ){
             exit(1);
         }
 
+        // Eventually change one-level type
+        HPDDM::Option& opt = *HPDDM::Option::get();
+        switch (opt.val("schwarz_method",0)) {
+            case HPDDM_SCHWARZ_METHOD_NONE:
+            hpddm_op.setType(HPDDMDense<LowRankMatrix,T>::Prcndtnr::NO);
+            break;
+            case HPDDM_SCHWARZ_METHOD_RAS:
+            hpddm_op.setType(HPDDMDense<LowRankMatrix,T>::Prcndtnr::GE);
+            break;
+            case HPDDM_SCHWARZ_METHOD_ASM:
+            hpddm_op.setType(HPDDMDense<LowRankMatrix,T>::Prcndtnr::SY);
+            break;
+            // case HPDDM_SCHWARZ_METHOD_OSM:
+            // hpddm_op.setType(HPDDM::Schwarz::Prcndtnr::NO);
+            // break;
+            // case HPDDM_SCHWARZ_METHOD_ORAS:
+            // hpddm_op.setType(HPDDM::Schwarz::Prcndtnr::NO);
+            // break;
+            // case HPDDM_SCHWARZ_METHOD_SORAS:
+            // hpddm_op.setType(HPDDM::Schwarz::Prcndtnr::NO);
+            // break;
+        }
+
         //
         int rankWorld = hpddm_op.HA.get_rankworld();
         int sizeWorld = hpddm_op.HA.get_sizeworld();
@@ -680,7 +703,6 @@ void build_coarse_space( Matrix<T>& Ki, const std::vector<R3>& x ){
 
 
         // Infos
-        HPDDM::Option& opt = *HPDDM::Option::get();
         time = MPI_Wtime()-time;
         infos["Solve"] = NbrToStr(time);
         infos["Nb_it"] = NbrToStr(nb_it);
@@ -697,15 +719,15 @@ void build_coarse_space( Matrix<T>& Ki, const std::vector<R3>& x ){
             case HPDDM_SCHWARZ_METHOD_ASM:
             infos["Precond"] = "ASM";
             break;
-            case HPDDM_SCHWARZ_METHOD_OSM:
-            infos["Precond"] = "OSM";
-            break;
-            case HPDDM_SCHWARZ_METHOD_ORAS:
-            infos["Precond"] = "ORAS";
-            break;
-            case HPDDM_SCHWARZ_METHOD_SORAS:
-            infos["Precond"] = "SORAS";
-            break;
+            // case HPDDM_SCHWARZ_METHOD_OSM:
+            // infos["Precond"] = "OSM";
+            // break;
+            // case HPDDM_SCHWARZ_METHOD_ORAS:
+            // infos["Precond"] = "ORAS";
+            // break;
+            // case HPDDM_SCHWARZ_METHOD_SORAS:
+            // infos["Precond"] = "SORAS";
+            // break;
         }
 
         switch (opt.val("krylov_method",8)) {
