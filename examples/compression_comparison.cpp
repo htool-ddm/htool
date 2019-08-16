@@ -5,7 +5,6 @@
 #include <htool/lrmat/SVD.hpp>
 #include <htool/lrmat/fullACA.hpp>
 #include <htool/lrmat/partialACA.hpp>
-#include <htool/lrmat/curGS.hpp>
 
 using namespace std;
 using namespace htool;
@@ -18,6 +17,7 @@ class MyMatrix: public IMatrix<double>{
 public:
 	MyMatrix(const vector<R3>& p10,const vector<R3>& p20 ):IMatrix<double>(p10.size(),p20.size()),p1(p10),p2(p20) {}
 	 double get_coef(const int& i, const int& j)const {return 1./(4*M_PI*norm2(p1[i]-p2[j]));}
+
 	 std::vector<double> operator*(std::vector<double> a){
 		std::vector<double> result(p1.size(),0);
 		for (int i=0;i<p1.size();i++){
@@ -27,6 +27,16 @@ public:
 		}
 		return result;
 	 }
+
+    double normFrob (){
+        double norm=0;
+		for (int i=0;i<p1.size();i++){
+			for (int k=0;k<p2.size();k++){
+                norm = norm + std::pow(this->get_coef(i,k),2);
+            }
+        }
+        return sqrt(norm);
+    }
 };
 
 
@@ -75,15 +85,16 @@ int main(int argc, char* argv[]){
     // Clustering
     std::vector<int> permt,perms;
     Cluster t(p1,permt); Cluster s(p2,perms); // We avoid cluster_tree and MPI here
-    std::cout << permt.size()<<" "<<tab1.size()<<std::endl;
+    std::cout << permt.size()<<","<<tab1.size()<<std::endl;
     MyMatrix A(p1,p2);
+    double norm_A= A.normFrob();
 
     // SVD with fixed rank
     SVD<double> A_SVD(permt,perms,reqrank_max);
     A_SVD.build(A,t,p1,tab1,s,p2,tab2);
     std::vector<double> SVD_fixed_errors;
     for (int k = 0 ; k < A_SVD.rank_of()+1 ; k++){
-        SVD_fixed_errors.push_back(Frobenius_absolute_error(A_SVD,A,k));
+        SVD_fixed_errors.push_back(Frobenius_absolute_error(A_SVD,A,k)/norm_A);
     }
 
 
@@ -92,7 +103,7 @@ int main(int argc, char* argv[]){
     A_fullACA_fixed.build(A,t,p1,tab1,s,p2,tab2);
     std::vector<double> fullACA_fixed_errors;
     for (int k = 0 ; k < A_fullACA_fixed.rank_of()+1 ; k++){
-        fullACA_fixed_errors.push_back(Frobenius_absolute_error(A_fullACA_fixed,A,k));
+        fullACA_fixed_errors.push_back(Frobenius_absolute_error(A_fullACA_fixed,A,k)/norm_A);
     }
 
     // partialACA with fixed rank
@@ -100,22 +111,15 @@ int main(int argc, char* argv[]){
     A_partialACA_fixed.build(A,t,p1,tab1,s,p2,tab2);
     std::vector<double> partialACA_fixed_errors;
     for (int k = 0 ; k < A_partialACA_fixed.rank_of()+1 ; k++){
-        partialACA_fixed_errors.push_back(Frobenius_absolute_error(A_partialACA_fixed,A,k));
+        partialACA_fixed_errors.push_back(Frobenius_absolute_error(A_partialACA_fixed,A,k)/norm_A);
     }
-
-    // // curGS with fixed rank
-    // curGS<double> CUR_fixed(permt,perms,reqrank_max);
-    // CUR_fixed.build(A,t,p1,tab1,s,p2,tab2);
-    // std::vector<double> cur_fixed_errors;
-    // for (int k = 0 ; k < CUR_fixed.rank_of()+1 ; k++){
-    //     cur_fixed_errors.push_back(Frobenius_absolute_error(CUR_fixed,A,k));
-    // }
 
 
     // Output
-    ofstream file_fixed("error_fixed_rank.txt");
+    ofstream file_fixed("error_fixed_rank.csv");
+    file_fixed<<"Rank,SVD,Full ACA,partial ACA"<<endl;
     for (int i=0;i<reqrank_max;i++){
-        file_fixed<<i<<" "<<SVD_fixed_errors[i]<<" "<<fullACA_fixed_errors[i]<<" "<<partialACA_fixed_errors[i]<<endl;
+        file_fixed<<i<<","<<SVD_fixed_errors[i]<<","<<fullACA_fixed_errors[i]<<","<<partialACA_fixed_errors[i]<<endl;
     }
 
 
