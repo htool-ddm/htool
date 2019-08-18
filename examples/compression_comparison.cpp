@@ -42,7 +42,20 @@ public:
 
 int main(int argc, char* argv[]){
 
-    double distance= 1;
+	// Check the number of parameters
+	if (argc < 3) {
+		// Tell the user how to run the program
+		cerr << "Usage: " << argv[0] << " distance \b outputfile \b outputpath" << endl;
+		/* "Usage messages" are a conventional way of telling the user
+		 * how to run a program if they enter the command incorrectly.
+		 */
+		return 1;
+	}
+
+	double distance = StrToNbr<double>(argv[1]);
+	std::string outputfile  = argv[2];
+    std::string outputpath  = argv[3];
+
     SetNdofPerElt(1);
     SetEpsilon(0.0001);
     int reqrank_max = 50;
@@ -116,7 +129,7 @@ int main(int argc, char* argv[]){
 
 
     // Output
-    ofstream file_fixed("error_fixed_rank.csv");
+    ofstream file_fixed((outputpath+"/"+outputfile).c_str());
     file_fixed<<"Rank,SVD,Full ACA,partial ACA"<<endl;
     for (int i=0;i<reqrank_max;i++){
         file_fixed<<i<<","<<SVD_fixed_errors[i]<<","<<fullACA_fixed_errors[i]<<","<<partialACA_fixed_errors[i]<<endl;
