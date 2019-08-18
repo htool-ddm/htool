@@ -39,112 +39,16 @@ matrix:
         - MPIEXEC_PREFLAGS=-oversubscribe
       install:
         - brew install openmpi
-    # - os: osx
-    #   env:
-    #     - CXX_COMPILER=g++-8
-    #     - C_COMPILER=gcc-8
-    #   install:
-    #     - brew install gcc
-    #     - brew install openmpi
-    #     - MPIEXEC_PREFLAGS=-oversubscribe
-
-    # Tests on linux
-    # - os: linux
-    #   dist: trusty
-    #   group: travis_latest
-    #   env:
-    #     - CXX_COMPILER=g++-4.9
-    #     - C_COMPILER=gcc-4.9
-    #   addons:
-    #     apt:
-    #       sources:
-    #         - ubuntu-toolchain-r-test
-    #       packages:
-    #         - g++-4.9
-    #         - cmake
-    #         - openmpi-bin
-    #         - libopenmpi-dev
-    #         - libblas-dev
-    #         - liblapack-dev
-    #         # - libmumps-dev
-    #         - libsuitesparse-dev
-    #
-    # - os: linux
-    #   dist: trusty
-    #   group: travis_latest
-    #   env:
-    #     - CXX_COMPILER=clang++-3.6
-    #     - C_COMPILER=clang-3.6
-    #   addons:
-    #     apt:
-    #       sources:
-    #         - ubuntu-toolchain-r-test
-    #         - llvm-toolchain-precise-3.6
-    #       packages:
-    #         - clang-3.6
-    #         - cmake
-    #         - openmpi-bin
-    #         - libopenmpi-dev
-    #         - libblas-dev
-    #         - liblapack-dev
-    #         # - libmumps-dev
-    #         - libsuitesparse-dev
-
-    # - os: linux
-    #   dist: trusty
-    #   group: travis_latest
-    #   env:
-    #     - CXX_COMPILER=g++
-    #     - C_COMPILER=gcc
-    #   addons:
-    #     apt:
-    #       sources:
-    #         - ubuntu-toolchain-r-test
-    #       packages:
-    #         # - g++
-    #         # - cmake
-    #         - mpich
-    #         - libmpich-dev
-    #         - libblas-dev
-    #         - liblapack-dev
-    #         # - libmumps-dev
-    #         - libsuitesparse-dev
-
-    # - os: linux
-    #   dist: trusty
-    #   group: travis_latest
-    #   env:
-    #     - CXX_COMPILER=clang++
-    #     - C_COMPILER=clang
-    #   addons:
-    #     apt:
-    #       sources:
-    #         - ubuntu-toolchain-r-test
-    #         # - llvm-toolchain-precise-3.6
-    #       packages:
-    #         # - clang-3.6
-    #         # - cmake
-    #         - mpich
-    #         - libmpich-dev
-    #         - libblas-dev
-    #         - liblapack-dev
-    #         # - libmumps-dev
-    #         - libsuitesparse-dev
-
 
     - os: linux
       dist: xenial
       group: travis_latest
-      env:
-        - CXX=clang++
-        - CC=clang
+      compiler: clang
       addons:
         apt:
           sources:
             - ubuntu-toolchain-r-test
-            - llvm-toolchain-precise-3.6
           packages:
-            - clang-3.6
             - mpich
             - libmpich-dev
             - libblas-dev
@@ -169,18 +73,14 @@ matrix:
     - os: linux
       dist: xenial
       group: travis_latest
-      env:
-        - CXX=clang++
-        - CC=clang
+      compiler: clang
       addons:
         apt:
           sources:
             - ubuntu-toolchain-r-test
-            - llvm-toolchain-precise-3.6
           packages:
-            - clang-3.6
             - openmpi-bin
-            - libmpich-dev
+            - libopenmpi-dev
             - libblas-dev
             - liblapack-dev
             - libsuitesparse-dev
@@ -195,7 +95,7 @@ matrix:
             - ubuntu-toolchain-r-test
           packages:
             - openmpi-bin
-            - libmpich-dev
+            - libopenmpi-dev
             - libblas-dev
             - liblapack-dev
             - libsuitesparse-dev
@@ -209,6 +109,7 @@ before_install:
   - if [ "$TRAVIS_OS_NAME" == "osx" ]; then brew update; fi
   - if [ "$TRAVIS_OS_NAME" == "osx" ]; then brew upgrade cmake; fi
   - if [ "$TRAVIS_OS_NAME" == "osx" ]; then brew install suite-sparse; fi
+  - if [ "$TRAVIS_OS_NAME" == "linux" ]; then export LD_LIBRARY_PATH=$(if [[ $CC == "clang" ]]; then echo -n '/usr/local/clang/lib'; fi); fi
   - cd .. && git clone https://github.com/hpddm/hpddm.git && cd htool
 
 

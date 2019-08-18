@@ -24,9 +24,7 @@ private:
 
 
 public:
-  SVD(const std::vector<int>& ir0, const std::vector<int>& ic0, int rank0=-1): LowRankMatrix<T>(ir0,ic0,rank0){}
-
-	SVD(const std::vector<int>& ir0, const std::vector<int>& ic0,int offset_i0, int offset_j0, int rank0=-1): LowRankMatrix<T>(ir0,ic0,offset_i0,offset_j0,rank0){}
+  using LowRankMatrix<T>::LowRankMatrix;
 
   void build(const IMatrix<T>& A){
     int reqrank=0;

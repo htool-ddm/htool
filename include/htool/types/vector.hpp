@@ -44,12 +44,24 @@ std::vector<T> operator+(const std::vector<T>& a,const std::vector<T>& b){
 }
 
 template<typename T>
+std::vector<T> plus(const std::vector<T>& a,const std::vector<T>& b){
+
+	return a+b;
+}
+
+template<typename T>
 std::vector<T> operator-(const std::vector<T>& a,const std::vector<T>& b){
 	assert(a.size()==b.size());
 	std::vector<T> result(a.size(),0);
 	std::transform (a.begin(), a.end(), b.begin(), result.begin(), std::minus<T>());
 
 	return result;
+}
+
+template<typename T>
+std::vector<T> minus(const std::vector<T>& a,const std::vector<T>& b){
+
+	return a-b;
 }
 
 // template<typename T>
@@ -121,7 +133,7 @@ int vector_to_bytes(const std::vector<T> vect, const std::string& file){
   std::ofstream out(file,std::ios::out | std::ios::binary | std::ios::trunc);
 
   if(!out) {
-    std::cout << "Cannot open file."<<std::endl;
+    std::cout << "Cannot open file: "<<file<<std::endl;
     return 1;
   }
   int size = vect.size();
@@ -138,7 +150,7 @@ int bytes_to_vector(std::vector<T>& vect, const std::string& file){
   std::ifstream in(file,std::ios::in | std::ios::binary);
 
     if(!in) {
-      std::cout << "Cannot open file."<<std::endl;
+      std::cout << "Cannot open file: "<<file<<std::endl;
       return 1;
     }
 
@@ -157,7 +169,7 @@ int matlab_save(std::vector<T> vector, const std::string& file){
     std::ofstream out(file);
     out << std::setprecision(18);
     if(!out) {
-        std::cout << "Cannot open file."<<std::endl;
+        std::cout << "Cannot open file: "<<file<<std::endl;
         return 1;
     }
 

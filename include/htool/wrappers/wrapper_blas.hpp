@@ -4,17 +4,17 @@
 #include <complex>
 
 #if defined(__powerpc__) || defined(INTEL_MKL_VERSION)
-# define HTOOL_F77(func) func
+# define HTOOL_BLAS_F77(func) func
 #else
-# define HTOOL_F77(func) func ## _
+# define HTOOL_BLAS_F77(func) func ## _
 #endif
 
 
 #define HTOOL_GENERATE_EXTERN_BLAS(C,T)                        \
-void    HTOOL_F77(C ## gemv)(const char*, const int*, const int*, const T*,    \
+void    HTOOL_BLAS_F77(C ## gemv)(const char*, const int*, const int*, const T*,    \
 const T*, const int*, const T*, const int*,       \
 const T*, T*, const int*);                        \
-void    HTOOL_F77(C ## gemm)(const char*, const char*, const int*, const int*, const int*,                   \
+void    HTOOL_BLAS_F77(C ## gemm)(const char*, const char*, const int*, const int*, const int*,                   \
 const T*, const T*, const int*, const T*, const int*,                           \
 const T*, T*, const int*);                           \
 
@@ -24,14 +24,14 @@ HTOOL_GENERATE_EXTERN_BLAS(C, T)                      \
 
 #if HTOOL_MKL
 # define HTOOL_GENERATE_EXTERN_GEMM3M(C, T)                                                    \
-void HTOOL_F77(C ## gemm3m)(const char*, const char*, const int*, const int*, const int*,                    \
+void HTOOL_BLAS_F77(C ## gemm3m)(const char*, const char*, const int*, const int*, const int*,                    \
 const T*, const T*, const int*, const T*, const int*,                                                 \
 const T*, T*, const int*);
 # define HTOOL_GENERATE_EXTERN_MKL_EXTENSIONS(C, T, B, U)                                                    \
 HTOOL_GENERATE_EXTERN_GEMM3M(C, T)
 #endif
 
-
+#ifdef __cplusplus
 extern "C" {
 HTOOL_GENERATE_EXTERN_BLAS_COMPLEX(c, std::complex<float>, s, float)
 HTOOL_GENERATE_EXTERN_BLAS_COMPLEX(z, std::complex<double>, d, double)
@@ -40,7 +40,12 @@ HTOOL_GENERATE_EXTERN_MKL_EXTENSIONS(c, std::complex<float>, s, float)
 HTOOL_GENERATE_EXTERN_MKL_EXTENSIONS(z, std::complex<double>, d, double)
 #endif
 }
+#else
+HTOOL_GENERATE_EXTERN_BLAS_COMPLEX(c, void, s, float)
+HTOOL_GENERATE_EXTERN_BLAS_COMPLEX(z, void, d, double)
+#endif // __cplusplus
 
+#ifdef __cplusplus
 namespace htool {
 /* Class: Blas
  *
@@ -68,7 +73,7 @@ inline void Blas<T>::gemm(const char* const transa, const char* const transb, co
 const int* const n, const int* const k, const T* const alpha, const T* const a,    \
 const int* const lda, const T* const b, const int* const ldb, const T* const beta, \
 T* const c, const int* const ldc) {                                                \
-    HTOOL_F77(C ## gemm)(transa, transb, m, n, k, alpha, a, lda, b, ldb, beta, c, ldc);                      \
+    HTOOL_BLAS_F77(C ## gemm)(transa, transb, m, n, k, alpha, a, lda, b, ldb, beta, c, ldc);                      \
 }              \
 
 # if !HTOOL_MKL
@@ -80,7 +85,7 @@ inline void Blas<T>::gemm(const char* const transa, const char* const transb, co
 const int* const n, const int* const k, const T* const alpha, const T* const a,    \
 const int* const lda, const T* const b, const int* const ldb, const T* const beta, \
 T* const c, const int* const ldc) {                                                \
-    HTOOL_F77(C ## gemm3m)(transa, transb, m, n, k, alpha, a, lda, b, ldb, beta, c, ldc);                    \
+    HTOOL_BLAS_F77(C ## gemm3m)(transa, transb, m, n, k, alpha, a, lda, b, ldb, beta, c, ldc);                    \
 }
 # endif
 
@@ -91,7 +96,7 @@ inline void Blas<T>::gemv(const char* const trans, const int* const m,         \
   const int* const n, const T* const alpha, const T* const a,                  \
   const int* const lda, const T* const b, const int* const ldb,                \
   const T* const beta, T* const c, const int* const ldc) {                     \
-    HTOOL_F77(C ## gemv)(trans, m, n, alpha, a, lda, b, ldb, beta, c, ldc);    \
+    HTOOL_BLAS_F77(C ## gemv)(trans, m, n, alpha, a, lda, b, ldb, beta, c, ldc);    \
 }                                                     \
 
 # define HTOOL_GENERATE_BLAS_COMPLEX(C, T, B,U)      \
@@ -104,5 +109,5 @@ HTOOL_GENERATE_BLAS_COMPLEX(c, std::complex<float>, s, float)
 HTOOL_GENERATE_BLAS_COMPLEX(z, std::complex<double>, d, double)
 
 } // HTOOL
-
-#endif // _HTOOL_BLAS_
+#endif // __cplusplus
+#endif // HTOOL_BLAS_HPP

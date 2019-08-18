@@ -32,21 +32,13 @@ namespace htool {
 template<typename T>
 class fullACA: public LowRankMatrix<T>{
 
-
-private:
-	// No assignement or copy
-	// fullACA(const fullACA& copy_from);
-	// fullACA & operator=(const fullACA& copy_from);
-
 public:
 	//=========================//
 	//    FULL PIVOT ACA    //
 	//=========================//
     // If reqrank=-1 (default value), we use the precision given by epsilon for the stopping criterion;
     // otherwise, we use the required rank for the stopping criterion (!: at the end the rank could be lower)
-	fullACA(const std::vector<int>& ir0, const std::vector<int>& ic0, int rank0=-1): LowRankMatrix<T>(ir0,ic0,rank0){}
-
-	fullACA(const std::vector<int>& ir0, const std::vector<int>& ic0,int offset_i0, int offset_j0, int rank0=-1): LowRankMatrix<T>(ir0,ic0,offset_i0,offset_j0,rank0){}
+	using LowRankMatrix<T>::LowRankMatrix;
 
 	void build(const IMatrix<T>& A){
 		if(this->rank == 0){

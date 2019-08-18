@@ -32,6 +32,9 @@ option(HTOOL_WITH_EXAMPLES "Build htool examples ?" ON)
 option(HTOOL_WITH_TESTS    "Build htool tests ?" ON)
 option(HTOOL_WITH_GUI      "Build htool visualization tools ?" OFF)
 
+# Information about compilation exported
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+
 #=============================================================================#
 #========================== External Libraries ===============================#
 #=============================================================================#
