@@ -32,10 +32,6 @@
 build*/
 bin*/
 
-# Data
-data/*
-!data/data_test/
-
 # Temporary files
 *~
 *.DS_Store
@@ -45,3 +41,6 @@ data/*
 
 # Output
 output/*
+
+# mesh
+*.msh

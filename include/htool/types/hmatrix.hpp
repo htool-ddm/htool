@@ -176,6 +176,7 @@ public:
 	void add_info(const std::string& keyname, const std::string& value) const {infos[keyname]=value;}
 	void print_infos() const;
 	void save_infos(const std::string& outputname, std::ios_base::openmode mode = std::ios_base::app, const std::string& sep = " = ") const;
+	void save_plot(const std::string& outputname) const;
 	double compression() const; // 1- !!!
 	friend double Frobenius_absolute_error<LowRankMatrix,T>(const HMatrix<LowRankMatrix,T>& B, const IMatrix<T>& A);
 
@@ -1220,6 +1221,35 @@ void HMatrix<LowRankMatrix,T >::save_infos(const std::string& outputname,std::io
 		else{
 			std::cout << "Unable to create "<<outputname<<std::endl;
 		}
+	}
+}
+
+template<template<typename> class LowRankMatrix,typename T >
+void HMatrix<LowRankMatrix,T >::save_plot(const std::string& outputname) const{
+
+
+
+	size_t pos = outputname.find_last_of(".");
+	std::string outputfilename_string;
+	if (pos != std::string::npos && pos<=outputname.size()){	
+		outputfilename_string = outputname.substr(0,pos);
+	}
+	else
+		outputfilename_string=outputname;
+	std::ofstream outputfile((outputfilename_string+"_"+NbrToStr(rankWorld)+".csv").c_str());
+
+	if (outputfile){
+		outputfile<<nr<<","<<nc<<std::endl;
+		for (typename std::vector<SubMatrix<T>*>::const_iterator it = MyNearFieldMats.begin() ; it != MyNearFieldMats.end() ; ++it){
+			outputfile<<(*it)->get_offset_i()<<","<<(*it)->get_ir().size()<<","<<(*it)->get_offset_j()<<","<<(*it)->get_ic().size()<<","<<-1<<std::endl;
+		}
+		for (typename std::vector<LowRankMatrix<T>*>::const_iterator it = MyFarFieldMats.begin() ; it != MyFarFieldMats.end() ; ++it){
+			outputfile<<(*it)->get_offset_i()<<","<<(*it)->get_ir().size()<<","<<(*it)->get_offset_j()<<","<<(*it)->get_ic().size()<<","<<(*it)->rank_of()<<std::endl;
+		}
+		outputfile.close();
+	}
+	else{
+		std::cout << "Unable to create "<<outputname<<std::endl;
 	}
 }
 

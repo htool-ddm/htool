@@ -16,7 +16,7 @@ class MyMatrix: public IMatrix<double>{
 
 public:
 	MyMatrix(const vector<R3>& p10,const vector<R3>& p20 ):IMatrix<double>(p10.size(),p20.size()),p1(p10),p2(p20) {}
-	 double get_coef(const int& i, const int& j)const {return 1./(4*M_PI*norm2(p1[i]-p2[j]));}
+	 double get_coef(const int& i, const int& j)const {return 1./(norm2(p1[i]-p2[j]));}
 
 	 std::vector<double> operator*(std::vector<double> a){
 		std::vector<double> result(p1.size(),0);
@@ -135,5 +135,14 @@ int main(int argc, char* argv[]){
         file_fixed<<i<<","<<SVD_fixed_errors[i]<<","<<fullACA_fixed_errors[i]<<","<<partialACA_fixed_errors[i]<<endl;
     }
 
+    ofstream geometry_1((outputpath+"/geometry_1_"+outputfile).c_str());
+    for (int i=0;i<nr;i++){
+        geometry_1<<p1[i][0]<<","<<p1[i][1]<<","<<p1[i][2]<<endl;
+    }
+
+    ofstream geometry_2((outputpath+"/geometry_2_"+outputfile).c_str());
+    for (int i=0;i<nc;i++){
+        geometry_2<<p2[i][0]<<","<<p2[i][1]<<","<<p2[i][2]<<endl;
+    }
 
 }
