@@ -83,3 +83,9 @@ add_executable(Test_hmat_to_dense test_hmat_to_dense.cpp)
 target_link_libraries(Test_hmat_to_dense htool)
 add_dependencies(build-tests Test_hmat_to_dense)
 add_test(NAME Test_hmat_to_dense COMMAND  ${MPIEXEC} ${MPIEXEC_NUMPROC_FLAG} 1 ${MPIEXEC_PREFLAGS} ${CMAKE_CURRENT_BINARY_DIR}/Test_hmat_to_dense)
+
+#=== hmat_save
+add_executable(Test_hmat_save test_hmat_save.cpp)
+target_link_libraries(Test_hmat_save htool)
+add_dependencies(build-tests Test_hmat_save)
+add_test(NAME Test_hmat_save COMMAND  ${MPIEXEC} ${MPIEXEC_NUMPROC_FLAG} 1 ${MPIEXEC_PREFLAGS} ${CMAKE_CURRENT_BINARY_DIR}/Test_hmat_save)
