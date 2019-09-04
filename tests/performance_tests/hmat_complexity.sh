@@ -4,7 +4,6 @@
 mkdir -p ../../build & cd ../../build
 cmake ../
 make build-Hmat_complexity
-mkdir -p ../output/tests/performance_tests/complexity
 cd - 
 
 # HPC data
@@ -18,8 +17,8 @@ eta=100
 minclustersize=100
 
 # Arguments
-outputpath=../output/tests/performance_tests/complexity/
-logpath=../log/tests/performance_tests/complexity/
+outputpath=../../output/tests/performance_tests/complexity/
+logpath=../../log/tests/performance_tests/complexity/
 distance=1
 sizes=(100 1000 10000 100000)
 

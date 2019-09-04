@@ -4,7 +4,6 @@
 mkdir -p ../../build & cd ../../build
 cmake ../
 make build-Hmat_scaling
-mkdir -p ../output/tests/performance_tests/scaling
 cd -
 
 # HPC data
@@ -18,8 +17,10 @@ eta=100
 minclustersize=100
 
 # Arguments
-outputpath=../output/tests/performance_tests/scaling/
-logpath=../log/tests/performance_tests/scaling/
+outputpath=../../output/tests/performance_tests/scaling/
+logpath=../../log/tests/performance_tests/scaling/
+mkdir -p ${outputpath}
+mkdir -p ${logpath}
 distance=1
 nr=100000
 nc=100000
