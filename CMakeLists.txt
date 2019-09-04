@@ -71,9 +71,6 @@ endif()
 find_package(LAPACK)
 message("-- Found Lapack:" "${LAPACK_LIBRARIES}")
 
-# SUITESPARSE
-find_package(SuiteSparse)
-
 # HPDDM
 find_package(HPDDM)
 
@@ -129,13 +126,11 @@ target_include_directories(htool INTERFACE
 					${htool_include_dir}
 					${MPI_INCLUDE_PATH}
 					${HPDDM_INCLUDE_DIRS}
-					${SUITESPARSE_INCLUDE_DIRS}
                 ${EIGEN3_INCLUDE_DIR})
 target_link_libraries(htool INTERFACE
 					${MPI_LIBRARIES}
 					${BLAS_LIBRARIES}
-					${LAPACK_LIBRARIES}
-				    ${SUITESPARSE_LIBRARIES})
+					${LAPACK_LIBRARIES})
 
 
 # For headers to show in IDE
