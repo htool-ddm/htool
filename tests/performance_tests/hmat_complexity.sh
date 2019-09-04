@@ -19,6 +19,8 @@ minclustersize=100
 # Arguments
 outputpath=../../output/tests/performance_tests/complexity/
 logpath=../../log/tests/performance_tests/complexity/
+mkdir -p ${outputpath}
+mkdir -p ${logpath}s
 distance=1
 sizes=(100 1000 10000 100000)
 
