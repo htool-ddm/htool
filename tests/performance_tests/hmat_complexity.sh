@@ -3,7 +3,7 @@
 # Initialization
 mkdir -p ../../build & cd ../../build
 cmake ../
-make build-Hmat_complexity
+make build-Hmat
 cd - 
 
 # HPC data
@@ -20,7 +20,7 @@ minclustersize=100
 outputpath=../../output/tests/performance_tests/complexity/
 logpath=../../log/tests/performance_tests/complexity/
 mkdir -p ${outputpath}
-mkdir -p ${logpath}s
+mkdir -p ${logpath}
 distance=1
 sizes=(100 1000 10000 100000)
 
@@ -32,8 +32,8 @@ for size in "${sizes[@]}"
 do
 
     ntask=$((node*procs_per_node/thread))
-    nr=size
-    nc=size
+    nr=${size}
+    nc=${size}
     signature=hmat_complexity_partialACA_${node}_${nr}_${nc}
     
     outputfile=${outputpath}/${signature}.eno

@@ -3,7 +3,7 @@
 # Initialization
 mkdir -p ../../build & cd ../../build
 cmake ../
-make build-Hmat_scaling
+make build-Hmat
 cd -
 
 # HPC data
