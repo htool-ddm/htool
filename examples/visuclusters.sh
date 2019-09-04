@@ -7,11 +7,11 @@ cd ../../
 mkdir -p build & cd build
 cmake ../
 make VisuCluster
-mkdir -p ../output/visucluster
+mkdir -p ../output/examples/visucluster
 
 # Arguments
 mesh=../data/data_example/disk.msh
-outputfile=../output/visucluster/clusters
+outputfile=../output/examples/visucluster/clusters
 depths=(1 2 3)
 
 # Run

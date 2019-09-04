@@ -5,10 +5,10 @@ cd ../
 mkdir -p build & cd build
 cmake ../
 make Compression_comparison
-mkdir -p ../output/compression_comparison
+mkdir -p ../output/examples/compression_comparison
 
 # Arguments
-outputpath=../output/compression_comparison/
+outputpath=../output/examples/compression_comparison/
 distances=(1 2 3)
 
 # Run
