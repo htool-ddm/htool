@@ -23,7 +23,7 @@ logpath=../log/tests/performance_tests/scaling/
 distance=1
 nr=100000
 nc=100000
-executable=./tests/performance_tests/Hmat_scaling_partialACA
+executable=./tests/performance_tests/Hmat_partialACA
 time=00:30:00
 
 # Run
