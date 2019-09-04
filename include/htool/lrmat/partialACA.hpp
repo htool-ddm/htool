@@ -73,7 +73,7 @@ public:
 			// Either we have a required rank
 			// Or it is negative and we have to check the relative error between two iterations.
 			//But to do that we need a least two iterations.
-			while (((reqrank > 0) && (q < reqrank) ) ||
+			while (((reqrank > 0) && (q < std::min(reqrank,std::min(this->nr,this->nc))) ) ||
 			       ((reqrank < 0) && (sqrt(aux/frob)>this->epsilon || q==0))) {
 
 				// Next current rank

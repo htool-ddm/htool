@@ -104,8 +104,8 @@ int main(int argc, char *argv[]) {
 		double erreur2 = norm2(A*f-result);
 		double erreurFrob = Frobenius_absolute_error(HA,A);
 
-		test = test || !(erreurFrob<1e-10);
-		test = test || !(erreur2<1e-10);
+		test = test || !(erreurFrob<GetEpsilon());
+		test = test || !(erreur2<GetEpsilon());
 
 		if (rank==0){
 			cout << "Errors with Frobenius norm: "<<erreurFrob<<endl;
