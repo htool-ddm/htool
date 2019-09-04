@@ -26,7 +26,7 @@ public:
 };
 
 template<template<typename> class LowRankMatrix>
-int scaling(int argc, char *argv[]){
+int hmat(int argc, char *argv[]){
 
 	// Initialize the MPI environment
 	MPI_Init(&argc,&argv);

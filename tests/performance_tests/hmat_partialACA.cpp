@@ -1,9 +1,9 @@
 #include <htool/lrmat/partialACA.hpp>
-#include "hmat_scaling.hpp"
+#include "hmat.hpp"
 
 int main(int argc, char *argv[]){
 
-	scaling<partialACA> (argc,argv);
+	hmat<partialACA> (argc,argv);
 	
 	return 0;
 }

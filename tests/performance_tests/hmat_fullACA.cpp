@@ -1,9 +1,9 @@
 #include <htool/lrmat/fullACA.hpp>
-#include "hmat_scaling.hpp"
+#include "hmat.hpp"
 
 int main(int argc, char *argv[]){
 
-	scaling<fullACA> (argc,argv);
+	hmat<fullACA> (argc,argv);
 	
 	return 0;
 }
