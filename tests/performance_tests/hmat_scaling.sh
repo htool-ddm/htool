@@ -1,8 +1,7 @@
 #!/bin/bash
 
 # Initialization
-cd ../../
-mkdir -p build & cd build
+mkdir -p ../../build & cd ../../build
 cmake ../
 make build-Hmat_scaling
 mkdir -p ../output/tests/performance_tests/scaling
