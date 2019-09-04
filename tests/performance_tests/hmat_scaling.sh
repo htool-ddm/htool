@@ -21,7 +21,7 @@ outputpath=../../output/tests/performance_tests/scaling/
 logpath=../../log/tests/performance_tests/scaling/
 mkdir -p ${outputpath}
 mkdir -p ${logpath}
-distance=1
+distance=0.1
 nr=100000
 nc=100000
 executable=../../build/tests/performance_tests/Hmat_partialACA
@@ -33,7 +33,7 @@ do
     for thread in "${threads[@]}"
     do
         ntask=$((node*procs_per_node/thread))
-        signature=hmat_scaling_partialACA_${node}_${nr}_${nc}
+        signature=hmat_scaling_partialACA_${node}_${thread}_${nr}_${nc}
         
         outputfile=${signature}.eno
         logfile=${logpath}/${signature}
