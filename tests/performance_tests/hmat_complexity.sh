@@ -5,7 +5,7 @@ mkdir -p ../../build & cd ../../build
 cmake ../
 make build-Hmat_complexity
 mkdir -p ../output/tests/performance_tests/complexity
-cd- 
+cd - 
 
 # HPC data
 node=8
