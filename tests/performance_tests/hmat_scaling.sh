@@ -29,11 +29,14 @@ time=00:30:00
 # Run
 for node in "${nodes[@]}"
 do
-    ntask=$((node*procs_per_node/thread))
-    signature=hmat_scaling_partialACA_${node}_${nr}_${nc}
-    
-    outputfile=${outputpath}/${signature}.eno
-    logfile=${logpath}/${signature}
+    for thread in "${threads[@]}"
+    do
+        ntask=$((node*procs_per_node/thread))
+        signature=hmat_scaling_partialACA_${node}_${nr}_${nc}
+        
+        outputfile=${outputpath}/${signature}.eno
+        logfile=${logpath}/${signature}
 
-    ./launch_slurm.sh ${node} ${ntask} $((ntask/node)) ${thread} ${time} ${logfile} ${executable} ${distance} ${outputfile} ${outputpath} ${epsilon} ${eta} ${minclustersize} ${nr} ${nc}
+        ./launch_slurm.sh ${node} ${ntask} $((ntask/node)) ${thread} ${time} ${logfile} ${executable} ${distance} ${outputfile} ${outputpath} ${epsilon} ${eta} ${minclustersize} ${nr} ${nc}
+    done
 done
