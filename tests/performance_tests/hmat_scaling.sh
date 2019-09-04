@@ -6,6 +6,7 @@ mkdir -p build & cd build
 cmake ../
 make build-Hmat_scaling
 mkdir -p ../output/tests/performance_tests/scaling
+cd -
 
 # HPC data
 nodes=(2 4 8 16)
@@ -23,7 +24,7 @@ logpath=../log/tests/performance_tests/scaling/
 distance=1
 nr=100000
 nc=100000
-executable=./tests/performance_tests/Hmat_partialACA
+executable=../../build/tests/performance_tests/Hmat_partialACA
 time=00:30:00
 
 # Run
