@@ -12,7 +12,7 @@ threads=(2 4 8)
 procs_per_node=16
 
 # Htool inputs
-epsilon=0.01
+epsilon=0.00001
 eta=100
 minclustersize=100
 
@@ -21,7 +21,7 @@ outputpath=../../output/tests/performance_tests/scaling/
 logpath=../../log/tests/performance_tests/scaling/
 mkdir -p ${outputpath}
 mkdir -p ${logpath}
-distance=0.1
+distance=0.05
 nr=1000000
 nc=1000000
 executable=../../build/tests/performance_tests/Hmat_partialACA
