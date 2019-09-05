@@ -22,8 +22,8 @@ logpath=../../log/tests/performance_tests/scaling/
 mkdir -p ${outputpath}
 mkdir -p ${logpath}
 distance=0.1
-nr=100000
-nc=100000
+nr=1000000
+nc=1000000
 executable=../../build/tests/performance_tests/Hmat_partialACA
 time=00:30:00
 

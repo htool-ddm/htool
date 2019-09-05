@@ -123,7 +123,7 @@ int hmat(int argc, char *argv[]){
 
 
 	HA.add_info("Mean_global_mat_vec_prod",NbrToStr(meanmean));
-	HA.add_info("Max_global_mat_vec_prod",NbrToStr(meanmean));
+	HA.add_info("Max_global_mat_vec_prod",NbrToStr(meanmax));
 	HA.save_infos((outputpath+"/"+outputfile).c_str());
 
 	// Finalize the MPI environment.
