@@ -13,12 +13,8 @@ public:
         IMatrix(p10.size(),p20.size()),p1(p10),p2(p20) {}
 
     // Virtual function to overload
-    double get_coef(const int& i, const int& j)const {
-        R3 dist; 
-        dist[0] = p1[i][0]-p2[j][0];
-        dist[1] = p1[i][1]-p2[j][1];
-        dist[2] = p1[i][2]-p2[j][2];
-        return 1./(norm2(dist));
+    double get_coef(const int& k, const int& j)const {
+        return 1./(norm2(p1[j]-p2[k]));
     }
 
     // Matrix vector product
