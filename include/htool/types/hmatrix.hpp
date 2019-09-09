@@ -169,6 +169,8 @@ public:
 	const std::vector<LowRankMatrix<T>*>& get_MyFarFieldMats() const {return MyFarFieldMats;}
 	const std::vector<SubMatrix<T>*>& get_MyDiagNearFieldMats() const {return MyDiagNearFieldMats;}
 	const std::vector<LowRankMatrix<T>*>& get_MyDiagFarFieldMats() const {return MyDiagFarFieldMats;}
+        const std::vector<SubMatrix<T>*>& get_MyStrictlyDiagNearFieldMats() const {return MyStrictlyDiagNearFieldMats;}
+        const std::vector<LowRankMatrix<T>*>& get_MyStrictlyDiagFarFieldMats() const {return MyStrictlyDiagFarFieldMats;}
 
 	// Infos
 	const std::map<std::string, std::string>& get_infos() const {return infos;}
