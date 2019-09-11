@@ -121,10 +121,14 @@ int hmat(int argc, char *argv[]){
 	meanmax /= 5;
 	meanmean /= 5;
 
-
+	std::ofstream output;
+	if (rank==0){
+		output.open((outputpath+"/"+outputfile).c_str());
+		output<<"# Hmatrix"<<std::endl;
+	}
 	HA.add_info("Mean_global_mat_vec_prod",NbrToStr(meanmean));
 	HA.add_info("Max_global_mat_vec_prod",NbrToStr(meanmax));
-	HA.save_infos((outputpath+"/"+outputfile).c_str());
+	HA.save_infos((outputpath+"/"+outputfile).c_str(),,std::ios::app,": ");
 
 	// Finalize the MPI environment.
 	MPI_Finalize();
