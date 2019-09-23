@@ -4,7 +4,7 @@
 
 #include <htool/clustering/cluster.hpp>
 #include <htool/types/hmatrix.hpp>
-#include <htool/lrmat/SVD.hpp>
+#include <htool/lrmat/fullACA.hpp>
 
 
 
@@ -50,7 +50,7 @@ int main(int argc, char *argv[]) {
 	double distance[ndistance];
 	distance[0] = 10; distance[1] = 20; distance[2] = 30; distance[3] = 40;
 	SetNdofPerElt(1);
-	SetEpsilon(0.0001);
+	SetEpsilon(1e-8);
 	SetEta(0.1);
 
 	for(int idist=0; idist<ndistance; idist++)
@@ -71,7 +71,6 @@ int main(int argc, char *argv[]) {
 	  vector<double> r1(nr,0);
 	  vector<double> g1(nr,1);
 		vector<int>    tab1(nr);
-
 		for(int j=0; j<nr; j++){
 			Ir[j] = j;
 			double rho = ((double) rand() / (double)(RAND_MAX)); // (double) otherwise integer division!
@@ -86,7 +85,6 @@ int main(int argc, char *argv[]) {
 		vector<double> r2(nc,0);
 	  vector<double> g2(nc,1);
 		vector<int>    tab2(nc);
-
 		for(int j=0; j<nc; j++){
             Ic[j] = j;
 			double rho = ((double) rand() / (RAND_MAX)); // (double) otherwise integer division!
@@ -95,29 +93,14 @@ int main(int argc, char *argv[]) {
 			tab2[j]=j;
 		}
 
-		vector<double> rhs(p2.size(),1);
 		MyMatrix A(p1,p2);
 		std::shared_ptr<Cluster_tree> t=make_shared<Cluster_tree>(p1,r1,tab1,g1);
 		std::shared_ptr<Cluster_tree> s=make_shared<Cluster_tree>(p2,r2,tab2,g2);
-		HMatrix<SVD,double> HA(A,t,p1,tab1,s,p2,tab2);
+		HMatrix<fullACA,double> HA(A,t,p1,tab1,s,p2,tab2);
 		HA.print_infos();
 
-		std::vector<double> f(nc,1),result(nr,0);
-		result = HA*f;
-		double erreur2 = norm2(A*f-result);
-		double erreurFrob = Frobenius_absolute_error(HA,A);
+        HA.save_plot("plot_"+NbrToStr(idist));
 
-		test = test || !(erreurFrob<GetEpsilon());
-		test = test || !(erreur2<GetEpsilon());
-
-		if (rank==0){
-			cout << "Errors with Frobenius norm: "<<erreurFrob<<endl;
-			cout << "Errors on a mat vec prod : "<< erreur2<<endl;
-		}
-
-	}
-	if (rank==0){
-		cout << "test: "<<test<<endl;
 	}
 
 	// Finalize the MPI environment.

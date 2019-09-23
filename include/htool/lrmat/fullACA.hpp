@@ -57,7 +57,7 @@ public:
 			std::vector<std::vector<T> > vv;
 			double Norm = normFrob(M);
 
-			while (((reqrank > 0) && (q < reqrank) ) ||
+			while (((reqrank > 0) && (q < std::min(reqrank,std::min(this->nr,this->nc))) ) ||
 			      ( (reqrank < 0) && ( normFrob(M)/Norm>this->epsilon || q==0) )) {
 
 				q+=1;

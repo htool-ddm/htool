@@ -16,7 +16,7 @@ class MyMatrix: public IMatrix<double>{
 
 public:
 	MyMatrix(const vector<R3>& p10,const vector<R3>& p20 ):IMatrix<double>(p10.size(),p20.size()),p1(p10),p2(p20) {}
-	 double get_coef(const int& i, const int& j)const {return 1./(4*M_PI*norm2(p1[i]-p2[j]));}
+	 double get_coef(const int& i, const int& j)const {return 1./(norm2(p1[i]-p2[j]));}
 
 	 std::vector<double> operator*(std::vector<double> a){
 		std::vector<double> result(p1.size(),0);
@@ -42,7 +42,20 @@ public:
 
 int main(int argc, char* argv[]){
 
-    double distance= 1;
+	// Check the number of parameters
+	if (argc < 3) {
+		// Tell the user how to run the program
+		cerr << "Usage: " << argv[0] << " distance \b outputfile \b outputpath" << endl;
+		/* "Usage messages" are a conventional way of telling the user
+		 * how to run a program if they enter the command incorrectly.
+		 */
+		return 1;
+	}
+
+	double distance = StrToNbr<double>(argv[1]);
+	std::string outputfile  = argv[2];
+    std::string outputpath  = argv[3];
+
     SetNdofPerElt(1);
     SetEpsilon(0.0001);
     int reqrank_max = 50;
@@ -116,11 +129,20 @@ int main(int argc, char* argv[]){
 
 
     // Output
-    ofstream file_fixed("error_fixed_rank.csv");
+    ofstream file_fixed((outputpath+"/"+outputfile).c_str());
     file_fixed<<"Rank,SVD,Full ACA,partial ACA"<<endl;
     for (int i=0;i<reqrank_max;i++){
         file_fixed<<i<<","<<SVD_fixed_errors[i]<<","<<fullACA_fixed_errors[i]<<","<<partialACA_fixed_errors[i]<<endl;
     }
 
+    ofstream geometry_1((outputpath+"/geometry_1_"+outputfile).c_str());
+    for (int i=0;i<nr;i++){
+        geometry_1<<p1[i][0]<<","<<p1[i][1]<<","<<p1[i][2]<<endl;
+    }
+
+    ofstream geometry_2((outputpath+"/geometry_2_"+outputfile).c_str());
+    for (int i=0;i<nc;i++){
+        geometry_2<<p2[i][0]<<","<<p2[i][1]<<","<<p2[i][2]<<endl;
+    }
 
 }

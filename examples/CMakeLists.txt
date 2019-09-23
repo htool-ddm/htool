@@ -2,6 +2,9 @@
 #=========================== Executables =====================================#
 #=============================================================================#
 
+add_executable(Smallest_example smallest_example.cpp)
+target_link_libraries (Smallest_example htool)
+
 add_executable(VisuCluster visucluster.cpp)
 target_link_libraries (VisuCluster htool)
 

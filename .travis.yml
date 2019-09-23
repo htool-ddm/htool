@@ -39,7 +39,14 @@ matrix:
         - MPIEXEC_PREFLAGS=-oversubscribe
       install:
         - brew install openmpi
-
+    - os: osx
+      env:
+        - CXX_COMPILER=g++-9
+        - C_COMPILER=gcc-9
+        - MPIEXEC_PREFLAGS=-oversubscribe
+      install:
+        - brew install gcc
+        - brew install openmpi
     - os: linux
       dist: xenial
       group: travis_latest

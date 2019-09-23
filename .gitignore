@@ -32,13 +32,15 @@
 build*/
 bin*/
 
-# Data
-data/*
-!data/data_test/
-
 # Temporary files
 *~
 *.DS_Store
 
 # VScode
 .vscode
+
+# Output
+output/*
+
+# mesh
+*.msh

@@ -1,6 +1,4 @@
-#include <htool/partialACA.hpp>
-#include <htool/matrix.hpp>
-#include <htool/hmatrix.hpp>
+#include <htool/htool.hpp>
 
 using namespace std;
 using namespace htool;
@@ -13,7 +11,7 @@ class MyMatrix: public IMatrix<double>{
 public:
 	MyMatrix(const vector<R3>& p10,const vector<R3>& p20 ):IMatrix(p10.size(),p20.size()),p1(p10),p2(p20) {}
 
-	double get_coef(const int& i, const int& j)const {return 1./(4*M_PI*norm2(p1[i]-p2[j]));}
+	double get_coef(const int& i, const int& j)const {return 1./(norm2(p1[i]-p2[j]));}
 
 
   std::vector<double> operator*(std::vector<double> a){
@@ -27,11 +25,11 @@ public:
 	 }
 };
 
-
-int main(int argc, char const *argv[]){
+template<template<typename> class LowRankMatrix>
+int hmat(int argc, char *argv[]){
 
 	// Initialize the MPI environment
-	MPI_Init(NULL, NULL);
+	MPI_Init(&argc,&argv);
 
 	// Get the number of processes
 	int size;
@@ -41,20 +39,35 @@ int main(int argc, char const *argv[]){
 	int rank;
 	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 
+	// Check the number of parameters
+	if (argc < 3) {
+		// Tell the user how to run the program
+		cerr << "Usage: " << argv[0] << " distance \b outputfile \b outputpath \b epsilon \b eta \b minclustersize \b nr \b nc" << endl;
+		/* "Usage messages" are a conventional way of telling the user
+		 * how to run a program if they enter the command incorrectly.
+		 */
+		return 1;
+	}
+
+	double distance = StrToNbr<double>(argv[1]);
+	std::string outputfile  = argv[2];
+    std::string outputpath  = argv[3];
+	double epsilon = StrToNbr<double>(argv[4]);
+	double eta = StrToNbr<double>(argv[5]);
+	double minclustersize = StrToNbr<double>(argv[6]);
+	int nr = StrToNbr<int>(argv[7]);
+	int nc = StrToNbr<int>(argv[8]);
+
 	//
-	double distance=3;
-	SetNdofPerElt(3);
-	SetEpsilon(1e-6);
-	SetEta(0.1);
-	SetMinClusterSize(100);
+	SetEpsilon(epsilon);
+	SetEta(eta);
+	SetMinClusterSize(minclustersize);
 
   // Create points randomly
 	srand (1);
 	// we set a constant seed for rand because we want always the same result if we run the check many times
 	// (two different initializations with the same seed will generate the same succession of results in the subsequent calls to rand)
 
-	int nr = 20000;
-	int nc = 10000;
 	vector<int> Ir(nr); // row indices for the lrmatrix
 	vector<int> Ic(nc); // column indices for the lrmatrix
 
@@ -81,9 +94,9 @@ int main(int argc, char const *argv[]){
 	MyMatrix A(p1,p2);
 
   // Hmatrix
-	HMatrix<partialACA,double> HA(A,p1,p2);
+	HMatrix<LowRankMatrix,double> HA(A,p1,p2);
 
-	HA.print_stats();
+	
 	double mytime, maxtime, meantime;
 	double meanmax, meanmean;
 
@@ -107,9 +120,15 @@ int main(int argc, char const *argv[]){
 	}
 	meanmax /= 5;
 	meanmean /= 5;
+
+	std::ofstream output;
 	if (rank==0){
-		std::cout <<"Five mvprod: "<<"max ="<<meanmax<<"\t"<<"mean = "<<meanmean<<std::endl;
+		output.open((outputpath+"/"+outputfile).c_str());
+		output<<"# Hmatrix"<<std::endl;
 	}
+	HA.add_info("Mean_global_mat_vec_prod",NbrToStr(meanmean));
+	HA.add_info("Max_global_mat_vec_prod",NbrToStr(meanmax));
+	HA.save_infos((outputpath+"/"+outputfile).c_str(),,std::ios::app,": ");
 
 	// Finalize the MPI environment.
 	MPI_Finalize();

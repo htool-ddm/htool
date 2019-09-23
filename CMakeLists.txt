@@ -20,6 +20,11 @@ if(NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
   set(CMAKE_BUILD_TYPE Release)
 endif()
 
+if (${CMAKE_BUILD_TYPE} STREQUAL Release_native)
+	message(STATUS "Setting build type to 'Release_native'.")
+	set(CMAKE_BUILD_TYPE Release)
+	SET(CMAKE_CXX_FLAGS  "${CMAKE_C_FLAGS} -march=native")
+endif()
 
 # Files to do find_package for some module
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}/cmake_modules")
@@ -70,9 +75,6 @@ endif()
 # LAPACK
 find_package(LAPACK)
 message("-- Found Lapack:" "${LAPACK_LIBRARIES}")
-
-# SUITESPARSE
-find_package(SuiteSparse)
 
 # HPDDM
 find_package(HPDDM)
@@ -129,13 +131,12 @@ target_include_directories(htool INTERFACE
 					${htool_include_dir}
 					${MPI_INCLUDE_PATH}
 					${HPDDM_INCLUDE_DIRS}
-					${SUITESPARSE_INCLUDE_DIRS}
-                ${EIGEN3_INCLUDE_DIR})
+				${EIGEN3_INCLUDE_DIR}
+				${MKL_INC_DIR})
 target_link_libraries(htool INTERFACE
 					${MPI_LIBRARIES}
 					${BLAS_LIBRARIES}
-					${LAPACK_LIBRARIES}
-				    ${SUITESPARSE_LIBRARIES})
+					${LAPACK_LIBRARIES})
 
 
 # For headers to show in IDE
