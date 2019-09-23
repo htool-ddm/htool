@@ -83,7 +83,7 @@ template<typename T, typename V>
 std::vector<T> operator/(const std::vector<T>& a,V value)
 {
   std::vector<T> result(a.size(),0);
-	std::transform (a.begin(), a.end(), result.begin(), std::bind2nd(std::divides<T>(),value));
+	std::transform (a.begin(), a.end(), result.begin(), [value](const T& c){return c/value;});
 
 	return result;
 }
@@ -115,12 +115,12 @@ int argmax(const std::vector<T>& u){
 
 template<typename T, typename V>
 void operator*=(std::vector<T>& a, const V& value){
-  std::transform (a.begin(), a.end(), a.begin(), std::bind1st(std::multiplies<T>(),value));
+  std::transform (a.begin(), a.end(), a.begin(), [value](T& c){return c*value;});
 }
 
 template<typename T, typename V>
 void operator/=(std::vector<T>& a, const V& value){
-  std::transform (a.begin(), a.end(), a.begin(), std::bind2nd(std::divides<T>(),value));
+  std::transform (a.begin(), a.end(), a.begin(), [value](T& c){return c/value;});
 }
 
 template<typename T>

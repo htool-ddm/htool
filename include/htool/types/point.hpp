@@ -58,7 +58,7 @@ template<typename T,std::size_t dim>
 std::array<T,dim> operator*(T value,const std::array<T,dim>& a)
 {
 	std::array<T,dim> result;
-	std::transform (a.begin(), a.end(), result.begin(), std::bind1st(std::multiplies<T>(),value));
+	std::transform (a.begin(), a.end(), result.begin(), [value](const T& c){return c*value;});
 
 	return result;
 }
@@ -76,12 +76,12 @@ void operator+=(std::array<T,dim> &a, const std::array<T,dim> &b) {
 
 template <typename T, std::size_t dim>
 void operator*=(std::array<T,dim> &a, const T &value) {
-    std::transform (a.begin(), a.end() ,a.begin(), std::bind1st(std::multiplies<T>(),value));
+    std::transform (a.begin(), a.end() ,a.begin(), [value](T& c){return c*value;});
 }
 
 template <typename T, std::size_t dim>
 void operator/=(std::array<T,dim> &a, const T &value) {
-    std::transform (a.begin(), a.end() ,a.begin(), std::bind2nd(std::divides<T>(),value));
+    std::transform (a.begin(), a.end() ,a.begin(), [value](T& c){return c/value;});
 }
 
 template <typename T, std::size_t dim>
