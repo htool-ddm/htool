@@ -651,7 +651,7 @@ void build_coarse_space( Matrix<T>& Ki, const std::vector<R3>& x ){
         hpddm_op.in_global->resize(nb_cols*(mu==1 ? 1 : 2*mu));
         hpddm_op.buffer->resize(n_inside*(mu==1 ? 1 : 2*mu));
 
-        // TODO blocking ?
+        // TODO: blocking ?
         for (int i=0;i<mu;i++){
             // Permutation
             hpddm_op.HA.source_to_cluster_permutation(rhs+i*nb_cols,rhs_perm.data());
@@ -659,7 +659,7 @@ void build_coarse_space( Matrix<T>& Ki, const std::vector<R3>& x ){
             std::copy_n(rhs_perm.begin()+offset,n_inside,local_rhs.begin()+i*n);
         }
 
-        // TODO avoid com here
+        // TODO: avoid com here
         // for (int i=0;i<n-n_inside;i++){
         //   local_rhs[i]=rhs_perm[]
         // }

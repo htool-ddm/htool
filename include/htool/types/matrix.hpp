@@ -44,7 +44,7 @@ public:
 
     virtual T get_coef(const int& j, const int& k) const =0;
 
-    // TODO improve interface
+    // TODO: improve interface
     virtual SubMatrix<T> get_submatrix(const std::vector<int>& J, const std::vector<int>& K) const
     {
         // std::cout << "coucou" << std::endl;
@@ -595,7 +595,7 @@ double normFrob (const Matrix<T>& A){
 //================================//
 template<typename T>
 class SubMatrix : public Matrix<T>{
-    // TODO remove ir and ic
+    // TODO: remove ir and ic
     std::vector<int> ir;
     std::vector<int> ic;
     int offset_i;

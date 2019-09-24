@@ -22,7 +22,6 @@ namespace htool {
 //===============================//
 //     MATRICE HIERARCHIQUE      //
 //===============================//
-// TODO visualisation for hmat
 // Friend functions
 template< template<typename> class LowRankMatrix, typename T >
 class HMatrix;
@@ -443,7 +442,7 @@ HMatrix<LowRankMatrix, T >::HMatrix(IMatrix<T>& mat, const std::shared_ptr<Clust
 
 
 // Build block tree
-// TODO recursivity -> stack for buildblocktree
+// TODO: recursivity -> stack for buildblocktree
 template< template<typename> class LowRankMatrix, typename T >
 Block* HMatrix<LowRankMatrix, T >::BuildBlockTree(const Cluster& t, const Cluster& s){
 	Block* B = new Block(t,s);
@@ -562,7 +561,7 @@ void HMatrix<LowRankMatrix, T >::ScatterTasks(){
 }
 
 // Compute blocks recursively
-// TODO recursivity -> stack for compute blocks
+// TODO: recursivity -> stack for compute blocks
 template< template<typename> class LowRankMatrix, typename T >
 void HMatrix<LowRankMatrix,T >::ComputeBlocks(IMatrix<T>& mat, const std::vector<R3> xt,const std::vector<int> tabt, const std::vector<R3> xs, const std::vector<int>tabs){
     #if _OPENMP

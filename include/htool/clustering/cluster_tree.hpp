@@ -81,7 +81,7 @@ public:
         MPI_Comm_size(comm, &sizeWorld);
         MPI_Comm_rank(comm, &rankWorld);
 
-        // TODO better handling of this case
+        // TODO: better handling of this case
         if (std::pow(2,head->get_min_depth())<sizeWorld){
           std::cout << "WARNING: too many procs for the cluster tree"<< std::endl;
           std::cout << "(min_deph,sizeworld): ("<<head->get_min_depth()<<","<<sizeWorld<<")"<< std::endl;
