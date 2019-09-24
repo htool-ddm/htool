@@ -3,6 +3,17 @@
 
 #include <complex>
 
+template<class T>
+struct underlying_type_spec {
+    typedef T type;
+};
+template<class T>
+struct underlying_type_spec<std::complex<T>> {
+    typedef T type;
+};
+template<class T>
+using underlying_type = typename underlying_type_spec<T>::type;
+
 #if defined(__powerpc__) || defined(INTEL_MKL_VERSION)
 # define HTOOL_LAPACK_F77(func) func
 #else
@@ -16,6 +27,7 @@ void HTOOL_LAPACK_F77(B ## gesvd)(const char*, const char*, const int*, const in
 void HTOOL_LAPACK_F77(C ## gesvd)(const char*, const char*, const int*, const int*, T*, const int*, U*, T*,         \
                           const int*, T*, const int*, T*, const int*, U*, int*);     
 
+#ifndef _MKL_H_
 # ifdef __cplusplus
 extern "C" {
 HTOOL_GENERATE_EXTERN_LAPACK_COMPLEX(c, std::complex<float>, s, float)
@@ -25,9 +37,10 @@ HTOOL_GENERATE_EXTERN_LAPACK_COMPLEX(z, std::complex<double>, d, double)
 HTOOL_GENERATE_EXTERN_LAPACK_COMPLEX(c, void, s, float)
 HTOOL_GENERATE_EXTERN_LAPACK_COMPLEX(z, void, d, double)
 # endif // __cplusplus
+#endif // _MKL_H_
 
 #ifdef __cplusplus
-namespace HTOOL {
+namespace htool {
 /* Class: Lapack
  *
  *  A class that wraps some LAPACK routines for dense linear algebra.
@@ -38,7 +51,7 @@ template<class K>
 struct Lapack {
     /* Function: gesvd
      *  computes the singular value decomposition (SVD). */
-    static void gesvd(const char*, const char*, const int*, const int*, K*, const int*, std::underlying_type<K>*, K*, const int*, K*, const int*, K*, const int*, std::underlying_type<K>*, int*);
+    static void gesvd(const char*, const char*, const int*, const int*, K*, const int*, underlying_type<K>*, K*, const int*, K*, const int*, K*, const int*, underlying_type<K>*, int*);
 };
 
 

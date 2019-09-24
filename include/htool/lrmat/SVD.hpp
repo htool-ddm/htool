@@ -3,24 +3,16 @@
 
 #include "lrmat.hpp"
 #include <cassert>
-#include <Eigen/Dense>
-// TODO use lapack instead of eigen
+#include "../wrappers/wrapper_lapack.hpp"
+
 namespace htool{
 
 template< typename T >
 class SVD: public LowRankMatrix<T>{
 
 private:
-  // Eigen
-  static const int Dynamic = Eigen::Dynamic;
-  typedef Eigen::Matrix<T, Dynamic, Dynamic>     DenseMatrix;
-  typedef Eigen::JacobiSVD<DenseMatrix>          SVDType;
-  typedef typename SVDType::SingularValuesType   SgValType;
-  typedef typename SVDType::MatrixUType		       UMatrixType;
-  typedef typename SVDType::MatrixVType		       VMatrixType;
-
   // Data member
-  std::vector<T> singular_values;
+  std::vector<underlying_type<T>> singular_values;
 
 
 public:
@@ -35,48 +27,51 @@ public:
     }
     else {
       //// Matrix assembling
-      DenseMatrix M(this->nr,this->nc);
       double Norm = 0;
       SubMatrix<T> submat = A.get_submatrix(this->ir,this->ic);
-      for (int i=0; i<M.rows(); i++){
-        for (int j=0; j<M.cols(); j++){
-          M(i,j) = submat(i, j);
-          Norm+= std::pow(std::abs(M(i,j)),2);
+      for (int i=0; i<submat.nb_rows(); i++){
+        for (int j=0; j<submat.nb_cols(); j++){
+          Norm+= std::pow(std::abs(submat(i,j)),2);
         }
       }
       Norm=sqrt(Norm);
 
       //// SVD
-      SVDType svd(M,Eigen::ComputeThinU | Eigen::ComputeThinV );
+      int m = submat.nb_rows();
+      int n = submat.nb_cols();
+      int lda = m;
+      int ldu = m;
+      int ldvt = n;
+      int lwork =-1;
+      int info;
+      singular_values.resize(std::min(m,n));
+      Matrix<T> u(m,m);
+      // std::vector<T> vt (n*n);
+      Matrix<T> vt(n,n);
+      std::vector<T> work(std::min(m,n));
+      std::vector<underlying_type<T>> rwork(5*std::min(m,n));
 
-      const SgValType& sv = svd.singularValues();
-      singular_values.resize(sv.size());
-      for(int j=0; j<sv.size(); j++){
-        singular_values[j]=sv[j];
-      }
-      const UMatrixType& uu = svd.matrixU();
-      const VMatrixType& vv = svd.matrixV();
+      Lapack<T>::gesvd("A","A",&m,&n,submat.data(),&lda,singular_values.data(),u.data(),&ldu,vt.data(),&ldvt,work.data(),&lwork,rwork.data(),&info);
+      lwork = (int)std::real(work[0]);
+      work.resize(lwork);
+      Lapack<T>::gesvd("A","A",&m,&n,submat.data(),&lda,singular_values.data(),u.data(),&ldu,vt.data(),&ldvt,work.data(),&lwork,rwork.data(),&info);
 
       if (this->rank==-1){
 
-        // typename std::vector<T>::iterator it =lower_bound(singular_values.begin(),singular_values.end(),this->epsilon,[](T a, T b){return std::abs(a)>std::abs(b);});
         // Compute Frobenius norm of the approximation error
         int j=singular_values.size();
         double svd_norm=0;
-        while (j>0 && std::sqrt(svd_norm)/Norm<this->epsilon){
+
+        do{
           j=j-1;
           svd_norm+=std::pow(std::abs(singular_values[j]),2);
+          std::cout << j<<" "<<std::sqrt(svd_norm)/Norm<<std::endl;
+        } while (j>0 && std::sqrt(svd_norm)/Norm<this->epsilon);
         
-        }
+
         
-        reqrank=j;
+        reqrank=std::max(j+2,std::min(m,n)); // +1 because reqrank is a size and not an index, and +1 because j is the first index that does not satisfy the required error
         
-        // if (it != singular_values.begin()) {
-        //   reqrank=int(it-singular_values.begin())-1;
-        // } 
-        // std::cout << singular_values << std::endl;
-        // std::cout <<reqrank<< std::endl;
-        // std::cout<<int(it-singular_values.begin())-1<<" "<<this->nr<<" "<<this->nc<<std::endl;
         if (reqrank*(this->nr+this->nc) > (this->nr*this->nc)){
           reqrank=-1;
         }
@@ -88,17 +83,17 @@ public:
       }
 
       if (this->rank>0){
-        this->U.resize(M.rows(),reqrank);
-        this->V.resize(reqrank,M.cols());
+        this->U.resize(submat.nb_rows(),reqrank);
+        this->V.resize(reqrank,submat.nb_cols());
 
-        for (int i=0;i<M.rows();i++){
+        for (int i=0;i<submat.nb_rows();i++){
           for (int j=0;j<reqrank;j++){
-            this->U(i,j)=uu(i,j)*sv[j];
+            this->U(i,j)=u(i,j)*singular_values[j];
           }
         }
         for (int i=0;i<reqrank;i++){
-          for (int j=0;j<M.cols();j++){
-              this->V(i,j)=vv(j,i);
+          for (int j=0;j<submat.nb_cols();j++){
+              this->V(i,j)=vt(i,j);
             }
         }
       }

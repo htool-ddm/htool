@@ -16,8 +16,8 @@ Htool is an implementation of hierarchical matrices (cf. this [reference](http:/
 Htool is a header library written in C++11 with MPI and OpenMP, but it can be used without the latter if needed. Then, Htool needs to be linked against :
 
 * BLAS, to perform algebraic operations (dense matrix-matrix or matrix-vector operations),
+* LAPACK, to perform SVD compression,
 * HPDDM and its dependencies (BLAS, LAPACK and a direct solver like [MUMPS](http://mumps.enseeiht.fr/), [SuiteSparse](http://faculty.cse.tamu.edu/davis/suitesparse.html), [MKL PARDISO](https://software.intel.com/en-us/articles/intel-mkl-pardiso), or [PaStiX](http://pastix.gforge.inria.fr/)) to use iterative solvers and DDM preconditioners,
-* Eigen, to use SVD compressors (to be modified),
 * Nanogui and its dependency (use `git submodule` in this repository to use it, see `Tests_view`), to use the GUI.
 
 In any case, a function that generates the coefficients must be provided to Htool. To do so, a structure inheriting from `IMatrix<T>` must be defined with a method called `T get_coef(const int& i, const int& j) const`, where `T` is the type of your coefficients. This method will return the coefficient (i,j) of the considered problem. A method `get_submatrix` can also be defined to provide a more efficient way to build a sub-block of the matrix. An example of such interface is given in `test_hmat_partialACA.hpp` or  [BemTool](https://github.com/xclaeys/BemTool) (see `bemtool/miscellaneous/htool_wrap.hpp`).
@@ -36,7 +36,6 @@ If you need help or have questions regarding Htool, feel free to contact [Pierre
 
 ## Collaborators/contributors
 
-[Alan Ayala](https://www.ljll.math.upmc.fr/~ayala/)  
 [Xavier Claeys](https://www.ljll.math.upmc.fr/~claeys/)  
 [Pierre Jolivet](http://jolivet.perso.enseeiht.fr/)  
 [Frédéric Nataf](https://www.ljll.math.upmc.fr/nataf/)
