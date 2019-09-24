@@ -1,7 +1,0 @@
-- avoid com here __TODO__ [include/htool/preconditioner.hpp](include/htool/preconditioner.hpp)
-- better handling of this case __TODO__ [include/htool/cluster_tree.hpp](include/htool/cluster_tree.hpp)
-- improve interface __TODO__ [include/htool/matrix.hpp](include/htool/matrix.hpp)
-- recursivity -> stack for buildblocktree __TODO__ [include/htool/hmatrix.hpp](include/htool/hmatrix.hpp)
-- recursivity -> stack for compute blocks __TODO__ [include/htool/hmatrix.hpp](include/htool/hmatrix.hpp)
-- visualisation for cluster __TODO__ [include/htool/cluster.hpp](include/htool/cluster.hpp)
-- visualisation for hmat __TODO__ [include/htool/hmatrix.hpp](include/htool/hmatrix.hpp)
