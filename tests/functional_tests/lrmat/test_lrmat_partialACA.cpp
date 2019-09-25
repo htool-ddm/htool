@@ -36,7 +36,7 @@ int main(){
 	bool test = 0;
 	for(int idist=0; idist<ndistance; idist++)
 	{
-		cout << "Distance between the clusters: " << distance[idist] << endl;
+		cout << "Distance between the clusters: " << NbrToStr(distance[idist]) << endl;
 		SetEpsilon(0.0001);
 		srand (1);
 		// we set a constant seed for rand because we want always the same result if we run the check many times
@@ -130,7 +130,7 @@ int main(){
             out_perm[permt[i]]=out[i];
         }
 		error = norm2(A*f-out_perm);
-		test = test || !(error<GetEpsilon()*10);
+		test = test || !(error<GetEpsilon());
 		cout << "Errors on a mat vec prod : "<< error<<endl<<endl<<endl;
 	}
 	cout << "test : "<<test<<endl;

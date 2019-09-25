@@ -31,7 +31,7 @@ public:
 int main(){
 	const int ndistance = 4;
 	double distance[ndistance];
-	distance[0] = 10; distance[1] = 20; distance[2] = 30; distance[3] = 40;
+	distance[0] = 15; distance[1] = 20; distance[2] = 30; distance[3] = 40;
 	SetNdofPerElt(1);
 	bool test = 0;
 
@@ -77,33 +77,63 @@ int main(){
 
 		MyMatrix A(p1,p2);
 
-		// ACA
+		// ACA fixed rank
 		int reqrank_max = 10;
-		fullACA<double> A_fullACA(Ir,Ic,reqrank_max);
-		A_fullACA.build(A);
+		fullACA<double> A_fullACA_fixed(Ir,Ic,reqrank_max);
+		A_fullACA_fixed.build(A);
+		std::vector<double> fullACA_fixed_errors;
+		for (int k = 0 ; k < A_fullACA_fixed.rank_of()+1 ; k++){
+			fullACA_fixed_errors.push_back(Frobenius_absolute_error(A_fullACA_fixed,A,k));
+		}
 
+		cout << "Full ACA with fixed rank" << endl;
+		// Test rank
+		cout << "rank : "<<A_fullACA_fixed.rank_of() << endl;
+		test = test || !(A_fullACA_fixed.rank_of()==reqrank_max);
+
+		// Test Frobenius errors
+		test = test || !(fullACA_fixed_errors.back()<1e-8);
+		cout << "Errors with Frobenius norm: "<<fullACA_fixed_errors<<endl;
+
+		// Test compression
+		test = test || !(0.87<A_fullACA_fixed.compression() && A_fullACA_fixed.compression()<0.89);
+		cout << "Compression rate : "<<A_fullACA_fixed.compression()<<endl;
+
+		// Test error on mat vec prod
+		std::vector<double> f(nc,1),out_perm(nr);
+		std::vector<double> out=A_fullACA_fixed*f;
+       	for (int i = 0; i<Ir.size();i++){
+            out_perm[Ir[i]]=out[i];
+        }
+		double error=norm2(A*f-out_perm);
+		test = test ||!(error<1e-7);
+		cout << "Errors on a mat vec prod : "<< error<<endl;
+
+		// ACA automatic building
+		fullACA<double> A_fullACA(Ir,Ic);
+		A_fullACA.build(A);
 		std::vector<double> fullACA_errors;
 		for (int k = 0 ; k < A_fullACA.rank_of()+1 ; k++){
 			fullACA_errors.push_back(Frobenius_absolute_error(A_fullACA,A,k));
 		}
 
-
-		// Test errors
-		for (int i =1 ;i<fullACA_errors.size();i++){
-			test = test || !(fullACA_errors[i-1]>fullACA_errors[i]);
-		}
+		cout << "Partial ACA" << endl;
+		// Test Frobenius error
+		test = test || !(fullACA_errors[A_fullACA.rank_of()]<GetEpsilon());
 		cout << "Errors with Frobenius norm: "<<fullACA_errors<<endl;
 
-		// Test compression
-		test = test || !(0.87<A_fullACA.compression() && A_fullACA.compression()<0.89);
+		// Test compression rate
+		test = test || !(0.96<A_fullACA.compression() && A_fullACA.compression()<0.97);
 		cout << "Compression rate : "<<A_fullACA.compression()<<endl;
 
-		// Test error on mat vec prod
-		std::vector<double> f(nc,1);
-		double error=norm2(A*f-A_fullACA*f);
-		test = test ||!(error<1e-7);
-		cout << "Errors on a mat vec prod : "<< error<<endl;
-
+		// // Test mat vec prod
+        // out=A_fullACA*f;
+        // for (int i = 0; i<Ir.size();i++){
+        //     out_perm[Ir[i]]=out[i];
+        // }
+		// error = norm2(A*f-out_perm);
+		// test = test || !(error<GetEpsilon());
+		// cout << "Errors on a mat vec prod : "<< error<<endl<<endl<<endl;
 
 	}
 	cout << "test : "<<test<<endl;

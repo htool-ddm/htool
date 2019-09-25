@@ -65,12 +65,10 @@ public:
         do{
           j=j-1;
           svd_norm+=std::pow(std::abs(singular_values[j]),2);
-          std::cout << j<<" "<<std::sqrt(svd_norm)/Norm<<std::endl;
         } while (j>0 && std::sqrt(svd_norm)/Norm<this->epsilon);
         
-
         
-        reqrank=std::max(j+2,std::min(m,n)); // +1 because reqrank is a size and not an index, and +1 because j is the first index that does not satisfy the required error
+        reqrank=std::min(j+1,std::min(m,n));
         
         if (reqrank*(this->nr+this->nc) > (this->nr*this->nc)){
           reqrank=-1;
