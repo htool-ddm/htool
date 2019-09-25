@@ -3,16 +3,19 @@
 
 #include <complex>
 
-template<class T>
-struct underlying_type_spec {
-    typedef T type;
-};
-template<class T>
-struct underlying_type_spec<std::complex<T>> {
-    typedef T type;
-};
-template<class T>
-using underlying_type = typename underlying_type_spec<T>::type;
+namespace htool {
+    template<class T>
+    struct underlying_type_spec {
+        typedef T type;
+    };
+    template<class T>
+    struct underlying_type_spec<std::complex<T>> {
+        typedef T type;
+    };
+    template<class T>
+    using underlying_type = typename underlying_type_spec<T>::type;
+}
+
 
 #if defined(__powerpc__) || defined(INTEL_MKL_VERSION)
 # define HTOOL_LAPACK_F77(func) func
