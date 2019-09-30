@@ -98,7 +98,7 @@ public:
     }
   }
 
-	void build(const IMatrix<T>& A, const Cluster& t, const std::vector<R3> xt,const std::vector<int> tabt, const Cluster& s, const std::vector<R3> xs, const std::vector<int>tabs){
+	void build(const IMatrix<T>& A, const Cluster& t, const std::vector<R3>& xt,const std::vector<int>& tabt, const Cluster& s, const std::vector<R3>& xs, const std::vector<int>& tabs){
     this->build(A);
   }
   T get_singular_value(int i){return singular_values[i];}

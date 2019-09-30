@@ -42,7 +42,7 @@ public:
   	using LowRankMatrix<T>::LowRankMatrix;
 
 
-	void build(const IMatrix<T>& A, const Cluster& t, const std::vector<R3> xt,const std::vector<int> tabt, const Cluster& s, const std::vector<R3> xs, const std::vector<int>tabs){
+	void build(const IMatrix<T>& A, const Cluster& t, const std::vector<R3>& xt,const std::vector<int>& tabt, const Cluster& s, const std::vector<R3>& xs, const std::vector<int>& tabs){
 		if(this->rank == 0){
 			this->U.resize(this->nr,1);
 			this->V.resize(1,this->nc);
@@ -99,6 +99,7 @@ public:
 						if( std::abs(r[k])>pivot && !visited_col[k] ){
 							J=k; pivot=std::abs(r[k]);}
 					}
+					std::cout << "J "<<J<<std::endl;
 					visited_row[I] = true;
 					T gamma = T(1.)/r[J];
 					//==================//
@@ -116,7 +117,7 @@ public:
 								I=j; cmax=std::abs(c[j]);}
 						}
 						visited_col[J] = true;
-
+						std::cout << "I "<<I<<std::endl;
 
 						// Test if no given rank
 						if (reqrank<0){

@@ -25,7 +25,7 @@ public:
     LowRankMatrix(const std::vector<int>& ir0, const std::vector<int>& ic0, int offset_i0, int offset_j0, int rank0=-1):rank(rank0), nr(ir0.size()), nc(ic0.size()), U(ir0.size(),1),V(1,ic0.size()), ir(ir0),ic(ic0),offset_i(offset_i0), offset_j(offset_j0){}
 
     // VIrtual function
-    virtual void build(const IMatrix<T>& A, const Cluster& t, const std::vector<R3> xt,const std::vector<int> tabt, const Cluster& s, const std::vector<R3> xs, const std::vector<int>tabs) = 0;
+    virtual void build(const IMatrix<T>& A, const Cluster& t, const std::vector<R3>& xt,const std::vector<int>& tabt, const Cluster& s, const std::vector<R3>& xs, const std::vector<int>& tabs) = 0;
 
     // Getters
     int nb_rows() const {return this->nr;}
