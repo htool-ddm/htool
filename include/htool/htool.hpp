@@ -21,6 +21,8 @@
 #include "lrmat/lrmat.hpp"
 #include "lrmat/fullACA.hpp"
 #include "lrmat/partialACA.hpp"
+#include "lrmat/sympartialACA.hpp"
+
 
 #include "misc/infos.hpp"
 #include "misc/parametres.hpp"

@@ -3,6 +3,6 @@
 
 int main(int argc, char *argv[]) {
 
-
-	return test_hmat_cluster<SVD>(argc,argv);
+	
+	return test_hmat_cluster<sympartialACA>(argc,argv);
 }

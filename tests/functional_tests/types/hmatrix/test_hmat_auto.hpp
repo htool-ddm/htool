@@ -3,7 +3,10 @@
 #include <vector>
 
 #include <htool/types/hmatrix.hpp>
+#include <htool/lrmat/SVD.hpp>
 #include <htool/lrmat/fullACA.hpp>
+#include <htool/lrmat/partialACA.hpp>
+#include <htool/lrmat/sympartialACA.hpp>
 
 
 
@@ -29,8 +32,8 @@ public:
 	 }
 };
 
-
-int main(int argc, char *argv[]) {
+template<template<typename> class LowRankMatrix>
+int test_hmat_auto(int argc, char *argv[],double matvec_tol) {
 
 	// Initialize the MPI environment
 	MPI_Init(&argc,&argv);
@@ -70,6 +73,7 @@ int main(int argc, char *argv[]) {
 	  vector<double> r1(nr,0);
 	  vector<double> g1(nr,1);
 		vector<int>    tab1(nr);
+
 		for(int j=0; j<nr; j++){
 			Ir[j] = j;
 			double rho = ((double) rand() / (double)(RAND_MAX)); // (double) otherwise integer division!
@@ -84,6 +88,7 @@ int main(int argc, char *argv[]) {
 		vector<double> r2(nc,0);
 	  vector<double> g2(nc,1);
 		vector<int>    tab2(nc);
+
 		for(int j=0; j<nc; j++){
             Ic[j] = j;
 			double rho = ((double) rand() / (RAND_MAX)); // (double) otherwise integer division!
@@ -92,8 +97,9 @@ int main(int argc, char *argv[]) {
 			tab2[j]=j;
 		}
 
+		vector<double> rhs(p2.size(),1);
 		MyMatrix A(p1,p2);
-		HMatrix<fullACA,double> HA(A,p1,r1,tab1,g1,p2,r2,tab2,g2);
+		HMatrix<LowRankMatrix,double> HA(A,p1,r1,tab1,g1,p2,r2,tab2,g2);
 		HA.print_infos();
 
 		std::vector<double> f(nc,1),result(nr,0);
@@ -102,17 +108,16 @@ int main(int argc, char *argv[]) {
 		double erreurFrob = Frobenius_absolute_error(HA,A);
 
 		test = test || !(erreurFrob<GetEpsilon());
-		test = test || !(erreur2<GetEpsilon()*10);
+		test = test || !(erreur2<GetEpsilon()*matvec_tol);
 
 		if (rank==0){
 			cout << "Errors with Frobenius norm: "<<erreurFrob<<endl;
 			cout << "Errors on a mat vec prod : "<< erreur2<<endl;
+			cout << "test: "<<test<<endl<<endl;
 		}
 
 	}
-	if (rank==0){
-		cout << "test: "<<test<<endl;
-	}
+
 	// Finalize the MPI environment.
 	MPI_Finalize();
 	return test;

@@ -2,8 +2,12 @@
 #include <complex>
 #include <vector>
 
+#include <htool/clustering/cluster.hpp>
 #include <htool/types/hmatrix.hpp>
 #include <htool/lrmat/SVD.hpp>
+#include <htool/lrmat/fullACA.hpp>
+#include <htool/lrmat/partialACA.hpp>
+#include <htool/lrmat/sympartialACA.hpp>
 
 
 
@@ -29,8 +33,8 @@ public:
 	 }
 };
 
-
-int main(int argc, char *argv[]) {
+template<template<typename> class LowRankMatrix>
+int test_hmat_cluster(int argc, char *argv[]) {
 
 	// Initialize the MPI environment
 	MPI_Init(&argc,&argv);
@@ -49,7 +53,7 @@ int main(int argc, char *argv[]) {
 	double distance[ndistance];
 	distance[0] = 10; distance[1] = 20; distance[2] = 30; distance[3] = 40;
 	SetNdofPerElt(1);
-	SetEpsilon(0.0001);
+	SetEpsilon(1e-8);
 	SetEta(0.1);
 
 	for(int idist=0; idist<ndistance; idist++)
@@ -96,7 +100,9 @@ int main(int argc, char *argv[]) {
 
 		vector<double> rhs(p2.size(),1);
 		MyMatrix A(p1,p2);
-		HMatrix<SVD,double> HA(A,p1,r1,tab1,g1,p2,r2,tab2,g2);
+		std::shared_ptr<Cluster_tree> t=make_shared<Cluster_tree>(p1,r1,tab1,g1);
+		std::shared_ptr<Cluster_tree> s=make_shared<Cluster_tree>(p2,r2,tab2,g2);
+		HMatrix<LowRankMatrix,double> HA(A,t,p1,tab1,s,p2,tab2);
 		HA.print_infos();
 
 		std::vector<double> f(nc,1),result(nr,0);
@@ -105,16 +111,14 @@ int main(int argc, char *argv[]) {
 		double erreurFrob = Frobenius_absolute_error(HA,A);
 
 		test = test || !(erreurFrob<GetEpsilon());
-		test = test || !(erreur2<GetEpsilon());
+		test = test || !(erreur2<GetEpsilon()*10);
 
 		if (rank==0){
 			cout << "Errors with Frobenius norm: "<<erreurFrob<<endl;
 			cout << "Errors on a mat vec prod : "<< erreur2<<endl;
+			cout << "test: "<<test<<endl;
 		}
 
-	}
-	if (rank==0){
-		cout << "test: "<<test<<endl;
 	}
 
 	// Finalize the MPI environment.

@@ -1,5 +1,5 @@
-#ifndef HTOOL_PARTIALACA_HPP
-#define HTOOL_PARTIALACA_HPP
+#ifndef HTOOL_SYMPARTIALACA_HPP
+#define HTOOL_SYMPARTIALACA_HPP
 
 #include <iostream>
 #include <fstream>
@@ -30,7 +30,7 @@ namespace htool {
 //
 //=================================//
 template<typename T>
-class partialACA: public LowRankMatrix<T>{
+class sympartialACA: public LowRankMatrix<T>{
 
 
 public:
@@ -48,24 +48,62 @@ public:
 			this->V.resize(1,this->nc);
 		}
 		else{
+			
+			int n1,n2;
+			std::vector<int> const * i1;
+			std::vector<int> const * i2;
+			std::vector<int> const * tab1;
+			std::vector<int> const * tab2;
+			std::vector<R3> const* x1;
+			std::vector<R3> const* x2;
+			Cluster const * cluster_1; 
+			Cluster const * cluster_2;
+
+
+			if (this->offset_i>=this->offset_j){
+
+				n1=this->nr;
+				n2=this->nc;
+				i1=&(this->ir);
+				i2=&(this->ic);
+				tab1=&tabt;
+				tab2=&tabs;
+				x1=&xt;
+				x2=&xs;
+				cluster_1=&t;
+				cluster_2=&s;
+			}
+			else{
+				n1=this->nc;
+				n2=this->nr;
+				i1=&(this->ic);
+				i2=&(this->ir);
+				tab1=&tabs;
+				tab2=&tabt;
+				x1=&xs;
+				x2=&xt;
+				cluster_1=&s;
+				cluster_2=&t;
+			}
+
 
 			//// Choice of the first row (see paragraph 3.4.3 page 151 Bebendorf)
 			double dist=1e30;
-			int I=0;
-			for (int i =0;i<int(this->nr/Parametres::ndofperelt);i++){
-				double aux_dist= norm2(xt[tabt[this->ir[i*Parametres::ndofperelt]]]-t.get_ctr());
+			int I1=0;
+			for (int i =0;i<int(n1/Parametres::ndofperelt);i++){
+				double aux_dist= norm2((*x1)[(*tab1)[(*i1)[i*Parametres::ndofperelt]]]-(*cluster_1).get_ctr());
 				if (dist>aux_dist){
 					dist=aux_dist;
-					I=i*Parametres::ndofperelt;
+					I1=i*Parametres::ndofperelt;
 				}
 			}
 			// Partial pivot
-			int J=0;
+			int I2=0;
 			int q = 0;
 			int reqrank = this->rank;
 			std::vector<std::vector<T> > uu, vv;
-			std::vector<bool> visited_row(this->nr,false);
-			std::vector<bool> visited_col(this->nc,false);
+			std::vector<bool> visited_1(n1,false);
+			std::vector<bool> visited_2(n2,false);
 
 			double frob = 0;
 			double aux  = 0;
@@ -84,48 +122,75 @@ public:
 					break;
 				}
 				else{
-					std::vector<T> r(this->nc),c(this->nr);
+					std::vector<T> line2(n2),line1(n1);
 
 					// Compute the first cross
 					//==================//
 					// Look for a column
 					double pivot = 0.;
-					SubMatrix<T> row = A.get_submatrix(std::vector<int> {this->ir[I]},this->ic);
-					for(int k=0; k<this->nc; k++){
-						r[k] = row(0,k);//A.get_coef(this->ir[I],this->ic[k]);
-						for(int j=0; j<uu.size(); j++){
-							r[k] += -uu[j][I]*vv[j][k];
+					if (this->offset_i>=this->offset_j){
+						SubMatrix<T> submat1 = A.get_submatrix(std::vector<int> {(*i1)[I1]},*i2);
+						for(int k=0; k<n2; k++){
+							line2[k] = submat1(0,k);//A.get_coef(this->ir[I],this->ic[k]);
+							for(int j=0; j<uu.size(); j++){
+								line2[k] += -uu[j][I1]*vv[j][k];
+							}
+							if( std::abs(line2[k])>pivot && !visited_2[k] ){
+								I2=k; pivot=std::abs(line2[k]);}
 						}
-						if( std::abs(r[k])>pivot && !visited_col[k] ){
-							J=k; pivot=std::abs(r[k]);}
 					}
-
-					visited_row[I] = true;
-					T gamma = T(1.)/r[J];
+					else{
+						SubMatrix<T> submat1 = A.get_submatrix(*i2,std::vector<int> {(*i1)[I1]});
+						for(int k=0; k<n2; k++){
+							line2[k] = submat1(k,0);//A.get_coef(this->ir[I],this->ic[k]);
+							for(int j=0; j<uu.size(); j++){
+								line2[k] += -uu[j][I1]*vv[j][k];
+							}
+							if( std::abs(line2[k])>pivot && !visited_2[k] ){
+								I2=k; pivot=std::abs(line2[k]);}
+						}
+					}
+					visited_1[I1] = true;
+					T gamma = T(1.)/line2[I2];
+					
 					//==================//
 					// Look for a line
-					if( std::abs(r[J]) > 1e-15 ){
+					if( std::abs(line2[I2]) > 1e-15 ){
 						double cmax = 0.;
-						SubMatrix<T> col = A.get_submatrix(this->ir,std::vector<int> {this->ic[J]});
-						for(int j=0; j<this->nr; j++){
-							c[j] = col(j,0);//A.get_coef(this->ir[j],this->ic[J]);
-							for(int k=0; k<uu.size(); k++){
-								c[j] += -uu[k][j]*vv[k][J];
+						if (this->offset_i>=this->offset_j){
+							SubMatrix<T> submat2 = A.get_submatrix(*i1,std::vector<int> {(*i2)[I2]});
+							for(int j=0; j<n1; j++){
+								line1[j] = submat2(j,0);//A.get_coef(this->ir[j],this->ic[J]);
+								for(int k=0; k<uu.size(); k++){
+									line1[j] += -uu[k][j]*vv[k][I2];
+								}
+								line1[j] = gamma*line1[j];
+								if( std::abs(line1[j])>cmax && !visited_1[j] ){
+									I1=j; cmax=std::abs(line1[j]);}
 							}
-							c[j] = gamma*c[j];
-							if( std::abs(c[j])>cmax && !visited_row[j] ){
-								I=j; cmax=std::abs(c[j]);}
 						}
-						visited_col[J] = true;
+						else{
+							SubMatrix<T> submat2 = A.get_submatrix(std::vector<int> {(*i2)[I2]},*i1);
+							for(int j=0; j<n1; j++){
+								line1[j] = submat2(0,j);//A.get_coef(this->ir[j],this->ic[J]);
+								for(int k=0; k<uu.size(); k++){
+									line1[j] += -uu[k][j]*vv[k][I2];
+								}
+								line1[j] = gamma*line1[j];
+								if( std::abs(line1[j])>cmax && !visited_1[j] ){
+									I1=j; cmax=std::abs(line1[j]);}
+							}
+						}
+						visited_2[I2] = true;
 
 						// Test if no given rank
 						if (reqrank<0){
 							// Error estimator
 							T frob_aux = 0.;
-							aux = std::abs(dprod(c,c)*dprod(r,r));
+							aux = std::abs(dprod(line2,line2)*dprod(line1,line1));
 							// aux: terme quadratiques du developpement du carre' de la norme de Frobenius de la matrice low rank
 							for(int j=0; j<uu.size(); j++){
-								frob_aux += dprod(r,vv[j])*dprod(c,uu[j]);
+								frob_aux += dprod(line2,vv[j])*dprod(line1,uu[j]);
 							}
 							// frob_aux: termes croises du developpement du carre' de la norme de Frobenius de la matrice low rank
 							frob += aux + 2*std::real(frob_aux); // frob: Frobenius norm of the low rank matrix
@@ -135,8 +200,8 @@ public:
 						// uu.push_back(M.get_col(J));
 						// vv.push_back(M.get_row(I)/M(I,J));
 						// New cross added
-						uu.push_back(c);
-						vv.push_back(r);
+						uu.push_back(line1);
+						vv.push_back(line2);
 
 					}
 					else{
@@ -153,8 +218,14 @@ public:
 				this->U.resize(this->nr,this->rank);
 				this->V.resize(this->rank,this->nc);
 				for (int k=0;k<this->rank;k++){
-					this->U.set_col(k,uu[k]);
-					this->V.set_row(k,vv[k]);
+					if (this->offset_i>=this->offset_j){
+						this->U.set_col(k,uu[k]);
+						this->V.set_row(k,vv[k]);
+					}
+					else{
+						this->U.set_col(k,vv[k]);
+						this->V.set_row(k,uu[k]);
+					}
 				}
 			}
 		}
