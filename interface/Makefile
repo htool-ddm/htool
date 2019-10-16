@@ -7,4 +7,4 @@ BLAS_LIB=-framework Accelerate
 all: htool_python.dylib
 
 htool_python.dylib: htool_python.cpp
-	mpic++ -std=c++11 ${BLAS_LIB} ${HTOOL_INCS} ${PYTHON_INCS} -shared  htool_python.cpp -o htool_python.dylib ${PYTHON_LIBS}
+	mpic++ -std=c++11 ${BLAS_LIB} ${HTOOL_INCS} ${PYTHON_INCS} -shared  htool_python.cpp -o htool_python.dylib ${PYTHON_LIBS} #-DFORCE_COMPLEX
