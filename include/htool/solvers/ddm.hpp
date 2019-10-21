@@ -852,6 +852,13 @@ void build_coarse_space( Matrix<T>& Ki, const std::vector<R3>& x ){
         }
     }
 
+    std::string get_infos(const std::string& key) const{
+        if (hpddm_op.HA.get_rankworld()==0){
+            return infos[key];
+        }
+        return "";
+    }
+
     int get_nevi() const {return nevi;}
 
 };
