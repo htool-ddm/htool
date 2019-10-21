@@ -7,6 +7,7 @@ import re
 import matplotlib.pyplot as plt
 import scipy.sparse.linalg as spla
 from mpi4py import MPI
+import math
 
 comm = MPI.COMM_WORLD
 size = comm.Get_size()
@@ -17,14 +18,19 @@ scalar = ctypes.c_double
 n = 1000
 
 np.random.seed(0)
-p = np.random.random((n,3))
-p[:,2] = 0;
+rho = np.random.random((n,3))
+theta = np.random.random((n,3))
+p=np.zeros((n,3))
+
+p[:,0] = np.sqrt(rho)*np.cos(2*math.pi*theta)
+p[:,1] = np.sqrt(rho)*np.sin(2*math.pi*theta)
+p[:,2] = 1
 
 @htool.getcoefFunc
 def getcoef(i,j,r):
     r._shape_ = (1,)
     r = np.ctypeslib.as_array(r)
-    r[0] = 1./(1e-5+np.vdot(p[i]-p[j],p[i]-p[j]));
+    r[0] = 1./(1e-5+math.sqrt(np.vdot(p[i]-p[j],p[i]-p[j])))
 
 @htool.getsubmatrixFunc
 def getsubmatrix(I,J,n,m,r):
@@ -36,7 +42,7 @@ def getsubmatrix(I,J,n,m,r):
     J = np.ctypeslib.as_array(J)
     for i in range(0,n):
         for j in range(0,m):
-            r[j,i] = 1./(1e-5+np.vdot(p[I[i]]-p[J[j]],p[I[i]]-p[J[j]]));
+            r[j,i] = 1./(1e-5+math.sqrt(np.vdot(p[I[i]]-p[J[j]],p[I[i]]-p[J[j]])))
 
 #H = htool.HMatrixCreate(p, n, getcoef)
 H = htool.HMatrixCreatewithsubmat(p, n, getsubmatrix)
