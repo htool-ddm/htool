@@ -8,13 +8,16 @@ import re
 import matplotlib.pyplot as plt
 import matplotlib.colors as colors
 import matplotlib.patches as patches
+import os
+
+libfile = os.path.dirname(__file__)+'/libhtool_shared'
 
 if 'linux' in sys.platform:
-    lib = ctypes.cdll.LoadLibrary('htool_python.so')
+    lib = ctypes.cdll.LoadLibrary(libfile+'.so')
 elif sys.platform == 'darwin':
-    lib = ctypes.cdll.LoadLibrary('htool_python.dylib')
+    lib = ctypes.cdll.LoadLibrary(libfile+'.dylib')
 elif sys.platform == 'win32':
-    lib = ctypes.cdll.LoadLibrary('htool_python.dll')
+    lib = ctypes.cdll.LoadLibrary(libfile+'.dll')
 
 if ctypes.c_ushort.in_dll(lib, 'scalar').value == 0:
     scalar = ctypes.c_double
