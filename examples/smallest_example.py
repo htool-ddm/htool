@@ -15,7 +15,7 @@ rank = comm.Get_rank()
 
 scalar = ctypes.c_double
 
-n = 10000
+n = 1000
 
 
 
@@ -23,9 +23,9 @@ p=np.zeros((n,3))
 size = int(math.sqrt(n)) # sqrt(n) must be an integer !!!
 for j in range(0,size):
     for k in range(0,size):
-        p[j+k*size,0] = j;
-        p[j+k*size,1] = k;
-        p[j,2] = 1;
+        p[j+k*size,0] = j
+        p[j+k*size,1] = k
+        p[j,2] = 1
 
 @htool.getcoefFunc
 def getcoef(i,j,r):
@@ -41,8 +41,8 @@ htool.set_epsilon(1e-3)
 htool.set_eta(100)
 htool.set_minclustersize(10)
 
-#H = htool.HMatrixCreate(p, n, getcoef)
-H = htool.HMatrixCreatewithsubmat(p, n, getsubmatrix)
+H = htool.HMatrixCreate(p, n, getcoef)
+# H = htool.HMatrixCreatewithsubmat(p, n, getsubmatrix)
 
 def Hmv(v):
     res = np.zeros(n,dtype = scalar)
@@ -69,7 +69,7 @@ I = np.arange(n, dtype = np.int32)
 
 for i in range(0,n):
     for j in range(0,n):
-        A[i,j] = 1./(1e-5+np.vdot(p[i]-p[j],p[i]-p[j]));
+        A[i,j] = 1./(1e-5+np.vdot(p[i]-p[j],p[i]-p[j]))
 
 def Amv(v):
     return A.dot(v)

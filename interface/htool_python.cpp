@@ -78,10 +78,6 @@ void* HMatrixCreatewithsubmat(double* pts, int n, void (*getsubmatrix)(const int
   // Matrix
 	MyMatrixwithsubmat A(p,getsubmatrix);
 
-  SetEpsilon(1e-2);
-  SetEta(10);
-  SetMinClusterSize(10);
-
   // Hmatrix
 	HMatrix<partialACA,K>* H = new HMatrix<partialACA,K>(A,p);
 

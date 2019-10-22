@@ -52,7 +52,7 @@ int main(int argc, char *argv[]) {
     SetMinClusterSize(10);
 
     // Data
-    int n = 10000;
+    int n = 1000;
     vector<int> I(n); // indices for the hmatrix
 
     // p1: points in a square in the plane z=z1
@@ -71,7 +71,7 @@ int main(int argc, char *argv[]) {
     // Hmatrix
     MyMatrix A(p,p);
     std::vector<double> x(n,1),result(n,0);
-    HMatrix<fullACA,double> HA(A,p,p);
+    HMatrix<partialACA,double> HA(A,p,p);
     result = HA*x;
 
     // Output
