@@ -18,8 +18,8 @@ scalar = ctypes.c_double
 n = 1000
 
 np.random.seed(0)
-rho = np.random.random((n,3))
-theta = np.random.random((n,3))
+rho = np.random.random(n)
+theta = np.random.random(n)
 p=np.zeros((n,3))
 
 p[:,0] = np.sqrt(rho)*np.cos(2*math.pi*theta)
