@@ -176,7 +176,7 @@ class BuildCMakeExt(build_ext):
             "-DCMAKE_LIBRARY_OUTPUT_DIRECTORY="+ str(extdir.parent.absolute()),
             "-DHTOOL_WITH_PYTHON_INTERFACE=True"])
 
-        self.spawn(['cmake', '--build', self.build_temp,"--target", "htool_shared",
+        self.spawn(['cmake', '--build', self.build_temp,"--target", "htool_shared","htool_shared_complex",
                     "--config", "Release"])
 
         # os.chdir(str(cwd))
@@ -212,7 +212,7 @@ setup(
     name='Htool',
     version='1.0',
     package_dir = {'': 'interface'},
-    py_modules=['htool'],
+    py_modules=['htool','htool_complex'],
     ext_modules=[CMakeExtension('htool')],
     cmdclass={
           'build_ext': BuildCMakeExt,

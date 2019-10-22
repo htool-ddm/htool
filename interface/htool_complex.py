@@ -10,7 +10,7 @@ import matplotlib.colors as colors
 import matplotlib.patches as patches
 import os
 
-libfile = os.path.dirname(__file__)+'/libhtool_shared'
+libfile = os.path.dirname(__file__)+'/libhtool_shared_complex'
 
 if 'linux' in sys.platform:
     lib = ctypes.cdll.LoadLibrary(libfile+'.so')
@@ -24,9 +24,9 @@ if ctypes.c_ushort.in_dll(lib, 'scalar').value == 0:
 else:
     scalar = np.complex128
 
-getcoefFunc = ctypes.CFUNCTYPE(None, ctypes.c_int, ctypes.c_int, ctypes.POINTER(scalar))
+getcoefFunc = ctypes.CFUNCTYPE(None, ctypes.c_int, ctypes.c_int, ctypes.POINTER(ctypes.c_double))
 
-getsubmatrixFunc = ctypes.CFUNCTYPE(None, ctypes.POINTER(ctypes.c_int), ctypes.POINTER(ctypes.c_int), ctypes.c_int, ctypes.c_int, ctypes.POINTER(scalar))
+getsubmatrixFunc = ctypes.CFUNCTYPE(None, ctypes.POINTER(ctypes.c_int), ctypes.POINTER(ctypes.c_int), ctypes.c_int, ctypes.c_int, ctypes.POINTER(ctypes.c_double))
 
 class HMatrix(ctypes.Structure):
     pass
@@ -108,7 +108,7 @@ def display(H):
         # Issue: there a shift of one pixel along the y-axis...
         shift = axes.transData.transform([(0,0), (1,1)])
         shift = shift[1,1] - shift[0,1]  # 1 unit in display coords
-        shift = 0 #1/shift  # 1 pixel in display coords
+        shift = 1/shift  # 1 pixel in display coords
 
         # Loop
         for i in range(0,nb):

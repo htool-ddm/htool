@@ -174,8 +174,25 @@ if (HTOOL_WITH_PYTHON_INTERFACE)
 						${BLAS_LIBRARIES}
 						${LAPACK_LIBRARIES}
 						${Python_LIBRARIES})
-
+	
 	target_compile_features(htool_shared PRIVATE cxx_std_11)
+
+	add_library(htool_shared_complex SHARED interface/htool_python.cpp)
+	target_include_directories(htool_shared_complex PRIVATE
+						$<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include>
+						$<INSTALL_INTERFACE:include>
+						${MPI_INCLUDE_PATH}
+						${HPDDM_INCLUDE_DIRS}
+						${MKL_INC_DIR}
+						${Python_INCLUDE_DIRS})
+	target_link_libraries(htool_shared_complex
+						${MPI_LIBRARIES}
+						${BLAS_LIBRARIES}
+						${LAPACK_LIBRARIES}
+						${Python_LIBRARIES})
+
+	target_compile_features(htool_shared_complex PRIVATE cxx_std_11)
+	target_compile_options(htool_shared_complex PRIVATE -DFORCE_COMPLEX)
 endif()
 
 # For headers to show in IDE
