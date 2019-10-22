@@ -15,16 +15,17 @@ rank = comm.Get_rank()
 
 scalar = ctypes.c_double
 
-n = 1000
+n = 10000
 
-np.random.seed(0)
-rho = np.random.random(n)
-theta = np.random.random(n)
+
+
 p=np.zeros((n,3))
-
-p[:,0] = np.sqrt(rho)*np.cos(2*math.pi*theta)
-p[:,1] = np.sqrt(rho)*np.sin(2*math.pi*theta)
-p[:,2] = 1
+size = int(math.sqrt(n)) # sqrt(n) must be an integer !!!
+for j in range(0,size):
+    for k in range(0,size):
+        p[j+k*size,0] = j;
+        p[j+k*size,1] = k;
+        p[j,2] = 1;
 
 @htool.getcoefFunc
 def getcoef(i,j,r):
@@ -36,8 +37,8 @@ def getsubmatrix(I,J,n,m,r):
         for j in range(0,m):
             r[j*n+i] = 1./(1e-5+math.sqrt(np.vdot(p[I[i]]-p[J[j]],p[I[i]]-p[J[j]])))
 
-htool.set_epsilon(1e-2)
-htool.set_eta(10)
+htool.set_epsilon(1e-3)
+htool.set_eta(100)
 htool.set_minclustersize(10)
 
 #H = htool.HMatrixCreate(p, n, getcoef)

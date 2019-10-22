@@ -52,20 +52,20 @@ int main(int argc, char *argv[]) {
     SetMinClusterSize(10);
 
     // Data
-    srand (1);    
-    int n = 1000;
+    int n = 10000;
     vector<int> I(n); // indices for the hmatrix
 
-    // p1: points in a unit disk of the plane z=z1
+    // p1: points in a square in the plane z=z1
     double z = 1;
     vector<R3> p(n);
-    for(int j=0; j<n; j++){
-        I[j] = j;
-        double rho = ((double) rand() / (double)(RAND_MAX));
-        double theta = ((double) rand() / (double)(RAND_MAX));
-        p[j][0] = sqrt(rho)*cos(2*M_PI*theta); 
-        p[j][1] = sqrt(rho)*sin(2*M_PI*theta); 
-        p[j][2] = z;
+    int size = sqrt(n); // sqrt(n) must be an integer !!!
+    for(int j=0; j<size; j++){
+        for(int k=0; k<size; k++){
+            I[j+k*size] = j+k*size;
+            p[j+k*size][0] = j;
+            p[j+k*size][1] = k;
+            p[j][2] = z;
+        }
     }
 
     // Hmatrix
