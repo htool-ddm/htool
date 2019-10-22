@@ -29,13 +29,13 @@ for j in range(0,size):
 
 @htool.getcoefFunc
 def getcoef(i,j,r):
-    r[0] = 1./(1.e5+math.sqrt(np.vdot(p[i]-p[j],p[i]-p[j])))
+    r[0] = 1./(1.e-5+np.vdot(p[i]-p[j],p[i]-p[j]))
 
 @htool.getsubmatrixFunc
 def getsubmatrix(I,J,n,m,r):
     for i in range(0,n):
         for j in range(0,m):
-            r[j*n+i] = 1./(1.e5+math.sqrt(np.vdot(p[I[i]]-p[J[j]],p[I[i]]-p[J[j]])))
+            r[j*n+i] = 1./(1.e-5+np.vdot(p[I[i]]-p[J[j]],p[I[i]]-p[J[j]]))
 
 htool.set_epsilon(1e-3)
 htool.set_eta(100)
@@ -69,7 +69,7 @@ I = np.arange(n, dtype = np.int32)
 
 for i in range(0,n):
     for j in range(0,n):
-        A[i,j] = 1./(1.e5+math.sqrt(np.vdot(p[i]-p[j],p[i]-p[j])))
+        A[i,j] = 1./(1.e-5+np.vdot(p[i]-p[j],p[i]-p[j]))
 
 def Amv(v):
     return A.dot(v)
