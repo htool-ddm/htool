@@ -66,6 +66,22 @@ mvprod = lib.mvprod
 mvprod.restype = None
 mvprod.argtypes = [ ctypes.POINTER(HMatrix), np.ctypeslib.ndpointer(scalar,flags='C_CONTIGUOUS'), np.ctypeslib.ndpointer(scalar,flags='C_CONTIGUOUS')]
 
+set_epsilon = lib.setepsilon
+set_epsilon.restype = None
+set_epsilon.argtypes = [ ctypes.c_double ]
+
+set_eta = lib.seteta
+set_eta.restype = None
+set_eta.argtypes = [ ctypes.c_double ]
+
+set_minclustersize = lib.setminclustersize
+set_minclustersize.restype = None
+set_minclustersize.argtypes = [ ctypes.c_int ]
+
+set_maxblocksize = lib.setmaxblocksize
+set_maxblocksize.restype = None
+set_maxblocksize.argtypes = [ ctypes.c_int ]
+
 def truncate_colormap(cmap, minval=0.0, maxval=1.0, n=100):
     new_cmap = colors.LinearSegmentedColormap.from_list(
         'trunc({n},{a:.2f},{b:.2f})'.format(n=cmap.name, a=minval, b=maxval),

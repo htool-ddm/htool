@@ -36,6 +36,10 @@ def getsubmatrix(I,J,n,m,r):
         for j in range(0,m):
             r[j*n+i] = 1./(1e-5+math.sqrt(np.vdot(p[I[i]]-p[J[j]],p[I[i]]-p[J[j]])))
 
+htool.set_epsilon(1e-2)
+htool.set_eta(10)
+htool.set_minclustersize(10)
+
 #H = htool.HMatrixCreate(p, n, getcoef)
 H = htool.HMatrixCreatewithsubmat(p, n, getsubmatrix)
 

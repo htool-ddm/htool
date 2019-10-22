@@ -60,10 +60,6 @@ void* HMatrixCreate(double* pts, int n, void (*getcoef)(int,int,K*)) {
   // Matrix
 	MyMatrix A(p,getcoef);
 
-  SetEpsilon(1e-2);
-  SetEta(10);
-  SetMinClusterSize(10);
-
   // Hmatrix
 	HMatrix<partialACA,K>* H = new HMatrix<partialACA,K>(A,p);
 
@@ -115,6 +111,11 @@ int nbrows(void* H) {
 int nbcols(void* H) {
     return reinterpret_cast<HMatrix<partialACA,K>*>(H)->nb_cols();
 }
+
+void setepsilon(double eps) { SetEpsilon(eps); }
+void seteta(double eta) { SetEta(eta); }
+void setminclustersize(int m) { SetMinClusterSize(m); }
+void setmaxblocksize(int m) { SetMaxBlockSize(m); }
 
 void getpattern(void* pH, int* buf) {
 	HMatrix<partialACA,K>* H = reinterpret_cast<HMatrix<partialACA,K>*>(pH);
