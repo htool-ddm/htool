@@ -21,9 +21,9 @@ if ctypes.c_ushort.in_dll(lib, 'scalar').value == 0:
 else:
     scalar = np.complex128
 
-getcoefFunc = ctypes.CFUNCTYPE(None, ctypes.c_int, ctypes.c_int, np.ctypeslib.ndpointer(scalar,flags='C_CONTIGUOUS'))
+getcoefFunc = ctypes.CFUNCTYPE(None, ctypes.c_int, ctypes.c_int, ctypes.POINTER(scalar))
 
-getsubmatrixFunc = ctypes.CFUNCTYPE(None, np.ctypeslib.ndpointer(ctypes.c_int,flags='C_CONTIGUOUS'), np.ctypeslib.ndpointer(ctypes.c_int,flags='C_CONTIGUOUS'), ctypes.c_int, ctypes.c_int, np.ctypeslib.ndpointer(scalar,flags='C_CONTIGUOUS'))
+getsubmatrixFunc = ctypes.CFUNCTYPE(None, ctypes.POINTER(ctypes.c_int), ctypes.POINTER(ctypes.c_int), ctypes.c_int, ctypes.c_int, ctypes.POINTER(scalar))
 
 class HMatrix(ctypes.Structure):
     pass

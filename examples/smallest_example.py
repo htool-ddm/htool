@@ -28,21 +28,13 @@ p[:,2] = 1
 
 @htool.getcoefFunc
 def getcoef(i,j,r):
-    r._shape_ = (1,)
-    r = np.ctypeslib.as_array(r)
     r[0] = 1./(1e-5+math.sqrt(np.vdot(p[i]-p[j],p[i]-p[j])))
 
 @htool.getsubmatrixFunc
 def getsubmatrix(I,J,n,m,r):
-    r._shape_ = (m,n)
-    I._shape_ = (n,)
-    J._shape_ = (m,)
-    r = np.ctypeslib.as_array(r)
-    I = np.ctypeslib.as_array(I)
-    J = np.ctypeslib.as_array(J)
     for i in range(0,n):
         for j in range(0,m):
-            r[j,i] = 1./(1e-5+math.sqrt(np.vdot(p[I[i]]-p[J[j]],p[I[i]]-p[J[j]])))
+            r[j*n+i] = 1./(1e-5+math.sqrt(np.vdot(p[I[i]]-p[J[j]],p[I[i]]-p[J[j]])))
 
 #H = htool.HMatrixCreate(p, n, getcoef)
 H = htool.HMatrixCreatewithsubmat(p, n, getsubmatrix)
@@ -70,7 +62,9 @@ A = np.zeros((n,n),dtype = scalar)
 
 I = np.arange(n, dtype = np.int32)
 
-getsubmatrix(I,I,n,n,A)
+for i in range(0,n):
+    for j in range(0,n):
+        A[i,j] = 1./(1e-5+np.vdot(p[i]-p[j],p[i]-p[j]));
 
 def Amv(v):
     return A.dot(v)
