@@ -224,7 +224,6 @@ setup(
           'numpy',
           'scipy',
           'mpi4py',
-          'matplotlib',
-          'gmsh-api'
+          'matplotlib'
       ],
 )

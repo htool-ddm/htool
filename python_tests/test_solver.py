@@ -5,7 +5,6 @@ import htool_complex
 import scipy.sparse.linalg as spla
 from mpi4py import MPI
 import math
-import gmsh_api.gmsh as gmsh
 import struct
 
 
@@ -38,10 +37,27 @@ with open("data/data_test/rhs.bin", "rb" ) as input:
     f=np.frombuffer(data[4:],dtype=np.dtype('complex128'))
 
 # mesh
-gmsh.initialize(sys.argv)
-gmsh.merge("data/data_test/gmsh_mesh.msh")
-p=gmsh.model.mesh.getNodes()[1]
-p=p.reshape((n,3))
+p=np.zeros((n,3))
+with open("data/data_test/gmsh_mesh.msh", "r" ) as input:
+    check=False
+    count=0
+    for line in input:
+        print(line,check)
+
+        if line=="$EndNodes\n":
+            break
+
+        if check and len(line.split())==4:
+            print(line.split())
+            tab_line=line.split()
+            p[count][0]=tab_line[1]
+            p[count][1]=tab_line[2]
+            p[count][2]=tab_line[3]
+            count+=1
+
+        if line=="$Nodes\n":
+            check=True
+
 
 # Hmatrix
     
