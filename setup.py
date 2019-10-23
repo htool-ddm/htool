@@ -223,7 +223,6 @@ setup(
     install_requires=[
           'numpy',
           'mpi4py',
-          'ctypes',
           'matplotlib',
           'gmsh-api'
       ],
