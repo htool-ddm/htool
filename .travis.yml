@@ -60,6 +60,7 @@ matrix:
         - pip3 install -U pytest
 
     - os: linux
+      env: PYTHON=3.7
       dist: xenial
       group: travis_latest
       compiler: clang
@@ -69,7 +70,6 @@ matrix:
             - ubuntu-toolchain-r-test
           packages:
             - mpich
-            - python3
             - libmpich-dev
             - libblas-dev
             - liblapack-dev
@@ -78,6 +78,7 @@ matrix:
         - pip3 install -U pytest
 
     - os: linux
+      env: PYTHON=3.7
       dist: xenial
       group: travis_latest
       compiler: gcc
@@ -87,7 +88,6 @@ matrix:
             - ubuntu-toolchain-r-test
           packages:
             - mpich
-            - python3
             - libmpich-dev
             - libblas-dev
             - liblapack-dev
@@ -97,6 +97,7 @@ matrix:
 
 
     - os: linux
+      env: PYTHON=3.7
       dist: xenial
       group: travis_latest
       compiler: clang
@@ -106,7 +107,6 @@ matrix:
             - ubuntu-toolchain-r-test
           packages:
             - openmpi-bin
-            - python3
             - libopenmpi-dev
             - libblas-dev
             - liblapack-dev
@@ -116,6 +116,7 @@ matrix:
 
 
     - os: linux
+      env: PYTHON=3.7
       dist: xenial
       group: travis_latest
       compiler: gcc
@@ -125,7 +126,6 @@ matrix:
             - ubuntu-toolchain-r-test
           packages:
             - openmpi-bin
-            - python3
             - libopenmpi-dev
             - libblas-dev
             - liblapack-dev
