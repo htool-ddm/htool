@@ -90,7 +90,7 @@ htool_complex.printinfos(H)
 inv_error = np.linalg.norm(f-A.dot(x))/np.linalg.norm(f)
 error     = np.linalg.norm(x-x_ref)/np.linalg.norm(x_ref)
 assert(inv_error<1e-6)
-assert(error<1e-6)
+assert(error<1e-5)
 
 if (rank==0):
     print("error on inversion : ",inv_error)
