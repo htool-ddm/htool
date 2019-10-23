@@ -25,7 +25,7 @@ matrix:
         - brew install mpich
         - brew install python
         - pip3 install -U pytest
-        
+
     ## mpich does not work anymore with gcc
     ## it would need to be compiled with gcc...
     # - os: osx
@@ -60,6 +60,7 @@ matrix:
       dist: xenial
       group: travis_latest
       compiler: clang
+      python: 3.7.1
       addons:
         apt:
           sources:
@@ -77,6 +78,7 @@ matrix:
       dist: xenial
       group: travis_latest
       compiler: gcc
+      python: 3.7.1
       addons:
         apt:
           sources:
@@ -95,6 +97,7 @@ matrix:
       dist: xenial
       group: travis_latest
       compiler: clang
+      python: 3.7.1
       addons:
         apt:
           sources:
@@ -113,6 +116,7 @@ matrix:
       dist: xenial
       group: travis_latest
       compiler: gcc
+      python: 3.7.1
       addons:
         apt:
           sources:
