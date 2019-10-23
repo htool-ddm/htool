@@ -4,7 +4,6 @@ import ctypes
 import ctypes.util
 _libc = ctypes.cdll.LoadLibrary(ctypes.util.find_library('c'))
 import numpy as np
-import re
 import matplotlib.pyplot as plt
 import matplotlib.colors as colors
 import matplotlib.patches as patches

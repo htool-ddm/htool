@@ -176,9 +176,9 @@ class BuildCMakeExt(build_ext):
             "-DCMAKE_LIBRARY_OUTPUT_DIRECTORY="+ str(extdir.parent.absolute()),
             "-DHTOOL_WITH_PYTHON_INTERFACE=True"])
 
-        self.spawn(['cmake', '--build', self.build_temp,"--target", "htool_shared","--target","htool_shared_complex",
+        self.spawn(['cmake', '--build', self.build_temp,"--target", "htool_shared","--config", "Release"])
+        self.spawn(['cmake', '--build', self.build_temp,"--target","htool_shared_complex",
                     "--config", "Release"])
-
         # os.chdir(str(cwd))
 
         # cmake_args = ['-DCMAKE_LIBRARY_OUTPUT_DIRECTORY=' + extdir]
@@ -219,5 +219,12 @@ setup(
           'install_data': InstallCMakeLibsData,
           'install_lib': InstallCMakeLibs,
         #   'install_scripts': InstallCMakeScripts
-          }
+          },
+    install_requires=[
+          'numpy',
+          'mpi4py',
+          'ctypes',
+          'matplotlib',
+          'gmsh-api'
+      ],
 )
