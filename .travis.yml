@@ -23,6 +23,7 @@ matrix:
         - CC=clang
       install:
         - brew install mpich
+        - brew install python
     ## mpich does not work anymore with gcc
     ## it would need to be compiled with gcc...
     # - os: osx
@@ -39,6 +40,8 @@ matrix:
         - MPIEXEC_PREFLAGS=-oversubscribe
       install:
         - brew install openmpi
+        - brew install python
+        - pip install -U pytest
     - os: osx
       env:
         - CXX_COMPILER=g++-9
@@ -47,6 +50,7 @@ matrix:
       install:
         - brew install gcc
         - brew install openmpi
+        - brew install python
     - os: linux
       dist: xenial
       group: travis_latest
@@ -61,6 +65,8 @@ matrix:
             - libblas-dev
             - liblapack-dev
             - libsuitesparse-dev
+      install:
+        - pip install -U pytest
 
     - os: linux
       dist: xenial
@@ -76,6 +82,9 @@ matrix:
             - libblas-dev
             - liblapack-dev
             - libsuitesparse-dev
+      install:
+        - pip install -U pytest
+
 
     - os: linux
       dist: xenial
@@ -91,6 +100,9 @@ matrix:
             - libblas-dev
             - liblapack-dev
             - libsuitesparse-dev
+      install:
+        - pip install -U pytest
+
 
     - os: linux
       dist: xenial
@@ -106,6 +118,8 @@ matrix:
             - libblas-dev
             - liblapack-dev
             - libsuitesparse-dev
+      install:
+        - pip install -U pytest
 
 
 
@@ -132,3 +146,7 @@ script:
   - make -j build-tests
   - export OMP_NUM_THREADS=2
   - ctest --output-on-failure
+  - cd ..
+  - pip3 install . --user -v
+  - pytest python_tests
+

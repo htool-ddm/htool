@@ -44,3 +44,6 @@ output/*
 
 # mesh
 *.msh
+
+# Python
+__pycache__
