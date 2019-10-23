@@ -176,7 +176,7 @@ class BuildCMakeExt(build_ext):
             "-DCMAKE_LIBRARY_OUTPUT_DIRECTORY="+ str(extdir.parent.absolute()),
             "-DHTOOL_WITH_PYTHON_INTERFACE=True"])
 
-        self.spawn(['cmake', '--build', self.build_temp,"--target", "htool_shared","htool_shared_complex",
+        self.spawn(['cmake', '--build', self.build_temp,"--target", "htool_shared","--target","htool_shared_complex",
                     "--config", "Release"])
 
         # os.chdir(str(cwd))
