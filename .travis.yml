@@ -23,6 +23,7 @@ matrix:
         - CC=clang
       install:
         - brew install mpich
+        - brew install suite-sparse
         - brew install python
         - pip3 install -U pytest
 
@@ -42,6 +43,7 @@ matrix:
         - MPIEXEC_PREFLAGS=-oversubscribe
       install:
         - brew install openmpi
+        - brew install suite-sparse
         - brew install python
         - pip3 install -U pytest
 
@@ -53,6 +55,7 @@ matrix:
       install:
         - brew install gcc
         - brew install openmpi
+        - brew install suite-sparse
         - brew install python
         - pip3 install -U pytest
 
@@ -60,13 +63,13 @@ matrix:
       dist: xenial
       group: travis_latest
       compiler: clang
-      python: "3.7.1"
       addons:
         apt:
           sources:
             - ubuntu-toolchain-r-test
           packages:
             - mpich
+            - python3
             - libmpich-dev
             - libblas-dev
             - liblapack-dev
@@ -78,13 +81,13 @@ matrix:
       dist: xenial
       group: travis_latest
       compiler: gcc
-      python: "3.7.1"
       addons:
         apt:
           sources:
             - ubuntu-toolchain-r-test
           packages:
             - mpich
+            - python3
             - libmpich-dev
             - libblas-dev
             - liblapack-dev
@@ -97,13 +100,13 @@ matrix:
       dist: xenial
       group: travis_latest
       compiler: clang
-      python: "3.7.1"
       addons:
         apt:
           sources:
             - ubuntu-toolchain-r-test
           packages:
             - openmpi-bin
+            - python3
             - libopenmpi-dev
             - libblas-dev
             - liblapack-dev
@@ -116,13 +119,13 @@ matrix:
       dist: xenial
       group: travis_latest
       compiler: gcc
-      python: "3.7.1"
       addons:
         apt:
           sources:
             - ubuntu-toolchain-r-test
           packages:
             - openmpi-bin
+            - python3
             - libopenmpi-dev
             - libblas-dev
             - liblapack-dev
@@ -138,7 +141,6 @@ matrix:
 before_install:
   - if [ "$TRAVIS_OS_NAME" == "osx" ]; then brew update; fi
   - if [ "$TRAVIS_OS_NAME" == "osx" ]; then brew upgrade cmake; fi
-  - if [ "$TRAVIS_OS_NAME" == "osx" ]; then brew install suite-sparse; fi
   - if [ "$TRAVIS_OS_NAME" == "linux" ]; then export LD_LIBRARY_PATH=$(if [[ $CC == "clang" ]]; then echo -n '/usr/local/clang/lib'; fi); fi
   - cd .. && git clone https://github.com/hpddm/hpddm.git && cd htool
 
