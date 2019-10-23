@@ -155,6 +155,6 @@ script:
   - export OMP_NUM_THREADS=2
   - ctest --output-on-failure
   - cd ..
-  - pip3 install . --user -v
+  - pip3 install . --user
   - pytest python_tests
 
