@@ -60,7 +60,7 @@ matrix:
       dist: xenial
       group: travis_latest
       compiler: clang
-      python: 3.7.1
+      python: 3.7
       addons:
         apt:
           sources:
@@ -78,7 +78,7 @@ matrix:
       dist: xenial
       group: travis_latest
       compiler: gcc
-      python: 3.7.1
+      python: 3.7
       addons:
         apt:
           sources:
@@ -97,7 +97,7 @@ matrix:
       dist: xenial
       group: travis_latest
       compiler: clang
-      python: 3.7.1
+      python: 3.7
       addons:
         apt:
           sources:
@@ -116,7 +116,7 @@ matrix:
       dist: xenial
       group: travis_latest
       compiler: gcc
-      python: 3.7.1
+      python: 3.7
       addons:
         apt:
           sources:
