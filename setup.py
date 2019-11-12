@@ -212,7 +212,7 @@ setup(
     name='Htool',
     version='1.0',
     package_dir = {'': 'interface'},
-    py_modules=['htool','htool_complex'],
+    py_modules=['htool','htool_complex', 'htool_test'],
     ext_modules=[CMakeExtension('htool')],
     cmdclass={
           'build_ext': BuildCMakeExt,
