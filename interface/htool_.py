@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-import os
+import os,sys
 import ctypes
 import numpy as np
 from mpi4py import MPI
@@ -235,7 +235,12 @@ class HMatrix(AbstractHMatrix):
         The parameters that have been used to build the matrix.
     """
     libfile = os.path.join(os.path.dirname(__file__), 'libhtool_shared')
-    lib = ctypes.cdll.LoadLibrary(libfile + '.so')
+    if 'linux' in sys.platform:
+        lib = ctypes.cdll.LoadLibrary(libfile+'.so')
+    elif sys.platform == 'darwin':
+        lib = ctypes.cdll.LoadLibrary(libfile+'.dylib')
+    elif sys.platform == 'win32':
+        lib = ctypes.cdll.LoadLibrary(libfile+'.dll')
     dtype = ctypes.c_double
 
 
@@ -259,6 +264,11 @@ class ComplexHMatrix(AbstractHMatrix):
         The parameters that have been used to build the matrix.
     """
     libfile = os.path.join(os.path.dirname(__file__), 'libhtool_shared_complex')
-    lib = ctypes.cdll.LoadLibrary(libfile + '.so')
+    if 'linux' in sys.platform:
+        lib = ctypes.cdll.LoadLibrary(libfile+'.so')
+    elif sys.platform == 'darwin':
+        lib = ctypes.cdll.LoadLibrary(libfile+'.dylib')
+    elif sys.platform == 'win32':
+        lib = ctypes.cdll.LoadLibrary(libfile+'.dll')
     dtype = np.complex128
 
