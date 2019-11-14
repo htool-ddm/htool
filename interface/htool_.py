@@ -57,7 +57,7 @@ class AbstractHMatrix:
         cls._set_building_params(**params)
 
         # Boilerplate code for Python/C++ interface.
-        _getcoef_func_type = ctypes.CFUNCTYPE(None, ctypes.c_int, ctypes.c_int, ctypes.POINTER(cls.dtype))
+        _getcoef_func_type = ctypes.CFUNCTYPE(None, ctypes.c_int, ctypes.c_int, ctypes.POINTER(ctypes.c_double))
         cls.lib.HMatrixCreate.restype = ctypes.POINTER(_C_HMatrix)
         cls.lib.HMatrixCreate.argtypes = [
             np.ctypeslib.ndpointer(dtype=np.float64, ndim=2, flags='C_CONTIGUOUS'),
