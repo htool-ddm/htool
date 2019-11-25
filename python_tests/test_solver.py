@@ -151,13 +151,9 @@ def python_gmres_get_submatrix():
     assert(inv_error<1e-6)
     assert(error<1e-5)
 
-    return (inv_error,error)
 
 
 def test_python_gmres():
-    error_get_coef = python_gmres_get_coef()
-    error_get_submatrix = python_gmres_get_submatrix()
-
-    assert(abs(error_get_coef[0]-error_get_submatrix[0])<1e-16)
-    assert(abs(error_get_coef[1]-error_get_submatrix[1])<1e-16)
+    python_gmres_get_coef()
+    python_gmres_get_submatrix()
 
