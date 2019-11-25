@@ -52,7 +52,7 @@ int main(int argc, char *argv[]) {
     SetMinClusterSize(10);
 
     // n² points on a regular grid in a square
-    int n = std::sqrt(5000);
+    int n = std::sqrt(4761);
     int size=n*n;
     vector<int> I(size); // indices for the hmatrix
 
