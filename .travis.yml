@@ -24,7 +24,7 @@ matrix:
       install:
         - brew install mpich
         - brew install suite-sparse
-        - pip3 install -U pytest
+        - pip3 install pytest
 
     ## mpich does not work anymore with gcc
     ## it would need to be compiled with gcc...
@@ -43,7 +43,7 @@ matrix:
       install:
         - brew install openmpi
         - brew install suite-sparse
-        - pip3 install -U pytest
+        - pip3 install pytest
 
     - os: osx
       env:
@@ -54,10 +54,10 @@ matrix:
         - brew install gcc
         - brew install openmpi
         - brew install suite-sparse
-        - pip3 install -U pytest
+        - pip3 install pytest
 
     - os: linux
-      env: PYTHON=3.7.1
+      # env: PYTHON=3.7.1
       dist: xenial
       group: travis_latest
       compiler: clang
@@ -72,10 +72,10 @@ matrix:
             - liblapack-dev
             - libsuitesparse-dev
       install:
-        - pip3 install -U pytest
+        - pip3 install pytest
 
     - os: linux
-      env: PYTHON=3.7.1
+      # env: PYTHON=3.7.1
       dist: xenial
       group: travis_latest
       compiler: gcc
@@ -90,11 +90,11 @@ matrix:
             - liblapack-dev
             - libsuitesparse-dev
       install:
-        - pip3 install -U pytest
+        - pip3 install pytest
 
 
     - os: linux
-      env: PYTHON=3.7.1
+      # env: PYTHON=3.7.1
       dist: xenial
       group: travis_latest
       compiler: clang
@@ -109,11 +109,11 @@ matrix:
             - liblapack-dev
             - libsuitesparse-dev
       install:
-        - pip3 install -U pytest
+        - pip3 install pytest
 
 
     - os: linux
-      env: PYTHON=3.7.1
+      # env: PYTHON=3.7.1
       dist: xenial
       group: travis_latest
       compiler: gcc
@@ -128,7 +128,7 @@ matrix:
             - liblapack-dev
             - libsuitesparse-dev
       install:
-        - pip3 install -U pytest
+        - pip3 install pytest
 
 
 
@@ -138,7 +138,8 @@ before_install:
   - if [ "$TRAVIS_OS_NAME" == "osx" ]; then brew update; fi
   - if [ "$TRAVIS_OS_NAME" == "osx" ]; then brew upgrade cmake; fi
   - if [ "$TRAVIS_OS_NAME" == "linux" ]; then export LD_LIBRARY_PATH=$(if [[ $CC == "clang" ]]; then echo -n '/usr/local/clang/lib'; fi); fi
-  - if [ "$TRAVIS_OS_NAME" == "linux" ]; then pyenv shell  ${PYTHON}; fi
+  # - if [ "$TRAVIS_OS_NAME" == "linux" ]; then pyenv versions; fi
+  # - if [ "$TRAVIS_OS_NAME" == "linux" ]; then pyenv shell  ${PYTHON}; fi
   - cd .. && git clone https://github.com/hpddm/hpddm.git && cd htool
 
 
