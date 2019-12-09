@@ -17,7 +17,7 @@ private:
     // const std::vector<int> cluster_to_ovr_subdomain;
     std::vector<std::vector<int> > intersections;
     std::vector<T> vec_ovr;
-    HPDDMDense<LowRankMatrix,T> hpddm_op;
+    HPDDMDense<LowRankMatrix,T>* hpddm_op;
     std::vector<T> mat_loc;
     std::vector<double> D;
     const MPI_Comm& comm;
@@ -33,27 +33,31 @@ private:
 public:
 
     void clean(){
-        hpddm_op.~HPDDMDense<LowRankMatrix,T>();
+        delete hpddm_op;
+        hpddm_op = nullptr;
     }
 
     // Without overlap
-    DDM(const HMatrix<LowRankMatrix,T>& hmat_0):n(hmat_0.get_local_size()),n_inside(hmat_0.get_local_size()),hpddm_op(hmat_0),mat_loc(n*n),D(n),nevi(0),size_E(0),comm(hmat_0.get_comm()),one_level(0),two_level(0){
+    DDM(const HMatrix<LowRankMatrix,T>& hmat_0):n(hmat_0.get_local_size()),n_inside(hmat_0.get_local_size()),mat_loc(n*n),D(n),nevi(0),size_E(0),comm(hmat_0.get_comm()),one_level(0),two_level(0){
+
+        HPDDMDense<LowRankMatrix,T>* hpddm_op= new HPDDMDense<LowRankMatrix,T>(hmat_0);
+
         // Timing
         double mytime, maxtime, meantime;
         double time = MPI_Wtime();
 
         // Building Ai
         bool sym=false;
-        const std::vector<LowRankMatrix<T>*>& MyDiagFarFieldMats = hpddm_op.HA.get_MyDiagFarFieldMats();
-        const std::vector<SubMatrix<T>*>& MyDiagNearFieldMats= hpddm_op.HA.get_MyDiagNearFieldMats();
+        const std::vector<LowRankMatrix<T>*>& MyDiagFarFieldMats = hpddm_op->HA.get_MyDiagFarFieldMats();
+        const std::vector<SubMatrix<T>*>& MyDiagNearFieldMats= hpddm_op->HA.get_MyDiagNearFieldMats();
 
         // Internal dense blocks
         for (int l=0;l<MyDiagNearFieldMats.size();l++){
             const SubMatrix<T>& submat = *(MyDiagNearFieldMats[l]);
             int local_nr = submat.nb_rows();
             int local_nc = submat.nb_cols();
-            int offset_i = submat.get_offset_i()-hpddm_op.HA.get_local_offset();;
-            int offset_j = submat.get_offset_j()-hpddm_op.HA.get_local_offset();
+            int offset_i = submat.get_offset_i()-hpddm_op->HA.get_local_offset();;
+            int offset_j = submat.get_offset_j()-hpddm_op->HA.get_local_offset();
             for (int k=0;k<local_nc;k++){
                 std::copy_n(&(submat(0,k)),local_nr,&mat_loc[offset_i+(offset_j+k)*n]);
             }
@@ -65,8 +69,8 @@ public:
             const LowRankMatrix<T>& lmat = *(MyDiagFarFieldMats[l]);
             int local_nr = lmat.nb_rows();
             int local_nc = lmat.nb_cols();
-            int offset_i = lmat.get_offset_i()-hpddm_op.HA.get_local_offset();
-            int offset_j = lmat.get_offset_j()-hpddm_op.HA.get_local_offset();;
+            int offset_i = lmat.get_offset_i()-hpddm_op->HA.get_local_offset();
+            int offset_j = lmat.get_offset_j()-hpddm_op->HA.get_local_offset();;
             FarFielBlock.resize(local_nr,local_nc);
             lmat.get_whole_matrix(&(FarFielBlock(0,0)));
             for (int k=0;k<local_nc;k++){
@@ -76,12 +80,12 @@ public:
 
         std::vector<int> neighbors;
         std::vector<std::vector<int> > intersections;
-        hpddm_op.initialize(n, sym, mat_loc.data(), neighbors, intersections);
+        hpddm_op->initialize(n, sym, mat_loc.data(), neighbors, intersections);
 
         fill(D.begin(),D.begin()+n_inside,1);
         fill(D.begin()+n_inside,D.end(),0);
 
-        hpddm_op.HPDDMDense<LowRankMatrix,T>::super::super::initialize(D.data());
+        hpddm_op->HPDDMDense<LowRankMatrix,T>::super::super::initialize(D.data());
         mytime =  MPI_Wtime() - time;
 
         // Timing
@@ -95,7 +99,9 @@ public:
     const std::vector<int>&  ovr_subdomain_to_global0,
     const std::vector<int>& cluster_to_ovr_subdomain0,
     const std::vector<int>& neighbors0,
-    const std::vector<std::vector<int> >& intersections0): hpddm_op(hmat_0), n(ovr_subdomain_to_global0.size()), n_inside(cluster_to_ovr_subdomain0.size()), neighbors(neighbors0), vec_ovr(n),mat_loc(n*n), D(n), comm(hmat_0.get_comm()),one_level(0),two_level(0) {
+    const std::vector<std::vector<int> >& intersections0): n(ovr_subdomain_to_global0.size()), n_inside(cluster_to_ovr_subdomain0.size()), neighbors(neighbors0), vec_ovr(n),mat_loc(n*n), D(n), comm(hmat_0.get_comm()),one_level(0),two_level(0) {
+
+        HPDDMDense<LowRankMatrix,T>* hpddm_op= new HPDDMDense<LowRankMatrix,T>(hmat_0);
 
         // Timing
         double mytime, maxtime, meantime;
@@ -128,16 +134,16 @@ public:
 
         // Building Ai
         bool sym=false;
-        const std::vector<LowRankMatrix<T>*>& MyDiagFarFieldMats = hpddm_op.HA.get_MyDiagFarFieldMats();
-        const std::vector<SubMatrix<T>*>& MyDiagNearFieldMats= hpddm_op.HA.get_MyDiagNearFieldMats();
+        const std::vector<LowRankMatrix<T>*>& MyDiagFarFieldMats = hpddm_op->HA.get_MyDiagFarFieldMats();
+        const std::vector<SubMatrix<T>*>& MyDiagNearFieldMats= hpddm_op->HA.get_MyDiagNearFieldMats();
 
         // Internal dense blocks
         for (int l=0;l<MyDiagNearFieldMats.size();l++){
           const SubMatrix<T>& submat = *(MyDiagNearFieldMats[l]);
           int local_nr = submat.nb_rows();
           int local_nc = submat.nb_cols();
-          int offset_i = submat.get_offset_i()-hpddm_op.HA.get_local_offset();;
-          int offset_j = submat.get_offset_j()-hpddm_op.HA.get_local_offset();
+          int offset_i = submat.get_offset_i()-hpddm_op->HA.get_local_offset();;
+          int offset_j = submat.get_offset_j()-hpddm_op->HA.get_local_offset();
           for (int k=0;k<local_nc;k++){
             std::copy_n(&(submat(0,k)),local_nr,&mat_loc[offset_i+(offset_j+k)*n]);
           }
@@ -149,8 +155,8 @@ public:
           const LowRankMatrix<T>& lmat = *(MyDiagFarFieldMats[l]);
           int local_nr = lmat.nb_rows();
           int local_nc = lmat.nb_cols();
-          int offset_i = lmat.get_offset_i()-hpddm_op.HA.get_local_offset();
-          int offset_j = lmat.get_offset_j()-hpddm_op.HA.get_local_offset();;
+          int offset_i = lmat.get_offset_i()-hpddm_op->HA.get_local_offset();
+          int offset_j = lmat.get_offset_j()-hpddm_op->HA.get_local_offset();;
           FarFielBlock.resize(local_nr,local_nc);
           lmat.get_whole_matrix(&(FarFielBlock(0,0)));
           for (int k=0;k<local_nc;k++){
@@ -172,12 +178,12 @@ public:
 
         // mat_loc= mat0.get_submatrix(renum_to_global,renum_to_global).get_mat();
 
-        hpddm_op.initialize(n, sym, mat_loc.data(), neighbors, intersections);
+        hpddm_op->initialize(n, sym, mat_loc.data(), neighbors, intersections);
 
         fill(D.begin(),D.begin()+n_inside,1);
         fill(D.begin()+n_inside,D.end(),0);
 
-        hpddm_op.HPDDMDense<LowRankMatrix,T>::super::super::initialize(D.data());
+        hpddm_op->HPDDMDense<LowRankMatrix,T>::super::super::initialize(D.data());
         mytime =  MPI_Wtime() - time;
 
         // Timing
@@ -190,7 +196,7 @@ public:
     void facto_one_level(){
         double time = MPI_Wtime();
         double mytime, maxtime;
-        hpddm_op.callNumfact();
+        hpddm_op->callNumfact();
         mytime = MPI_Wtime() - time;
 
         // Timing
@@ -207,13 +213,13 @@ public:
         double time = MPI_Wtime();
 
         //
-        int n_global= hpddm_op.HA.nb_cols();
-        int sizeWorld = hpddm_op.HA.get_sizeworld();
-        int rankWorld = hpddm_op.HA.get_rankworld();
+        int n_global= hpddm_op->HA.nb_cols();
+        int sizeWorld = hpddm_op->HA.get_sizeworld();
+        int rankWorld = hpddm_op->HA.get_rankworld();
         int info;
 
         // Building Neumann matrix
-        htool::HMatrix<LowRankMatrix,T> HBi(generator_Bi,std::make_shared<Cluster_tree>(hpddm_op.HA.get_cluster_tree_t().create_local_cluster_tree()),x,-1,MPI_COMM_SELF);
+        htool::HMatrix<LowRankMatrix,T> HBi(generator_Bi,std::make_shared<Cluster_tree>(hpddm_op->HA.get_cluster_tree_t().create_local_cluster_tree()),x,-1,MPI_COMM_SELF);
         Matrix<T> Bi(n,n);
 
         // Building Bi
@@ -228,8 +234,8 @@ public:
           const SubMatrix<T>& submat = *(MyLocalNearFieldMats[i]);
           int local_nr = submat.nb_rows();
           int local_nc = submat.nb_cols();
-          int offset_i = submat.get_offset_i()-hpddm_op.HA.get_local_offset();
-          int offset_j = submat.get_offset_j()-hpddm_op.HA.get_local_offset();
+          int offset_i = submat.get_offset_i()-hpddm_op->HA.get_local_offset();
+          int offset_j = submat.get_offset_j()-hpddm_op->HA.get_local_offset();
           for (int i=0;i<local_nc;i++){
             std::copy_n(&(submat(0,i)),local_nr,Bi.data()+offset_i+(offset_j+i)*n);
           }
@@ -241,8 +247,8 @@ public:
           const LowRankMatrix<T>& lmat = *(MyLocalFarFieldMats[i]);
           int local_nr = lmat.nb_rows();
           int local_nc = lmat.nb_cols();
-          int offset_i = lmat.get_offset_i()-hpddm_op.HA.get_local_offset();
-          int offset_j = lmat.get_offset_j()-hpddm_op.HA.get_local_offset();;
+          int offset_i = lmat.get_offset_i()-hpddm_op->HA.get_local_offset();
+          int offset_j = lmat.get_offset_j()-hpddm_op->HA.get_local_offset();;
           FarFielBlock.resize(local_nr,local_nc);
           lmat.get_whole_matrix(&(FarFielBlock(0,0)));
           for (int i=0;i<local_nc;i++){
@@ -285,15 +291,16 @@ public:
         Bi.mvprod(DAiD.data(),evp.data(),n);
 
         mytime[0] = MPI_Wtime() - time;
-        MPI_Barrier(hpddm_op.HA.get_comm());
+        MPI_Barrier(hpddm_op->HA.get_comm());
         time = MPI_Wtime();
 
         // if (rankWorld==0)
         //     evp.matlab_save("evp_ddm.txt");
 
         // eigenvalue problem
-        hpddm_op.solveEVP(evp.data());
-        T* const* Z = const_cast <T* const*> (hpddm_op.getVectors()) ;
+        std::cout<<rankWorld << " "<< n <<std::endl;
+        hpddm_op->solveEVP(evp.data());
+        T* const* Z = const_cast <T* const*> (hpddm_op->getVectors()) ;
         HPDDM::Option& opt = *HPDDM::Option::get();
         nevi = opt.val("geneo_nu",2);
 
@@ -310,7 +317,7 @@ public:
         // }
 
         mytime[1] = MPI_Wtime() - time;
-        MPI_Barrier(hpddm_op.HA.get_comm());
+        MPI_Barrier(hpddm_op->HA.get_comm());
         time = MPI_Wtime();
 
 
@@ -352,8 +359,8 @@ public:
 
 
         int local_max_size_j=0;
-        const std::vector<LowRankMatrix<T>*>& MyFarFieldMats = hpddm_op.HA.get_MyFarFieldMats();
-        const std::vector<SubMatrix<T>*>& MyNearFieldMats= hpddm_op.HA.get_MyNearFieldMats();
+        const std::vector<LowRankMatrix<T>*>& MyFarFieldMats = hpddm_op->HA.get_MyFarFieldMats();
+        const std::vector<SubMatrix<T>*>& MyNearFieldMats= hpddm_op->HA.get_MyNearFieldMats();
         for (int i=0;i<MyFarFieldMats.size();i++){
             if (local_max_size_j<(*MyFarFieldMats[i]).nb_cols())
                 local_max_size_j=(*MyFarFieldMats[i]).nb_cols();
@@ -368,7 +375,7 @@ public:
         E.resize(size_E*size_E,0);
 
         for (int i=0;i<sizeWorld;i++){
-            std::vector<T> buffer((hpddm_op.HA.get_MasterOffset_t(i).second+2*local_max_size_j)*recvcounts[i],0);
+            std::vector<T> buffer((hpddm_op->HA.get_MasterOffset_t(i).second+2*local_max_size_j)*recvcounts[i],0);
             std::fill_n(AZ.data(),recvcounts[i]*n_inside,0);
 
             if (rankWorld==i){
@@ -378,10 +385,10 @@ public:
                     }
                 }
             }
-            MPI_Bcast(buffer.data()+local_max_size_j*recvcounts[i],hpddm_op.HA.get_MasterOffset_t(i).second*recvcounts[i],wrapper_mpi<T>::mpi_type(),i,comm);
+            MPI_Bcast(buffer.data()+local_max_size_j*recvcounts[i],hpddm_op->HA.get_MasterOffset_t(i).second*recvcounts[i],wrapper_mpi<T>::mpi_type(),i,comm);
 
 
-            hpddm_op.HA.mvprod_subrhs(buffer.data(),AZ.data(),recvcounts[i],hpddm_op.HA.get_MasterOffset_t(i).first,hpddm_op.HA.get_MasterOffset_t(i).second,local_max_size_j);
+            hpddm_op->HA.mvprod_subrhs(buffer.data(),AZ.data(),recvcounts[i],hpddm_op->HA.get_MasterOffset_t(i).first,hpddm_op->HA.get_MasterOffset_t(i).second,local_max_size_j);
 
             for (int j=0;j<recvcounts[i];j++){
                 // std::fill_n(vec_ovr.data(),vec_ovr.size(),0);
@@ -421,10 +428,10 @@ public:
         // if (rankWorld==0)
         //     matlab_save(E,"E_ddm.txt");
         mytime[2] = MPI_Wtime() - time;
-        MPI_Barrier(hpddm_op.HA.get_comm());
+        MPI_Barrier(hpddm_op->HA.get_comm());
         time = MPI_Wtime();
 
-        hpddm_op.buildTwo(MPI_COMM_WORLD, E.data());
+        hpddm_op->buildTwo(MPI_COMM_WORLD, E.data());
 
         mytime[3] = MPI_Wtime() - time;
         // MPI_Barrier(hmat.get_comm());
@@ -448,9 +455,9 @@ void build_coarse_space( Matrix<T>& Ki, const std::vector<R3>& x ){
         double time = MPI_Wtime();
 
         //
-        int n_global= hpddm_op.HA.nb_cols();
-        int sizeWorld = hpddm_op.HA.get_sizeworld();
-        int rankWorld = hpddm_op.HA.get_rankworld();
+        int n_global= hpddm_op->HA.nb_cols();
+        int sizeWorld = hpddm_op->HA.get_sizeworld();
+        int rankWorld = hpddm_op->HA.get_rankworld();
         int info;
 
         // Partition of unity
@@ -508,10 +515,10 @@ void build_coarse_space( Matrix<T>& Ki, const std::vector<R3>& x ){
             }
         }
 
-        hpddm_op.setVectors(Z);
+        hpddm_op->setVectors(Z);
 
         mytime[0] = MPI_Wtime() - time;
-        MPI_Barrier(hpddm_op.HA.get_comm());
+        MPI_Barrier(hpddm_op->HA.get_comm());
         time = MPI_Wtime();
 
 
@@ -537,8 +544,8 @@ void build_coarse_space( Matrix<T>& Ki, const std::vector<R3>& x ){
         }
 
         int local_max_size_j=0;
-        const std::vector<LowRankMatrix<T>*>& MyFarFieldMats = hpddm_op.HA.get_MyFarFieldMats();
-        const std::vector<SubMatrix<T>*>& MyNearFieldMats= hpddm_op.HA.get_MyNearFieldMats();
+        const std::vector<LowRankMatrix<T>*>& MyFarFieldMats = hpddm_op->HA.get_MyFarFieldMats();
+        const std::vector<SubMatrix<T>*>& MyNearFieldMats= hpddm_op->HA.get_MyNearFieldMats();
         for (int i=0;i<MyFarFieldMats.size();i++){
             if (local_max_size_j<(*MyFarFieldMats[i]).nb_cols())
                 local_max_size_j=(*MyFarFieldMats[i]).nb_cols();
@@ -553,7 +560,7 @@ void build_coarse_space( Matrix<T>& Ki, const std::vector<R3>& x ){
         E.resize(size_E*size_E,0);
 
         for (int i=0;i<sizeWorld;i++){
-            std::vector<T> buffer((hpddm_op.HA.get_MasterOffset_t(i).second+2*local_max_size_j)*recvcounts[i],0);
+            std::vector<T> buffer((hpddm_op->HA.get_MasterOffset_t(i).second+2*local_max_size_j)*recvcounts[i],0);
             std::fill_n(AZ.data(),recvcounts[i]*n_inside,0);
 
             if (rankWorld==i){
@@ -563,10 +570,10 @@ void build_coarse_space( Matrix<T>& Ki, const std::vector<R3>& x ){
                     }
                 }
             }
-            MPI_Bcast(buffer.data()+local_max_size_j*recvcounts[i],hpddm_op.HA.get_MasterOffset_t(i).second*recvcounts[i],wrapper_mpi<T>::mpi_type(),i,comm);
+            MPI_Bcast(buffer.data()+local_max_size_j*recvcounts[i],hpddm_op->HA.get_MasterOffset_t(i).second*recvcounts[i],wrapper_mpi<T>::mpi_type(),i,comm);
 
 
-            hpddm_op.HA.mvprod_subrhs(buffer.data(),AZ.data(),recvcounts[i],hpddm_op.HA.get_MasterOffset_t(i).first,hpddm_op.HA.get_MasterOffset_t(i).second,local_max_size_j);
+            hpddm_op->HA.mvprod_subrhs(buffer.data(),AZ.data(),recvcounts[i],hpddm_op->HA.get_MasterOffset_t(i).first,hpddm_op->HA.get_MasterOffset_t(i).second,local_max_size_j);
 
             for (int j=0;j<recvcounts[i];j++){
                 for (int k=0;k<n_inside;k++){
@@ -588,10 +595,10 @@ void build_coarse_space( Matrix<T>& Ki, const std::vector<R3>& x ){
             MPI_Reduce(E.data(), E.data(), E.size(), wrapper_mpi<T>::mpi_type(),MPI_SUM, 0,comm);
 
         mytime[1] = MPI_Wtime() - time;
-        MPI_Barrier(hpddm_op.HA.get_comm());
+        MPI_Barrier(hpddm_op->HA.get_comm());
         time = MPI_Wtime();
 
-        hpddm_op.buildTwo(MPI_COMM_WORLD, E.data());
+        hpddm_op->buildTwo(MPI_COMM_WORLD, E.data());
 
         mytime[2] = MPI_Wtime() - time;
 
@@ -615,46 +622,46 @@ void build_coarse_space( Matrix<T>& Ki, const std::vector<R3>& x ){
         HPDDM::Option& opt = *HPDDM::Option::get();
         switch (opt.val("schwarz_method",0)) {
             case HPDDM_SCHWARZ_METHOD_NONE:
-            hpddm_op.setType(HPDDMDense<LowRankMatrix,T>::Prcndtnr::NO);
+            hpddm_op->setType(HPDDMDense<LowRankMatrix,T>::Prcndtnr::NO);
             break;
             case HPDDM_SCHWARZ_METHOD_RAS:
-            hpddm_op.setType(HPDDMDense<LowRankMatrix,T>::Prcndtnr::GE);
+            hpddm_op->setType(HPDDMDense<LowRankMatrix,T>::Prcndtnr::GE);
             break;
             case HPDDM_SCHWARZ_METHOD_ASM:
-            hpddm_op.setType(HPDDMDense<LowRankMatrix,T>::Prcndtnr::SY);
+            hpddm_op->setType(HPDDMDense<LowRankMatrix,T>::Prcndtnr::SY);
             break;
             // case HPDDM_SCHWARZ_METHOD_OSM:
-            // hpddm_op.setType(HPDDM::Schwarz::Prcndtnr::NO);
+            // hpddm_op->setType(HPDDM::Schwarz::Prcndtnr::NO);
             // break;
             // case HPDDM_SCHWARZ_METHOD_ORAS:
-            // hpddm_op.setType(HPDDM::Schwarz::Prcndtnr::NO);
+            // hpddm_op->setType(HPDDM::Schwarz::Prcndtnr::NO);
             // break;
             // case HPDDM_SCHWARZ_METHOD_SORAS:
-            // hpddm_op.setType(HPDDM::Schwarz::Prcndtnr::NO);
+            // hpddm_op->setType(HPDDM::Schwarz::Prcndtnr::NO);
             // break;
         }
 
         //
-        int rankWorld = hpddm_op.HA.get_rankworld();
-        int sizeWorld = hpddm_op.HA.get_sizeworld();
-        int offset  = hpddm_op.HA.get_local_offset();
-        int size    = hpddm_op.HA.get_local_size();
-        int nb_cols = hpddm_op.HA.nb_cols();
-        int nb_rows = hpddm_op.HA.nb_rows();
-        int nb_vec_prod =  StrToNbr<int>(hpddm_op.HA.get_infos("nb_mat_vec_prod"));
+        int rankWorld = hpddm_op->HA.get_rankworld();
+        int sizeWorld = hpddm_op->HA.get_sizeworld();
+        int offset  = hpddm_op->HA.get_local_offset();
+        int size    = hpddm_op->HA.get_local_size();
+        int nb_cols = hpddm_op->HA.nb_cols();
+        int nb_rows = hpddm_op->HA.nb_rows();
+        int nb_vec_prod =  StrToNbr<int>(hpddm_op->HA.get_infos("nb_mat_vec_prod"));
         double time = MPI_Wtime();
 
         //
         std::vector<T> rhs_perm(nb_cols);
         std::vector<T> x_local(n*mu,0);
         std::vector<T> local_rhs(n*mu,0);
-        hpddm_op.in_global->resize(nb_cols*(mu==1 ? 1 : 2*mu));
-        hpddm_op.buffer->resize(n_inside*(mu==1 ? 1 : 2*mu));
+        hpddm_op->in_global->resize(nb_cols*(mu==1 ? 1 : 2*mu));
+        hpddm_op->buffer->resize(n_inside*(mu==1 ? 1 : 2*mu));
 
         // TODO: blocking ?
         for (int i=0;i<mu;i++){
             // Permutation
-            hpddm_op.HA.source_to_cluster_permutation(rhs+i*nb_cols,rhs_perm.data());
+            hpddm_op->HA.source_to_cluster_permutation(rhs+i*nb_cols,rhs_perm.data());
 
             std::copy_n(rhs_perm.begin()+offset,n_inside,local_rhs.begin()+i*n);
         }
@@ -663,10 +670,10 @@ void build_coarse_space( Matrix<T>& Ki, const std::vector<R3>& x ){
         // for (int i=0;i<n-n_inside;i++){
         //   local_rhs[i]=rhs_perm[]
         // }
-        hpddm_op.scaledexchange(local_rhs.data(), mu);
+        hpddm_op->scaledexchange(local_rhs.data(), mu);
 
         // Solve
-        int nb_it = HPDDM::IterativeMethod::solve(hpddm_op, local_rhs.data(), x_local.data(), mu,comm);
+        int nb_it = HPDDM::IterativeMethod::solve(*hpddm_op, local_rhs.data(), x_local.data(), mu,comm);
 
         // Delete the overlap (useful only when mu>1 and n!=n_inside)
         for (int i=0;i<mu;i++){
@@ -674,31 +681,31 @@ void build_coarse_space( Matrix<T>& Ki, const std::vector<R3>& x ){
         }
 
         // Local to global
-        // hpddm_op.HA.local_to_global(x_local.data(),hpddm_op.in_global->data(),mu);
+        // hpddm_op->HA.local_to_global(x_local.data(),hpddm_op->in_global->data(),mu);
     	std::vector<int> recvcounts(sizeWorld);
     	std::vector<int>  displs(sizeWorld);
 
     	displs[0] = 0;
 
         for (int i=0; i<sizeWorld; i++) {
-        recvcounts[i] = (hpddm_op.HA.get_MasterOffset_t(i).second)*mu;
+        recvcounts[i] = (hpddm_op->HA.get_MasterOffset_t(i).second)*mu;
         if (i > 0)
         	displs[i] = displs[i-1] + recvcounts[i-1];
         }
 
-        MPI_Allgatherv(local_rhs.data(), recvcounts[rankWorld], wrapper_mpi<T>::mpi_type(), hpddm_op.in_global->data() + (mu==1 ? 0 : mu*nb_rows), &(recvcounts[0]), &(displs[0]), wrapper_mpi<T>::mpi_type(), comm);
+        MPI_Allgatherv(local_rhs.data(), recvcounts[rankWorld], wrapper_mpi<T>::mpi_type(), hpddm_op->in_global->data() + (mu==1 ? 0 : mu*nb_rows), &(recvcounts[0]), &(displs[0]), wrapper_mpi<T>::mpi_type(), comm);
 
         //
 
         for (int i=0 ;i<mu;i++){
         if (mu!=1){
             for (int j=0; j<sizeWorld;j++){
-                std::copy_n(hpddm_op.in_global->data()+mu*nb_rows+displs[j]+i*recvcounts[j]/mu,recvcounts[j]/mu,hpddm_op.in_global->data()+i*nb_rows+displs[j]/mu);
+                std::copy_n(hpddm_op->in_global->data()+mu*nb_rows+displs[j]+i*recvcounts[j]/mu,recvcounts[j]/mu,hpddm_op->in_global->data()+i*nb_rows+displs[j]/mu);
             }
         }
 
         // Permutation
-        hpddm_op.HA.cluster_to_target_permutation(hpddm_op.in_global->data()+i*nb_rows,x+i*nb_rows);
+        hpddm_op->HA.cluster_to_target_permutation(hpddm_op->in_global->data()+i*nb_rows,x+i*nb_rows);
         }
 
 
@@ -707,8 +714,8 @@ void build_coarse_space( Matrix<T>& Ki, const std::vector<R3>& x ){
         infos["Solve"] = NbrToStr(time);
         infos["Nb_it"] = NbrToStr(nb_it);
         infos["Nb_subdomains"] = NbrToStr(sizeWorld);
-        infos["nb_mat_vec_prod"] = NbrToStr(StrToNbr<int>(hpddm_op.HA.get_infos("nb_mat_vec_prod"))-nb_vec_prod);
-        infos["mean_time_mat_vec_prod"] = NbrToStr(StrToNbr<double>(hpddm_op.HA.get_infos("total_time_mat_vec_prod"))/StrToNbr<double>(hpddm_op.HA.get_infos("nb_mat_vec_prod")));
+        infos["nb_mat_vec_prod"] = NbrToStr(StrToNbr<int>(hpddm_op->HA.get_infos("nb_mat_vec_prod"))-nb_vec_prod);
+        infos["mean_time_mat_vec_prod"] = NbrToStr(StrToNbr<double>(hpddm_op->HA.get_infos("total_time_mat_vec_prod"))/StrToNbr<double>(hpddm_op->HA.get_infos("nb_mat_vec_prod")));
         switch (opt.val("schwarz_method",0)) {
             case HPDDM_SCHWARZ_METHOD_NONE:
             infos["Precond"] = "None";
@@ -812,7 +819,7 @@ void build_coarse_space( Matrix<T>& Ki, const std::vector<R3>& x ){
     }
 
   	void print_infos() const{
-    	if (hpddm_op.HA.get_rankworld()==0){
+    	if (hpddm_op->HA.get_rankworld()==0){
     		for (std::map<std::string,std::string>::const_iterator it = infos.begin() ; it != infos.end() ; ++it){
     			std::cout<<it->first<<"\t"<<it->second<<std::endl;
     		}
@@ -821,7 +828,7 @@ void build_coarse_space( Matrix<T>& Ki, const std::vector<R3>& x ){
     }
 
     void save_infos(const std::string& outputname,std::ios_base::openmode mode = std::ios_base::app, const std::string& sep=" = ") const{
-    	if (hpddm_op.HA.get_rankworld()==0){
+    	if (hpddm_op->HA.get_rankworld()==0){
     		std::ofstream outputfile(outputname, mode);
     		if (outputfile){
     			for (std::map<std::string,std::string>::const_iterator it = infos.begin() ; it != infos.end() ; ++it){
@@ -836,7 +843,7 @@ void build_coarse_space( Matrix<T>& Ki, const std::vector<R3>& x ){
     }
 
     void add_infos(std::string key, std::string value) const{
-        if (hpddm_op.HA.get_rankworld()==0){
+        if (hpddm_op->HA.get_rankworld()==0){
             if (infos.find(key)==infos.end()){
                 infos[key]=value;
             }
@@ -847,13 +854,13 @@ void build_coarse_space( Matrix<T>& Ki, const std::vector<R3>& x ){
     }
 
     void set_infos(std::string key, std::string value) const{
-        if (hpddm_op.HA.get_rankworld()==0){
+        if (hpddm_op->HA.get_rankworld()==0){
             infos[key]=value;
         }
     }
 
     std::string get_infos(const std::string& key) const{
-        if (hpddm_op.HA.get_rankworld()==0){
+        if (hpddm_op->HA.get_rankworld()==0){
             return infos[key];
         }
         return "";

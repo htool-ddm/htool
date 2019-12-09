@@ -7,7 +7,10 @@
 #define HPDDM_BDD 0
 #define LAPACKSUB
 #define DLAPACK
-#define EIGENSOLVER 1
+// there should be a better mechanism below: if one wants to use LAPACK,   comment MU_ARPACK, uncomment EIGENSOLVER 1
+//                                                               ARPACK, uncomment MU_ARPACK,   comment EIGENSOLVER 1
+// #define EIGENSOLVER 1
+#define MU_ARPACK
 #include <HPDDM.hpp>
 #include "../types/hmatrix.hpp"
 #include "../types/matrix.hpp"
@@ -35,8 +38,10 @@ public:
         in_global = new std::vector<T> ;
         buffer = new std::vector<T>;
     }
-    ~HPDDMDense(){delete in_global;in_global=nullptr;delete buffer;buffer=nullptr;}
-
+    // ~HPDDMDense(){ f_test();}
+    void clean(){
+        delete in_global;in_global=nullptr;delete buffer;buffer=nullptr;
+    }
 
     virtual void GMV(const T* const in, T* const out, const int& mu = 1) const override {
         int local_size = HA.get_local_size();
