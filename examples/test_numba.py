@@ -45,7 +45,7 @@ def get_coef(i, j, coef):
     coef[0] = math.exp(-norm(points[i, :] - points[j, :])) / (1e-5 + norm(points[i, :] - points[j, :]))
 
 with timer("building HMatrix with Python get_coef"):
-    H1 = HMatrix.from_coefs(points, get_coef, **params)
+    H1 = HMatrix.from_coefs(get_coef, points, **params)
     H1.print_infos()
 ###############################################################################
 # PASSING A PYTHON GET_SUBMATRIX
@@ -56,7 +56,7 @@ def get_submatrix(I, J, n, m, coef):
             coef[j*n+i] = math.exp(-norm(points[I[i], :] - points[J[j], :])) / (1e-5 + norm(points[I[i], :] - points[J[j], :]))
 
 with timer("building HMatrix with Python get_submatrix"):
-    H2 = HMatrix.from_submatrices(points, get_submatrix, **params)
+    H2 = HMatrix.from_submatrices(get_submatrix, points, **params)
     H2.print_infos()
 ###############################################################################
 # PASSING A NUMBA COMPILED GET_COEF
@@ -67,7 +67,7 @@ def get_coef_2(i, j, coef):
     coef[0] = math.exp(-norm(points[i, :] - points[j, :])) / (1e-5 + norm(points[i, :] - points[j, :]))
 
 with timer("building HMatrix with Numba get_coef"):
-    H3 = HMatrix.from_coefs(points, get_coef_2.ctypes, **params)
+    H3 = HMatrix.from_coefs(get_coef_2.ctypes, points, **params)
     H3.print_infos()
 ###############################################################################
 # PASSING A NUMBA COMPILED GET_SUBMATRIX
@@ -80,7 +80,7 @@ def get_submatrix_2(I, J, n, m, coef):
             coef[j*n+i] = math.exp(-norm(points[I[i], :] - points[J[j], :])) / (1e-5 + norm(points[I[i], :] - points[J[j], :]))
 
 with timer("building HMatrix with Numba get_submatrix"):
-    H4 = HMatrix.from_submatrices(points, get_submatrix_2.ctypes, **params)
+    H4 = HMatrix.from_submatrices(get_submatrix_2.ctypes, points, **params)
     H4.print_infos()
 ###############################################################################
 # FULL MATRIX

@@ -53,7 +53,7 @@ def python_gmres_get_coef():
         coef[0] = A[i][j].real
         coef[1] = A[i][j].imag
 
-    H = ComplexHMatrix.from_coefs(p, get_coef, epsilon=1e-6, eta=0.1, minclustersize=1)
+    H = ComplexHMatrix.from_coefs(get_coef, p , epsilon=1e-6, eta=0.1, minclustersize=1)
 
     # Global vectors
     with open(os.path.join(os.path.dirname(__file__)+"/../data/data_test/sol.bin"), "rb" ) as input:
@@ -127,7 +127,7 @@ def python_gmres_get_submatrix():
                 r[2*(j*n+i)]   = A[I[i]][J[j]].real
                 r[2*(j*n+i)+1] = A[I[i]][J[j]].imag
 
-    H = ComplexHMatrix.from_submatrices(p, get_submatrix, epsilon=1e-6, eta=0.1, minclustersize=1)
+    H = ComplexHMatrix.from_submatrices(get_submatrix, p, epsilon=1e-6, eta=0.1, minclustersize=1)
 
     # Global vectors
     with open(os.path.join(os.path.dirname(__file__)+"/../data/data_test/sol.bin"), "rb" ) as input:
@@ -157,3 +157,4 @@ def test_python_gmres():
     python_gmres_get_coef()
     python_gmres_get_submatrix()
 
+test_python_gmres()

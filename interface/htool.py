@@ -21,7 +21,6 @@ class AbstractHMatrix:
         # Users should use one of the two constructors below.
 
         self.c_data = c_data
-
         self.shape = (self.lib.nbrows(c_data), self.lib.nbcols(c_data))
 
         self.nb_dense_blocks = self.lib.getndmat(c_data)
@@ -31,15 +30,17 @@ class AbstractHMatrix:
         self.params = params.copy()
 
     @classmethod
-    def from_coefs(cls, points, getcoef, **params):
+    def from_coefs(cls, getcoef, points_target, points_source=None, **params):
         """Construct an instance of the class from a evaluation function.
 
         Parameters
         ----------
-        points: np.ndarray of shape (N, 3)
-            The coordinates of the points.
         getcoef: Callable
             A function evaluating the matrix at given coordinates.
+        points_target: np.ndarray of shape (N, 3)
+            The coordinates of the target points. If points_source=None, also the coordinates of the target points
+        points_source: np.ndarray of shape (N, 3)
+            If not None; the coordinates of the source points.
         epsilon: float, keyword-only, optional
             Tolerance of the Adaptive Cross Approximation
         eta: float, keyword-only, optional
@@ -55,22 +56,38 @@ class AbstractHMatrix:
         """
         # Set params.
         cls._set_building_params(**params)
-
+        
         # Boilerplate code for Python/C++ interface.
         _getcoef_func_type = ctypes.CFUNCTYPE(None, ctypes.c_int, ctypes.c_int, ctypes.POINTER(ctypes.c_double))
-        cls.lib.HMatrixCreate.restype = ctypes.POINTER(_C_HMatrix)
-        cls.lib.HMatrixCreate.argtypes = [
-            np.ctypeslib.ndpointer(dtype=np.float64, ndim=2, flags='C_CONTIGUOUS'),
-            ctypes.c_int,
-            _getcoef_func_type,
-        ]
+        if points_source is None:
+            cls.lib.HMatrixCreateSym.restype = ctypes.POINTER(_C_HMatrix)
+            cls.lib.HMatrixCreateSym.argtypes = [
+                np.ctypeslib.ndpointer(dtype=np.float64, ndim=2, flags='C_CONTIGUOUS'),
+                ctypes.c_int,
+                _getcoef_func_type,
+            ]
 
-        # Call the C++ backend.
-        c_data = cls.lib.HMatrixCreate(points, points.shape[0], _getcoef_func_type(getcoef))
+            # Call the C++ backend.
+            c_data = cls.lib.HMatrixCreateSym(points_target, points_target.shape[0], _getcoef_func_type(getcoef))
+
+        else:
+            cls.lib.HMatrixCreate.restype = ctypes.POINTER(_C_HMatrix)
+            cls.lib.HMatrixCreate.argtypes = [
+                np.ctypeslib.ndpointer(dtype=np.float64, ndim=2, flags='C_CONTIGUOUS'),
+                ctypes.c_int,
+                np.ctypeslib.ndpointer(dtype=np.float64, ndim=2, flags='C_CONTIGUOUS'),
+                ctypes.c_int,
+                _getcoef_func_type,
+            ]
+
+            # Call the C++ backend.            
+            c_data = cls.lib.HMatrixCreate(points_target,points_target.shape[0],points_source, points_source.shape[0], _getcoef_func_type(getcoef))
+
         return cls(c_data, **params)
 
+
     @classmethod
-    def from_submatrices(cls, points, getsubmatrix, **params):
+    def from_submatrices(cls, getsubmatrix, points_target, points_source=None, **params):
         """Construct an instance of the class from a evaluation function.
 
         Parameters
@@ -97,18 +114,32 @@ class AbstractHMatrix:
 
         # Boilerplate code for Python/C++ interface.
         _getsumatrix_func_type = ctypes.CFUNCTYPE(
-            None, ctypes.POINTER(ctypes.c_int), ctypes.POINTER(ctypes.c_int),
-            ctypes.c_int, ctypes.c_int, ctypes.POINTER(ctypes.c_double),
-        )
-        cls.lib.HMatrixCreatewithsubmat.restype = ctypes.POINTER(_C_HMatrix)
-        cls.lib.HMatrixCreatewithsubmat.argtypes = [
-            np.ctypeslib.ndpointer(dtype=np.float64, ndim=2, flags='C_CONTIGUOUS'),
-            ctypes.c_int,
-            _getsumatrix_func_type,
-        ]
+                None, ctypes.POINTER(ctypes.c_int), ctypes.POINTER(ctypes.c_int),
+                ctypes.c_int, ctypes.c_int, ctypes.POINTER(ctypes.c_double),
+            )
+        if points_source is None:
+            cls.lib.HMatrixCreatewithsubmatSym.restype = ctypes.POINTER(_C_HMatrix)
+            cls.lib.HMatrixCreatewithsubmatSym.argtypes = [
+                np.ctypeslib.ndpointer(dtype=np.float64, ndim=2, flags='C_CONTIGUOUS'),
+                ctypes.c_int,
+                _getsumatrix_func_type,
+            ]
 
-        # Call the C++ backend.
-        c_data = cls.lib.HMatrixCreatewithsubmat(points, points.shape[0], _getsumatrix_func_type(getsubmatrix))
+            # Call the C++ backend.
+            c_data = cls.lib.HMatrixCreatewithsubmatSym(points_target, points_target.shape[0], _getsumatrix_func_type(getsubmatrix))
+        else:
+            cls.lib.HMatrixCreatewithsubmat.restype = ctypes.POINTER(_C_HMatrix)
+            cls.lib.HMatrixCreatewithsubmat.argtypes = [
+                np.ctypeslib.ndpointer(dtype=np.float64, ndim=2, flags='C_CONTIGUOUS'),
+                ctypes.c_int,
+                np.ctypeslib.ndpointer(dtype=np.float64, ndim=2, flags='C_CONTIGUOUS'),
+                ctypes.c_int,
+                _getsumatrix_func_type,
+            ]
+
+            # Call the C++ backend.
+            c_data = cls.lib.HMatrixCreatewithsubmat(points_target,points_target.shape[0],points_source, points_source.shape[0], _getsumatrix_func_type(getsubmatrix))
+
         return cls(c_data, **params)
 
     @classmethod
