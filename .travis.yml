@@ -161,4 +161,6 @@ script:
   - cd ..
   - pip3 install . --user
   - pytest python_tests
+  - mpirun -np 2 pytest python_tests
+  - mpirun -np 4 pytest python_tests
 

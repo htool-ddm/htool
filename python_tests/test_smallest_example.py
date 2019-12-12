@@ -14,6 +14,7 @@ def smallest_example(m,n,submatrix):
     rank = comm.Get_rank()
 
     # SETUP
+    np.random.seed(0)
     points_target=np.zeros((m,3))
     points_target[:,0] = np.random.random(m)
     points_target[:,1] = np.random.random(m)
@@ -33,9 +34,9 @@ def smallest_example(m,n,submatrix):
             coef[0] = 1.0 / (1e-5 + norm(points_target[i, :] - points_source[j, :]))
 
         if n==m:
-            H = HMatrix.from_coefs(get_coef,points_target, epsilon=1e-6, eta=-100, minclustersize=10)
+            H = HMatrix.from_coefs(get_coef,points_target, epsilon=1e-6, eta=100, minclustersize=10)
         else:
-            H = HMatrix.from_coefs(get_coef,points_target,points_source, epsilon=1e-6, eta=-100, minclustersize=10)
+            H = HMatrix.from_coefs(get_coef,points_target,points_source, epsilon=1e-6, eta=100, minclustersize=10)
     else:
         # BUILDING THE H-MATRIX from get_submatrix
         def get_submatrix(I, J, m, n, coef):
@@ -43,9 +44,9 @@ def smallest_example(m,n,submatrix):
                 for j in range(0,n):
                     coef[j*m+i] = 1.0 / (1.e-5 + norm(points_target[I[i], :] - points_source[J[j], :]))
         if n==m:
-            H = HMatrix.from_submatrices(get_submatrix,points_target, epsilon=1e-6, eta=-100, minclustersize=10)
+            H = HMatrix.from_submatrices(get_submatrix,points_target, epsilon=1e-6, eta=100, minclustersize=10)
         else:
-            H = HMatrix.from_submatrices(get_submatrix,points_target,points_source, epsilon=1e-6, eta=-100, minclustersize=10)
+            H = HMatrix.from_submatrices(get_submatrix,points_target,points_source, epsilon=1e-6, eta=100, minclustersize=10)
     
     if rank == 0:
         print("Shape:", H.shape)
@@ -58,8 +59,7 @@ def smallest_example(m,n,submatrix):
     x = np.random.rand(n)
     y_1 = H.matvec(x)
     y_2 = full_H.dot(x)
-    print(norm(y_1-y_2))
-
+    assert(norm(y_1-y_2)/norm(y_2)<1e-6)
 
 
 def test_smallest_example():
@@ -67,4 +67,3 @@ def test_smallest_example():
     smallest_example(1000,3000,False)
     smallest_example(1000,1000,True)
     smallest_example(1000,1000,False)
-test_smallest_example()

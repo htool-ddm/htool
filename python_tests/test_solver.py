@@ -156,5 +156,3 @@ def python_gmres_get_submatrix():
 def test_python_gmres():
     python_gmres_get_coef()
     python_gmres_get_submatrix()
-
-test_python_gmres()
