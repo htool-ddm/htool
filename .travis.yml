@@ -161,6 +161,6 @@ script:
   - cd ..
   - pip3 install . --user
   - pytest python_tests
-  - mpirun -np 2 pytest python_tests
-  - mpirun -np 4 pytest python_tests
+  - mpirun -np 2 ${MPIEXEC_PREFLAGS} pytest python_tests
+  - mpirun -np 4 ${MPIEXEC_PREFLAGS} pytest python_tests
 
