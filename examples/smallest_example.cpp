@@ -51,26 +51,26 @@ int main(int argc, char *argv[]) {
 	SetEta(100);
     SetMinClusterSize(10);
 
-    // Data
-    int n = 1000;
-    vector<int> I(n); // indices for the hmatrix
+    // n² points on a regular grid in a square
+    int n = std::sqrt(4761);
+    int size=n*n;
+    vector<int> I(size); // indices for the hmatrix
 
     // p1: points in a square in the plane z=z1
     double z = 1;
-    vector<R3> p(n);
-    int size = sqrt(n); // sqrt(n) must be an integer !!!
-    for(int j=0; j<size; j++){
-        for(int k=0; k<size; k++){
-            I[j+k*size] = j+k*size;
-            p[j+k*size][0] = j;
-            p[j+k*size][1] = k;
+    vector<R3> p(size);
+    for(int j=0; j<n; j++){
+        for(int k=0; k<n; k++){
+            I[j+k*n] = j+k*n;
+            p[j+k*n][0] = j;
+            p[j+k*n][1] = k;
             p[j][2] = z;
         }
     }
 
     // Hmatrix
     MyMatrix A(p,p);
-    std::vector<double> x(n,1),result(n,0);
+    std::vector<double> x(size,1),result(size,0);
     HMatrix<partialACA,double> HA(A,p,p);
     result = HA*x;
 

@@ -1,91 +1,52 @@
-from __future__ import print_function
-import sys
-import ctypes
+#!/usr/bin/env python
+# coding: utf-8
+
 import numpy as np
-import htool
-import re
-import matplotlib.pyplot as plt
-import scipy.sparse.linalg as spla
+from numpy.linalg import norm
+from scipy.sparse.linalg import gmres
 from mpi4py import MPI
-import math
+
+from htool import HMatrix
 
 comm = MPI.COMM_WORLD
-size = comm.Get_size()
 rank = comm.Get_rank()
 
-scalar = ctypes.c_double
+# SETUP
+# n² points on a regular grid in a square
+n = int(np.sqrt(4761))
+points = np.zeros((n*n, 3))
+for j in range(0, n):
+    for k in range(0, n):
+        points[j+k*n, :] = (j, k, 1)
 
-#  Data
-n = 1000
+# BUILDING THE H-MATRIX
+def get_coef(i, j, coef):
+    coef[0] = 1.0 / (1e-5 + norm(points[i, :] - points[j, :]))
 
-# p: points in a square in the plane z=1
-p=np.zeros((n,3))
-size = int(math.sqrt(n)) # sqrt(n) must be an integer !!!
-for j in range(0,size):
-    for k in range(0,size):
-        p[j+k*size,0] = j
-        p[j+k*size,1] = k
-        p[j,2] = 1
+H = HMatrix.from_coefs(get_coef, points, epsilon=1e-3, eta=100, minclustersize=10)
 
+# def get_submatrix(I, J, n, m, coef):
+#     for i in range(0,n):
+#         for j in range(0,m):
+#             coef[j*n+i] = 1.0 / (1.e-5 + norm(points[I[i], :] - points[J[j], :]))
 
-# My Matrix equivalent
-@htool.getcoefFunc
-def getcoef(i,j,r):
-    r[0] = 1./(1.e-5+math.sqrt(np.vdot(p[i]-p[j],p[i]-p[j])))
+# H = HMatrix.from_submatrices(points, get_submatrix, epsilon=1e-3, eta=100, minclustersize=10)
 
+if rank == 0:
+    print("Shape:", H.shape)
+    print("Nb blocks:", H.nb_blocks)
 
-@htool.getsubmatrixFunc
-def getsubmatrix(I,J,n,m,r):
-    for i in range(0,n):
-        for j in range(0,m):
-            r[j*n+i] = 1./(1.e-5+math.sqrt(np.vdot(p[I[i]]-p[J[j]],p[I[i]]-p[J[j]])))
+H.print_infos()
+H.display()
 
-# Htool parameters
-htool.set_epsilon(1e-3)
-htool.set_eta(100)
-htool.set_minclustersize(10)
+full_H = 1.0 / (1e-5 + norm(points.reshape(1, H.shape[1], 3) - points.reshape(H.shape[0], 1, 3), axis=2))
 
-# Hmatrix
-H = htool.HMatrixCreate(p, n, getcoef)
-# H = htool.HMatrixCreatewithsubmat(p, n, getsubmatrix)
-x = np.ones(n,dtype = scalar)
-result = np.zeros(n,dtype = scalar)
-htool.mvprod(H,x,result)
+# GMRES
+y = np.ones((n*n,))
+x, _ = gmres(H, y)
+x_full, _ = gmres(full_H, y)
 
-# def Hmv(v):
-#     res = np.zeros(n,dtype = scalar)
-#     htool.mvprod(H,v,res)
-#     return res
+print("Error from gmres (Hmatrix):", norm(H @ x - y))
+print("Error from gmres (full matrix):", norm(full_H @ x_full - y))
+print("Error between the two solutions:", norm(x - x_full)/norm(x))
 
-# def iter(rk):
-#     if (rank == 0):
-#         print(np.linalg.norm(rk))
-
-# HOp = spla.LinearOperator((n, n), dtype = scalar, matvec=Hmv)
-
-# x = np.random.random(n)
-
-# [xh,infoh] = spla.gmres(HOp, x, callback = iter)
-
-# Output
-htool.printinfos(H)
-htool.display(H)
-
-# Dense matrix
-A = np.zeros((n,n),dtype = scalar)
-for i in range(0,n):
-    for j in range(0,n):
-        A[i,j] = 1./(1.e-5+math.sqrt(np.vdot(p[i]-p[j],p[i]-p[j])))
-# def Amv(v):
-#     return A.dot(v)
-
-# AOp = spla.LinearOperator((n, n), dtype = scalar, matvec=Amv)
-
-# [xa,infoa] = spla.gmres(AOp, x, callback = iter)
-
-if (rank == 0):
-    print(np.linalg.norm(A.dot(x)-result)/np.linalg.norm(A.dot(x)))
-
-#plt.scatter(p[:,0], p[:,1], c=xa, alpha=0.5)
-#plt.gray()
-#plt.show()

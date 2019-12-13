@@ -11,11 +11,14 @@ typedef double K;
 #endif
 
 class MyMatrix: public IMatrix<K>{
-	const vector<R3>& p;
+	const vector<R3>& p1;
+	const vector<R3>& p2;
   void (*getcoef)(int,int,K*);
 
 public:
-	MyMatrix(const vector<R3>& p1, void (*g)(int,int,K*)):IMatrix(p1.size(),p1.size()),p(p1),getcoef(g) {}
+	MyMatrix(const vector<R3>& p10, void (*g)(int,int,K*)):IMatrix(p10.size(),p10.size()),p1(p10),p2(p10),getcoef(g) {}
+
+	MyMatrix(const vector<R3>& p10,const vector<R3>& p20, void (*g)(int,int,K*)):IMatrix(p10.size(),p20.size()),p1(p10),p2(p20),getcoef(g) {}
 
 	K get_coef(const int& i, const int& j)const {
 		K r;
@@ -25,11 +28,14 @@ public:
 };
 
 class MyMatrixwithsubmat: public IMatrix<K>{
-	const vector<R3>& p;
+	const vector<R3>& p1;
+	const vector<R3>& p2;
 	void (*getsubmatrix)(const int*,const int*,int,int,K*);
 
 public:
-	MyMatrixwithsubmat(const vector<R3>& p1, void (*g)(const int*,const int*,int,int,K*)):IMatrix(p1.size(),p1.size()),p(p1),getsubmatrix(g) {}
+	MyMatrixwithsubmat(const vector<R3>& p10, void (*g)(const int*,const int*,int,int,K*)):IMatrix(p10.size(),p10.size()),p1(p10),p2(p10),getsubmatrix(g) {}
+
+	MyMatrixwithsubmat(const vector<R3>& p10,const vector<R3>& p20, void (*g)(const int*,const int*,int,int,K*)):IMatrix(p10.size(),p20.size()),p1(p10),p2(p20),getsubmatrix(g) {}
 
 	SubMatrix<K> get_submatrix(const std::vector<int>& I, const std::vector<int>& J) const {
 		SubMatrix<K> mat(I,J);
@@ -48,7 +54,7 @@ public:
 extern "C" {
 unsigned short scalar = std::is_same<K, double>::value ? 0 : 1;
 
-void* HMatrixCreate(double* pts, int n, void (*getcoef)(int,int,K*)) {
+void* HMatrixCreateSym(double* pts, int n, void (*getcoef)(int,int,K*)) {
 
   vector<R3> p(n);
 	for(int j=0; j<n; j++){
@@ -66,7 +72,31 @@ void* HMatrixCreate(double* pts, int n, void (*getcoef)(int,int,K*)) {
   return H;
 }
 
-void* HMatrixCreatewithsubmat(double* pts, int n, void (*getsubmatrix)(const int*, const int*, int,int,K*)) {
+void* HMatrixCreate(double* pts1, int m, double* pts2, int n, void (*getcoef)(int,int,K*)) {
+std::cout << m <<" "<<n<< std::endl;
+  vector<R3> p1(m),p2(n);
+	for(int j=0; j<m; j++){
+    p1[j][0] = pts1[3*j];
+    p1[j][1] = pts1[3*j+1];
+    p1[j][2] = pts1[3*j+2];
+	}
+
+	for(int j=0; j<n; j++){
+	p2[j][0] = pts2[3*j];
+	p2[j][1] = pts2[3*j+1];
+	p2[j][2] = pts2[3*j+2];
+	}
+
+  // Matrix
+	MyMatrix A(p1,p2,getcoef);
+
+  // Hmatrix
+	HMatrix<partialACA,K>* H = new HMatrix<partialACA,K>(A,p1,p2);
+
+  return H;
+}
+
+void* HMatrixCreatewithsubmatSym(double* pts, int n, void (*getsubmatrix)(const int*, const int*, int,int,K*)) {
 
   vector<R3> p(n);
 	for(int j=0; j<n; j++){
@@ -80,6 +110,30 @@ void* HMatrixCreatewithsubmat(double* pts, int n, void (*getsubmatrix)(const int
 
   // Hmatrix
 	HMatrix<partialACA,K>* H = new HMatrix<partialACA,K>(A,p);
+
+  return H;
+}
+
+void* HMatrixCreatewithsubmat(double* pts1, int m, double* pts2, int n, void (*getsubmatrix)(const int*, const int*, int,int,K*)) {
+
+  vector<R3> p1(m),p2(n);
+	for(int j=0; j<m; j++){
+    p1[j][0] = pts1[3*j];
+    p1[j][1] = pts1[3*j+1];
+    p1[j][2] = pts1[3*j+2];
+	}
+
+	for(int j=0; j<n; j++){
+	p2[j][0] = pts2[3*j];
+	p2[j][1] = pts2[3*j+1];
+	p2[j][2] = pts2[3*j+2];
+	}
+
+  // Matrix
+	MyMatrixwithsubmat A(p1,p2,getsubmatrix);
+
+  // Hmatrix
+	HMatrix<partialACA,K>* H = new HMatrix<partialACA,K>(A,p1,p2);
 
   return H;
 }
