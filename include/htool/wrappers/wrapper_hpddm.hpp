@@ -407,14 +407,19 @@ public:
     void apply(const T* const in, T* const out, const unsigned short& mu = 1, T* = nullptr, const unsigned short& = 0) const {
         int local_size = HB.get_local_size();
         int offset = HB.get_local_offset();
-        // Tranpose
+
         if (mu!=1){
-            for (int i=0;i<mu;i++){
-                for (int j=0;j<local_size;j++){
-                    (*buffer)[i+j*mu]=in[i*this->getDof()+j];
-                }
-            }
+            std::cerr << "Calderon preconditioning not working for multiple rhs"<< std::endl;
+            exit(1); 
         }
+        // // Tranpose
+        // if (mu!=1){
+        //     for (int i=0;i<mu;i++){
+        //         for (int j=0;j<local_size;j++){
+        //             (*buffer)[i+j*mu]=in[i*this->getDof()+j];
+        //         }
+        //     }
+        // }
 
         // M^-1
         HA.local_to_global(in, in_global->data(),mu);
@@ -427,25 +432,25 @@ public:
         HPDDM::Lapack<T>::getrs(&l,&n,&nrhs,M.data(),&lda,_ipiv.data(),in_global->data(),&ldb,&info);
 
         // All gather
-        if (mu==1){// C'est moche
+        // if (mu==1){// C'est moche
             HB.mvprod_local(in_global->data()+offset,out,in_global->data()+M.nb_rows(),mu);
-        }
-        else{
-            HB.mvprod_local(buffer->data(),buffer->data()+local_size*mu,in_global->data(),mu);
-        }
+        // }
+        // else{
+        //     HB.mvprod_local(buffer->data(),buffer->data()+local_size*mu,in_global->data(),mu);
+        // }
 
         // M^-1
         HA.local_to_global(out, in_global->data(),mu);
-        HPDDM::Lapack<T>::getrs(&l,&n,&nrhs,M.data(),&lda,_ipiv.data(),in_global->data()+M.nb_rows(),&ldb,&info);
-
-        // Tranpose
-        if (mu!=1){
-            for (int i=0;i<mu;i++){
-                for (int j=0;j<local_size;j++){
-                    out[i*this->getDof()+j]=(*buffer)[i+j*mu+local_size*mu];
-                }
-            }
-        }
+        HPDDM::Lapack<T>::getrs(&l,&n,&nrhs,M.data(),&lda,_ipiv.data(),in_global->data(),&ldb,&info);
+        std::copy_n(in_global->data()+offset,this->_n,out);
+        // // Tranpose
+        // if (mu!=1){
+        //     for (int i=0;i<mu;i++){
+        //         for (int j=0;j<local_size;j++){
+        //             out[i*this->getDof()+j]=(*buffer)[i+j*mu+local_size*mu];
+        //         }
+        //     }
+        // }
 
     }
 
