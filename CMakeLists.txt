@@ -3,7 +3,7 @@
 #=============================================================================#
 cmake_minimum_required(VERSION 3.0)
 Project(Htool 
-	VERSION 1.0.1
+	VERSION 1.0
 	DESCRIPTION "A header only c++ library that provides Hierarchical matrices."
 	HOMEPAGE_URL "https://github.com/PierreMarchand20/htool"
 	LANGUAGES CXX)
@@ -146,7 +146,7 @@ endif()
 #=== HTOOL as header only library
 add_library(htool INTERFACE)
 target_include_directories(htool INTERFACE
-					$<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include>
+					$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
 					$<INSTALL_INTERFACE:include>
 					${MPI_INCLUDE_PATH}
 					${HPDDM_INCLUDE_DIRS}
@@ -163,7 +163,7 @@ target_compile_features(htool INTERFACE cxx_std_11)
 if (HTOOL_WITH_PYTHON_INTERFACE)
 	add_library(htool_shared SHARED interface/htool_python.cpp)
 	target_include_directories(htool_shared PRIVATE
-						$<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include>
+						$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
 						$<INSTALL_INTERFACE:include>
 						${MPI_INCLUDE_PATH}
 						${HPDDM_INCLUDE_DIRS}
@@ -179,7 +179,7 @@ if (HTOOL_WITH_PYTHON_INTERFACE)
 
 	add_library(htool_shared_complex SHARED interface/htool_python.cpp)
 	target_include_directories(htool_shared_complex PRIVATE
-						$<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include>
+						$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
 						$<INSTALL_INTERFACE:include>
 						${MPI_INCLUDE_PATH}
 						${HPDDM_INCLUDE_DIRS}
@@ -204,32 +204,38 @@ endif()
 #=============================================================================#
 #========================== Installation =====================================#
 #=============================================================================#
+
+# Define target to install
+install(TARGETS htool
+		EXPORT ${PROJECT_NAME}Targets
+		PUBLIC_HEADER DESTINATION include)
+
+
+# Build and install CMake helpers
 include(CMakePackageConfigHelpers)
 write_basic_package_version_file(
-	"${PROJECT_BINARY_DIR}/htoolConfigVersion.cmake"
-	VERSION 1.0
+	"${PROJECT_NAME}ConfigVersion.cmake"
+	VERSION ${PROJECT_VERSION}
 	COMPATIBILITY AnyNewerVersion
 )
 
-install(TARGETS htool
-		EXPORT htool_Targets
-		LIBRARY DESTINATION lib COMPONENT Runtime
-		ARCHIVE DESTINATION lib COMPONENT Development
-		RUNTIME DESTINATION bin COMPONENT Runtime
-		PUBLIC_HEADER DESTINATION include COMPONENT Development
-		BUNDLE DESTINATION bin COMPONENT Runtime)
-		
-include(CMakePackageConfigHelpers)
 configure_package_config_file(
-	"${PROJECT_SOURCE_DIR}/cmake/htoolConfig.cmake.in"
-	"${PROJECT_BINARY_DIR}/htoolConfig.cmake"
-	INSTALL_DESTINATION lib/cmake/mylib
+	"${PROJECT_SOURCE_DIR}/cmake/${PROJECT_NAME}Config.cmake.in"
+	"${PROJECT_BINARY_DIR}/${PROJECT_NAME}Config.cmake"
+	INSTALL_DESTINATION lib/cmake/${PROJECT_NAME}
 )
 
-install(EXPORT htool_Targets DESTINATION lib/cmake/mylib)
-install(FILES "${PROJECT_BINARY_DIR}/htoolConfigVersion.cmake"
-			"${PROJECT_BINARY_DIR}/htoolConfig.cmake"
-		DESTINATION lib/cmake/mylib)
+install(EXPORT ${PROJECT_NAME}Targets
+        FILE ${PROJECT_NAME}Targets.cmake
+        NAMESPACE ${PROJECT_NAME}::
+		DESTINATION lib/cmake/${PROJECT_NAME})
+
+
+install(FILES "${PROJECT_BINARY_DIR}/${PROJECT_NAME}ConfigVersion.cmake"
+				"${PROJECT_BINARY_DIR}/${PROJECT_NAME}Config.cmake"
+		DESTINATION lib/cmake/${PROJECT_NAME})
+
+###### install files
 install(DIRECTORY ${PROJECT_SOURCE_DIR}/include/ DESTINATION include)
 
 #=============================================================================#
