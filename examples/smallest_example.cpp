@@ -14,7 +14,7 @@ public:
 
     // Virtual function to overload
     double get_coef(const int& k, const int& j)const {
-        return 1./(norm2(p1[j]-p2[k]));
+        return 1./(1e-5+norm2(p1[j]-p2[k]));
     }
 
     // Matrix vector product
@@ -49,46 +49,34 @@ int main(int argc, char *argv[]) {
     // Htool parameters
 	SetEpsilon(0.001);
 	SetEta(100);
+    SetMinClusterSize(10);
 
-    // Data
-    srand (1);    
-    int nr = 10000;
-    int nc = 5000;
-    vector<int> Ir(nr); // row indices for the hmatrix
-    vector<int> Ic(nc); // column indices for the hmatrix
+    // n² points on a regular grid in a square
+    int n = std::sqrt(4761);
+    int size=n*n;
+    vector<int> I(size); // indices for the hmatrix
 
-    // p1: points in a unit disk of the plane z=z1
-    double z1 = 1;
-    vector<R3> p1(nr);
-    for(int j=0; j<nr; j++){
-        Ir[j] = j;
-        double rho = ((double) rand() / (double)(RAND_MAX));
-        double theta = ((double) rand() / (double)(RAND_MAX));
-        p1[j][0] = sqrt(rho)*cos(2*M_PI*theta); 
-        p1[j][1] = sqrt(rho)*sin(2*M_PI*theta); 
-        p1[j][2] = z1;
-    }
-
-    // p2: points in a unit disk of the plane z=z2
-    double z2 = 2;
-    vector<R3> p2(nc);
-    for(int j=0; j<nc; j++){
-        Ic[j] = j;
-        double rho = ((double) rand() / (RAND_MAX));
-        double theta = ((double) rand() / (RAND_MAX));
-        p2[j][0] = sqrt(rho)*cos(2*M_PI*theta); 
-        p2[j][1] = sqrt(rho)*sin(2*M_PI*theta); 
-        p2[j][2] = z2;
+    // p1: points in a square in the plane z=z1
+    double z = 1;
+    vector<R3> p(size);
+    for(int j=0; j<n; j++){
+        for(int k=0; k<n; k++){
+            I[j+k*n] = j+k*n;
+            p[j+k*n][0] = j;
+            p[j+k*n][1] = k;
+            p[j][2] = z;
+        }
     }
 
     // Hmatrix
-    MyMatrix A(p1,p2);
-    std::vector<double> x(nc,1),result(nr,0);
-    HMatrix<fullACA,double> HA(A,p1,p2);
+    MyMatrix A(p,p);
+    std::vector<double> x(size,1),result(size,0);
+    HMatrix<partialACA,double> HA(A,p,p);
     result = HA*x;
 
     // Output
     HA.print_infos();
+    HA.save_plot("smallest_example_plot");
     std::cout<< Frobenius_absolute_error(HA,A)/A.norm()<<std::endl;
     std::cout<< norm2(A*x-result)/norm2(A*x)<<std::endl;
 

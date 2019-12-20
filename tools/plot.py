@@ -29,7 +29,8 @@ plt.imshow(matrix)
 # Issue: there a shift of one pixel along the y-axis...
 shift = axes.transData.transform([(0,0), (1,1)])
 shift = shift[1,1] - shift[0,1]  # 1 unit in display coords
-shift = 1/shift  # 1 pixel in display coords
+shift = 0
+# 1/shift  # 1 pixel in display coords
 
 # Loop
 for i in range(0,sizeWorld):

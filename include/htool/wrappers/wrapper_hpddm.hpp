@@ -407,14 +407,19 @@ public:
     void apply(const T* const in, T* const out, const unsigned short& mu = 1, T* = nullptr, const unsigned short& = 0) const {
         int local_size = HB.get_local_size();
         int offset = HB.get_local_offset();
-        // Tranpose
+
         if (mu!=1){
-            for (int i=0;i<mu;i++){
-                for (int j=0;j<local_size;j++){
-                    (*buffer)[i+j*mu]=in[i*this->getDof()+j];
-                }
-            }
+            std::cerr << "Calderon preconditioning not working for multiple rhs"<< std::endl;
+            exit(1); 
         }
+        // // Tranpose
+        // if (mu!=1){
+        //     for (int i=0;i<mu;i++){
+        //         for (int j=0;j<local_size;j++){
+        //             (*buffer)[i+j*mu]=in[i*this->getDof()+j];
+        //         }
+        //     }
+        // }
 
         // M^-1
         HA.local_to_global(in, in_global->data(),mu);
@@ -427,25 +432,25 @@ public:
         HPDDM::Lapack<T>::getrs(&l,&n,&nrhs,M.data(),&lda,_ipiv.data(),in_global->data(),&ldb,&info);
 
         // All gather
-        if (mu==1){// C'est moche
+        // if (mu==1){// C'est moche
             HB.mvprod_local(in_global->data()+offset,out,in_global->data()+M.nb_rows(),mu);
-        }
-        else{
-            HB.mvprod_local(buffer->data(),buffer->data()+local_size*mu,in_global->data(),mu);
-        }
+        // }
+        // else{
+        //     HB.mvprod_local(buffer->data(),buffer->data()+local_size*mu,in_global->data(),mu);
+        // }
 
         // M^-1
         HA.local_to_global(out, in_global->data(),mu);
-        HPDDM::Lapack<T>::getrs(&l,&n,&nrhs,M.data(),&lda,_ipiv.data(),in_global->data()+M.nb_rows(),&ldb,&info);
-
-        // Tranpose
-        if (mu!=1){
-            for (int i=0;i<mu;i++){
-                for (int j=0;j<local_size;j++){
-                    out[i*this->getDof()+j]=(*buffer)[i+j*mu+local_size*mu];
-                }
-            }
-        }
+        HPDDM::Lapack<T>::getrs(&l,&n,&nrhs,M.data(),&lda,_ipiv.data(),in_global->data(),&ldb,&info);
+        std::copy_n(in_global->data()+offset,local_size,out);
+        // // Tranpose
+        // if (mu!=1){
+        //     for (int i=0;i<mu;i++){
+        //         for (int j=0;j<local_size;j++){
+        //             out[i*this->getDof()+j]=(*buffer)[i+j*mu+local_size*mu];
+        //         }
+        //     }
+        // }
 
     }
 
@@ -535,6 +540,211 @@ public:
 
     void add_infos(std::string key, std::string value) const{
         if (HA.get_rankworld()==0){
+            if (infos.find(key)==infos.end()){
+                infos[key]=infos[key]+value;
+            }
+            else{
+                infos[key]=infos[key]+value;
+            }
+        }
+    }
+
+    std::string get_infos(const std::string& key) const { return infos[key];}
+};
+
+template< template<typename> class LowRankMatrix, typename T>
+class ContinuousOperator : public HPDDM::EmptyOperator<T> {
+private:
+    const HMatrix<LowRankMatrix,T>& H;
+    Matrix<T>& M;
+    std::vector<int> _ipiv;
+    std::vector<T>* in_global,*buffer;
+    mutable std::map<std::string, std::string> infos;
+
+public:
+
+    ContinuousOperator(const HMatrix<LowRankMatrix,T>& A,  Matrix<T>& M0):HPDDM::EmptyOperator<T>(A.get_local_size()),H(A),M(M0),_ipiv(M.nb_rows()){
+        in_global = new std::vector<T> ;
+        buffer = new std::vector<T>;
+
+        // LU facto
+        int size = M.nb_rows();
+        int lda=M.nb_rows();
+        int info;
+        HPDDM::Lapack<Cplx>::getrf(&size,&size,M.data(),&lda,_ipiv.data(),&info);
+
+
+    }
+
+    ~ContinuousOperator(){delete in_global;delete buffer;}
+
+
+    void GMV(const T* const in, T* const out, const int& mu = 1) const {
+        int local_size = H.get_local_size();
+
+        // Tranpose without overlap
+        if (mu!=1){
+            for (int i=0;i<mu;i++){
+                for (int j=0;j<local_size;j++){
+                    (*buffer)[i+j*mu]=in[i*this->getDof()+j];
+                }
+            }
+        }
+
+        // All gather
+        if (mu==1){// C'est moche
+            H.mvprod_local(in,out,in_global->data(),mu);
+        }
+        else{
+            H.mvprod_local(buffer->data(),buffer->data()+local_size*mu,in_global->data(),mu);
+        }
+
+
+
+        // Tranpose
+        if (mu!=1){
+            for (int i=0;i<mu;i++){
+                for (int j=0;j<local_size;j++){
+                    out[i*this->getDof()+j]=(*buffer)[i+j*mu+local_size*mu];
+                }
+            }
+        }
+
+    }
+
+    template<bool = true>
+    void apply(const T* const in, T* const out, const unsigned short& mu = 1, T* = nullptr, const unsigned short& = 0) const {
+        int local_size = H.get_local_size();
+        int offset = H.get_local_offset();
+        // // Tranpose
+        // if (mu!=1){
+        //     for (int i=0;i<mu;i++){
+        //         for (int j=0;j<local_size;j++){
+        //             (*buffer)[i+j*mu]=in[i*this->getDof()+j];
+        //         }
+        //     }
+        // }
+
+        // M^-1
+        H.local_to_global(in, in_global->data(),mu);
+        const char l='N';
+        int n= M.nb_rows();
+        int lda=M.nb_rows();
+        int ldb=M.nb_rows();
+        int nrhs =mu ;
+        int info;
+        HPDDM::Lapack<T>::getrs(&l,&n,&nrhs,M.data(),&lda,_ipiv.data(),in_global->data(),&ldb,&info);
+        std::copy_n(in_global->data()+offset,local_size,out);
+        
+        // // All gather
+        // if (mu==1){// C'est moche
+        //     HB.mvprod_local(in_global->data()+offset,out,in_global->data()+M.nb_rows(),mu);
+        // }
+        // else{
+        //     HB.mvprod_local(buffer->data(),buffer->data()+local_size*mu,in_global->data(),mu);
+        // }
+
+        // // M^-1
+        // HA.local_to_global(out, in_global->data(),mu);
+        // HPDDM::Lapack<T>::getrs(&l,&n,&nrhs,M.data(),&lda,_ipiv.data(),in_global->data()+M.nb_rows(),&ldb,&info);
+
+        // // Tranpose
+        // if (mu!=1){
+        //     for (int i=0;i<mu;i++){
+        //         for (int j=0;j<local_size;j++){
+        //             out[i*this->getDof()+j]=(*buffer)[i+j*mu+local_size*mu];
+        //         }
+        //     }
+        // }
+
+    }
+
+
+    void solve(const T* const rhs, T* const x, const int& mu=1 ){
+        //
+        int rankWorld = H.get_rankworld();
+        int sizeWorld = H.get_sizeworld();
+        int offset  = H.get_local_offset();
+        int nb_cols = H.nb_cols();
+        int nb_rows = H.nb_rows();
+        int n_local = this->_n;
+        double time = MPI_Wtime();
+        double time_vec_prod = StrToNbr<double>(H.get_infos("total_time_mat_vec_prod"));
+        int nb_vec_prod =  StrToNbr<int>(H.get_infos("nb_mat_vec_prod"));
+        in_global->resize(nb_cols*2*mu);
+        buffer->resize(n_local*(mu==1 ? 1 : 2*mu));
+
+        //
+        std::vector<T> rhs_perm(nb_cols);
+        std::vector<T> x_local(n_local,0);
+        std::vector<T> local_rhs(n_local,0);
+
+        // Permutation
+        H.source_to_cluster_permutation(rhs,rhs_perm.data());
+        std::copy_n(rhs_perm.begin()+offset,n_local,local_rhs.begin());
+
+        // Solve
+        int nb_it = HPDDM::IterativeMethod::solve(*this, local_rhs.data(), x_local.data(), mu,H.get_comm());
+
+        // // Delete the overlap (useful only when mu>1 and n!=n_inside)
+        // for (int i=0;i<mu;i++){
+        //     std::copy_n(x_local.data()+i*n,n_inside,local_rhs.data()+i*n_inside);
+        // }
+
+        // Local to global
+        // hpddm_op.HA.local_to_global(x_local.data(),hpddm_op.in_global->data(),mu);
+        std::vector<int> recvcounts(sizeWorld);
+        std::vector<int>  displs(sizeWorld);
+
+        displs[0] = 0;
+
+        for (int i=0; i<sizeWorld; i++) {
+        recvcounts[i] = (H.get_MasterOffset_t(i).second);
+        if (i > 0)
+            displs[i] = displs[i-1] + recvcounts[i-1];
+        }
+
+        MPI_Allgatherv(x_local.data(), recvcounts[rankWorld], wrapper_mpi<T>::mpi_type(), in_global->data() , &(recvcounts[0]), &(displs[0]), wrapper_mpi<T>::mpi_type(), H.get_comm());
+
+        // Permutation
+        H.cluster_to_target_permutation(in_global->data(),x);
+
+        // Timing
+        HPDDM::Option& opt = *HPDDM::Option::get();
+        time = MPI_Wtime()-time;
+        infos["Solve"] = NbrToStr(time);
+        infos["Nb_it"] = NbrToStr(nb_it);
+        infos["nb_mat_vec_prod"] = NbrToStr(StrToNbr<int>(H.get_infos("nb_mat_vec_prod"))-nb_vec_prod);
+        infos["mean_time_mat_vec_prod"] = NbrToStr((StrToNbr<double>(H.get_infos("total_time_mat_vec_prod"))-time_vec_prod)/(StrToNbr<double>(H.get_infos("nb_mat_vec_prod"))-nb_vec_prod));
+
+
+    }
+
+    void print_infos() const{
+        if (H.get_rankworld()==0){
+            for (std::map<std::string,std::string>::const_iterator it = infos.begin() ; it != infos.end() ; ++it){
+                std::cout<<it->first<<"\t"<<it->second<<std::endl;
+            }
+        std::cout << std::endl;
+        }
+    }
+    void save_infos(const std::string& outputname, std::ios_base::openmode mode = std::ios_base::app, const std::string& sep= " = ") const{
+    	if (H.get_rankworld()==0){
+    		std::ofstream outputfile(outputname, mode);
+    		if (outputfile){
+                for (std::map<std::string,std::string>::const_iterator it = infos.begin() ; it != infos.end() ; ++it){
+                    outputfile<<it->first<<sep<<it->second<<std::endl;
+                }
+    			outputfile.close();
+    		}
+    		else{
+    			std::cout << "Unable to create "<<outputname<<std::endl;
+    		}
+    	}
+    }
+
+    void add_infos(std::string key, std::string value) const{
+        if (H.get_rankworld()==0){
             if (infos.find(key)==infos.end()){
                 infos[key]=infos[key]+value;
             }

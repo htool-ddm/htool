@@ -630,6 +630,30 @@ public:
         this->nc=m.nc;
     }
 
+    // Mostly same operators as in Matrix, need CRTP to factorize
+    // Operators
+    SubMatrix operator+(const SubMatrix& A){
+        assert(this->nr==A.nr && this->nc==A.nc);
+        SubMatrix R(*this);
+        for (int i=0;i<A.nr;i++){
+            for (int j=0;j<A.nc;j++){
+                R(i,j)+=A(i,j);
+            }
+        }
+        return R;
+    }
+    friend SubMatrix operator*(const SubMatrix& A, const T& a){
+        SubMatrix R(A);
+        for (int i=0;i<A.nr;i++){
+            for (int j=0;j<A.nc;j++){
+                R(i,j)=A(i,j)*a;
+            }
+        }
+        return R;
+    }
+    friend SubMatrix operator*(const T& a,const SubMatrix& A){
+        return A*a;
+    }
     // Getters
     std::vector<int> get_ir() const{ return this->ir;}
     std::vector<int> get_ic() const{ return this->ic;}

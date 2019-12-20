@@ -2,43 +2,59 @@
 #============================== Project ======================================#
 #=============================================================================#
 cmake_minimum_required(VERSION 3.0)
-Project(Htool)
+Project(Htool 
+	VERSION 1.0
+	DESCRIPTION "A header only c++ library that provides Hierarchical matrices."
+	HOMEPAGE_URL "https://github.com/PierreMarchand20/htool"
+	LANGUAGES CXX)
 
-# To force c++11
-if (${CMAKE_VERSION} VERSION_LESS 3.1)
-	add_compile_options(-std=c++11)
-elseif (${CMAKE_VERSION} VERSION_LESS 3.6.3 AND ${CMAKE_CXX_COMPILER_ID} STREQUAL "Intel")
-	add_compile_options(-std=c++11)
-else()
-	set(CMAKE_CXX_STANDARD 11)
-	set(CMAKE_CXX_STANDARD_REQUIRED ON)
-endif ()
+if(CMAKE_PROJECT_NAME STREQUAL PROJECT_NAME)
 
-# To set CMAKE_BUILD_TYPE
-if(NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
-  message(STATUS "Setting build type to 'Release' as none was specified.")
-  set(CMAKE_BUILD_TYPE Release)
+	# To set default CMAKE_BUILD_TYPE
+	set(default_build_type "Release")
+	if(NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
+		message(STATUS "Setting build type to '${default_build_type}' as none was specified.")
+		set(CMAKE_BUILD_TYPE "${default_build_type}" CACHE STRING "Choose the type of build." FORCE)
+	endif()
+
+	if (${CMAKE_BUILD_TYPE} STREQUAL Release_native)
+		message(STATUS "Setting build type to 'Release_native'.")
+		set(CMAKE_BUILD_TYPE Release)
+		SET(CMAKE_CXX_FLAGS  "${CMAKE_C_FLAGS} -march=native")
+	endif()
+
+	# Files to do find_package for some module
+	list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}/cmake_modules")
+
+	# Information about compilation exported
+	set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+
+	# Let's nicely support folders in IDE's
+	set_property(GLOBAL PROPERTY USE_FOLDERS ON)
+	
+	# Testing only available if this is the main app
+    # Note this needs to be done in the main CMakeLists
+    # since it calls enable_testing, which must be in the
+    # main CMakeLists.
+	include(CTest)
+
+    # # Docs only available if this is the main app
+    # find_package(Doxygen)
+    # if(Doxygen_FOUND)
+	# add_subdirectory(docs)
+    # else()
+	# message(STATUS "Doxygen not found, not building docs")
+    # endif()
+
+
 endif()
-
-if (${CMAKE_BUILD_TYPE} STREQUAL Release_native)
-	message(STATUS "Setting build type to 'Release_native'.")
-	set(CMAKE_BUILD_TYPE Release)
-	SET(CMAKE_CXX_FLAGS  "${CMAKE_C_FLAGS} -march=native")
-endif()
-
-# Files to do find_package for some module
-list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}/cmake_modules")
-
-# Useful variables
-set(htool_include_dir "${CMAKE_CURRENT_SOURCE_DIR}/include")
 
 # Options
-option(HTOOL_WITH_EXAMPLES "Build htool examples ?" ON)
-option(HTOOL_WITH_TESTS    "Build htool tests ?" ON)
-option(HTOOL_WITH_GUI      "Build htool visualization tools ?" OFF)
+option(HTOOL_WITH_EXAMPLES             "Build htool examples ?" ON)
+option(HTOOL_WITH_GUI                  "Build htool visualization tools ?" OFF)
+option(HTOOL_WITH_PYTHON_INTERFACE     "Build htool visualization tools ?" OFF)
 
-# Information about compilation exported
-set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+
 
 #=============================================================================#
 #========================== External Libraries ===============================#
@@ -64,17 +80,13 @@ endif()
 find_package(BLAS REQUIRED)
 message("-- Found Blas implementation:" "${BLAS_LIBRARIES}")
 
-# EIGEN3
-find_package(EIGEN3)
-if (EIGEN3_FOUND)
-	message("-- Found Eigen3:" "${EIGEN3_INCLUDE_DIR}")
-else()
-	message("-- Eigen3 not found, no SVD available")
-endif()
-
 # LAPACK
 find_package(LAPACK)
 message("-- Found Lapack:" "${LAPACK_LIBRARIES}")
+
+# ARPACK
+find_package(ARPACK)
+message("-- Found Arpack:" "${ARPACK_LIBRARIES}")
 
 # HPDDM
 find_package(HPDDM)
@@ -84,9 +96,15 @@ if (HTOOL_WITH_GUI)
 	# GLM
 	find_package(GLM)
 endif()
+
+if (HTOOL_WITH_PYTHON_INTERFACE)
+	find_package (Python COMPONENTS Interpreter Development)
+endif()
+
 #=============================================================================#
 #========================== Libraries ========================================#
 #=============================================================================#
+#=== GUI
 if (HTOOL_WITH_GUI)
 	#=== Nanogui and dependencies
 	message("-- Nanogui and its dependencies will be built as submodules")
@@ -125,19 +143,57 @@ if (HTOOL_WITH_GUI)
 endif()
 
 
-#=== HTOOL
+#=== HTOOL as header only library
 add_library(htool INTERFACE)
 target_include_directories(htool INTERFACE
-					${htool_include_dir}
+					$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+					$<INSTALL_INTERFACE:include>
 					${MPI_INCLUDE_PATH}
 					${HPDDM_INCLUDE_DIRS}
-				${EIGEN3_INCLUDE_DIR}
-				${MKL_INC_DIR})
+					${MKL_INC_DIR})
 target_link_libraries(htool INTERFACE
 					${MPI_LIBRARIES}
 					${BLAS_LIBRARIES}
-					${LAPACK_LIBRARIES})
+					${LAPACK_LIBRARIES}
+					${ARPACK_LIBRARIES})
 
+target_compile_features(htool INTERFACE cxx_std_11)
+
+#=== HTOOL python interface as shared library
+if (HTOOL_WITH_PYTHON_INTERFACE)
+	add_library(htool_shared SHARED interface/htool_python.cpp)
+	target_include_directories(htool_shared PRIVATE
+						$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+						$<INSTALL_INTERFACE:include>
+						${MPI_INCLUDE_PATH}
+						${HPDDM_INCLUDE_DIRS}
+						${MKL_INC_DIR}
+						${Python_INCLUDE_DIRS})
+	target_link_libraries(htool_shared
+						${MPI_LIBRARIES}
+						${BLAS_LIBRARIES}
+						${LAPACK_LIBRARIES}
+						${Python_LIBRARIES})
+	
+	target_compile_features(htool_shared PRIVATE cxx_std_11)
+
+	add_library(htool_shared_complex SHARED interface/htool_python.cpp)
+	target_include_directories(htool_shared_complex PRIVATE
+						$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+						$<INSTALL_INTERFACE:include>
+						${MPI_INCLUDE_PATH}
+						${HPDDM_INCLUDE_DIRS}
+						${MKL_INC_DIR}
+						${Python_INCLUDE_DIRS})
+	target_link_libraries(htool_shared_complex
+						${MPI_LIBRARIES}
+						${BLAS_LIBRARIES}
+						${LAPACK_LIBRARIES}
+						${Python_LIBRARIES})
+
+	target_compile_features(htool_shared_complex PRIVATE cxx_std_11)
+	target_compile_options(htool_shared_complex PRIVATE -DFORCE_COMPLEX)
+endif()
 
 # For headers to show in IDE
 if (NOT "${CMAKE_VERSION}" VERSION_LESS 3.1)
@@ -145,7 +201,42 @@ if (NOT "${CMAKE_VERSION}" VERSION_LESS 3.1)
 endif()
 
 #===
+#=============================================================================#
+#========================== Installation =====================================#
+#=============================================================================#
 
+# Define target to install
+install(TARGETS htool
+		EXPORT ${PROJECT_NAME}Targets
+		PUBLIC_HEADER DESTINATION include)
+
+
+# Build and install CMake helpers
+include(CMakePackageConfigHelpers)
+write_basic_package_version_file(
+	"${PROJECT_NAME}ConfigVersion.cmake"
+	VERSION ${PROJECT_VERSION}
+	COMPATIBILITY AnyNewerVersion
+)
+
+configure_package_config_file(
+	"${PROJECT_SOURCE_DIR}/cmake/${PROJECT_NAME}Config.cmake.in"
+	"${PROJECT_BINARY_DIR}/${PROJECT_NAME}Config.cmake"
+	INSTALL_DESTINATION lib/cmake/${PROJECT_NAME}
+)
+
+install(EXPORT ${PROJECT_NAME}Targets
+        FILE ${PROJECT_NAME}Targets.cmake
+        NAMESPACE ${PROJECT_NAME}::
+		DESTINATION lib/cmake/${PROJECT_NAME})
+
+
+install(FILES "${PROJECT_BINARY_DIR}/${PROJECT_NAME}ConfigVersion.cmake"
+				"${PROJECT_BINARY_DIR}/${PROJECT_NAME}Config.cmake"
+		DESTINATION lib/cmake/${PROJECT_NAME})
+
+###### install files
+install(DIRECTORY ${PROJECT_SOURCE_DIR}/include/ DESTINATION include)
 
 #=============================================================================#
 #========================== Repertories ======================================#
@@ -157,13 +248,13 @@ if (HTOOL_WITH_EXAMPLES)
 endif()
 
 # Add tests
-if (HTOOL_WITH_TESTS)
-	enable_testing()
+if((CMAKE_PROJECT_NAME STREQUAL PROJECT_NAME OR MODERN_CMAKE_BUILD_TESTING) AND BUILD_TESTING)
 	add_custom_target(build-tests)
 	add_subdirectory(tests EXCLUDE_FROM_ALL)
 endif()
 
-add_subdirectory(src)
+
+add_subdirectory(src EXCLUDE_FROM_ALL)
 
 #
 #

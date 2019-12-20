@@ -44,3 +44,7 @@ output/*
 
 # mesh
 *.msh
+
+# Python
+__pycache__
+*.egg-info
