@@ -11,18 +11,56 @@ Htool is an implementation of hierarchical matrices (cf. this [reference](http:/
 * an interface with [HPDDM](https://github.com/hpddm/hpddm) for iterative solvers,
 * GUI and several service functions to display informations about matrix structures and timing.
 
+It is now used in [FreeFEM](https://freefem.org) starting from version 4.5.
+
 ## How to use Htool?
 
-Htool is a header library written in C++11 with MPI and OpenMP, but it can be used without the latter if needed. Then, Htool needs to be linked against :
+### Dependencies
 
-* BLAS, to perform algebraic operations (dense matrix-matrix or matrix-vector operations),
+Htool is a header-only library written in C++11 with MPI and OpenMP, but it can be used without the latter if needed. Then, to use Htool, you need your code to be linked against:
+
+* BLAS, to perform algebraic operations (dense matrix-matrix or matrix-vector operations).
+
+And if you want, you can also link your code to be linked against:
+
 * LAPACK, to perform SVD compression,
-* HPDDM and its dependencies (BLAS, LAPACK and a direct solver like [MUMPS](http://mumps.enseeiht.fr/), [SuiteSparse](http://faculty.cse.tamu.edu/davis/suitesparse.html), [MKL PARDISO](https://software.intel.com/en-us/articles/intel-mkl-pardiso), or [PaStiX](http://pastix.gforge.inria.fr/)) to use iterative solvers and DDM preconditioners,
+* HPDDM and its dependencies (BLAS, LAPACK) to use iterative solvers and DDM preconditioners,
 * Nanogui and its dependency (use `git submodule` in this repository to use it, see `Tests_view`), to use the GUI.
 
-In any case, a function that generates the coefficients must be provided to Htool. To do so, a structure inheriting from `IMatrix<T>` must be defined with a method called `T get_coef(const int& i, const int& j) const`, where `T` is the type of your coefficients. This method will return the coefficient (i,j) of the considered problem. A method `get_submatrix` can also be defined to provide a more efficient way to build a sub-block of the matrix. An example of such interface is given in `test_hmat_partialACA.hpp` or  [BemTool](https://github.com/xclaeys/BemTool) (see `bemtool/miscellaneous/htool_wrap.hpp`).
+We also developed a Python interface, so that you can build HMatrices and perform HMatrix-vector products in Python. Other functionalities available in C++ will be added.
+
+### Installing
+
+In C++, since Htool is a header-only library, you can just include in your code the `include` folder of this repository. You can also use the following command to install the include folder in the one of your system to make it more widely available: in the root of this repository in your system, you can do
+
+```bash
+mkdir build
+cd build
+cmake ..
+cmake --build . --config Release --target install -- -j $(nproc)
+```
+
+Note that you can modify the install prefix using `cmake ..  -DCMAKE_INSTALL_PREFIX:PATH=your/install/path` instead of the fourth line.
+
+In Python, you can do
+
+```shell
+pip install .
+```
+
+### Embedding Htool in your code
+
+We mostly refer to `smallest_example.cpp` and `smallest_example.py` in the `examples` folder to see how to use Htool.
+
+#### C++
+
+A function that generates the coefficients must be provided to Htool. To do so, a structure inheriting from `IMatrix<T>` must be defined with a method called `T get_coef(const int& i, const int& j) const`, where `T` is the type of your coefficients. This method will return the coefficient (i,j) of the considered problem. A method `get_submatrix` can also be defined to provide a more efficient way to build a sub-block of the matrix. An example of such interface is given in `test_hmat_partialACA.hpp` or  [BemTool](https://github.com/xclaeys/BemTool) (see `bemtool/miscellaneous/htool_wrap.hpp`). This new structure and the geometry will be used to define an object `HMatrix`.
 
 A new type of compressor can also be added by defining a structure inheriting from `LowRankMatrix` with a method called `build` which populates the data members needed (see `partialACA.hpp`).
+
+#### Python
+
+Similarly, you need to call the method `get_coefs` (and you can add `get_submatrices`) of the class `HMatrix` to pass the function that compute the coefficients and the geometry.
 
 ## Who is behind Htool?
 
@@ -36,6 +74,7 @@ If you need help or have questions regarding Htool, feel free to contact [Pierre
 
 ## Collaborators/contributors
 
+[Matthieu Ancellin](https://ancell.in)  
 [Xavier Claeys](https://www.ljll.math.upmc.fr/~claeys/)  
 [Pierre Jolivet](http://jolivet.perso.enseeiht.fr/)  
 [Frédéric Nataf](https://www.ljll.math.upmc.fr/nataf/)
