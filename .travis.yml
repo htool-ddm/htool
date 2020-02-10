@@ -24,7 +24,7 @@ matrix:
       install:
         - brew install mpich
         - brew install suite-sparse
-        - brew reinstall python
+        # - brew reinstall python
         - pip3 install pytest
 
     ## mpich does not work anymore with gcc
@@ -44,7 +44,7 @@ matrix:
       install:
         - brew install openmpi
         - brew install suite-sparse
-        - brew reinstall python
+        # - brew reinstall python
         - pip3 install pytest
 
     - os: osx
@@ -53,10 +53,10 @@ matrix:
         - C_COMPILER=gcc-9
         - MPIEXEC_PREFLAGS=-oversubscribe
       install:
-        - brew install gcc
+        # - brew install gcc
         - brew install openmpi
         - brew install suite-sparse
-        - brew reinstall python
+        # - brew reinstall python
         - pip3 install pytest
 
     - os: linux
