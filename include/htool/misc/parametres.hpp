@@ -113,6 +113,6 @@ void SetMinSourceDepth(int minsourcedepth0){
 	Parametres::minsourcedepth=minsourcedepth0;
 }
 
-Parametres Parametres_defauts(1,10,1e-3,1000000,10,1,1);
+Parametres Parametres_defauts(1,10,1e-3,1000000,10,0,0);
 }
 #endif

@@ -367,7 +367,7 @@ public:
 
     }
 
-    ~Calderon(){delete in_global;delete buffer;}
+    ~Calderon(){delete in_global;in_global=nullptr;delete buffer;buffer=nullptr;}
 
 
     void GMV(const T* const in, T* const out, const int& mu = 1) const {
@@ -576,7 +576,7 @@ public:
 
     }
 
-    ~ContinuousOperator(){delete in_global;delete buffer;}
+    ~ContinuousOperator(){delete in_global;in_global=nullptr;delete buffer;buffer=nullptr;}
 
 
     void GMV(const T* const in, T* const out, const int& mu = 1) const {
