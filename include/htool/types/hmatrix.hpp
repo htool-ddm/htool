@@ -12,9 +12,12 @@
 #include <map>
 #include <memory>
 #include "matrix.hpp"
+// #include "multihmatrix.hpp"
 #include "../misc/parametres.hpp"
 #include "../clustering/cluster_tree.hpp"
 #include "../wrappers/wrapper_mpi.hpp"
+
+
 
 namespace htool {
 
@@ -70,6 +73,8 @@ private:
 	void AddFarFieldMat(IMatrix<T>& mat, const Cluster& t, const Cluster& s, const std::vector<R3> xt,const std::vector<int> tabt, const std::vector<R3> xs, const std::vector<int>tabs, std::vector<LowRankMatrix<T>*>&, const int& reqrank=-1);
 	void ComputeInfos(const std::vector<double>& mytimes);
 
+	// Friends
+	// friend class MultiHMatrix < template<typename> class LowRankMatrix, typename T >; 
 
 public:
 	// Build

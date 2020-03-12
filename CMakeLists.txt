@@ -100,9 +100,9 @@ message("-- Found Blas implementation:" "${BLAS_LIBRARIES}")
 find_package(LAPACK)
 message("-- Found Lapack:" "${LAPACK_LIBRARIES}")
 
-# ARPACK
-find_package(ARPACK)
-message("-- Found Arpack:" "${ARPACK_LIBRARIES}")
+# # ARPACK
+# find_package(ARPACK)
+# message("-- Found Arpack:" "${ARPACK_LIBRARIES}")
 
 # HPDDM
 find_package(HPDDM)

@@ -5,10 +5,7 @@
 
 #=== hmat_auto_SVD
 add_executable(Test_hmat_auto_SVD test_hmat_auto_SVD.cpp)
-target_link_libraries(Test_hmat_auto_SVD htool
-                              ${EIGEN3_LIBRARIES})
-target_include_directories(Test_hmat_auto_SVD PUBLIC
-                            ${EIGEN3_INCLUDE_DIR})
+target_link_libraries(Test_hmat_auto_SVD htool)
 add_dependencies(build-tests Test_hmat_auto_SVD)
 add_test(NAME Test_hmat_auto_SVD_1 COMMAND  ${MPIEXEC} ${MPIEXEC_NUMPROC_FLAG} 1 ${MPIEXEC_PREFLAGS} ${CMAKE_CURRENT_BINARY_DIR}/Test_hmat_auto_SVD)
 add_test(NAME Test_hmat_auto_SVD_2 COMMAND  ${MPIEXEC} ${MPIEXEC_NUMPROC_FLAG} 2 ${MPIEXEC_PREFLAGS} ${CMAKE_CURRENT_BINARY_DIR}/Test_hmat_auto_SVD)
@@ -16,10 +13,7 @@ add_test(NAME Test_hmat_auto_SVD_4 COMMAND  ${MPIEXEC} ${MPIEXEC_NUMPROC_FLAG} 4
 
 #=== hmat_cluster_SVD
 add_executable(Test_hmat_cluster_SVD test_hmat_cluster_SVD.cpp)
-target_link_libraries(Test_hmat_cluster_SVD htool
-                              ${EIGEN3_LIBRARIES})
-target_include_directories(Test_hmat_cluster_SVD PUBLIC
-                            ${EIGEN3_INCLUDE_DIR})
+target_link_libraries(Test_hmat_cluster_SVD htool)
 add_dependencies(build-tests Test_hmat_cluster_SVD)
 add_test(NAME Test_hmat_cluster_SVD_1 COMMAND  ${MPIEXEC} ${MPIEXEC_NUMPROC_FLAG} 1 ${MPIEXEC_PREFLAGS} ${CMAKE_CURRENT_BINARY_DIR}/Test_hmat_cluster_SVD)
 add_test(NAME Test_hmat_cluster_SVD_2 COMMAND  ${MPIEXEC} ${MPIEXEC_NUMPROC_FLAG} 2 ${MPIEXEC_PREFLAGS} ${CMAKE_CURRENT_BINARY_DIR}/Test_hmat_cluster_SVD)
