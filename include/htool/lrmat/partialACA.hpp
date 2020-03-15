@@ -7,6 +7,7 @@
 #include <vector>
 #include <cassert>
 #include "lrmat.hpp"
+#include "../multilrmat/multipartialACA.hpp"
 
 
 namespace htool {
@@ -29,9 +30,17 @@ namespace htool {
 //           et en particulier le paragraphe 3.2
 //
 //=================================//
+// Friend class --- forward declaration
+template<typename>
+class MultipartialACA;
+
+
 template<typename T>
 class partialACA: public LowRankMatrix<T>{
+private:
 
+    // Friend
+    friend class MultipartialACA<T>;
 
 public:
 	//=========================//

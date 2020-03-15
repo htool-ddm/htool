@@ -108,6 +108,11 @@ T max(const std::vector<T>& u){
 }
 
 template<typename T>
+T min(const std::vector<T>& u){
+  return *std::min_element(u.begin(),u.end(),[](T a, T b){return std::abs(a)<std::abs(b);});
+}
+
+template<typename T>
 int argmax(const std::vector<T>& u){
   return std::max_element(u.begin(),u.end(),[](T a, T b){return std::abs(a)<std::abs(b);})-u.begin();
 }
