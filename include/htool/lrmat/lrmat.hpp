@@ -4,6 +4,7 @@
 #include <vector>
 #include "../clustering/cluster.hpp"
 #include "../types/matrix.hpp"
+#include "../types/multimatrix.hpp"
 namespace htool{
 
 template<typename T>
@@ -167,6 +168,50 @@ double Frobenius_absolute_error(const LowRankMatrix<std::complex<T>>& lrmat, con
   for (int j=0;j<lrmat.nb_rows();j++){
     for (int k=0;k<lrmat.nb_cols();k++){
       std::complex<T> aux=ref.get_coef(ir[j],ic[k]);
+      for (int l=0;l<reqrank;l++){
+        aux = aux - lrmat.get_U(j,l) * lrmat.get_V(l,k);
+      }
+      err+=std::pow(std::abs(aux),2);
+    }
+  }
+  return std::sqrt(err);
+}
+
+template<typename T>
+double Frobenius_absolute_error(const LowRankMatrix<T>& lrmat, const MultiIMatrix<T>& ref, int l, int reqrank=-1){
+  assert(reqrank<=lrmat.rank_of());
+  if (reqrank==-1){
+    reqrank=lrmat.rank_of();
+  }
+  T err = 0;
+  std::vector<int> ir = lrmat.get_ir();
+  std::vector<int> ic = lrmat.get_ic();
+
+  for (int j=0;j<lrmat.nb_rows();j++){
+    for (int k=0;k<lrmat.nb_cols();k++){
+      T aux=ref.get_coefs(ir[j],ic[k])[l];
+      for (int l=0;l<reqrank;l++){
+        aux = aux - lrmat.get_U(j,l) * lrmat.get_V(l,k);
+      }
+      err+=std::pow(std::abs(aux),2);
+    }
+  }
+  return std::sqrt(err);
+}
+
+template<typename T >
+double Frobenius_absolute_error(const LowRankMatrix<std::complex<T>>& lrmat, const MultiIMatrix<std::complex<T>>& ref, int l,int reqrank=-1){
+  assert(reqrank<=lrmat.rank_of());
+  if (reqrank==-1){
+    reqrank=lrmat.rank_of();
+  }
+  T err = 0;
+  std::vector<int> ir = lrmat.get_ir();
+  std::vector<int> ic = lrmat.get_ic();
+
+  for (int j=0;j<lrmat.nb_rows();j++){
+    for (int k=0;k<lrmat.nb_cols();k++){
+      std::complex<T> aux=ref.get_coefs(ir[j],ic[k])[l];
       for (int l=0;l<reqrank;l++){
         aux = aux - lrmat.get_U(j,l) * lrmat.get_V(l,k);
       }

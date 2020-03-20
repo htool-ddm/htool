@@ -7,32 +7,13 @@
 #include <vector>
 #include <cassert>
 #include "multilrmat.hpp"
-#include "../lrmat/partialACA.hpp"
 #include "../types/multimatrix.hpp"
 
 
 namespace htool {
-//================================//
-//   CLASSE MATRICE RANG FAIBLE   //
-//================================//
-//
-// Refs biblio:
-//
-//  -> slides de Stéphanie Chaillat:
-//           http://uma.ensta-paristech.fr/var/files/chaillat/seance2.pdf
-//           et en particulier la slide 25
-//
-//  -> livre de M.Bebendorf:
-//           http://www.springer.com/kr/book/9783540771463
-//           et en particulier le paragraphe 3.4
-//
-//  -> livre de Rjasanow-Steinbach:
-//           http://www.ems-ph.org/books/book.php?proj_nr=125
-//           et en particulier le paragraphe 3.2
-//
-//=================================//
+
 template< typename T >
-class MultipartialACA: public MultiLowRankMatrix<partialACA,T>{
+class MultipartialACA: public MultiLowRankMatrix<T>{
 
 
 public:
@@ -41,7 +22,7 @@ public:
 	//=========================//
     // If reqrank=-1 (default value), we use the precision given by epsilon for the stopping criterion;
     // otherwise, we use the required rank for the stopping criterion (!: at the end the rank could be lower)
-	using MultiLowRankMatrix<partialACA,T>::MultiLowRankMatrix;
+	using MultiLowRankMatrix<T>::MultiLowRankMatrix;
 
 	void build(const MultiIMatrix<T>& A, const Cluster& t, const std::vector<R3>& xt,const std::vector<int>& tabt, const Cluster& s, const std::vector<R3>& xs, const std::vector<int>& tabs){
 		if(this->rank == 0){
@@ -95,12 +76,12 @@ public:
 					//==================//
 					// Look for a column
 					double pivot = 0.;
-					// SubMatrix<T> row = A.get_submatrix(std::vector<int> {this->ir[I]},this->ic);
-					for(int k=0; k<this->nc; k++){
-						coefs = A.get_coefs(this->ir[I],this->ic[k]);
 
-						for (int l=0;l<this->nm;l++){
-							r(k,l) = coefs[l];
+					MultiSubMatrix<T> row = A.get_submatrices(std::vector<int> {this->ir[I]},this->ic);
+
+					for (int l=0;l<this->nm;l++){
+						for(int k=0; k<this->nc; k++){
+							r(k,l) = row[l](0,k);
 							for(int j=0; j<uu.size(); j++){
 								r(k,l) += -uu[j](I,l)*vv[j](k,l);
 							}
@@ -119,11 +100,10 @@ public:
 					// Look for a line
 					if( std::abs(min(r.get_row(J))) > 1e-15 ){
 						double cmax = 0.;
-						// SubMatrix<T> col = A.get_submatrix(this->ir,std::vector<int> {this->ic[J]});
-						for(int j=0; j<this->nr; j++){
-							coefs = A.get_coefs(this->ir[j],this->ic[J]);
-							for (int l=0;l<this->nm;l++){
-								c(j,l) = coefs[l];
+						MultiSubMatrix<T> col = A.get_submatrices(this->ir,std::vector<int> {this->ic[J]});
+						for (int l=0;l<this->nm;l++){
+							for(int j=0; j<this->nr; j++){
+								c(j,l) = col[l](j,0);
 								for(int k=0; k<uu.size(); k++){
 									c(j,l) += -uu[k](j,l)*vv[k](J,l);
 								}

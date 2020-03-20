@@ -7,7 +7,6 @@
 #include <vector>
 #include <cassert>
 #include "lrmat.hpp"
-#include "../multilrmat/multipartialACA.hpp"
 
 
 namespace htool {
@@ -30,17 +29,9 @@ namespace htool {
 //           et en particulier le paragraphe 3.2
 //
 //=================================//
-// Friend class --- forward declaration
-template<typename>
-class MultipartialACA;
-
-
 template<typename T>
 class partialACA: public LowRankMatrix<T>{
-private:
 
-    // Friend
-    friend class MultipartialACA<T>;
 
 public:
 	//=========================//
@@ -78,7 +69,6 @@ public:
 
 			double frob = 0;
 			double aux  = 0;
-
 			// Either we have a required rank
 			// Or it is negative and we have to check the relative error between two iterations.
 			//But to do that we need a least two iterations.
@@ -126,7 +116,6 @@ public:
 								I=j; cmax=std::abs(c[j]);}
 						}
 						visited_col[J] = true;
-
 						// Test if no given rank
 						if (reqrank<0){
 							// Error estimator
@@ -155,7 +144,6 @@ public:
 					}
 				}
 			}
-
 			// Final rank
 			this->rank=q;
 			if (this->rank>0){

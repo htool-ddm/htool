@@ -23,6 +23,8 @@
 #include "lrmat/partialACA.hpp"
 #include "lrmat/sympartialACA.hpp"
 
+#include "multilrmat/multilrmat.hpp"
+#include "multilrmat/multipartialACA.hpp"
 
 #include "misc/infos.hpp"
 #include "misc/parametres.hpp"
@@ -30,6 +32,8 @@
 
 #include "types/hmatrix.hpp"
 #include "types/matrix.hpp"
+#include "types/multihmatrix.hpp"
+#include "types/multimatrix.hpp"
 #include "types/point.hpp"
 #include "types/vector.hpp"
 

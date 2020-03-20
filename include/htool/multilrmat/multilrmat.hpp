@@ -4,17 +4,17 @@
 #include <vector>
 #include "../clustering/cluster.hpp"
 #include "../types/multimatrix.hpp"
-#include "../lrmat/lrmat.hpp"
+#include "../lrmat/barelrmat.hpp"
 namespace htool{
 
-template< template<typename> class LowRankMatrix, typename T >
+template< typename T >
 class MultiLowRankMatrix: public Parametres{
 
 protected:
     // Data member
     int rank, nr, nc, nm;
     // Matrix<T>  U,V;
-    std::vector<LowRankMatrix<T>> LowRankMatrices;
+    std::vector<bareLowRankMatrix<T>> LowRankMatrices;
     std::vector<int> ir;
     std::vector<int> ic;
     int offset_i;
@@ -42,20 +42,20 @@ public:
     int nb_rows()   const {return this->nr;}
     int nb_cols()   const {return this->nc;}
     int nb_lrmats() const {return this->nm;}
-    // int rank_of() const {return this->rank;}
+    int rank_of() const {return this->rank;}
     std::vector<int> get_ir() const {return this->ir;}
     std::vector<int> get_ic() const {return this->ic;}
     int get_offset_i() const {return this->offset_i;}
     int get_offset_j() const {return this->offset_j;}
 
-    LowRankMatrix<T>&  operator[](int j){return LowRankMatrices[j];}; 
-    const LowRankMatrix<T>&  operator[](int j) const {return LowRankMatrices[j];}; 
+    bareLowRankMatrix<T>&  operator[](int j){return LowRankMatrices[j];}; 
+    const bareLowRankMatrix<T>&  operator[](int j) const {return LowRankMatrices[j];}; 
 
 
 };
 
-template< template<typename> class LowRankMatrix, typename T >
-double Frobenius_absolute_error(const MultiLowRankMatrix<LowRankMatrix,T>& lrmat, const MultiIMatrix<T>& ref, int l, int reqrank=-1){
+template<typename T >
+double Frobenius_absolute_error(const MultiLowRankMatrix<T>& lrmat, const MultiIMatrix<T>& ref, int l, int reqrank=-1){
   assert(reqrank<=lrmat[l].rank_of());
   if (reqrank==-1){
     reqrank=lrmat[l].rank_of();
@@ -75,8 +75,8 @@ double Frobenius_absolute_error(const MultiLowRankMatrix<LowRankMatrix,T>& lrmat
   return std::sqrt(err);
 }
 
-template< template<typename> class LowRankMatrix, typename T >
-double Frobenius_absolute_error(const MultiLowRankMatrix<LowRankMatrix,std::complex<T>>& lrmat, const MultiIMatrix<std::complex<T>>& ref, int l, int reqrank=-1){
+template<typename T >
+double Frobenius_absolute_error(const MultiLowRankMatrix<std::complex<T>>& lrmat, const MultiIMatrix<std::complex<T>>& ref, int l, int reqrank=-1){
   assert(reqrank<=lrmat[l].rank_of());
   if (reqrank==-1){
     reqrank=lrmat.rank_of();

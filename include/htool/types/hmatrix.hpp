@@ -12,7 +12,7 @@
 #include <map>
 #include <memory>
 #include "matrix.hpp"
-// #include "multihmatrix.hpp"
+#include "multihmatrix.hpp"
 #include "../misc/parametres.hpp"
 #include "../clustering/cluster_tree.hpp"
 #include "../wrappers/wrapper_mpi.hpp"
@@ -25,7 +25,9 @@ namespace htool {
 //===============================//
 //     MATRICE HIERARCHIQUE      //
 //===============================//
-// Friend functions
+// Friend functions --- forward declaration
+template<template<typename> class MultiLowRankMatrix, typename T >
+class MultiHMatrix;
 template< template<typename> class LowRankMatrix, typename T >
 class HMatrix;
 
@@ -74,7 +76,12 @@ private:
 	void ComputeInfos(const std::vector<double>& mytimes);
 
 	// Friends
-	// friend class MultiHMatrix < template<typename> class LowRankMatrix, typename T >; 
+	template<template<typename> class MultiLowRankMatrix,typename U > friend class MultiHMatrix; 
+
+
+	// Special constructor for hand-made build (for MultiHMatrix for example)
+	HMatrix(int nr0, int nc0,const std::shared_ptr<Cluster_tree>& cluster_tree_t0, const std::shared_ptr<Cluster_tree>& cluster_tree_s0): nr(nr0), nc(nc0), cluster_tree_t(cluster_tree_t0), cluster_tree_s(cluster_tree_s0){};
+
 
 public:
 	// Build
