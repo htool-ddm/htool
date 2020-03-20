@@ -75,14 +75,11 @@ int main(int argc, char *argv[]){
 		// Test multi lrmat
 		std::pair<double,double> fixed_compression_interval(0.87,0.89);
 		std::pair<double,double> auto_compression_interval(0.93,0.96);
-		for (int l=0;l<nm;l++){
-			if (verbose)
-				cout << "Matrix numbered : " << NbrToStr(l) << endl;
-			test = test || (test_multi_lrmat(A,A_partialACA_fixed,A_partialACA,permt,perms,fixed_compression_interval,auto_compression_interval,l,verbose));
-		}
 		
-	}
+		test = test || (test_multi_lrmat(A,A_partialACA_fixed,A_partialACA,permt,perms,fixed_compression_interval,auto_compression_interval,verbose));
 	
+	}
+
 	if (verbose)
 		cout << "test : "<<test<<endl;
 	return test;

@@ -55,46 +55,58 @@ public:
 };
 
 template<typename T >
-double Frobenius_absolute_error(const MultiLowRankMatrix<T>& lrmat, const MultiIMatrix<T>& ref, int l, int reqrank=-1){
-  assert(reqrank<=lrmat[l].rank_of());
+std::vector<double> Frobenius_absolute_error(const MultiLowRankMatrix<T>& lrmat, const MultiIMatrix<T>& ref, int reqrank=-1){
+  assert(reqrank<=lrmat[0].rank_of());
   if (reqrank==-1){
-    reqrank=lrmat[l].rank_of();
+      reqrank=lrmat[0].rank_of();
   }
-  T err = 0;
+  std::vector<T> err (lrmat.nb_lrmats(),0);
   std::vector<int> ir = lrmat.get_ir();
   std::vector<int> ic = lrmat.get_ic();
+  std::vector<T> aux(lrmat.nb_lrmats());
+
   for (int j=0;j<lrmat.nb_rows();j++){
     for (int k=0;k<lrmat.nb_cols();k++){
-      T aux=ref.get_coefs(ir[j],ic[k])[l];
-      for (int r=0;r<reqrank;r++){
-        aux = aux - lrmat[l].get_U(j,r) * lrmat[l].get_V(r,k);
+      aux=ref.get_coefs(ir[j],ic[k]);
+      for (int l=0;l<lrmat.nb_lrmats();l++){
+        for (int r=0;r<reqrank;r++){
+          aux[l] = aux[l] - lrmat[l].get_U(j,r) * lrmat[l].get_V(r,k);
+        }
+        err[l]+=std::pow(std::abs(aux[l]),2);
       }
-      err+=std::pow(std::abs(aux),2);
     }
   }
-  return std::sqrt(err);
+
+  std::transform(err.begin(), err.end(), err.begin(), (double(*)(double)) sqrt);
+  return err;
 }
 
 template<typename T >
-double Frobenius_absolute_error(const MultiLowRankMatrix<std::complex<T>>& lrmat, const MultiIMatrix<std::complex<T>>& ref, int l, int reqrank=-1){
+std::vector<double> Frobenius_absolute_error(const MultiLowRankMatrix<std::complex<T>>& lrmat, const MultiIMatrix<std::complex<T>>& ref, int reqrank=-1){
   assert(reqrank<=lrmat[l].rank_of());
-  if (reqrank==-1){
-    reqrank=lrmat.rank_of();
-  }
-  T err = 0;
+
+  std::vector<T> err (lrmat.nb_lrmats(),0);
   std::vector<int> ir = lrmat.get_ir();
   std::vector<int> ic = lrmat.get_ic();
-
+  std::vector<std::complex<T>> aux(lrmat.nb_lrmats());
+double test_time = MPI_Wtime();
   for (int j=0;j<lrmat.nb_rows();j++){
     for (int k=0;k<lrmat.nb_cols();k++){
-      std::complex<T> aux=ref.get_coefs(ir[j],ic[k])[l];
-      for (int r=0;r<reqrank;r++){
-        aux = aux - lrmat[l].get_U(j,r) * lrmat[l].get_V(r,k);
+      aux=ref.get_coefs(ir[j],ic[k]);
+      for (int l=0;l<lrmat.nb_lrmats();l++){
+        if (reqrank==-1){
+          reqrank=lrmat.rank_of();
+        }
+        for (int r=0;r<reqrank;r++){
+          aux[l] = aux[l] - lrmat[l].get_U(j,r) * lrmat[l].get_V(r,k);
+        }
+        err[l]+=std::pow(std::abs(aux[l]),2);
       }
-      err+=std::pow(std::abs(aux),2);
     }
   }
-  return std::sqrt(err);
+std::cout << "Compute : "<<MPI_Wtime()-test_time<< std::endl;
+  std::transform(err.begin(), err.end(), err.begin(), (double(*)(double)) sqrt);
+  return err;
 }
 
 }
