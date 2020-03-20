@@ -61,10 +61,9 @@ int main(int argc, char *argv[]) {
     distance[0] = 3; distance[1] = 5; distance[2] = 7; distance[3] = 10;
     int mu = 5;
     SetNdofPerElt(1);
-    SetEpsilon(1e-6);
+    SetEpsilon(1e-8);
     SetEta(0.1);
-    SetMinClusterSize(2);
-    // SetMaxBlockSize(25);
+
 
     for(int idist=0; idist<ndistance; idist++)
     {

@@ -1,6 +1,7 @@
 #include <iostream>
 #include <complex>
 #include <vector>
+#include <random>
 
 #include <htool/types/hmatrix.hpp>
 #include <htool/lrmat/SVD.hpp>
@@ -33,7 +34,7 @@ public:
 };
 
 template<template<typename> class LowRankMatrix>
-int test_hmat_auto(int argc, char *argv[],double matvec_tol) {
+int test_hmat_auto(int argc, char *argv[]) {
 
 	// Initialize the MPI environment
 	MPI_Init(&argc,&argv);
@@ -102,13 +103,28 @@ int test_hmat_auto(int argc, char *argv[],double matvec_tol) {
 		HMatrix<LowRankMatrix,double> HA(A,p1,r1,tab1,g1,p2,r2,tab2,g2);
 		HA.print_infos();
 
-		std::vector<double> f(nc,1),result(nr,0);
+		// Random vector
+		vector<double> f(nc,1);
+		if (rank==0){
+			double lower_bound = 0;
+			double upper_bound = 10000;
+			std::random_device rd;
+			std::mt19937 mersenne_engine(rd());
+			std::uniform_real_distribution<double> dist(lower_bound,upper_bound);
+			auto gen = [&dist, &mersenne_engine](){
+						return dist(mersenne_engine);
+					};
+
+			generate(begin(f), end(f), gen);
+		}
+		MPI_Bcast(f.data(),nc,MPI_DOUBLE,0,MPI_COMM_WORLD);
+		std::vector<double> result(nr,0);
 		result = HA*f;
-		double erreur2 = norm2(A*f-result);
+		double erreur2 = norm2(A*f-result)/norm2(A*f);
 		double erreurFrob = Frobenius_absolute_error(HA,A);
 
 		test = test || !(erreurFrob<GetEpsilon());
-		test = test || !(erreur2<GetEpsilon()*matvec_tol);
+		test = test || !(erreur2<GetEpsilon());
 
 		if (rank==0){
 			cout << "Errors with Frobenius norm: "<<erreurFrob<<endl;

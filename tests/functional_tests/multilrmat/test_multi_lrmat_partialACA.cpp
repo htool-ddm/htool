@@ -3,6 +3,7 @@
 #include <vector>
 
 #include <htool/multilrmat/multipartialACA.hpp>
+#include <htool/lrmat/partialACA.hpp>
 #include "test_multi_lrmat.hpp"
 
 
@@ -10,7 +11,13 @@ using namespace std;
 using namespace htool;
 
 
-int main(){
+int main(int argc, char *argv[]){
+
+	bool verbose=0;
+	if (argc>=2){
+		verbose=argv[1];
+	}
+
 	const int ndistance = 4;
 	double distance[ndistance];
 	distance[0] = 15; distance[1] = 20; distance[2] = 30; distance[3] = 40;
@@ -20,17 +27,19 @@ int main(){
 
 	int nr=500;
 	int nc=100;
-// int nr=5;
-// 	int nc=10;
+	
 	std::vector<R3> xt(nr);
 	std::vector<R3> xs(nc);
-	std::vector<int> tabt(500);
-	std::vector<int> tabs(100);
+	std::vector<int> tabt(nr);
+	std::vector<int> tabs(nc);
 	bool test =0;
+
+	double test_time;
+
 	for(int idist=0; idist<ndistance; idist++)
 	{
 		
-		create_geometry(distance[idist],xt,tabt,xs,tabs);
+		create_geometry(distance[idist],xt,tabt,xs,tabs,verbose);
 
 		std::vector<int> permt,perms;
 		Cluster t(xt,permt); Cluster s(xs,perms); // We avoid 
@@ -54,22 +63,27 @@ int main(){
 		// Comparison with lrmat
 		std::vector<double> one(nc,1);
 		test = test || !(norm2(A_partialACA_fixed[0]*one-A_partialACA_fixed_test*one)<1e-10);
-		cout << "> Errors for fixed rank compared to lrmat: "<<norm2(A_partialACA_fixed[0]*one-A_partialACA_fixed_test*one)<<endl;
+		if (verbose)
+			cout << "> Errors for fixed rank compared to lrmat: "<<norm2(A_partialACA_fixed[0]*one-A_partialACA_fixed_test*one)<<endl;
 
 		test = test || !(norm2(A_partialACA[0]*one-A_partialACA_test*one)<1e-10);
-		cout << "> Errors for auto rank compared to lrmat: "<<norm2(A_partialACA[0]*one-A_partialACA_test*one)<<endl;
+		if (verbose)
+			cout << "> Errors for auto rank compared to lrmat: "<<norm2(A_partialACA[0]*one-A_partialACA_test*one)<<endl;
 
-
+		
 
 		// Test multi lrmat
 		std::pair<double,double> fixed_compression_interval(0.87,0.89);
 		std::pair<double,double> auto_compression_interval(0.93,0.96);
 		for (int l=0;l<nm;l++){
-			cout << "Matrix numbered : " << NbrToStr(l) << endl;
-			test = test || (test_multi_lrmat(A,A_partialACA_fixed,A_partialACA,permt,perms,fixed_compression_interval,auto_compression_interval,l));
+			if (verbose)
+				cout << "Matrix numbered : " << NbrToStr(l) << endl;
+			test = test || (test_multi_lrmat(A,A_partialACA_fixed,A_partialACA,permt,perms,fixed_compression_interval,auto_compression_interval,l,verbose));
 		}
 		
 	}
-	cout << "test : "<<test<<endl;
+	
+	if (verbose)
+		cout << "test : "<<test<<endl;
 	return test;
 }

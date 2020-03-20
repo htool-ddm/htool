@@ -4,5 +4,5 @@
 int main(int argc, char *argv[]) {
 
 	
-	return test_hmat_auto<sympartialACA>(argc,argv,10);
+	return test_hmat_auto<sympartialACA>(argc,argv);
 }

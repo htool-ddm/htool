@@ -10,7 +10,13 @@ using namespace std;
 using namespace htool;
 
 
-int main(){
+int main(int argc, char *argv[]){
+
+	bool verbose=0;
+	if (argc>=2){
+		verbose=argv[1];
+	}
+
 	const int ndistance = 4;
 	double distance[ndistance];
 	distance[0] = 15; distance[1] = 20; distance[2] = 30; distance[3] = 40;
@@ -28,7 +34,7 @@ int main(){
 	for(int idist=0; idist<ndistance; idist++)
 	{
 		
-		create_geometry(distance[idist],xt,tabt,xs,tabs);
+		create_geometry(distance[idist],xt,tabt,xs,tabs,verbose);
 
 		std::vector<int> permt,perms;
 		Cluster t(xt,permt); Cluster s(xs,perms); // We avoid 
@@ -39,14 +45,16 @@ int main(){
 		partialACA<double> A_partialACA_fixed(permt,perms,reqrank_max);
 		A_partialACA_fixed.build(A,t,xt,tabt,s,xs,tabs);;
 
+		
 		// ACA automatic building
 		partialACA<double> A_partialACA(permt,perms);
 		A_partialACA.build(A,t,xt,tabt,s,xs,tabs);
-
+		
 		std::pair<double,double> fixed_compression_interval(0.87,0.89);
 		std::pair<double,double> auto_compression_interval(0.93,0.96);
-		test = test || (test_lrmat(A,A_partialACA_fixed,A_partialACA,permt,perms,fixed_compression_interval,auto_compression_interval));
+		test = test || (test_lrmat(A,A_partialACA_fixed,A_partialACA,permt,perms,fixed_compression_interval,auto_compression_interval,verbose));
 	}
+	
 	cout << "test : "<<test<<endl;
 	return test;
 }

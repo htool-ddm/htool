@@ -1,6 +1,7 @@
 #include <iostream>
 #include <complex>
 #include <vector>
+#include <random>
 
 #include <htool/clustering/cluster.hpp>
 #include <htool/types/hmatrix.hpp>
@@ -105,13 +106,29 @@ int test_hmat_cluster(int argc, char *argv[]) {
 		HMatrix<LowRankMatrix,double> HA(A,t,p1,tab1,s,p2,tab2);
 		HA.print_infos();
 
-		std::vector<double> f(nc,1),result(nr,0);
+		// Random vector
+		vector<double> f(nc,1);
+		if (rank==0){
+			double lower_bound = 0;
+			double upper_bound = 10000;
+			std::random_device rd;
+			std::mt19937 mersenne_engine(rd());
+			std::uniform_real_distribution<double> dist(lower_bound,upper_bound);
+			auto gen = [&dist, &mersenne_engine](){
+						return dist(mersenne_engine);
+					};
+
+			generate(begin(f), end(f), gen);
+		}
+		MPI_Bcast(f.data(),nc,MPI_DOUBLE,0,MPI_COMM_WORLD);
+
+		std::vector<double> result(nr,0);
 		result = HA*f;
-		double erreur2 = norm2(A*f-result);
+		double erreur2 = norm2(A*f-result)/norm2(A*f);
 		double erreurFrob = Frobenius_absolute_error(HA,A);
 
 		test = test || !(erreurFrob<GetEpsilon());
-		test = test || !(erreur2<GetEpsilon()*10);
+		test = test || !(erreur2<GetEpsilon());
 
 		if (rank==0){
 			cout << "Errors with Frobenius norm: "<<erreurFrob<<endl;
