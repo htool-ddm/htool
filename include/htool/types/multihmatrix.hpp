@@ -249,8 +249,9 @@ bool MultiHMatrix<MultiLowRankMatrix,T >::AddFarFieldMat(MultiIMatrix<T>& mat, c
 template< template<typename> class MultiLowRankMatrix, typename T >
 double Frobenius_absolute_error(const MultiHMatrix<MultiLowRankMatrix,T>& B, const MultiIMatrix<T>& A, int l){
 	double myerr = 0;
-	for(int j=0; j<B[l].MyFarFieldMats.size(); j++){
-		double test = Frobenius_absolute_error(*(B[l].MyFarFieldMats[j]), A,l);
+	std::vector<bareLowRankMatrix<T>* > MyFarFieldMats=B[l].get_MyFarFieldMats();
+	for(int j=0; j<MyFarFieldMats.size(); j++){
+		double test = Frobenius_absolute_error(*(MyFarFieldMats[j]), A,l);
 		myerr += std::pow(test,2);
 
 	}
