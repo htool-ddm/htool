@@ -59,9 +59,8 @@ public:
 	 }
 };
 
-void create_geometry(int distance, std::vector<R3>& xt, std::vector<int>& tabt, std::vector<R3>& xs, std::vector<int>& tabs,bool verbose){
-	if (verbose)
-		cout << "Distance between the clusters: " << NbrToStr(distance) << endl;
+void create_geometry(int distance, std::vector<R3>& xt, std::vector<int>& tabt, std::vector<R3>& xs, std::vector<int>& tabs){
+	cout << "Distance between the clusters: " << NbrToStr(distance) << endl;
 	
 	srand (1);
 	// we set a constant seed for rand because we want always the same result if we run the check many times
@@ -94,7 +93,7 @@ void create_geometry(int distance, std::vector<R3>& xt, std::vector<int>& tabt, 
 }
 
 template< template<typename> class MultiLowRankMatrix, typename T >
-int test_multi_lrmat(const MyMultiMatrix& A,const MultiLowRankMatrix<T>& Fixed_approximation, const MultiLowRankMatrix<T>& Auto_approximation, std::vector<int>& permt, std::vector<int>& perms, std::pair<double,double> fixed_compression_interval, std::pair<double,double> auto_compression_interval, bool verbose){
+int test_multi_lrmat(const MyMultiMatrix& A,const MultiLowRankMatrix<T>& Fixed_approximation, const MultiLowRankMatrix<T>& Auto_approximation, std::vector<int>& permt, std::vector<int>& perms, std::pair<double,double> fixed_compression_interval, std::pair<double,double> auto_compression_interval){
 
 	bool test = 0;
 	int nr=permt.size();
@@ -123,22 +122,19 @@ int test_multi_lrmat(const MyMultiMatrix& A,const MultiLowRankMatrix<T>& Fixed_a
 
 	// Test rank
 	test = test || !(Fixed_approximation.rank_of()==reqrank_max);
-	if (verbose){
-		cout << "Compression with fixed rank" << endl;
-		cout << "> rank : "<<Fixed_approximation.rank_of() << endl;
-	}
+	std::cout << test << " "  << reqrank_max<< " "<<Fixed_approximation.rank_of()<< std::endl;
+	cout << "Compression with fixed rank" << endl;
+	cout << "> rank : "<<Fixed_approximation.rank_of() << endl;
 
 	// Test Frobenius errors
-	test = test || !(max(fixed_errors.back())<1e-8);
-	if (verbose)
-		cout << "> Errors with Frobenius norm : "<<fixed_errors<<endl;
+	test = test || !(max(fixed_errors.back())<1e-7);
+	cout << "> Errors with Frobenius norm : "<<fixed_errors<<endl;
 
 	for (int l=0;l<A.nb_matrix();l++){
 
 		// Test compression
 		test = test || !(fixed_compression_interval.first<Fixed_approximation[l].compression() && Fixed_approximation[l].compression()<fixed_compression_interval.second);
-		if (verbose)
-			cout << "> Compression rate : "<<Fixed_approximation[l].compression()<<endl;
+		cout << "> Compression rate : "<<Fixed_approximation[l].compression()<<endl;
 
 
 		// Test mat vec prod
@@ -149,8 +145,8 @@ int test_multi_lrmat(const MyMultiMatrix& A,const MultiLowRankMatrix<T>& Fixed_a
 		}
 		double error=norm2(A.mult(f,l)-out_perm)/norm2(A.mult(f,l));
 		test = test || !(error<GetEpsilon()*10);
-		if (verbose)
-			cout << "> Errors on a mat vec prod : "<< error<<endl;
+		cout << "> Errors on a mat vec prod : "<< error<< " " << (GetEpsilon()*10)<<" "<<(error<GetEpsilon()*10)<<endl;
+		cout << "test : "<<test<<endl<<endl;
 
 	}
 
@@ -160,20 +156,17 @@ int test_multi_lrmat(const MyMultiMatrix& A,const MultiLowRankMatrix<T>& Fixed_a
 	for (int k = 0 ; k < Auto_approximation.rank_of()+1 ; k++){
 		auto_errors.push_back(Frobenius_absolute_error(Auto_approximation,A,k));
 	}
-	if (verbose)
-		cout << "Automatic compression" << endl;
+	cout << "Automatic compression" << endl;
 
 	// Test Frobenius error
 	test = test || !(max(auto_errors[Auto_approximation.rank_of()])<GetEpsilon());
-	if (verbose)
-		cout << "> Errors with Frobenius norm: "<<auto_errors<<endl;
+	cout << "> Errors with Frobenius norm: "<<auto_errors<<endl;
 
 	for (int l=0;l<A.nb_matrix();l++){
 		
 		// Test compression rate
 		test = test || !(auto_compression_interval.first<Auto_approximation[l].compression() && Auto_approximation[l].compression()<auto_compression_interval.second);
-		if (verbose)
-			cout << "> Compression rate : "<<Auto_approximation[l].compression()<<endl;
+		cout << "> Compression rate : "<<Auto_approximation[l].compression()<<endl;
 
 		// Test mat vec prod
 		std::vector<double> out_perm(nr);
@@ -183,9 +176,7 @@ int test_multi_lrmat(const MyMultiMatrix& A,const MultiLowRankMatrix<T>& Fixed_a
 		}
 		double error = norm2(A.mult(f,l)-out_perm)/norm2(A.mult(f,l));
 		test = test || !(error<GetEpsilon()*10);
-		if (verbose){
-			cout << "> Errors on a mat vec prod : "<< error<<endl;
-		}
+		cout << "> Errors on a mat vec prod : "<< error<<endl;
 
 
 		cout << "test : "<<test<<endl<<endl;

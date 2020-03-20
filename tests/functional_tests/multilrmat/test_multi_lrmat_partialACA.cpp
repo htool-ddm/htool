@@ -13,10 +13,6 @@ using namespace htool;
 
 int main(int argc, char *argv[]){
 
-	bool verbose=0;
-	if (argc>=2){
-		verbose=argv[1];
-	}
 
 	const int ndistance = 4;
 	double distance[ndistance];
@@ -39,7 +35,7 @@ int main(int argc, char *argv[]){
 	for(int idist=0; idist<ndistance; idist++)
 	{
 		
-		create_geometry(distance[idist],xt,tabt,xs,tabs,verbose);
+		create_geometry(distance[idist],xt,tabt,xs,tabs);
 
 		std::vector<int> permt,perms;
 		Cluster t(xt,permt); Cluster s(xs,perms); // We avoid 
@@ -63,12 +59,10 @@ int main(int argc, char *argv[]){
 		// Comparison with lrmat
 		std::vector<double> one(nc,1);
 		test = test || !(norm2(A_partialACA_fixed[0]*one-A_partialACA_fixed_test*one)<1e-10);
-		if (verbose)
-			cout << "> Errors for fixed rank compared to lrmat: "<<norm2(A_partialACA_fixed[0]*one-A_partialACA_fixed_test*one)<<endl;
+		cout << "> Errors for fixed rank compared to lrmat: "<<norm2(A_partialACA_fixed[0]*one-A_partialACA_fixed_test*one)<<endl;
 
 		test = test || !(norm2(A_partialACA[0]*one-A_partialACA_test*one)<1e-10);
-		if (verbose)
-			cout << "> Errors for auto rank compared to lrmat: "<<norm2(A_partialACA[0]*one-A_partialACA_test*one)<<endl;
+		cout << "> Errors for auto rank compared to lrmat: "<<norm2(A_partialACA[0]*one-A_partialACA_test*one)<<endl;
 
 		
 
@@ -76,11 +70,10 @@ int main(int argc, char *argv[]){
 		std::pair<double,double> fixed_compression_interval(0.87,0.89);
 		std::pair<double,double> auto_compression_interval(0.93,0.96);
 		
-		test = test || (test_multi_lrmat(A,A_partialACA_fixed,A_partialACA,permt,perms,fixed_compression_interval,auto_compression_interval,verbose));
+		test = test || (test_multi_lrmat(A,A_partialACA_fixed,A_partialACA,permt,perms,fixed_compression_interval,auto_compression_interval));
 	
 	}
 
-	if (verbose)
-		cout << "test : "<<test<<endl;
+	cout << "test : "<<test<<endl;
 	return test;
 }
