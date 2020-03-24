@@ -40,7 +40,7 @@ cmake ..
 cmake --build . --config Release --target install -- -j $(nproc)
 ```
 
-Note that you can modify the install prefix using `cmake ..  -DCMAKE_INSTALL_PREFIX:PATH=your/install/path` instead of the fourth line.
+Note that you can modify the install prefix using `cmake ..  -DCMAKE_INSTALL_PREFIX:PATH=your/install/path` instead of the third line.
 
 In Python, you can do
 
