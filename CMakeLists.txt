@@ -1,7 +1,7 @@
 #=============================================================================#
 #============================== Project ======================================#
 #=============================================================================#
-cmake_minimum_required(VERSION 3.0)
+cmake_minimum_required(VERSION 3.12)
 Project(Htool 
 	VERSION 1.0
 	DESCRIPTION "A header only c++ library that provides Hierarchical matrices."
