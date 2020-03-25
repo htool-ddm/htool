@@ -63,6 +63,7 @@ option(HTOOL_WITH_PYTHON_INTERFACE     "Build htool visualization tools ?" OFF)
 find_package (MPI REQUIRED)
 message("-- MPI libraries found in " "${MPI_LIBRARIES}")
 message("-- MPI include files found in " "${MPI_INCLUDE_PATH}")
+separate_arguments(MPIEXEC_PREFLAGS) # to support multi flags
 
 # OPENMP
 find_package(OpenMP)

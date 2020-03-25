@@ -1,5 +1,3 @@
-sudo: false
-
 # Git options
 git:
   submodules: false
@@ -7,160 +5,43 @@ git:
 # Enable c++ support
 language: cpp
 
-# # Cache
-# cache:
-#   directories:
-#     - $HOME/Library/Caches/Homebrew
-
+services:
+  - docker
 
 # Compiler selection
 matrix:
   include:
-    # Tests on osx
-    - os: osx
-      env:
-        - CXX=clang++
-        - CC=clang
-      install:
-        - brew install mpich
-        - brew install suite-sparse
-        # - brew reinstall python
-        - pip3 install pytest
+      # - env: CC_COMPILER=gcc CXX_COMPILER=g++ TESTING_ENV=ubuntu_openmpi MPIEXEC_PREFLAGS="--allow-run-as-root --oversubscribe"
 
-    ## mpich does not work anymore with gcc
-    ## it would need to be compiled with gcc...
-    # - os: osx
-    #   env:
-    #     - CXX_COMPILER=g++-7
-    #     - C_COMPILER=gcc-7
-    #   install:
-    #     - brew install gcc
-    #     - brew install mpich
-    - os: osx
-      env:
-        - CXX=clang++
-        - CC=clang
-        - MPIEXEC_PREFLAGS=-oversubscribe
-      install:
-        - brew install openmpi
-        - brew install suite-sparse
-        # - brew reinstall python
-        - pip3 install pytest
+      # - env: CC_COMPILER=clang CXX_COMPILER=clang++ TESTING_ENV=ubuntu_openmpi MPIEXEC_PREFLAGS="--allow-run-as-root --oversubscribe"
 
-    - os: osx
-      env:
-        - CXX_COMPILER=g++-9
-        - C_COMPILER=gcc-9
-        - MPIEXEC_PREFLAGS=-oversubscribe
-      install:
-        # - brew install gcc
-        - brew install openmpi
-        - brew install suite-sparse
-        # - brew reinstall python
-        - pip3 install pytest
+      # - env: CC_COMPILER=gcc CXX_COMPILER=g++ TESTING_ENV=ubuntu_mpich
 
-    - os: linux
-      env: PYTHON=3.8
-      dist: xenial
-      group: travis_latest
-      compiler: clang
-      addons:
-        apt:
-          sources:
-            - ubuntu-toolchain-r-test
-          packages:
-            - mpich
-            - libmpich-dev
-            - libblas-dev
-            - liblapack-dev
-            - libsuitesparse-dev
-      install:
-        - pip3 install pytest
+      # - env: CC_COMPILER=clang CXX_COMPILER=clang++ TESTING_ENV=ubuntu_mpich
 
-    - os: linux
-      env: PYTHON=3.8
-      dist: xenial
-      group: travis_latest
-      compiler: gcc
-      addons:
-        apt:
-          sources:
-            - ubuntu-toolchain-r-test
-          packages:
-            - mpich
-            - libmpich-dev
-            - libblas-dev
-            - liblapack-dev
-            - libsuitesparse-dev
-      install:
-        - pip3 install pytest
+      - env: CC_COMPILER=gcc CXX_COMPILER=g++ TESTING_ENV=debian_openmpi MPIEXEC_PREFLAGS="--allow-run-as-root --oversubscribe" OMPI_MCA_rmaps_base_oversubscribe=1
 
+      - env: CC_COMPILER=clang CXX_COMPILER=clang++ TESTING_ENV=debian_openmpi MPIEXEC_PREFLAGS="--allow-run-as-root --oversubscribe"
 
-    - os: linux
-      env: PYTHON=3.8
-      dist: xenial
-      group: travis_latest
-      compiler: clang
-      addons:
-        apt:
-          sources:
-            - ubuntu-toolchain-r-test
-          packages:
-            - openmpi-bin
-            - libopenmpi-dev
-            - libblas-dev
-            - liblapack-dev
-            - libsuitesparse-dev
-      install:
-        - pip3 install pytest
+      # - env: CC_COMPILER=gcc CXX_COMPILER=g++ TESTING_ENV=debian_mpich
 
+      # - env: CC_COMPILER=clang CXX_COMPILER=clang++ TESTING_ENV=debian_mpich
 
-    - os: linux
-      env: PYTHON=3.8
-      dist: xenial
-      group: travis_latest
-      compiler: gcc
-      addons:
-        apt:
-          sources:
-            - ubuntu-toolchain-r-test
-          packages:
-            - openmpi-bin
-            - libopenmpi-dev
-            - libblas-dev
-            - liblapack-dev
-            - libsuitesparse-dev
-      install:
-        - pip3 install pytest
-
-
-
-
-# Updates
-before_install:
-  - if [ "$TRAVIS_OS_NAME" == "osx" ]; then brew update; fi
-  - if [ "$TRAVIS_OS_NAME" == "osx" ]; then brew upgrade cmake; fi
-  - if [ "$TRAVIS_OS_NAME" == "linux" ]; then export LD_LIBRARY_PATH=$(if [[ $CC == "clang" ]]; then echo -n '/usr/local/clang/lib'; fi); fi
-  - if [ "$TRAVIS_OS_NAME" == "linux" ]; then pyenv versions; fi
-  - if [ "$TRAVIS_OS_NAME" == "linux" ]; then pyenv shell  ${PYTHON}; fi
-  - cd .. && git clone https://github.com/hpddm/hpddm.git && cd htool
-
-
-
-before_script:
-  - which $CXX
-  - mkdir build
-  - cd build
+install:
+  - docker pull pierremarchand/htool_testing_environments:${TESTING_ENV}
+  - docker run -itd --name ${TESTING_ENV} pierremarchand/htool_testing_environments:${TESTING_ENV}
+  - docker exec -it ${TESTING_ENV} bash -c "apt-get update && apt-get install -y --reinstall openmpi-bin libopenmpi-dev" 
+  - docker exec -it ${TESTING_ENV} bash -c "cd && git clone https://github.com/hpddm/hpddm.git && git clone --single-branch --branch ${TRAVIS_BRANCH} https://github.com/PierreMarchand20/htool.git" 
+  - docker exec -it ${TESTING_ENV} bash -c "mkdir htool/build"
 
 # Build steps
 script:
-  - cmake ../ -DMPIEXEC_PREFLAGS=${MPIEXEC_PREFLAGS}
-  - make -j build-tests
-  - export OMP_NUM_THREADS=2
-  - ctest --output-on-failure
-  - cd ..
-  - pip3 install . --user
-  - pytest python_tests
-  - mpirun -np 2 ${MPIEXEC_PREFLAGS} pytest python_tests
-  - mpirun -np 4 ${MPIEXEC_PREFLAGS} pytest python_tests
+  - docker exec -it -w /root/htool/build -e MPIEXEC_PREFLAGS="${MPIEXEC_PREFLAGS}" ${TESTING_ENV} bash -c 'CC=${CC_COMPILER} CXX=${CXX_COMPILER} cmake -DMPIEXEC_PREFLAGS="${MPIEXEC_PREFLAGS}" ../'
+  - docker exec -it -w /root/htool/build ${TESTING_ENV} bash -c "make -j build-tests"
+  - docker exec -it ${TESTING_ENV} bash -c "export OMP_NUM_THREADS=2"
+  - docker exec -it -w /root/htool/build ${TESTING_ENV} bash -c "ctest --output-on-failure"
+  - docker exec -it -w /root/htool ${TESTING_ENV} bash -c "pip3 install . --user"
+  - docker exec -it -w /root/htool ${TESTING_ENV} bash -c "pytest python_tests"
+  - docker exec -it -w /root/htool ${TESTING_ENV} bash -c "mpirun -np 2 "${MPIEXEC_PREFLAGS}" pytest python_tests"
+  - docker exec -it -w /root/htool ${TESTING_ENV} bash -c "mpirun -np 4 "${MPIEXEC_PREFLAGS}" pytest python_tests"
 
