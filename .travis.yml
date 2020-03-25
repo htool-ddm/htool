@@ -11,21 +11,29 @@ services:
 # Compiler selection
 matrix:
   include:
-      - env: CC_COMPILER=gcc CXX_COMPILER=g++ TESTING_ENV=ubuntu_openmpi MPIEXEC_PREFLAGS="--allow-run-as-root --oversubscribe"
+      - name: "Ubuntu OpenMPI g++"
+        env: CC_COMPILER=gcc CXX_COMPILER=g++ TESTING_ENV=ubuntu_openmpi MPIEXEC_PREFLAGS="--allow-run-as-root --oversubscribe"
 
-      - env: CC_COMPILER=clang CXX_COMPILER=clang++ TESTING_ENV=ubuntu_openmpi MPIEXEC_PREFLAGS="--allow-run-as-root --oversubscribe"
+      - name: "Ubuntu OpenMPI clang++"
+        env: CC_COMPILER=clang CXX_COMPILER=clang++ TESTING_ENV=ubuntu_openmpi MPIEXEC_PREFLAGS="--allow-run-as-root --oversubscribe"
 
-      - env: CC_COMPILER=gcc CXX_COMPILER=g++ TESTING_ENV=ubuntu_mpich
+      - name: "Ubuntu MPICH gcc++"
+        env: CC_COMPILER=gcc CXX_COMPILER=g++ TESTING_ENV=ubuntu_mpich
 
-      - env: CC_COMPILER=clang CXX_COMPILER=clang++ TESTING_ENV=ubuntu_mpich
+      - name: "Ubuntu MPICH clang++"
+        env: CC_COMPILER=clang CXX_COMPILER=clang++ TESTING_ENV=ubuntu_mpich
 
-      - env: CC_COMPILER=gcc CXX_COMPILER=g++ TESTING_ENV=debian_openmpi MPIEXEC_PREFLAGS="--allow-run-as-root --oversubscribe"
+      - name: "Debian OpenMPI g++"
+        env: CC_COMPILER=gcc CXX_COMPILER=g++ TESTING_ENV=debian_openmpi MPIEXEC_PREFLAGS="--allow-run-as-root --oversubscribe"
 
-      - env: CC_COMPILER=clang CXX_COMPILER=clang++ TESTING_ENV=debian_openmpi MPIEXEC_PREFLAGS="--allow-run-as-root --oversubscribe"
+      - name: "Debian OpenMPI clang++"
+        env: CC_COMPILER=clang CXX_COMPILER=clang++ TESTING_ENV=debian_openmpi MPIEXEC_PREFLAGS="--allow-run-as-root --oversubscribe"
 
-      - env: CC_COMPILER=gcc CXX_COMPILER=g++ TESTING_ENV=debian_mpich
+      - name: "Debian MPICH g++"
+        env: CC_COMPILER=gcc CXX_COMPILER=g++ TESTING_ENV=debian_mpich
 
-      - env: CC_COMPILER=clang CXX_COMPILER=clang++ TESTING_ENV=debian_mpich
+      - name: "Debian MPICH clang++"
+        env: CC_COMPILER=clang CXX_COMPILER=clang++ TESTING_ENV=debian_mpich
 
 install:
   - docker pull pierremarchand/htool_testing_environments:${TESTING_ENV}
