@@ -11,37 +11,37 @@ services:
 # Compiler selection
 matrix:
   include:
-      # - env: CC_COMPILER=gcc CXX_COMPILER=g++ TESTING_ENV=ubuntu_openmpi MPIEXEC_PREFLAGS="--allow-run-as-root --oversubscribe"
+      - env: CC_COMPILER=gcc CXX_COMPILER=g++ TESTING_ENV=ubuntu_openmpi MPIEXEC_PREFLAGS="--allow-run-as-root --oversubscribe"
 
-      # - env: CC_COMPILER=clang CXX_COMPILER=clang++ TESTING_ENV=ubuntu_openmpi MPIEXEC_PREFLAGS="--allow-run-as-root --oversubscribe"
+      - env: CC_COMPILER=clang CXX_COMPILER=clang++ TESTING_ENV=ubuntu_openmpi MPIEXEC_PREFLAGS="--allow-run-as-root --oversubscribe"
 
-      # - env: CC_COMPILER=gcc CXX_COMPILER=g++ TESTING_ENV=ubuntu_mpich
+      - env: CC_COMPILER=gcc CXX_COMPILER=g++ TESTING_ENV=ubuntu_mpich
 
-      # - env: CC_COMPILER=clang CXX_COMPILER=clang++ TESTING_ENV=ubuntu_mpich
+      - env: CC_COMPILER=clang CXX_COMPILER=clang++ TESTING_ENV=ubuntu_mpich
 
-      - env: CC_COMPILER=gcc CXX_COMPILER=g++ TESTING_ENV=debian_openmpi MPIEXEC_PREFLAGS="--allow-run-as-root --oversubscribe" OMPI_MCA_rmaps_base_oversubscribe=1
+      - env: CC_COMPILER=gcc CXX_COMPILER=g++ TESTING_ENV=debian_openmpi MPIEXEC_PREFLAGS="--allow-run-as-root --oversubscribe"
 
       - env: CC_COMPILER=clang CXX_COMPILER=clang++ TESTING_ENV=debian_openmpi MPIEXEC_PREFLAGS="--allow-run-as-root --oversubscribe"
 
-      # - env: CC_COMPILER=gcc CXX_COMPILER=g++ TESTING_ENV=debian_mpich
+      - env: CC_COMPILER=gcc CXX_COMPILER=g++ TESTING_ENV=debian_mpich
 
-      # - env: CC_COMPILER=clang CXX_COMPILER=clang++ TESTING_ENV=debian_mpich
+      - env: CC_COMPILER=clang CXX_COMPILER=clang++ TESTING_ENV=debian_mpich
 
 install:
   - docker pull pierremarchand/htool_testing_environments:${TESTING_ENV}
   - docker run -itd --name ${TESTING_ENV} pierremarchand/htool_testing_environments:${TESTING_ENV}
-  - docker exec -it ${TESTING_ENV} bash -c "apt-get update && apt-get install -y --reinstall openmpi-bin libopenmpi-dev" 
-  - docker exec -it ${TESTING_ENV} bash -c "cd && git clone https://github.com/hpddm/hpddm.git && git clone --single-branch --branch ${TRAVIS_BRANCH} https://github.com/PierreMarchand20/htool.git" 
-  - docker exec -it ${TESTING_ENV} bash -c "mkdir htool/build"
+  - docker exec -it ${TESTING_ENV} bash -c 'apt-get update && apt-get install -y --reinstall openmpi-bin libopenmpi-dev'
+  - docker exec -it ${TESTING_ENV} bash -c 'cd && git clone https://github.com/hpddm/hpddm.git && git clone --single-branch --branch ${TRAVIS_BRANCH} https://github.com/PierreMarchand20/htool.git'
+  - docker exec -it ${TESTING_ENV} bash -c 'mkdir htool/build'
 
 # Build steps
 script:
   - docker exec -it -w /root/htool/build -e MPIEXEC_PREFLAGS="${MPIEXEC_PREFLAGS}" ${TESTING_ENV} bash -c 'CC=${CC_COMPILER} CXX=${CXX_COMPILER} cmake -DMPIEXEC_PREFLAGS="${MPIEXEC_PREFLAGS}" ../'
-  - docker exec -it -w /root/htool/build ${TESTING_ENV} bash -c "make -j build-tests"
-  - docker exec -it ${TESTING_ENV} bash -c "export OMP_NUM_THREADS=2"
-  - docker exec -it -w /root/htool/build ${TESTING_ENV} bash -c "ctest --output-on-failure"
-  - docker exec -it -w /root/htool ${TESTING_ENV} bash -c "pip3 install . --user"
-  - docker exec -it -w /root/htool ${TESTING_ENV} bash -c "pytest python_tests"
-  - docker exec -it -w /root/htool ${TESTING_ENV} bash -c "mpirun -np 2 "${MPIEXEC_PREFLAGS}" pytest python_tests"
-  - docker exec -it -w /root/htool ${TESTING_ENV} bash -c "mpirun -np 4 "${MPIEXEC_PREFLAGS}" pytest python_tests"
+  - docker exec -it -w /root/htool/build ${TESTING_ENV} bash -c 'make -j build-tests'
+  - docker exec -it ${TESTING_ENV} bash -c 'export OMP_NUM_THREADS=2'
+  - docker exec -it -w /root/htool/build ${TESTING_ENV} bash -c 'ctest --output-on-failure'
+  - docker exec -it -w /root/htool ${TESTING_ENV} bash -c 'pip3 install . --user'
+  - docker exec -it -w /root/htool ${TESTING_ENV} bash -c 'pytest python_tests'
+  - docker exec -it -w /root/htool ${TESTING_ENV} bash -c 'mpirun -np 2 "${MPIEXEC_PREFLAGS}" pytest python_tests'
+  - docker exec -it -w /root/htool ${TESTING_ENV} bash -c 'mpirun -np 4 "${MPIEXEC_PREFLAGS}" pytest python_tests'
 
