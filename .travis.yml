@@ -42,6 +42,6 @@ script:
   - docker exec -it -w /root/htool/build ${TESTING_ENV} bash -c 'ctest --output-on-failure'
   - docker exec -it -w /root/htool ${TESTING_ENV} bash -c 'pip3 install . --user'
   - docker exec -it -w /root/htool ${TESTING_ENV} bash -c 'pytest python_tests'
-  - docker exec -it -w /root/htool ${TESTING_ENV} bash -c 'mpirun -np 2 "${MPIEXEC_PREFLAGS}" pytest python_tests'
-  - docker exec -it -w /root/htool ${TESTING_ENV} bash -c 'mpirun -np 4 "${MPIEXEC_PREFLAGS}" pytest python_tests'
+  - docker exec -it -w /root/htool -e MPIEXEC_PREFLAGS="${MPIEXEC_PREFLAGS}" ${TESTING_ENV} bash -c 'mpirun -np 2 "${MPIEXEC_PREFLAGS}" pytest python_tests'
+  - docker exec -it -w /root/htool -e MPIEXEC_PREFLAGS="${MPIEXEC_PREFLAGS}" ${TESTING_ENV} bash -c 'mpirun -np 4 "${MPIEXEC_PREFLAGS}" pytest python_tests'
 
