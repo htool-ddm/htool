@@ -30,7 +30,6 @@ matrix:
 install:
   - docker pull pierremarchand/htool_testing_environments:${TESTING_ENV}
   - docker run -itd --name ${TESTING_ENV} pierremarchand/htool_testing_environments:${TESTING_ENV}
-  - docker exec -it ${TESTING_ENV} bash -c 'apt-get update && apt-get install -y --reinstall openmpi-bin libopenmpi-dev'
   - docker exec -it ${TESTING_ENV} bash -c "cd && git clone https://github.com/hpddm/hpddm.git && git clone --single-branch --branch ${TRAVIS_BRANCH} https://github.com/PierreMarchand20/htool.git"
   - docker exec -it ${TESTING_ENV} bash -c 'mkdir htool/build'
 
