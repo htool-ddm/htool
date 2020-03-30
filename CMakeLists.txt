@@ -1,15 +1,30 @@
 #=============================================================================#
 #============================== Project ======================================#
 #=============================================================================#
-cmake_minimum_required(VERSION 3.12)
-Project(Htool 
+cmake_minimum_required(VERSION 3.10)
+if (${CMAKE_VERSION} VERSION_LESS 3.12)
+	Project(Htool 
+		VERSION 1.0
+		LANGUAGES CXX)
+else ()
+	Project(Htool 
 	VERSION 1.0
 	DESCRIPTION "A header only c++ library that provides Hierarchical matrices."
 	HOMEPAGE_URL "https://github.com/PierreMarchand20/htool"
 	LANGUAGES CXX)
+endif ()
+
+# To force c++11
+if (${CMAKE_VERSION} VERSION_LESS 3.1)
+	add_compile_options(-std=c++11)
+elseif (${CMAKE_VERSION} VERSION_LESS 3.6.3 AND ${CMAKE_CXX_COMPILER_ID} STREQUAL "Intel")
+	add_compile_options(-std=c++11)
+else()
+	set(CMAKE_CXX_STANDARD 11)
+	set(CMAKE_CXX_STANDARD_REQUIRED ON)
+endif ()
 
 if(CMAKE_PROJECT_NAME STREQUAL PROJECT_NAME)
-
 	# To set default CMAKE_BUILD_TYPE
 	set(default_build_type "Release")
 	if(NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
@@ -99,7 +114,13 @@ if (HTOOL_WITH_GUI)
 endif()
 
 if (HTOOL_WITH_PYTHON_INTERFACE)
-	find_package (Python COMPONENTS Interpreter Development)
+	if (${CMAKE_VERSION} VERSION_LESS 3.12)
+		find_package (PythonLibs)
+		set(Python_INCLUDE_DIRS ${PYTHON_INCLUDE_DIRS})
+		set(Python_LIBRARIES ${PYTHON_LIBRARIES})
+	else()
+		find_package (Python COMPONENTS Interpreter Development)
+	endif()
 endif()
 
 #=============================================================================#
