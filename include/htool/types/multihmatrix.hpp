@@ -202,7 +202,7 @@ void MultiHMatrix<MultiLowRankMatrix, T >::ComputeBlocks(MultiIMatrix<T>& mat, c
 				count=l;
 				while (count<MyNearFieldMats_local.size())
 				{
-					HMatrices[l].MyNearFieldMats.push_back(MyNearFieldMats_local[count*nb_hmatrix]);
+					HMatrices[l].MyNearFieldMats.push_back(MyNearFieldMats_local[count]);
 					count+=nb_hmatrix;
 				}
 			}
