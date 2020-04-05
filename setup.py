@@ -174,11 +174,11 @@ class BuildCMakeExt(build_ext):
         self.spawn(['cmake',str(cwd),
             '-B'+self.build_temp,
             "-DCMAKE_LIBRARY_OUTPUT_DIRECTORY="+ str(extdir.parent.absolute()),
-            "-DHTOOL_WITH_PYTHON_INTERFACE=True"])
+            "-DHTOOL_WITH_PYTHON_INTERFACE=True","-DCMAKE_BUILD_TYPE=Debug"])
 
-        self.spawn(['cmake', '--build', self.build_temp,"--target", "htool_shared","--config", "Release"])
+        self.spawn(['cmake', '--build', self.build_temp,"--target", "htool_shared","--config", "Debug"])
         self.spawn(['cmake', '--build', self.build_temp,"--target","htool_shared_complex",
-                    "--config", "Release"])
+                    "--config", "Debug"])
         # os.chdir(str(cwd))
 
         # cmake_args = ['-DCMAKE_LIBRARY_OUTPUT_DIRECTORY=' + extdir]
@@ -212,7 +212,8 @@ setup(
     name='Htool',
     version='1.0',
     package_dir = {'': 'interface'},
-    py_modules=['htool'],
+    # packages = {"htool"},
+    # py_modules=['htool','htool.hmatrix'],
     ext_modules=[CMakeExtension('htool')],
     cmdclass={
           'build_ext': BuildCMakeExt,
@@ -226,4 +227,5 @@ setup(
           'mpi4py',
           'matplotlib'
       ],
+    packages=setuptools.find_packages("interface"),
 )

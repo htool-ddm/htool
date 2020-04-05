@@ -19,14 +19,15 @@ class AbstractHMatrix:
 
     def __init__(self, c_data: _C_HMatrix, **params):
         # Users should use one of the two constructors below.
-
+        print("ok1")
         self.c_data = c_data
+        print("ok1")
         self.shape = (self.lib.nbrows(c_data), self.lib.nbcols(c_data))
-
+        print("ok1")
         self.nb_dense_blocks = self.lib.getndmat(c_data)
         self.nb_low_rank_blocks = self.lib.getnlrmat(c_data)
         self.nb_blocks = self.nb_dense_blocks + self.nb_low_rank_blocks
-
+        print("ok1")
         self.params = params.copy()
 
     @classmethod
@@ -265,7 +266,7 @@ class HMatrix(AbstractHMatrix):
     params: dict
         The parameters that have been used to build the matrix.
     """
-    libfile = os.path.join(os.path.dirname(__file__), 'libhtool_shared')
+    libfile = os.path.join(os.path.dirname(__file__), '../libhtool_shared')
     if 'linux' in sys.platform:
         lib = ctypes.cdll.LoadLibrary(libfile+'.so')
     elif sys.platform == 'darwin':
@@ -294,7 +295,7 @@ class ComplexHMatrix(AbstractHMatrix):
     params: dict
         The parameters that have been used to build the matrix.
     """
-    libfile = os.path.join(os.path.dirname(__file__), 'libhtool_shared_complex')
+    libfile = os.path.join(os.path.dirname(__file__), '../libhtool_shared_complex')
     if 'linux' in sys.platform:
         lib = ctypes.cdll.LoadLibrary(libfile+'.so')
     elif sys.platform == 'darwin':
