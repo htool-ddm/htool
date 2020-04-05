@@ -659,6 +659,9 @@ public:
     std::vector<int> get_ic() const{ return this->ic;}
     int get_offset_i() const{ return this->offset_i;}
     int get_offset_j() const{ return this->offset_j;}
+    void set_offset_i(int offset) {  this->offset_i=offset;}
+    void set_offset_j(int offset) {  this->offset_j=offset;}
+
 };
 } // namespace
 

@@ -28,7 +28,7 @@ void* HMatrixCreateSym(double* pts, int n, void (*getcoef)(int,int,K*)) {
 
   // Hmatrix
 	HMatrix<partialACA,K>* H = new HMatrix<partialACA,K>(A,p);
-
+std::cout << H<< std::endl;
   return H;
 }
 
@@ -52,7 +52,7 @@ std::cout << m <<" "<<n<< std::endl;
 
   // Hmatrix
 	HMatrix<partialACA,K>* H = new HMatrix<partialACA,K>(A,p1,p2);
-
+std::cout << H<< std::endl;
   return H;
 }
 
@@ -70,7 +70,7 @@ void* HMatrixCreatewithsubmatSym(double* pts, int n, void (*getsubmatrix)(const 
 
   // Hmatrix
 	HMatrix<partialACA,K>* H = new HMatrix<partialACA,K>(A,p);
-
+std::cout << H<< std::endl;
   return H;
 }
 
@@ -95,6 +95,8 @@ void* HMatrixCreatewithsubmat(double* pts1, int m, double* pts2, int n, void (*g
   // Hmatrix
 	HMatrix<partialACA,K>* H = new HMatrix<partialACA,K>(A,p1,p2);
 
+	std::cout << H<< std::endl;
+
   return H;
 }
 
@@ -115,6 +117,7 @@ int getndmat(void* H) {
 }
 
 int nbrows(void* H) {
+	std::cout << H<< std::endl;
     return reinterpret_cast<HMatrix<partialACA,K>*>(H)->nb_rows();
 }
 
@@ -174,7 +177,7 @@ void getpattern(void* pH, int* buf) {
 	MPI_Gatherv(rankworld==0?MPI_IN_PLACE:buf, recvcounts[rankworld], MPI_INT, buf, recvcounts, displs, MPI_INT, 0, H->get_comm());
 }
 
-void* MultiHMatrixCreateSym(double* pts, int n, void (*getcoefs)(int,int,vector<K>*), int nm) {
+void* MultiHMatrixCreateSym(double* pts, int n, void (*getcoefs)(int,int,K*), int nm) {
 
   vector<R3> p(n);
 	for(int j=0; j<n; j++){
@@ -187,14 +190,12 @@ void* MultiHMatrixCreateSym(double* pts, int n, void (*getcoefs)(int,int,vector<
 	MyMultiMatrix A(p,getcoefs,nm);
 
   // MultiHmatrix
-  std::cout << "Create MultiHmatrix"<<std::endl;
 	MultiHMatrix<MultipartialACA,K>* H = new MultiHMatrix<MultipartialACA,K>(A,p,p);
-	std::cout << "END Create MultiHmatrix"<<std::endl;
 
   return H;
 }
 
-void* MultiHMatrixCreate(double* pts1, int m, double* pts2, int n, void (*getcoefs)(int,int,vector<K>*), int nm) {
+void* MultiHMatrixCreate(double* pts1, int m, double* pts2, int n, void (*getcoefs)(int,int,K*), int nm) {
 
   vector<R3> p1(m),p2(n);
 	for(int j=0; j<m; j++){
@@ -211,71 +212,82 @@ void* MultiHMatrixCreate(double* pts1, int m, double* pts2, int n, void (*getcoe
 
   // Matrix
 	MyMultiMatrix A(p1,p2,getcoefs, nm);
-
+	
   // MultiHmatrix
-  std::cout << "Create MultiHmatrix"<<std::endl;
 	MultiHMatrix<MultipartialACA,K>* H = new MultiHMatrix<MultipartialACA,K>(A,p1,p2);
-	std::cout << "END Create MultiHmatrix"<<std::endl;
 
   return H;
 }
 
-// void* HMatrixCreatewithsubmatSym(double* pts, int n, void (*getsubmatrix)(const int*, const int*, int,int,K*)) {
+void* MultiHMatrixCreatewithsubmatSym(double* pts, int n, void (*getsubmatrix)(const int*, const int*, int,int,K*), int nm) {
 
-//   vector<R3> p(n);
-// 	for(int j=0; j<n; j++){
-//     p[j][0] = pts[3*j];
-//     p[j][1] = pts[3*j+1];
-//     p[j][2] = pts[3*j+2];
-// 	}
+  vector<R3> p(n);
+	for(int j=0; j<n; j++){
+    p[j][0] = pts[3*j];
+    p[j][1] = pts[3*j+1];
+    p[j][2] = pts[3*j+2];
+	}
 
-//   // Matrix
-// 	MyMatrixwithsubmat A(p,getsubmatrix);
+  // Matrix
+	MyMultiMatrixwithsubmat A(p,getsubmatrix,nm);
 
-//   // Hmatrix
-// 	HMatrix<partialACA,K>* H = new HMatrix<partialACA,K>(A,p);
+  // Hmatrix
+	MultiHMatrix<MultipartialACA,K>* H = new MultiHMatrix<MultipartialACA,K>(A,p,p);
+  return H;
+}
 
-//   return H;
-// }
+void* MultiHMatrixCreatewithsubmat(double* pts1, int m, double* pts2, int n, void (*getsubmatrix)(const int*, const int*, int,int,K*), int nm) {
 
-// void* HMatrixCreatewithsubmat(double* pts1, int m, double* pts2, int n, void (*getsubmatrix)(const int*, const int*, int,int,K*)) {
+  vector<R3> p1(m),p2(n);
+	for(int j=0; j<m; j++){
+    p1[j][0] = pts1[3*j];
+    p1[j][1] = pts1[3*j+1];
+    p1[j][2] = pts1[3*j+2];
+	}
 
-//   vector<R3> p1(m),p2(n);
-// 	for(int j=0; j<m; j++){
-//     p1[j][0] = pts1[3*j];
-//     p1[j][1] = pts1[3*j+1];
-//     p1[j][2] = pts1[3*j+2];
-// 	}
+	for(int j=0; j<n; j++){
+	p2[j][0] = pts2[3*j];
+	p2[j][1] = pts2[3*j+1];
+	p2[j][2] = pts2[3*j+2];
+	}
 
-// 	for(int j=0; j<n; j++){
-// 	p2[j][0] = pts2[3*j];
-// 	p2[j][1] = pts2[3*j+1];
-// 	p2[j][2] = pts2[3*j+2];
-// 	}
+  // Matrix
+	MyMultiMatrixwithsubmat A(p1,p2,getsubmatrix,nm);
 
-//   // Matrix
-// 	MyMatrixwithsubmat A(p1,p2,getsubmatrix);
-
-//   // Hmatrix
-// 	HMatrix<partialACA,K>* H = new HMatrix<partialACA,K>(A,p1,p2);
-
-//   return H;
-// }
+  // Hmatrix
+	MultiHMatrix<MultipartialACA,K>* H = new MultiHMatrix<MultipartialACA,K>(A,p1,p2);
+  return H;
+}
 
 void* getHMatrix(void* MultiH, int i) {
 		HMatrix<bareLowRankMatrix,K>* H = &(reinterpret_cast<MultiHMatrix<MultipartialACA,K>*>(MultiH)->operator[](i));
+		std::cout << &(reinterpret_cast<MultiHMatrix<MultipartialACA,K>*>(MultiH)->operator[](i))<< std::endl;
+		std::cout << &(reinterpret_cast<MultiHMatrix<MultipartialACA,K>*>(MultiH)->operator[](i))<< std::endl;
 		H->print_infos();
   	return H;
+}
+
+void MultiHMatrixVecProd(void* MultiH, int i, K* x, K* Ax) {
+  	reinterpret_cast<MultiHMatrix<MultipartialACA,K>*>(MultiH)->operator[](i).mvprod_global(x,Ax);
 }
 
 int nbhmats(void* MultiH) {
     return reinterpret_cast<MultiHMatrix<MultipartialACA,K>*>(MultiH)->nb_hmats();
 }
 
+int multi_nbrows(void* H) {
+    return reinterpret_cast<MultiHMatrix<MultipartialACA,K>*>(H)->nb_rows();
+}
+
+int multi_nbcols(void* H) {
+    return reinterpret_cast<MultiHMatrix<MultipartialACA,K>*>(H)->nb_cols();
+}
+
 int nbrows_test(void* H) {
-	std::cout << "bouh"<< std::endl;
+
 	HMatrix<bareLowRankMatrix,K>* test = reinterpret_cast<HMatrix<bareLowRankMatrix,K>*>(H);
 	std::cout << "bouh"<< std::endl;
+	std::cout << test<< std::endl;
 	std::cout << test->nb_rows()<< std::endl;
     return reinterpret_cast<HMatrix<bareLowRankMatrix,K>*>(H)->nb_rows();
 }

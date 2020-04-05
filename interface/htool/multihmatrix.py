@@ -22,7 +22,7 @@ class AbstractMultiHMatrix:
         # Users should use one of the two constructors below.
 
         self.c_data = c_data
-        # self.shape = (self.lib.nbrows(c_data), self.lib.nbcols(c_data), self.lib.nbcols(c_data))
+        self.shape = (self.lib.multi_nbrows(c_data), self.lib.multi_nbcols(c_data))
         self.size = self.lib.nbhmats(c_data)
 
         # self.nb_dense_blocks = self.lib.getndmat(c_data)
@@ -60,7 +60,7 @@ class AbstractMultiHMatrix:
         cls._set_building_params(**params)
         
         # Boilerplate code for Python/C++ interface.
-        _getcoefs_func_type = ctypes.CFUNCTYPE(None, ctypes.c_int, ctypes.c_int, np.ctypeslib.ndpointer(dtype=np.float64, ndim=1, flags='C_CONTIGUOUS'))
+        _getcoefs_func_type = ctypes.CFUNCTYPE(None, ctypes.c_int, ctypes.c_int, ctypes.POINTER(ctypes.c_double))
         if points_source is None:
             cls.lib.MultiHMatrixCreateSym.restype = ctypes.POINTER(_C_MultiHMatrix)
             cls.lib.MultiHMatrixCreateSym.argtypes = [
@@ -84,67 +84,69 @@ class AbstractMultiHMatrix:
                 ctypes.c_int
             ]
 
-            # Call the C++ backend.            
+            # Call the C++ backend.      
             c_data = cls.lib.MultiHMatrixCreate(points_target,points_target.shape[0],points_source, points_source.shape[0], _getcoefs_func_type(getcoefs),nm)
 
         return cls(c_data, **params)
 
 
-    # @classmethod
-    # def from_submatrices(cls, getsubmatrix, points_target, points_source=None, **params):
-    #     """Construct an instance of the class from a evaluation function.
+    @classmethod
+    def from_submatrices(cls, getsubmatrix, nm, points_target, points_source=None, **params):
+        """Construct an instance of the class from a evaluation function.
 
-    #     Parameters
-    #     ----------
-    #     points: np.ndarray of shape (N, 3)
-    #         The coordinates of the points.
-    #     getsubmatrix: Callable
-    #         A function evaluating the matrix in a given range.
-    #     epsilon: float, keyword-only, optional
-    #         Tolerance of the Adaptive Cross Approximation
-    #     eta: float, keyword-only, optional
-    #         Criterion to choose the blocks to compress
-    #     minclustersize: int, keyword-only, optional
-    #         Minimum shape of a block
-    #     maxblocksize: int, keyword-only, optional
-    #         Maximum number of coefficients in a block
+        Parameters
+        ----------
+        points: np.ndarray of shape (N, 3)
+            The coordinates of the points.
+        getsubmatrix: Callable
+            A function evaluating the matrix in a given range.
+        epsilon: float, keyword-only, optional
+            Tolerance of the Adaptive Cross Approximation
+        eta: float, keyword-only, optional
+            Criterion to choose the blocks to compress
+        minclustersize: int, keyword-only, optional
+            Minimum shape of a block
+        maxblocksize: int, keyword-only, optional
+            Maximum number of coefficients in a block
 
-    #     Returns
-    #     -------
-    #     HMatrix or ComplexHMatrix
-    #     """
-    #     # Set params.
-    #     cls._set_building_params(**params)
+        Returns
+        -------
+        HMatrix or ComplexHMatrix
+        """
+        # Set params.
+        cls._set_building_params(**params)
 
-    #     # Boilerplate code for Python/C++ interface.
-    #     _getsumatrix_func_type = ctypes.CFUNCTYPE(
-    #             None, ctypes.POINTER(ctypes.c_int), ctypes.POINTER(ctypes.c_int),
-    #             ctypes.c_int, ctypes.c_int, ctypes.POINTER(ctypes.c_double),
-    #         )
-    #     if points_source is None:
-    #         cls.lib.HMatrixCreatewithsubmatSym.restype = ctypes.POINTER(_C_HMatrix)
-    #         cls.lib.HMatrixCreatewithsubmatSym.argtypes = [
-    #             np.ctypeslib.ndpointer(dtype=np.float64, ndim=2, flags='C_CONTIGUOUS'),
-    #             ctypes.c_int,
-    #             _getsumatrix_func_type,
-    #         ]
+        # Boilerplate code for Python/C++ interface.
+        _getsumatrix_func_type = ctypes.CFUNCTYPE(
+                None, ctypes.POINTER(ctypes.c_int), ctypes.POINTER(ctypes.c_int),
+                ctypes.c_int, ctypes.c_int, ctypes.POINTER(ctypes.c_double)
+            )
+        if points_source is None:
+            cls.lib.MultiHMatrixCreatewithsubmatSym.restype = ctypes.POINTER(_C_MultiHMatrix)
+            cls.lib.MultiHMatrixCreatewithsubmatSym.argtypes = [
+                np.ctypeslib.ndpointer(dtype=np.float64, ndim=2, flags='C_CONTIGUOUS'),
+                ctypes.c_int,
+                _getsumatrix_func_type,
+                ctypes.c_int
+            ]
 
-    #         # Call the C++ backend.
-    #         c_data = cls.lib.HMatrixCreatewithsubmatSym(points_target, points_target.shape[0], _getsumatrix_func_type(getsubmatrix))
-    #     else:
-    #         cls.lib.HMatrixCreatewithsubmat.restype = ctypes.POINTER(_C_HMatrix)
-    #         cls.lib.HMatrixCreatewithsubmat.argtypes = [
-    #             np.ctypeslib.ndpointer(dtype=np.float64, ndim=2, flags='C_CONTIGUOUS'),
-    #             ctypes.c_int,
-    #             np.ctypeslib.ndpointer(dtype=np.float64, ndim=2, flags='C_CONTIGUOUS'),
-    #             ctypes.c_int,
-    #             _getsumatrix_func_type,
-    #         ]
+            # Call the C++ backend.
+            c_data = cls.lib.MultiHMatrixCreatewithsubmatSym(points_target, points_target.shape[0], _getsumatrix_func_type(getsubmatrix),nm)
+        else:
+            cls.lib.MultiHMatrixCreatewithsubmat.restype = ctypes.POINTER(_C_MultiHMatrix)
+            cls.lib.MultiHMatrixCreatewithsubmat.argtypes = [
+                np.ctypeslib.ndpointer(dtype=np.float64, ndim=2, flags='C_CONTIGUOUS'),
+                ctypes.c_int,
+                np.ctypeslib.ndpointer(dtype=np.float64, ndim=2, flags='C_CONTIGUOUS'),
+                ctypes.c_int,
+                _getsumatrix_func_type,
+                ctypes.c_int
+            ]
 
-    #         # Call the C++ backend.
-    #         c_data = cls.lib.HMatrixCreatewithsubmat(points_target,points_target.shape[0],points_source, points_source.shape[0], _getsumatrix_func_type(getsubmatrix))
+            # Call the C++ backend.
+            c_data = cls.lib.MultiHMatrixCreatewithsubmat(points_target,points_target.shape[0],points_source, points_source.shape[0], _getsumatrix_func_type(getsubmatrix),nm)
 
-    #     return cls(c_data, **params)
+        return cls(c_data, **params)
 
     @classmethod
     def _set_building_params(cls, *, eta=None, minclustersize=None, epsilon=None, maxblocksize=None):
@@ -170,39 +172,41 @@ class AbstractMultiHMatrix:
             cls.lib.setmaxblocksize(maxblocksize)
 
     def __str__(self):
-        return f"{self.__class__.__name__}(shape={self.shape}, nb_dense_blocks={self.nb_dense_blocks}, nb_low_rank_blocks={self.nb_low_rank_blocks})"
+        return f"{self.__class__.__name__}(shape={self.shape})"
 
     def __getitem__(self, key):
         print("ok")
         print(self.lib.nbhmats(self.c_data))
-        hmatrix = self.lib.getHMatrix(self.c_data,key)
+        test = self.lib.getHMatrix(self.c_data,key)
+        print(type(test))
+        print(test,hex(test))
         print("ok")
-        print(self.lib.nbrows_test(hmatrix))
+        print(self.lib.nbrows_test(test))
         # HMatrix(self.lib.getHMatrix(self.c_data,key),**self.params)
-        HMatrix(hmatrix)
+        # HMatrix(hmatrix)
         print("ok")
         # HMatrix(self.lib.getHMatrix(self.c_data,key),**self.params)
         # return 
 
-    # def matvec(self, vector):
-    #     """Matrix-vector product (interface for scipy iterative solvers)."""
+    def matvec(self, l , vector):
+        """Matrix-vector product (interface for scipy iterative solvers)."""
 
-    #     assert self.shape[1] == vector.shape[0], "Matrix-vector product of matrices of wrong shapes."
+        assert self.shape[1] == vector.shape[0], "Matrix-vector product of matrices of wrong shapes."
 
-    #     # Boilerplate for Python/C++ interface
-    #     self.lib.mvprod.argtypes = [
-    #             ctypes.POINTER(_C_HMatrix),
-    #             np.ctypeslib.ndpointer(self.dtype, flags='C_CONTIGUOUS'),
-    #             np.ctypeslib.ndpointer(self.dtype, flags='C_CONTIGUOUS')
-    #             ]
+        # Boilerplate for Python/C++ interface
+        self.lib.MultiHMatrixVecProd.argtypes = [
+                ctypes.POINTER(_C_MultiHMatrix),
+                ctypes.c_int,
+                np.ctypeslib.ndpointer(self.dtype, flags='C_CONTIGUOUS'),
+                np.ctypeslib.ndpointer(self.dtype, flags='C_CONTIGUOUS')
+                ]
 
-    #     # Initialize vector
-    #     result = np.zeros((self.shape[0],), dtype=self.dtype)
+        # Initialize vector
+        result = np.zeros((self.shape[0],), dtype=self.dtype)
 
-    #     # Call C++ backend
-    #     self.lib.mvprod(self.c_data, vector, result)
-
-    #     return result
+        # Call C++ backend
+        self.lib.MultiHMatrixVecProd(self.c_data,l , vector, result)
+        return result
 
     # def __matmul__(self, other):
     #     if isinstance(other, np.ndarray) and len(other.shape) == 1:  # other is a vector

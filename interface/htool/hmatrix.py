@@ -19,15 +19,11 @@ class AbstractHMatrix:
 
     def __init__(self, c_data: _C_HMatrix, **params):
         # Users should use one of the two constructors below.
-        print("ok1")
         self.c_data = c_data
-        print("ok1")
         self.shape = (self.lib.nbrows(c_data), self.lib.nbcols(c_data))
-        print("ok1")
         self.nb_dense_blocks = self.lib.getndmat(c_data)
         self.nb_low_rank_blocks = self.lib.getnlrmat(c_data)
         self.nb_blocks = self.nb_dense_blocks + self.nb_low_rank_blocks
-        print("ok1")
         self.params = params.copy()
 
     @classmethod

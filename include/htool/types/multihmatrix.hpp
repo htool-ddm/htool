@@ -80,6 +80,22 @@ public:
 	// 		delete Tasks[i];
 	// }
 
+	// Getters
+	int nb_rows() const { return nr;}
+	int nb_cols() const { return nc;}
+	const MPI_Comm& get_comm() const {return comm;}
+	int get_nlrmat(int i) const {
+		int res=HMatrices[i].MyFarFieldMats.size(); MPI_Allreduce(MPI_IN_PLACE, &res, 1, MPI_INT, MPI_SUM, comm); return res;
+	}
+	int get_ndmat(int i) const {
+		int res=HMatrices[i].MyNearFieldMats.size(); MPI_Allreduce(MPI_IN_PLACE, &res, 1, MPI_INT, MPI_SUM, comm); return res;
+	}
+	int nb_hmats() const { return nb_hmatrix;}	
+
+	// Mat vec prod
+	void mvprod_global(int i,const T* const in, T* const out,const int& mu=1) const{
+		HMatrices[i].mvprod_global(in,out,mu);
+	}
 };
 
 // build
@@ -101,6 +117,8 @@ void MultiHMatrix<MultiLowRankMatrix, T >::build(MultiIMatrix<T>& mat, const std
 
 	local_size   = cluster_tree_t->get_local_size();
 	local_offset = cluster_tree_t->get_local_offset();
+
+	mytimes[0] = MPI_Wtime() - time;
 
 	// Hmatrices
 	for (int l=0;l<nb_hmatrix;l++){
@@ -190,10 +208,8 @@ void MultiHMatrix<MultiLowRankMatrix, T >::ComputeBlocks(MultiIMatrix<T>& mat, c
         #pragma omp critical
         #endif
         {
-			// std::cout << "TEST "<<nb_hmatrix<< std::endl;
 			for (int l=0;l<nb_hmatrix;l++){
 				int count =l;
-				// std::cout << "l: "<<l<< std::endl;
 				while (count<MyFarFieldMats_local.size())
 				{
 					HMatrices[l].MyFarFieldMats.push_back(MyFarFieldMats_local[count]);
@@ -232,7 +248,7 @@ bool MultiHMatrix<MultiLowRankMatrix,T >::AddFarFieldMat(MultiIMatrix<T>& mat, c
 	MultiLowRankMatrix<T> Local_MultiLowRankMatrix(std::vector<int>(cluster_tree_t->get_perm_start()+t.get_offset(),cluster_tree_t->get_perm_start()+t.get_offset()+t.get_size()), std::vector<int>(cluster_tree_s->get_perm_start()+s.get_offset(),cluster_tree_s->get_perm_start()+s.get_offset()+s.get_size()),mat.nb_matrix(),t.get_offset(),s.get_offset(),reqrank);
 	Local_MultiLowRankMatrix.build(mat,t,xt,tabt,s,xs,tabs);
 
-	if (Local_MultiLowRankMatrix.rank_of()!=1){
+	if (Local_MultiLowRankMatrix.rank_of()!=-1){
 		for (int l=0;l<nb_hmatrix;l++){
 			bareLowRankMatrix<T>* lrmat = new bareLowRankMatrix<T> (Local_MultiLowRankMatrix[l]);
 			MyFarFieldMats_local.push_back(lrmat);

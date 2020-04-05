@@ -16,43 +16,47 @@ typedef double K;
 class MyMultiMatrix: public MultiIMatrix<K>{
 	const vector<R3>& p1;
 	const vector<R3>& p2;
-  void (*getcoefs)(int,int,vector<K>*);
+  void (*getcoefs)(int,int,K*);
 
 public:
-	MyMultiMatrix(const vector<R3>& p10, void (*g)(int,int,vector<K>*),int nm):MultiIMatrix(p10.size(),p10.size(),nm),p1(p10),p2(p10),getcoefs(g) {}
+	MyMultiMatrix(const vector<R3>& p10, void (*g)(int,int,K*),int nm):MultiIMatrix(p10.size(),p10.size(),nm),p1(p10),p2(p10),getcoefs(g) {}
 
-	MyMultiMatrix(const vector<R3>& p10,const vector<R3>& p20, void (*g)(int,int,vector<K>*), int nm):MultiIMatrix(p10.size(),p20.size(),nm),p1(p10),p2(p20),getcoefs(g) {}
+	MyMultiMatrix(const vector<R3>& p10,const vector<R3>& p20, void (*g)(int,int,K*), int nm):MultiIMatrix(p10.size(),p20.size(),nm),p1(p10),p2(p20),getcoefs(g) {}
 
 	vector<K> get_coefs(const int& i, const int& j)const {
 		vector<K> r(nm);
-		getcoefs(i,j,&r);
+		getcoefs(i,j,r.data());
 		return r;
 	}
 };
 
-// class MyMultiMatrixwithsubmat: public MultiIMatrix<K>{
-// 	const vector<R3>& p1;
-// 	const vector<R3>& p2;
-// 	void (*getsubmatrices)(const int*,const int*,int,int,K*);
+class MyMultiMatrixwithsubmat: public MultiIMatrix<K>{
+	const vector<R3>& p1;
+	const vector<R3>& p2;
+	void (*getsubmatrices)(const int*,const int*,int,int,K*);
 
-// public:
-// 	MyMatrixwithsubmat(const vector<R3>& p10, void (*g)(const int*,const int*,int,int,K*)):IMatrix(p10.size(),p10.size()),p1(p10),p2(p10),getsubmatrix(g) {}
+public:
+	MyMultiMatrixwithsubmat(const vector<R3>& p10, void (*g)(const int*,const int*,int,int,K*), int nm):MultiIMatrix(p10.size(),p10.size(),nm),p1(p10),p2(p10),getsubmatrices(g) {}
 
-// 	MyMatrixwithsubmat(const vector<R3>& p10,const vector<R3>& p20, void (*g)(const int*,const int*,int,int,K*)):IMatrix(p10.size(),p20.size()),p1(p10),p2(p20),getsubmatrix(g) {}
+	MyMultiMatrixwithsubmat(const vector<R3>& p10,const vector<R3>& p20, void (*g)(const int*,const int*,int,int,K*), int nm):MultiIMatrix(p10.size(),p20.size(),nm),p1(p10),p2(p20),getsubmatrices(g) {}
 
-// 	SubMatrix<K> get_submatrix(const std::vector<int>& I, const std::vector<int>& J) const {
-// 		SubMatrix<K> mat(I,J);
-// 		getsubmatrix(I.data(),J.data(),I.size(),J.size(),mat.data());
-// 		return mat;
-// 	}
+	MultiSubMatrix<K> get_submatrices(const std::vector<int>& I, const std::vector<int>& J) const {
+		MultiSubMatrix<K> mat(I,J,nm);
+		std::vector<K> raw_data(I.size()*J.size()*nm);
+		getsubmatrices(I.data(),J.data(),I.size(),J.size(),raw_data.data());
+		for (int l=0;l<nm;l++){
+			std::copy_n(raw_data.data()+I.size()*J.size()*l,I.size()*J.size(),mat[l].data());
+		}
+		return mat;
+	}
 
-// 	K get_coef(const int& i, const int& j)const {
-// 		K r;
-// 		getsubmatrix(&i,&j,1,1,&r);
-// 		return r;
-// 	}
+	vector<K> get_coefs(const int& i, const int& j)const {
+		vector<K> r(nm);
+		getsubmatrices(&i,&j,1,1,r.data());
+		return r;
+	}
 
-// };
+};
 
 // extern "C" {
 // unsigned short scalar = std::is_same<K, double>::value ? 0 : 1;
