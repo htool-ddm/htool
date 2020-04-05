@@ -83,7 +83,7 @@ std::vector<double> Frobenius_absolute_error(const MultiLowRankMatrix<T>& lrmat,
 
 template<typename T >
 std::vector<double> Frobenius_absolute_error(const MultiLowRankMatrix<std::complex<T>>& lrmat, const MultiIMatrix<std::complex<T>>& ref, int reqrank=-1){
-  assert(reqrank<=lrmat[l].rank_of());
+  assert(reqrank<=lrmat[0].rank_of());
 
   std::vector<T> err (lrmat.nb_lrmats(),0);
   std::vector<int> ir = lrmat.get_ir();
@@ -104,7 +104,7 @@ double test_time = MPI_Wtime();
       }
     }
   }
-std::cout << "Compute : "<<MPI_Wtime()-test_time<< std::endl;
+
   std::transform(err.begin(), err.end(), err.begin(), (double(*)(double)) sqrt);
   return err;
 }
