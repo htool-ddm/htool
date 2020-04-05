@@ -120,28 +120,12 @@ public:
     }
 
    MultiSubMatrix(const MultiIMatrix<T>& mat0, const std::vector<int>& ir0, const std::vector<int>& ic0): MultiIMatrix<T>(ir0.size(),ic0.size(),mat0.nb_matrix()), ir(ir0), ic(ic0), offset_i(0),offset_j(0),SubMatrices(mat0.nb_matrix(),SubMatrix<T>(ir0,ic0)) {
-        std::vector<T> coefs(this->nm,0);
-        for (int i=0;i<this->ir.size();i++){
-            for (int j=0;j<this->ic.size();j++){
-                coefs = mat0.get_coefs(this->ir[i],this->ic[j]);
-                for (int l=0;l<this->nm;l++){
-                    this->SubMatrices[l](i,j)=coefs[l];
-                }
-            }
-        }
+        *this = mat0.get_submatrices(ir0,ic0);
     }
 
     MultiSubMatrix( const MultiIMatrix<T>& mat0, const std::vector<int>& ir0, const std::vector<int>& ic0, const int& offset_i0, const int& offset_j0): MultiIMatrix<T>(ir0.size(),ic0.size(),mat0.nb_matrix()), ir(ir0), ic(ic0),offset_i(offset_i0), offset_j(offset_j0),SubMatrices(mat0.nb_matrix(),SubMatrix<T>(ir0,ic0,offset_i0,offset_j0)) {
 
-        std::vector<T> coefs(this->nm,0);
-        for (int i=0;i<this->ir.size();i++){
-            for (int j=0;j<ic0.size();j++){
-                coefs = mat0.get_coefs(this->ir[i],this->ic[j]);
-                for (int l=0;l<this->nm;l++){
-                    this->SubMatrices[l](i,j)=coefs[l];
-                }
-            }
-        }
+        *this = mat0.get_submatrices(ir0,ic0);
     }
 
     std::vector<T> get_coefs(const int& j, const int& k) const{
