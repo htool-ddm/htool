@@ -52,17 +52,21 @@ def smallest_example(m,n,submatrix):
             H = MultiHMatrix.from_submatrices(get_submatrix,nm,points_target,points_source, epsilon=1e-6, eta=100, minclustersize=10)
     
     if rank == 0:
-        print("Shape:", H.shape)
-        print("Size:", H.size)
+        print("Shape of MultiHMatrix:", H.shape)
+        print("Size of MultiHMatrix:", H.size)
 
 
     x = np.random.rand(n)
     for l in range(0,nm):
-        H[l]
+
+        if rank==0:
+            print("Shape of HMatrix "+str(l)+":", H[l].shape)
+            H[l].print_infos()
+
         full_H = (l+1) / (1e-5 + norm(points_target.reshape(H.shape[0],1, 3) - points_source.reshape(1,H.shape[1], 3), axis=2))
 
         x = np.random.rand(n)
-        y_1 = H.matvec(l,x)
+        y_1 =  H[l].matvec(x)
         y_2 = full_H.dot(x)
 
         assert(norm(y_1-y_2)/norm(y_2)<1e-6)

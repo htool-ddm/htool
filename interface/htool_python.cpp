@@ -28,12 +28,12 @@ void* HMatrixCreateSym(double* pts, int n, void (*getcoef)(int,int,K*)) {
 
   // Hmatrix
 	HMatrix<partialACA,K>* H = new HMatrix<partialACA,K>(A,p);
-std::cout << H<< std::endl;
+
   return H;
 }
 
 void* HMatrixCreate(double* pts1, int m, double* pts2, int n, void (*getcoef)(int,int,K*)) {
-std::cout << m <<" "<<n<< std::endl;
+
   vector<R3> p1(m),p2(n);
 	for(int j=0; j<m; j++){
     p1[j][0] = pts1[3*j];
@@ -52,7 +52,7 @@ std::cout << m <<" "<<n<< std::endl;
 
   // Hmatrix
 	HMatrix<partialACA,K>* H = new HMatrix<partialACA,K>(A,p1,p2);
-std::cout << H<< std::endl;
+
   return H;
 }
 
@@ -70,7 +70,7 @@ void* HMatrixCreatewithsubmatSym(double* pts, int n, void (*getsubmatrix)(const 
 
   // Hmatrix
 	HMatrix<partialACA,K>* H = new HMatrix<partialACA,K>(A,p);
-std::cout << H<< std::endl;
+
   return H;
 }
 
@@ -95,7 +95,6 @@ void* HMatrixCreatewithsubmat(double* pts1, int m, double* pts2, int n, void (*g
   // Hmatrix
 	HMatrix<partialACA,K>* H = new HMatrix<partialACA,K>(A,p1,p2);
 
-	std::cout << H<< std::endl;
 
   return H;
 }
@@ -117,7 +116,6 @@ int getndmat(void* H) {
 }
 
 int nbrows(void* H) {
-	std::cout << H<< std::endl;
     return reinterpret_cast<HMatrix<partialACA,K>*>(H)->nb_rows();
 }
 
@@ -261,9 +259,7 @@ void* MultiHMatrixCreatewithsubmat(double* pts1, int m, double* pts2, int n, voi
 
 void* getHMatrix(void* MultiH, int i) {
 		HMatrix<bareLowRankMatrix,K>* H = &(reinterpret_cast<MultiHMatrix<MultipartialACA,K>*>(MultiH)->operator[](i));
-		std::cout << &(reinterpret_cast<MultiHMatrix<MultipartialACA,K>*>(MultiH)->operator[](i))<< std::endl;
-		std::cout << &(reinterpret_cast<MultiHMatrix<MultipartialACA,K>*>(MultiH)->operator[](i))<< std::endl;
-		H->print_infos();
+
   	return H;
 }
 
@@ -282,92 +278,5 @@ int multi_nbrows(void* H) {
 int multi_nbcols(void* H) {
     return reinterpret_cast<MultiHMatrix<MultipartialACA,K>*>(H)->nb_cols();
 }
-
-int nbrows_test(void* H) {
-
-	HMatrix<bareLowRankMatrix,K>* test = reinterpret_cast<HMatrix<bareLowRankMatrix,K>*>(H);
-	std::cout << "bouh"<< std::endl;
-	std::cout << test<< std::endl;
-	std::cout << test->nb_rows()<< std::endl;
-    return reinterpret_cast<HMatrix<bareLowRankMatrix,K>*>(H)->nb_rows();
-}
-
-// void printinfos(void* H) {
-//     reinterpret_cast<HMatrix<partialACA,K>*>(H)->print_infos();
-// }
-
-// void mvprod(void* H, K* x, K* Ax) {
-//     reinterpret_cast<HMatrix<partialACA,K>*>(H)->mvprod_global(x,Ax);
-// }
-
-// int getnlrmat(void* H) {
-//     return reinterpret_cast<HMatrix<partialACA,K>*>(H)->get_nlrmat();
-// }
-
-// int getndmat(void* H) {
-//     return reinterpret_cast<HMatrix<partialACA,K>*>(H)->get_ndmat();
-// }
-
-// int nbrows(void* H) {
-//     return reinterpret_cast<HMatrix<partialACA,K>*>(H)->nb_rows();
-// }
-
-// int nbcols(void* H) {
-//     return reinterpret_cast<HMatrix<partialACA,K>*>(H)->nb_cols();
-// }
-
-
-
-// void setepsilon(double eps) { SetEpsilon(eps); }
-// void seteta(double eta) { SetEta(eta); }
-// void setminclustersize(int m) { SetMinClusterSize(m); }
-// void setmaxblocksize(int m) { SetMaxBlockSize(m); }
-
-// void getpattern(void* pH, int* buf) {
-// 	HMatrix<partialACA,K>* H = reinterpret_cast<HMatrix<partialACA,K>*>(pH);
-
-// 	const std::vector<partialACA<K>*>& lrmats = H->get_MyFarFieldMats();
-// 	const std::vector<SubMatrix<K>*>& dmats = H->get_MyNearFieldMats();
-
-// 	int nb = dmats.size() + lrmats.size();
-
-// 	int sizeworld = H->get_sizeworld();
-// 	int rankworld = H->get_rankworld();
-
-// 	int nbworld[sizeworld];
-// 	MPI_Allgather(&nb, 1, MPI_INT, nbworld, 1, MPI_INT, H->get_comm());
-// 	int nbg = 0;
-// 	for (int i=0; i<sizeworld; i++) {
-// 		nbg += nbworld[i];
-// 	}
-
-// 	for (int i=0;i<dmats.size();i++) {
-// 		const SubMatrix<K>& l = *(dmats[i]);
-// 		buf[5*i] = l.get_offset_i();
-// 		buf[5*i+1] = l.nb_rows();
-// 		buf[5*i+2] = l.get_offset_j();
-// 		buf[5*i+3] = l.nb_cols();
-// 		buf[5*i+4] = -1;
-// 	}
-
-// 	for (int i=0;i<lrmats.size();i++) {
-// 		const LowRankMatrix<K>& l = *(lrmats[i]);
-// 		buf[5*(dmats.size()+i)] = l.get_offset_i();
-// 		buf[5*(dmats.size()+i)+1] = l.nb_rows();
-// 		buf[5*(dmats.size()+i)+2] = l.get_offset_j();
-// 		buf[5*(dmats.size()+i)+3] = l.nb_cols();
-// 		buf[5*(dmats.size()+i)+4] = l.rank_of();
-// 	}
-
-// 	int displs[sizeworld];
-// 	int recvcounts[sizeworld];
-// 	displs[0] = 0;
-
-// 	for (int i=0; i<sizeworld; i++) {
-// 		recvcounts[i] = 5*nbworld[i];
-// 		if (i > 0)	displs[i] = displs[i-1] + recvcounts[i-1];
-// 	}
-// 	MPI_Gatherv(rankworld==0?MPI_IN_PLACE:buf, recvcounts[rankworld], MPI_INT, buf, recvcounts, displs, MPI_INT, 0, H->get_comm());
-// }
 
 }

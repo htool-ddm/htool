@@ -4,8 +4,7 @@
 import os,sys
 import ctypes
 import numpy as np
-from mpi4py import MPI
-from .hmatrix import HMatrix,AbstractHMatrix
+from .hmatrix import _C_HMatrix, HMatrix
 
 
 class _C_MultiHMatrix(ctypes.Structure):
@@ -175,18 +174,11 @@ class AbstractMultiHMatrix:
         return f"{self.__class__.__name__}(shape={self.shape})"
 
     def __getitem__(self, key):
-        print("ok")
-        print(self.lib.nbhmats(self.c_data))
-        test = self.lib.getHMatrix(self.c_data,key)
-        print(type(test))
-        print(test,hex(test))
-        print("ok")
-        print(self.lib.nbrows_test(test))
-        # HMatrix(self.lib.getHMatrix(self.c_data,key),**self.params)
-        # HMatrix(hmatrix)
-        print("ok")
-        # HMatrix(self.lib.getHMatrix(self.c_data,key),**self.params)
-        # return 
+
+        self.lib.getHMatrix.restype=ctypes.POINTER(_C_HMatrix)
+        self.lib.getHMatrix.argtypes=[ctypes.POINTER(_C_MultiHMatrix), ctypes.c_int]
+        c_data_hmatrix = self.lib.getHMatrix(self.c_data,key)
+        return HMatrix(c_data_hmatrix,**self.params)
 
     def matvec(self, l , vector):
         """Matrix-vector product (interface for scipy iterative solvers)."""
@@ -207,63 +199,6 @@ class AbstractMultiHMatrix:
         # Call C++ backend
         self.lib.MultiHMatrixVecProd(self.c_data,l , vector, result)
         return result
-
-    # def __matmul__(self, other):
-    #     if isinstance(other, np.ndarray) and len(other.shape) == 1:  # other is a vector
-    #         return self.matvec(other)
-    #     else:
-    #         return NotImplemented
-
-    # def print_infos(self):
-    #     self.lib.printinfos(self.c_data)
-
-    # def _pattern(self):
-    #     buf = np.zeros(5*self.nb_blocks, dtype=ctypes.c_int)
-
-    #     self.lib.getpattern.restype = None
-    #     self.lib.getpattern.argtypes = [ ctypes.POINTER(_C_HMatrix), np.ctypeslib.ndpointer(ctypes.c_int, flags='C_CONTIGUOUS')]
-    #     self.lib.getpattern(self.c_data, buf)
-
-    #     return buf
-
-    # def display(self):
-    #     import matplotlib.pyplot as plt
-    #     from matplotlib.patches import Rectangle
-
-    #     buf = self._pattern()
-
-    #     if MPI.COMM_WORLD.Get_rank() == 0:
-    #         cmap = plt.get_cmap('YlGn')
-    #         max_rank = 10
-
-    #         plt.figure()
-    #         ax = plt.gca()
-
-    #         for i in range(0, self.nb_blocks):
-    #             i_row, nb_row, i_col, nb_col, rank = buf[5*i:5*i+5]
-
-    #             if rank < 0:
-    #                 color = 'red'
-    #             else:
-    #                 color = cmap(rank/max_rank)
-
-    #             rect = Rectangle(
-    #                 (i_col-0.5, i_row-0.5), nb_col, nb_row,
-    #                 linewidth=0.75, edgecolor='k', facecolor=color,
-    #             )
-    #             ax.add_patch(rect)
-
-    #             if rank >= 0 and nb_row > 0.05*self.shape[0] and nb_col > 0.05*self.shape[1]:
-    #                 ax.annotate(
-    #                     str(rank), (i_col + nb_col/2, i_row + nb_row/2),
-    #                     color="white", size=10, va='center', ha='center',
-    #                 )
-
-    #         plt.axis('equal')
-    #         ax.set(xlim=(0, self.shape[0]), ylim=(0, self.shape[1]))
-    #         ax.xaxis.tick_top()
-    #         ax.invert_yaxis()
-    #         plt.show()
 
 
 class MultiHMatrix(AbstractMultiHMatrix):
