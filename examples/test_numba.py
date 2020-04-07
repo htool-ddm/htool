@@ -9,7 +9,7 @@ from mpi4py import MPI
 import numpy as np
 import math
 
-from htool import HMatrix
+from htool.hmatrix import HMatrix
 
 comm = MPI.COMM_WORLD
 rank = comm.Get_rank()

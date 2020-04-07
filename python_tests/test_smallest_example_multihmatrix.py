@@ -58,7 +58,6 @@ def smallest_example(m,n,submatrix):
 
     x = np.random.rand(n)
     for l in range(0,nm):
-
         if rank==0:
             print("Shape of HMatrix "+str(l)+":", H[l].shape)
             H[l].print_infos()
@@ -67,16 +66,16 @@ def smallest_example(m,n,submatrix):
 
         x = np.random.rand(n)
         y_1 =  H[l].matvec(x)
+        
         y_2 = full_H.dot(x)
-
         assert(norm(y_1-y_2)/norm(y_2)<1e-6)
 
 
 def test_smallest_example():
-    smallest_example(100,300,True)
-    smallest_example(100,300,False)
-    smallest_example(100,100,True)
-    smallest_example(100,100,False)
+    smallest_example(1000,3000,True)
+    smallest_example(1000,3000,False)
+    smallest_example(1000,1000,True)
+    smallest_example(1000,1000,False)
 
 
 test_smallest_example()

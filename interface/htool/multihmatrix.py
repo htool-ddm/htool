@@ -24,9 +24,15 @@ class AbstractMultiHMatrix:
         self.shape = (self.lib.multi_nbrows(c_data), self.lib.multi_nbcols(c_data))
         self.size = self.lib.nbhmats(c_data)
 
-        # self.nb_dense_blocks = self.lib.getndmat(c_data)
-        # self.nb_low_rank_blocks = self.lib.getnlrmat(c_data)
-        # self.nb_blocks = self.nb_dense_blocks + self.nb_low_rank_blocks
+
+        self.lib.getHMatrix.restype=ctypes.POINTER(_C_HMatrix)
+        self.lib.getHMatrix.argtypes=[ctypes.POINTER(_C_MultiHMatrix), ctypes.c_int]
+
+        self.hmatrices = []
+        for l in range(0,self.size):
+            c_data_hmatrix = self.lib.getHMatrix(self.c_data,l)
+            self.hmatrices.append(HMatrix(c_data_hmatrix,**params))
+
 
         self.params = params.copy()
 
@@ -175,10 +181,11 @@ class AbstractMultiHMatrix:
 
     def __getitem__(self, key):
 
-        self.lib.getHMatrix.restype=ctypes.POINTER(_C_HMatrix)
-        self.lib.getHMatrix.argtypes=[ctypes.POINTER(_C_MultiHMatrix), ctypes.c_int]
-        c_data_hmatrix = self.lib.getHMatrix(self.c_data,key)
-        return HMatrix(c_data_hmatrix,**self.params)
+        # self.lib.getHMatrix.restype=ctypes.POINTER(_C_HMatrix)
+        # self.lib.getHMatrix.argtypes=[ctypes.POINTER(_C_MultiHMatrix), ctypes.c_int]
+        # c_data_hmatrix = self.lib.getHMatrix(self.c_data,key)
+        # return HMatrix(c_data_hmatrix,**self.params)
+        return self.hmatrices[key]
 
     def matvec(self, l , vector):
         """Matrix-vector product (interface for scipy iterative solvers)."""

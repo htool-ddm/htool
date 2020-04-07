@@ -6,7 +6,7 @@ from numpy.linalg import norm
 from scipy.sparse.linalg import gmres
 from mpi4py import MPI
 
-from htool import HMatrix
+from htool.hmatrix import HMatrix
 
 comm = MPI.COMM_WORLD
 rank = comm.Get_rank()
@@ -46,7 +46,12 @@ y = np.ones((n*n,))
 x, _ = gmres(H, y)
 x_full, _ = gmres(full_H, y)
 
-print("Error from gmres (Hmatrix):", norm(H @ x - y))
-print("Error from gmres (full matrix):", norm(full_H @ x_full - y))
-print("Error between the two solutions:", norm(x - x_full)/norm(x))
+err_gmres_hmat  = norm(H @ x - y)
+err_gmres_dense = norm(full_H @ x_full - y)
+err_comp        = norm(x - x_full)/norm(x)
+
+if rank==0:
+    print("Error from gmres (Hmatrix):", err_gmres_hmat)
+    print("Error from gmres (full matrix):", err_gmres_dense)
+    print("Error between the two solutions:", err_comp)
 
