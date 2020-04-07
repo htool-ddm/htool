@@ -1,5 +1,5 @@
 import numpy as np
-from htool import ComplexHMatrix
+from htool.hmatrix import ComplexHMatrix
 from scipy.sparse.linalg import gmres
 from mpi4py import MPI
 import math
