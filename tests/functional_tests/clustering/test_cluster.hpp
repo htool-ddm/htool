@@ -34,11 +34,17 @@ int test_cluster(int argc, char *argv[]) {
 
     std::vector<int> nb_sons_test {2,4,-1};
     for (auto & nb_sons : nb_sons_test){
+        if (rankWorld==0){
+            cout<<"Number of sons : "<<nb_sons<<endl;
+        }
+
         Cluster_type t;
         t.build(p,r,tab,g,nb_sons);
-        // t.print();
+        t.print();
+        MPI_Barrier(MPI_COMM_WORLD);
 
-        // Test
+
+        // Testing recursivity
         std::stack<Cluster_type*> s;
         s.push(&t);
         int depth =0;
@@ -46,20 +52,28 @@ int test_cluster(int argc, char *argv[]) {
             Cluster_type* curr = s.top();
             s.pop();
             if (!curr->IsLeaf()){
-                  // test num inclusion
+                // test num inclusion
 
-                  int count = 0;
-                  for (int l=0;l<nb_sons;l++){
-                      test = test || !(curr->get_offset()+count==curr->get_son(l).get_offset());
-                      count += curr->get_son(l).get_size();
-                  }
-                  
-
-                  s.push(dynamic_cast<Cluster_type*>(&(curr->get_son(0))));
-                  s.push(dynamic_cast<Cluster_type*>(&(curr->get_son(1))));
+                int count = 0;
+                for (int l=0;l<nb_sons;l++){
+                    test = test || !(curr->get_offset()+count==curr->get_son(l).get_offset());
+                    count += curr->get_son(l).get_size();
+                }
+                
+                for (int l=0;l<nb_sons;l++){
+                    s.push((Cluster_type*)(&(curr->get_son(l))));
+                }
             }
 
         }
+
+        // Testing getters for local cluster
+        int local_size   = t.get_local_size();
+        int local_offset = t.get_local_offset();
+
+        // Testing getters for local cluster
+        int root_size   = t.get_root().get_size();
+        int root_offset = t.get_root().get_offset();
 
         // Random vector
         double lower_bound = 0;
@@ -84,18 +98,20 @@ int test_cluster(int argc, char *argv[]) {
             test = test || !(t.get_local_cluster().get_rank()==rankWorld);
         }
         
-
-        cout<<"max depth : "<<t.get_max_depth()<<endl;
-        cout<<"min depth : "<<t.get_min_depth()<<endl;
-
+        MPI_Barrier(MPI_COMM_WORLD);
+        if (rankWorld==0){
+            cout<<"max depth : "<<t.get_max_depth()<<endl;
+            cout<<"min depth : "<<t.get_min_depth()<<endl;
+        }
         test = test || !(t.get_max_depth()>=t.get_min_depth() && t.get_min_depth()>=0);
     }
 
 
     
 
-
-    std::cout << "test "<< test << std::endl;
+    if (rankWorld==0){
+        std::cout << "test "<< test << std::endl;
+    }
     MPI_Finalize();
     return test;
 }

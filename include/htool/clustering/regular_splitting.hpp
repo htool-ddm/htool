@@ -61,11 +61,13 @@ public:
 		// We fix the number of sons without MPI
 		else if (nb_sons>0 && sizeWorld==1){
 			rank=0;
+			local_cluster=root;
 		}
 		// Automatic but no parallelisation, just a sane choice
 		else if (nb_sons<0 && sizeWorld==1){
 			nb_sons=2;
 			rank=0;
+			local_cluster=root;
 		}
 		// Automatic with parallelisation, works well for a small number of processors...
 		else{
@@ -75,10 +77,6 @@ public:
 
 		// Initialisation
 		rad = 0;
-		depth = 0;
-		max_depth = 0;
-		min_depth = -1;
-		offset=0;
 		size = tab.size();
 		sons.resize(nb_sons);
 		MasterOffset.resize(nb_sons);
