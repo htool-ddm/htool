@@ -4,8 +4,6 @@
 
 set(cluster_types "geometric_splitting")
 list(APPEND cluster_types "regular_splitting")
-# list(APPEND cluster_type "sympartialACA")
-# list(APPEND cluster_type "SVD")
 
 foreach(cluster_type ${cluster_types})
     add_executable(Test_cluster_${cluster_type} test_cluster_${cluster_type}.cpp)
@@ -23,8 +21,3 @@ foreach(cluster_type ${cluster_types})
 endforeach()
 
 
-
-add_executable(Test_cluster_tree test_cluster_tree.cpp)
-target_link_libraries(Test_cluster_tree htool)
-add_dependencies(build-tests Test_cluster_tree)
-add_test(Test_cluster_tree Test_cluster_tree)

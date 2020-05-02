@@ -3,6 +3,6 @@
 
 int main(int argc, char *argv[]) {
 
-	
-	return test_hmat_auto<fullACA>(argc,argv);
+
+	return test_hmat_auto<RegularClustering,SVD>(argc,argv);
 }

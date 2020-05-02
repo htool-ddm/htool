@@ -1,5 +1,7 @@
 #include <htool/types/hmatrix.hpp>
 #include <htool/lrmat/fullACA.hpp>
+#include <htool/clustering/geometric_splitting.hpp>
+#include <htool/clustering/regular_splitting.hpp>
 
 using namespace std;
 using namespace htool;
@@ -47,9 +49,7 @@ int main(int argc, char *argv[]) {
   distance[0] = 3; distance[1] = 5; distance[2] = 7; distance[3] = 10;
   SetNdofPerElt(1);
   SetEpsilon(1e-6);
-  SetEta(0.1);
-  SetMinClusterSize(2);
-	// SetMaxBlockSize(25);
+  SetEta(-0.1);
 
   	for(int idist=0; idist<ndistance; idist++)
   	{
@@ -89,10 +89,16 @@ int main(int argc, char *argv[]) {
   		}
 
   		MyMatrix A(p1,p2);
+		//   vector<double> g2(nc,1);
+		//   vector<double> g1(nr,1);
+		// std::shared_ptr<RegularClustering> t=make_shared<RegularClustering>();
+		// std::shared_ptr<RegularClustering> s=make_shared<RegularClustering>();
+		// t->build(p1,r1,tab1,g1,2);
+		// s->build(p2,r2,tab2,g2,2);
+		// HMatrix<double,fullACA,RegularClustering> HA(A,t,p1,tab1,s,p2,tab2);
 
 
-  		// HMatrix<fullACA,double> HA(A,p1,r1,tab1,p2,r2,tab2);
-  		HMatrix<fullACA,double> HA(A,p1,r1,tab1,p2,r2,tab2);
+  		HMatrix<double,fullACA,RegularClustering> HA(A,p1,r1,tab1,p2,r2,tab2);
   		HA.print_infos();
 
 

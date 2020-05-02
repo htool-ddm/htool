@@ -4,12 +4,13 @@
 #include <random>
 
 #include <htool/clustering/cluster.hpp>
-#include <htool/types/hmatrix.hpp>
+#include <htool/clustering/geometric_splitting.hpp>
+#include <htool/clustering/regular_splitting.hpp>
 #include <htool/lrmat/SVD.hpp>
 #include <htool/lrmat/fullACA.hpp>
 #include <htool/lrmat/partialACA.hpp>
 #include <htool/lrmat/sympartialACA.hpp>
-
+#include <htool/types/hmatrix.hpp>
 
 
 using namespace std;
@@ -34,7 +35,7 @@ public:
 	 }
 };
 
-template<template<typename> class LowRankMatrix>
+template<typename ClusterImpl, template<typename,typename> class LowRankMatrix>
 int test_hmat_cluster(int argc, char *argv[]) {
 
 	// Initialize the MPI environment
@@ -101,9 +102,12 @@ int test_hmat_cluster(int argc, char *argv[]) {
 
 		vector<double> rhs(p2.size(),1);
 		MyMatrix A(p1,p2);
-		std::shared_ptr<Cluster_tree> t=make_shared<Cluster_tree>(p1,r1,tab1,g1);
-		std::shared_ptr<Cluster_tree> s=make_shared<Cluster_tree>(p2,r2,tab2,g2);
-		HMatrix<LowRankMatrix,double> HA(A,t,p1,tab1,s,p2,tab2);
+		std::shared_ptr<ClusterImpl> t=make_shared<ClusterImpl>();
+		std::shared_ptr<ClusterImpl> s=make_shared<ClusterImpl>();
+		t->build(p1,r1,tab1,g1,2);
+		s->build(p2,r2,tab2,g2,2);
+
+		HMatrix<double,LowRankMatrix,ClusterImpl> HA(A,t,p1,tab1,s,p2,tab2);
 		HA.print_infos();
 
 		// Random vector

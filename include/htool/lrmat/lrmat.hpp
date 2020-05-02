@@ -3,11 +3,12 @@
 
 #include <vector>
 #include "../clustering/cluster.hpp"
+#include "../clustering/geometric_splitting.hpp"
 #include "../types/matrix.hpp"
 #include "../types/multimatrix.hpp"
 namespace htool{
 
-template<typename T>
+template<typename T, typename ClusterImpl=GeometricClustering>
 class LowRankMatrix: public Parametres{
 
 protected:
@@ -26,7 +27,7 @@ public:
     LowRankMatrix(const std::vector<int>& ir0, const std::vector<int>& ic0, int offset_i0, int offset_j0, int rank0=-1):rank(rank0), nr(ir0.size()), nc(ic0.size()), U(ir0.size(),1),V(1,ic0.size()), ir(ir0),ic(ic0),offset_i(offset_i0), offset_j(offset_j0){}
 
     // VIrtual function
-    virtual void build(const IMatrix<T>& A, const Cluster& t, const std::vector<R3>& xt,const std::vector<int>& tabt, const Cluster& s, const std::vector<R3>& xs, const std::vector<int>& tabs) = 0;
+    virtual void build(const IMatrix<T>& A, const Cluster<ClusterImpl>& t, const std::vector<R3>& xt,const std::vector<int>& tabt, const Cluster<ClusterImpl>& s, const std::vector<R3>& xs, const std::vector<int>& tabs) = 0;
 
     // Getters
     int nb_rows() const {return this->nr;}
@@ -107,8 +108,8 @@ public:
     }
 };
 
-template<typename T>
-double Frobenius_relative_error(const LowRankMatrix<T>& lrmat, const IMatrix<T>& ref, int reqrank=-1){
+template<typename T, typename ClusterImpl>
+double Frobenius_relative_error(const LowRankMatrix<T,ClusterImpl>& lrmat, const IMatrix<T>& ref, int reqrank=-1){
   assert(reqrank<=lrmat.rank_of());
   if (reqrank==-1){
     reqrank=lrmat.rank_of();
@@ -133,8 +134,8 @@ double Frobenius_relative_error(const LowRankMatrix<T>& lrmat, const IMatrix<T>&
 }
 
 
-template<typename T>
-double Frobenius_absolute_error(const LowRankMatrix<T>& lrmat, const IMatrix<T>& ref, int reqrank=-1){
+template<typename T, typename ClusterImpl>
+double Frobenius_absolute_error(const LowRankMatrix<T, ClusterImpl>& lrmat, const IMatrix<T>& ref, int reqrank=-1){
   assert(reqrank<=lrmat.rank_of());
   if (reqrank==-1){
     reqrank=lrmat.rank_of();
@@ -155,8 +156,8 @@ double Frobenius_absolute_error(const LowRankMatrix<T>& lrmat, const IMatrix<T>&
   return std::sqrt(err);
 }
 
-template<typename T >
-double Frobenius_absolute_error(const LowRankMatrix<std::complex<T>>& lrmat, const IMatrix<std::complex<T>>& ref, int reqrank=-1){
+template<typename T, typename ClusterImpl>
+double Frobenius_absolute_error(const LowRankMatrix<std::complex<T>,ClusterImpl>& lrmat, const IMatrix<std::complex<T>>& ref, int reqrank=-1){
   assert(reqrank<=lrmat.rank_of());
   if (reqrank==-1){
     reqrank=lrmat.rank_of();
@@ -177,8 +178,8 @@ double Frobenius_absolute_error(const LowRankMatrix<std::complex<T>>& lrmat, con
   return std::sqrt(err);
 }
 
-template<typename T>
-double Frobenius_absolute_error(const LowRankMatrix<T>& lrmat, const MultiIMatrix<T>& ref, int l, int reqrank=-1){
+template<typename T, typename ClusterImpl>
+double Frobenius_absolute_error(const LowRankMatrix<T,ClusterImpl>& lrmat, const MultiIMatrix<T>& ref, int l, int reqrank=-1){
   assert(reqrank<=lrmat.rank_of());
   if (reqrank==-1){
     reqrank=lrmat.rank_of();
@@ -199,8 +200,8 @@ double Frobenius_absolute_error(const LowRankMatrix<T>& lrmat, const MultiIMatri
   return std::sqrt(err);
 }
 
-template<typename T >
-double Frobenius_absolute_error(const LowRankMatrix<std::complex<T>>& lrmat, const MultiIMatrix<std::complex<T>>& ref, int l,int reqrank=-1){
+template<typename T, typename ClusterImpl>
+double Frobenius_absolute_error(const LowRankMatrix<std::complex<T>,ClusterImpl>& lrmat, const MultiIMatrix<std::complex<T>>& ref, int l,int reqrank=-1){
   assert(reqrank<=lrmat.rank_of());
   if (reqrank==-1){
     reqrank=lrmat.rank_of();

@@ -4,6 +4,9 @@
 #include <random>
 
 #include <htool/types/hmatrix.hpp>
+#include <htool/clustering/cluster.hpp>
+#include <htool/clustering/geometric_splitting.hpp>
+#include <htool/clustering/regular_splitting.hpp>
 #include <htool/lrmat/SVD.hpp>
 #include <htool/lrmat/fullACA.hpp>
 #include <htool/lrmat/partialACA.hpp>
@@ -33,7 +36,7 @@ public:
 	 }
 };
 
-template<template<typename> class LowRankMatrix>
+template<typename ClusterImpl, template<typename,typename> class LowRankMatrix>
 int test_hmat_auto(int argc, char *argv[]) {
 
 	// Initialize the MPI environment
@@ -100,7 +103,7 @@ int test_hmat_auto(int argc, char *argv[]) {
 
 		vector<double> rhs(p2.size(),1);
 		MyMatrix A(p1,p2);
-		HMatrix<LowRankMatrix,double> HA(A,p1,r1,tab1,g1,p2,r2,tab2,g2);
+		HMatrix<double,LowRankMatrix,ClusterImpl> HA(A,p1,r1,tab1,g1,p2,r2,tab2,g2);
 		HA.print_infos();
 
 		// Random vector

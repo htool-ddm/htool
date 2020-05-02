@@ -2,7 +2,8 @@
 #include <complex>
 #include <vector>
 
-#include <htool/clustering/cluster.hpp>
+
+#include <htool/clustering/geometric_splitting.hpp>
 #include <htool/types/hmatrix.hpp>
 #include <htool/lrmat/fullACA.hpp>
 
@@ -94,9 +95,11 @@ int main(int argc, char *argv[]) {
 		}
 
 		MyMatrix A(p1,p2);
-		std::shared_ptr<Cluster_tree> t=make_shared<Cluster_tree>(p1,r1,tab1,g1);
-		std::shared_ptr<Cluster_tree> s=make_shared<Cluster_tree>(p2,r2,tab2,g2);
-		HMatrix<fullACA,double> HA(A,t,p1,tab1,s,p2,tab2);
+		std::shared_ptr<GeometricClustering> t=make_shared<GeometricClustering>();
+		std::shared_ptr<GeometricClustering> s=make_shared<GeometricClustering>();
+		t->build(p1,r1,tab1,g1);
+		s->build(p2,r2,tab2,g2);
+		HMatrix<double,fullACA,GeometricClustering> HA(A,t,p1,tab1,s,p2,tab2);
 		HA.print_infos();
 
         HA.save_plot("plot_"+NbrToStr(idist));

@@ -7,7 +7,7 @@
 
 namespace htool{
 
-template<template<typename> class LowRankMatrix, typename T>
+template<typename T, template<typename,typename> class LowRankMatrix, class ClusterImpl>
 class DDM{
 private:
     int n;
@@ -17,7 +17,7 @@ private:
     // const std::vector<int> cluster_to_ovr_subdomain;
     std::vector<std::vector<int> > intersections;
     std::vector<T> vec_ovr;
-    HPDDMDense<LowRankMatrix,T> hpddm_op;
+    HPDDMDense<T,LowRankMatrix,ClusterImpl> hpddm_op;
     std::vector<T> mat_loc;
     std::vector<double> D;
     const MPI_Comm& comm;
@@ -33,18 +33,18 @@ private:
 public:
 
     void clean(){
-        hpddm_op.~HPDDMDense<LowRankMatrix,T>();
+        hpddm_op.~HPDDMDense<T,LowRankMatrix,ClusterImpl>();
     }
 
     // Without overlap
-    DDM(const HMatrix<LowRankMatrix,T>& hmat_0):n(hmat_0.get_local_size()),n_inside(hmat_0.get_local_size()),hpddm_op(hmat_0),mat_loc(n*n),D(n),nevi(0),size_E(0),comm(hmat_0.get_comm()),one_level(0),two_level(0){
+    DDM(const HMatrix<T,LowRankMatrix,ClusterImpl>& hmat_0):n(hmat_0.get_local_size()),n_inside(hmat_0.get_local_size()),hpddm_op(hmat_0),mat_loc(n*n),D(n),nevi(0),size_E(0),comm(hmat_0.get_comm()),one_level(0),two_level(0){
         // Timing
         double mytime, maxtime, meantime;
         double time = MPI_Wtime();
 
         // Building Ai
         bool sym=false;
-        const std::vector<LowRankMatrix<T>*>& MyDiagFarFieldMats = hpddm_op.HA.get_MyDiagFarFieldMats();
+        const std::vector<LowRankMatrix<T,ClusterImpl>*>& MyDiagFarFieldMats = hpddm_op.HA.get_MyDiagFarFieldMats();
         const std::vector<SubMatrix<T>*>& MyDiagNearFieldMats= hpddm_op.HA.get_MyDiagNearFieldMats();
 
         // Internal dense blocks
@@ -62,7 +62,7 @@ public:
         // Internal compressed block
         Matrix<T> FarFielBlock(n,n);
         for (int l=0;l<MyDiagFarFieldMats.size();l++){
-            const LowRankMatrix<T>& lmat = *(MyDiagFarFieldMats[l]);
+            const LowRankMatrix<T,ClusterImpl>& lmat = *(MyDiagFarFieldMats[l]);
             int local_nr = lmat.nb_rows();
             int local_nc = lmat.nb_cols();
             int offset_i = lmat.get_offset_i()-hpddm_op.HA.get_local_offset();
@@ -81,7 +81,7 @@ public:
         fill(D.begin(),D.begin()+n_inside,1);
         fill(D.begin()+n_inside,D.end(),0);
 
-        hpddm_op.HPDDMDense<LowRankMatrix,T>::super::super::initialize(D.data());
+        hpddm_op.HPDDMDense<T,LowRankMatrix,ClusterImpl>::super::super::initialize(D.data());
         mytime =  MPI_Wtime() - time;
 
         // Timing
@@ -91,7 +91,7 @@ public:
     }
 
     // With overlap
-    DDM(const IMatrix<T>& mat0, const HMatrix<LowRankMatrix,T>& hmat_0,
+    DDM(const IMatrix<T>& mat0, const HMatrix<T,LowRankMatrix,ClusterImpl>& hmat_0,
     const std::vector<int>&  ovr_subdomain_to_global0,
     const std::vector<int>& cluster_to_ovr_subdomain0,
     const std::vector<int>& neighbors0,
@@ -128,7 +128,7 @@ public:
 
         // Building Ai
         bool sym=false;
-        const std::vector<LowRankMatrix<T>*>& MyDiagFarFieldMats = hpddm_op.HA.get_MyDiagFarFieldMats();
+        const std::vector<LowRankMatrix<T,ClusterImpl>*>& MyDiagFarFieldMats = hpddm_op.HA.get_MyDiagFarFieldMats();
         const std::vector<SubMatrix<T>*>& MyDiagNearFieldMats= hpddm_op.HA.get_MyDiagNearFieldMats();
 
         // Internal dense blocks
@@ -146,7 +146,7 @@ public:
         // Internal compressed block
         Matrix<T> FarFielBlock(n,n);
         for (int l=0;l<MyDiagFarFieldMats.size();l++){
-          const LowRankMatrix<T>& lmat = *(MyDiagFarFieldMats[l]);
+          const LowRankMatrix<T,ClusterImpl>& lmat = *(MyDiagFarFieldMats[l]);
           int local_nr = lmat.nb_rows();
           int local_nc = lmat.nb_cols();
           int offset_i = lmat.get_offset_i()-hpddm_op.HA.get_local_offset();
@@ -177,7 +177,7 @@ public:
         fill(D.begin(),D.begin()+n_inside,1);
         fill(D.begin()+n_inside,D.end(),0);
 
-        hpddm_op.HPDDMDense<LowRankMatrix,T>::super::super::initialize(D.data());
+        hpddm_op.HPDDMDense<T,LowRankMatrix,ClusterImpl>::super::super::initialize(D.data());
         mytime =  MPI_Wtime() - time;
 
         // Timing
@@ -213,12 +213,12 @@ public:
         int info;
 
         // Building Neumann matrix
-        htool::HMatrix<LowRankMatrix,T> HBi(generator_Bi,std::make_shared<Cluster_tree>(hpddm_op.HA.get_cluster_tree_t().create_local_cluster_tree()),x,-1,MPI_COMM_SELF);
+        htool::HMatrix<T,LowRankMatrix,ClusterImpl> HBi(generator_Bi,hpddm_op.HA.get_cluster_tree_t().get_local_cluster_tree(),x,-1,MPI_COMM_SELF);
         Matrix<T> Bi(n,n);
 
         // Building Bi
         bool sym=false;
-        const std::vector<LowRankMatrix<T>*>& MyLocalFarFieldMats = HBi.get_MyFarFieldMats();
+        const std::vector<LowRankMatrix<T,ClusterImpl>*>& MyLocalFarFieldMats = HBi.get_MyFarFieldMats();
         const std::vector<SubMatrix<T>*>& MyLocalNearFieldMats= HBi.get_MyNearFieldMats();
         // std::cout << MyLocalNearFieldMats.size()<<std::endl;
         // std::cout << MyLocalFarFieldMats.size()<<std::endl;
@@ -238,7 +238,7 @@ public:
         // Internal compressed block
         Matrix<T> FarFielBlock(n,n);
         for (int i=0;i<MyLocalFarFieldMats.size();i++){
-          const LowRankMatrix<T>& lmat = *(MyLocalFarFieldMats[i]);
+          const LowRankMatrix<T,ClusterImpl>& lmat = *(MyLocalFarFieldMats[i]);
           int local_nr = lmat.nb_rows();
           int local_nc = lmat.nb_cols();
           int offset_i = lmat.get_offset_i()-hpddm_op.HA.get_local_offset();
@@ -352,7 +352,7 @@ public:
 
 
         int local_max_size_j=0;
-        const std::vector<LowRankMatrix<T>*>& MyFarFieldMats = hpddm_op.HA.get_MyFarFieldMats();
+        const std::vector<LowRankMatrix<T,ClusterImpl>*>& MyFarFieldMats = hpddm_op.HA.get_MyFarFieldMats();
         const std::vector<SubMatrix<T>*>& MyNearFieldMats= hpddm_op.HA.get_MyNearFieldMats();
         for (int i=0;i<MyFarFieldMats.size();i++){
             if (local_max_size_j<(*MyFarFieldMats[i]).nb_cols())
@@ -537,7 +537,7 @@ void build_coarse_space( Matrix<T>& Ki, const std::vector<R3>& x ){
         }
 
         int local_max_size_j=0;
-        const std::vector<LowRankMatrix<T>*>& MyFarFieldMats = hpddm_op.HA.get_MyFarFieldMats();
+        const std::vector<LowRankMatrix<T,ClusterImpl>*>& MyFarFieldMats = hpddm_op.HA.get_MyFarFieldMats();
         const std::vector<SubMatrix<T>*>& MyNearFieldMats= hpddm_op.HA.get_MyNearFieldMats();
         for (int i=0;i<MyFarFieldMats.size();i++){
             if (local_max_size_j<(*MyFarFieldMats[i]).nb_cols())
@@ -615,13 +615,13 @@ void build_coarse_space( Matrix<T>& Ki, const std::vector<R3>& x ){
         HPDDM::Option& opt = *HPDDM::Option::get();
         switch (opt.val("schwarz_method",0)) {
             case HPDDM_SCHWARZ_METHOD_NONE:
-            hpddm_op.setType(HPDDMDense<LowRankMatrix,T>::Prcndtnr::NO);
+            hpddm_op.setType(HPDDMDense<T,LowRankMatrix,ClusterImpl>::Prcndtnr::NO);
             break;
             case HPDDM_SCHWARZ_METHOD_RAS:
-            hpddm_op.setType(HPDDMDense<LowRankMatrix,T>::Prcndtnr::GE);
+            hpddm_op.setType(HPDDMDense<T,LowRankMatrix,ClusterImpl>::Prcndtnr::GE);
             break;
             case HPDDM_SCHWARZ_METHOD_ASM:
-            hpddm_op.setType(HPDDMDense<LowRankMatrix,T>::Prcndtnr::SY);
+            hpddm_op.setType(HPDDMDense<T,LowRankMatrix,ClusterImpl>::Prcndtnr::SY);
             break;
             // case HPDDM_SCHWARZ_METHOD_OSM:
             // hpddm_op.setType(HPDDM::Schwarz::Prcndtnr::NO);

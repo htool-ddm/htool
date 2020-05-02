@@ -2,73 +2,36 @@
 #=========================== Executables =====================================#
 #=============================================================================#
 
+set(cluster_types "geometric_splitting")
+list(APPEND cluster_types "regular_splitting")
 
-#=== hmat_auto_SVD
-add_executable(Test_hmat_auto_SVD test_hmat_auto_SVD.cpp)
-target_link_libraries(Test_hmat_auto_SVD htool)
-add_dependencies(build-tests Test_hmat_auto_SVD)
-add_test(NAME Test_hmat_auto_SVD_1 COMMAND  ${MPIEXEC} ${MPIEXEC_NUMPROC_FLAG} 1 ${MPIEXEC_PREFLAGS} ${CMAKE_CURRENT_BINARY_DIR}/Test_hmat_auto_SVD)
-add_test(NAME Test_hmat_auto_SVD_2 COMMAND  ${MPIEXEC} ${MPIEXEC_NUMPROC_FLAG} 2 ${MPIEXEC_PREFLAGS} ${CMAKE_CURRENT_BINARY_DIR}/Test_hmat_auto_SVD)
-add_test(NAME Test_hmat_auto_SVD_4 COMMAND  ${MPIEXEC} ${MPIEXEC_NUMPROC_FLAG} 4 ${MPIEXEC_PREFLAGS} ${CMAKE_CURRENT_BINARY_DIR}/Test_hmat_auto_SVD)
-
-#=== hmat_cluster_SVD
-add_executable(Test_hmat_cluster_SVD test_hmat_cluster_SVD.cpp)
-target_link_libraries(Test_hmat_cluster_SVD htool)
-add_dependencies(build-tests Test_hmat_cluster_SVD)
-add_test(NAME Test_hmat_cluster_SVD_1 COMMAND  ${MPIEXEC} ${MPIEXEC_NUMPROC_FLAG} 1 ${MPIEXEC_PREFLAGS} ${CMAKE_CURRENT_BINARY_DIR}/Test_hmat_cluster_SVD)
-add_test(NAME Test_hmat_cluster_SVD_2 COMMAND  ${MPIEXEC} ${MPIEXEC_NUMPROC_FLAG} 2 ${MPIEXEC_PREFLAGS} ${CMAKE_CURRENT_BINARY_DIR}/Test_hmat_cluster_SVD)
-add_test(NAME Test_hmat_cluster_SVD_4 COMMAND  ${MPIEXEC} ${MPIEXEC_NUMPROC_FLAG} 4 ${MPIEXEC_PREFLAGS} ${CMAKE_CURRENT_BINARY_DIR}/Test_hmat_cluster_SVD)
+set(compression_types "SVD")
+list(APPEND compression_types "partialACA")
+list(APPEND compression_types "fullACA")
+list(APPEND compression_types "sympartialACA")
 
 
-#=== hmat_auto_fullACA
-add_executable(Test_hmat_auto_fullACA test_hmat_auto_fullACA.cpp)
-target_link_libraries(Test_hmat_auto_fullACA htool)
-add_dependencies(build-tests Test_hmat_auto_fullACA)
-add_test(NAME Test_hmat_auto_fullACA_1 COMMAND  ${MPIEXEC} ${MPIEXEC_NUMPROC_FLAG} 1 ${MPIEXEC_PREFLAGS} ${CMAKE_CURRENT_BINARY_DIR}/Test_hmat_auto_fullACA)
-add_test(NAME Test_hmat_auto_fullACA_2 COMMAND  ${MPIEXEC} ${MPIEXEC_NUMPROC_FLAG} 2 ${MPIEXEC_PREFLAGS} ${CMAKE_CURRENT_BINARY_DIR}/Test_hmat_auto_fullACA)
-add_test(NAME Test_hmat_auto_fullACA_4 COMMAND  ${MPIEXEC} ${MPIEXEC_NUMPROC_FLAG} 4 ${MPIEXEC_PREFLAGS} ${CMAKE_CURRENT_BINARY_DIR}/Test_hmat_auto_fullACA)
 
-#=== hmat_cluster_fullACA
-add_executable(Test_hmat_cluster_fullACA test_hmat_cluster_fullACA.cpp)
-target_link_libraries(Test_hmat_cluster_fullACA htool)
-add_dependencies(build-tests Test_hmat_cluster_fullACA)
-add_test(NAME Test_hmat_cluster_fullACA_1 COMMAND  ${MPIEXEC} ${MPIEXEC_NUMPROC_FLAG} 1 ${MPIEXEC_PREFLAGS} ${CMAKE_CURRENT_BINARY_DIR}/Test_hmat_cluster_fullACA)
-add_test(NAME Test_hmat_cluster_fullACA_2 COMMAND  ${MPIEXEC} ${MPIEXEC_NUMPROC_FLAG} 2 ${MPIEXEC_PREFLAGS} ${CMAKE_CURRENT_BINARY_DIR}/Test_hmat_cluster_fullACA)
-add_test(NAME Test_hmat_cluster_fullACA_4 COMMAND  ${MPIEXEC} ${MPIEXEC_NUMPROC_FLAG} 4 ${MPIEXEC_PREFLAGS} ${CMAKE_CURRENT_BINARY_DIR}/Test_hmat_cluster_fullACA)
+foreach(compression_type ${compression_types})
 
-#=== hmat_auto_partialACA
-add_executable(Test_hmat_auto_partialACA test_hmat_auto_partialACA.cpp)
-target_link_libraries(Test_hmat_auto_partialACA htool)
-add_dependencies(build-tests Test_hmat_auto_partialACA)
-add_test(NAME Test_hmat_auto_partialACA_1 COMMAND  ${MPIEXEC} ${MPIEXEC_NUMPROC_FLAG} 1 ${MPIEXEC_PREFLAGS} ${CMAKE_CURRENT_BINARY_DIR}/Test_hmat_auto_partialACA)
-add_test(NAME Test_hmat_auto_partialACA_2 COMMAND  ${MPIEXEC} ${MPIEXEC_NUMPROC_FLAG} 2 ${MPIEXEC_PREFLAGS} ${CMAKE_CURRENT_BINARY_DIR}/Test_hmat_auto_partialACA)
-add_test(NAME Test_hmat_auto_partialACA_4 COMMAND  ${MPIEXEC} ${MPIEXEC_NUMPROC_FLAG} 4 ${MPIEXEC_PREFLAGS} ${CMAKE_CURRENT_BINARY_DIR}/Test_hmat_auto_partialACA)
+    foreach(cluster_type ${cluster_types})
 
+        add_executable(Test_hmat_auto_${cluster_type}_${compression_type} test_hmat_auto_${cluster_type}_${compression_type}.cpp)
+        target_link_libraries(Test_hmat_auto_${cluster_type}_${compression_type} htool)
+        add_dependencies(build-tests Test_hmat_auto_${cluster_type}_${compression_type})
+        add_test(NAME Test_hmat_auto_${cluster_type}_${compression_type}_1 COMMAND  ${MPIEXEC} ${MPIEXEC_NUMPROC_FLAG} 1 ${MPIEXEC_PREFLAGS} ${CMAKE_CURRENT_BINARY_DIR}/Test_hmat_auto_${cluster_type}_${compression_type})
+        add_test(NAME Test_hmat_auto_${cluster_type}_${compression_type}_2 COMMAND  ${MPIEXEC} ${MPIEXEC_NUMPROC_FLAG} 2 ${MPIEXEC_PREFLAGS} ${CMAKE_CURRENT_BINARY_DIR}/Test_hmat_auto_${cluster_type}_${compression_type})
+        add_test(NAME Test_hmat_auto_${cluster_type}_${compression_type}_4 COMMAND  ${MPIEXEC} ${MPIEXEC_NUMPROC_FLAG} 4 ${MPIEXEC_PREFLAGS} ${CMAKE_CURRENT_BINARY_DIR}/Test_hmat_auto_${cluster_type}_${compression_type})
+        
+        add_executable(Test_hmat_${cluster_type}_${compression_type} test_hmat_${cluster_type}_${compression_type}.cpp)
+        target_link_libraries(Test_hmat_${cluster_type}_${compression_type} htool)
+        add_dependencies(build-tests Test_hmat_${cluster_type}_${compression_type})
+        add_test(NAME Test_hmat_${cluster_type}_${compression_type}_1 COMMAND  ${MPIEXEC} ${MPIEXEC_NUMPROC_FLAG} 1 ${MPIEXEC_PREFLAGS} ${CMAKE_CURRENT_BINARY_DIR}/Test_hmat_${cluster_type}_${compression_type})
+        add_test(NAME Test_hmat_${cluster_type}_${compression_type}_2 COMMAND  ${MPIEXEC} ${MPIEXEC_NUMPROC_FLAG} 2 ${MPIEXEC_PREFLAGS} ${CMAKE_CURRENT_BINARY_DIR}/Test_hmat_${cluster_type}_${compression_type})
+        add_test(NAME Test_hmat_${cluster_type}_${compression_type}_4 COMMAND  ${MPIEXEC} ${MPIEXEC_NUMPROC_FLAG} 4 ${MPIEXEC_PREFLAGS} ${CMAKE_CURRENT_BINARY_DIR}/Test_hmat_${cluster_type}_${compression_type})
 
-#=== hmat_cluster_partialACA
-add_executable(Test_hmat_cluster_partialACA test_hmat_cluster_partialACA.cpp)
-target_link_libraries(Test_hmat_cluster_partialACA htool)
-add_dependencies(build-tests Test_hmat_cluster_partialACA)
-add_test(NAME Test_hmat_cluster_partialACA_1 COMMAND  ${MPIEXEC} ${MPIEXEC_NUMPROC_FLAG} 1 ${MPIEXEC_PREFLAGS} ${CMAKE_CURRENT_BINARY_DIR}/Test_hmat_cluster_partialACA)
-add_test(NAME Test_hmat_cluster_partialACA_2 COMMAND  ${MPIEXEC} ${MPIEXEC_NUMPROC_FLAG} 2 ${MPIEXEC_PREFLAGS} ${CMAKE_CURRENT_BINARY_DIR}/Test_hmat_cluster_partialACA)
-add_test(NAME Test_hmat_cluster_partialACA_4 COMMAND  ${MPIEXEC} ${MPIEXEC_NUMPROC_FLAG} 4 ${MPIEXEC_PREFLAGS} ${CMAKE_CURRENT_BINARY_DIR}/Test_hmat_cluster_partialACA)
-
-#=== hmat_auto_sympartialACA
-add_executable(Test_hmat_auto_sympartialACA test_hmat_auto_sympartialACA.cpp)
-target_link_libraries(Test_hmat_auto_sympartialACA htool)
-add_dependencies(build-tests Test_hmat_auto_sympartialACA)
-add_test(NAME Test_hmat_auto_sympartialACA_1 COMMAND  ${MPIEXEC} ${MPIEXEC_NUMPROC_FLAG} 1 ${MPIEXEC_PREFLAGS} ${CMAKE_CURRENT_BINARY_DIR}/Test_hmat_auto_sympartialACA)
-add_test(NAME Test_hmat_auto_sympartialACA_2 COMMAND  ${MPIEXEC} ${MPIEXEC_NUMPROC_FLAG} 2 ${MPIEXEC_PREFLAGS} ${CMAKE_CURRENT_BINARY_DIR}/Test_hmat_auto_sympartialACA)
-add_test(NAME Test_hmat_auto_sympartialACA_4 COMMAND  ${MPIEXEC} ${MPIEXEC_NUMPROC_FLAG} 4 ${MPIEXEC_PREFLAGS} ${CMAKE_CURRENT_BINARY_DIR}/Test_hmat_auto_sympartialACA)
-
-
-#=== hmat_cluster_sympartialACA
-add_executable(Test_hmat_cluster_sympartialACA test_hmat_cluster_sympartialACA.cpp)
-target_link_libraries(Test_hmat_cluster_sympartialACA htool)
-add_dependencies(build-tests Test_hmat_cluster_sympartialACA)
-add_test(NAME Test_hmat_cluster_sympartialACA_1 COMMAND  ${MPIEXEC} ${MPIEXEC_NUMPROC_FLAG} 1 ${MPIEXEC_PREFLAGS} ${CMAKE_CURRENT_BINARY_DIR}/Test_hmat_cluster_sympartialACA)
-add_test(NAME Test_hmat_cluster_sympartialACA_2 COMMAND  ${MPIEXEC} ${MPIEXEC_NUMPROC_FLAG} 2 ${MPIEXEC_PREFLAGS} ${CMAKE_CURRENT_BINARY_DIR}/Test_hmat_cluster_sympartialACA)
-add_test(NAME Test_hmat_cluster_sympartialACA_4 COMMAND  ${MPIEXEC} ${MPIEXEC_NUMPROC_FLAG} 4 ${MPIEXEC_PREFLAGS} ${CMAKE_CURRENT_BINARY_DIR}/Test_hmat_cluster_sympartialACA)
+    endforeach()
+endforeach()
 
 #=== hmat_vec_prod
 add_executable(Test_hmat_vec_prod test_hmat_vec_prod.cpp)

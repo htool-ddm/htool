@@ -61,7 +61,7 @@ int test_cluster(int argc, char *argv[]) {
                 }
                 
                 for (int l=0;l<nb_sons;l++){
-                    s.push((Cluster_type*)(&(curr->get_son(l))));
+                    s.push((&(curr->get_son(l))));
                 }
             }
 
@@ -71,9 +71,41 @@ int test_cluster(int argc, char *argv[]) {
         int local_size   = t.get_local_size();
         int local_offset = t.get_local_offset();
 
-        // Testing getters for local cluster
+        // Testing getters for root cluster
         int root_size   = t.get_root().get_size();
         int root_offset = t.get_root().get_offset();
+        test = test || !(root_size==size);
+        test = test || !(root_offset==0);
+
+        // Testing to get local cluster
+        std::shared_ptr<Cluster_type> local_cluster = t.get_local_cluster_tree();
+        test = test || !(local_size==local_cluster->get_size());
+        test = test || !(local_offset==local_cluster->get_offset());
+        std::stack<Cluster_type const *> s_local_1;
+        std::stack<Cluster_type const *> s_local_2;
+        s_local_1.push(local_cluster.get());
+        s_local_2.push(&(t.get_local_cluster()));
+        depth =0;
+        while (!s_local_1.empty()){
+            Cluster_type const * curr_1 = s_local_1.top();
+            Cluster_type const * curr_2 = s_local_2.top();
+            s_local_1.pop();
+            s_local_2.pop();
+
+            test = test || !(curr_1->get_offset()==curr_2->get_offset());
+            test = test || !(curr_1->get_size()==curr_2->get_size());
+
+            if (!curr_2->IsLeaf()){
+                // test num inclusion
+                
+                for (int l=0;l<curr_2->get_nb_sons();l++){
+                    s_local_1.push(&(curr_1->get_son(l)));
+                    s_local_2.push(&(curr_2->get_son(l)));
+                }
+            }
+
+        }
+
 
         // Random vector
         double lower_bound = 0;

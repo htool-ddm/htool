@@ -42,8 +42,8 @@ int main(int argc, char *argv[]) {
 		MyMultiMatrix MultiA(xt,xs);
 		int nm = MultiA.nb_matrix();
 		MyMatrix A(xt,xs);
-		MultiHMatrix<MultipartialACA,double> MultiHA(MultiA,xt,xs);
-		HMatrix<partialACA,double> HA(A,xt,xs);
+		MultiHMatrix<double,MultipartialACA,GeometricClustering> MultiHA(MultiA,xt,xs);
+		HMatrix<double,partialACA,GeometricClustering> HA(A,xt,xs);
 
 		// Comparison with HMatrix
 		std::vector<double> one(nc,1);

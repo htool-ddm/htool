@@ -1,5 +1,6 @@
 #include <htool/types/hmatrix.hpp>
 #include <htool/lrmat/fullACA.hpp>
+#include <htool/clustering/geometric_splitting.hpp>
 
 using namespace std;
 using namespace htool;
@@ -60,6 +61,7 @@ int main(int argc, char *argv[]) {
 	double z1 = 1;
 	vector<R3>        p1(nr);
 	vector<double>  r1(nr,0);
+	vector<double> g1(nr,1);
 	vector<int>     tab1(nr);
 	for(int j=0; j<nr; j++){
 		Ir[j] = j;
@@ -73,6 +75,7 @@ int main(int argc, char *argv[]) {
 	double z2 = 1+distance;
 	vector<R3>       p2(nc);
 	vector<double> r2(nc,0);
+	vector<double> g2(nr,1);
 	vector<int>    tab2(nc);
 	for(int j=0; j<nc; j++){
       Ic[j] = j;
@@ -85,9 +88,11 @@ int main(int argc, char *argv[]) {
 	MyMatrix A(p1,p2);
 
     // Hmatrix
-    std::shared_ptr<Cluster_tree> t=make_shared<Cluster_tree>(p1,r1,tab1);
-    std::shared_ptr<Cluster_tree> s=make_shared<Cluster_tree>(p2,r2,tab2);
-    HMatrix<fullACA,double> HA(A,t,p1,tab1,s,p2,tab2);
+    std::shared_ptr<GeometricClustering> t=make_shared<GeometricClustering>();
+    std::shared_ptr<GeometricClustering> s=make_shared<GeometricClustering>();
+	t->build(p1,r1,tab1,g1);
+	s->build(p2,r2,tab2,g2);
+    HMatrix<double,fullACA,GeometricClustering> HA(A,t,p1,tab1,s,p2,tab2);
 	HA.print_infos();
 
     // Dense Matrix

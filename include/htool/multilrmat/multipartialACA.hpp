@@ -12,8 +12,8 @@
 
 namespace htool {
 
-template< typename T >
-class MultipartialACA: public MultiLowRankMatrix<T>{
+template<typename T, typename ClusterImpl>
+class MultipartialACA: public MultiLowRankMatrix<T,ClusterImpl>{
 
 
 public:
@@ -22,9 +22,9 @@ public:
 	//=========================//
     // If reqrank=-1 (default value), we use the precision given by epsilon for the stopping criterion;
     // otherwise, we use the required rank for the stopping criterion (!: at the end the rank could be lower)
-	using MultiLowRankMatrix<T>::MultiLowRankMatrix;
+	using MultiLowRankMatrix<T,ClusterImpl>::MultiLowRankMatrix;
 
-	void build(const MultiIMatrix<T>& A, const Cluster& t, const std::vector<R3>& xt,const std::vector<int>& tabt, const Cluster& s, const std::vector<R3>& xs, const std::vector<int>& tabs){
+	void build(const MultiIMatrix<T>& A, const Cluster<ClusterImpl>& t, const std::vector<R3>& xt,const std::vector<int>& tabt, const Cluster<ClusterImpl>& s, const std::vector<R3>& xs, const std::vector<int>& tabs){
 		if(this->rank == 0){
 			for (int l=0;l<this->nm;l++){
 				this->LowRankMatrices[l].U.resize(this->nr,1);

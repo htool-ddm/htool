@@ -1,5 +1,6 @@
 #include <htool/types/hmatrix.hpp>
 #include <htool/lrmat/fullACA.hpp>
+#include <htool/clustering/geometric_splitting.hpp>
 
 using namespace std;
 using namespace htool;
@@ -106,7 +107,7 @@ int main(int argc, char *argv[]) {
 
 
         // HMatrix<fullACA,double> HA(A,p1,r1,tab1,p2,r2,tab2);
-        HMatrix<fullACA,double> HA(A,p1,r1,tab1,p2,r2,tab2);
+        HMatrix<double,fullACA,GeometricClustering> HA(A,p1,r1,tab1,p2,r2,tab2);
         HA.print_infos();
 
 

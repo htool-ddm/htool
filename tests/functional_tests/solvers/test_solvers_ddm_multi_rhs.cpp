@@ -3,6 +3,7 @@
 #include <htool/lrmat/fullACA.hpp>
 #include <htool/types/hmatrix.hpp>
 #include <htool/input_output/geometry.hpp>
+#include <htool/clustering/geometric_splitting.hpp>
 
 
 using namespace std;
@@ -67,7 +68,7 @@ int main(int argc, char *argv[]){
 	for (int i=0;i<n;i++){
 		tab[i]=i;
 	}
-	HMatrix<fullACA,complex<double>> HA(A,p);
+	HMatrix<complex<double>,fullACA,GeometricClustering> HA(A,p);
 
 	// Global vectors
 	Matrix<complex<double>> x_global(n,mu),x_ref(n,mu);
@@ -77,7 +78,7 @@ int main(int argc, char *argv[]){
     }
 
 	// Solve
-    DDM<fullACA,complex<double>> hpddm_operator(HA);
+    DDM<complex<double>,fullACA,GeometricClustering> hpddm_operator(HA);
     hpddm_operator.facto_one_level();
 	hpddm_operator.solve(f_global.data(),x_global.data(),mu);
 	HA.print_infos();

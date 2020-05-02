@@ -8,8 +8,9 @@
 #include <memory>
 #include "matrix.hpp"
 #include "../misc/parametres.hpp"
-#include "../clustering/cluster_tree.hpp"
+#include "../clustering/cluster.hpp"
 #include "../wrappers/wrapper_mpi.hpp"
+#include "../blocks/blocks.hpp"
 #include "hmatrix.hpp"
 #include "multimatrix.hpp"
 #include "../multilrmat/multilrmat.hpp"
@@ -18,17 +19,17 @@
 namespace htool {
 
 // Friend functions --- forward declaration
-template< template<typename> class LowRankMatrix, typename T >
+template<typename T, template<typename,typename> class LowRankMatrix, class ClusterImpl>
 class HMatrix;
 
-template<template<typename> class MultiLowRankMatrix,typename T >
+template<typename T, template<typename,typename> class MultiLowRankMatrix, class ClusterImpl>
 class MultiHMatrix;
 
-template< template<typename> class MultiLowRankMatrix, typename T >
-double Frobenius_absolute_error(const MultiHMatrix<MultiLowRankMatrix,T>& B, const MultiIMatrix<T>& A, int l);
+template<typename T, template<typename,typename> class MultiLowRankMatrix, class ClusterImpl>
+double Frobenius_absolute_error(const MultiHMatrix<T,MultiLowRankMatrix,ClusterImpl>& B, const MultiIMatrix<T>& A, int l);
 
 // Class
-template<template<typename> class MultiLowRankMatrix,typename T >
+template<typename T, template<typename,typename> class MultiLowRankMatrix, class ClusterImpl>
 class MultiHMatrix: public Parametres{
 
 private:
@@ -43,12 +44,12 @@ private:
 	MPI_Comm comm;
 	int rankWorld,sizeWorld;
 
-	std::vector<HMatrix<bareLowRankMatrix,T> >    HMatrices;
+	std::vector<HMatrix<T,bareLowRankMatrix,ClusterImpl> >    HMatrices;
 	// std::vector<Block*>		   Tasks;
 	// std::vector<Block*>		   MyBlocks;
 
-    std::shared_ptr<Cluster_tree> cluster_tree_s;
-	std::shared_ptr<Cluster_tree> cluster_tree_t;
+    std::shared_ptr<Cluster<ClusterImpl>> cluster_tree_s;
+	std::shared_ptr<Cluster<ClusterImpl>> cluster_tree_t;
 
 
 public:
@@ -65,14 +66,14 @@ public:
 	
 	// Internal methods
 	void ComputeBlocks(MultiIMatrix<T>& mat, const std::vector<R3> xt,const std::vector<int> tabt, const std::vector<R3> xs, const std::vector<int>tabs);
-	void AddNearFieldMat(MultiIMatrix<T>& mat, const Cluster& t, const Cluster& s, std::vector<SubMatrix<T>*>&);
-	bool AddFarFieldMat(MultiIMatrix<T>& mat, const Cluster& t, const Cluster& s, const std::vector<R3> xt,const std::vector<int> tabt, const std::vector<R3> xs, const std::vector<int>tabs, std::vector<bareLowRankMatrix<T>*>&, const int& reqrank=-1);
+	void AddNearFieldMat(MultiIMatrix<T>& mat, const Cluster<ClusterImpl>& t, const Cluster<ClusterImpl>& s, std::vector<SubMatrix<T>*>&);
+	bool AddFarFieldMat(MultiIMatrix<T>& mat, const Cluster<ClusterImpl>& t, const Cluster<ClusterImpl>& s, const std::vector<R3> xt,const std::vector<int> tabt, const std::vector<R3> xs, const std::vector<int>tabs, std::vector<bareLowRankMatrix<T,ClusterImpl>*>&, const int& reqrank=-1);
 
-	HMatrix<bareLowRankMatrix,T>&  operator[](int j){return HMatrices[j];}; 
-    const HMatrix<bareLowRankMatrix,T>&  operator[](int j) const {return HMatrices[j];}; 
+	HMatrix<T,bareLowRankMatrix,ClusterImpl>&  operator[](int j){return HMatrices[j];}; 
+    const HMatrix<T,bareLowRankMatrix,ClusterImpl>&  operator[](int j) const {return HMatrices[j];}; 
 
 
-	friend double Frobenius_absolute_error<MultiLowRankMatrix,T>(const MultiHMatrix<MultiLowRankMatrix,T>& B, const MultiIMatrix<T>& A, int l);
+	friend double Frobenius_absolute_error<T,MultiLowRankMatrix,ClusterImpl>(const MultiHMatrix<T,MultiLowRankMatrix,ClusterImpl>& B, const MultiIMatrix<T>& A, int l);
 
     // // Destructor
 	// ~MultiHMatrix() {
@@ -99,8 +100,8 @@ public:
 };
 
 // build
-template< template<typename> class MultiLowRankMatrix, typename T >
-void MultiHMatrix<MultiLowRankMatrix, T >::build(MultiIMatrix<T>& mat, const std::vector<R3>& xt, const std::vector<double>& rt, const std::vector<int>& tabt, const std::vector<double>& gt, const std::vector<R3>&xs, const std::vector<double>& rs, const std::vector<int>& tabs, const std::vector<double>& gs, MPI_Comm comm0){
+template<typename T, template<typename,typename> class MultiLowRankMatrix, class ClusterImpl>
+void MultiHMatrix<T,MultiLowRankMatrix,ClusterImpl>::build(MultiIMatrix<T>& mat, const std::vector<R3>& xt, const std::vector<double>& rt, const std::vector<int>& tabt, const std::vector<double>& gt, const std::vector<R3>&xs, const std::vector<double>& rs, const std::vector<int>& tabs, const std::vector<double>& gs, MPI_Comm comm0){
 
 	assert( mat.nb_rows()==tabt.size() && mat.nb_cols()==tabs.size() );
 
@@ -112,8 +113,10 @@ void MultiHMatrix<MultiLowRankMatrix, T >::build(MultiIMatrix<T>& mat, const std
 
 	// Construction arbre des paquets
 	double time = MPI_Wtime();
-	cluster_tree_t = std::make_shared<Cluster_tree>(xt,rt,tabt,gt,comm); // target
-	cluster_tree_s = std::make_shared<Cluster_tree>(xs,rs,tabs,gs,comm); // source
+	cluster_tree_t = std::make_shared<ClusterImpl>(); // target
+	cluster_tree_s = std::make_shared<ClusterImpl>(); // source
+	cluster_tree_t->build(xt,rt,tabt,gt,2,comm);
+	cluster_tree_s->build(xs,rs,tabs,gs,2,comm);
 
 	local_size   = cluster_tree_t->get_local_size();
 	local_offset = cluster_tree_t->get_local_offset();
@@ -122,12 +125,12 @@ void MultiHMatrix<MultiLowRankMatrix, T >::build(MultiIMatrix<T>& mat, const std
 
 	// Hmatrices
 	for (int l=0;l<nb_hmatrix;l++){
-		HMatrices.push_back(HMatrix<bareLowRankMatrix,T> (nr,nc,cluster_tree_t,cluster_tree_s));
+		HMatrices.push_back(HMatrix<T,bareLowRankMatrix,ClusterImpl> (nr,nc,cluster_tree_t,cluster_tree_s));
 	}
 
 	// Construction arbre des blocs
 	time = MPI_Wtime();
-	Block* B = HMatrices[0].BuildBlockTree(cluster_tree_t->get_head(),cluster_tree_s->get_head());
+	Block<ClusterImpl>* B = HMatrices[0].BuildBlockTree(cluster_tree_t->get_root(),cluster_tree_s->get_root());
 	if (B != NULL) HMatrices[0].Tasks.push_back(B);
 	mytimes[1] = MPI_Wtime() - time;
 
@@ -161,14 +164,14 @@ void MultiHMatrix<MultiLowRankMatrix, T >::build(MultiIMatrix<T>& mat, const std
 }
 
 // Full constructor
-template< template<typename> class MultiLowRankMatrix, typename T >
-MultiHMatrix<MultiLowRankMatrix, T >::MultiHMatrix(MultiIMatrix<T>& mat, const std::vector<R3>& xt, const std::vector<double>& rt, const std::vector<int>& tabt, const std::vector<double>& gt, const std::vector<R3>&xs, const std::vector<double>& rs, const std::vector<int>& tabs, const std::vector<double>& gs, const int& reqrank0, MPI_Comm comm0): nr(mat.nb_rows()),nc(mat.nb_cols()), nb_hmatrix(mat.nb_matrix()), cluster_tree_s(nullptr), cluster_tree_t(nullptr), reqrank(reqrank0) {
+template<typename T, template<typename,typename> class MultiLowRankMatrix, class ClusterImpl>
+MultiHMatrix<T,MultiLowRankMatrix,ClusterImpl>::MultiHMatrix(MultiIMatrix<T>& mat, const std::vector<R3>& xt, const std::vector<double>& rt, const std::vector<int>& tabt, const std::vector<double>& gt, const std::vector<R3>&xs, const std::vector<double>& rs, const std::vector<int>& tabs, const std::vector<double>& gs, const int& reqrank0, MPI_Comm comm0): nr(mat.nb_rows()),nc(mat.nb_cols()), nb_hmatrix(mat.nb_matrix()), cluster_tree_s(nullptr), cluster_tree_t(nullptr), reqrank(reqrank0) {
 	this->build(mat, xt, rt, tabt, gt, xs, rs, tabs, gs,comm0);
 }
 
 // Constructor without radius, mass and tab
-template< template<typename> class MultiLowRankMatrix, typename T >
-MultiHMatrix<MultiLowRankMatrix, T >::MultiHMatrix(MultiIMatrix<T>& mat, const std::vector<R3>& xt, const std::vector<R3>& xs, const int& reqrank0, MPI_Comm comm0): nr(mat.nb_rows()),nc(mat.nb_cols()), nb_hmatrix(mat.nb_matrix()), cluster_tree_s(nullptr), cluster_tree_t(nullptr), reqrank(reqrank0) {
+template<typename T, template<typename,typename> class MultiLowRankMatrix, class ClusterImpl>
+MultiHMatrix<T,MultiLowRankMatrix,ClusterImpl>::MultiHMatrix(MultiIMatrix<T>& mat, const std::vector<R3>& xt, const std::vector<R3>& xs, const int& reqrank0, MPI_Comm comm0): nr(mat.nb_rows()),nc(mat.nb_cols()), nb_hmatrix(mat.nb_matrix()), cluster_tree_s(nullptr), cluster_tree_t(nullptr), reqrank(reqrank0) {
 	std::vector<int> tabt(xt.size()), tabs(xs.size());
 	std::iota(tabt.begin(),tabt.end(),int(0));
 	std::iota(tabs.begin(),tabs.end(),int(0));
@@ -176,21 +179,21 @@ MultiHMatrix<MultiLowRankMatrix, T >::MultiHMatrix(MultiIMatrix<T>& mat, const s
 }
 
 
-template< template<typename> class MultiLowRankMatrix, typename T >
-void MultiHMatrix<MultiLowRankMatrix, T >::ComputeBlocks(MultiIMatrix<T>& mat, const std::vector<R3> xt,const std::vector<int> tabt, const std::vector<R3> xs, const std::vector<int>tabs){
+template<typename T, template<typename,typename> class MultiLowRankMatrix, class ClusterImpl>
+void MultiHMatrix<T,MultiLowRankMatrix,ClusterImpl>::ComputeBlocks(MultiIMatrix<T>& mat, const std::vector<R3> xt,const std::vector<int> tabt, const std::vector<R3> xs, const std::vector<int>tabs){
     #if _OPENMP
     #pragma omp parallel
     #endif
 	{
         std::vector<SubMatrix<T>*>     MyNearFieldMats_local;
-        std::vector<bareLowRankMatrix<T>*> MyFarFieldMats_local;
+        std::vector<bareLowRankMatrix<T,ClusterImpl>*> MyFarFieldMats_local;
         #if _OPENMP
         #pragma omp for schedule(guided)
         #endif
         for(int b=0; b<HMatrices[0].MyBlocks.size(); b++) {
-            const Block& B = *(HMatrices[0].MyBlocks[b]);
-        	const Cluster& t = B.tgt_();
-            const Cluster& s = B.src_();
+            const Block<ClusterImpl>& B = *(HMatrices[0].MyBlocks[b]);
+        	const Cluster<ClusterImpl>& t = B.tgt_();
+            const Cluster<ClusterImpl>& s = B.src_();
 			if( B.IsAdmissible() ){
 				bool test = AddFarFieldMat(mat,t,s,xt,tabt,xs,tabs,MyFarFieldMats_local,reqrank);
 				
@@ -229,8 +232,8 @@ void MultiHMatrix<MultiLowRankMatrix, T >::ComputeBlocks(MultiIMatrix<T>& mat, c
 }
 
 // Build a dense block
-template< template<typename> class MultiLowRankMatrix, typename T>
-void MultiHMatrix<MultiLowRankMatrix,T >::AddNearFieldMat(MultiIMatrix<T>& mat, const Cluster& t, const Cluster& s, std::vector<SubMatrix<T>*>& MyNearFieldMats_local){
+template<typename T, template<typename,typename> class MultiLowRankMatrix, class ClusterImpl>
+void MultiHMatrix<T,MultiLowRankMatrix,ClusterImpl>::AddNearFieldMat(MultiIMatrix<T>& mat, const Cluster<ClusterImpl>& t, const Cluster<ClusterImpl>& s, std::vector<SubMatrix<T>*>& MyNearFieldMats_local){
 
 	MultiSubMatrix<T> Local_MultiSubMatrix(mat, std::vector<int>(cluster_tree_t->get_perm_start()+t.get_offset(),cluster_tree_t->get_perm_start()+t.get_offset()+t.get_size()), std::vector<int>(cluster_tree_s->get_perm_start()+s.get_offset(),cluster_tree_s->get_perm_start()+s.get_offset()+s.get_size()),t.get_offset(),s.get_offset());
 
@@ -243,14 +246,14 @@ void MultiHMatrix<MultiLowRankMatrix,T >::AddNearFieldMat(MultiIMatrix<T>& mat, 
 }
 
 // Build a low rank block
-template< template<typename> class MultiLowRankMatrix, typename T>
-bool MultiHMatrix<MultiLowRankMatrix,T >::AddFarFieldMat(MultiIMatrix<T>& mat, const Cluster& t, const Cluster& s, const std::vector<R3> xt,const std::vector<int> tabt, const std::vector<R3> xs, const std::vector<int>tabs, std::vector<bareLowRankMatrix<T>*>& MyFarFieldMats_local, const int& reqrank){
-	MultiLowRankMatrix<T> Local_MultiLowRankMatrix(std::vector<int>(cluster_tree_t->get_perm_start()+t.get_offset(),cluster_tree_t->get_perm_start()+t.get_offset()+t.get_size()), std::vector<int>(cluster_tree_s->get_perm_start()+s.get_offset(),cluster_tree_s->get_perm_start()+s.get_offset()+s.get_size()),mat.nb_matrix(),t.get_offset(),s.get_offset(),reqrank);
+template<typename T, template<typename,typename> class MultiLowRankMatrix, class ClusterImpl>
+bool MultiHMatrix<T,MultiLowRankMatrix,ClusterImpl>::AddFarFieldMat(MultiIMatrix<T>& mat, const Cluster<ClusterImpl>& t, const Cluster<ClusterImpl>& s, const std::vector<R3> xt,const std::vector<int> tabt, const std::vector<R3> xs, const std::vector<int>tabs, std::vector<bareLowRankMatrix<T,ClusterImpl>*>& MyFarFieldMats_local, const int& reqrank){
+	MultiLowRankMatrix<T,ClusterImpl> Local_MultiLowRankMatrix(std::vector<int>(cluster_tree_t->get_perm_start()+t.get_offset(),cluster_tree_t->get_perm_start()+t.get_offset()+t.get_size()), std::vector<int>(cluster_tree_s->get_perm_start()+s.get_offset(),cluster_tree_s->get_perm_start()+s.get_offset()+s.get_size()),mat.nb_matrix(),t.get_offset(),s.get_offset(),reqrank);
 	Local_MultiLowRankMatrix.build(mat,t,xt,tabt,s,xs,tabs);
 
 	if (Local_MultiLowRankMatrix.rank_of()!=-1){
 		for (int l=0;l<nb_hmatrix;l++){
-			bareLowRankMatrix<T>* lrmat = new bareLowRankMatrix<T> (Local_MultiLowRankMatrix[l]);
+			bareLowRankMatrix<T,ClusterImpl>* lrmat = new bareLowRankMatrix<T,ClusterImpl> (Local_MultiLowRankMatrix[l]);
 			MyFarFieldMats_local.push_back(lrmat);
 		}
 		return 0;
@@ -262,10 +265,10 @@ bool MultiHMatrix<MultiLowRankMatrix,T >::AddFarFieldMat(MultiIMatrix<T>& mat, c
 }
 
 
-template< template<typename> class MultiLowRankMatrix, typename T >
-double Frobenius_absolute_error(const MultiHMatrix<MultiLowRankMatrix,T>& B, const MultiIMatrix<T>& A, int l){
+template<typename T, template<typename,typename> class MultiLowRankMatrix, class ClusterImpl>
+double Frobenius_absolute_error(const MultiHMatrix<T,MultiLowRankMatrix,ClusterImpl>& B, const MultiIMatrix<T>& A, int l){
 	double myerr = 0;
-	std::vector<bareLowRankMatrix<T>* > MyFarFieldMats=B[l].get_MyFarFieldMats();
+	std::vector<bareLowRankMatrix<T,ClusterImpl>* > MyFarFieldMats=B[l].get_MyFarFieldMats();
 	for(int j=0; j<MyFarFieldMats.size(); j++){
 		double test = Frobenius_absolute_error(*(MyFarFieldMats[j]), A,l);
 		myerr += std::pow(test,2);

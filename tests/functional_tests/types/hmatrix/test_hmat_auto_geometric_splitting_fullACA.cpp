@@ -4,5 +4,5 @@
 int main(int argc, char *argv[]) {
 
 	
-	return test_hmat_auto<sympartialACA>(argc,argv);
+	return test_hmat_auto<GeometricClustering,fullACA>(argc,argv);
 }

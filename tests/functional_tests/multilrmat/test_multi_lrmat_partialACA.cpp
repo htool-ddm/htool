@@ -13,6 +13,8 @@ using namespace htool;
 
 int main(int argc, char *argv[]){
 
+	// Initialize the MPI environment
+	MPI_Init(&argc,&argv);
 
 	const int ndistance = 4;
 	double distance[ndistance];
@@ -37,23 +39,29 @@ int main(int argc, char *argv[]){
 		
 		create_geometry(distance[idist],xt,tabt,xs,tabs);
 
-		std::vector<int> permt,perms;
-		Cluster t(xt,permt); Cluster s(xs,perms); // We avoid 
+		GeometricClustering t,s; 
+
+		std::vector<int> tabt(xt.size()),tabs(xs.size());
+		std::iota(tabt.begin(),tabt.end(),int(0));
+		std::iota(tabs.begin(),tabs.end(),int(0));
+		t.build(xt,std::vector<double>(xt.size(),0),tabt,std::vector<double>(xt.size(),1));
+		s.build(xs,std::vector<double>(xs.size(),0),tabs,std::vector<double>(xs.size(),1));
+
 		MyMultiMatrix A(xt,xs);
 		int nm = A.nb_matrix();
 		MyMatrix A_test(xt,xs);
 
 		// partialACA fixed rank
     	int reqrank_max = 10;
-		MultipartialACA<double> A_partialACA_fixed(permt,perms,nm,reqrank_max);
-		partialACA<double> A_partialACA_fixed_test(permt,perms,reqrank_max);
+		MultipartialACA<double,GeometricClustering> A_partialACA_fixed(t.get_perm(),s.get_perm(),nm,reqrank_max);
+		partialACA<double,GeometricClustering> A_partialACA_fixed_test(t.get_perm(),s.get_perm(),reqrank_max);
 		A_partialACA_fixed.build(A,t,xt,tabt,s,xs,tabs);;
 		A_partialACA_fixed_test.build(A_test,t,xt,tabt,s,xs,tabs);;
 
 		// ACA automatic building
-		MultipartialACA<double> A_partialACA(permt,perms,nm);
+		MultipartialACA<double,GeometricClustering> A_partialACA(t.get_perm(),s.get_perm(),nm);
 		A_partialACA.build(A,t,xt,tabt,s,xs,tabs);
-		partialACA<double> A_partialACA_test(permt,perms);
+		partialACA<double,GeometricClustering> A_partialACA_test(t.get_perm(),s.get_perm());
 		A_partialACA_test.build(A_test,t,xt,tabt,s,xs,tabs);;
 
 		// Comparison with lrmat
@@ -70,10 +78,14 @@ int main(int argc, char *argv[]){
 		std::pair<double,double> fixed_compression_interval(0.87,0.89);
 		std::pair<double,double> auto_compression_interval(0.93,0.96);
 		
-		test = test || (test_multi_lrmat(A,A_partialACA_fixed,A_partialACA,permt,perms,fixed_compression_interval,auto_compression_interval));
+		test = test || (test_multi_lrmat(A,A_partialACA_fixed,A_partialACA,t.get_perm(),s.get_perm(),fixed_compression_interval,auto_compression_interval));
 	
 	}
 
 	cout << "test : "<<test<<endl;
+
+	// Finalize the MPI environment.
+	MPI_Finalize();
+	
 	return test;
 }

@@ -4,6 +4,7 @@
 #include <random>
 
 #include <htool/multilrmat/multilrmat.hpp>
+#include <htool/clustering/geometric_splitting.hpp>
 
 
 using namespace std;
@@ -92,8 +93,8 @@ void create_geometry(int distance, std::vector<R3>& xt, std::vector<int>& tabt, 
 	}
 }
 
-template< template<typename> class MultiLowRankMatrix, typename T >
-int test_multi_lrmat(const MyMultiMatrix& A,const MultiLowRankMatrix<T>& Fixed_approximation, const MultiLowRankMatrix<T>& Auto_approximation, std::vector<int>& permt, std::vector<int>& perms, std::pair<double,double> fixed_compression_interval, std::pair<double,double> auto_compression_interval){
+template< class MultiLowRankMatrix >
+int test_multi_lrmat(const MyMultiMatrix& A,const MultiLowRankMatrix& Fixed_approximation, const MultiLowRankMatrix& Auto_approximation, const std::vector<int>& permt, const std::vector<int>& perms, std::pair<double,double> fixed_compression_interval, std::pair<double,double> auto_compression_interval){
 
 	bool test = 0;
 	int nr=permt.size();

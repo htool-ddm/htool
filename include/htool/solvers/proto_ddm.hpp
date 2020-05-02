@@ -8,10 +8,10 @@
 
 namespace htool{
 
-template<template<typename> class LowRankMatrix, typename T>
+template<typename T,template<typename,typename> class LowRankMatrix, class ClusterImpl>
 class Proto_HPDDM;
 
-template<template<typename> class LowRankMatrix, typename T>
+template<typename T,template<typename,typename> class LowRankMatrix, class ClusterImpl>
 class Proto_DDM{
 private:
     int n;
@@ -30,7 +30,7 @@ private:
     std::vector<T> evi;
     std::vector<int> renum_to_global;
     Matrix<T> E;
-    const HMatrix<LowRankMatrix,T>& hmat;
+    const HMatrix<T,LowRankMatrix,ClusterImpl>& hmat;
     const T* const* Z;
     std::vector<int> recvcounts;
     std::vector<int> displs;
@@ -68,7 +68,7 @@ public:
     double timing_one_level;
     double timing_Q;
 
-    Proto_DDM(const IMatrix<T>& mat0, const HMatrix<LowRankMatrix,T>& hmat_0,
+    Proto_DDM(const IMatrix<T>& mat0, const HMatrix<T,LowRankMatrix, ClusterImpl>& hmat_0,
     const std::vector<int>&  ovr_subdomain_to_global0,
     const std::vector<int>& cluster_to_ovr_subdomain0,
     const std::vector<int>& neighbors0,
@@ -109,7 +109,7 @@ public:
 
         // Building Ai
         bool sym=false;
-        const std::vector<LowRankMatrix<T>*>& MyDiagFarFieldMats = hmat_0.get_MyDiagFarFieldMats();
+        const std::vector<LowRankMatrix<T,ClusterImpl>*>& MyDiagFarFieldMats = hmat_0.get_MyDiagFarFieldMats();
         const std::vector<SubMatrix<T>*>& MyDiagNearFieldMats= hmat_0.get_MyDiagNearFieldMats();
 
         // Internal dense blocks
@@ -127,7 +127,7 @@ public:
         // Internal compressed block
         Matrix<T> FarFielBlock(n,n);
         for (int i=0;i<MyDiagFarFieldMats.size();i++){
-          const LowRankMatrix<T>& lmat = *(MyDiagFarFieldMats[i]);
+          const LowRankMatrix<T,ClusterImpl>& lmat = *(MyDiagFarFieldMats[i]);
           int local_nr = lmat.nb_rows();
           int local_nc = lmat.nb_cols();
           int offset_i = lmat.get_offset_i()-hmat_0.get_local_offset();
@@ -202,13 +202,13 @@ public:
         int info;
 
         // Building Neumann matrix
-        htool::HMatrix<LowRankMatrix,T> HBi(generator_Bi,std::make_shared<Cluster_tree>(hmat.get_cluster_tree_t().create_local_cluster_tree()),x,-1,MPI_COMM_SELF);
+        htool::HMatrix<T,LowRankMatrix, ClusterImpl> HBi(generator_Bi,hmat.get_cluster_tree_t().get_local_cluster_tree(),x,-1,MPI_COMM_SELF);
 
         Matrix<T> Bi(n,n);
 
         // Building Bi
         bool sym=false;
-        const std::vector<LowRankMatrix<T>*>& MyLocalFarFieldMats = HBi.get_MyFarFieldMats();
+        const std::vector<LowRankMatrix<T,ClusterImpl>*>& MyLocalFarFieldMats = HBi.get_MyFarFieldMats();
         const std::vector<SubMatrix<T>*>& MyLocalNearFieldMats= HBi.get_MyNearFieldMats();
         // std::cout << MyLocalNearFieldMats.size()<<std::endl;
         // std::cout << MyLocalFarFieldMats.size()<<std::endl;
@@ -228,7 +228,7 @@ public:
         // Internal compressed block
         Matrix<T> FarFielBlock(n,n);
         for (int i=0;i<MyLocalFarFieldMats.size();i++){
-          const LowRankMatrix<T>& lmat = *(MyLocalFarFieldMats[i]);
+          const LowRankMatrix<T,ClusterImpl>& lmat = *(MyLocalFarFieldMats[i]);
           int local_nr = lmat.nb_rows();
           int local_nc = lmat.nb_cols();
           int offset_i = lmat.get_offset_i()-hmat.get_local_offset();
@@ -357,13 +357,13 @@ void build_coarse_space(Matrix<T>& Mi, IMatrix<T>& generator_Bi, const std::vect
         int info;
 
         // Building Neumann matrix
-        htool::HMatrix<LowRankMatrix,T> HBi(generator_Bi,std::make_shared<Cluster_tree>(hmat.get_cluster_tree_t().create_local_cluster_tree()),x,-1,MPI_COMM_SELF);
+        htool::HMatrix<T,LowRankMatrix,ClusterImpl> HBi(generator_Bi,hmat.get_cluster_tree_t().get_local_cluster_tree(),x,-1,MPI_COMM_SELF);
 
         Matrix<T> Bi(n,n);
 
         // Building Bi
         bool sym=false;
-        const std::vector<LowRankMatrix<T>*>& MyLocalFarFieldMats = HBi.get_MyFarFieldMats();
+        const std::vector<LowRankMatrix<T,ClusterImpl>*>& MyLocalFarFieldMats = HBi.get_MyFarFieldMats();
         const std::vector<SubMatrix<T>*>& MyLocalNearFieldMats= HBi.get_MyNearFieldMats();
 
         // Internal dense blocks
@@ -381,7 +381,7 @@ void build_coarse_space(Matrix<T>& Mi, IMatrix<T>& generator_Bi, const std::vect
         // Internal compressed block
         Matrix<T> FarFielBlock(n,n);
         for (int i=0;i<MyLocalFarFieldMats.size();i++){
-          const LowRankMatrix<T>& lmat = *(MyLocalFarFieldMats[i]);
+          const LowRankMatrix<T,ClusterImpl>& lmat = *(MyLocalFarFieldMats[i]);
           int local_nr = lmat.nb_rows();
           int local_nc = lmat.nb_cols();
           int offset_i = lmat.get_offset_i()-hmat.get_local_offset();
@@ -681,7 +681,7 @@ void build_coarse_space(Matrix<T>& Mi, IMatrix<T>& generator_Bi, const std::vect
         }
 
         int local_max_size_j=0;
-        const std::vector<LowRankMatrix<T>*>& MyFarFieldMats = hmat.get_MyFarFieldMats();
+        const std::vector<LowRankMatrix<T,ClusterImpl>*>& MyFarFieldMats = hmat.get_MyFarFieldMats();
         const std::vector<SubMatrix<T>*>& MyNearFieldMats= hmat.get_MyNearFieldMats();
         for (int i=0;i<MyFarFieldMats.size();i++){
             if (local_max_size_j<(*MyFarFieldMats[i]).nb_cols())
@@ -784,7 +784,7 @@ void build_coarse_space(Matrix<T>& Mi, IMatrix<T>& generator_Bi, const std::vect
         }
 
         int local_max_size_j=0;
-        const std::vector<LowRankMatrix<T>*>& MyFarFieldMats = hmat.get_MyFarFieldMats();
+        const std::vector<LowRankMatrix<T,ClusterImpl>*>& MyFarFieldMats = hmat.get_MyFarFieldMats();
         const std::vector<SubMatrix<T>*>& MyNearFieldMats= hmat.get_MyNearFieldMats();
         for (int i=0;i<MyFarFieldMats.size();i++){
             if (local_max_size_j<(*MyFarFieldMats[i]).nb_cols())
@@ -1037,7 +1037,7 @@ void build_coarse_space(Matrix<T>& Mi, IMatrix<T>& generator_Bi, const std::vect
         // std::transform(out_Q.begin(),out_Q.begin()+n_inside,ptm1p.begin(),out,std::plus<T>());
     }
 
-    void init_hpddm(Proto_HPDDM<LowRankMatrix,T>& hpddm_op){
+    void init_hpddm(Proto_HPDDM<T,LowRankMatrix,ClusterImpl>& hpddm_op){
         bool sym=false;
         hpddm_op.initialize(n, sym, nullptr, neighbors, intersections);
     }

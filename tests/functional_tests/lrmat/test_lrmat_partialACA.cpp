@@ -2,6 +2,8 @@
 #include <complex>
 #include <vector>
 
+
+#include <htool/clustering/geometric_splitting.hpp>
 #include <htool/lrmat/partialACA.hpp>
 #include "test_lrmat.hpp"
 
@@ -11,6 +13,8 @@ using namespace htool;
 
 
 int main(int argc, char *argv[]){
+	// Initialize the MPI environment
+	MPI_Init(&argc,&argv);
 
 	bool verbose=0;
 	if (argc>=2){
@@ -36,25 +40,35 @@ int main(int argc, char *argv[]){
 		
 		create_geometry(distance[idist],xt,tabt,xs,tabs,verbose);
 
-		std::vector<int> permt,perms;
-		Cluster t(xt,permt); Cluster s(xs,perms); // We avoid 
+		GeometricClustering t,s; 
+
+		std::vector<int> tabt(xt.size()),tabs(xs.size());
+		std::iota(tabt.begin(),tabt.end(),int(0));
+		std::iota(tabs.begin(),tabs.end(),int(0));
+		t.build(xt,std::vector<double>(xt.size(),0),tabt,std::vector<double>(xt.size(),1));
+		s.build(xs,std::vector<double>(xs.size(),0),tabs,std::vector<double>(xs.size(),1));
+
 		MyMatrix A(xt,xs);
 
 		// partialACA fixed rank
     	int reqrank_max = 10;
-		partialACA<double> A_partialACA_fixed(permt,perms,reqrank_max);
+		partialACA<double,GeometricClustering> A_partialACA_fixed(t.get_perm(),s.get_perm(),reqrank_max);
 		A_partialACA_fixed.build(A,t,xt,tabt,s,xs,tabs);;
 
 		
 		// ACA automatic building
-		partialACA<double> A_partialACA(permt,perms);
+		partialACA<double,GeometricClustering> A_partialACA(t.get_perm(),s.get_perm());
 		A_partialACA.build(A,t,xt,tabt,s,xs,tabs);
 		
 		std::pair<double,double> fixed_compression_interval(0.87,0.89);
 		std::pair<double,double> auto_compression_interval(0.93,0.96);
-		test = test || (test_lrmat(A,A_partialACA_fixed,A_partialACA,permt,perms,fixed_compression_interval,auto_compression_interval,verbose));
+		test = test || (test_lrmat(A,A_partialACA_fixed,A_partialACA,t.get_perm(),s.get_perm(),fixed_compression_interval,auto_compression_interval,verbose));
 	}
 	
 	cout << "test : "<<test<<endl;
+
+	// Finalize the MPI environment.
+	MPI_Finalize();
+	
 	return test;
 }

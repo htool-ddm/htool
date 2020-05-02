@@ -4,5 +4,5 @@
 int main(int argc, char *argv[]) {
 
 
-	return test_hmat_auto<SVD>(argc,argv);
+	return test_hmat_auto<GeometricClustering,SVD>(argc,argv);
 }

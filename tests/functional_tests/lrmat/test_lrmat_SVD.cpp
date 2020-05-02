@@ -2,6 +2,7 @@
 #include <complex>
 #include <vector>
 
+#include <htool/clustering/geometric_splitting.hpp>
 #include <htool/lrmat/SVD.hpp>
 #include "test_lrmat.hpp"
 
@@ -10,7 +11,11 @@ using namespace std;
 using namespace htool;
 
 
-int main(){
+int main(int argc, char *argv[]){
+
+	// Initialize the MPI environment
+	MPI_Init(&argc,&argv);
+
 	const int ndistance = 4;
 	double distance[ndistance];
 	distance[0] = 15; distance[1] = 20; distance[2] = 30; distance[3] = 40;
@@ -30,13 +35,19 @@ int main(){
 		
 		create_geometry(distance[idist],xt,tabt,xs,tabs);
 
-		std::vector<int> permt,perms;
-		Cluster t(xt,permt); Cluster s(xs,perms); // We avoid 
+		GeometricClustering t,s; 
+
+		std::vector<int> tabt(xt.size()),tabs(xs.size());
+		std::iota(tabt.begin(),tabt.end(),int(0));
+		std::iota(tabs.begin(),tabs.end(),int(0));
+		t.build(xt,std::vector<double>(xt.size(),0),tabt,std::vector<double>(xt.size(),1));
+		s.build(xs,std::vector<double>(xs.size(),0),tabs,std::vector<double>(xs.size(),1));
+
 		MyMatrix A(xt,xs);
 
 		// SVD fixed rank
     	int reqrank_max = 10;
-		SVD<double> A_SVD_fixed(permt,perms,reqrank_max);
+		SVD<double,GeometricClustering> A_SVD_fixed(t.get_perm(),s.get_perm(),reqrank_max);
 		A_SVD_fixed.build(A);
 		std::vector<double> SVD_fixed_errors;
 		std::vector<double> SVD_errors_check(reqrank_max,0);
@@ -56,13 +67,16 @@ int main(){
 		cout << "> Errors computed with the remaining eigenvalues : "<<SVD_errors_check << endl;
 
 		// ACA automatic building
-		SVD<double> A_SVD(permt,perms);
+		SVD<double,GeometricClustering> A_SVD(t.get_perm(),s.get_perm());
 		A_SVD.build(A);
 
 		std::pair<double,double> fixed_compression_interval(0.87,0.89);
 		std::pair<double,double> auto_compression_interval(0.95,0.97);
-		test = test_lrmat(A,A_SVD_fixed,A_SVD,permt,perms,fixed_compression_interval,auto_compression_interval);
+		test = test_lrmat(A,A_SVD_fixed,A_SVD,t.get_perm(),s.get_perm(),fixed_compression_interval,auto_compression_interval);
 	}
 	cout << "test : "<<test<<endl;
+
+	// Finalize the MPI environment.
+	MPI_Finalize();
 	return test;
 }

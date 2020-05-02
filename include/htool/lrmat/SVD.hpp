@@ -7,8 +7,8 @@
 
 namespace htool{
 
-template< typename T >
-class SVD: public LowRankMatrix<T>{
+template< typename T, typename ClusterImpl>
+class SVD: public LowRankMatrix<T,ClusterImpl>{
 
 private:
   // Data member
@@ -16,7 +16,7 @@ private:
 
 
 public:
-  using LowRankMatrix<T>::LowRankMatrix;
+  using LowRankMatrix<T,ClusterImpl>::LowRankMatrix;
 
   void build(const IMatrix<T>& A){
     int reqrank=0;
@@ -98,7 +98,7 @@ public:
     }
   }
 
-	void build(const IMatrix<T>& A, const Cluster& t, const std::vector<R3>& xt,const std::vector<int>& tabt, const Cluster& s, const std::vector<R3>& xs, const std::vector<int>& tabs){
+	void build(const IMatrix<T>& A, const Cluster<ClusterImpl>& t, const std::vector<R3>& xt,const std::vector<int>& tabt, const Cluster<ClusterImpl>& s, const std::vector<R3>& xs, const std::vector<int>& tabs){
     this->build(A);
   }
   T get_singular_value(int i){return singular_values[i];}

@@ -13,7 +13,8 @@
 
 
 #include "clustering/cluster.hpp"
-#include "clustering/cluster_tree.hpp"
+#include "clustering/geometric_splitting.hpp"
+#include "clustering/regular_splitting.hpp"
 
 #include "input_output/geometry.hpp"
 #include "input_output/output.hpp"
@@ -38,14 +39,14 @@
 #include "types/vector.hpp"
 
 #ifdef WITH_HPDDM
-    #include "wrappers/wrapper_hpddm.hpp"
+    // #include "wrappers/wrapper_hpddm.hpp"
 #endif
 #include "wrappers/wrapper_blas.hpp"
 #include "wrappers/wrapper_mpi.hpp"
 
 #ifdef WITH_HPDDM
-    #include "solvers/ddm.hpp"
-    #include "solvers/proto_ddm.hpp"
+    // #include "solvers/ddm.hpp"
+    // #include "solvers/proto_ddm.hpp"
 #endif
 
 #endif
