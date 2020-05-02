@@ -5,6 +5,7 @@
 #include "../types/point.hpp"
 #include "../misc/parametres.hpp"
 
+
 namespace htool {
 
 
@@ -58,7 +59,6 @@ public:
 	}
 
    
-
 	//// Getters for local data
 	const double&   get_rad() const {return rad;}
 	const R3&       get_ctr() const {return ctr;}
@@ -78,10 +78,58 @@ public:
 		return *(root->local_cluster);
 	}
 
+	std::shared_ptr<Derived> get_local_cluster_tree(MPI_Comm comm=MPI_COMM_WORLD){
+		int rankWorld;
+		MPI_Comm_rank(comm, &rankWorld);
+
+		std::shared_ptr<Derived> copy_local_cluster=std::make_shared<Derived>();
+
+		copy_local_cluster->MasterOffset.push_back(std::make_pair(this->MasterOffset[rankWorld].first,this->MasterOffset[rankWorld].second));
+
+		copy_local_cluster->local_cluster=copy_local_cluster->root;
+
+		copy_local_cluster->permutation=this->permutation;
+
+
+
+		// Recursion
+		std::stack<Derived*> cluster_input;
+		cluster_input.push(local_cluster);
+		std::stack<Derived*> cluster_output;
+		cluster_output.push(copy_local_cluster->root);
+		int count = 0;
+		while(!cluster_input.empty()){
+			Derived* curr_input  = cluster_input.top();
+			Derived* curr_output = cluster_output.top();
+			
+			cluster_input.pop();
+			cluster_output.pop();
+
+			curr_output->rank    = curr_input->rank;
+			curr_output->ctr     = curr_input->ctr;
+			curr_output->rad     = curr_input->rad;
+			curr_output->offset  = curr_input->offset;
+			curr_output->size    = curr_input->size;
+
+			int nb_sons = curr_input->sons.size();
+			curr_output->sons.resize(nb_sons);
+			for (int p=0;p<nb_sons;p++){
+				curr_output->sons[p] = new Derived(copy_local_cluster.get(),(curr_output->counter)*nb_sons+p,curr_output->depth+1,this->permutation);
+
+				cluster_input.push(curr_input->sons[p]);
+				cluster_output.push(curr_output->sons[p]);
+			}
+		}
+
+		
+		return copy_local_cluster;
+	}
+
 	//// Getters for global data
 	int	get_max_depth() const {return root->max_depth;}
 	int	get_min_depth() const {return root->min_depth;}
 	const std::vector<int>& get_perm() const{return *permutation;};
+	int get_perm(int i) const{return (*permutation)[i];};
 	std::vector<int>::const_iterator get_perm_start() const {return permutation->begin();}
 	const Derived& get_root() const {
 		return *(root);
@@ -89,7 +137,7 @@ public:
 
 	//// Getter for MasterOffsets
 	int get_local_offset() const {return root->local_cluster->get_offset();}
-    int get_local_size() const {std::cout <<root->local_cluster->get_size() << std::endl;return root->local_cluster->get_size();}
+    int get_local_size() const {return root->local_cluster->get_size();}
     std::pair<int,int> get_masteroffset(int i)const {return root->MasterOffset[i];}
 
     // Permutations
@@ -119,6 +167,7 @@ public:
 
     bool IsLeaf() const { if(sons.size()==0){return true;} return false; }
 
+	// Output
 	void print(MPI_Comm comm=MPI_COMM_WORLD) const{
 		int rankWorld;
 		MPI_Comm_rank(MPI_COMM_WORLD, &rankWorld);

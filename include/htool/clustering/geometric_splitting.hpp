@@ -55,30 +55,33 @@ public:
 				exit(1);
 			}
 			rank=-1;
+			MasterOffset.resize(sizeWorld);
 
 		}
 		// We fix the number of sons without MPI
 		else if (nb_sons>0 && sizeWorld==1){
 			rank = 0;
 			local_cluster=root;
+			MasterOffset.push_back(std::pair<int,int>(0,tab.size()));
 		}
 		// Automatic but no parallelisation, just a sane choice
 		else if (nb_sons<0 && sizeWorld==1){
 			nb_sons=2;
 			rank = 0;
 			local_cluster=root;
+			MasterOffset.push_back(std::pair<int,int>(0,tab.size()));
 		}
 		// Automatic with parallelisation, works well for a small number of processors...
 		else{
 			nb_sons=sizeWorld;
 			rank=-1;
+			MasterOffset.resize(nb_sons);
 		}
 
 		// Initialisation
 		rad = 0;
 		size = tab.size();
 		sons.resize(nb_sons);
-		MasterOffset.resize(nb_sons);
 		for (auto& son : sons ){
 			son=nullptr;
 		}
@@ -86,7 +89,6 @@ public:
 
 		permutation->resize(tab.size());
 		std::iota(permutation->begin(),permutation->end(),0); // perm[i]=i
-
 
 		// Recursion
 		std::stack<GeometricClustering*> s;
@@ -248,7 +250,6 @@ public:
 				curr->sons[p]->set_size(numbering[p].size());
 				count+=numbering[p].size();
 
-				MasterOffset[p] = std::pair<int,int>(curr->sons[p]->get_offset(),curr->sons[p]->get_size());
 
 				if (sizeWorld>1){
 					// level of parallelization
@@ -258,6 +259,7 @@ public:
 						if (rankWorld==curr->sons[p]->get_counter()){
 							local_cluster = (curr->sons[p]);
 						}
+						MasterOffset[curr->sons[p]->get_counter()] = std::pair<int,int>(curr->sons[p]->get_offset(),curr->sons[p]->get_size());
 
 					}
 					// before level of parallelization
