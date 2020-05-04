@@ -1,6 +1,7 @@
 #ifndef HTOOL_CLUSTERING_CLUSTER_HPP
 #define HTOOL_CLUSTERING_CLUSTER_HPP
 
+#include <memory>
 #include "../types/matrix.hpp"
 #include "../types/point.hpp"
 #include "../misc/parametres.hpp"
