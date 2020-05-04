@@ -27,7 +27,7 @@ void* HMatrixCreateSym(double* pts, int n, void (*getcoef)(int,int,K*)) {
 	MyMatrix A(p,getcoef);
 
   // Hmatrix
-	HMatrix<partialACA,K>* H = new HMatrix<partialACA,K>(A,p);
+	HMatrix<K,partialACA,GeometricClustering>* H = new HMatrix<K,partialACA,GeometricClustering>(A,p);
 
   return H;
 }
@@ -51,7 +51,7 @@ void* HMatrixCreate(double* pts1, int m, double* pts2, int n, void (*getcoef)(in
 	MyMatrix A(p1,p2,getcoef);
 
   // Hmatrix
-	HMatrix<partialACA,K>* H = new HMatrix<partialACA,K>(A,p1,p2);
+	HMatrix<K,partialACA,GeometricClustering>* H = new HMatrix<K,partialACA,GeometricClustering>(A,p1,p2);
 
   return H;
 }
@@ -69,7 +69,7 @@ void* HMatrixCreatewithsubmatSym(double* pts, int n, void (*getsubmatrix)(const 
 	MyMatrixwithsubmat A(p,getsubmatrix);
 
   // Hmatrix
-	HMatrix<partialACA,K>* H = new HMatrix<partialACA,K>(A,p);
+	HMatrix<K,partialACA,GeometricClustering>* H = new HMatrix<K,partialACA,GeometricClustering>(A,p);
 
   return H;
 }
@@ -93,34 +93,34 @@ void* HMatrixCreatewithsubmat(double* pts1, int m, double* pts2, int n, void (*g
 	MyMatrixwithsubmat A(p1,p2,getsubmatrix);
 
   // Hmatrix
-	HMatrix<partialACA,K>* H = new HMatrix<partialACA,K>(A,p1,p2);
+	HMatrix<K,partialACA,GeometricClustering>* H = new HMatrix<K,partialACA,GeometricClustering>(A,p1,p2);
 
 
   return H;
 }
 
 void printinfos(void* H) {
-    reinterpret_cast<HMatrix<partialACA,K>*>(H)->print_infos();
+    reinterpret_cast<HMatrix<K,partialACA,GeometricClustering>*>(H)->print_infos();
 }
 
 void mvprod(void* H, K* x, K* Ax) {
-    reinterpret_cast<HMatrix<partialACA,K>*>(H)->mvprod_global(x,Ax);
+    reinterpret_cast<HMatrix<K,partialACA,GeometricClustering>*>(H)->mvprod_global(x,Ax);
 }
 
 int getnlrmat(void* H) {
-    return reinterpret_cast<HMatrix<partialACA,K>*>(H)->get_nlrmat();
+    return reinterpret_cast<HMatrix<K,partialACA,GeometricClustering>*>(H)->get_nlrmat();
 }
 
 int getndmat(void* H) {
-    return reinterpret_cast<HMatrix<partialACA,K>*>(H)->get_ndmat();
+    return reinterpret_cast<HMatrix<K,partialACA,GeometricClustering>*>(H)->get_ndmat();
 }
 
 int nbrows(void* H) {
-    return reinterpret_cast<HMatrix<partialACA,K>*>(H)->nb_rows();
+    return reinterpret_cast<HMatrix<K,partialACA,GeometricClustering>*>(H)->nb_rows();
 }
 
 int nbcols(void* H) {
-    return reinterpret_cast<HMatrix<partialACA,K>*>(H)->nb_cols();
+    return reinterpret_cast<HMatrix<K,partialACA,GeometricClustering>*>(H)->nb_cols();
 }
 
 void setepsilon(double eps) { SetEpsilon(eps); }
@@ -129,9 +129,9 @@ void setminclustersize(int m) { SetMinClusterSize(m); }
 void setmaxblocksize(int m) { SetMaxBlockSize(m); }
 
 void getpattern(void* pH, int* buf) {
-	HMatrix<partialACA,K>* H = reinterpret_cast<HMatrix<partialACA,K>*>(pH);
+	HMatrix<K,partialACA,GeometricClustering>* H = reinterpret_cast<HMatrix<K,partialACA,GeometricClustering>*>(pH);
 
-	const std::vector<partialACA<K>*>& lrmats = H->get_MyFarFieldMats();
+	const std::vector<partialACA<K,GeometricClustering>*>& lrmats = H->get_MyFarFieldMats();
 	const std::vector<SubMatrix<K>*>& dmats = H->get_MyNearFieldMats();
 
 	int nb = dmats.size() + lrmats.size();
@@ -156,7 +156,7 @@ void getpattern(void* pH, int* buf) {
 	}
 
 	for (int i=0;i<lrmats.size();i++) {
-		const LowRankMatrix<K>& l = *(lrmats[i]);
+		const LowRankMatrix<K,GeometricClustering>& l = *(lrmats[i]);
 		buf[5*(dmats.size()+i)] = l.get_offset_i();
 		buf[5*(dmats.size()+i)+1] = l.nb_rows();
 		buf[5*(dmats.size()+i)+2] = l.get_offset_j();
@@ -188,7 +188,7 @@ void* MultiHMatrixCreateSym(double* pts, int n, void (*getcoefs)(int,int,K*), in
 	MyMultiMatrix A(p,getcoefs,nm);
 
   // MultiHmatrix
-	MultiHMatrix<MultipartialACA,K>* H = new MultiHMatrix<MultipartialACA,K>(A,p,p);
+	MultiHMatrix<K,MultipartialACA,GeometricClustering>* H = new MultiHMatrix<K,MultipartialACA,GeometricClustering>(A,p,p);
 
   return H;
 }
@@ -212,7 +212,7 @@ void* MultiHMatrixCreate(double* pts1, int m, double* pts2, int n, void (*getcoe
 	MyMultiMatrix A(p1,p2,getcoefs, nm);
 	
   // MultiHmatrix
-	MultiHMatrix<MultipartialACA,K>* H = new MultiHMatrix<MultipartialACA,K>(A,p1,p2);
+	MultiHMatrix<K,MultipartialACA,GeometricClustering>* H = new MultiHMatrix<K,MultipartialACA,GeometricClustering>(A,p1,p2);
 
   return H;
 }
@@ -230,7 +230,7 @@ void* MultiHMatrixCreatewithsubmatSym(double* pts, int n, void (*getsubmatrix)(c
 	MyMultiMatrixwithsubmat A(p,getsubmatrix,nm);
 
   // Hmatrix
-	MultiHMatrix<MultipartialACA,K>* H = new MultiHMatrix<MultipartialACA,K>(A,p,p);
+	MultiHMatrix<K,MultipartialACA,GeometricClustering>* H = new MultiHMatrix<K,MultipartialACA,GeometricClustering>(A,p,p);
   return H;
 }
 
@@ -253,30 +253,30 @@ void* MultiHMatrixCreatewithsubmat(double* pts1, int m, double* pts2, int n, voi
 	MyMultiMatrixwithsubmat A(p1,p2,getsubmatrix,nm);
 
   // Hmatrix
-	MultiHMatrix<MultipartialACA,K>* H = new MultiHMatrix<MultipartialACA,K>(A,p1,p2);
+	MultiHMatrix<K,MultipartialACA,GeometricClustering>* H = new MultiHMatrix<K,MultipartialACA,GeometricClustering>(A,p1,p2);
   return H;
 }
 
 void* getHMatrix(void* MultiH, int i) {
-		HMatrix<bareLowRankMatrix,K>* H = &(reinterpret_cast<MultiHMatrix<MultipartialACA,K>*>(MultiH)->operator[](i));
+		HMatrix<K,bareLowRankMatrix,GeometricClustering>* H = &(reinterpret_cast<MultiHMatrix<K,MultipartialACA,GeometricClustering>*>(MultiH)->operator[](i));
 
   	return H;
 }
 
 void MultiHMatrixVecProd(void* MultiH, int i, K* x, K* Ax) {
-  	reinterpret_cast<MultiHMatrix<MultipartialACA,K>*>(MultiH)->operator[](i).mvprod_global(x,Ax);
+  	reinterpret_cast<MultiHMatrix<K,MultipartialACA,GeometricClustering>*>(MultiH)->operator[](i).mvprod_global(x,Ax);
 }
 
 int nbhmats(void* MultiH) {
-    return reinterpret_cast<MultiHMatrix<MultipartialACA,K>*>(MultiH)->nb_hmats();
+    return reinterpret_cast<MultiHMatrix<K,MultipartialACA,GeometricClustering>*>(MultiH)->nb_hmats();
 }
 
 int multi_nbrows(void* H) {
-    return reinterpret_cast<MultiHMatrix<MultipartialACA,K>*>(H)->nb_rows();
+    return reinterpret_cast<MultiHMatrix<K,MultipartialACA,GeometricClustering>*>(H)->nb_rows();
 }
 
 int multi_nbcols(void* H) {
-    return reinterpret_cast<MultiHMatrix<MultipartialACA,K>*>(H)->nb_cols();
+    return reinterpret_cast<MultiHMatrix<K,MultipartialACA,GeometricClustering>*>(H)->nb_cols();
 }
 
 }
