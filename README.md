@@ -1,4 +1,4 @@
-# HTOOL [![Build Status](https://travis-ci.org/PierreMarchand20/htool.svg?branch=master)](https://travis-ci.org/PierreMarchand20/htool.svg?branch=master)
+# HTOOL [![Build Status](https://travis-ci.com/htool-ddm/htool.svg?branch=master)](https://travis-ci.com/htool-ddm/htool.svg?branch=master)
 
 ## What is Htool?
 

@@ -10,7 +10,7 @@ else ()
 	Project(Htool 
 	VERSION 1.0
 	DESCRIPTION "A header only c++ library that provides Hierarchical matrices."
-	HOMEPAGE_URL "https://github.com/PierreMarchand20/htool"
+	HOMEPAGE_URL "https://github.com/htool-ddm/htool"
 	LANGUAGES CXX)
 endif ()
 
