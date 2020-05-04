@@ -1276,14 +1276,7 @@ void HMatrix<T, LowRankMatrix, ClusterImpl>::save_plot(const std::string& output
 
 
 
-	size_t pos = outputname.find_last_of(".");
-	std::string outputfilename_string;
-	if (pos != std::string::npos && pos<=outputname.size()){	
-		outputfilename_string = outputname.substr(0,pos);
-	}
-	else
-		outputfilename_string=outputname;
-	std::ofstream outputfile((outputfilename_string+"_"+NbrToStr(rankWorld)+".csv").c_str());
+	std::ofstream outputfile((outputname+"_"+NbrToStr(rankWorld)+".csv").c_str());
 
 	if (outputfile){
 		outputfile<<nr<<","<<nc<<std::endl;

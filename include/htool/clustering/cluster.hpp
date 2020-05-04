@@ -192,7 +192,7 @@ public:
 
 			std::stack< Cluster<Derived> const *> s;
 			s.push(this);
-			std::ofstream output(filename);
+			std::ofstream output(filename+".csv");
 
 			std::vector<std::vector<int>> outputs(depths.size());
 			std::vector<int> counters(depths.size(),0);

@@ -20,6 +20,7 @@
 #include "input_output/output.hpp"
 
 #include "lrmat/lrmat.hpp"
+#include "lrmat/SVD.hpp"
 #include "lrmat/fullACA.hpp"
 #include "lrmat/partialACA.hpp"
 #include "lrmat/sympartialACA.hpp"
