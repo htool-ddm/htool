@@ -18,4 +18,4 @@ do
 done
 
 
-python3 ../tools/plot_comparison_compression.py --inputfile ../output/examples/compression_comparison/compression_comparison_1.csv
+# python3 ../tools/plot_comparison_compression.py --inputfile ../output/examples/compression_comparison/compression_comparison_1.csv
