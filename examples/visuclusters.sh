@@ -1,21 +1,17 @@
 #!/bin/bash
 
 # Initialization
-cd ../data/data_example
-gmsh -2 disk.geo
-cd ../../
+cd ../
 mkdir -p build & cd build
 cmake ../
 make VisuCluster
 mkdir -p ../output/examples/visucluster
 
 # Arguments
-mesh=../data/data_example/disk.msh
-outputfile=../output/examples/visucluster/clusters
-depths=(1 2 3)
+outputpath=../output/examples/visucluster/
 
 # Run
-for depth in "${depths[@]}"
-do
-    ./examples/VisuCluster ${depth} ${mesh} ${outputfile}_${depth}.msh
-done
+mpirun -np 2 ./examples/visucluster ${outputpath}
+
+
+# python3 ../tools/plot_cluster.py --inputfile ../output/examples/visucluster/clustering_output.csv --depth 2

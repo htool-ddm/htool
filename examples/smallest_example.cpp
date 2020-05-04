@@ -46,6 +46,18 @@ int main(int argc, char *argv[]) {
     // Initialize the MPI environment
     MPI_Init(&argc,&argv);
 
+	// Check the number of parameters
+	if (argc < 1) {
+		// Tell the user how to run the program
+		cerr << "Usage: " << argv[0] << " outputpath" << endl;
+		/* "Usage messages" are a conventional way of telling the user
+		 * how to run a program if they enter the command incorrectly.
+		 */
+		return 1;
+	}
+
+    std::string outputpath  = argv[1];
+
     // Htool parameters
 	SetEpsilon(0.001);
 	SetEta(100);
@@ -71,12 +83,13 @@ int main(int argc, char *argv[]) {
     // Hmatrix
     MyMatrix A(p,p);
     std::vector<double> x(size,1),result(size,0);
-    HMatrix<partialACA,double> HA(A,p,p);
+    HMatrix<double,partialACA,GeometricClustering> HA(A,p,p);
     result = HA*x;
 
     // Output
     HA.print_infos();
-    HA.save_plot("smallest_example_plot");
+    HA.save_plot(outputpath+"/smallest_example_plot");
+    std::cout << outputpath+"/smallest_example_plot"<< std::endl;
     std::cout<< Frobenius_absolute_error(HA,A)/A.norm()<<std::endl;
     std::cout<< norm2(A*x-result)/norm2(A*x)<<std::endl;
 

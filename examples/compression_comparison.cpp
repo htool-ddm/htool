@@ -2,9 +2,7 @@
 #include <complex>
 #include <vector>
 
-#include <htool/lrmat/SVD.hpp>
-#include <htool/lrmat/fullACA.hpp>
-#include <htool/lrmat/partialACA.hpp>
+#include <htool/htool.hpp>
 
 using namespace std;
 using namespace htool;
@@ -42,6 +40,9 @@ public:
 
 int main(int argc, char* argv[]){
 
+    // Initialize the MPI environment
+    MPI_Init(&argc,&argv);
+
 	// Check the number of parameters
 	if (argc < 3) {
 		// Tell the user how to run the program
@@ -71,6 +72,7 @@ int main(int argc, char* argv[]){
     double z1 = 1;
     vector<R3>     p1(nr);
     vector<double> r1(nr);
+    vector<double> g1(nc,1);
     vector<int>  tab1(nr);
     for(int j=0; j<nr; j++){
         Ir[j] = j;
@@ -85,6 +87,7 @@ int main(int argc, char* argv[]){
     double z2 = 1+distance;
     vector<R3> p2(nc);
     vector<double> r2(nc);
+    vector<double> g2(nc,1);
     vector<int> tab2(nc);
     for(int j=0; j<nc; j++){
         Ic[j] = j;
@@ -96,14 +99,16 @@ int main(int argc, char* argv[]){
     }
 
     // Clustering
-    std::vector<int> permt,perms;
-    Cluster t(p1,permt); Cluster s(p2,perms); // We avoid cluster_tree and MPI here
-    std::cout << permt.size()<<","<<tab1.size()<<std::endl;
+
+    GeometricClustering t, s;
+    t.build(p1,r1,tab1,g1);
+    s.build(p2,r2,tab2,g2);
+
     MyMatrix A(p1,p2);
     double norm_A= A.normFrob();
 
     // SVD with fixed rank
-    SVD<double> A_SVD(permt,perms,reqrank_max);
+    SVD<double,GeometricClustering> A_SVD(t.get_perm(),s.get_perm(),reqrank_max);
     A_SVD.build(A,t,p1,tab1,s,p2,tab2);
     std::vector<double> SVD_fixed_errors;
     for (int k = 0 ; k < A_SVD.rank_of()+1 ; k++){
@@ -112,7 +117,7 @@ int main(int argc, char* argv[]){
 
 
     // fullACA with fixed rank
-    fullACA<double> A_fullACA_fixed(permt,perms,reqrank_max);
+    fullACA<double,GeometricClustering> A_fullACA_fixed(t.get_perm(),s.get_perm(),reqrank_max);
     A_fullACA_fixed.build(A,t,p1,tab1,s,p2,tab2);
     std::vector<double> fullACA_fixed_errors;
     for (int k = 0 ; k < A_fullACA_fixed.rank_of()+1 ; k++){
@@ -120,19 +125,26 @@ int main(int argc, char* argv[]){
     }
 
     // partialACA with fixed rank
-    partialACA<double> A_partialACA_fixed(permt,perms,reqrank_max);
+    partialACA<double,GeometricClustering> A_partialACA_fixed(t.get_perm(),s.get_perm(),reqrank_max);
     A_partialACA_fixed.build(A,t,p1,tab1,s,p2,tab2);
     std::vector<double> partialACA_fixed_errors;
     for (int k = 0 ; k < A_partialACA_fixed.rank_of()+1 ; k++){
         partialACA_fixed_errors.push_back(Frobenius_absolute_error(A_partialACA_fixed,A,k)/norm_A);
     }
 
+    // sympartialACA with fixed rank
+    sympartialACA<double,GeometricClustering> A_sympartialACA_fixed(t.get_perm(),s.get_perm(),reqrank_max);
+    A_sympartialACA_fixed.build(A,t,p1,tab1,s,p2,tab2);
+    std::vector<double> sympartialACA_fixed_errors;
+    for (int k = 0 ; k < A_sympartialACA_fixed.rank_of()+1 ; k++){
+        sympartialACA_fixed_errors.push_back(Frobenius_absolute_error(A_sympartialACA_fixed,A,k)/norm_A);
+    }
 
     // Output
     ofstream file_fixed((outputpath+"/"+outputfile).c_str());
-    file_fixed<<"Rank,SVD,Full ACA,partial ACA"<<endl;
+    file_fixed<<"Rank,SVD,Full ACA,partial ACA,sym partial ACA"<<endl;
     for (int i=0;i<reqrank_max;i++){
-        file_fixed<<i<<","<<SVD_fixed_errors[i]<<","<<fullACA_fixed_errors[i]<<","<<partialACA_fixed_errors[i]<<endl;
+        file_fixed<<i<<","<<SVD_fixed_errors[i]<<","<<fullACA_fixed_errors[i]<<","<<partialACA_fixed_errors[i]<<","<<sympartialACA_fixed_errors[i]<<endl;
     }
 
     ofstream geometry_1((outputpath+"/geometry_1_"+outputfile).c_str());
@@ -145,4 +157,6 @@ int main(int argc, char* argv[]){
         geometry_2<<p2[i][0]<<","<<p2[i][1]<<","<<p2[i][2]<<endl;
     }
 
+    // Finalize the MPI environment.
+    MPI_Finalize();
 }

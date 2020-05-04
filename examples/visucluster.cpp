@@ -1,6 +1,4 @@
-#include <htool/clustering/cluster_tree.hpp>
-#include <htool/input_output/geometry.hpp>
-#include <htool/input_output/output.hpp>
+#include <htool/clustering/geometric_splitting.hpp>
 
 
 
@@ -13,27 +11,39 @@ int main(int argc, char* argv[]){
 	MPI_Init(&argc,&argv);
 
 	// Check the number of parameters
-	if (argc < 3) {
+	if (argc < 1) {
 		// Tell the user how to run the program
-		cerr << "Usage: " << argv[0] << " depth \b inputname \b outputname" << endl;
+		cerr << "Usage: " << argv[0] << "  outputname" << endl;
 		/* "Usage messages" are a conventional way of telling the user
 		 * how to run a program if they enter the command incorrectly.
 		 */
 		return 1;
 	}
-	int depth = StrToNbr<int>(argv[1]);
-	std::string inputname  = argv[2];
-	std::string outputname = argv[3];
+	std::string outputname = argv[1];
 
-	std::vector<R3> x;
+	// Geometry
+    int size = 1000;
+    double z = 1;
+    vector<R3>     p(size);
+    vector<double> r(size,0);
+    vector<double> g(size,1);
+    vector<int>    tab(size);
+    
+    for(int j=0; j<size; j++){
+      double rho = ((double) rand() / (double)(RAND_MAX)); // (double) otherwise integer division!
+      double theta = ((double) rand() / (double)(RAND_MAX));
+      p[j][0] = sqrt(rho)*cos(2*M_PI*theta); p[j][1] = sqrt(rho)*sin(2*M_PI*theta); p[j][2] = z;
+      // sqrt(rho) otherwise the points would be concentrated in the center of the disk
+      tab[j]=j;
+    }
 
-	Load_GMSH_nodes(x,inputname);
 
-	Cluster_tree t(x);
-    t.print_size(depth);
-    t.print_infos();
+	// Clustering
+	GeometricClustering t;
+    t.build(p,r,tab,g,2);
 
-	Write_gmsh_nodes(t.get_labels(depth),inputname,outputname);
+	// Output
+	t.save(p,outputname+"/clustering_output",{1,2,3});
 
 	MPI_Finalize();
 	return 0;
