@@ -18,7 +18,6 @@
 #include "../blocks/blocks.hpp"
 #include "../wrappers/wrapper_mpi.hpp"
 
-#include "../clustering/cluster_acp.hpp"
 
 namespace htool {
 
