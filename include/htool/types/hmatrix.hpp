@@ -233,8 +233,8 @@ void HMatrix<T, LowRankMatrix, ClusterImpl>::build(IMatrix<T>& mat, const std::v
 	double time = MPI_Wtime();
 	cluster_tree_t = std::make_shared<ClusterImpl>(); // target
 	cluster_tree_s = std::make_shared<ClusterImpl>(); // source
-	cluster_tree_t->build(xt,rt,tabt,gt,2,comm);
-	cluster_tree_s->build(xs,rs,tabs,gs,2,comm);
+	cluster_tree_t->build(xt,rt,tabt,gt,-1,comm);
+	cluster_tree_s->build(xs,rs,tabs,gs,-1,comm);
 
 	local_size   = cluster_tree_t->get_local_size();
 	local_offset = cluster_tree_t->get_local_offset();
@@ -312,7 +312,7 @@ void HMatrix<T, LowRankMatrix, ClusterImpl>::build(IMatrix<T>& mat,const std::ve
 	double time = MPI_Wtime();
 	cluster_tree_t = std::make_shared<ClusterImpl>();
 	cluster_tree_s = cluster_tree_t;
-	cluster_tree_t->build(xt,rt,tabt,gt,2,comm);
+	cluster_tree_t->build(xt,rt,tabt,gt,-1,comm);
 	local_size   = cluster_tree_t->get_local_size();
 	local_offset = cluster_tree_t->get_local_offset();
 

@@ -42,6 +42,16 @@ public:
 		}
 		return result;
 	 }
+
+	 double normFrob(int l) const{
+		double norm=0;
+		for (int j=0;j<this->nb_rows();j++){
+			for (int k=0;k<this->nb_cols();k++){
+				norm = norm + std::pow(std::abs((this->get_coefs(j,k))[l]),2);
+			}
+		}
+    	return sqrt(norm);
+	}
 };
 
 class MyMatrix: public IMatrix<double>{
@@ -123,7 +133,7 @@ int test_multi_hmat_cluster(const MyMultiMatrix& MultiA, const MultiHMatrix<doub
 	MultiHA[l].print_infos();
 	result = MultiHA[l]*f;
 	double erreur2 = norm2(MultiA.mult(f,l)-result)/norm2(MultiA.mult(f,l));
-	double erreurFrob = Frobenius_absolute_error(MultiHA,MultiA,l);
+	double erreurFrob = Frobenius_absolute_error(MultiHA,MultiA,l)/MultiA.normFrob(l);
 
 	test = test || !(erreurFrob<GetEpsilon()*10);
 	test = test || !(erreur2<GetEpsilon());

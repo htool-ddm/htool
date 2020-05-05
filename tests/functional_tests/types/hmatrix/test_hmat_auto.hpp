@@ -33,6 +33,16 @@ public:
 		}
 		return result;
 	 }
+
+	 double normFrob(){
+		double norm=0;
+		for (int j=0;j<this->nb_rows();j++){
+			for (int k=0;k<this->nb_cols();k++){
+				norm = norm + std::pow(std::abs(this->get_coef(j,k)),2);
+			}
+		}
+    	return sqrt(norm);
+	}
 };
 
 template<typename ClusterImpl, template<typename,typename> class LowRankMatrix>
@@ -123,7 +133,7 @@ int test_hmat_auto(int argc, char *argv[]) {
 		std::vector<double> result(nr,0);
 		result = HA*f;
 		double erreur2 = norm2(A*f-result)/norm2(A*f);
-		double erreurFrob = Frobenius_absolute_error(HA,A);
+		double erreurFrob = Frobenius_absolute_error(HA,A)/A.normFrob();
 
 		test = test || !(erreurFrob<GetEpsilon());
 		test = test || !(erreur2<GetEpsilon());
