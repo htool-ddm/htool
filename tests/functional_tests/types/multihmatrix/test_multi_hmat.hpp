@@ -135,7 +135,7 @@ int test_multi_hmat_cluster(const MyMultiMatrix& MultiA, const MultiHMatrix<doub
 	double erreur2 = norm2(MultiA.mult(f,l)-result)/norm2(MultiA.mult(f,l));
 	double erreurFrob = Frobenius_absolute_error(MultiHA,MultiA,l)/MultiA.normFrob(l);
 
-	test = test || !(erreurFrob<GetEpsilon()*10);
+	test = test || !(erreurFrob<GetEpsilon());
 	test = test || !(erreur2<GetEpsilon());
 
 	if (rank==0){

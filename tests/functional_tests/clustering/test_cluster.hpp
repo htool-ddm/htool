@@ -55,12 +55,12 @@ int test_cluster(int argc, char *argv[]) {
                 // test num inclusion
 
                 int count = 0;
-                for (int l=0;l<nb_sons;l++){
+                for (int l=0;l<curr->get_nb_sons();l++){
                     test = test || !(curr->get_offset()+count==curr->get_son(l).get_offset());
                     count += curr->get_son(l).get_size();
                 }
                 
-                for (int l=0;l<nb_sons;l++){
+                for (int l=0;l<curr->get_nb_sons();l++){
                     s.push((&(curr->get_son(l))));
                 }
             }
