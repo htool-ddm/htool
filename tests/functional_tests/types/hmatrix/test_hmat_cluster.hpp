@@ -4,8 +4,7 @@
 #include <random>
 
 #include <htool/clustering/cluster.hpp>
-#include <htool/clustering/geometric_splitting.hpp>
-#include <htool/clustering/regular_splitting.hpp>
+#include <htool/clustering/ncluster.hpp>
 #include <htool/lrmat/SVD.hpp>
 #include <htool/lrmat/fullACA.hpp>
 #include <htool/lrmat/partialACA.hpp>

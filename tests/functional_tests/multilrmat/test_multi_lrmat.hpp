@@ -4,7 +4,7 @@
 #include <random>
 
 #include <htool/multilrmat/multilrmat.hpp>
-#include <htool/clustering/geometric_splitting.hpp>
+#include <htool/clustering/ncluster.hpp>
 
 
 using namespace std;

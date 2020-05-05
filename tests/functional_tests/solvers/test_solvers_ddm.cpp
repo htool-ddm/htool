@@ -3,7 +3,7 @@
 #include <htool/lrmat/fullACA.hpp>
 #include <htool/types/hmatrix.hpp>
 #include <htool/input_output/geometry.hpp>
-#include <htool/clustering/geometric_splitting.hpp>
+#include <htool/clustering/ncluster.hpp>
 
 using namespace std;
 using namespace htool;

@@ -1,4 +1,4 @@
-#include <htool/clustering/regular_splitting.hpp>
+#include <htool/clustering/ncluster.hpp>
 #include "test_cluster.hpp"
 
 using namespace std;

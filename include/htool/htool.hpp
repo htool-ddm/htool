@@ -13,8 +13,7 @@
 
 
 #include "clustering/cluster.hpp"
-#include "clustering/geometric_splitting.hpp"
-#include "clustering/regular_splitting.hpp"
+#include "clustering/ncluster.hpp"
 
 #include "input_output/geometry.hpp"
 #include "input_output/output.hpp"

@@ -3,7 +3,7 @@
 
 #include <vector>
 #include "../clustering/cluster.hpp"
-#include "../clustering/geometric_splitting.hpp"
+#include <htool/clustering/ncluster.hpp>
 #include "../types/matrix.hpp"
 #include "../types/multimatrix.hpp"
 namespace htool{

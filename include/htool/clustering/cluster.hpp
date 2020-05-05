@@ -139,6 +139,7 @@ public:
 	//// Getter for MasterOffsets
 	int get_local_offset() const {return root->local_cluster->get_offset();}
     int get_local_size() const {return root->local_cluster->get_size();}
+	const std::vector<std::pair<int,int>>& get_masteroffset()const {return root->MasterOffset;}
     std::pair<int,int> get_masteroffset(int i)const {return root->MasterOffset[i];}
 
     // Permutations

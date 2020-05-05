@@ -1,7 +1,6 @@
 #include <htool/types/hmatrix.hpp>
 #include <htool/lrmat/fullACA.hpp>
-#include <htool/clustering/geometric_splitting.hpp>
-#include <htool/clustering/regular_splitting.hpp>
+#include <htool/clustering/ncluster.hpp>
 
 using namespace std;
 using namespace htool;

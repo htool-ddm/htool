@@ -3,7 +3,7 @@
 #include <vector>
 
 
-#include <htool/clustering/geometric_splitting.hpp>
+#include <htool/clustering/ncluster.hpp>
 #include <htool/types/hmatrix.hpp>
 #include <htool/lrmat/fullACA.hpp>
 

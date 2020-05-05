@@ -4,7 +4,7 @@
 #include <random>
 
 
-#include <htool/clustering/geometric_splitting.hpp>
+#include <htool/clustering/ncluster.hpp>
 #include <htool/types/multihmatrix.hpp>
 #include <htool/lrmat/SVD.hpp>
 #include <htool/lrmat/fullACA.hpp>

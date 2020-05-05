@@ -1,17 +1,20 @@
-#ifndef HTOOL_CLUSTERING_REGULAR_SPLITTING_HPP
-#define HTOOL_CLUSTERING_REGULAR_SPLITTING_HPP
+#ifndef HTOOL_CLUSTERING_NCLUSTER_HPP
+#define HTOOL_CLUSTERING_NCLUSTER_HPP
 
 #include "cluster.hpp"
+#include "splitting.hpp"
 #include <stack>
 
 namespace htool {
 
-class RegularClustering: public Cluster<RegularClustering>{
+
+template<SplittingTypes SplittingType>
+class NCluster: public Cluster<NCluster<SplittingType>>{
 
 public:
 
 	// Inherhits son constructor
-	using Cluster::Cluster;
+	using Cluster<NCluster<SplittingType>>::Cluster;
 
 	// build cluster tree
 	// nb_sons=-1 means nb_sons = sizeworld if sizeworld!=1 and nb_sons = 2 otherwise 
@@ -26,11 +29,11 @@ public:
 		int rankWorld, sizeWorld;
 		MPI_Comm_size(comm, &sizeWorld);
 		MPI_Comm_rank(comm, &rankWorld);
-
+		
 
 		// Impossible value for nb_sons
 		try{
-			if (nb_sons == 0)
+			if (nb_sons == 0 || nb_sons==1)
 				throw std::string("Impossible value for nb_sons");
 		}
 		catch(std::string const& error){
@@ -54,50 +57,50 @@ public:
 				}
 				exit(1);
 			}
-			rank=-1;
-			MasterOffset.resize(sizeWorld);
+			this->rank=-1;
+			this->MasterOffset.resize(sizeWorld);
+
 		}
 		// We fix the number of sons without MPI
 		else if (nb_sons>0 && sizeWorld==1){
-			rank=0;
-			local_cluster=root;
-			MasterOffset.push_back(std::pair<int,int>(0,tab.size()));
+			this->rank = 0;
+			this->local_cluster=this->root;
+			this->MasterOffset.push_back(std::pair<int,int>(0,tab.size()));
 		}
 		// Automatic but no parallelisation, just a sane choice
 		else if (nb_sons<0 && sizeWorld==1){
 			nb_sons=2;
-			rank=0;
-			local_cluster=root;
-			MasterOffset.push_back(std::pair<int,int>(0,tab.size()));
+			this->rank = 0;
+			this->local_cluster=this->root;
+			this->MasterOffset.push_back(std::pair<int,int>(0,tab.size()));
 		}
 		// Automatic with parallelisation, works well for a small number of processors...
 		else{
 			nb_sons=sizeWorld;
-			rank=-1;
-			MasterOffset.resize(nb_sons);
+			this->rank=-1;
+			this->MasterOffset.resize(nb_sons);
 		}
 
 		// Initialisation
-		rad = 0;
-		size = tab.size();
-		sons.resize(nb_sons);
-		MasterOffset.resize(nb_sons);
-		for (auto& son : sons ){
+		this->rad = 0;
+		this->size = tab.size();
+		this->sons.resize(nb_sons);
+		for (auto& son : this->sons ){
 			son=nullptr;
 		}
-		depth = 0; // ce constructeur est appele' juste pour la racine
+		this->depth = 0; // ce constructeur est appele' juste pour la racine
 
-		permutation->resize(tab.size());
-		std::iota(permutation->begin(),permutation->end(),0); // perm[i]=i
+		this->permutation->resize(tab.size());
+		std::iota(this->permutation->begin(),this->permutation->end(),0); // perm[i]=i
 
 		// Recursion
-		std::stack<RegularClustering*> s;
+		std::stack<NCluster*> s;
 		std::stack<std::vector<int>> n;
 		s.push(this);
-		n.push(*permutation);
+		n.push(*(this->permutation));
 
 		while(!s.empty()){
-			RegularClustering* curr = s.top();
+			NCluster* curr = s.top();
 			std::vector<int> num = n.top();
 			s.pop();
 			n.pop();
@@ -208,25 +211,14 @@ public:
 			// Creating sons
 			curr->sons.resize(nb_sons);
 			for (int p=0;p<nb_sons;p++){
-				curr->sons[p] = new RegularClustering(this,(curr->counter)*nb_sons+p,curr->depth+1,permutation);
+				curr->sons[p] = new NCluster(this,(curr->counter)*nb_sons+p,curr->depth+1,this->permutation);
 			}
 			
 			// Compute numbering
-			std::vector<std::vector<int>> numbering(nb_sons);
 
-			std::sort(num.begin(),num.end(),[&](int a, int b){return (x[tab[a]] - xc,dir)<(x[tab[b]] - xc,dir);});
-
-			int size_numbering = num.size()/nb_sons;
-			int count_size = 0;
-			for (int p=0;p<nb_sons-1;p++){
-				numbering[p].resize(size_numbering);
-				std::copy_n(num.begin()+count_size,size_numbering,numbering[p].begin());
-				count_size+=size_numbering;
-			}
-
-			numbering.back().resize(num.size()-count_size);
-			std::copy(num.begin()+count_size,num.end(),numbering.back().begin());
-
+			
+			std::vector<std::vector<int>> numbering = this->splitting(x,tab,num,curr,nb_sons,dir);
+			
 			// Set offsets, size and rank of sons
 			int count = 0;
 			int sons_at_next_level = std::pow(nb_sons,curr->depth+1);
@@ -236,17 +228,16 @@ public:
 				count+=numbering[p].size();
 
 
-
 				if (sizeWorld>1){
 					// level of parallelization
 					if (sons_at_next_level==sizeWorld){
 
 						curr->sons[p]->set_rank(curr->sons[p]->get_counter());
-
 						if (rankWorld==curr->sons[p]->get_counter()){
-							local_cluster = (curr->sons[p]);
+							this->local_cluster = (curr->sons[p]);
 						}
-						MasterOffset[curr->sons[p]->get_counter()] = std::pair<int,int>(curr->sons[p]->get_offset(),curr->sons[p]->get_size());
+						this->MasterOffset[curr->sons[p]->get_counter()] = std::pair<int,int>(curr->sons[p]->get_offset(),curr->sons[p]->get_size());
+
 					}
 					// before level of parallelization
 					else if (sons_at_next_level<sizeWorld){
@@ -260,7 +251,7 @@ public:
 				else{
 					curr->sons[p]->set_rank(curr->rank);
 				}
-			}
+			} 
 
 
 
@@ -271,7 +262,7 @@ public:
 			}
 			if(test_minclustersize) {
 				for (int p=0;p<nb_sons;p++){
-					s.push(curr->sons[p]);
+					s.push((curr->sons[p]));
 					n.push(numbering[p]);
 				}
 			}
@@ -285,13 +276,31 @@ public:
 					delete son; son = nullptr;
 				}
 				curr->sons.resize(0);
-				std::copy_n(num.begin(),num.size(),permutation->begin()+curr->offset);
+				std::copy_n(num.begin(),num.size(),this->permutation->begin()+curr->offset);
 
 			}
 		}
 	}
 
+
+	std::vector<std::vector<int>> splitting(const std::vector<R3>& x, const std::vector<int>& tab, std::vector<int>& num, Cluster<NCluster<SplittingType>> const * const curr_cluster, int nb_sons, R3 dir);
+
 };
+
+
+// Specialization of splitting
+template <>
+std::vector<std::vector<int>> NCluster<SplittingTypes::GeometricSplitting>::splitting(const std::vector<R3>& x, const std::vector<int>& tab, std::vector<int>& num, Cluster<NCluster<SplittingTypes::GeometricSplitting>> const * const curr_cluster, int nb_sons, R3 dir){ return geometric_splitting(x,tab,num,curr_cluster,nb_sons,dir);}
+
+template <>
+std::vector<std::vector<int>> NCluster<SplittingTypes::RegularSplitting>::splitting(const std::vector<R3>& x, const std::vector<int>& tab, std::vector<int>& num, Cluster<NCluster<SplittingTypes::RegularSplitting>> const * const curr_cluster, int nb_sons, R3 dir){ return regular_splitting(x,tab,num,curr_cluster,nb_sons,dir);}
+
+
+// Typdef with specific splitting
+typedef NCluster<SplittingTypes::GeometricSplitting> GeometricClustering;
+typedef NCluster<SplittingTypes::RegularSplitting>   RegularClustering;
+
+
 
 }
 #endif

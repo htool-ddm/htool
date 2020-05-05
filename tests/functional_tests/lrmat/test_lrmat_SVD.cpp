@@ -2,7 +2,7 @@
 #include <complex>
 #include <vector>
 
-#include <htool/clustering/geometric_splitting.hpp>
+#include <htool/clustering/ncluster.hpp>
 #include <htool/lrmat/SVD.hpp>
 #include "test_lrmat.hpp"
 
