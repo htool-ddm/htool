@@ -45,7 +45,7 @@ public:
 };
 
 template<typename ClusterImpl, template<typename,typename> class LowRankMatrix>
-int test_hmat_cluster(int argc, char *argv[]) {
+int test_hmat_cluster(int argc, char *argv[], double margin=0) {
 
 	// Initialize the MPI environment
 	MPI_Init(&argc,&argv);
@@ -140,7 +140,7 @@ int test_hmat_cluster(int argc, char *argv[]) {
 		double erreur2 = norm2(A*f-result)/norm2(A*f);
 		double erreurFrob = Frobenius_absolute_error(HA,A)/A.normFrob();
 
-		test = test || !(erreurFrob<GetEpsilon());
+		test = test || !(erreurFrob<(1+margin)*GetEpsilon());
 		test = test || !(erreur2<GetEpsilon());
 
 		if (rank==0){

@@ -174,11 +174,11 @@ class BuildCMakeExt(build_ext):
         self.spawn(['cmake',str(cwd),
             '-B'+self.build_temp,
             "-DCMAKE_LIBRARY_OUTPUT_DIRECTORY="+ str(extdir.parent.absolute()),
-            "-DHTOOL_WITH_PYTHON_INTERFACE=True","-DCMAKE_BUILD_TYPE=Debug"])
+            "-DHTOOL_WITH_PYTHON_INTERFACE=True","-DCMAKE_BUILD_TYPE=Release"])
 
-        self.spawn(['cmake', '--build', self.build_temp,"--target", "htool_shared","--config", "Debug"])
+        self.spawn(['cmake', '--build', self.build_temp,"--target", "htool_shared","--config", "Release"])
         self.spawn(['cmake', '--build', self.build_temp,"--target","htool_shared_complex",
-                    "--config", "Debug"])
+                    "--config", "Release"])
         # os.chdir(str(cwd))
 
         # cmake_args = ['-DCMAKE_LIBRARY_OUTPUT_DIRECTORY=' + extdir]

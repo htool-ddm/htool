@@ -20,7 +20,7 @@ public:
 	// nb_sons=-1 means nb_sons = sizeworld if sizeworld!=1 and nb_sons = 2 otherwise 
 	// nb_sons>0 means we check that sizeworld//nb_sons if sizeworld>1
 	void build(const std::vector<R3>& x, const std::vector<double>& r,const std::vector<int>& tab, const std::vector<double>& g, int nb_sons = -1, MPI_Comm comm=MPI_COMM_WORLD){
-		assert(tab.size()==x.size()*ndofperelt);
+		assert(tab.size()==x.size()*this->ndofperelt);
 		assert(x.size()==g.size());
 		assert(x.size()==r.size());
 		assert(nb_sons!=0);
