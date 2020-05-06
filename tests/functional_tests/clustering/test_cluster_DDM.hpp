@@ -1,11 +1,11 @@
-#include <htool/clustering/cluster.hpp>
+#include <htool/clustering/DDM_cluster.hpp>
 #include <random>
 
 using namespace std;
 using namespace htool;
 
-template<typename Cluster_type>
-int test_cluster(int argc, char *argv[]) {
+template<SplittingTypes SplittingType>
+int test_cluster_DDM(int argc, char *argv[]) {
 
     int rankWorld, sizeWorld;
     MPI_Comm_size(MPI_COMM_WORLD, &sizeWorld);
@@ -16,6 +16,8 @@ int test_cluster(int argc, char *argv[]) {
     srand (1);
     bool test =0;
 
+
+    // Geometry
     int size = 20;
     double z = 1;
     vector<R3>     p(size);
@@ -30,26 +32,45 @@ int test_cluster(int argc, char *argv[]) {
       // sqrt(rho) otherwise the points would be concentrated in the center of the disk
       tab[j]=j;
     }
-    
 
+
+    // Compute permutation and partition along the x axis
+    std::vector<int> permutation(size);
+    std::iota(permutation.begin(),permutation.end(),int(0));
+    std::sort(permutation.begin(),permutation.end(),[&](int a, int b){return p[tab[a]][0]<p[tab[b]][0];});
+    
+    int size_numbering = permutation.size()/sizeWorld;
+	int count_size = 0;
+    std::vector<std::pair<int,int>> MasterOffset;
+	for (int p=0;p<sizeWorld-1;p++){
+        MasterOffset.push_back(std::pair<int,int>(count_size,size_numbering));
+
+		count_size+=size_numbering;
+	}
+    MasterOffset.push_back(std::pair<int,int>(count_size,permutation.size()-count_size));
+
+
+    
+    
+    // Tests
     std::vector<int> nb_sons_test {2,4,-1};
     for (auto & nb_sons : nb_sons_test){
         if (rankWorld==0){
             cout<<"Number of sons : "<<nb_sons<<endl;
         }
 
-        Cluster_type t;
+        DDM_Cluster<SplittingType> t;
         t.build(p,r,tab,g,nb_sons);
         t.print();
         MPI_Barrier(MPI_COMM_WORLD);
 
 
         // Testing recursivity
-        std::stack<Cluster_type*> s;
+        std::stack<DDM_Cluster<SplittingType>*> s;
         s.push(&t);
         int depth =0;
         while (!s.empty()){
-            Cluster_type* curr = s.top();
+            DDM_Cluster<SplittingType>* curr = s.top();
             s.pop();
             if (!curr->IsLeaf()){
                 // test num inclusion
@@ -78,17 +99,17 @@ int test_cluster(int argc, char *argv[]) {
         test = test || !(root_offset==0);
 
         // Testing to get local cluster
-        std::shared_ptr<Cluster_type> local_cluster = t.get_local_cluster_tree();
+        std::shared_ptr<DDM_Cluster<SplittingType>> local_cluster = t.get_local_cluster_tree();
         test = test || !(local_size==local_cluster->get_size());
         test = test || !(local_offset==local_cluster->get_offset());
-        std::stack<Cluster_type const *> s_local_1;
-        std::stack<Cluster_type const *> s_local_2;
+        std::stack<DDM_Cluster<SplittingType> const *> s_local_1;
+        std::stack<DDM_Cluster<SplittingType> const *> s_local_2;
         s_local_1.push(local_cluster.get());
         s_local_2.push(&(t.get_local_cluster()));
         depth =0;
         while (!s_local_1.empty()){
-            Cluster_type const * curr_1 = s_local_1.top();
-            Cluster_type const * curr_2 = s_local_2.top();
+            DDM_Cluster<SplittingType> const * curr_1 = s_local_1.top();
+            DDM_Cluster<SplittingType> const * curr_2 = s_local_2.top();
             s_local_1.pop();
             s_local_2.pop();
 
@@ -144,6 +165,6 @@ int test_cluster(int argc, char *argv[]) {
     if (rankWorld==0){
         std::cout << "test "<< test << std::endl;
     }
-
+    
     return test;
 }

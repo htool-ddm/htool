@@ -10,61 +10,13 @@ namespace htool {
 
 template<SplittingTypes SplittingType>
 class DDM_Cluster: public Cluster<DDM_Cluster<SplittingType>>{
-
-public:
-
-	// Inherhits son constructor
-	using Cluster<DDM_Cluster<SplittingType>>::Cluster;
-
-	// build cluster tree
-	// nb_sons=-1 means nb_sons = sizeworld if sizeworld!=1 and nb_sons = 2 otherwise 
-	// nb_sons>0 means we check that sizeworld//nb_sons if sizeworld>1
-	void build(const std::vector<R3>& x, const std::vector<double>& r,const std::vector<int>& tab, const std::vector<double>& g, int nb_sons = 2, MPI_Comm comm=MPI_COMM_WORLD){
-		assert(tab.size()==x.size()*this->ndofperelt);
-		assert(x.size()==g.size());
-		assert(x.size()==r.size());
+private:
+	void recursive_build(const std::vector<R3>& x, const std::vector<double>& r,const std::vector<int>& tab, const std::vector<double>& g, int nb_sons, MPI_Comm comm, std::stack<DDM_Cluster*>& s, std::stack<std::vector<int>>& n){
 		
 		// MPI parameters
 		int rankWorld, sizeWorld;
 		MPI_Comm_size(comm, &sizeWorld);
 		MPI_Comm_rank(comm, &rankWorld);
-		
-
-		// Impossible value for nb_sons
-		try{
-			if (nb_sons == 0 || nb_sons==1)
-				throw std::string("Impossible value for nb_sons:"+NbrToStr<int>(nb_sons));
-		}
-		catch(std::string const& error){
-			if (rankWorld){
-				std::cerr << error<< std::endl;
-			}
-			exit(1);
-		}
-
-		// nb_sons=-1 is automatic mode
-		if (nb_sons==-1){
-			nb_sons=2;
-		}
-		// Initialisation
-		this->rad = 0;
-		this->size = tab.size();
-		this->rank=-1;
-		this->MasterOffset.resize(sizeWorld);
-		this->sons.resize(sizeWorld);
-		for (auto& son : this->sons ){
-			son=nullptr;
-		}
-		this->depth = 0; // ce constructeur est appele' juste pour la racine
-
-		this->permutation->resize(tab.size());
-		std::iota(this->permutation->begin(),this->permutation->end(),0); // perm[i]=i
-
-		// Recursion
-		std::stack<DDM_Cluster*> s;
-		std::stack<std::vector<int>> n;
-		s.push(this);
-		n.push(*(this->permutation));
 
 		while(!s.empty()){
 			DDM_Cluster* curr = s.top();
@@ -185,10 +137,6 @@ public:
 			
 			// Compute numbering
 			std::vector<std::vector<int>> numbering = this->splitting(x,tab,num,curr,curr_nb_sons,dir);
-			std::cout << numbering.size()<< std::endl;
-			for (int i=0;i<numbering.size();i++){
-				std::cout << numbering[i].size()<< std::endl;
-			}
 			
 			// Set offsets, size and rank of sons
 			int count = 0;
@@ -240,8 +188,124 @@ public:
 			}
 		}
 	}
+public:
+
+	// Inherhits son constructor
+	using Cluster<DDM_Cluster<SplittingType>>::Cluster;
+
+	// build cluster tree
+	// nb_sons=-1 means nb_sons = 2
+	void build(const std::vector<R3>& x, const std::vector<double>& r,const std::vector<int>& tab, const std::vector<double>& g, int nb_sons = 2, MPI_Comm comm=MPI_COMM_WORLD){
+		assert(tab.size()==x.size()*this->ndofperelt);
+		assert(x.size()==g.size());
+		assert(x.size()==r.size());
+		
+		// MPI parameters
+		int rankWorld, sizeWorld;
+		MPI_Comm_size(comm, &sizeWorld);
+		MPI_Comm_rank(comm, &rankWorld);
+		
+
+		// Impossible value for nb_sons
+		try{
+			if (nb_sons == 0 || nb_sons==1)
+				throw std::string("Impossible value for nb_sons:"+NbrToStr<int>(nb_sons));
+		}
+		catch(std::string const& error){
+			if (rankWorld){
+				std::cerr << error<< std::endl;
+			}
+			exit(1);
+		}
+
+		// nb_sons=-1 is automatic mode
+		if (nb_sons==-1){
+			nb_sons=2;
+		}
+		// Initialisation
+		this->rad = 0;
+		this->size = tab.size();
+		this->rank=-1;
+		this->MasterOffset.resize(sizeWorld);
+		this->sons.resize(sizeWorld);
+		for (auto& son : this->sons ){
+			son=nullptr;
+		}
+		this->depth = 0; // ce constructeur est appele' juste pour la racine
+
+		this->permutation->resize(tab.size());
+		std::iota(this->permutation->begin(),this->permutation->end(),0); // perm[i]=i
+
+		// Recursion
+		std::stack<DDM_Cluster*> s;
+		std::stack<std::vector<int>> n;
+		s.push(this);
+		n.push(*(this->permutation));
+
+		this->recursive_build(x,r,tab,g,nb_sons,comm,s,n);
+
+	}
+
+	// build cluster tree from given partition
+	void build(const std::vector<R3>& x, const std::vector<double>& r,const std::vector<int>& tab, const std::vector<double>& g, std::vector<int> permutation0, std::vector<std::pair<int,int>> MasterOffset0, int nb_sons = 2, MPI_Comm comm=MPI_COMM_WORLD){
+		assert(tab.size()==x.size()*this->ndofperelt);
+		assert(x.size()==g.size());
+		assert(x.size()==r.size());
+		
+		// MPI parameters
+		int rankWorld, sizeWorld;
+		MPI_Comm_size(comm, &sizeWorld);
+		MPI_Comm_rank(comm, &rankWorld);
+		
+
+		// Impossible value for nb_sons
+		try{
+			if (nb_sons == 0 || nb_sons==1)
+				throw std::string("Impossible value for nb_sons:"+NbrToStr<int>(nb_sons));
+		}
+		catch(std::string const& error){
+			if (rankWorld){
+				std::cerr << error<< std::endl;
+			}
+			exit(1);
+		}
+
+		// nb_sons=-1 is automatic mode
+		if (nb_sons==-1){
+			nb_sons=2;
+		}
+		
+		// Initialisation of root
+		this->rad = 0;
+		this->size = tab.size();
+		this->rank=-1;
+		this->MasterOffset=MasterOffset0;
+		*(this->permutation)=permutation0;
+		this->depth = 0; // ce constructeur est appele' juste pour la racine
+
+		// Build level of depth 1 with the given partition and prepare recursion
+		std::stack<DDM_Cluster*> s;
+		std::stack<std::vector<int>> n;
+
+		this->sons.resize(sizeWorld);
+		for (int p=0;p<sizeWorld;p++){
+			this->sons[p] = new DDM_Cluster(this,p,this->depth+1,this->permutation);
+			this->sons[p]->set_offset(this->MasterOffset[p].first);
+			this->sons[p]->set_size(this->MasterOffset[p].second);
+			this->sons[p]->set_rank(p);
+
+			s.push(this->sons[p]);
+			n.push(std::vector<int>(this->permutation->begin()+this->sons[p]->get_offset(),this->permutation->begin()+this->sons[p]->get_offset()+this->sons[p]->get_size()));
+		}
+		
+
+		
 
 
+		// Recursion
+		this->recursive_build(x,r,tab,g,nb_sons,comm,s,n);
+
+	}
 	std::vector<std::vector<int>> splitting(const std::vector<R3>& x, const std::vector<int>& tab, std::vector<int>& num, Cluster<DDM_Cluster<SplittingType>> const * const curr_cluster, int nb_sons, R3 dir);
 
 };

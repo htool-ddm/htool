@@ -75,7 +75,7 @@ int main(int argc, char *argv[]) {
 	double z2 = 1+distance;
 	vector<R3>       p2(nc);
 	vector<double> r2(nc,0);
-	vector<double> g2(nr,1);
+	vector<double> g2(nc,1);
 	vector<int>    tab2(nc);
 	for(int j=0; j<nc; j++){
       Ic[j] = j;
