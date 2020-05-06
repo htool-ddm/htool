@@ -293,6 +293,10 @@ public:
 			this->sons[p]->set_offset(this->MasterOffset[p].first);
 			this->sons[p]->set_size(this->MasterOffset[p].second);
 			this->sons[p]->set_rank(p);
+			
+			if (rankWorld==this->sons[p]->get_counter()){
+				this->local_cluster = this->sons[p];
+			}
 
 			s.push(this->sons[p]);
 			n.push(std::vector<int>(this->permutation->begin()+this->sons[p]->get_offset(),this->permutation->begin()+this->sons[p]->get_offset()+this->sons[p]->get_size()));

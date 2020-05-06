@@ -60,7 +60,7 @@ int test_cluster_DDM(int argc, char *argv[]) {
         }
 
         DDM_Cluster<SplittingType> t;
-        t.build(p,r,tab,g,nb_sons);
+        t.build(p,r,tab,g,permutation,MasterOffset,nb_sons);
         t.print();
         MPI_Barrier(MPI_COMM_WORLD);
 
