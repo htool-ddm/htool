@@ -13,7 +13,7 @@ def python_gmres_get_coef():
     rank = comm.Get_rank()
 
     # Matrix
-    with open(os.path.join(os.path.dirname(__file__)+"/../data/data_test/SPD_mat_example.bin"), "rb" ) as input:
+    with open(os.path.join(os.path.dirname(__file__)+"/../data/data_test/matrix.bin"), "rb" ) as input:
         data=input.read()
         (m, n) = struct.unpack("@II", data[:8])
         # print(m,n)
@@ -29,7 +29,7 @@ def python_gmres_get_coef():
 
     # mesh
     p=np.zeros((n,3))
-    with open(os.path.join(os.path.dirname(__file__)+"/../data/data_test/gmsh_mesh.msh"), "r" ) as input:
+    with open(os.path.join(os.path.dirname(__file__)+"/../data/data_test/mesh.msh"), "r" ) as input:
         check=False
         count=0
         for line in input:
@@ -67,17 +67,12 @@ def python_gmres_get_coef():
     H.print_infos()
 
     # Error on inversions
-    inv_error = np.linalg.norm(f-A.dot(x))/np.linalg.norm(f)
-    error     = np.linalg.norm(x-x_ref)/np.linalg.norm(x_ref)
+    error = np.linalg.norm(f-A.dot(x))/np.linalg.norm(f)
 
     if (rank==0):
-        print("error on inversion : ",inv_error)
-        print("error on solution : ",error)
+        print("error: ",error)
 
-    assert(inv_error<1e-6)
-    assert(error<1e-5)
-
-    return (inv_error,error)
+    assert(error<1e-6)
 
 def python_gmres_get_submatrix():
 
@@ -86,7 +81,7 @@ def python_gmres_get_submatrix():
     rank = comm.Get_rank()
 
     # Matrix
-    with open(os.path.join(os.path.dirname(__file__)+"/../data/data_test/SPD_mat_example.bin"), "rb" ) as input:
+    with open(os.path.join(os.path.dirname(__file__)+"/../data/data_test/matrix.bin"), "rb" ) as input:
         data=input.read()
         (m, n) = struct.unpack("@II", data[:8])
         A=np.frombuffer(data[8:],dtype=np.dtype('complex128'))
@@ -101,7 +96,7 @@ def python_gmres_get_submatrix():
 
     # mesh
     p=np.zeros((n,3))
-    with open(os.path.join(os.path.dirname(__file__)+"/../data/data_test/gmsh_mesh.msh"), "r" ) as input:
+    with open(os.path.join(os.path.dirname(__file__)+"/../data/data_test/mesh.msh"), "r" ) as input:
         check=False
         count=0
         for line in input:
@@ -141,15 +136,12 @@ def python_gmres_get_submatrix():
     H.print_infos()
 
     # Error on inversions
-    inv_error = np.linalg.norm(f-A.dot(x))/np.linalg.norm(f)
-    error     = np.linalg.norm(x-x_ref)/np.linalg.norm(x_ref)
+    error = np.linalg.norm(f-A.dot(x))/np.linalg.norm(f)
 
     if (rank==0):
-        print("error on inversion : ",inv_error)
-        print("error on solution : ",error)
+        print("error: ",error)
 
-    assert(inv_error<1e-6)
-    assert(error<1e-5)
+    assert(error<1e-6)
 
 
 

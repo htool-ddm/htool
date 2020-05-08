@@ -43,7 +43,7 @@ int main(int argc, char* argv[]){
     t.build(p,r,tab,g,2);
 
 	// Output
-	t.save(p,outputname+"/clustering_output",{1,2,3});
+	t.save_geometry(p,outputname+"/clustering_output",{1,2,3});
 
 	MPI_Finalize();
 	return 0;
