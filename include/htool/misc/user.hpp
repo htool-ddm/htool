@@ -59,20 +59,24 @@ T StrToNbr ( const std::string &Text )
 }
 
 
-//  String splitting
+//  String operations
 
-std::vector<std::string> &split(const std::string &s, char delim, std::vector<std::string> &elems) {
-    std::stringstream ss(s);
-    std::string item;
-    while (getline(ss, item, delim)) {
-        elems.push_back(item);
-    }
-    return elems;
-}
-std::vector<std::string> split(const std::string &s, char delim) {
+std::vector<std::string> split(const std::string &s, const std::string& delim) {
 	std::vector<std::string> elems;
-	split(s, delim, elems);
+	std::string line = s ;
+    size_t pos = 0;
+    std::string token;
+    while ((pos = line.find(delim)) != std::string::npos) {
+        token = line.substr(0, pos);
+        elems.push_back(token);
+        line.erase(0, pos + delim.length());
+    }
+    elems.push_back(line);
 	return elems;
+}
+
+std::string join(std::string delimiter, std::vector<std::string> x){
+	return std::accumulate(std::begin(x), std::end(x), std::string(),[&](std::string &ss, std::string &s){return ss.empty() ? s : ss + delimiter + s;});
 }
 }
 

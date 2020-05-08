@@ -199,6 +199,7 @@ public:
 	void mymvprod_local(const T* const in, T* const out, const int& mu) const;
     void mvprod_subrhs(const T* const in, T* const out, const int& mu, const int& offset, const int& size, const int& local_max_size_j) const;
 	std::vector<T> operator*( const std::vector<T>& x) const;
+	Matrix<T> operator*( const Matrix<T>& x) const;
 
 	// Permutations
 	template<typename U>
@@ -459,6 +460,7 @@ HMatrix<T, LowRankMatrix, ClusterImpl>::HMatrix(IMatrix<T>& mat, const std::shar
 // TODO: recursivity -> stack for buildblocktree
 template<typename T, template<typename,typename> class LowRankMatrix, class ClusterImpl>
 Block<ClusterImpl>* HMatrix<T, LowRankMatrix, ClusterImpl>::BuildBlockTree(const Cluster<ClusterImpl>& t, const Cluster<ClusterImpl>& s){
+	
 	Block<ClusterImpl>* B = new Block<ClusterImpl>(t,s);
 	int bsize = t.get_size()*s.get_size();
 	B->ComputeAdmissibility();
