@@ -16,7 +16,7 @@ int main(int argc, char *argv[]){
 	// Initialize the MPI environment
 	MPI_Init(&argc,&argv);
 
-	bool verbose=0;
+	bool verbose=1;
 	if (argc>=2){
 		verbose=argv[1];
 	}

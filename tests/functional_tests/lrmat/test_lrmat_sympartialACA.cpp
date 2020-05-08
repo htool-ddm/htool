@@ -16,11 +16,11 @@ int main(int argc, char *argv[]){
 	// Initialize the MPI environment
 	MPI_Init(&argc,&argv);
 
-	bool verbose=0;
+	bool verbose=1;
 	if (argc>=2){
 		verbose=argv[1];
 	}
-	
+
 	const int ndistance = 4;
 	double distance[ndistance];
 	distance[0] = 15; distance[1] = 20; distance[2] = 30; distance[3] = 40;
