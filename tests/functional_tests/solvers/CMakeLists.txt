@@ -2,32 +2,27 @@
 #=========================== Executables =====================================#
 #=============================================================================#
 
-set(cases "ddm")
 
-set(Test_solvers_ARGS ${CMAKE_SOURCE_DIR}/data/data_test/SPD_mat_example.bin
-                              ${CMAKE_SOURCE_DIR}/data/data_test/rhs.bin
-                              ${CMAKE_SOURCE_DIR}/data/data_test/gmsh_mesh.msh
-                              ${CMAKE_SOURCE_DIR}/data/data_test/sol.bin)
-
-set(Test_solvers_multi_rhs_ARGS ${Test_solvers_ARGS}
-                                10)
+set(Test_solver_ARGS 
+    ${CMAKE_SOURCE_DIR}/data/data_test/)
 
 
-foreach(case ${cases})
-    add_executable(Test_solvers_${case} test_solvers_${case}.cpp)
-    target_link_libraries(Test_solvers_${case} htool)
-    add_dependencies(build-tests Test_solvers_${case})
+add_executable(Test_solver_ddm_single_rhs test_solver_ddm_single_rhs.cpp)
+target_link_libraries(Test_solver_ddm_single_rhs htool)
+add_dependencies(build-tests Test_solver_ddm_single_rhs)
 
-    add_test(NAME Test_solvers_${case}_1 COMMAND  ${MPIEXEC} ${MPIEXEC_NUMPROC_FLAG} 1 ${MPIEXEC_PREFLAGS} ${CMAKE_CURRENT_BINARY_DIR}/Test_solvers_${case} ${Test_solvers_ARGS} )
-    add_test(NAME Test_solvers_${case}_2 COMMAND  ${MPIEXEC} ${MPIEXEC_NUMPROC_FLAG} 2 ${MPIEXEC_PREFLAGS} ${CMAKE_CURRENT_BINARY_DIR}/Test_solvers_${case} ${Test_solvers_ARGS})
-    add_test(NAME Test_solvers_${case}_4 COMMAND  ${MPIEXEC} ${MPIEXEC_NUMPROC_FLAG} 4 ${MPIEXEC_PREFLAGS} ${CMAKE_CURRENT_BINARY_DIR}/Test_solvers_${case} ${Test_solvers_ARGS})
+add_test(NAME Test_solver_ddm_single_rhs_1 COMMAND  ${MPIEXEC} ${MPIEXEC_NUMPROC_FLAG} 1 ${MPIEXEC_PREFLAGS} ${CMAKE_CURRENT_BINARY_DIR}/Test_solver_ddm_single_rhs ${Test_solver_ARGS} )
+add_test(NAME Test_solver_ddm_single_rhs_2 COMMAND  ${MPIEXEC} ${MPIEXEC_NUMPROC_FLAG} 2 ${MPIEXEC_PREFLAGS} ${CMAKE_CURRENT_BINARY_DIR}/Test_solver_ddm_single_rhs ${Test_solver_ARGS})
+add_test(NAME Test_solver_ddm_single_rhs_3 COMMAND  ${MPIEXEC} ${MPIEXEC_NUMPROC_FLAG} 3 ${MPIEXEC_PREFLAGS} ${CMAKE_CURRENT_BINARY_DIR}/Test_solver_ddm_single_rhs ${Test_solver_ARGS})
+add_test(NAME Test_solver_ddm_single_rhs_4 COMMAND  ${MPIEXEC} ${MPIEXEC_NUMPROC_FLAG} 4 ${MPIEXEC_PREFLAGS} ${CMAKE_CURRENT_BINARY_DIR}/Test_solver_ddm_single_rhs ${Test_solver_ARGS})
 
 
-    add_executable(Test_solvers_${case}_multi_rhs test_solvers_${case}_multi_rhs.cpp)
-    target_link_libraries(Test_solvers_${case}_multi_rhs htool)
-    add_dependencies(build-tests Test_solvers_${case}_multi_rhs)
+add_executable(Test_solver_ddm_multi_rhs test_solver_ddm_multi_rhs.cpp)
+target_link_libraries(Test_solver_ddm_multi_rhs htool)
+add_dependencies(build-tests Test_solver_ddm_multi_rhs)
 
-    add_test(NAME Test_solvers_${case}_multi_rhs_1 COMMAND  ${MPIEXEC} ${MPIEXEC_NUMPROC_FLAG} 1 ${MPIEXEC_PREFLAGS} ${CMAKE_CURRENT_BINARY_DIR}/Test_solvers_${case}_multi_rhs ${Test_solvers_multi_rhs_ARGS} )
-    add_test(NAME Test_solvers_${case}_multi_rhs_2 COMMAND  ${MPIEXEC} ${MPIEXEC_NUMPROC_FLAG} 2 ${MPIEXEC_PREFLAGS} ${CMAKE_CURRENT_BINARY_DIR}/Test_solvers_${case}_multi_rhs ${Test_solvers_multi_rhs_ARGS})
-    add_test(NAME Test_solvers_${case}_multi_rhs_4 COMMAND  ${MPIEXEC} ${MPIEXEC_NUMPROC_FLAG} 4 ${MPIEXEC_PREFLAGS} ${CMAKE_CURRENT_BINARY_DIR}/Test_solvers_${case}_multi_rhs ${Test_solvers_multi_rhs_ARGS})
-endforeach()
+add_test(NAME Test_solver_ddm_multi_rhs_1 COMMAND  ${MPIEXEC} ${MPIEXEC_NUMPROC_FLAG} 1 ${MPIEXEC_PREFLAGS} ${CMAKE_CURRENT_BINARY_DIR}/Test_solver_ddm_multi_rhs ${Test_solver_ARGS} )
+add_test(NAME Test_solver_ddm_multi_rhs_2 COMMAND  ${MPIEXEC} ${MPIEXEC_NUMPROC_FLAG} 2 ${MPIEXEC_PREFLAGS} ${CMAKE_CURRENT_BINARY_DIR}/Test_solver_ddm_multi_rhs ${Test_solver_ARGS})
+add_test(NAME Test_solver_ddm_multi_rhs_3 COMMAND  ${MPIEXEC} ${MPIEXEC_NUMPROC_FLAG} 3 ${MPIEXEC_PREFLAGS} ${CMAKE_CURRENT_BINARY_DIR}/Test_solver_ddm_multi_rhs ${Test_solver_ARGS})
+add_test(NAME Test_solver_ddm_multi_rhs_4 COMMAND  ${MPIEXEC} ${MPIEXEC_NUMPROC_FLAG} 4 ${MPIEXEC_PREFLAGS} ${CMAKE_CURRENT_BINARY_DIR}/Test_solver_ddm_multi_rhs ${Test_solver_ARGS})
+
