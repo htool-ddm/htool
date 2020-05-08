@@ -62,7 +62,7 @@ int main(int argc, char *argv[]){
 		
 		std::pair<double,double> fixed_compression_interval(0.87,0.89);
 		std::pair<double,double> auto_compression_interval(0.93,0.96);
-		test = test || (test_lrmat(A,A_partialACA_fixed,A_partialACA,t.get_perm(),s.get_perm(),fixed_compression_interval,auto_compression_interval,verbose));
+		test = test || (test_lrmat(A,A_partialACA_fixed,A_partialACA,t.get_perm(),s.get_perm(),fixed_compression_interval,auto_compression_interval,verbose,0.5));
 	}
 	
 	cout << "test : "<<test<<endl;

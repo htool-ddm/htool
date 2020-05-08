@@ -64,7 +64,7 @@ void create_geometry(int distance, std::vector<R3>& xt, std::vector<int>& tabt, 
 }
 
 template<class LowRankMatrix >
-int test_lrmat(const MyMatrix& A,const LowRankMatrix& Fixed_approximation, const LowRankMatrix& Auto_approximation, const std::vector<int>& permt, const std::vector<int>& perms, std::pair<double,double> fixed_compression_interval, std::pair<double,double> auto_compression_interval,bool verbose=0){
+int test_lrmat(const MyMatrix& A,const LowRankMatrix& Fixed_approximation, const LowRankMatrix& Auto_approximation, const std::vector<int>& permt, const std::vector<int>& perms, std::pair<double,double> fixed_compression_interval, std::pair<double,double> auto_compression_interval, bool verbose=0,double margin = 0){
 
 	bool test = 0;
 	int nr=permt.size();
@@ -119,7 +119,7 @@ int test_lrmat(const MyMatrix& A,const LowRankMatrix& Fixed_approximation, const
 		out_perm[permt[i]]=out[i];
 	}
 	double error=norm2(A*f-out_perm)/norm2(A*f);
-	test = test || !(error<GetEpsilon()*10);
+	test = test || !(error<GetEpsilon()*(1+margin));
 	if (verbose)
 		cout << "> Errors on a mat vec prod : "<< error<<endl;
 
@@ -147,7 +147,7 @@ int test_lrmat(const MyMatrix& A,const LowRankMatrix& Fixed_approximation, const
 		out_perm[permt[i]]=out[i];
 	}
 	error = norm2(A*f-out_perm)/norm2(A*f);
-	test = test || !(error<GetEpsilon()*10);
+	test = test || !(error<GetEpsilon()*(1+margin));
 	if (verbose)
 		cout << "> Errors on a mat vec prod : "<< error<<endl;
 	if (verbose)

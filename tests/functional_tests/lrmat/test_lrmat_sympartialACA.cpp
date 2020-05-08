@@ -16,6 +16,11 @@ int main(int argc, char *argv[]){
 	// Initialize the MPI environment
 	MPI_Init(&argc,&argv);
 
+	bool verbose=0;
+	if (argc>=2){
+		verbose=argv[1];
+	}
+	
 	const int ndistance = 4;
 	double distance[ndistance];
 	distance[0] = 15; distance[1] = 20; distance[2] = 30; distance[3] = 40;
@@ -56,7 +61,7 @@ int main(int argc, char *argv[]){
 
 		std::pair<double,double> fixed_compression_interval(0.87,0.89);
 		std::pair<double,double> auto_compression_interval(0.93,0.96);
-		test = test || (test_lrmat(A,A_sympartialACA_fixed,A_sympartialACA,t.get_perm(),s.get_perm(),fixed_compression_interval,auto_compression_interval));
+		test = test || (test_lrmat(A,A_sympartialACA_fixed,A_sympartialACA,t.get_perm(),s.get_perm(),fixed_compression_interval,auto_compression_interval,verbose,0.5));
 	}
 	cout << "test : "<<test<<endl;
 
