@@ -106,6 +106,35 @@ int test_cluster(int argc, char *argv[]) {
 
         }
 
+        // Testing save and read cluster
+        t.save_cluster("test_cluster");
+        MPI_Barrier(MPI_COMM_WORLD);
+        Cluster_type copy_t;
+        copy_t.read_cluster("test_cluster_permutation.csv","test_cluster_tree.csv");
+
+        std::stack<Cluster_type const *> s_save;
+        std::stack<Cluster_type const *> s_read;
+        s_save.push(&t);
+        s_read.push(&(copy_t));
+        while (!s_save.empty()){
+            Cluster_type const * curr_1 = s_save.top();
+            Cluster_type const * curr_2 = s_read.top();
+            s_save.pop();
+            s_read.pop();
+
+            test = test || !(curr_1->get_offset()==curr_2->get_offset());
+            test = test || !(curr_1->get_size()==curr_2->get_size());
+
+            if (!curr_2->IsLeaf()){
+                // test num inclusion
+                
+                for (int l=0;l<curr_2->get_nb_sons();l++){
+                    s_save.push(&(curr_1->get_son(l)));
+                    s_read.push(&(curr_2->get_son(l)));
+                }
+            }
+
+        }
 
         // Random vector
         double lower_bound = 0;
