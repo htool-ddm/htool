@@ -45,6 +45,7 @@ int main(int argc, char* argv[]){
 	// Output
 	t.save_geometry(p,outputname+"/clustering_output",{1,2,3});
 
+	std::cout <<outputname+"/clustering_output" << std::endl;
 	MPI_Finalize();
 	return 0;
 }

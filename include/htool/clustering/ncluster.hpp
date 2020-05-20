@@ -142,22 +142,24 @@ public:
 			R3 dir;
 			Matrix<double> prod(3,3);
 			if (p1 < 1e-16) {
+				dir[0]=0;dir[1]=0;dir[2]=0;
 				// cov is diagonal.
 				eigs[0] = cov(0,0);
 				eigs[1] = cov(1,1);
 				eigs[2] = cov(2,2);
-				dir[0]=1;dir[1]=0;dir[2]=0;
-				if (eigs[0] < eigs[1]) {
-					double tmp = eigs[0];
-					eigs[0] = eigs[1];
-					eigs[1] = tmp;
-					dir[0]=0;dir[1]=1;dir[2]=0;
+				std::vector<int> index_eigs={0,1,2};
+				std::sort(index_eigs.begin(), index_eigs.end(),[&eigs](size_t i1, size_t i2) {return eigs[i1] < eigs[i2];});
+				dir[index_eigs[0]]=1;
+				
+
+				if (eigs[index_eigs[1]]-1e-10< eigs[index_eigs[0]] < eigs[index_eigs[1]]+1e-10){
+					dir[index_eigs[0]]=1./std::sqrt(2);
+					dir[index_eigs[1]]=1./std::sqrt(2);
 				}
-				if (eigs[0] < eigs[2]) {
-					double tmp = eigs[0];
-					eigs[0] = eigs[2];
-					eigs[2] = tmp;
-					dir[0]=0;dir[1]=0;dir[2]=1;
+				if (eigs[index_eigs[2]]-1e-10< eigs[index_eigs[0]] < eigs[index_eigs[2]]+1e-10){
+					dir[0]=1./std::sqrt(3);
+					dir[1]=1./std::sqrt(3);
+					dir[2]=1./std::sqrt(3);
 				}
 			}
 			else {

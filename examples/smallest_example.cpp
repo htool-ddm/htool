@@ -76,19 +76,20 @@ int main(int argc, char *argv[]) {
             I[j+k*n] = j+k*n;
             p[j+k*n][0] = j;
             p[j+k*n][1] = k;
-            p[j][2] = z;
+            p[j+k*n][2] = z;
         }
     }
 
     // Hmatrix
     MyMatrix A(p,p);
     std::vector<double> x(size,1),result(size,0);
-    HMatrix<double,partialACA,GeometricClustering> HA(A,p,p);
+    HMatrix<double,partialACA,GeometricClustering> HA(A,p);
     result = HA*x;
 
     // Output
     HA.print_infos();
     HA.save_plot(outputpath+"/smallest_example_plot");
+    HA.get_cluster_tree_t().save_geometry(p,outputpath+"/smallest_example_cluster",{1,2,3});
     std::cout << outputpath+"/smallest_example_plot"<< std::endl;
     std::cout<< Frobenius_absolute_error(HA,A)/A.norm()<<std::endl;
     std::cout<< norm2(A*x-result)/norm2(A*x)<<std::endl;

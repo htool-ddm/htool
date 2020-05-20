@@ -23,8 +23,6 @@ data =data[1:]
 data.columns = header
 
 
-print(data[str(depth)])
-
 # Create Color Map
 colormap = plt.get_cmap("Dark2")
 norm = colors.Normalize(vmin=min(data[str(depth)]), vmax=max(data[str(depth)]))
