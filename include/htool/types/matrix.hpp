@@ -391,7 +391,7 @@ public:
     //! ### Special mvprod
     /*!
     */
-    void mvprod_row_major(const T* const in, T* const out, const int& mu) const{
+    void mvprod_row_major(const T* const in, T* const out, const int& mu, char op = 'N') const{
         int nr = this->nr;
         int nc = this->nc;
         T alpha = 1;
@@ -399,10 +399,9 @@ public:
         int lda =  nr;
 
         if (mu==1){
-            char n='N';
             int incx =1;
             int incy = 1;
-            Blas<T>::gemv(&n, &nr , &nc, &alpha, &(this->mat[0]) , &lda, in, &incx, &beta, out, &incy);
+            Blas<T>::gemv(&op, &nr , &nc, &alpha, &(this->mat[0]) , &lda, in, &incx, &beta, out, &incy);
         }
         else{
             int lda =  mu;
@@ -413,6 +412,13 @@ public:
             int K = nc;
             int ldb =  nr;
             int ldc = mu;
+
+            if (op=='C'){
+                transb='N';
+                N=nc;
+                K=nr;
+            }
+
             Blas<T>::gemm(&transa, &transb, &M, &N, &K, &alpha, in,
                 &lda, &(this->mat[0]), &ldb, &beta, out,&ldc);
             }
@@ -421,7 +427,7 @@ public:
     //! ### Special add_mvprod
     /*!
     */
-    void add_mvprod_row_major(const T* const in, T* const out, const int& mu) const{
+    void add_mvprod_row_major(const T* const in, T* const out, const int& mu, char op='N') const{
         int nr = this->nr;
         int nc = this->nc;
         T alpha = 1;
@@ -430,10 +436,9 @@ public:
 
         if (mu==1){
             int lda =  nr;
-            char n='N';
             int incx =1;
             int incy = 1;
-            Blas<T>::gemv(&n, &nr , &nc, &alpha, &(this->mat[0]) , &lda, in, &incx, &beta, out, &incy);
+            Blas<T>::gemv(&op, &nr , &nc, &alpha, &(this->mat[0]) , &lda, in, &incx, &beta, out, &incy);
         }
         else{
             int lda =  mu;
@@ -445,11 +450,43 @@ public:
             int ldb =  nr;
             int ldc = mu;
 
-            Blas<T>::gemm(&transa, &transb, &M, &N, &K, &alpha, in,
-                &lda, &(this->mat[0]), &ldb, &beta, out,&ldc);
+            if (op=='C'){
+                transb='N';
+                N=nc;
+                K=nr;
+            }
+
+
+            Blas<T>::gemm(&transa, &transb, &M, &N, &K, &alpha, in, &lda, &(this->mat[0]), &ldb, &beta, out,&ldc);
         }
     }
 
+    void add_mvprod_row_major_sym(const T* const in, T* const out, const int& mu) const{
+        int nr = this->nr;
+        int nc = this->nc;
+        T alpha = 1;
+        T beta =1;
+        char UPLO = 'L';
+
+
+        if (mu==1){
+            int lda =  nr;
+            int incx =1;
+            int incy = 1;
+            Blas<T>::symv(&UPLO, &nr, &alpha, &(this->mat[0]), &lda,in, &incx, &beta, out, &incy);
+        }
+        else{
+            int lda =  nr;
+            char side = 'R';
+            int M = mu;
+            int N = nr;
+            int ldb =  mu;
+            int ldc = mu;
+
+            Blas<T>::symm(&side, &UPLO, &M, &N, &alpha, &(this->mat[0]),&lda, in, &ldb, &beta, out,&ldc);
+
+        }
+    }
 
     friend std::ostream& operator<<(std::ostream& out, const Matrix& m){
         if ( !(m.mat.empty()) ) {

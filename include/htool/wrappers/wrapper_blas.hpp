@@ -10,13 +10,18 @@
 #endif
 
 
-#define HTOOL_GENERATE_EXTERN_BLAS(C,T)                        \
-void    HTOOL_BLAS_F77(C ## gemv)(const char*, const int*, const int*, const T*,    \
-const T*, const int*, const T*, const int*,       \
-const T*, T*, const int*);                        \
-void    HTOOL_BLAS_F77(C ## gemm)(const char*, const char*, const int*, const int*, const int*,                   \
-const T*, const T*, const int*, const T*, const int*,                           \
-const T*, T*, const int*);                           \
+#define HTOOL_GENERATE_EXTERN_BLAS(C,T)                                                                     \
+void    HTOOL_BLAS_F77(C ## gemv)(const char*, const int*, const int*, const T*,                            \
+                                    const T*, const int*, const T*, const int*,                             \
+                                    const T*, T*, const int*);                                              \
+void    HTOOL_BLAS_F77(C ## gemm)(const char*, const char*, const int*, const int*, const int*,             \
+                                    const T*, const T*, const int*, const T*, const int*,                   \
+                                    const T*, T*, const int*);                                              \
+void    HTOOL_BLAS_F77(C ## symv)(const char*, const int*, const T*, const T*, const int*,                  \
+                             const T*, const int*, const T*, T*, const int*);                               \
+void    HTOOL_BLAS_F77(C ## symm)(const char*, const char*, const int*, const int*,                         \
+                             const T*, const T*, const int*, const T*, const int*,                          \
+                             const T*, T*, const int*);                                                     \
 
 #define HTOOL_GENERATE_EXTERN_BLAS_COMPLEX(C, T, B, U)\
 HTOOL_GENERATE_EXTERN_BLAS(B, U)                      \
@@ -64,6 +69,14 @@ struct Blas {
     *  Computes a scalar-matrix-matrix product. */
     static void gemm(const char* const, const char* const, const int* const, const int* const, const int* const, const K* const, const K* const,
     const int* const, const K* const, const int* const, const K* const, K* const, const int* const);
+    /* Function: symv
+     *  Computes a symmetric scalar-matrix-vector product. */
+    static void symv(const char* const, const int* const, const K* const, const K* const, const int* const,
+                     const K* const, const int* const, const K* const, K* const, const int* const);
+    /* Function: symm
+     *  Computes a symmetric scalar-matrix-matrix product. */
+    static void symm(const char* const, const char* const, const int* const, const int* const, const K* const, const K* const,
+                     const int* const, const K* const, const int* const, const K* const, K* const, const int* const);
 
 };
 
@@ -90,14 +103,27 @@ T* const c, const int* const ldc) {                                             
 # endif
 
 
-# define HTOOL_GENERATE_BLAS(C, T)                 \
-template<>                                           \
-inline void Blas<T>::gemv(const char* const trans, const int* const m,         \
-  const int* const n, const T* const alpha, const T* const a,                  \
-  const int* const lda, const T* const b, const int* const ldb,                \
-  const T* const beta, T* const c, const int* const ldc) {                     \
-    HTOOL_BLAS_F77(C ## gemv)(trans, m, n, alpha, a, lda, b, ldb, beta, c, ldc);    \
-}                                                     \
+# define HTOOL_GENERATE_BLAS(C, T)                                                                              \
+template<>                                                                                                      \
+inline void Blas<T>::gemv(const char* const trans, const int* const m,                                          \
+  const int* const n, const T* const alpha, const T* const a,                                                   \
+  const int* const lda, const T* const b, const int* const ldb,                                                 \
+  const T* const beta, T* const c, const int* const ldc) {                                                      \
+    HTOOL_BLAS_F77(C ## gemv)(trans, m, n, alpha, a, lda, b, ldb, beta, c, ldc);                                \
+}                                                                                                               \
+template<>                                                                                                      \
+inline void Blas<T>::symv(const char* const uplo, const int* const n, const T* const alpha, const T* const a,   \
+                          const int* const lda, const T* const x, const int* const incx, const T* const beta,   \
+                          T* const y, const int* const incy) {                                                  \
+    HTOOL_BLAS_F77(C ## symv)(uplo, n, alpha, a, lda, x, incx, beta, y, incy);                                  \
+}                                                                                                               \
+template<>                                                                                                   \
+inline void Blas<T>::symm(const char* const side, const char* const uplo, const int* const m,                \
+                          const int* const n, const T* const alpha, const T* const a, const int* const lda,  \
+                          const T* const b, const int* const ldb, const T* const beta,                       \
+                          T* const c, const int* const ldc) {                                                \
+    HTOOL_BLAS_F77(C ## symm)(side, uplo, m, n, alpha, a, lda, b, ldb, beta, c, ldc);                             \
+}                                                                                                            \
 
 # define HTOOL_GENERATE_BLAS_COMPLEX(C, T, B,U)      \
 HTOOL_GENERATE_BLAS(C,T)                             \

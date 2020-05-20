@@ -46,6 +46,8 @@ private:
 	int local_size;
 	int local_offset;
 
+	bool symmetric;
+
 	std::vector<Block<ClusterImpl>*>		   Tasks;
 	std::vector<Block<ClusterImpl>*>		   MyBlocks;
 
@@ -69,6 +71,7 @@ private:
 	// Internal methods
 	void ScatterTasks();
 	Block<ClusterImpl>* BuildBlockTree(const Cluster<ClusterImpl>&, const Cluster<ClusterImpl>&);
+	Block<ClusterImpl>* BuildSymBlockTree(const Cluster<ClusterImpl>&, const Cluster<ClusterImpl>&);
 	void ComputeBlocks(IMatrix<T>& mat, const std::vector<R3> xt,const std::vector<int> tabt, const std::vector<R3> xs, const std::vector<int>tabs);
 	bool UpdateBlocks(IMatrix<T>&mat ,const Cluster<ClusterImpl>&, const Cluster<ClusterImpl>&, const std::vector<R3> xt,const std::vector<int> tabt, const std::vector<R3> xs, const std::vector<int>tabs, std::vector<SubMatrix<T>*>&, std::vector<LowRankMatrix<T,ClusterImpl>*>&);
 	void AddNearFieldMat(IMatrix<T>& mat, const Cluster<ClusterImpl>& t, const Cluster<ClusterImpl>& s, std::vector<SubMatrix<T>*>&);
@@ -80,7 +83,7 @@ private:
 
 
 	// Special constructor for hand-made build (for MultiHMatrix for example)
-	HMatrix(int nr0, int nc0,const std::shared_ptr<Cluster<ClusterImpl>>& cluster_tree_t0, const std::shared_ptr<Cluster<ClusterImpl>>& cluster_tree_s0): nr(nr0), nc(nc0), cluster_tree_t(cluster_tree_t0), cluster_tree_s(cluster_tree_s0){};
+	HMatrix(int nr0, int nc0,const std::shared_ptr<Cluster<ClusterImpl>>& cluster_tree_t0, const std::shared_ptr<Cluster<ClusterImpl>>& cluster_tree_s0,bool symmetry0=false): nr(nr0), nc(nc0), cluster_tree_t(cluster_tree_t0), cluster_tree_s(cluster_tree_s0), symmetric(symmetry0){};
 
 
 public:
@@ -106,37 +109,37 @@ public:
 	void build(IMatrix<T>& mat, const std::vector<R3>& xt, const std::vector<double>& rt, const std::vector<int>& tabt, const std::vector<double>& gt, MPI_Comm comm=MPI_COMM_WORLD); // To be used with one different clusters
 
 	// Full symetric constructor
-	HMatrix(IMatrix<T>&, const std::vector<R3>& xt, const std::vector<double>& rt, const std::vector<int>& tabt, const std::vector<double>& gt, const int& reqrank=-1, MPI_Comm comm=MPI_COMM_WORLD); // To be used with one different clusters
+	HMatrix(IMatrix<T>&, const std::vector<R3>& xt, const std::vector<double>& rt, const std::vector<int>& tabt, const std::vector<double>& gt, bool Symmetry=false, const int& reqrank=-1, MPI_Comm comm=MPI_COMM_WORLD); // To be used with one different clusters
 
 	// Symetric constructor without radius
-	HMatrix(IMatrix<T>&, const std::vector<R3>& xt, const std::vector<int>& tabt, const std::vector<double>& gt, const int& reqrank=-1, MPI_Comm comm=MPI_COMM_WORLD); // To be used with one different clusters
+	HMatrix(IMatrix<T>&, const std::vector<R3>& xt, const std::vector<int>& tabt, const std::vector<double>& gt, bool Symmetry=false, const int& reqrank=-1, MPI_Comm comm=MPI_COMM_WORLD); // To be used with one different clusters
 
 	// Constructor without mass
-	HMatrix(IMatrix<T>&, const std::vector<R3>& xt, const std::vector<double>& rt, const std::vector<int>& tabt, const int& reqrank=-1, MPI_Comm comm=MPI_COMM_WORLD); // To be used with one different clusters
+	HMatrix(IMatrix<T>&, const std::vector<R3>& xt, const std::vector<double>& rt, const std::vector<int>& tabt, bool Symmetry=false, const int& reqrank=-1, MPI_Comm comm=MPI_COMM_WORLD); // To be used with one different clusters
 
 	// Constructor without tab
-	HMatrix(IMatrix<T>&, const std::vector<R3>& xt, const std::vector<double>& rt, const std::vector<double>& gt, const int& reqrank=-1, MPI_Comm comm=MPI_COMM_WORLD); // To be used with one different clusters
+	HMatrix(IMatrix<T>&, const std::vector<R3>& xt, const std::vector<double>& rt, const std::vector<double>& gt, bool Symmetry=false, const int& reqrank=-1, MPI_Comm comm=MPI_COMM_WORLD); // To be used with one different clusters
 
 	// Constructor without radius, tab and mass
-	HMatrix(IMatrix<T>&, const std::vector<R3>& xt, const int& reqrank=-1, MPI_Comm comm=MPI_COMM_WORLD); // To be used with one different clusters
+	HMatrix(IMatrix<T>&, const std::vector<R3>& xt, bool Symmetry=false, const int& reqrank=-1, MPI_Comm comm=MPI_COMM_WORLD); // To be used with one different clusters
 
 	// Build with precomputed clusters
 	void build(IMatrix<T>& mat, const std::vector<R3>& xt, const std::vector<int>& tabt, const std::vector<R3>&xs, const std::vector<int>& tabs, MPI_Comm comm=MPI_COMM_WORLD); // To be used with two different clusters
 
 	// Full constructor with precomputed clusters
-	HMatrix(IMatrix<T>& mat,  const std::shared_ptr<Cluster<ClusterImpl>>& t, const std::vector<R3>& xt, const std::vector<int>& tabt,  const std::shared_ptr<Cluster<ClusterImpl>>& s, const std::vector<R3>&xs, const std::vector<int>& tabs, const int& reqrank=-1, MPI_Comm comm=MPI_COMM_WORLD); // To be used with two different clusters
+	HMatrix(IMatrix<T>& mat,  const std::shared_ptr<Cluster<ClusterImpl>>& t, const std::vector<R3>& xt, const std::vector<int>& tabt,  const std::shared_ptr<Cluster<ClusterImpl>>& s, const std::vector<R3>&xs, const std::vector<int>& tabs, bool Symmetry=false, const int& reqrank=-1, MPI_Comm comm=MPI_COMM_WORLD); // To be used with two different clusters
 
 	// Constructor without tab and with precomputed clusters
-	HMatrix(IMatrix<T>&,  const std::shared_ptr<Cluster<ClusterImpl>>& t, const std::vector<R3>& xt,  const std::shared_ptr<Cluster<ClusterImpl>>& s, const std::vector<R3>&xs, const int& reqrank=-1, MPI_Comm comm=MPI_COMM_WORLD); // To be used with two different clusters
+	HMatrix(IMatrix<T>&,  const std::shared_ptr<Cluster<ClusterImpl>>& t, const std::vector<R3>& xt,  const std::shared_ptr<Cluster<ClusterImpl>>& s, const std::vector<R3>&xs, bool Symmetry=false, const int& reqrank=-1, MPI_Comm comm=MPI_COMM_WORLD); // To be used with two different clusters
 
 	// Symetric build with precomputed cluster
 	void build(IMatrix<T>& mat,  const std::shared_ptr<Cluster<ClusterImpl>>& t, const std::vector<R3>& xt, const std::vector<int>& tabt, MPI_Comm comm=MPI_COMM_WORLD); // To be used with one different clusters
 
 	// Full symetric constructor with precomputed cluster
-	HMatrix(IMatrix<T>& mat,  const std::shared_ptr<Cluster<ClusterImpl>>& t, const std::vector<R3>& xt, const std::vector<int>& tabt, const int& reqrank=-1, MPI_Comm comm=MPI_COMM_WORLD); // To be used with one different clusters
+	HMatrix(IMatrix<T>& mat,  const std::shared_ptr<Cluster<ClusterImpl>>& t, const std::vector<R3>& xt, const std::vector<int>& tabt, bool Symmetry=false, const int& reqrank=-1, MPI_Comm comm=MPI_COMM_WORLD); // To be used with one different clusters
 
 	// Constructor without tab and with precomputed cluster
-	HMatrix(IMatrix<T>&,  const std::shared_ptr<Cluster<ClusterImpl>>& t, const std::vector<R3>& xt, const int& reqrank=-1, MPI_Comm comm=MPI_COMM_WORLD); // To be used with one different clusters
+	HMatrix(IMatrix<T>&,  const std::shared_ptr<Cluster<ClusterImpl>>& t, const std::vector<R3>& xt, bool Symmetry=false, const int& reqrank=-1, MPI_Comm comm=MPI_COMM_WORLD); // To be used with one different clusters
 
   // Destructor
 	~HMatrix() {
@@ -244,7 +247,13 @@ void HMatrix<T, LowRankMatrix, ClusterImpl>::build(IMatrix<T>& mat, const std::v
 
 	// Construction arbre des blocs
 	time = MPI_Wtime();
-	Block<ClusterImpl>* B = BuildBlockTree(cluster_tree_t->get_root(),cluster_tree_s->get_root());
+	Block<ClusterImpl>* B=nullptr;
+	if (!symmetric){
+		B = BuildBlockTree(cluster_tree_t->get_root(),cluster_tree_s->get_root());
+	}
+	else{
+		B = BuildSymBlockTree(cluster_tree_t->get_root(),cluster_tree_s->get_root());
+	}
 	if (B !=nullptr) Tasks.push_back(B);
 	mytimes[1] = MPI_Wtime() - time;
 
@@ -264,26 +273,26 @@ void HMatrix<T, LowRankMatrix, ClusterImpl>::build(IMatrix<T>& mat, const std::v
 
 // Full constructor
 template<typename T, template<typename,typename> class LowRankMatrix, class ClusterImpl>
-HMatrix<T, LowRankMatrix, ClusterImpl>::HMatrix(IMatrix<T>& mat, const std::vector<R3>& xt, const std::vector<double>& rt, const std::vector<int>& tabt, const std::vector<double>& gt, const std::vector<R3>&xs, const std::vector<double>& rs, const std::vector<int>& tabs, const std::vector<double>& gs, const int& reqrank0, MPI_Comm comm0): nr(mat.nb_rows()),nc(mat.nb_cols()), cluster_tree_s(nullptr), cluster_tree_t(nullptr), reqrank(reqrank0) {
+HMatrix<T, LowRankMatrix, ClusterImpl>::HMatrix(IMatrix<T>& mat, const std::vector<R3>& xt, const std::vector<double>& rt, const std::vector<int>& tabt, const std::vector<double>& gt, const std::vector<R3>&xs, const std::vector<double>& rs, const std::vector<int>& tabs, const std::vector<double>& gs, const int& reqrank0, MPI_Comm comm0): nr(mat.nb_rows()),nc(mat.nb_cols()), symmetric(false), cluster_tree_s(nullptr), cluster_tree_t(nullptr), reqrank(reqrank0) {
 	this->build(mat, xt, rt, tabt, gt, xs, rs, tabs, gs,comm0);
 }
 
 // Constructor without rt and rs
 template<typename T, template<typename,typename> class LowRankMatrix, class ClusterImpl>
-HMatrix<T, LowRankMatrix, ClusterImpl>::HMatrix(IMatrix<T>& mat, const std::vector<R3>& xt, const std::vector<int>& tabt, const std::vector<double>& gt, const std::vector<R3>&xs, const std::vector<int>& tabs, const std::vector<double>& gs, const int& reqrank0, MPI_Comm comm0): nr(mat.nb_rows()),nc(mat.nb_cols()), cluster_tree_s(nullptr), cluster_tree_t(nullptr), reqrank(reqrank0) {
+HMatrix<T, LowRankMatrix, ClusterImpl>::HMatrix(IMatrix<T>& mat, const std::vector<R3>& xt, const std::vector<int>& tabt, const std::vector<double>& gt, const std::vector<R3>&xs, const std::vector<int>& tabs, const std::vector<double>& gs, const int& reqrank0, MPI_Comm comm0): nr(mat.nb_rows()),nc(mat.nb_cols()), symmetric(false), cluster_tree_s(nullptr), cluster_tree_t(nullptr), reqrank(reqrank0) {
 
 	this->build(mat, xt, std::vector<double>(xt.size(),0), tabt, gt, xs, std::vector<double>(xs.size(),0), tabs, gs, comm0);
 }
 
 // Constructor without gt and gs
 template<typename T, template<typename,typename> class LowRankMatrix, class ClusterImpl>
-HMatrix<T, LowRankMatrix, ClusterImpl>::HMatrix(IMatrix<T>& mat, const std::vector<R3>& xt, const std::vector<double>& rt, const std::vector<int>& tabt, const std::vector<R3>&xs, const std::vector<double>& rs, const std::vector<int>& tabs, const int& reqrank0, MPI_Comm comm0): nr(mat.nb_rows()),nc(mat.nb_cols()), cluster_tree_s(nullptr), cluster_tree_t(nullptr), reqrank(reqrank0) {
+HMatrix<T, LowRankMatrix, ClusterImpl>::HMatrix(IMatrix<T>& mat, const std::vector<R3>& xt, const std::vector<double>& rt, const std::vector<int>& tabt, const std::vector<R3>&xs, const std::vector<double>& rs, const std::vector<int>& tabs, const int& reqrank0, MPI_Comm comm0): nr(mat.nb_rows()),nc(mat.nb_cols()), symmetric(false), cluster_tree_s(nullptr), cluster_tree_t(nullptr), reqrank(reqrank0) {
 	this->build(mat, xt, rt, tabt, std::vector<double>(xt.size(),1), xs, rs, tabs, std::vector<double>(xs.size(),1), comm0);
 }
 
 // Constructor without tabt and tabs
 template<typename T, template<typename,typename> class LowRankMatrix, class ClusterImpl>
-HMatrix<T, LowRankMatrix, ClusterImpl>::HMatrix(IMatrix<T>& mat, const std::vector<R3>& xt, const std::vector<double>& rt, const std::vector<double>& gt, const std::vector<R3>&xs, const std::vector<double>& rs, const std::vector<double>& gs, const int& reqrank0, MPI_Comm comm0): nr(mat.nb_rows()),nc(mat.nb_cols()), cluster_tree_s(nullptr), cluster_tree_t(nullptr), reqrank(reqrank0) {
+HMatrix<T, LowRankMatrix, ClusterImpl>::HMatrix(IMatrix<T>& mat, const std::vector<R3>& xt, const std::vector<double>& rt, const std::vector<double>& gt, const std::vector<R3>&xs, const std::vector<double>& rs, const std::vector<double>& gs, const int& reqrank0, MPI_Comm comm0): nr(mat.nb_rows()),nc(mat.nb_cols()), symmetric(false), cluster_tree_s(nullptr), cluster_tree_t(nullptr), reqrank(reqrank0) {
 	std::vector<int> tabt(xt.size()), tabs(xs.size());
 	std::iota(tabt.begin(),tabt.end(),int(0));
 	std::iota(tabs.begin(),tabs.end(),int(0));
@@ -292,7 +301,7 @@ HMatrix<T, LowRankMatrix, ClusterImpl>::HMatrix(IMatrix<T>& mat, const std::vect
 
 // Constructor without radius, mass and tab
 template<typename T, template<typename,typename> class LowRankMatrix, class ClusterImpl>
-HMatrix<T, LowRankMatrix, ClusterImpl>::HMatrix(IMatrix<T>& mat, const std::vector<R3>& xt, const std::vector<R3>& xs, const int& reqrank0, MPI_Comm comm0): nr(mat.nb_rows()),nc(mat.nb_cols()), cluster_tree_s(nullptr), cluster_tree_t(nullptr), reqrank(reqrank0) {
+HMatrix<T, LowRankMatrix, ClusterImpl>::HMatrix(IMatrix<T>& mat, const std::vector<R3>& xt, const std::vector<R3>& xs, const int& reqrank0, MPI_Comm comm0): nr(mat.nb_rows()),nc(mat.nb_cols()), symmetric(false), cluster_tree_s(nullptr), cluster_tree_t(nullptr), reqrank(reqrank0) {
 	std::vector<int> tabt(xt.size()), tabs(xs.size());
 	std::iota(tabt.begin(),tabt.end(),int(0));
 	std::iota(tabs.begin(),tabs.end(),int(0));
@@ -321,7 +330,14 @@ void HMatrix<T, LowRankMatrix, ClusterImpl>::build(IMatrix<T>& mat,const std::ve
 
 	// Construction arbre des blocs
 	time = MPI_Wtime();
-	Block<ClusterImpl>* B = BuildBlockTree(cluster_tree_t->get_root(),cluster_tree_t->get_root());
+	Block<ClusterImpl>* B=nullptr;
+	if (!symmetric){
+		B = BuildBlockTree(cluster_tree_t->get_root(),cluster_tree_t->get_root());
+	}
+	else{
+		B = BuildSymBlockTree(cluster_tree_t->get_root(),cluster_tree_t->get_root());
+	}
+	
 	if (B !=nullptr) Tasks.push_back(B);
 	mytimes[1] = MPI_Wtime() - time;
 
@@ -343,7 +359,7 @@ void HMatrix<T, LowRankMatrix, ClusterImpl>::build(IMatrix<T>& mat,const std::ve
 // Full symetric constructor
 template<typename T, template<typename,typename> class LowRankMatrix, class ClusterImpl>
 HMatrix<T, LowRankMatrix, ClusterImpl>::HMatrix(IMatrix<T>& mat,
-		 const std::vector<R3>& xt, const std::vector<double>& rt, const std::vector<int>& tabt, const std::vector<double>& gt, const int& reqrank0,  MPI_Comm comm0):nr(mat.nb_rows()),nc(mat.nb_cols()), cluster_tree_s(nullptr),cluster_tree_t(nullptr),reqrank(reqrank0){
+		 const std::vector<R3>& xt, const std::vector<double>& rt, const std::vector<int>& tabt, const std::vector<double>& gt, bool symmetric0, const int& reqrank0,  MPI_Comm comm0):nr(mat.nb_rows()),nc(mat.nb_cols()), symmetric(symmetric0), cluster_tree_s(nullptr),cluster_tree_t(nullptr),reqrank(reqrank0){
 
 		this->build(mat,xt,rt,tabt,gt,comm0);
 }
@@ -351,7 +367,7 @@ HMatrix<T, LowRankMatrix, ClusterImpl>::HMatrix(IMatrix<T>& mat,
 // Symetric constructor without rt
 template<typename T, template<typename,typename> class LowRankMatrix, class ClusterImpl>
 HMatrix<T, LowRankMatrix, ClusterImpl>::HMatrix(IMatrix<T>& mat,
-		 const std::vector<R3>& xt, const std::vector<int>& tabt, const std::vector<double>& gt, const int& reqrank0,  MPI_Comm comm0):nr(mat.nb_rows()),nc(mat.nb_cols()), cluster_tree_s(nullptr),cluster_tree_t(nullptr),reqrank(reqrank0){
+		 const std::vector<R3>& xt, const std::vector<int>& tabt, const std::vector<double>& gt, bool symmetric0, const int& reqrank0,  MPI_Comm comm0):nr(mat.nb_rows()),nc(mat.nb_cols()), symmetric(symmetric0), cluster_tree_s(nullptr),cluster_tree_t(nullptr),reqrank(reqrank0){
 		this->build(mat,xt,std::vector<double>(xt.size(),0),tabt,gt,comm0);
 }
 
@@ -359,7 +375,7 @@ HMatrix<T, LowRankMatrix, ClusterImpl>::HMatrix(IMatrix<T>& mat,
 // Symetric constructor without tabt
 template<typename T, template<typename,typename> class LowRankMatrix, class ClusterImpl>
 HMatrix<T, LowRankMatrix, ClusterImpl>::HMatrix(IMatrix<T>& mat,
-		 const std::vector<R3>& xt, const std::vector<double>& rt, const std::vector<double>& gt, const int& reqrank0,  MPI_Comm comm0):nr(mat.nb_rows()),nc(mat.nb_cols()),cluster_tree_s(nullptr),cluster_tree_t(nullptr),reqrank(reqrank0){
+		 const std::vector<R3>& xt, const std::vector<double>& rt, const std::vector<double>& gt, bool symmetric0, const int& reqrank0,  MPI_Comm comm0):nr(mat.nb_rows()),nc(mat.nb_cols()), symmetric(symmetric0),cluster_tree_s(nullptr),cluster_tree_t(nullptr),reqrank(reqrank0){
 		std::vector<int> tabt(xt.size());
  		std::iota(tabt.begin(),tabt.end(),int(0));
 		this->build(mat,xt,rt,tabt,gt,comm0);
@@ -368,14 +384,14 @@ HMatrix<T, LowRankMatrix, ClusterImpl>::HMatrix(IMatrix<T>& mat,
 // Symetric constructor without gt
 template<typename T, template<typename,typename> class LowRankMatrix, class ClusterImpl>
 HMatrix<T, LowRankMatrix, ClusterImpl>::HMatrix(IMatrix<T>& mat,
-		 const std::vector<R3>& xt, const std::vector<double>& rt, const std::vector<int>& tabt, const int& reqrank0,  MPI_Comm comm0):nr(mat.nb_rows()),nc(mat.nb_cols()),cluster_tree_s(nullptr),cluster_tree_t(nullptr),reqrank(reqrank0), comm(comm0){
+		 const std::vector<R3>& xt, const std::vector<double>& rt, const std::vector<int>& tabt, bool symmetric0, const int& reqrank0,  MPI_Comm comm0):nr(mat.nb_rows()),nc(mat.nb_cols()), symmetric(symmetric0),cluster_tree_s(nullptr),cluster_tree_t(nullptr),reqrank(reqrank0), comm(comm0){
 		this->build(mat,xt,rt,tabt,std::vector<double>(xt.size(),1),comm0);
 }
 
 // Symetric constructor without rt, tabt and gt
 template<typename T, template<typename,typename> class LowRankMatrix, class ClusterImpl>
 HMatrix<T, LowRankMatrix, ClusterImpl>::HMatrix(IMatrix<T>& mat,
-		 const std::vector<R3>& xt, const int& reqrank0,  MPI_Comm comm0):nr(mat.nb_rows()),nc(mat.nb_cols()),cluster_tree_s(nullptr),cluster_tree_t(nullptr),reqrank(reqrank0){
+		 const std::vector<R3>& xt, bool symmetric0, const int& reqrank0,  MPI_Comm comm0):nr(mat.nb_rows()),nc(mat.nb_cols()), symmetric(symmetric0),cluster_tree_s(nullptr),cluster_tree_t(nullptr),reqrank(reqrank0){
 		std::vector<int> tabt(xt.size());
  		std::iota(tabt.begin(),tabt.end(),int(0));
 		this->build(mat,xt,std::vector<double>(xt.size(),0),tabt,std::vector<double>(xt.size(),1),comm0);
@@ -404,7 +420,14 @@ void HMatrix<T, LowRankMatrix, ClusterImpl>::build(IMatrix<T>& mat, const std::v
 
 	// Construction arbre des blocs
 	time = MPI_Wtime();
-	Block<ClusterImpl>* B = BuildBlockTree(cluster_tree_t->get_root(),cluster_tree_s->get_root());
+	Block<ClusterImpl>* B=nullptr;
+	if (!symmetric){
+		B = BuildBlockTree(cluster_tree_t->get_root(),cluster_tree_s->get_root());
+	}
+	else{
+		B = BuildSymBlockTree(cluster_tree_t->get_root(),cluster_tree_s->get_root());
+	}
+	
 	if (B !=nullptr) Tasks.push_back(B);
 	mytimes[1] = MPI_Wtime() - time;
 
@@ -425,13 +448,13 @@ void HMatrix<T, LowRankMatrix, ClusterImpl>::build(IMatrix<T>& mat, const std::v
 
 // Full constructor with precomputed clusters
 template<typename T, template<typename,typename> class LowRankMatrix, class ClusterImpl>
-HMatrix<T, LowRankMatrix, ClusterImpl>::HMatrix(IMatrix<T>& mat,  const std::shared_ptr<Cluster<ClusterImpl>>& t, const std::vector<R3>& xt, const std::vector<int>& tabt, const std::shared_ptr<Cluster<ClusterImpl>>& s, const std::vector<R3>&xs, const std::vector<int>& tabs, const int& reqrank0, MPI_Comm comm0): nr(mat.nb_rows()),nc(mat.nb_cols()), cluster_tree_t(t), cluster_tree_s(s), reqrank(reqrank0) {
+HMatrix<T, LowRankMatrix, ClusterImpl>::HMatrix(IMatrix<T>& mat,  const std::shared_ptr<Cluster<ClusterImpl>>& t, const std::vector<R3>& xt, const std::vector<int>& tabt, const std::shared_ptr<Cluster<ClusterImpl>>& s, const std::vector<R3>&xs, const std::vector<int>& tabs, bool symmetric0, const int& reqrank0, MPI_Comm comm0): nr(mat.nb_rows()),nc(mat.nb_cols()), symmetric(symmetric0), cluster_tree_t(t), cluster_tree_s(s), reqrank(reqrank0) {
 	this->build(mat, xt, tabt, xs, tabs, comm0);
 }
 
 // Constructor without tabt and tabs
 template<typename T, template<typename,typename> class LowRankMatrix, class ClusterImpl>
-HMatrix<T, LowRankMatrix, ClusterImpl>::HMatrix(IMatrix<T>& mat, const std::shared_ptr<Cluster<ClusterImpl>>& t, const std::vector<R3>& xt, const std::shared_ptr<Cluster<ClusterImpl>>& s, const std::vector<R3>&xs, const int& reqrank0, MPI_Comm comm0): nr(mat.nb_rows()),nc(mat.nb_cols()), cluster_tree_t(t), cluster_tree_s(s), reqrank(reqrank0) {
+HMatrix<T, LowRankMatrix, ClusterImpl>::HMatrix(IMatrix<T>& mat, const std::shared_ptr<Cluster<ClusterImpl>>& t, const std::vector<R3>& xt, const std::shared_ptr<Cluster<ClusterImpl>>& s, const std::vector<R3>&xs, bool symmetric0, const int& reqrank0, MPI_Comm comm0): nr(mat.nb_rows()),nc(mat.nb_cols()), symmetric(symmetric0), cluster_tree_t(t), cluster_tree_s(s), reqrank(reqrank0) {
 	std::vector<int> tabt(xt.size()), tabs(xs.size());
 	std::iota(tabt.begin(),tabt.end(),int(0));
 	std::iota(tabs.begin(),tabs.end(),int(0));
@@ -441,14 +464,14 @@ HMatrix<T, LowRankMatrix, ClusterImpl>::HMatrix(IMatrix<T>& mat, const std::shar
 
 // Full symetric constructor
 template<typename T, template<typename,typename> class LowRankMatrix, class ClusterImpl>
-HMatrix<T, LowRankMatrix, ClusterImpl>::HMatrix(IMatrix<T>& mat, const std::shared_ptr<Cluster<ClusterImpl>>& t, const std::vector<R3>& xt, const std::vector<int>& tabt, const int& reqrank0,  MPI_Comm comm0):nr(mat.nb_rows()),nc(mat.nb_cols()), cluster_tree_t(t), cluster_tree_s(t), reqrank(reqrank0){
+HMatrix<T, LowRankMatrix, ClusterImpl>::HMatrix(IMatrix<T>& mat, const std::shared_ptr<Cluster<ClusterImpl>>& t, const std::vector<R3>& xt, const std::vector<int>& tabt, bool symmetric0, const int& reqrank0,  MPI_Comm comm0):nr(mat.nb_rows()),nc(mat.nb_cols()), symmetric(symmetric0), cluster_tree_t(t), cluster_tree_s(t), reqrank(reqrank0){
 
 		this->build(mat,xt,tabt,xt,tabt,comm0);
 }
 
 // Symetric constructor without tabt
 template<typename T, template<typename,typename> class LowRankMatrix, class ClusterImpl>
-HMatrix<T, LowRankMatrix, ClusterImpl>::HMatrix(IMatrix<T>& mat, const std::shared_ptr<Cluster<ClusterImpl>>& t, const std::vector<R3>& xt, const int& reqrank0,  MPI_Comm comm0):nr(mat.nb_rows()),nc(mat.nb_cols()), cluster_tree_t(t), cluster_tree_s(t), reqrank(reqrank0){
+HMatrix<T, LowRankMatrix, ClusterImpl>::HMatrix(IMatrix<T>& mat, const std::shared_ptr<Cluster<ClusterImpl>>& t, const std::vector<R3>& xt, bool symmetric0, const int& reqrank0,  MPI_Comm comm0):nr(mat.nb_rows()),nc(mat.nb_cols()), symmetric(symmetric0), cluster_tree_t(t), cluster_tree_s(t), reqrank(reqrank0){
 	std::vector<int> tabt(xt.size());
 	std::iota(tabt.begin(),tabt.end(),int(0));
 		this->build(mat,xt,tabt,xt,tabt,comm0);
@@ -464,47 +487,34 @@ Block<ClusterImpl>* HMatrix<T, LowRankMatrix, ClusterImpl>::BuildBlockTree(const
 	Block<ClusterImpl>* B = new Block<ClusterImpl>(t,s);
 	int bsize = t.get_size()*s.get_size();
 	B->ComputeAdmissibility();
-	if( B->IsAdmissible() && t.get_rank()>=0 && t.get_depth()>=GetMinTargetDepth() && s.get_depth()>=GetMinSourceDepth()){
+	if( B->IsAdmissible() && t.get_rank()>=0 && t.get_depth()>=GetMinTargetDepth() && s.get_depth()>=GetMinSourceDepth() && (!symmetric || (t.get_offset()==s.get_offset() && t.get_size()==s.get_size()) || (t.get_offset()!=s.get_offset() && ( (t.get_offset()<s.get_offset() && s.get_offset()-t.get_offset() >= t.get_size()) || (s.get_offset() < t.get_offset() && t.get_offset() -s.get_offset() >= s.get_size()) )) )){
 		Tasks.push_back(B);
 		return nullptr;
 	}
 	else if( s.IsLeaf() ){
-				if( t.IsLeaf() ){
-					return B;
-				}
-				else{
-					std::vector<Block<ClusterImpl>*> Blocks(t.get_nb_sons());
-					for (int p=0; p <t.get_nb_sons();p++){
-						Blocks[p] = BuildBlockTree(t.get_son(p),s);
-					}
+		if( t.IsLeaf() ){
+			return B;
+		}
+		else{
+			std::vector<Block<ClusterImpl>*> Blocks(t.get_nb_sons());
+			for (int p=0; p <t.get_nb_sons();p++){
+				Blocks[p] = BuildBlockTree(t.get_son(p),s);
+			}
 
-					if ((bsize <= maxblocksize) && std::all_of(Blocks.begin(), Blocks.end(),[](Block<ClusterImpl>* block){return block!=nullptr;} ) && t.get_rank()>=0 && t.get_depth()>=GetMinTargetDepth() && s.get_depth()>=GetMinSourceDepth()) {
-						for (auto block : Blocks){
-							delete block;
-						} 
-						return B;
-					}
-					else{
-						for (auto block : Blocks){
-							if (block !=nullptr) Tasks.push_back(block);
-						}
-						delete B; 
-						return nullptr;
-					}
-					
-
-					// if ((bsize <= maxblocksize) && (r1 !=nullptr) && (r2 !=nullptr) && t.get_rank()>=0 && t.get_depth()>=GetMinTargetDepth() && s.get_depth()>=GetMinSourceDepth()) {
-					// 	delete r1;
-					// 	delete r2;
-					// 	return B;
-					// }
-					// else {
-					// 	if (r1 !=nullptr) Tasks.push_back(r1);
-					// 	if (r2 !=nullptr) Tasks.push_back(r2);
-                    //     delete B;
-					// 	return nullptr;
-					// }
+			if ((bsize <= maxblocksize) && std::all_of(Blocks.begin(), Blocks.end(),[](Block<ClusterImpl>* block){return block!=nullptr;} ) && t.get_rank()>=0 && t.get_depth()>=GetMinTargetDepth() && s.get_depth()>=GetMinSourceDepth() && (!symmetric || (t.get_offset()==s.get_offset() && t.get_size()==s.get_size()) || (t.get_offset()!=s.get_offset() && ( (t.get_offset()<s.get_offset() && s.get_offset()-t.get_offset() >= t.get_size()) || (s.get_offset() < t.get_offset() && t.get_offset() -s.get_offset() >= s.get_size()) )) )) {
+				for (auto block : Blocks){
+					delete block;
+				} 
+				return B;
+			}
+			else{
+				for (auto block : Blocks){
+					if (block !=nullptr) Tasks.push_back(block);
 				}
+				delete B; 
+				return nullptr;
+			}
+		}
 	}
 	else{
 		if( t.IsLeaf() ){
@@ -513,7 +523,7 @@ Block<ClusterImpl>* HMatrix<T, LowRankMatrix, ClusterImpl>::BuildBlockTree(const
 				Blocks[p] = BuildBlockTree(t,s.get_son(p));
 			}
 
-			if ((bsize <= maxblocksize) && std::all_of(Blocks.begin(), Blocks.end(),[](Block<ClusterImpl>* block){return block!=nullptr;} ) && t.get_rank()>=0 && t.get_depth()>=GetMinTargetDepth() && s.get_depth()>=GetMinSourceDepth()) {
+			if ((bsize <= maxblocksize) && std::all_of(Blocks.begin(), Blocks.end(),[](Block<ClusterImpl>* block){return block!=nullptr;} ) && t.get_rank()>=0 && t.get_depth()>=GetMinTargetDepth() && s.get_depth()>=GetMinSourceDepth()&& (!symmetric || (t.get_offset()==s.get_offset() && t.get_size()==s.get_size()) || (t.get_offset()!=s.get_offset() && ( (t.get_offset()<s.get_offset() && s.get_offset()-t.get_offset() >= t.get_size()) || (s.get_offset() < t.get_offset() && t.get_offset() -s.get_offset() >= s.get_size()) )) )) {
 				for (auto block : Blocks){
 					delete block;
 				} 
@@ -528,34 +538,12 @@ Block<ClusterImpl>* HMatrix<T, LowRankMatrix, ClusterImpl>::BuildBlockTree(const
 			}
 		}
 		else{
-
-				// // Other kind of partition
-				// Block* r1 = BuildBlockTree(t.get_son(0),s.get_son(0));
-				// Block* r2 = BuildBlockTree(t.get_son(1),s.get_son(1));
-				// Block* r3 = BuildBlockTree(t.get_son(1),s.get_son(0));
-				// Block* r4 = BuildBlockTree(t.get_son(0),s.get_son(1));
-				// if ((bsize <= maxblocksize) && (r1 !=nullptr) && (r2 !=nullptr) && (r3 !=nullptr) && (r4 !=nullptr) && t.get_rank()>=0 && t.get_depth()>=GetMinTargetDepth() && s.get_depth()>=GetMinSourceDepth()) {
-				// 	delete r1;
-				// 	delete r2;
-				// 	delete r3;
-				// 	delete r4;
-				// 	return B;
-				// }
-				// else {
-				// 	if (r1 !=nullptr) Tasks.push_back(r1);
-				// 	if (r2 !=nullptr) Tasks.push_back(r2);
-				// 	if (r3 !=nullptr) Tasks.push_back(r3);
-				// 	if (r4 !=nullptr) Tasks.push_back(r4);
-				// 	returnnullptr;
-				// }
-
-
 			if (t.get_size()>s.get_size()){
 				std::vector<Block<ClusterImpl>*> Blocks(t.get_nb_sons());
 				for (int p=0; p <t.get_nb_sons();p++){
 					Blocks[p] = BuildBlockTree(t.get_son(p),s);
 				}
-				if ((bsize <= maxblocksize) && std::all_of(Blocks.begin(), Blocks.end(),[](Block<ClusterImpl>* block){return block!=nullptr;} ) && t.get_rank()>=0 && t.get_depth()>=GetMinTargetDepth() && s.get_depth()>=GetMinSourceDepth()) {
+				if ((bsize <= maxblocksize) && std::all_of(Blocks.begin(), Blocks.end(),[](Block<ClusterImpl>* block){return block!=nullptr;} ) && t.get_rank()>=0 && t.get_depth()>=GetMinTargetDepth() && s.get_depth()>=GetMinSourceDepth()&& (!symmetric || (t.get_offset()==s.get_offset() && t.get_size()==s.get_size()) || (t.get_offset()!=s.get_offset() && ( (t.get_offset()<s.get_offset() && s.get_offset()-t.get_offset() >= t.get_size()) || (s.get_offset() < t.get_offset() && t.get_offset() -s.get_offset() >= s.get_size()) )) )) {
 					for (auto block : Blocks){
 						delete block;
 					} 
@@ -574,7 +562,7 @@ Block<ClusterImpl>* HMatrix<T, LowRankMatrix, ClusterImpl>::BuildBlockTree(const
 				for (int p=0; p <s.get_nb_sons();p++){
 					Blocks[p] = BuildBlockTree(t,s.get_son(p));
 				}
-				if ((bsize <= maxblocksize) && std::all_of(Blocks.begin(), Blocks.end(),[](Block<ClusterImpl>* block){return block!=nullptr;} ) && t.get_rank()>=0 && t.get_depth()>=GetMinTargetDepth() && s.get_depth()>=GetMinSourceDepth()) {
+				if ((bsize <= maxblocksize) && std::all_of(Blocks.begin(), Blocks.end(),[](Block<ClusterImpl>* block){return block!=nullptr;} ) && t.get_rank()>=0 && t.get_depth()>=GetMinTargetDepth() && s.get_depth()>=GetMinSourceDepth()&& (!symmetric || (t.get_offset()==s.get_offset() && t.get_size()==s.get_size()) || (t.get_offset()!=s.get_offset() && ( (t.get_offset()<s.get_offset() && s.get_offset()-t.get_offset() >= t.get_size()) || (s.get_offset() < t.get_offset() && t.get_offset() -s.get_offset() >= s.get_size()) )) )) {
 					for (auto block : Blocks){
 						delete block;
 					} 
@@ -592,19 +580,106 @@ Block<ClusterImpl>* HMatrix<T, LowRankMatrix, ClusterImpl>::BuildBlockTree(const
 	}
 }
 
+template<typename T, template<typename,typename> class LowRankMatrix, class ClusterImpl>
+Block<ClusterImpl>* HMatrix<T, LowRankMatrix, ClusterImpl>::BuildSymBlockTree(const Cluster<ClusterImpl>& t, const Cluster<ClusterImpl>& s){
+	
+	Block<ClusterImpl>* B = new Block<ClusterImpl>(t,s);
+	int bsize = t.get_size()*s.get_size();
+	B->ComputeAdmissibility();
+	if( B->IsAdmissible() && t.get_rank()>=0 && t.get_depth()>=GetMinTargetDepth() && s.get_depth()>=GetMinSourceDepth() && (!symmetric || (t.get_offset()==s.get_offset() && t.get_size()==s.get_size()) || (t.get_offset()!=s.get_offset() && ( (t.get_offset()<s.get_offset() && s.get_offset()-t.get_offset() >= t.get_size()) || (s.get_offset() < t.get_offset() && t.get_offset() -s.get_offset() >= s.get_size()) )) )){
+		Tasks.push_back(B);
+		return nullptr;
+	}
+	else if( s.IsLeaf() ){
+		if( t.IsLeaf() ){
+			return B;
+		}
+		else{
+			std::vector<Block<ClusterImpl>*> Blocks(t.get_nb_sons());
+			for (int p=0; p <t.get_nb_sons();p++){
+				Blocks[p] = BuildSymBlockTree(t.get_son(p),s);
+			}
+
+			if ((bsize <= maxblocksize) && std::all_of(Blocks.begin(), Blocks.end(),[](Block<ClusterImpl>* block){return block!=nullptr;} ) && t.get_rank()>=0 && t.get_depth()>=GetMinTargetDepth() && s.get_depth()>=GetMinSourceDepth() && (!symmetric || (t.get_offset()==s.get_offset() && t.get_size()==s.get_size()) || (t.get_offset()!=s.get_offset() && ( (t.get_offset()<s.get_offset() && s.get_offset()-t.get_offset() >= t.get_size()) || (s.get_offset() < t.get_offset() && t.get_offset() -s.get_offset() >= s.get_size()) )) )) {
+				for (auto block : Blocks){
+					delete block;
+				} 
+				return B;
+			}
+			else{
+				for (auto block : Blocks){
+					if (block !=nullptr) Tasks.push_back(block);
+				}
+				delete B; 
+				return nullptr;
+			}
+		}
+	}
+	else{
+		if( t.IsLeaf() ){
+			std::vector<Block<ClusterImpl>*> Blocks(s.get_nb_sons());
+			for (int p=0; p <s.get_nb_sons();p++){
+				Blocks[p] = BuildSymBlockTree(t,s.get_son(p));
+			}
+
+			if ((bsize <= maxblocksize) && std::all_of(Blocks.begin(), Blocks.end(),[](Block<ClusterImpl>* block){return block!=nullptr;} ) && t.get_rank()>=0 && t.get_depth()>=GetMinTargetDepth() && s.get_depth()>=GetMinSourceDepth()&& (!symmetric || (t.get_offset()==s.get_offset() && t.get_size()==s.get_size()) || (t.get_offset()!=s.get_offset() && ( (t.get_offset()<s.get_offset() && s.get_offset()-t.get_offset() >= t.get_size()) || (s.get_offset() < t.get_offset() && t.get_offset() -s.get_offset() >= s.get_size()) )) )) {
+				for (auto block : Blocks){
+					delete block;
+				} 
+				return B;
+			}
+			else{
+				for (auto block : Blocks){
+					if (block !=nullptr) Tasks.push_back(block);
+				} 
+				delete B;
+				return nullptr;
+			}
+		}
+		else{
+			std::vector<Block<ClusterImpl>*> Blocks(t.get_nb_sons()*s.get_nb_sons());
+			for (int p=0; p <t.get_nb_sons();p++){
+				for (int l=0; l <s.get_nb_sons();l++){
+					Blocks[p+l*t.get_nb_sons()] = BuildSymBlockTree(t.get_son(p),s.get_son(l));
+				}
+			}
+			if ((bsize <= maxblocksize) && std::all_of(Blocks.begin(), Blocks.end(),[](Block<ClusterImpl>* block){return block!=nullptr;} ) && t.get_rank()>=0 && t.get_depth()>=GetMinTargetDepth() && s.get_depth()>=GetMinSourceDepth()&& (!symmetric || (t.get_offset()==s.get_offset() && t.get_size()==s.get_size()) || (t.get_offset()!=s.get_offset() && ( (t.get_offset()<s.get_offset() && s.get_offset()-t.get_offset() >= t.get_size()) || (s.get_offset() < t.get_offset() && t.get_offset() -s.get_offset() >= s.get_size()) )) )) {
+				for (auto block : Blocks){
+					delete block;
+				} 
+				return B;
+			}
+			else{
+				for (auto block : Blocks){
+					if (block !=nullptr) Tasks.push_back(block);
+				} 
+				delete B;
+				return nullptr;
+			}
+		}
+	}
+}
+
 // Scatter tasks
 template<typename T, template<typename,typename> class LowRankMatrix, class ClusterImpl>
 void HMatrix<T, LowRankMatrix, ClusterImpl>::ScatterTasks(){
 
-	// std::cout << "Tasks : "<<Tasks.size()<<std::endl;
-  for(int b=0; b<Tasks.size(); b++){
-    	//if (b%sizeWorld == rankWorld)
-    if ((*(Tasks[b])).tgt_().get_rank() == cluster_tree_t->get_local_cluster().get_rank()){
-    		MyBlocks.push_back(Tasks[b]);
+
+  	for(int b=0; b<Tasks.size(); b++){
+    	if ((*(Tasks[b])).tgt_().get_rank() == cluster_tree_t->get_local_cluster().get_rank()){
+			if (symmetric)
+			{
+				if (((*(Tasks[b])).src_().get_offset()<=(*(Tasks[b])).tgt_().get_offset() || (*(Tasks[b])).src_().get_offset()>=local_offset+local_size)){
+    				MyBlocks.push_back(Tasks[b]);
+				}
+			}
+			else{
+				MyBlocks.push_back(Tasks[b]);
+			}
 		}
 	}
     std::sort(MyBlocks.begin(),MyBlocks.end(),comp_block());
-	// std::cout << "rank : "<<rankWorld<<" "<<"Block : "<<MyBlocks.size() <<std::endl;
+
 }
 
 // Compute blocks recursively
@@ -633,77 +708,77 @@ void HMatrix<T, LowRankMatrix, ClusterImpl>::ComputeBlocks(IMatrix<T>& mat, cons
                     delete MyFarFieldMats_local.back();
             		MyFarFieldMats_local.pop_back();
 
-					AddNearFieldMat(mat,t,s,MyNearFieldMats_local);
-            		// if( s.IsLeaf() ){
-            		// 	if( t.IsLeaf() ){
-            		// 		// MyNearFieldMats.emplace_back(mat,I,J);
-            		// 		AddNearFieldMat(mat,t,s,MyNearFieldMats_local);
-            		// 	}
-            		// 	else{
-            		// 		bool b1 = UpdateBlocks(mat,t.get_son(0),s,xt,tabt,xs,tabs,MyNearFieldMats_local,MyFarFieldMats_local);
-            		// 		bool b2 = UpdateBlocks(mat,t.get_son(1),s,xt,tabt,xs,tabs,MyNearFieldMats_local,MyFarFieldMats_local);
-            		// 		if ((b1 != true) && (b2 != true))
-            		// 			// MyNearFieldMats.emplace_back(mat,I,J);
-            		// 			AddNearFieldMat(mat,t,s,MyNearFieldMats_local);
-            		// 		else {
-            		// 			if (b1 != true)
-            		// 				// 	MyNearFieldMats.emplace_back(mat,t.get_son(0).get_num(),J);
-            		// 				AddNearFieldMat(mat,t.get_son(0),s,MyNearFieldMats_local);
-            		// 			if (b2 != true)
-            		// 				// 	MyNearFieldMats.emplace_back(mat,t.get_son(1).get_num(),J);
-            		// 				AddNearFieldMat(mat,t.get_son(1),s,MyNearFieldMats_local);
-            		// 		}
-            		// 	}
-            		// }
-            		// else{
-            		// 	if( t.IsLeaf() ){
-            		// 		bool b3 = UpdateBlocks(mat,t,s.get_son(0),xt,tabt,xs,tabs,MyNearFieldMats_local,MyFarFieldMats_local);
-            		// 		bool b4 = UpdateBlocks(mat,t,s.get_son(1),xt,tabt,xs,tabs,MyNearFieldMats_local,MyFarFieldMats_local);
-            		// 		if ((b3 != true) && (b4 != true))
-            		// 			// MyNearFieldMats.emplace_back(mat,I,J);
-            		// 			AddNearFieldMat(mat,t,s,MyNearFieldMats_local);
-            		// 		else {
-            		// 			if (b3 != true)
-            		// 				// 	MyNearFieldMats.emplace_back(mat,I,s.get_son(0).get_num());
-            		// 				AddNearFieldMat(mat,t,s.get_son(0),MyNearFieldMats_local);
-            		// 			if (b4 != true)
-            		// 				// 	MyNearFieldMats.emplace_back(mat,I,s.get_son(1).get_num());
-            		// 				AddNearFieldMat(mat,t,s.get_son(1),MyNearFieldMats_local);
-            		// 		}
-            		// 	}
-            		// 	else{
-            		// 		if (t.get_size()>s.get_size()){
-            		// 			bool b1 = UpdateBlocks(mat,t.get_son(0),s,xt,tabt,xs,tabs,MyNearFieldMats_local,MyFarFieldMats_local);
-            		// 			bool b2 = UpdateBlocks(mat,t.get_son(1),s,xt,tabt,xs,tabs,MyNearFieldMats_local,MyFarFieldMats_local);
-            		// 			if ((b1 != true) && (b2 != true))
-            		// 				// MyNearFieldMats.emplace_back(mat,I,J);
-            		// 				AddNearFieldMat(mat,t,s,MyNearFieldMats_local);
-            		// 			else {
-            		// 				if (b1 != true)
-            		// 						// MyNearFieldMats.emplace_back(mat,t.get_son(0).get_num(),J);
-            		// 						AddNearFieldMat(mat,t.get_son(0),s,MyNearFieldMats_local);
-            		// 				if (b2 != true)
-            		// 						// MyNearFieldMats.emplace_back(mat,t.get_son(1).get_num(),J);
-            		// 						AddNearFieldMat(mat,t.get_son(1),s,MyNearFieldMats_local);
-            		// 			}
-            		// 		}
-            		// 		else{
-            		// 			bool b3 = UpdateBlocks(mat,t,s.get_son(0),xt,tabt,xs,tabs,MyNearFieldMats_local,MyFarFieldMats_local);
-            		// 			bool b4 = UpdateBlocks(mat,t,s.get_son(1),xt,tabt,xs,tabs,MyNearFieldMats_local,MyFarFieldMats_local);
-            		// 			if ((b3 != true) && (b4 != true))
-            		// 				// MyNearFieldMats.emplace_back(mat,I,J);
-            		// 				AddNearFieldMat(mat,t,s,MyNearFieldMats_local);
-            		// 			else {
-            		// 				if (b3 != true)
-            		// 						// MyNearFieldMats.emplace_back(mat,I,s.get_son(0).get_num());
-            		// 						AddNearFieldMat(mat,t,s.get_son(0),MyNearFieldMats_local);
-            		// 				if (b4 != true)
-            		// 						// MyNearFieldMats.emplace_back(mat,I,s.get_son(1).get_num());
-            		// 						AddNearFieldMat(mat,t,s.get_son(1),MyNearFieldMats_local);
-            		// 			}
-            		// 		}
-            		// 	}
-            		// }
+					// AddNearFieldMat(mat,t,s,MyNearFieldMats_local);
+            		if( s.IsLeaf() ){
+            			if( t.IsLeaf() ){
+            				// MyNearFieldMats.emplace_back(mat,I,J);
+            				AddNearFieldMat(mat,t,s,MyNearFieldMats_local);
+            			}
+            			else{
+            				bool b1 = UpdateBlocks(mat,t.get_son(0),s,xt,tabt,xs,tabs,MyNearFieldMats_local,MyFarFieldMats_local);
+            				bool b2 = UpdateBlocks(mat,t.get_son(1),s,xt,tabt,xs,tabs,MyNearFieldMats_local,MyFarFieldMats_local);
+            				if ((b1 != true) && (b2 != true))
+            					// MyNearFieldMats.emplace_back(mat,I,J);
+            					AddNearFieldMat(mat,t,s,MyNearFieldMats_local);
+            				else {
+            					if (b1 != true)
+            						// 	MyNearFieldMats.emplace_back(mat,t.get_son(0).get_num(),J);
+            						AddNearFieldMat(mat,t.get_son(0),s,MyNearFieldMats_local);
+            					if (b2 != true)
+            						// 	MyNearFieldMats.emplace_back(mat,t.get_son(1).get_num(),J);
+            						AddNearFieldMat(mat,t.get_son(1),s,MyNearFieldMats_local);
+            				}
+            			}
+            		}
+            		else{
+            			if( t.IsLeaf() ){
+            				bool b3 = UpdateBlocks(mat,t,s.get_son(0),xt,tabt,xs,tabs,MyNearFieldMats_local,MyFarFieldMats_local);
+            				bool b4 = UpdateBlocks(mat,t,s.get_son(1),xt,tabt,xs,tabs,MyNearFieldMats_local,MyFarFieldMats_local);
+            				if ((b3 != true) && (b4 != true))
+            					// MyNearFieldMats.emplace_back(mat,I,J);
+            					AddNearFieldMat(mat,t,s,MyNearFieldMats_local);
+            				else {
+            					if (b3 != true)
+            						// 	MyNearFieldMats.emplace_back(mat,I,s.get_son(0).get_num());
+            						AddNearFieldMat(mat,t,s.get_son(0),MyNearFieldMats_local);
+            					if (b4 != true)
+            						// 	MyNearFieldMats.emplace_back(mat,I,s.get_son(1).get_num());
+            						AddNearFieldMat(mat,t,s.get_son(1),MyNearFieldMats_local);
+            				}
+            			}
+            			else{
+            				if (t.get_size()>s.get_size()){
+            					bool b1 = UpdateBlocks(mat,t.get_son(0),s,xt,tabt,xs,tabs,MyNearFieldMats_local,MyFarFieldMats_local);
+            					bool b2 = UpdateBlocks(mat,t.get_son(1),s,xt,tabt,xs,tabs,MyNearFieldMats_local,MyFarFieldMats_local);
+            					if ((b1 != true) && (b2 != true))
+            						// MyNearFieldMats.emplace_back(mat,I,J);
+            						AddNearFieldMat(mat,t,s,MyNearFieldMats_local);
+            					else {
+            						if (b1 != true)
+            								// MyNearFieldMats.emplace_back(mat,t.get_son(0).get_num(),J);
+            								AddNearFieldMat(mat,t.get_son(0),s,MyNearFieldMats_local);
+            						if (b2 != true)
+            								// MyNearFieldMats.emplace_back(mat,t.get_son(1).get_num(),J);
+            								AddNearFieldMat(mat,t.get_son(1),s,MyNearFieldMats_local);
+            					}
+            				}
+            				else{
+            					bool b3 = UpdateBlocks(mat,t,s.get_son(0),xt,tabt,xs,tabs,MyNearFieldMats_local,MyFarFieldMats_local);
+            					bool b4 = UpdateBlocks(mat,t,s.get_son(1),xt,tabt,xs,tabs,MyNearFieldMats_local,MyFarFieldMats_local);
+            					if ((b3 != true) && (b4 != true))
+            						// MyNearFieldMats.emplace_back(mat,I,J);
+            						AddNearFieldMat(mat,t,s,MyNearFieldMats_local);
+            					else {
+            						if (b3 != true)
+            								// MyNearFieldMats.emplace_back(mat,I,s.get_son(0).get_num());
+            								AddNearFieldMat(mat,t,s.get_son(0),MyNearFieldMats_local);
+            						if (b4 != true)
+            								// MyNearFieldMats.emplace_back(mat,I,s.get_son(1).get_num());
+            								AddNearFieldMat(mat,t,s.get_son(1),MyNearFieldMats_local);
+            					}
+            				}
+            			}
+            		}
             	}
             }
             else {
@@ -968,8 +1043,9 @@ void HMatrix<T, LowRankMatrix, ClusterImpl>::mymvprod_local(const T* const in, T
     		int offset_i     = M.get_offset_i();
     		int offset_j     = M.get_offset_j();
 
-    		M.add_mvprod_row_major(in+offset_j*mu,temp.data()+(offset_i-local_offset)*mu,mu);
-
+			if (!symmetric || offset_i!=offset_j){// remove strictly diagonal blocks
+    			M.add_mvprod_row_major(in+offset_j*mu,temp.data()+(offset_i-local_offset)*mu,mu);
+			}
     	}
     	// Contribution champ proche
         #if _OPENMP
@@ -980,8 +1056,63 @@ void HMatrix<T, LowRankMatrix, ClusterImpl>::mymvprod_local(const T* const in, T
     		int offset_i     = M.get_offset_i();
     		int offset_j     = M.get_offset_j();
 
-    		M.add_mvprod_row_major(in+offset_j*mu,temp.data()+(offset_i-local_offset)*mu,mu);
+			if (!symmetric || offset_i!=offset_j){// remove strictly diagonal blocks
+    			M.add_mvprod_row_major(in+offset_j*mu,temp.data()+(offset_i-local_offset)*mu,mu);
+			}
     	}
+
+		// Symmetric part of the diagonal part
+		if (symmetric){
+			#if _OPENMP
+			#pragma omp for schedule(guided)
+			#endif
+			for(int b=0; b<MyDiagFarFieldMats.size(); b++){
+				const LowRankMatrix<T,ClusterImpl>&  M  = *(MyDiagFarFieldMats[b]);
+				int offset_i     = M.get_offset_j();
+				int offset_j     = M.get_offset_i();
+
+				if (offset_i!=offset_j){// remove strictly diagonal blocks
+					M.add_mvprod_row_major(in+offset_j*mu,temp.data()+(offset_i-local_offset)*mu,mu,'C');
+				}
+
+			}
+			// #if _OPENMP
+			// #pragma omp for schedule(guided)
+			// #endif
+			// for(int b=0; b<MyStrictlyDiagFarFieldMats.size(); b++){
+			// 	const LowRankMatrix<T,ClusterImpl>&  M  = *(MyStrictlyDiagFarFieldMats[b]);
+			// 	int offset_i     = M.get_offset_j();
+			// 	int offset_j     = M.get_offset_i();
+
+			// 	M.add_mvprod_row_major_sym(in+offset_j*mu,temp.data()+(offset_i-local_offset)*mu,mu);
+
+			// }
+
+			// Contribution champ proche
+			#if _OPENMP
+			#pragma omp for schedule(guided)
+			#endif
+			for(int b=0; b<MyDiagNearFieldMats.size(); b++){
+				const SubMatrix<T>&  M  = *(MyDiagNearFieldMats[b]);
+				int offset_i     = M.get_offset_j();
+				int offset_j     = M.get_offset_i();
+				
+				if (offset_i!=offset_j){// remove strictly diagonal blocks
+					M.add_mvprod_row_major(in+offset_j*mu,temp.data()+(offset_i-local_offset)*mu,mu,'C');
+				}
+			}
+
+			#if _OPENMP
+			#pragma omp for schedule(guided)
+			#endif
+			for(int b=0; b<MyStrictlyDiagNearFieldMats.size(); b++){
+				const SubMatrix<T>&  M  = *(MyStrictlyDiagNearFieldMats[b]);
+				int offset_i     = M.get_offset_j();
+				int offset_j     = M.get_offset_i();
+				M.add_mvprod_row_major_sym(in+offset_j*mu,temp.data()+(offset_i-local_offset)*mu,mu);
+			}
+		}
+    	
         #if _OPENMP
         #pragma omp critical
         #endif

@@ -8,18 +8,20 @@ using namespace htool;
 
 class MyMatrix: public IMatrix<double>{
 	const vector<R3>& p1;
-	const vector<R3>& p2;
 
 public:
-	MyMatrix(const vector<R3>& p10,const vector<R3>& p20 ):IMatrix(p10.size(),p20.size()),p1(p10),p2(p20) {}
+	MyMatrix(const vector<R3>& p10 ):IMatrix(p10.size(),p10.size()),p1(p10) {}
 
-	double get_coef(const int& i, const int& j)const {return 1./(4*M_PI*norm2(p1[i]-p2[j]));}
+	double get_coef(const int& i, const int& j)const {
+		return 1./(4*M_PI*(1+norm2(p1[i]-p1[j])));
+		
+	}
 
 
   std::vector<double> operator*(std::vector<double> a){
 		std::vector<double> result(p1.size(),0);
 		for (int i=0;i<p1.size();i++){
-			for (int k=0;k<p2.size();k++){
+			for (int k=0;k<p1.size();k++){
 				result[i]+=this->get_coef(i,k)*a[k];
 			}
 		}
@@ -47,8 +49,8 @@ int main(int argc, char *argv[]) {
   double distance[ndistance];
   distance[0] = 3; distance[1] = 5; distance[2] = 7; distance[3] = 10;
   SetNdofPerElt(1);
-  SetEpsilon(1e-6);
-  SetEta(0.1);
+  SetEpsilon(1e-3);
+  SetEta(10);
 
   	for(int idist=0; idist<ndistance; idist++)
   	{
@@ -58,7 +60,7 @@ int main(int argc, char *argv[]) {
   		// (two different initializations with the same seed will generate the same succession of results in the subsequent calls to rand)
 
   		int nr = 2000;
-  		int nc = 1000;
+  		int nc = 2000;
   		vector<int> Ir(nr); // row indices for the lrmatrix
   		vector<int> Ic(nc); // column indices for the lrmatrix
 
@@ -74,43 +76,22 @@ int main(int argc, char *argv[]) {
   			// sqrt(rho) otherwise the points would be concentrated in the center of the disk
   			tab1[j]=j;
   		}
-  		// p2: points in a unit disk of the plane z=z2
-  		double z2 = 1+distance[idist];
-  		vector<R3>       p2(nc);
-			vector<double> r2(nc,0);
-  		vector<int>    tab2(nc);
-  		for(int j=0; j<nc; j++){
-              Ic[j] = j;
-  			double rho = ((double) rand() / (RAND_MAX)); // (double) otherwise integer division!
-  			double theta = ((double) rand() / (RAND_MAX));
-  			p2[j][0] = sqrt(rho)*cos(2*M_PI*theta); p2[j][1] = sqrt(rho)*sin(2*M_PI*theta); p2[j][2] = z2;
-  			tab2[j]=j;
-  		}
 
-  		MyMatrix A(p1,p2);
-		//   vector<double> g2(nc,1);
-		//   vector<double> g1(nr,1);
-		// std::shared_ptr<RegularClustering> t=make_shared<RegularClustering>();
-		// std::shared_ptr<RegularClustering> s=make_shared<RegularClustering>();
-		// t->build(p1,r1,tab1,g1,2);
-		// s->build(p2,r2,tab2,g2,2);
-		// HMatrix<double,fullACA,RegularClustering> HA(A,t,p1,tab1,s,p2,tab2);
+  		MyMatrix A(p1);
 
 
-  		HMatrix<double,fullACA,RegularClustering> HA(A,p1,r1,tab1,p2,r2,tab2);
-  		HA.print_infos();
+  		HMatrix<double,fullACA,RegularClustering> HA_sym(A,p1,r1,tab1,true);
+  		HA_sym.print_infos();
 
-
-
-      // Global vectors
+      	// Global vectors
   		std::vector<double> x_global(nc,1),f_global(nr),f_global_test(nr);
-			f_global = A*x_global;
+		f_global = A*x_global;
 
-      // Global product
-      HA.mvprod_global(x_global.data(),f_global_test.data());
+      	// Global product
+      	HA_sym.mvprod_global(x_global.data(),f_global_test.data());
 
-      // Errors
-      double global_diff = norm2(f_global-f_global_test)/norm2(f_global);
+		// Errors
+		double global_diff = norm2(f_global-f_global_test)/norm2(f_global);
 
 
   		if (rank==0){
