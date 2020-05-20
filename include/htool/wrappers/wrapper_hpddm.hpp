@@ -38,7 +38,7 @@ public:
     ~HPDDMDense(){delete in_global;in_global=nullptr;delete buffer;buffer=nullptr;}
 
 
-    virtual void GMV(const T* const in, T* const out, const int& mu = 1) const override {
+    virtual int GMV(const T* const in, T* const out, const int& mu = 1) const override {
         int local_size = HA.get_local_size();
 
         // Tranpose without overlap
@@ -100,7 +100,7 @@ public:
     }
     ~Proto_HPDDM(){delete in_global;}
 
-    void GMV(const T* const in, T* const out, const int& mu = 1) const {
+    int GMV(const T* const in, T* const out, const int& mu = 1) const {
         HA.mvprod_local(in,out,in_global->data(),1);
     }
 
@@ -370,7 +370,7 @@ public:
     ~Calderon(){delete in_global;in_global=nullptr;delete buffer;buffer=nullptr;}
 
 
-    void GMV(const T* const in, T* const out, const int& mu = 1) const {
+    int GMV(const T* const in, T* const out, const int& mu = 1) const {
         int local_size = HA.get_local_size();
 
         // Tranpose without overlap
@@ -579,7 +579,7 @@ public:
     ~ContinuousOperator(){delete in_global;in_global=nullptr;delete buffer;buffer=nullptr;}
 
 
-    void GMV(const T* const in, T* const out, const int& mu = 1) const {
+    int GMV(const T* const in, T* const out, const int& mu = 1) const {
         int local_size = H.get_local_size();
 
         // Tranpose without overlap
