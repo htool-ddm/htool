@@ -72,6 +72,8 @@ public:
         this->exchange(out, mu);
         if(allocate)
             this->clearBuffer(allocate);
+
+        return 0;
     }
 
     void scaledexchange(T* const out, const int& mu = 1) const{
@@ -102,6 +104,7 @@ public:
 
     int GMV(const T* const in, T* const out, const int& mu = 1) const {
         HA.mvprod_local(in,out,in_global->data(),1);
+        return 0;
     }
 
     template<bool = true>
@@ -400,7 +403,7 @@ public:
                 }
             }
         }
-
+        return 0;
     }
 
     template<bool = true>
@@ -609,7 +612,7 @@ public:
                 }
             }
         }
-
+        return 0;
     }
 
     template<bool = true>
