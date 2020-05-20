@@ -175,6 +175,90 @@ void getpattern(void* pH, int* buf) {
 	MPI_Gatherv(rankworld==0?MPI_IN_PLACE:buf, recvcounts[rankworld], MPI_INT, buf, recvcounts, displs, MPI_INT, 0, H->get_comm());
 }
 
+void get_target_cluster(void* pH, double* x,  double* output, int depth) {
+	HMatrix<K,partialACA,GeometricClustering>* H = reinterpret_cast<HMatrix<K,partialACA,GeometricClustering>*>(pH);
+
+	int sizeworld = H->get_sizeworld();
+	int rankworld = H->get_rankworld();
+
+	if (rankworld==0){
+		Cluster<GeometricClustering> const * root = &(H->get_cluster_tree_t());
+		std::stack< Cluster<GeometricClustering> const *> s;
+		s.push(root);
+
+		int size = root->get_size();
+
+		// Permuted geometric points
+		for(int i = 0; i<size; ++i) {
+			output[i  ]     = x[3*root->get_perm(i)];
+			output[i+size]  = x[3*root->get_perm(i)+1];
+			output[i+size*2]= x[3*root->get_perm(i)+2];
+		}
+
+		int counter = 0;
+		while(!s.empty()){
+			Cluster<GeometricClustering> const * curr = s.top();
+			s.pop();
+
+			if (depth == curr->get_depth()){
+				std::fill_n(&(output[3*size+curr->get_offset()]),curr->get_size(),counter);
+				counter+=1;
+			}
+
+			// Recursion
+			if (!curr->IsLeaf()){
+				
+				for (int p=0;p<curr->get_nb_sons();p++){
+					s.push(&(curr->get_son(p)));
+				}
+			}
+
+		}
+	}
+}
+
+void get_source_cluster(void* pH, double* x,  double* output, int depth) {
+	HMatrix<K,partialACA,GeometricClustering>* H = reinterpret_cast<HMatrix<K,partialACA,GeometricClustering>*>(pH);
+
+	int sizeworld = H->get_sizeworld();
+	int rankworld = H->get_rankworld();
+
+	if (rankworld==0){
+		Cluster<GeometricClustering> const * root = &(H->get_cluster_tree_s());
+		std::stack< Cluster<GeometricClustering> const *> s;
+		s.push(root);
+
+		int size = root->get_size();
+
+		// Permuted geometric points
+		for(int i = 0; i<size; ++i) {
+			output[i  ]     = x[3*root->get_perm(i)];
+			output[i+size]  = x[3*root->get_perm(i)+1];
+			output[i+size*2]= x[3*root->get_perm(i)+2];
+		}
+
+		int counter = 0;
+		while(!s.empty()){
+			Cluster<GeometricClustering> const * curr = s.top();
+			s.pop();
+
+			if (depth == curr->get_depth()){
+				std::fill_n(&(output[3*size+curr->get_offset()]),curr->get_size(),counter);
+				counter+=1;
+			}
+
+			// Recursion
+			if (!curr->IsLeaf()){
+				
+				for (int p=0;p<curr->get_nb_sons();p++){
+					s.push(&(curr->get_son(p)));
+				}
+			}
+
+		}
+	}
+}
+
 void* MultiHMatrixCreateSym(double* pts, int n, void (*getcoefs)(int,int,K*), int nm) {
 
   vector<R3> p(n);

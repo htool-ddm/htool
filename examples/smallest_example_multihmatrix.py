@@ -35,6 +35,7 @@ for l in range(0,nm):
 
     H[l].print_infos()
     H[l].display()
+    H[l].display_target_cluster(points,2)
 
     full_H = (l+1) / (1e-5 + norm(points.reshape(1, H.shape[1], 3) - points.reshape(H.shape[0], 1, 3), axis=2))
 

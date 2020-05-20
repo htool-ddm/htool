@@ -38,6 +38,7 @@ if rank == 0:
 
 H.print_infos()
 H.display()
+H.display_target_cluster(points,2)
 
 full_H = 1.0 / (1e-5 + norm(points.reshape(1, H.shape[1], 3) - points.reshape(H.shape[0], 1, 3), axis=2))
 

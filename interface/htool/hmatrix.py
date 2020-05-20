@@ -203,6 +203,24 @@ class AbstractHMatrix:
 
         return buf
 
+    def _target_cluster(self,points_target,depth):
+        output = np.zeros(4*len(points_target), dtype=ctypes.c_double)
+
+        self.lib.get_target_cluster.restype = None
+        self.lib.get_target_cluster.argtypes = [ ctypes.POINTER(_C_HMatrix), np.ctypeslib.ndpointer(ctypes.c_double, flags='C_CONTIGUOUS'),np.ctypeslib.ndpointer(ctypes.c_double, flags='C_CONTIGUOUS'),ctypes.c_int]
+        self.lib.get_target_cluster(self.c_data,points_target,output,depth)
+
+        return output
+
+    def _source_cluster(self,points_source,depth):
+        output = np.zeros(4*len(points_source), dtype=ctypes.c_double)
+
+        self.lib.get_source_cluster.restype = None
+        self.lib.get_source_cluster.argtypes = [ ctypes.POINTER(_C_HMatrix), np.ctypeslib.ndpointer(ctypes.c_double, flags='C_CONTIGUOUS'),np.ctypeslib.ndpointer(ctypes.c_double, flags='C_CONTIGUOUS'),ctypes.c_int]
+        self.lib.get_source_cluster(self.c_data,points_source,output,depth)
+
+        return output
+
     def display(self):
         import matplotlib.pyplot as plt
         from matplotlib.patches import Rectangle
@@ -242,6 +260,52 @@ class AbstractHMatrix:
             ax.invert_yaxis()
             plt.show()
 
+
+    def display_target_cluster(self,points_target,depth):
+        from mpl_toolkits.mplot3d import Axes3D 
+        import matplotlib.pyplot as plt
+        import matplotlib.colors as colors
+
+        if MPI.COMM_WORLD.Get_rank() == 0:
+            size = len(points_target)
+            output = self._target_cluster(points_target,depth)
+            print(output,size)
+            print(output[3*size:])
+            # Create Color Map
+            colormap = plt.get_cmap("Dark2")
+            norm = colors.Normalize(vmin=min(output[3*size:]), vmax=max(output[3*size:]))
+
+            # Figure
+            fig = plt.figure()
+            ax = fig.add_subplot(111, projection='3d')
+
+            ax.scatter(output[0:size], output[size:2*size], output[2*size:3*size],c=colormap(norm(output[3*size:])), marker='o')
+
+            plt.show()
+
+    def display_source_cluster(self,points_target,depth):
+        from mpl_toolkits.mplot3d import Axes3D 
+        import matplotlib.pyplot as plt
+        import matplotlib.colors as colors
+
+        if MPI.COMM_WORLD.Get_rank() == 0:
+            size = len(points_target)
+            output = self._target_cluster(points_target,depth)
+            print(output,size)
+            print(output[3*size:])
+            # Create Color Map
+            colormap = plt.get_cmap("Dark2")
+            norm = colors.Normalize(vmin=min(output[3*size:]), vmax=max(output[3*size:]))
+
+            # Figure
+            fig = plt.figure()
+            ax = fig.add_subplot(111, projection='3d')
+
+            ax.scatter(output[0:size], output[size:2*size], output[2*size:3*size],c=colormap(norm(output[3*size:])), marker='o')
+
+            plt.show()
+            
+            
 
 class HMatrix(AbstractHMatrix):
     """A real-valued hierarchical matrix based on htool C++ library.
