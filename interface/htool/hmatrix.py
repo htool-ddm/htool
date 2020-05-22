@@ -27,7 +27,7 @@ class AbstractHMatrix:
         self.params = params.copy()
 
     @classmethod
-    def from_coefs(cls, getcoef, points_target, points_source=None, **params):
+    def from_coefs(cls, getcoef, points_target, points_source=None, symmetric=False, **params):
         """Construct an instance of the class from a evaluation function.
 
         Parameters
@@ -38,6 +38,8 @@ class AbstractHMatrix:
             The coordinates of the target points. If points_source=None, also the coordinates of the target points
         points_source: np.ndarray of shape (N, 3)
             If not None; the coordinates of the source points.
+        symmetric: boolean
+            If True, builds a symmetric HMatrix. Default to False.
         epsilon: float, keyword-only, optional
             Tolerance of the Adaptive Cross Approximation
         eta: float, keyword-only, optional
@@ -62,10 +64,11 @@ class AbstractHMatrix:
                 np.ctypeslib.ndpointer(dtype=np.float64, ndim=2, flags='C_CONTIGUOUS'),
                 ctypes.c_int,
                 _getcoef_func_type,
+                ctypes.c_bool
             ]
 
             # Call the C++ backend.
-            c_data = cls.lib.HMatrixCreateSym(points_target, points_target.shape[0], _getcoef_func_type(getcoef))
+            c_data = cls.lib.HMatrixCreateSym(points_target, points_target.shape[0], _getcoef_func_type(getcoef),symmetric)
 
         else:
             cls.lib.HMatrixCreate.restype = ctypes.POINTER(_C_HMatrix)
@@ -84,7 +87,7 @@ class AbstractHMatrix:
 
 
     @classmethod
-    def from_submatrices(cls, getsubmatrix, points_target, points_source=None, **params):
+    def from_submatrices(cls, getsubmatrix, points_target, points_source=None, symmetric=False, **params):
         """Construct an instance of the class from a evaluation function.
 
         Parameters
@@ -93,6 +96,8 @@ class AbstractHMatrix:
             The coordinates of the points.
         getsubmatrix: Callable
             A function evaluating the matrix in a given range.
+        symmetric: boolean
+        If True, builds a symmetric HMatrix. Default to False.
         epsilon: float, keyword-only, optional
             Tolerance of the Adaptive Cross Approximation
         eta: float, keyword-only, optional
@@ -120,10 +125,11 @@ class AbstractHMatrix:
                 np.ctypeslib.ndpointer(dtype=np.float64, ndim=2, flags='C_CONTIGUOUS'),
                 ctypes.c_int,
                 _getsumatrix_func_type,
+                ctypes.c_bool
             ]
 
             # Call the C++ backend.
-            c_data = cls.lib.HMatrixCreatewithsubmatSym(points_target, points_target.shape[0], _getsumatrix_func_type(getsubmatrix))
+            c_data = cls.lib.HMatrixCreatewithsubmatSym(points_target, points_target.shape[0], _getsumatrix_func_type(getsubmatrix),symmetric)
         else:
             cls.lib.HMatrixCreatewithsubmat.restype = ctypes.POINTER(_C_HMatrix)
             cls.lib.HMatrixCreatewithsubmat.argtypes = [
@@ -224,40 +230,55 @@ class AbstractHMatrix:
     def display(self):
         import matplotlib.pyplot as plt
         from matplotlib.patches import Rectangle
+        import matplotlib.patches as patches
+        import matplotlib.colors as colors
 
         buf = self._pattern()
 
         if MPI.COMM_WORLD.Get_rank() == 0:
-            cmap = plt.get_cmap('YlGn')
-            max_rank = 10
 
-            plt.figure()
-            ax = plt.gca()
+            # First Data
+            nr = self.shape[0]
+            nc = self.shape[1]
+            matrix = np.zeros((nr,nc))
+
+            # Figure
+            fig, axes = plt.subplots(1,1)
+            axes.xaxis.tick_top()
+            plt.imshow(matrix)
+
+            # Issue: there a shift of one pixel along the y-axis...
+            shift = axes.transData.transform([(0,0), (1,1)])
+            shift = shift[1,1] - shift[0,1]  # 1 unit in display coords
+            shift = 0
+
 
             for i in range(0, self.nb_blocks):
                 i_row, nb_row, i_col, nb_col, rank = buf[5*i:5*i+5]
 
-                if rank < 0:
-                    color = 'red'
-                else:
-                    color = cmap(rank/max_rank)
+                matrix[np.ix_(range(i_row,i_row+nb_row),range(i_col,i_col+nb_col))]=rank
 
-                rect = Rectangle(
-                    (i_col-0.5, i_row-0.5), nb_col, nb_row,
-                    linewidth=0.75, edgecolor='k', facecolor=color,
-                )
-                ax.add_patch(rect)
+                rect = patches.Rectangle((i_col-0.5,i_row-0.5+shift),nb_col,nb_row,linewidth=0.75,edgecolor='k',facecolor='none')
+                axes.add_patch(rect)
+                
+                if rank>=0 and nb_col/float(nc)>0.05 and nb_row/float(nc)>0.05:
+                    axes.annotate(rank,(i_col+nb_col/2.,i_row+nb_row/2.),color="white",size=10, va='center', ha='center')
 
-                if rank >= 0 and nb_row > 0.05*self.shape[0] and nb_col > 0.05*self.shape[1]:
-                    ax.annotate(
-                        str(rank), (i_col + nb_col/2, i_row + nb_row/2),
-                        color="white", size=10, va='center', ha='center',
-                    )
+            # Colormap
+            def truncate_colormap(cmap, minval=0.0, maxval=1.0, n=100):
+                new_cmap = colors.LinearSegmentedColormap.from_list(
+                    'trunc({n},{a:.2f},{b:.2f})'.format(n=cmap.name, a=minval, b=maxval),
+                    cmap(np.linspace(minval, maxval, n)))
+                return new_cmap
 
-            plt.axis('equal')
-            ax.set(xlim=(0, self.shape[0]), ylim=(0, self.shape[1]))
-            ax.xaxis.tick_top()
-            ax.invert_yaxis()
+            cmap = plt.get_cmap('YlGn')
+            new_cmap = truncate_colormap(cmap, 0.4, 1)
+
+            # Plot
+            matrix =np.ma.masked_where(0>matrix,matrix)
+            new_cmap.set_bad(color="red")
+            plt.imshow(matrix,cmap=new_cmap,vmin=0, vmax=10)
+
             plt.show()
 
 

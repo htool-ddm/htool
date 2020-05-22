@@ -14,7 +14,7 @@ typedef double K;
 extern "C" {
 unsigned short scalar = std::is_same<K, double>::value ? 0 : 1;
 
-void* HMatrixCreateSym(double* pts, int n, void (*getcoef)(int,int,K*)) {
+void* HMatrixCreateSym(double* pts, int n, void (*getcoef)(int,int,K*),bool symmetric=false) {
 
   vector<R3> p(n);
 	for(int j=0; j<n; j++){
@@ -27,7 +27,7 @@ void* HMatrixCreateSym(double* pts, int n, void (*getcoef)(int,int,K*)) {
 	MyMatrix A(p,getcoef);
 
   // Hmatrix
-	HMatrix<K,partialACA,GeometricClustering>* H = new HMatrix<K,partialACA,GeometricClustering>(A,p);
+	HMatrix<K,sympartialACA,GeometricClustering>* H = new HMatrix<K,sympartialACA,GeometricClustering>(A,p,symmetric);
 
   return H;
 }
@@ -51,12 +51,12 @@ void* HMatrixCreate(double* pts1, int m, double* pts2, int n, void (*getcoef)(in
 	MyMatrix A(p1,p2,getcoef);
 
   // Hmatrix
-	HMatrix<K,partialACA,GeometricClustering>* H = new HMatrix<K,partialACA,GeometricClustering>(A,p1,p2);
+	HMatrix<K,sympartialACA,GeometricClustering>* H = new HMatrix<K,sympartialACA,GeometricClustering>(A,p1,p2);
 
   return H;
 }
 
-void* HMatrixCreatewithsubmatSym(double* pts, int n, void (*getsubmatrix)(const int*, const int*, int,int,K*)) {
+void* HMatrixCreatewithsubmatSym(double* pts, int n, void (*getsubmatrix)(const int*, const int*, int,int,K*),bool symmetric=false) {
 
   vector<R3> p(n);
 	for(int j=0; j<n; j++){
@@ -69,7 +69,7 @@ void* HMatrixCreatewithsubmatSym(double* pts, int n, void (*getsubmatrix)(const 
 	MyMatrixwithsubmat A(p,getsubmatrix);
 
   // Hmatrix
-	HMatrix<K,partialACA,GeometricClustering>* H = new HMatrix<K,partialACA,GeometricClustering>(A,p);
+	HMatrix<K,sympartialACA,GeometricClustering>* H = new HMatrix<K,sympartialACA,GeometricClustering>(A,p,symmetric);
 
   return H;
 }
@@ -93,18 +93,18 @@ void* HMatrixCreatewithsubmat(double* pts1, int m, double* pts2, int n, void (*g
 	MyMatrixwithsubmat A(p1,p2,getsubmatrix);
 
   // Hmatrix
-	HMatrix<K,partialACA,GeometricClustering>* H = new HMatrix<K,partialACA,GeometricClustering>(A,p1,p2);
+	HMatrix<K,sympartialACA,GeometricClustering>* H = new HMatrix<K,sympartialACA,GeometricClustering>(A,p1,p2);
 
 
   return H;
 }
 
 void printinfos(void* H) {
-    reinterpret_cast<HMatrix<K,partialACA,GeometricClustering>*>(H)->print_infos();
+    reinterpret_cast<HMatrix<K,sympartialACA,GeometricClustering>*>(H)->print_infos();
 }
 
 void mvprod(void* H, K* x, K* Ax) {
-    reinterpret_cast<HMatrix<K,partialACA,GeometricClustering>*>(H)->mvprod_global(x,Ax);
+    reinterpret_cast<HMatrix<K,sympartialACA,GeometricClustering>*>(H)->mvprod_global(x,Ax);
 }
 
 int getnlrmat(void* H) {
@@ -120,7 +120,7 @@ int nbrows(void* H) {
 }
 
 int nbcols(void* H) {
-    return reinterpret_cast<HMatrix<K,partialACA,GeometricClustering>*>(H)->nb_cols();
+    return reinterpret_cast<HMatrix<K,sympartialACA,GeometricClustering>*>(H)->nb_cols();
 }
 
 void setepsilon(double eps) { SetEpsilon(eps); }
@@ -129,9 +129,9 @@ void setminclustersize(int m) { SetMinClusterSize(m); }
 void setmaxblocksize(int m) { SetMaxBlockSize(m); }
 
 void getpattern(void* pH, int* buf) {
-	HMatrix<K,partialACA,GeometricClustering>* H = reinterpret_cast<HMatrix<K,partialACA,GeometricClustering>*>(pH);
+	HMatrix<K,sympartialACA,GeometricClustering>* H = reinterpret_cast<HMatrix<K,sympartialACA,GeometricClustering>*>(pH);
 
-	const std::vector<partialACA<K,GeometricClustering>*>& lrmats = H->get_MyFarFieldMats();
+	const std::vector<sympartialACA<K,GeometricClustering>*>& lrmats = H->get_MyFarFieldMats();
 	const std::vector<SubMatrix<K>*>& dmats = H->get_MyNearFieldMats();
 
 	int nb = dmats.size() + lrmats.size();
@@ -176,7 +176,7 @@ void getpattern(void* pH, int* buf) {
 }
 
 void get_target_cluster(void* pH, double* x,  double* output, int depth) {
-	HMatrix<K,partialACA,GeometricClustering>* H = reinterpret_cast<HMatrix<K,partialACA,GeometricClustering>*>(pH);
+	HMatrix<K,sympartialACA,GeometricClustering>* H = reinterpret_cast<HMatrix<K,sympartialACA,GeometricClustering>*>(pH);
 
 	int sizeworld = H->get_sizeworld();
 	int rankworld = H->get_rankworld();
@@ -218,7 +218,7 @@ void get_target_cluster(void* pH, double* x,  double* output, int depth) {
 }
 
 void get_source_cluster(void* pH, double* x,  double* output, int depth) {
-	HMatrix<K,partialACA,GeometricClustering>* H = reinterpret_cast<HMatrix<K,partialACA,GeometricClustering>*>(pH);
+	HMatrix<K,sympartialACA,GeometricClustering>* H = reinterpret_cast<HMatrix<K,sympartialACA,GeometricClustering>*>(pH);
 
 	int sizeworld = H->get_sizeworld();
 	int rankworld = H->get_rankworld();

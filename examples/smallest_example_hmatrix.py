@@ -23,7 +23,7 @@ for j in range(0, n):
 def get_coef(i, j, coef):
     coef[0] = 1.0 / (1e-5 + norm(points[i, :] - points[j, :]))
 
-H = HMatrix.from_coefs(get_coef, points, epsilon=1e-3, eta=100, minclustersize=10)
+H = HMatrix.from_coefs(get_coef, points, symmetric=True, epsilon=1e-3, eta=100, minclustersize=10)
 
 # def get_submatrix(I, J, n, m, coef):
 #     for i in range(0,n):

@@ -8,7 +8,7 @@ from mpi4py import MPI
 from htool.hmatrix import HMatrix
 
 
-def smallest_example(m,n,submatrix):
+def smallest_example(m,n,submatrix,symmetric=False):
     comm = MPI.COMM_WORLD
     rank = comm.Get_rank()
 
@@ -33,7 +33,7 @@ def smallest_example(m,n,submatrix):
             coef[0] = 1.0 / (1e-5 + norm(points_target[i, :] - points_source[j, :]))
 
         if n==m:
-            H = HMatrix.from_coefs(get_coef,points_target, epsilon=1e-6, eta=100, minclustersize=10)
+            H = HMatrix.from_coefs(get_coef,points_target, symmetric=symmetric, epsilon=1e-6, eta=100, minclustersize=10)
         else:
             H = HMatrix.from_coefs(get_coef,points_target,points_source, epsilon=1e-6, eta=100, minclustersize=10)
     else:
@@ -43,7 +43,7 @@ def smallest_example(m,n,submatrix):
                 for j in range(0,n):
                     coef[j*m+i] = 1.0 / (1.e-5 + norm(points_target[I[i], :] - points_source[J[j], :]))
         if n==m:
-            H = HMatrix.from_submatrices(get_submatrix,points_target, epsilon=1e-6, eta=100, minclustersize=10)
+            H = HMatrix.from_submatrices(get_submatrix,points_target,symmetric=symmetric, epsilon=1e-6, eta=100, minclustersize=10)
         else:
             H = HMatrix.from_submatrices(get_submatrix,points_target,points_source, epsilon=1e-6, eta=100, minclustersize=10)
     
@@ -66,5 +66,6 @@ def test_smallest_example():
     smallest_example(1000,3000,False)
     smallest_example(1000,1000,True)
     smallest_example(1000,1000,False)
-
+    smallest_example(1000,1000,True,True)
+    smallest_example(1000,1000,False,True)
 test_smallest_example()
