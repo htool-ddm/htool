@@ -44,10 +44,10 @@ install:
 # Build steps
 script:
   - docker exec -it -w /root/htool/build -e MPIEXEC_PREFLAGS="${MPIEXEC_PREFLAGS}" ${TESTING_ENV} bash -c 'CC=${CC_COMPILER} CXX=${CXX_COMPILER} cmake -DHTOOL_WITH_EXAMPLES=1 -DMPIEXEC_PREFLAGS="${MPIEXEC_PREFLAGS}" ../'
-  - docker exec -it -w /root/htool/build ${TESTING_ENV} bash -c 'make -j build-tests'
+  - docker exec -it -w /root/htool/build ${TESTING_ENV} bash -c 'make -j2 build-tests'
   - docker exec -it ${TESTING_ENV} bash -c 'export OMP_NUM_THREADS=2'
   - docker exec -it -w /root/htool/build ${TESTING_ENV} bash -c 'ctest --output-on-failure'
-  - docker exec -it -w /root/htool/build ${TESTING_ENV} bash -c 'make -j build-examples'
+  - docker exec -it -w /root/htool/build ${TESTING_ENV} bash -c 'make -j2 build-examples'
   - docker exec -it -w /root/htool ${TESTING_ENV} bash -c 'pip3 install . --user'
   - docker exec -it -w /root/htool ${TESTING_ENV} bash -c 'pytest python_tests'
   - docker exec -it -w /root/htool -e MPIEXEC_PREFLAGS="${MPIEXEC_PREFLAGS}" ${TESTING_ENV} bash -c 'mpirun -np 2 ${MPIEXEC_PREFLAGS} pytest python_tests'
