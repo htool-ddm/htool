@@ -73,7 +73,9 @@ private:
 	Block<ClusterImpl>* BuildBlockTree(const Cluster<ClusterImpl>&, const Cluster<ClusterImpl>&);
 	Block<ClusterImpl>* BuildSymBlockTree(const Cluster<ClusterImpl>&, const Cluster<ClusterImpl>&);
 	void ComputeBlocks(IMatrix<T>& mat, const std::vector<R3> xt,const std::vector<int> tabt, const std::vector<R3> xs, const std::vector<int>tabs);
+	void ComputeSymBlocks(IMatrix<T>& mat, const std::vector<R3> xt,const std::vector<int> tabt, const std::vector<R3> xs, const std::vector<int>tabs);
 	bool UpdateBlocks(IMatrix<T>&mat ,const Cluster<ClusterImpl>&, const Cluster<ClusterImpl>&, const std::vector<R3> xt,const std::vector<int> tabt, const std::vector<R3> xs, const std::vector<int>tabs, std::vector<SubMatrix<T>*>&, std::vector<LowRankMatrix<T,ClusterImpl>*>&);
+	bool UpdateSymBlocks(IMatrix<T>&mat ,const Cluster<ClusterImpl>&, const Cluster<ClusterImpl>&, const std::vector<R3> xt,const std::vector<int> tabt, const std::vector<R3> xs, const std::vector<int>tabs, std::vector<SubMatrix<T>*>&, std::vector<LowRankMatrix<T,ClusterImpl>*>&);
 	void AddNearFieldMat(IMatrix<T>& mat, const Cluster<ClusterImpl>& t, const Cluster<ClusterImpl>& s, std::vector<SubMatrix<T>*>&);
 	void AddFarFieldMat(IMatrix<T>& mat, const Cluster<ClusterImpl>& t, const Cluster<ClusterImpl>& s, const std::vector<R3> xt,const std::vector<int> tabt, const std::vector<R3> xs, const std::vector<int>tabs, std::vector<LowRankMatrix<T,ClusterImpl>*>&, const int& reqrank=-1);
 	void ComputeInfos(const std::vector<double>& mytimes);
@@ -127,10 +129,10 @@ public:
 	void build(IMatrix<T>& mat, const std::vector<R3>& xt, const std::vector<int>& tabt, const std::vector<R3>&xs, const std::vector<int>& tabs, MPI_Comm comm=MPI_COMM_WORLD); // To be used with two different clusters
 
 	// Full constructor with precomputed clusters
-	HMatrix(IMatrix<T>& mat,  const std::shared_ptr<Cluster<ClusterImpl>>& t, const std::vector<R3>& xt, const std::vector<int>& tabt,  const std::shared_ptr<Cluster<ClusterImpl>>& s, const std::vector<R3>&xs, const std::vector<int>& tabs, bool Symmetry=false, const int& reqrank=-1, MPI_Comm comm=MPI_COMM_WORLD); // To be used with two different clusters
+	HMatrix(IMatrix<T>& mat,  const std::shared_ptr<Cluster<ClusterImpl>>& t, const std::vector<R3>& xt, const std::vector<int>& tabt,  const std::shared_ptr<Cluster<ClusterImpl>>& s, const std::vector<R3>&xs, const std::vector<int>& tabs, const int& reqrank=-1, MPI_Comm comm=MPI_COMM_WORLD); // To be used with two different clusters
 
 	// Constructor without tab and with precomputed clusters
-	HMatrix(IMatrix<T>&,  const std::shared_ptr<Cluster<ClusterImpl>>& t, const std::vector<R3>& xt,  const std::shared_ptr<Cluster<ClusterImpl>>& s, const std::vector<R3>&xs, bool Symmetry=false, const int& reqrank=-1, MPI_Comm comm=MPI_COMM_WORLD); // To be used with two different clusters
+	HMatrix(IMatrix<T>&,  const std::shared_ptr<Cluster<ClusterImpl>>& t, const std::vector<R3>& xt,  const std::shared_ptr<Cluster<ClusterImpl>>& s, const std::vector<R3>&xs, const int& reqrank=-1, MPI_Comm comm=MPI_COMM_WORLD); // To be used with two different clusters
 
 	// Symetric build with precomputed cluster
 	void build(IMatrix<T>& mat,  const std::shared_ptr<Cluster<ClusterImpl>>& t, const std::vector<R3>& xt, const std::vector<int>& tabt, MPI_Comm comm=MPI_COMM_WORLD); // To be used with one different clusters
@@ -248,12 +250,7 @@ void HMatrix<T, LowRankMatrix, ClusterImpl>::build(IMatrix<T>& mat, const std::v
 	// Construction arbre des blocs
 	time = MPI_Wtime();
 	Block<ClusterImpl>* B=nullptr;
-	if (!symmetric){
-		B = BuildBlockTree(cluster_tree_t->get_root(),cluster_tree_s->get_root());
-	}
-	else{
-		B = BuildSymBlockTree(cluster_tree_t->get_root(),cluster_tree_s->get_root());
-	}
+	B = BuildBlockTree(cluster_tree_t->get_root(),cluster_tree_s->get_root());
 	if (B !=nullptr) Tasks.push_back(B);
 	mytimes[1] = MPI_Wtime() - time;
 
@@ -348,7 +345,12 @@ void HMatrix<T, LowRankMatrix, ClusterImpl>::build(IMatrix<T>& mat,const std::ve
 
 	// Assemblage des sous-matrices
 	time = MPI_Wtime();
-	ComputeBlocks(mat,xt,tabt,xt,tabt);
+	if (!symmetric){
+		ComputeBlocks(mat,xt,tabt,xt,tabt);
+	}
+	else{
+		ComputeSymBlocks(mat,xt,tabt,xt,tabt);
+	}
 	mytimes[3] = MPI_Wtime() - time;
 
 	// Infos
@@ -438,7 +440,12 @@ void HMatrix<T, LowRankMatrix, ClusterImpl>::build(IMatrix<T>& mat, const std::v
 
 	// Assemblage des sous-matrices
 	time = MPI_Wtime();
-	ComputeBlocks(mat,xt,tabt,xs,tabs);
+	if (!symmetric){
+		ComputeBlocks(mat,xt,tabt,xs,tabs);
+	}
+	else{
+		ComputeSymBlocks(mat,xt,tabt,xs,tabs);
+	}
 	mytimes[3] = MPI_Wtime() - time;
 
 	// Infos
@@ -448,13 +455,13 @@ void HMatrix<T, LowRankMatrix, ClusterImpl>::build(IMatrix<T>& mat, const std::v
 
 // Full constructor with precomputed clusters
 template<typename T, template<typename,typename> class LowRankMatrix, class ClusterImpl>
-HMatrix<T, LowRankMatrix, ClusterImpl>::HMatrix(IMatrix<T>& mat,  const std::shared_ptr<Cluster<ClusterImpl>>& t, const std::vector<R3>& xt, const std::vector<int>& tabt, const std::shared_ptr<Cluster<ClusterImpl>>& s, const std::vector<R3>&xs, const std::vector<int>& tabs, bool symmetric0, const int& reqrank0, MPI_Comm comm0): nr(mat.nb_rows()),nc(mat.nb_cols()), symmetric(symmetric0), cluster_tree_t(t), cluster_tree_s(s), reqrank(reqrank0) {
+HMatrix<T, LowRankMatrix, ClusterImpl>::HMatrix(IMatrix<T>& mat,  const std::shared_ptr<Cluster<ClusterImpl>>& t, const std::vector<R3>& xt, const std::vector<int>& tabt, const std::shared_ptr<Cluster<ClusterImpl>>& s, const std::vector<R3>&xs, const std::vector<int>& tabs, const int& reqrank0, MPI_Comm comm0): nr(mat.nb_rows()),nc(mat.nb_cols()), symmetric(false), cluster_tree_t(t), cluster_tree_s(s), reqrank(reqrank0) {
 	this->build(mat, xt, tabt, xs, tabs, comm0);
 }
 
 // Constructor without tabt and tabs
 template<typename T, template<typename,typename> class LowRankMatrix, class ClusterImpl>
-HMatrix<T, LowRankMatrix, ClusterImpl>::HMatrix(IMatrix<T>& mat, const std::shared_ptr<Cluster<ClusterImpl>>& t, const std::vector<R3>& xt, const std::shared_ptr<Cluster<ClusterImpl>>& s, const std::vector<R3>&xs, bool symmetric0, const int& reqrank0, MPI_Comm comm0): nr(mat.nb_rows()),nc(mat.nb_cols()), symmetric(symmetric0), cluster_tree_t(t), cluster_tree_s(s), reqrank(reqrank0) {
+HMatrix<T, LowRankMatrix, ClusterImpl>::HMatrix(IMatrix<T>& mat, const std::shared_ptr<Cluster<ClusterImpl>>& t, const std::vector<R3>& xt, const std::shared_ptr<Cluster<ClusterImpl>>& s, const std::vector<R3>&xs, const int& reqrank0, MPI_Comm comm0): nr(mat.nb_rows()),nc(mat.nb_cols()), symmetric(false), cluster_tree_t(t), cluster_tree_s(s), reqrank(reqrank0) {
 	std::vector<int> tabt(xt.size()), tabs(xs.size());
 	std::iota(tabt.begin(),tabt.end(),int(0));
 	std::iota(tabs.begin(),tabs.end(),int(0));
@@ -702,6 +709,7 @@ void HMatrix<T, LowRankMatrix, ClusterImpl>::ComputeBlocks(IMatrix<T>& mat, cons
             const Block<ClusterImpl>& B = *(MyBlocks[b]);
         	const Cluster<ClusterImpl>& t = B.tgt_();
             const Cluster<ClusterImpl>& s = B.src_();
+			int bsize = t.get_size()*s.get_size();
             if( B.IsAdmissible() ){
         	    AddFarFieldMat(mat,t,s,xt,tabt,xs,tabs,MyFarFieldMats_local,reqrank);
             	if(MyFarFieldMats_local.back()->rank_of()==-1){
@@ -711,72 +719,185 @@ void HMatrix<T, LowRankMatrix, ClusterImpl>::ComputeBlocks(IMatrix<T>& mat, cons
 					// AddNearFieldMat(mat,t,s,MyNearFieldMats_local);
             		if( s.IsLeaf() ){
             			if( t.IsLeaf() ){
-            				// MyNearFieldMats.emplace_back(mat,I,J);
             				AddNearFieldMat(mat,t,s,MyNearFieldMats_local);
             			}
             			else{
-            				bool b1 = UpdateBlocks(mat,t.get_son(0),s,xt,tabt,xs,tabs,MyNearFieldMats_local,MyFarFieldMats_local);
-            				bool b2 = UpdateBlocks(mat,t.get_son(1),s,xt,tabt,xs,tabs,MyNearFieldMats_local,MyFarFieldMats_local);
-            				if ((b1 != true) && (b2 != true))
-            					// MyNearFieldMats.emplace_back(mat,I,J);
-            					AddNearFieldMat(mat,t,s,MyNearFieldMats_local);
-            				else {
-            					if (b1 != true)
-            						// 	MyNearFieldMats.emplace_back(mat,t.get_son(0).get_num(),J);
-            						AddNearFieldMat(mat,t.get_son(0),s,MyNearFieldMats_local);
-            					if (b2 != true)
-            						// 	MyNearFieldMats.emplace_back(mat,t.get_son(1).get_num(),J);
-            						AddNearFieldMat(mat,t.get_son(1),s,MyNearFieldMats_local);
-            				}
+							std::vector<bool> Blocks(t.get_nb_sons());
+							for (int p=0; p <t.get_nb_sons();p++){
+								Blocks[p] = UpdateBlocks(mat,t.get_son(p),s,xt,tabt,xs,tabs,MyNearFieldMats_local,MyFarFieldMats_local);
+							}
+
+							if ((bsize <= maxblocksize) && std::all_of(Blocks.begin(), Blocks.end(),[](bool block){return block!=true;} ) ) {
+								AddNearFieldMat(mat,t,s,MyNearFieldMats_local);
+							}
+							else{
+								for (int p=0;p<Blocks.size();p++){
+									if (Blocks[p] !=true) AddNearFieldMat(mat,t.get_son(p),s,MyNearFieldMats_local);
+								} 
+							}
             			}
             		}
             		else{
             			if( t.IsLeaf() ){
-            				bool b3 = UpdateBlocks(mat,t,s.get_son(0),xt,tabt,xs,tabs,MyNearFieldMats_local,MyFarFieldMats_local);
-            				bool b4 = UpdateBlocks(mat,t,s.get_son(1),xt,tabt,xs,tabs,MyNearFieldMats_local,MyFarFieldMats_local);
-            				if ((b3 != true) && (b4 != true))
-            					// MyNearFieldMats.emplace_back(mat,I,J);
-            					AddNearFieldMat(mat,t,s,MyNearFieldMats_local);
-            				else {
-            					if (b3 != true)
-            						// 	MyNearFieldMats.emplace_back(mat,I,s.get_son(0).get_num());
-            						AddNearFieldMat(mat,t,s.get_son(0),MyNearFieldMats_local);
-            					if (b4 != true)
-            						// 	MyNearFieldMats.emplace_back(mat,I,s.get_son(1).get_num());
-            						AddNearFieldMat(mat,t,s.get_son(1),MyNearFieldMats_local);
-            				}
+							std::vector<bool> Blocks(s.get_nb_sons());
+							for (int p=0; p <s.get_nb_sons();p++){
+								Blocks[p] = UpdateBlocks(mat,t,s.get_son(p),xt,tabt,xs,tabs,MyNearFieldMats_local,MyFarFieldMats_local);
+							}
+
+							if ((bsize <= maxblocksize) && std::all_of(Blocks.begin(), Blocks.end(),[](bool block){return block!=true;} ) ) {
+								AddNearFieldMat(mat,t,s,MyNearFieldMats_local);
+							}
+							else{
+								for (int p=0;p<Blocks.size();p++){
+									if (Blocks[p] !=true) AddNearFieldMat(mat,t,s.get_son(p),MyNearFieldMats_local);
+								} 
+							}
             			}
             			else{
             				if (t.get_size()>s.get_size()){
-            					bool b1 = UpdateBlocks(mat,t.get_son(0),s,xt,tabt,xs,tabs,MyNearFieldMats_local,MyFarFieldMats_local);
-            					bool b2 = UpdateBlocks(mat,t.get_son(1),s,xt,tabt,xs,tabs,MyNearFieldMats_local,MyFarFieldMats_local);
-            					if ((b1 != true) && (b2 != true))
-            						// MyNearFieldMats.emplace_back(mat,I,J);
-            						AddNearFieldMat(mat,t,s,MyNearFieldMats_local);
-            					else {
-            						if (b1 != true)
-            								// MyNearFieldMats.emplace_back(mat,t.get_son(0).get_num(),J);
-            								AddNearFieldMat(mat,t.get_son(0),s,MyNearFieldMats_local);
-            						if (b2 != true)
-            								// MyNearFieldMats.emplace_back(mat,t.get_son(1).get_num(),J);
-            								AddNearFieldMat(mat,t.get_son(1),s,MyNearFieldMats_local);
-            					}
+            					std::vector<bool> Blocks(t.get_nb_sons());
+								for (int p=0; p <t.get_nb_sons();p++){
+									Blocks[p] = UpdateBlocks(mat,t.get_son(p),s,xt,tabt,xs,tabs,MyNearFieldMats_local,MyFarFieldMats_local);
+								}
+
+								if ((bsize <= maxblocksize) && std::all_of(Blocks.begin(), Blocks.end(),[](bool block){return block!=true;} ) ) {
+									AddNearFieldMat(mat,t,s,MyNearFieldMats_local);
+								}
+								else{
+									for (int p=0;p<Blocks.size();p++){
+										if (Blocks[p] !=true) AddNearFieldMat(mat,t.get_son(p),s,MyNearFieldMats_local);
+									} 
+								}
             				}
             				else{
-            					bool b3 = UpdateBlocks(mat,t,s.get_son(0),xt,tabt,xs,tabs,MyNearFieldMats_local,MyFarFieldMats_local);
-            					bool b4 = UpdateBlocks(mat,t,s.get_son(1),xt,tabt,xs,tabs,MyNearFieldMats_local,MyFarFieldMats_local);
-            					if ((b3 != true) && (b4 != true))
-            						// MyNearFieldMats.emplace_back(mat,I,J);
-            						AddNearFieldMat(mat,t,s,MyNearFieldMats_local);
-            					else {
-            						if (b3 != true)
-            								// MyNearFieldMats.emplace_back(mat,I,s.get_son(0).get_num());
-            								AddNearFieldMat(mat,t,s.get_son(0),MyNearFieldMats_local);
-            						if (b4 != true)
-            								// MyNearFieldMats.emplace_back(mat,I,s.get_son(1).get_num());
-            								AddNearFieldMat(mat,t,s.get_son(1),MyNearFieldMats_local);
-            					}
+            					std::vector<bool> Blocks(s.get_nb_sons());
+								for (int p=0; p <s.get_nb_sons();p++){
+									Blocks[p] = UpdateBlocks(mat,t,s.get_son(p),xt,tabt,xs,tabs,MyNearFieldMats_local,MyFarFieldMats_local);
+								}
+
+								if ((bsize <= maxblocksize) && std::all_of(Blocks.begin(), Blocks.end(),[](bool block){return block!=true;} ) ) {
+									AddNearFieldMat(mat,t,s,MyNearFieldMats_local);
+								}
+								else{
+									for (int p=0;p<Blocks.size();p++){
+										if (Blocks[p] !=true) AddNearFieldMat(mat,t,s.get_son(p),MyNearFieldMats_local);
+									} 
+								}
             				}
+            			}
+            		}
+            	}
+            }
+            else {
+            	// MyNearFieldMats.emplace_back(mat,I,J);
+            	AddNearFieldMat(mat,t,s,MyNearFieldMats_local);
+            }
+        }
+        #if _OPENMP
+        #pragma omp critical
+        #endif
+        {
+            MyFarFieldMats.insert(MyFarFieldMats.end(),MyFarFieldMats_local.begin(),MyFarFieldMats_local.end());
+            MyNearFieldMats.insert(MyNearFieldMats.end(),MyNearFieldMats_local.begin(),MyNearFieldMats_local.end());
+        }
+    }
+
+    // Build vectors of pointers for diagonal blocks
+    for (int i=0;i<MyFarFieldMats.size();i++){
+        if (local_offset<=MyFarFieldMats[i]->get_offset_j() && MyFarFieldMats[i]->get_offset_j()<local_offset+local_size){
+            MyDiagFarFieldMats.push_back(MyFarFieldMats[i]);
+            if (MyFarFieldMats[i]->get_offset_j()==MyFarFieldMats[i]->get_offset_i())
+                MyStrictlyDiagFarFieldMats.push_back(MyFarFieldMats[i]);
+        }
+    }
+    for (int i=0;i<MyNearFieldMats.size();i++){
+        if (local_offset<=MyNearFieldMats[i]->get_offset_j() && MyNearFieldMats[i]->get_offset_j()<local_offset+local_size){
+            MyDiagNearFieldMats.push_back(MyNearFieldMats[i]);
+            if (MyNearFieldMats[i]->get_offset_j()==MyNearFieldMats[i]->get_offset_i())
+                MyStrictlyDiagNearFieldMats.push_back(MyNearFieldMats[i]);
+        }
+    }
+}
+
+template<typename T, template<typename,typename> class LowRankMatrix, class ClusterImpl>
+void HMatrix<T, LowRankMatrix, ClusterImpl>::ComputeSymBlocks(IMatrix<T>& mat, const std::vector<R3> xt,const std::vector<int> tabt, const std::vector<R3> xs, const std::vector<int>tabs){
+    #if _OPENMP
+    #pragma omp parallel
+    #endif
+    {
+        // IMatrix<T> mat = mat;
+        std::vector<SubMatrix<T>*>     MyNearFieldMats_local;
+        std::vector<LowRankMatrix<T,ClusterImpl>*> MyFarFieldMats_local;
+        // int tid = omp_get_thread_num();
+        // std::cout<<"Hello World from thread = "+ NbrToStr(tid)<<std::endl;
+        #if _OPENMP
+        #pragma omp for schedule(guided)
+        #endif
+        for(int b=0; b<MyBlocks.size(); b++) {
+            const Block<ClusterImpl>& B = *(MyBlocks[b]);
+        	const Cluster<ClusterImpl>& t = B.tgt_();
+            const Cluster<ClusterImpl>& s = B.src_();
+			int bsize = t.get_size()*s.get_size();
+            if( B.IsAdmissible() ){
+        	    AddFarFieldMat(mat,t,s,xt,tabt,xs,tabs,MyFarFieldMats_local,reqrank);
+            	if(MyFarFieldMats_local.back()->rank_of()==-1){
+                    delete MyFarFieldMats_local.back();
+            		MyFarFieldMats_local.pop_back();
+
+					// AddNearFieldMat(mat,t,s,MyNearFieldMats_local);
+            		if( s.IsLeaf() ){
+            			if( t.IsLeaf() ){
+            				AddNearFieldMat(mat,t,s,MyNearFieldMats_local);
+            			}
+            			else{
+							std::vector<bool> Blocks(t.get_nb_sons());
+							for (int p=0; p <t.get_nb_sons();p++){
+								Blocks[p] = UpdateBlocks(mat,t.get_son(p),s,xt,tabt,xs,tabs,MyNearFieldMats_local,MyFarFieldMats_local);
+							}
+
+							if ((bsize <= maxblocksize) && std::all_of(Blocks.begin(), Blocks.end(),[](bool block){return block!=true;} ) ) {
+								AddNearFieldMat(mat,t,s,MyNearFieldMats_local);
+							}
+							else{
+								for (int p=0;p<Blocks.size();p++){
+									if (Blocks[p] !=true) AddNearFieldMat(mat,t.get_son(p),s,MyNearFieldMats_local);
+								} 
+							}
+            			}
+            		}
+            		else{
+            			if( t.IsLeaf() ){
+							std::vector<bool> Blocks(s.get_nb_sons());
+							for (int p=0; p <s.get_nb_sons();p++){
+								Blocks[p] = UpdateBlocks(mat,t,s.get_son(p),xt,tabt,xs,tabs,MyNearFieldMats_local,MyFarFieldMats_local);
+							}
+
+							if ((bsize <= maxblocksize) && std::all_of(Blocks.begin(), Blocks.end(),[](bool block){return block!=true;} ) ) {
+								AddNearFieldMat(mat,t,s,MyNearFieldMats_local);
+							}
+							else{
+								for (int p=0;p<Blocks.size();p++){
+									if (Blocks[p] !=true) AddNearFieldMat(mat,t,s.get_son(p),MyNearFieldMats_local);
+								} 
+							}
+            			}
+            			else{
+							std::vector<bool> Blocks(t.get_nb_sons()*s.get_nb_sons());
+							for (int p=0; p <t.get_nb_sons();p++){
+								for (int l=0; l <s.get_nb_sons();l++){
+									Blocks[p+l*t.get_nb_sons()] =UpdateBlocks(mat,t.get_son(p),s.get_son(l),xt,tabt,xs,tabs,MyNearFieldMats_local,MyFarFieldMats_local);
+								}
+							}
+							if ((bsize <= maxblocksize) && std::all_of(Blocks.begin(), Blocks.end(),[](bool block){return block!=true;} ) ) {
+									AddNearFieldMat(mat,t,s,MyNearFieldMats_local);
+							}
+							else{
+								for (int p=0; p <t.get_nb_sons();p++){
+									for (int l=0; l <s.get_nb_sons();l++){
+										if (Blocks[p+l*t.get_nb_sons()] !=true) AddNearFieldMat(mat,t.get_son(p),s.get_son(l),MyNearFieldMats_local);
+									}
+								}
+							}
             			}
             		}
             	}
@@ -833,68 +954,148 @@ bool HMatrix<T, LowRankMatrix, ClusterImpl>::UpdateBlocks(IMatrix<T>& mat,const 
 			return false;
 		}
 		else{
-			bool b1 = UpdateBlocks(mat,t.get_son(0),s,xt,tabt,xs,tabs,MyNearFieldMats_local,MyFarFieldMats_local);
-			bool b2 = UpdateBlocks(mat,t.get_son(1),s,xt,tabt,xs,tabs,MyNearFieldMats_local,MyFarFieldMats_local);
-			if ((bsize <= maxblocksize) && (b1 != true) && (b2 != true))
+			std::vector<bool> Blocks(t.get_nb_sons());
+			for (int p=0; p <t.get_nb_sons();p++){
+				Blocks[p] = UpdateBlocks(mat,t.get_son(p),s,xt,tabt,xs,tabs,MyNearFieldMats_local,MyFarFieldMats_local);
+			}
+
+			if ((bsize <= maxblocksize) && std::all_of(Blocks.begin(), Blocks.end(),[](bool block){return block!=true;} ) ) {
 				return false;
-			else {
-				if (b1 != true)
-					// MyNearFieldMats.emplace_back(mat,t.get_son(0).get_num(),J);
-					AddNearFieldMat(mat,t.get_son(0),s,MyNearFieldMats_local);
-				if (b2 != true)
-					// MyNearFieldMats.emplace_back(mat,t.get_son(1).get_num(),J);
-					AddNearFieldMat(mat,t.get_son(1),s,MyNearFieldMats_local);
+			}
+			else{
+				for (int p=0;p<Blocks.size();p++){
+					if (Blocks[p] !=true) AddNearFieldMat(mat,t.get_son(p),s,MyNearFieldMats_local);
+				} 
 				return true;
 			}
 		}
 	}
 	else{
 		if( t.IsLeaf() ){
-			bool b3 = UpdateBlocks(mat,t,s.get_son(0),xt,tabt,xs,tabs,MyNearFieldMats_local,MyFarFieldMats_local);
-			bool b4 = UpdateBlocks(mat,t,s.get_son(1),xt,tabt,xs,tabs,MyNearFieldMats_local,MyFarFieldMats_local);
-			if ((bsize <= maxblocksize) && (b3 != true) && (b4 != true))
+			std::vector<bool> Blocks(t.get_nb_sons());
+			for (int p=0; p <t.get_nb_sons();p++){
+				Blocks[p] = UpdateBlocks(mat,t,s.get_son(p),xt,tabt,xs,tabs,MyNearFieldMats_local,MyFarFieldMats_local);
+			}
+
+			if ((bsize <= maxblocksize) && std::all_of(Blocks.begin(), Blocks.end(),[](bool block){return block!=true;} ) ) {
 				return false;
+			}
 			else{
-				if (b3 != true)
-					// MyNearFieldMats.emplace_back(mat,I,s.get_son(0).get_num());
-					AddNearFieldMat(mat,t,s.get_son(0),MyNearFieldMats_local);
-				if (b4 != true)
-					// 	MyNearFieldMats.emplace_back(mat,I,s.get_son(1).get_num());
-					AddNearFieldMat(mat,t,s.get_son(1),MyNearFieldMats_local);
+				for (int p=0;p<Blocks.size();p++){
+					if (Blocks[p] !=true) AddNearFieldMat(mat,t,s.get_son(p),MyNearFieldMats_local);
+				} 
 				return true;
 			}
 		}
 		else{
 
 			if (t.get_size()>s.get_size()){
-				bool b1 = UpdateBlocks(mat,t.get_son(0),s,xt,tabt,xs,tabs,MyNearFieldMats_local,MyFarFieldMats_local);
-				bool b2 = UpdateBlocks(mat,t.get_son(1),s,xt,tabt,xs,tabs,MyNearFieldMats_local,MyFarFieldMats_local);
-				if ((bsize <= maxblocksize) && (b1 != true) && (b2 != true))
+				std::vector<bool> Blocks(t.get_nb_sons());
+				for (int p=0; p <t.get_nb_sons();p++){
+					Blocks[p] = UpdateBlocks(mat,t.get_son(p),s,xt,tabt,xs,tabs,MyNearFieldMats_local,MyFarFieldMats_local);
+				}
+
+				if ((bsize <= maxblocksize) && std::all_of(Blocks.begin(), Blocks.end(),[](bool block){return block!=true;} ) ) {
 					return false;
-				else {
-					if (b1 != true)
-						// 	MyNearFieldMats.emplace_back(mat,t.get_son(0).get_num(),J);
-						AddNearFieldMat(mat,t.get_son(0),s,MyNearFieldMats_local);
-					if (b2 != true)
-						// 	MyNearFieldMats.emplace_back(mat,t.get_son(1).get_num(),J);
-						AddNearFieldMat(mat,t.get_son(1),s,MyNearFieldMats_local);
+				}
+				else{
+					for (int p=0;p<Blocks.size();p++){
+						if (Blocks[p] !=true) AddNearFieldMat(mat,t.get_son(p),s,MyNearFieldMats_local);
+					} 
 					return true;
 				}
 			}
 			else{
-				bool b3 = UpdateBlocks(mat,t,s.get_son(0),xt,tabt,xs,tabs,MyNearFieldMats_local,MyFarFieldMats_local);
-				bool b4 = UpdateBlocks(mat,t,s.get_son(1),xt,tabt,xs,tabs,MyNearFieldMats_local,MyFarFieldMats_local);
-				if ((bsize <= maxblocksize) && (b3 != true) && (b4 != true))
+				std::vector<bool> Blocks(t.get_nb_sons());
+				for (int p=0; p <t.get_nb_sons();p++){
+					Blocks[p] = UpdateBlocks(mat,t,s.get_son(p),xt,tabt,xs,tabs,MyNearFieldMats_local,MyFarFieldMats_local);
+				}
+
+				if ((bsize <= maxblocksize) && std::all_of(Blocks.begin(), Blocks.end(),[](bool block){return block!=true;} ) ) {
 					return false;
+				}
 				else{
-					if (b3 != true)
-						// 	MyNearFieldMats.emplace_back(mat,I,s.get_son(0).get_num());
-						AddNearFieldMat(mat,t,s.get_son(0),MyNearFieldMats_local);
-					if (b4 != true)
-						// 	MyNearFieldMats.emplace_back(mat,I,s.get_son(1).get_num());
-						AddNearFieldMat(mat,t,s.get_son(1),MyNearFieldMats_local);
+					for (int p=0;p<Blocks.size();p++){
+						if (Blocks[p] !=true) AddNearFieldMat(mat,t,s.get_son(p),MyNearFieldMats_local);
+					} 
 					return true;
 				}
+			}
+		}
+	}
+}
+
+template<typename T, template<typename,typename> class LowRankMatrix, class ClusterImpl>
+bool HMatrix<T, LowRankMatrix, ClusterImpl>::UpdateSymBlocks(IMatrix<T>& mat,const Cluster<ClusterImpl>& t, const Cluster<ClusterImpl>& s, const std::vector<R3> xt,const std::vector<int> tabt, const std::vector<R3> xs, const std::vector<int>tabs, std::vector<SubMatrix<T>*>& MyNearFieldMats_local, std::vector<LowRankMatrix<T,ClusterImpl>*>& MyFarFieldMats_local){
+	int bsize = t.get_size()*s.get_size();
+	Block<ClusterImpl> B(t,s);
+	B.ComputeAdmissibility();
+	if( B.IsAdmissible() ){
+
+		AddFarFieldMat(mat,t,s,xt,tabt,xs,tabs,MyFarFieldMats_local,reqrank);
+		if(MyFarFieldMats_local.back()->rank_of()!=-1){
+			return true;
+		}
+		else {
+            delete MyFarFieldMats_local.back();
+			MyFarFieldMats_local.pop_back();
+		}
+	}
+	if( s.IsLeaf() ){
+		if( t.IsLeaf() ){
+			return false;
+		}
+		else{
+			std::vector<bool> Blocks(t.get_nb_sons());
+			for (int p=0; p <t.get_nb_sons();p++){
+				Blocks[p] = UpdateBlocks(mat,t.get_son(p),s,xt,tabt,xs,tabs,MyNearFieldMats_local,MyFarFieldMats_local);
+			}
+
+			if ((bsize <= maxblocksize) && std::all_of(Blocks.begin(), Blocks.end(),[](bool block){return block!=true;} ) ) {
+				return false;
+			}
+			else{
+				for (int p=0;p<Blocks.size();p++){
+					if (Blocks[p] !=true) AddNearFieldMat(mat,t.get_son(p),s,MyNearFieldMats_local);
+				} 
+				return true;
+			}
+		}
+	}
+	else{
+		if( t.IsLeaf() ){
+			std::vector<bool> Blocks(t.get_nb_sons());
+			for (int p=0; p <t.get_nb_sons();p++){
+				Blocks[p] = UpdateBlocks(mat,t,s.get_son(p),xt,tabt,xs,tabs,MyNearFieldMats_local,MyFarFieldMats_local);
+			}
+
+			if ((bsize <= maxblocksize) && std::all_of(Blocks.begin(), Blocks.end(),[](bool block){return block!=true;} ) ) {
+				return false;
+			}
+			else{
+				for (int p=0;p<Blocks.size();p++){
+					if (Blocks[p] !=true) AddNearFieldMat(mat,t,s.get_son(p),MyNearFieldMats_local);
+				} 
+				return true;
+			}
+		}
+		else{
+			std::vector<bool> Blocks(t.get_nb_sons()*s.get_nb_sons());
+			for (int p=0; p <t.get_nb_sons();p++){
+				for (int l=0; l <s.get_nb_sons();l++){
+					Blocks[p+l*t.get_nb_sons()] =UpdateBlocks(mat,t.get_son(p),s.get_son(l),xt,tabt,xs,tabs,MyNearFieldMats_local,MyFarFieldMats_local);
+				}
+			}
+			if ((bsize <= maxblocksize) && std::all_of(Blocks.begin(), Blocks.end(),[](bool block){return block!=true;} ) ) {
+					return false;
+			}
+			else{
+				for (int p=0; p <t.get_nb_sons();p++){
+					for (int l=0; l <s.get_nb_sons();l++){
+						if (Blocks[p+l*t.get_nb_sons()] !=true) AddNearFieldMat(mat,t.get_son(p),s.get_son(l),MyNearFieldMats_local);
+					}
+				}
+				return true;
 			}
 		}
 	}
