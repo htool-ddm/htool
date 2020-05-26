@@ -25,7 +25,7 @@ public:
 	 }
 };
 
-template<template<typename> class LowRankMatrix>
+template<typename ClusterImpl, template<typename,typename> class LowRankMatrix>
 int hmat(int argc, char *argv[]){
 
 	// Initialize the MPI environment
@@ -73,28 +73,41 @@ int hmat(int argc, char *argv[]){
 
 	double z1 = 1;
 	vector<R3>     p1(nr);
+	vector<double> r1(nr,0);
+	vector<double> g1(nr,1);
+	vector<int>    tab1(nr);
 	for(int j=0; j<nr; j++){
 		Ir[j] = j;
 		double rho = ((double) rand() / (double)(RAND_MAX)); // (double) otherwise integer division!
 		double theta = ((double) rand() / (double)(RAND_MAX));
 		p1[j][0] = sqrt(rho)*cos(2*M_PI*theta); p1[j][1] = sqrt(rho)*sin(2*M_PI*theta); p1[j][2] = z1;
+		tab1[j]=j;
 		// sqrt(rho) otherwise the points would be concentrated in the center of the disk
 	}
 	// p2: points in a unit disk of the plane z=z2
 	double z2 = 1+distance;
 	vector<R3> p2(nc);
+	vector<double> r2(nc,0);
+	vector<double> g2(nc,1);
+	vector<int>    tab2(nc);
 	for(int j=0; j<nc; j++){
-          Ic[j] = j;
+			Ic[j] = j;
 		double rho = ((double) rand() / (RAND_MAX)); // (double) otherwise integer division!
 		double theta = ((double) rand() / (RAND_MAX));
 		p2[j][0] = sqrt(rho)*cos(2*M_PI*theta); p2[j][1] = sqrt(rho)*sin(2*M_PI*theta); p2[j][2] = z2;
+		tab2[j]=j;
 	}
 
   // Matrix
 	MyMatrix A(p1,p2);
 
+	// Clustering
+	std::shared_ptr<ClusterImpl>  t=make_shared<ClusterImpl>();
+	std::shared_ptr<ClusterImpl> s=make_shared<ClusterImpl>();
+	t->build(p1,r1,tab1,g1,2);
+	s->build(p2,r2,tab2,g2,2); 
   // Hmatrix
-	HMatrix<LowRankMatrix,double> HA(A,p1,p2);
+	HMatrix<double,LowRankMatrix,ClusterImpl> HA(A,p1,p2);
 
 	
 	double mytime, maxtime, meantime;
