@@ -38,7 +38,7 @@ matrix:
 install:
   - docker pull pierremarchand/htool_testing_environments:${TESTING_ENV}
   - docker run -itd --name ${TESTING_ENV} pierremarchand/htool_testing_environments:${TESTING_ENV}
-  - docker exec -it ${TESTING_ENV} bash -c "cd && git clone https://github.com/hpddm/hpddm.git && cd hpddm && git checkout 1e8cbb130fc70e96c1757eff9d0ba6f7ec6ef2c3 && cd .."
+  - docker exec -it ${TESTING_ENV} bash -c "cd && git clone https://github.com/hpddm/hpddm.git && cd hpddm && git checkout ce6ce80b62e9bc71efedf8b9cb6ffb00dfd6e44e && cd .."
   - docker exec -it ${TESTING_ENV} bash -c "git clone --single-branch --branch ${TRAVIS_BRANCH} https://github.com/htool-ddm/htool.git"
   - docker exec -it ${TESTING_ENV} bash -c 'mkdir htool/build'
 
