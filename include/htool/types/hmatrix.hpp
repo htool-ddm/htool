@@ -171,6 +171,8 @@ public:
 	int get_local_size() const {return local_size;}
 	int get_local_offset() const {return local_offset;}
 
+	bool IsSymmetric() const {return symmetric;}
+
     const Cluster<ClusterImpl>& get_cluster_tree_t() const{return *(cluster_tree_t.get());}
     const Cluster<ClusterImpl>& get_cluster_tree_s() const{return *(cluster_tree_s.get());}
 	std::vector<std::pair<int,int>> get_MasterOffset_t() const {return cluster_tree_t->get_masteroffset();}

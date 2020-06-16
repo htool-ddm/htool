@@ -11,7 +11,7 @@ using namespace htool;
 
 
 
-int test_solver_ddm(int argc, char *argv[], int mu){
+int test_solver_ddm(int argc, char *argv[], int mu, bool symmetric){
 
 	// Input file
 	if ( argc < 2 ){ // argc should be 5 or more for correct execution
@@ -84,7 +84,7 @@ int test_solver_ddm(int argc, char *argv[], int mu){
 	// Hmatrix
 	if (rank==0)
 	   std::cout << "Creating HMatrix" << std::endl;
-	HMatrix<complex<double>,fullACA,GeometricClustering> HA(A,t,p);
+	HMatrix<complex<double>,fullACA,GeometricClustering> HA(A,t,p,symmetric);
 	HA.print_infos();
 	
 	// Global vectors
@@ -171,7 +171,7 @@ int test_solver_ddm(int argc, char *argv[], int mu){
 
 	// No precond with overlap
     if (rank==0)
-        std::cout<<"No precond without overlap:"<<std::endl;
+        std::cout<<"No precond with overlap:"<<std::endl;
 
     opt.parse("-hpddm_schwarz_method none");
     ddm_with_overlap.solve(f_global.data(),x_global.data(),mu);
@@ -189,7 +189,7 @@ int test_solver_ddm(int argc, char *argv[], int mu){
 
     // DDM one level ASM with overlap
     if (rank==0)
-        std::cout<<"ASM one level without overlap:"<<std::endl;
+        std::cout<<"ASM one level with overlap:"<<std::endl;
     MPI_Barrier(MPI_COMM_WORLD);
     opt.parse("-hpddm_schwarz_method asm ");
     ddm_with_overlap.facto_one_level();
@@ -207,7 +207,7 @@ int test_solver_ddm(int argc, char *argv[], int mu){
 	
     // DDM one level RAS with overlap
     if (rank==0)
-        std::cout<<"RAS one level without overlap:"<<std::endl;
+        std::cout<<"RAS one level with overlap:"<<std::endl;
     MPI_Barrier(MPI_COMM_WORLD);
     opt.parse("-hpddm_schwarz_method ras ");
     ddm_with_overlap.solve(f_global.data(),x_global.data(),mu);

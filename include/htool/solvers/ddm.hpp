@@ -43,7 +43,7 @@ public:
         double time = MPI_Wtime();
 
         // Building Ai
-        bool sym=false;
+        bool sym=hmat_0.IsSymmetric();
         const std::vector<LowRankMatrix<T,ClusterImpl>*>& MyDiagFarFieldMats = hpddm_op.HA.get_MyDiagFarFieldMats();
         const std::vector<SubMatrix<T>*>& MyDiagNearFieldMats= hpddm_op.HA.get_MyDiagNearFieldMats();
 
@@ -127,7 +127,7 @@ public:
         }
 
         // Building Ai
-        bool sym=false;
+        bool sym=hmat_0.IsSymmetric();
         const std::vector<LowRankMatrix<T,ClusterImpl>*>& MyDiagFarFieldMats = hpddm_op.HA.get_MyDiagFarFieldMats();
         const std::vector<SubMatrix<T>*>& MyDiagNearFieldMats= hpddm_op.HA.get_MyDiagNearFieldMats();
 
@@ -160,17 +160,29 @@ public:
 
 
         // Overlap
-        std::vector<T> horizontal_block(n-n_inside,n_inside),vertical_block(n,n-n_inside);
+        std::vector<T> horizontal_block(n-n_inside,n_inside),diagonal_block(n-n_inside,n-n_inside);
+
+
         horizontal_block = mat0.get_submatrix(std::vector<int>(renum_to_global.begin()+n_inside,renum_to_global.end()),std::vector<int>(renum_to_global.begin(),renum_to_global.begin()+n_inside)).get_mat();
-        vertical_block = mat0.get_submatrix(renum_to_global,std::vector<int>(renum_to_global.begin()+n_inside,renum_to_global.end())).get_mat();
         for (int j=0;j<n_inside;j++){
           std::copy_n(horizontal_block.begin()+j*(n-n_inside),n-n_inside,&mat_loc[n_inside+j*n]);
         }
+
+        diagonal_block = mat0.get_submatrix(std::vector<int>(renum_to_global.begin()+n_inside,renum_to_global.end()),std::vector<int>(renum_to_global.begin(),renum_to_global.begin()+n_inside)).get_mat();
+
         for (int j=n_inside;j<n;j++){
-          std::copy_n(vertical_block.begin()+(j-n_inside)*n,n,&mat_loc[j*n]);
+          std::copy_n(diagonal_block.begin()+j*(n-n_inside),n-n_inside,&mat_loc[n_inside+j*n]);
         }
 
-        // mat_loc= mat0.get_submatrix(renum_to_global,renum_to_global).get_mat();
+        if (!hmat_0.IsSymmetric()){
+            std::vector<T> vertical_block(n_inside,n-n_inside);
+            vertical_block = mat0.get_submatrix(std::vector<int>(renum_to_global.begin(),renum_to_global.begin()+n_inside),std::vector<int>(renum_to_global.begin()+n_inside,renum_to_global.end())).get_mat();
+            for (int j=n_inside;j<n;j++){
+                std::copy_n(vertical_block.begin()+(j-n_inside)*n_inside,n_inside,&mat_loc[j*n]);
+            }
+        }
+        
+        
 
         hpddm_op.initialize(n, sym, mat_loc.data(), neighbors, intersections);
 
