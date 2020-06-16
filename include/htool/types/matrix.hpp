@@ -558,58 +558,36 @@ public:
         return 0;
     }
 
+    int print( std::ofstream& os, const std::string& delimiter){
 
-    int raw_save(const std::string& file){
-        std::ofstream out(file);
-
-        if(!out) {
-            std::cout << "Cannot open file."<<std::endl;
-            return 1;
-        }
         int rows = this->nr;
         int cols = this->nc;
-        out<<rows<<" "<<cols<<std::endl;
         for (int i=0;i<rows;i++){
             std::vector<T> row = this->get_row(i);
-            std::copy (row.begin(), row.end(), std::ostream_iterator<T>(out, "\t"));
-            out << std::endl;
+            std::copy (row.begin(), row.end()-1, std::ostream_iterator<T>(os, delimiter.c_str()));
+            os << row.back();
+            os << '\n';
         }
-        out.close();
         return 0;
     }
 
-    // To be used with dlmread
-    int matlab_save(const std::string& file){
-        std::ofstream out(file);
-        out << std::setprecision(18);
-        if(!out) {
-            std::cout << "Cannot open file."<<std::endl;
-            return 1;
-        }
-        int rows = this->nr;
-        int cols = this->nc;
-        // out<<rows<<" "<<cols<<std::endl;
-        for (int i=0;i<rows;i++){
-            std::vector<T> row = this->get_row(i);
-            for (int j=0;j<cols;j++){
-                out<<std::real(row[j]);
-                if (std::imag(row[j])<0){
-                    out<<std::imag(row[j])<<"i\t";
-                }
-                else if (std::imag(row[j])==0){
-                    out<<"+"<<0<<"i\t";
-                }
-                else{
-                    out<<"+"<<std::imag(row[j])<<"i\t";
-                }
+    int csv_save( const std::string& file, const std::string& delimiter=","){
+        std::ofstream os(file);
+        try {
+            if(!os) {
+                throw std::string("Cannot create file "+file);
             }
-            out << std::endl;
         }
-        out.close();
+        catch(std::string const& error){
+            std::cerr << error<< std::endl;
+            return 1;
+		}
+
+        this->print(os,delimiter);
+
+        os.close();
         return 0;
     }
-
-
 };
 
 //! ### Computation of the Frobenius norm
