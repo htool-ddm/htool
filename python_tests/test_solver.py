@@ -13,7 +13,7 @@ def python_gmres_get_coef():
     rank = comm.Get_rank()
 
     # Matrix
-    with open(os.path.join(os.path.dirname(__file__)+"/../data/data_test/matrix.bin"), "rb" ) as input:
+    with open(os.path.join(os.path.dirname(__file__)+"/../data/data_test/non_symmetric/matrix.bin"), "rb" ) as input:
         data=input.read()
         (m, n) = struct.unpack("@II", data[:8])
         # print(m,n)
@@ -22,14 +22,14 @@ def python_gmres_get_coef():
 
 
     # Right-hand side
-    with open(os.path.join(os.path.dirname(__file__)+"/../data/data_test/rhs.bin"), "rb" ) as input:
+    with open(os.path.join(os.path.dirname(__file__)+"/../data/data_test/non_symmetric/rhs.bin"), "rb" ) as input:
         data=input.read()
         l = struct.unpack("@I", data[:4])
         f=np.frombuffer(data[4:],dtype=np.dtype('complex128'))
 
     # mesh
     p=np.zeros((n,3))
-    with open(os.path.join(os.path.dirname(__file__)+"/../data/data_test/mesh.msh"), "r" ) as input:
+    with open(os.path.join(os.path.dirname(__file__)+"/../data/data_test/non_symmetric/mesh.msh"), "r" ) as input:
         check=False
         count=0
         for line in input:
@@ -56,7 +56,7 @@ def python_gmres_get_coef():
     H = ComplexHMatrix.from_coefs(get_coef, p , epsilon=1e-6, eta=0.1, minclustersize=1)
 
     # Global vectors
-    with open(os.path.join(os.path.dirname(__file__)+"/../data/data_test/sol.bin"), "rb" ) as input:
+    with open(os.path.join(os.path.dirname(__file__)+"/../data/data_test/non_symmetric/sol.bin"), "rb" ) as input:
         data=input.read()
         x_ref=np.frombuffer(data[4:],dtype=np.dtype('complex128'))
 
@@ -81,7 +81,7 @@ def python_gmres_get_submatrix():
     rank = comm.Get_rank()
 
     # Matrix
-    with open(os.path.join(os.path.dirname(__file__)+"/../data/data_test/matrix.bin"), "rb" ) as input:
+    with open(os.path.join(os.path.dirname(__file__)+"/../data/data_test/non_symmetric/matrix.bin"), "rb" ) as input:
         data=input.read()
         (m, n) = struct.unpack("@II", data[:8])
         A=np.frombuffer(data[8:],dtype=np.dtype('complex128'))
@@ -89,14 +89,14 @@ def python_gmres_get_submatrix():
 
 
     # Right-hand side
-    with open(os.path.join(os.path.dirname(__file__)+"/../data/data_test/rhs.bin"), "rb" ) as input:
+    with open(os.path.join(os.path.dirname(__file__)+"/../data/data_test/non_symmetric/rhs.bin"), "rb" ) as input:
         data=input.read()
         l = struct.unpack("@I", data[:4])
         f=np.frombuffer(data[4:],dtype=np.dtype('complex128'))
 
     # mesh
     p=np.zeros((n,3))
-    with open(os.path.join(os.path.dirname(__file__)+"/../data/data_test/mesh.msh"), "r" ) as input:
+    with open(os.path.join(os.path.dirname(__file__)+"/../data/data_test/non_symmetric/mesh.msh"), "r" ) as input:
         check=False
         count=0
         for line in input:
@@ -125,7 +125,7 @@ def python_gmres_get_submatrix():
     H = ComplexHMatrix.from_submatrices(get_submatrix, p, epsilon=1e-6, eta=0.1, minclustersize=1)
 
     # Global vectors
-    with open(os.path.join(os.path.dirname(__file__)+"/../data/data_test/sol.bin"), "rb" ) as input:
+    with open(os.path.join(os.path.dirname(__file__)+"/../data/data_test/non_symmetric/sol.bin"), "rb" ) as input:
         data=input.read()
         x_ref=np.frombuffer(data[4:],dtype=np.dtype('complex128'))
 
