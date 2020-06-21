@@ -110,7 +110,7 @@ void create_geometry(int distance, std::vector<R3>& xt, std::vector<int>& tabt, 
 }
 
 template<template<typename,typename> class MultiLowRankMatrix>
-int test_multi_hmat_cluster(const MyMultiMatrix& MultiA, const MultiHMatrix<double,MultiLowRankMatrix,GeometricClustering>& MultiHA,int l) {
+int test_multi_hmat_cluster(const MyMultiMatrix& MultiA, const MultiHMatrix<double,MultiLowRankMatrix,GeometricClustering,RjasanowSteinbach>& MultiHA,int l) {
 	bool test =0;
 	int rank;
 	MPI_Comm_rank(MPI_COMM_WORLD, &rank);

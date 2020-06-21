@@ -116,7 +116,7 @@ int test_hmat_cluster(int argc, char *argv[], double margin=0) {
 		t->build(p1,r1,tab1,g1,2);
 		s->build(p2,r2,tab2,g2,2);
 
-		HMatrix<double,LowRankMatrix,ClusterImpl> HA(A,t,p1,tab1,s,p2,tab2);
+		HMatrix<double,LowRankMatrix,ClusterImpl,RjasanowSteinbach> HA(A,t,p1,tab1,s,p2,tab2);
 		HA.print_infos();
 
 		// Random vector

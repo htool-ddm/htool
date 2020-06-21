@@ -97,7 +97,7 @@ int main(int argc, char *argv[]) {
 		// HMatrix<double,fullACA,RegularClustering> HA(A,t,p1,tab1,s,p2,tab2);
 
 
-  		HMatrix<double,fullACA,RegularClustering> HA(A,p1,r1,tab1,p2,r2,tab2);
+  		HMatrix<double,fullACA,RegularClustering,RjasanowSteinbach> HA(A,p1,r1,tab1,p2,r2,tab2);
   		HA.print_infos();
 
 

@@ -10,6 +10,7 @@
 #include <htool/lrmat/fullACA.hpp>
 #include <htool/lrmat/partialACA.hpp>
 #include <htool/lrmat/sympartialACA.hpp>
+#include <htool/blocks/admissibility_conditions.hpp>
 
 
 
@@ -112,7 +113,7 @@ int test_hmat_auto(int argc, char *argv[], double margin=0) {
 
 		vector<double> rhs(p2.size(),1);
 		MyMatrix A(p1,p2);
-		HMatrix<double,LowRankMatrix,ClusterImpl> HA(A,p1,r1,tab1,g1,p2,r2,tab2,g2);
+		HMatrix<double,LowRankMatrix,ClusterImpl,RjasanowSteinbach> HA(A,p1,r1,tab1,g1,p2,r2,tab2,g2);
 		HA.print_infos();
 
 		// Random vector

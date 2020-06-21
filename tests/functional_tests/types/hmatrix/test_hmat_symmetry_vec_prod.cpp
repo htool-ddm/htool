@@ -80,7 +80,7 @@ int main(int argc, char *argv[]) {
   		MyMatrix A(p1);
 
 
-  		HMatrix<double,fullACA,RegularClustering> HA_sym(A,p1,r1,tab1,true);
+  		HMatrix<double,fullACA,RegularClustering,RjasanowSteinbach> HA_sym(A,p1,r1,tab1,true);
   		HA_sym.print_infos();
 
       	// Global vectors

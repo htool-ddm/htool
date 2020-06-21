@@ -15,23 +15,23 @@
 
 namespace htool{
 
-template<typename T, template<typename,typename> class LowRankMatrix, class ClusterImpl>
+template<typename T, template<typename,typename> class LowRankMatrix, class ClusterImpl, template<typename> typename AdmissibleCondition>
 class DDM;
 
-template<typename T, template<typename,typename> class LowRankMatrix, class ClusterImpl>
+template<typename T, template<typename,typename> class LowRankMatrix, class ClusterImpl, template<typename> typename AdmissibleCondition>
 class Proto_DDM;
 
-template<typename T, template<typename,typename> class LowRankMatrix, class ClusterImpl>
+template<typename T, template<typename,typename> class LowRankMatrix, class ClusterImpl, template<typename> typename AdmissibleCondition>
 class HPDDMDense : public HpDense<T, 'G'> {
 private:
-    const HMatrix<T,LowRankMatrix,ClusterImpl>& HA;
+    const HMatrix<T,LowRankMatrix,ClusterImpl,AdmissibleCondition>& HA;
     std::vector<T>* in_global,*buffer;
 
 
 public:
     typedef  HpDense<T, 'G'> super;
 
-    HPDDMDense(const HMatrix<T,LowRankMatrix,ClusterImpl>& A):HA(A){
+    HPDDMDense(const HMatrix<T,LowRankMatrix,ClusterImpl,AdmissibleCondition>& A):HA(A){
         in_global = new std::vector<T> ;
         buffer = new std::vector<T>;
     }
@@ -82,21 +82,21 @@ public:
 
     void setType(typename super::Prcndtnr type) { this->_type = type; };
 
-    friend class DDM<T,LowRankMatrix,ClusterImpl>;
+    friend class DDM<T,LowRankMatrix,ClusterImpl,AdmissibleCondition>;
 
 };
 
-template<typename T, template<typename,typename> class LowRankMatrix, class ClusterImpl>
+template<typename T, template<typename,typename> class LowRankMatrix, class ClusterImpl, template<typename> typename AdmissibleCondition>
 class Proto_HPDDM : public HpDense<T, 'G'> {
 private:
-    const HMatrix<T,LowRankMatrix,ClusterImpl>& HA;
+    const HMatrix<T,LowRankMatrix,ClusterImpl,AdmissibleCondition>& HA;
     std::vector<T>* in_global;
-    Proto_DDM<T,LowRankMatrix,ClusterImpl>& P;
+    Proto_DDM<T,LowRankMatrix,ClusterImpl,AdmissibleCondition>& P;
 
 public:
     typedef  HpDense<T, 'G'> super;
 
-    Proto_HPDDM(const HMatrix<T,LowRankMatrix,ClusterImpl>& A,  Proto_DDM<T,LowRankMatrix,ClusterImpl>& P0):HA(A),P(P0){
+    Proto_HPDDM(const HMatrix<T,LowRankMatrix,ClusterImpl,AdmissibleCondition>& A,  Proto_DDM<T,LowRankMatrix,ClusterImpl,AdmissibleCondition>& P0):HA(A),P(P0){
         in_global = new std::vector<T> (A.nb_cols());
         P.init_hpddm(*this);
     }
@@ -345,11 +345,11 @@ public:
     int get_nevi() const {return P.get_nevi();}
 };
 
-template<typename T, template<typename,typename> class LowRankMatrix, class ClusterImpl>
+template<typename T, template<typename,typename> class LowRankMatrix, class ClusterImpl, template<typename> typename AdmissibleCondition>
 class Calderon : public HPDDM::EmptyOperator<T> {
 private:
-    const HMatrix<T,LowRankMatrix,ClusterImpl>& HA;
-    const HMatrix<T,LowRankMatrix,ClusterImpl>& HB;
+    const HMatrix<T,LowRankMatrix,ClusterImpl,AdmissibleCondition>& HA;
+    const HMatrix<T,LowRankMatrix,ClusterImpl,AdmissibleCondition>& HB;
     Matrix<T>& M;
     std::vector<int> _ipiv;
     std::vector<T>* in_global,*buffer;
@@ -357,7 +357,7 @@ private:
 
 public:
 
-    Calderon(const HMatrix<T,LowRankMatrix,ClusterImpl>& A,  const HMatrix<T,LowRankMatrix,ClusterImpl>& B,  Matrix<T>& M0):HPDDM::EmptyOperator<T>(A.get_local_size()),HA(A),HB(B),M(M0),_ipiv(M.nb_rows()){
+    Calderon(const HMatrix<T,LowRankMatrix,ClusterImpl,AdmissibleCondition>& A,  const HMatrix<T,LowRankMatrix,ClusterImpl,AdmissibleCondition>& B,  Matrix<T>& M0):HPDDM::EmptyOperator<T>(A.get_local_size()),HA(A),HB(B),M(M0),_ipiv(M.nb_rows()){
         in_global = new std::vector<T> ;
         buffer = new std::vector<T>;
 
@@ -555,10 +555,10 @@ public:
     std::string get_infos(const std::string& key) const { return infos[key];}
 };
 
-template<typename T, template<typename,typename> class LowRankMatrix, class ClusterImpl>
+template<typename T, template<typename,typename> class LowRankMatrix, class ClusterImpl, template<typename> typename AdmissibleCondition>
 class ContinuousOperator : public HPDDM::EmptyOperator<T> {
 private:
-    const HMatrix<T,LowRankMatrix,ClusterImpl>& H;
+    const HMatrix<T,LowRankMatrix,ClusterImpl,AdmissibleCondition>& H;
     Matrix<T>& M;
     std::vector<int> _ipiv;
     std::vector<T>* in_global,*buffer;
@@ -566,7 +566,7 @@ private:
 
 public:
 
-    ContinuousOperator(const HMatrix<T,LowRankMatrix,ClusterImpl>& A,  Matrix<T>& M0):HPDDM::EmptyOperator<T>(A.get_local_size()),H(A),M(M0),_ipiv(M.nb_rows()){
+    ContinuousOperator(const HMatrix<T,LowRankMatrix,ClusterImpl,AdmissibleCondition>& A,  Matrix<T>& M0):HPDDM::EmptyOperator<T>(A.get_local_size()),H(A),M(M0),_ipiv(M.nb_rows()){
         in_global = new std::vector<T> ;
         buffer = new std::vector<T>;
 

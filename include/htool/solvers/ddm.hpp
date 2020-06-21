@@ -7,7 +7,7 @@
 
 namespace htool{
 
-template<typename T, template<typename,typename> class LowRankMatrix, class ClusterImpl>
+template<typename T, template<typename,typename> class LowRankMatrix, class ClusterImpl, template<typename> typename AdmissibleCondition>
 class DDM{
 private:
     int n;
@@ -17,7 +17,7 @@ private:
     // const std::vector<int> cluster_to_ovr_subdomain;
     std::vector<std::vector<int> > intersections;
     std::vector<T> vec_ovr;
-    HPDDMDense<T,LowRankMatrix,ClusterImpl> hpddm_op;
+    HPDDMDense<T,LowRankMatrix,ClusterImpl,AdmissibleCondition> hpddm_op;
     std::vector<T> mat_loc;
     std::vector<double> D;
     const MPI_Comm& comm;
@@ -33,11 +33,11 @@ private:
 public:
 
     void clean(){
-        hpddm_op.~HPDDMDense<T,LowRankMatrix,ClusterImpl>();
+        hpddm_op.~HPDDMDense<T,LowRankMatrix,ClusterImpl,AdmissibleCondition>();
     }
 
     // Without overlap
-    DDM(const HMatrix<T,LowRankMatrix,ClusterImpl>& hmat_0):n(hmat_0.get_local_size()),n_inside(hmat_0.get_local_size()),hpddm_op(hmat_0),mat_loc(n*n),D(n),nevi(0),size_E(0),comm(hmat_0.get_comm()),one_level(0),two_level(0){
+    DDM(const HMatrix<T,LowRankMatrix,ClusterImpl,AdmissibleCondition>& hmat_0):n(hmat_0.get_local_size()),n_inside(hmat_0.get_local_size()),hpddm_op(hmat_0),mat_loc(n*n),D(n),nevi(0),size_E(0),comm(hmat_0.get_comm()),one_level(0),two_level(0){
         // Timing
         double mytime, maxtime, meantime;
         double time = MPI_Wtime();
@@ -81,7 +81,7 @@ public:
         fill(D.begin(),D.begin()+n_inside,1);
         fill(D.begin()+n_inside,D.end(),0);
 
-        hpddm_op.HPDDMDense<T,LowRankMatrix,ClusterImpl>::super::super::initialize(D.data());
+        hpddm_op.HPDDMDense<T,LowRankMatrix,ClusterImpl,AdmissibleCondition>::super::super::initialize(D.data());
         mytime =  MPI_Wtime() - time;
 
         // Timing
@@ -91,7 +91,7 @@ public:
     }
 
     // With overlap
-    DDM(const IMatrix<T>& mat0, const HMatrix<T,LowRankMatrix,ClusterImpl>& hmat_0,
+    DDM(const IMatrix<T>& mat0, const HMatrix<T,LowRankMatrix,ClusterImpl,AdmissibleCondition>& hmat_0,
     const std::vector<int>&  ovr_subdomain_to_global0,
     const std::vector<int>& cluster_to_ovr_subdomain0,
     const std::vector<int>& neighbors0,
@@ -189,7 +189,7 @@ public:
         fill(D.begin(),D.begin()+n_inside,1);
         fill(D.begin()+n_inside,D.end(),0);
 
-        hpddm_op.HPDDMDense<T,LowRankMatrix,ClusterImpl>::super::super::initialize(D.data());
+        hpddm_op.HPDDMDense<T,LowRankMatrix,ClusterImpl,AdmissibleCondition>::super::super::initialize(D.data());
         mytime =  MPI_Wtime() - time;
 
         // Timing
@@ -225,7 +225,7 @@ public:
         int info;
 
         // Building Neumann matrix
-        htool::HMatrix<T,LowRankMatrix,ClusterImpl> HBi(generator_Bi,hpddm_op.HA.get_cluster_tree_t().get_local_cluster_tree(),x,-1,MPI_COMM_SELF);
+        htool::HMatrix<T,LowRankMatrix,ClusterImpl,AdmissibleCondition> HBi(generator_Bi,hpddm_op.HA.get_cluster_tree_t().get_local_cluster_tree(),x,-1,MPI_COMM_SELF);
         Matrix<T> Bi(n,n);
 
         // Building Bi
@@ -627,13 +627,13 @@ void build_coarse_space( Matrix<T>& Ki, const std::vector<R3>& x ){
         HPDDM::Option& opt = *HPDDM::Option::get();
         switch (opt.val("schwarz_method",0)) {
             case HPDDM_SCHWARZ_METHOD_NONE:
-            hpddm_op.setType(HPDDMDense<T,LowRankMatrix,ClusterImpl>::Prcndtnr::NO);
+            hpddm_op.setType(HPDDMDense<T,LowRankMatrix,ClusterImpl,AdmissibleCondition>::Prcndtnr::NO);
             break;
             case HPDDM_SCHWARZ_METHOD_RAS:
-            hpddm_op.setType(HPDDMDense<T,LowRankMatrix,ClusterImpl>::Prcndtnr::GE);
+            hpddm_op.setType(HPDDMDense<T,LowRankMatrix,ClusterImpl,AdmissibleCondition>::Prcndtnr::GE);
             break;
             case HPDDM_SCHWARZ_METHOD_ASM:
-            hpddm_op.setType(HPDDMDense<T,LowRankMatrix,ClusterImpl>::Prcndtnr::SY);
+            hpddm_op.setType(HPDDMDense<T,LowRankMatrix,ClusterImpl,AdmissibleCondition>::Prcndtnr::SY);
             break;
             // case HPDDM_SCHWARZ_METHOD_OSM:
             // hpddm_op.setType(HPDDM::Schwarz::Prcndtnr::NO);
