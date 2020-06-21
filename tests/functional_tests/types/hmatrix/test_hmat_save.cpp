@@ -99,7 +99,7 @@ int main(int argc, char *argv[]) {
 		std::shared_ptr<GeometricClustering> s=make_shared<GeometricClustering>();
 		t->build(p1,r1,tab1,g1);
 		s->build(p2,r2,tab2,g2);
-		HMatrix<double,fullACA,GeometricClustering> HA(A,t,p1,tab1,s,p2,tab2);
+		HMatrix<double,fullACA,GeometricClustering,RjasanowSteinbach> HA(A,t,p1,tab1,s,p2,tab2);
 		HA.print_infos();
 
         HA.save_plot("plot_"+NbrToStr(idist));

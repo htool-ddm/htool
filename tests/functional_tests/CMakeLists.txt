@@ -1,3 +1,4 @@
+add_subdirectory(blocks)
 add_subdirectory(clustering)
 add_subdirectory(lrmat)
 add_subdirectory(multilrmat)

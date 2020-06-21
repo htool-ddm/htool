@@ -107,7 +107,7 @@ int hmat(int argc, char *argv[]){
 	t->build(p1,r1,tab1,g1,2);
 	s->build(p2,r2,tab2,g2,2); 
   // Hmatrix
-	HMatrix<double,LowRankMatrix,ClusterImpl> HA(A,p1,p2);
+	HMatrix<double,LowRankMatrix,ClusterImpl,RjasanowSteinbach> HA(A,p1,p2);
 
 	
 	double mytime, maxtime, meantime;

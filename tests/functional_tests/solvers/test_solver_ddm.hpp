@@ -84,7 +84,7 @@ int test_solver_ddm(int argc, char *argv[], int mu, bool symmetric){
 	// Hmatrix
 	if (rank==0)
 	   std::cout << "Creating HMatrix" << std::endl;
-	HMatrix<complex<double>,fullACA,GeometricClustering> HA(A,t,p,symmetric);
+	HMatrix<complex<double>,fullACA,GeometricClustering,RjasanowSteinbach> HA(A,t,p,symmetric);
 	HA.print_infos();
 	
 	// Global vectors
@@ -113,8 +113,8 @@ int test_solver_ddm(int argc, char *argv[], int mu, bool symmetric){
 	double error2;
 
 	// Solve
-    DDM<complex<double>,fullACA,GeometricClustering> ddm_wo_overlap(HA);
-	DDM<complex<double>,fullACA,GeometricClustering> ddm_with_overlap(A,HA,ovr_subdomain_to_global,cluster_to_ovr_subdomain,neighbors,intersections);
+    DDM<complex<double>,fullACA,GeometricClustering,RjasanowSteinbach> ddm_wo_overlap(HA);
+	DDM<complex<double>,fullACA,GeometricClustering,RjasanowSteinbach> ddm_with_overlap(A,HA,ovr_subdomain_to_global,cluster_to_ovr_subdomain,neighbors,intersections);
 
 	// No precond wo overlap
     if (rank==0)

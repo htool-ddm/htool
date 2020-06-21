@@ -8,10 +8,10 @@
 
 namespace htool{
 
-template<typename T,template<typename,typename> class LowRankMatrix, class ClusterImpl>
+template<typename T,template<typename,typename> class LowRankMatrix, class ClusterImpl,template<typename> typename AdmissibleCondition>
 class Proto_HPDDM;
 
-template<typename T,template<typename,typename> class LowRankMatrix, class ClusterImpl>
+template<typename T,template<typename,typename> class LowRankMatrix, class ClusterImpl,template<typename> typename AdmissibleCondition>
 class Proto_DDM{
 private:
     int n;
@@ -30,7 +30,7 @@ private:
     std::vector<T> evi;
     std::vector<int> renum_to_global;
     Matrix<T> E;
-    const HMatrix<T,LowRankMatrix,ClusterImpl>& hmat;
+    const HMatrix<T,LowRankMatrix,ClusterImpl,AdmissibleCondition>& hmat;
     const T* const* Z;
     std::vector<int> recvcounts;
     std::vector<int> displs;
@@ -68,7 +68,7 @@ public:
     double timing_one_level;
     double timing_Q;
 
-    Proto_DDM(const IMatrix<T>& mat0, const HMatrix<T,LowRankMatrix, ClusterImpl>& hmat_0,
+    Proto_DDM(const IMatrix<T>& mat0, const HMatrix<T,LowRankMatrix, ClusterImpl,AdmissibleCondition>& hmat_0,
     const std::vector<int>&  ovr_subdomain_to_global0,
     const std::vector<int>& cluster_to_ovr_subdomain0,
     const std::vector<int>& neighbors0,
@@ -202,7 +202,7 @@ public:
         int info;
 
         // Building Neumann matrix
-        htool::HMatrix<T,LowRankMatrix, ClusterImpl> HBi(generator_Bi,hmat.get_cluster_tree_t().get_local_cluster_tree(),x,-1,MPI_COMM_SELF);
+        htool::HMatrix<T,LowRankMatrix, ClusterImpl,AdmissibleCondition> HBi(generator_Bi,hmat.get_cluster_tree_t().get_local_cluster_tree(),x,-1,MPI_COMM_SELF);
 
         Matrix<T> Bi(n,n);
 
@@ -357,7 +357,7 @@ void build_coarse_space(Matrix<T>& Mi, IMatrix<T>& generator_Bi, const std::vect
         int info;
 
         // Building Neumann matrix
-        htool::HMatrix<T,LowRankMatrix,ClusterImpl> HBi(generator_Bi,hmat.get_cluster_tree_t().get_local_cluster_tree(),x,-1,MPI_COMM_SELF);
+        htool::HMatrix<T,LowRankMatrix,ClusterImpl,AdmissibleCondition> HBi(generator_Bi,hmat.get_cluster_tree_t().get_local_cluster_tree(),x,-1,MPI_COMM_SELF);
 
         Matrix<T> Bi(n,n);
 
@@ -1037,7 +1037,7 @@ void build_coarse_space(Matrix<T>& Mi, IMatrix<T>& generator_Bi, const std::vect
         // std::transform(out_Q.begin(),out_Q.begin()+n_inside,ptm1p.begin(),out,std::plus<T>());
     }
 
-    void init_hpddm(Proto_HPDDM<T,LowRankMatrix,ClusterImpl>& hpddm_op){
+    void init_hpddm(Proto_HPDDM<T,LowRankMatrix,ClusterImpl,AdmissibleCondition>& hpddm_op){
         bool sym=false;
         hpddm_op.initialize(n, sym, nullptr, neighbors, intersections);
     }
