@@ -391,10 +391,11 @@ public:
 					}
 				}
 			}
-			counter_offset[curr->depth+1]+=nb_sons;
+			
 
 			// Recursion
 			if (!curr->IsLeaf()){
+				counter_offset[curr->depth+1]+=nb_sons;
 				for (int p=curr->get_nb_sons()-1;p!=-1;p--){
 					s.push((curr->sons[p]));
 				}

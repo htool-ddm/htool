@@ -32,6 +32,9 @@ if(CMAKE_PROJECT_NAME STREQUAL PROJECT_NAME)
 		set(CMAKE_BUILD_TYPE "${default_build_type}" CACHE STRING "Choose the type of build." FORCE)
 	endif()
 
+	# Sanitizers
+	include(cmake/sanitizers.cmake)
+
 	if (${CMAKE_BUILD_TYPE} STREQUAL Release_native)
 		message(STATUS "Setting build type to 'Release_native'.")
 		set(CMAKE_BUILD_TYPE Release)
