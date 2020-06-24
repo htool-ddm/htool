@@ -32,14 +32,16 @@ if(CMAKE_PROJECT_NAME STREQUAL PROJECT_NAME)
 		set(CMAKE_BUILD_TYPE "${default_build_type}" CACHE STRING "Choose the type of build." FORCE)
 	endif()
 
-	# Sanitizers
-	include(cmake/sanitizers.cmake)
-
 	if (${CMAKE_BUILD_TYPE} STREQUAL Release_native)
 		message(STATUS "Setting build type to 'Release_native'.")
 		set(CMAKE_BUILD_TYPE Release)
 		SET(CMAKE_CXX_FLAGS  "${CMAKE_C_FLAGS} -march=native")
 	endif()
+
+	message(STATUS "Build type: ${CMAKE_BUILD_TYPE}")
+
+	# Sanitizers
+	include(cmake/sanitizers.cmake)
 
 	# Files to do find_package for some module
 	list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}/cmake_modules")
