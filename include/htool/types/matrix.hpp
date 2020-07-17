@@ -33,9 +33,11 @@ protected:
     IMatrix()                           = delete;  // no default constructor
 
 
-    IMatrix(int nr0,int nc0): nr(nr0), nc(nc0){}
+    
 
 public:
+
+    IMatrix(int nr0,int nc0): nr(nr0), nc(nc0){}
 
     IMatrix(IMatrix&&)                  = default; // move constructor
     IMatrix& operator=(IMatrix&&)       = default; // move assignement operator
