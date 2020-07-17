@@ -202,7 +202,7 @@ public:
     /*!
     */
 
-    const std::vector<T>& get_mat(){return this->mat;}
+    const std::vector<T>& get_mat() const {return this->mat;}
 
 
     //! ### Access operator
