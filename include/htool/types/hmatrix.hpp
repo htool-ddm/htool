@@ -695,7 +695,7 @@ void HMatrix<T, LowRankMatrix, ClusterImpl>::ScatterTasks(){
 // TODO: recursivity -> stack for compute blocks
 template<typename T, template<typename,typename> class LowRankMatrix, class ClusterImpl>
 void HMatrix<T, LowRankMatrix, ClusterImpl>::ComputeBlocks(IMatrix<T>& mat, const std::vector<R3> xt,const std::vector<int> tabt, const std::vector<R3> xs, const std::vector<int>tabs){
-    #if _OPENMP
+    #if _OPENMP && !defined(PYTHON_INTERFACE)
     #pragma omp parallel
     #endif
     {
@@ -704,7 +704,7 @@ void HMatrix<T, LowRankMatrix, ClusterImpl>::ComputeBlocks(IMatrix<T>& mat, cons
         std::vector<LowRankMatrix<T,ClusterImpl>*> MyFarFieldMats_local;
         // int tid = omp_get_thread_num();
         // std::cout<<"Hello World from thread = "+ NbrToStr(tid)<<std::endl;
-        #if _OPENMP
+        #if _OPENMP && !defined(PYTHON_INTERFACE)
         #pragma omp for schedule(guided)
         #endif
         for(int b=0; b<MyBlocks.size(); b++) {
@@ -823,7 +823,7 @@ void HMatrix<T, LowRankMatrix, ClusterImpl>::ComputeBlocks(IMatrix<T>& mat, cons
 
 template<typename T, template<typename,typename> class LowRankMatrix, class ClusterImpl>
 void HMatrix<T, LowRankMatrix, ClusterImpl>::ComputeSymBlocks(IMatrix<T>& mat, const std::vector<R3> xt,const std::vector<int> tabt, const std::vector<R3> xs, const std::vector<int>tabs){
-    #if _OPENMP
+    #if _OPENMP && !defined(PYTHON_INTERFACE)
     #pragma omp parallel
     #endif
     {
@@ -832,7 +832,7 @@ void HMatrix<T, LowRankMatrix, ClusterImpl>::ComputeSymBlocks(IMatrix<T>& mat, c
         std::vector<LowRankMatrix<T,ClusterImpl>*> MyFarFieldMats_local;
         // int tid = omp_get_thread_num();
         // std::cout<<"Hello World from thread = "+ NbrToStr(tid)<<std::endl;
-        #if _OPENMP
+        #if _OPENMP && !defined(PYTHON_INTERFACE)
         #pragma omp for schedule(guided)
         #endif
         for(int b=0; b<MyBlocks.size(); b++) {
@@ -909,7 +909,7 @@ void HMatrix<T, LowRankMatrix, ClusterImpl>::ComputeSymBlocks(IMatrix<T>& mat, c
             	AddNearFieldMat(mat,t,s,MyNearFieldMats_local);
             }
         }
-        #if _OPENMP
+        #if _OPENMP && !defined(PYTHON_INTERFACE)
         #pragma omp critical
         #endif
         {
