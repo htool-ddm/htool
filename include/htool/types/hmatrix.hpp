@@ -219,6 +219,7 @@ public:
 
     // Convert
     Matrix<T> to_dense() const;
+	Matrix<T> to_local_dense() const;
     Matrix<T> to_dense_perm() const;
 
     // Apply Dirichlet condition
@@ -1653,7 +1654,7 @@ Matrix<T> HMatrix<T, LowRankMatrix, ClusterImpl>::to_dense() const{
       int offset_i = submat.get_offset_i();
       int offset_j = submat.get_offset_j();
       for (int k=0;k<local_nc;k++){
-        std::copy_n(&(submat(0,k)),local_nr,Dense.data()+offset_i+(offset_j+k)*local_size);
+        std::copy_n(&(submat(0,k)),local_nr,Dense.data()+offset_i+(offset_j+k)*nr);
       }
     }
 
@@ -1668,7 +1669,39 @@ Matrix<T> HMatrix<T, LowRankMatrix, ClusterImpl>::to_dense() const{
       FarFielBlock.resize(local_nr,local_nc);
       lmat.get_whole_matrix(&(FarFielBlock(0,0)));
       for (int k=0;k<local_nc;k++){
-        std::copy_n(&(FarFielBlock(0,k)),local_nr,Dense.data()+offset_i+(offset_j+k)*local_size);
+        std::copy_n(&(FarFielBlock(0,k)),local_nr,Dense.data()+offset_i+(offset_j+k)*nr);
+      }
+    }
+    return Dense;
+}
+
+template<typename T, template<typename,typename> class LowRankMatrix, class ClusterImpl>
+Matrix<T> HMatrix<T, LowRankMatrix, ClusterImpl>::to_local_dense() const{
+    Matrix<T> Dense(local_size,nc);
+    // Internal dense blocks
+    for (int l=0;l<MyNearFieldMats.size();l++){
+      const SubMatrix<T>& submat = *(MyNearFieldMats[l]);
+      int local_nr = submat.nb_rows();
+      int local_nc = submat.nb_cols();
+      int offset_i = submat.get_offset_i();
+      int offset_j = submat.get_offset_j();
+      for (int k=0;k<local_nc;k++){
+        std::copy_n(&(submat(0,k)),local_nr,Dense.data()+(offset_i-local_offset)+(offset_j+k)*local_size);
+      }
+    }
+
+    // Internal compressed block
+    Matrix<T> FarFielBlock(local_size,local_size);
+    for (int l=0;l<MyFarFieldMats.size();l++){
+      const LowRankMatrix<T,ClusterImpl>& lmat = *(MyFarFieldMats[l]);
+      int local_nr = lmat.nb_rows();
+      int local_nc = lmat.nb_cols();
+      int offset_i = lmat.get_offset_i();
+      int offset_j = lmat.get_offset_j();
+      FarFielBlock.resize(local_nr,local_nc);
+      lmat.get_whole_matrix(&(FarFielBlock(0,0)));
+      for (int k=0;k<local_nc;k++){
+        std::copy_n(&(FarFielBlock(0,k)),local_nr,Dense.data()+(offset_i-local_offset)+(offset_j+k)*local_size);
       }
     }
     return Dense;

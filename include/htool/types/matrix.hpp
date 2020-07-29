@@ -560,7 +560,7 @@ public:
         return 0;
     }
 
-    int print( std::ofstream& os, const std::string& delimiter){
+    int print( std::ostream& os, const std::string& delimiter){
 
         int rows = this->nr;
         int cols = this->nc;
