@@ -72,7 +72,7 @@ add_test(NAME Test_hmat_symmetry_mat_prod_4 COMMAND  ${MPIEXEC} ${MPIEXEC_NUMPRO
 add_executable(Test_hmat_to_dense test_hmat_to_dense.cpp)
 target_link_libraries(Test_hmat_to_dense htool)
 add_dependencies(build-tests Test_hmat_to_dense)
-add_test(NAME Test_hmat_to_dense_1 COMMAND  ${MPIEXEC} ${MPIEXEC_NUMPROC_FLAG} 1 ${MPIEXEC_PREFLAGS} ${CMAKE_CURRENT_BINARY_DIR}/Texst_hmat_to_dense)
+add_test(NAME Test_hmat_to_dense_1 COMMAND  ${MPIEXEC} ${MPIEXEC_NUMPROC_FLAG} 1 ${MPIEXEC_PREFLAGS} ${CMAKE_CURRENT_BINARY_DIR}/Test_hmat_to_dense)
 add_test(NAME Test_hmat_to_dense_2 COMMAND  ${MPIEXEC} ${MPIEXEC_NUMPROC_FLAG} 2 ${MPIEXEC_PREFLAGS} ${CMAKE_CURRENT_BINARY_DIR}/Test_hmat_to_dense)
 add_test(NAME Test_hmat_to_dense_3 COMMAND  ${MPIEXEC} ${MPIEXEC_NUMPROC_FLAG} 3 ${MPIEXEC_PREFLAGS} ${CMAKE_CURRENT_BINARY_DIR}/Test_hmat_to_dense)
 add_test(NAME Test_hmat_to_dense_4 COMMAND  ${MPIEXEC} ${MPIEXEC_NUMPROC_FLAG} 4 ${MPIEXEC_PREFLAGS} ${CMAKE_CURRENT_BINARY_DIR}/Test_hmat_to_dense)
