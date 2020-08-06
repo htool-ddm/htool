@@ -41,7 +41,7 @@ private:
 	int local_offset;
     int nb_hmatrix;
 
-	MPI_Comm comm;
+	const MPI_Comm comm;
 	int rankWorld,sizeWorld;
 
 	std::vector<HMatrix<T,bareLowRankMatrix,ClusterImpl,AdmissibleCondition> >    HMatrices;
@@ -56,13 +56,13 @@ private:
 public:
 
 	// Build
-	void build(MultiIMatrix<T>& mat, const std::vector<R3>& xt, const std::vector<double>& rt, const std::vector<int>& tabt, const std::vector<double>& gt, const std::vector<R3>&xs, const std::vector<double>& rs, const std::vector<int>& tabs, const std::vector<double>& gs, MPI_Comm comm=MPI_COMM_WORLD); // To be used with two different clusters
+	void build(MultiIMatrix<T>& mat, const std::vector<R3>& xt, const std::vector<double>& rt, const std::vector<int>& tabt, const std::vector<double>& gt, const std::vector<R3>&xs, const std::vector<double>& rs, const std::vector<int>& tabs, const std::vector<double>& gs); // To be used with two different clusters
 
 	// Full constructor
-	MultiHMatrix(MultiIMatrix<T>&, const std::vector<R3>& xt, const std::vector<double>& rt, const std::vector<int>& tabt, const std::vector<double>& gt, const std::vector<R3>&xs, const std::vector<double>& rs, const std::vector<int>& tabs, const std::vector<double>& gs, const int& reqrank=-1, MPI_Comm comm=MPI_COMM_WORLD); // To be used with two different clusters
+	MultiHMatrix(MultiIMatrix<T>&, const std::vector<R3>& xt, const std::vector<double>& rt, const std::vector<int>& tabt, const std::vector<double>& gt, const std::vector<R3>&xs, const std::vector<double>& rs, const std::vector<int>& tabs, const std::vector<double>& gs, const int& reqrank=-1, const MPI_Comm comm=MPI_COMM_WORLD); // To be used with two different clusters
 
 	// Constructor without radius, tab and mass
-	MultiHMatrix(MultiIMatrix<T>&, const std::vector<R3>& xt, const std::vector<R3>&xs, const int& reqrank=-1, MPI_Comm comm=MPI_COMM_WORLD); // To be used with two different clusters
+	MultiHMatrix(MultiIMatrix<T>&, const std::vector<R3>& xt, const std::vector<R3>&xs, const int& reqrank=-1, const MPI_Comm comm=MPI_COMM_WORLD); // To be used with two different clusters
 
 	
 	// Internal methods
@@ -102,11 +102,8 @@ public:
 
 // build
 template<typename T, template<typename,typename> class MultiLowRankMatrix, class ClusterImpl, template<typename> class AdmissibleCondition>
-void MultiHMatrix<T,MultiLowRankMatrix,ClusterImpl,AdmissibleCondition>::build(MultiIMatrix<T>& mat, const std::vector<R3>& xt, const std::vector<double>& rt, const std::vector<int>& tabt, const std::vector<double>& gt, const std::vector<R3>&xs, const std::vector<double>& rs, const std::vector<int>& tabs, const std::vector<double>& gs, MPI_Comm comm0){
+void MultiHMatrix<T,MultiLowRankMatrix,ClusterImpl,AdmissibleCondition>::build(MultiIMatrix<T>& mat, const std::vector<R3>& xt, const std::vector<double>& rt, const std::vector<int>& tabt, const std::vector<double>& gt, const std::vector<R3>&xs, const std::vector<double>& rs, const std::vector<int>& tabs, const std::vector<double>& gs){
 
-	assert( mat.nb_rows()==tabt.size() && mat.nb_cols()==tabs.size() );
-
-	MPI_Comm_dup(comm0,&comm);
 	MPI_Comm_size(comm, &sizeWorld);
 	MPI_Comm_rank(comm, &rankWorld);
 
@@ -126,7 +123,7 @@ void MultiHMatrix<T,MultiLowRankMatrix,ClusterImpl,AdmissibleCondition>::build(M
 
 	// Hmatrices
 	for (int l=0;l<nb_hmatrix;l++){
-		HMatrices.emplace_back(nr,nc,cluster_tree_t,cluster_tree_s);
+		HMatrices.emplace_back(nr,nc,cluster_tree_t,cluster_tree_s,'N','N',comm);
 	}
 
 	// Construction arbre des blocs
@@ -146,7 +143,6 @@ void MultiHMatrix<T,MultiLowRankMatrix,ClusterImpl,AdmissibleCondition>::build(M
 	for (int l=0;l<nb_hmatrix;l++){
 		HMatrices[l].sizeWorld=sizeWorld;
 		HMatrices[l].rankWorld=rankWorld;
-		HMatrices[l].comm=comm;
 		HMatrices[l].reqrank=this->reqrank;
 		HMatrices[l].local_size=local_size;
 		HMatrices[l].local_offset=local_offset;
@@ -161,17 +157,17 @@ void MultiHMatrix<T,MultiLowRankMatrix,ClusterImpl,AdmissibleCondition>::build(M
 
 // Full constructor
 template<typename T, template<typename,typename> class MultiLowRankMatrix, class ClusterImpl, template<typename> class AdmissibleCondition>
-MultiHMatrix<T,MultiLowRankMatrix,ClusterImpl,AdmissibleCondition>::MultiHMatrix(MultiIMatrix<T>& mat, const std::vector<R3>& xt, const std::vector<double>& rt, const std::vector<int>& tabt, const std::vector<double>& gt, const std::vector<R3>&xs, const std::vector<double>& rs, const std::vector<int>& tabs, const std::vector<double>& gs, const int& reqrank0, MPI_Comm comm0): nr(mat.nb_rows()),nc(mat.nb_cols()), nb_hmatrix(mat.nb_matrix()), cluster_tree_s(nullptr), cluster_tree_t(nullptr), reqrank(reqrank0) {
-	this->build(mat, xt, rt, tabt, gt, xs, rs, tabs, gs,comm0);
+MultiHMatrix<T,MultiLowRankMatrix,ClusterImpl,AdmissibleCondition>::MultiHMatrix(MultiIMatrix<T>& mat, const std::vector<R3>& xt, const std::vector<double>& rt, const std::vector<int>& tabt, const std::vector<double>& gt, const std::vector<R3>&xs, const std::vector<double>& rs, const std::vector<int>& tabs, const std::vector<double>& gs, const int& reqrank0, const MPI_Comm comm0): nr(mat.nb_rows()),nc(mat.nb_cols()), nb_hmatrix(mat.nb_matrix()), cluster_tree_s(nullptr), cluster_tree_t(nullptr), reqrank(reqrank0), comm(comm0) {
+	this->build(mat, xt, rt, tabt, gt, xs, rs, tabs, gs);
 }
 
 // Constructor without radius, mass and tab
 template<typename T, template<typename,typename> class MultiLowRankMatrix, class ClusterImpl, template<typename> class AdmissibleCondition>
-MultiHMatrix<T,MultiLowRankMatrix,ClusterImpl,AdmissibleCondition>::MultiHMatrix(MultiIMatrix<T>& mat, const std::vector<R3>& xt, const std::vector<R3>& xs, const int& reqrank0, MPI_Comm comm0): nr(mat.nb_rows()),nc(mat.nb_cols()), nb_hmatrix(mat.nb_matrix()), cluster_tree_s(nullptr), cluster_tree_t(nullptr), reqrank(reqrank0) {
+MultiHMatrix<T,MultiLowRankMatrix,ClusterImpl,AdmissibleCondition>::MultiHMatrix(MultiIMatrix<T>& mat, const std::vector<R3>& xt, const std::vector<R3>& xs, const int& reqrank0, const MPI_Comm comm0): nr(mat.nb_rows()),nc(mat.nb_cols()), nb_hmatrix(mat.nb_matrix()), cluster_tree_s(nullptr), cluster_tree_t(nullptr), reqrank(reqrank0), comm(comm0) {
 	std::vector<int> tabt(xt.size()), tabs(xs.size());
 	std::iota(tabt.begin(),tabt.end(),int(0));
 	std::iota(tabs.begin(),tabs.end(),int(0));
-	this->build(mat, xt, std::vector<double>(xt.size(),0), tabt, std::vector<double>(xt.size(),1), xs, std::vector<double>(xs.size(),0), tabs, std::vector<double>(xs.size(),1), comm0);
+	this->build(mat, xt, std::vector<double>(xt.size(),0), tabt, std::vector<double>(xt.size(),1), xs, std::vector<double>(xs.size(),0), tabs, std::vector<double>(xs.size(),1));
 }
 
 
