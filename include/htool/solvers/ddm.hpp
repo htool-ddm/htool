@@ -21,7 +21,7 @@ private:
     HPDDMDense<T,LowRankMatrix,ClusterImpl,AdmissibleCondition> hpddm_op;
     std::vector<T> mat_loc;
     std::vector<double> D;
-    const MPI_Comm& comm;
+    const MPI_Comm comm;
     int nevi;
     int size_E;
     bool one_level;
