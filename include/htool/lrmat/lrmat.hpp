@@ -58,16 +58,16 @@ public:
         }
     }
 
-    void add_mvprod_row_major(const T* const in,  T* const out, const int& mu, char trans = 'N') const{
+    void add_mvprod_row_major(const T* const in,  T* const out, const int& mu, char transb = 'N', char op = 'N') const{
         if (rank!=0){
             std::vector<T> a(this->rank*mu);
-            if (trans == 'N'){
-                V.mvprod_row_major(in,a.data(),mu);
-                U.add_mvprod_row_major(a.data(),out,mu);
+            if (op == 'N'){
+                V.mvprod_row_major(in,a.data(),mu,transb,op);
+                U.add_mvprod_row_major(a.data(),out,mu,transb,op);
             }
-            else if (trans == 'C'){
-                U.mvprod_row_major(in,a.data(),mu,trans);
-                V.add_mvprod_row_major(a.data(),out,mu,trans);
+            else if (op == 'C' || op == 'T'){
+                U.mvprod_row_major(in,a.data(),mu,transb,op);
+                V.add_mvprod_row_major(a.data(),out,mu,transb,op);
             }
 
 

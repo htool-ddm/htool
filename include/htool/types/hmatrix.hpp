@@ -17,6 +17,7 @@
 #include "../clustering/cluster.hpp"
 #include "../blocks/blocks.hpp"
 #include "../wrappers/wrapper_mpi.hpp"
+#include "../misc/misc.hpp"
 
 
 namespace htool {
@@ -26,16 +27,16 @@ namespace htool {
 //     MATRICE HIERARCHIQUE      //
 //===============================//
 // Friend functions --- forward declaration
-template<typename T, template<typename,typename> class MultiLowRankMatrix, typename ClusterImpl, template<typename> typename AdmissibleCondition>
+template<typename T, template<typename,typename> class MultiLowRankMatrix, typename ClusterImpl, template<typename> class AdmissibleCondition>
 class MultiHMatrix;
-template<typename T, template<typename,typename> class LowRankMatrix, class ClusterImpl, template<typename> typename AdmissibleCondition>
+template<typename T, template<typename,typename> class LowRankMatrix, class ClusterImpl, template<typename> class AdmissibleCondition>
 class HMatrix;
 
-template<typename T, template<typename,typename> class LowRankMatrix, class ClusterImpl, template<typename> typename AdmissibleCondition>
+template<typename T, template<typename,typename> class LowRankMatrix, class ClusterImpl, template<typename> class AdmissibleCondition>
 double Frobenius_absolute_error(const HMatrix<T, LowRankMatrix, ClusterImpl, AdmissibleCondition>& B, const IMatrix<T>& A);
 
 // Class
-template<typename T, template<typename,typename> class LowRankMatrix, class ClusterImpl, template<typename> typename AdmissibleCondition>
+template<typename T, template<typename,typename> class LowRankMatrix, class ClusterImpl, template<typename> class AdmissibleCondition>
 class HMatrix: public Parametres{
 
 private:
@@ -45,7 +46,8 @@ private:
 	int reqrank;
 	int local_size;
 	int local_offset;
-	bool symmetric;
+	char symmetry;
+	char UPLO;
 
 	std::shared_ptr<Cluster<ClusterImpl>> cluster_tree_s;
 	std::shared_ptr<Cluster<ClusterImpl>> cluster_tree_t;
@@ -74,9 +76,15 @@ private:
 	void AddNearFieldMat(IMatrix<T>& mat, Block<ClusterImpl,AdmissibleCondition>& task, std::vector<std::unique_ptr<SubMatrix<T>>>&);
 	void AddFarFieldMat(IMatrix<T>& mat, Block<ClusterImpl,AdmissibleCondition>& task, const std::vector<R3> xt,const std::vector<int> tabt, const std::vector<R3> xs, const std::vector<int>tabs, std::vector<std::unique_ptr<LowRankMatrix<T,ClusterImpl>>>&, const int& reqrank=-1);
 	void ComputeInfos(const std::vector<double>& mytimes);
+	
+	// Check arguments
+	void check_arguments(IMatrix<T>& mat, const std::vector<R3>& xt, const std::vector<double>& rt, const std::vector<int>& tabt, const std::vector<double>& gt, const std::vector<R3>&xs, const std::vector<double>& rs, const std::vector<int>& tabs, const std::vector<double>& gs, char symmetry, char UPLO) const;
+	void check_arguments(IMatrix<T>& mat, const std::vector<R3>& xt, const std::vector<int>& tabt, const std::vector<R3>& xs, const std::vector<int>& tabs, char symmetry, char UPLO) const;
+	void check_arguments_sym(IMatrix<T>& mat, const std::vector<R3>& xt, const std::vector<double>& rt, const std::vector<int>& tabt, const std::vector<double>& gt, char symmetry, char UPLO) const;
+	
 
 	// Friends
-	template<typename U,template<typename,typename> class MultiLowRankMatrix, typename ClusterImplU, template<typename> typename AdmissibleConditionU > friend class MultiHMatrix; 
+	template<typename U,template<typename,typename> class MultiLowRankMatrix, typename ClusterImplU, template<typename> class AdmissibleConditionU > friend class MultiHMatrix; 
 
 
 
@@ -86,7 +94,7 @@ public:
 
 
 	// Special constructor for hand-made build (for MultiHMatrix for example)
-	HMatrix(int nr0, int nc0,const std::shared_ptr<Cluster<ClusterImpl>>& cluster_tree_t0, const std::shared_ptr<Cluster<ClusterImpl>>& cluster_tree_s0,bool symmetry0=false): nr(nr0), nc(nc0), cluster_tree_t(cluster_tree_t0), cluster_tree_s(cluster_tree_s0), symmetric(symmetry0){};
+	HMatrix(int nr0, int nc0,const std::shared_ptr<Cluster<ClusterImpl>>& cluster_tree_t0, const std::shared_ptr<Cluster<ClusterImpl>>& cluster_tree_s0, char symmetry0='N', char UPLO='N'): nr(nr0), nc(nc0), cluster_tree_t(cluster_tree_t0), cluster_tree_s(cluster_tree_s0), symmetry(symmetry0){};
 
 	// Build
 	void build(IMatrix<T>& mat, const std::vector<R3>& xt, const std::vector<double>& rt, const std::vector<int>& tabt, const std::vector<double>& gt, const std::vector<R3>&xs, const std::vector<double>& rs, const std::vector<int>& tabs, const std::vector<double>& gs, MPI_Comm comm=MPI_COMM_WORLD); // To be used with two different clusters
@@ -106,23 +114,23 @@ public:
 	// Constructor without radius, tab and mass
 	HMatrix(IMatrix<T>&, const std::vector<R3>& xt, const std::vector<R3>&xs, const int& reqrank=-1, MPI_Comm comm=MPI_COMM_WORLD); // To be used with two different clusters
 
-	// Symetric build
+	// Symmetry build
 	void build(IMatrix<T>& mat, const std::vector<R3>& xt, const std::vector<double>& rt, const std::vector<int>& tabt, const std::vector<double>& gt, MPI_Comm comm=MPI_COMM_WORLD); // To be used with one different clusters
 
-	// Full symetric constructor
-	HMatrix(IMatrix<T>&, const std::vector<R3>& xt, const std::vector<double>& rt, const std::vector<int>& tabt, const std::vector<double>& gt, bool Symmetry=false, const int& reqrank=-1, MPI_Comm comm=MPI_COMM_WORLD); // To be used with one different clusters
+	// Full symmetry constructor
+	HMatrix(IMatrix<T>&, const std::vector<R3>& xt, const std::vector<double>& rt, const std::vector<int>& tabt, const std::vector<double>& gt, char Symmetry='N', char UPLO='N', const int& reqrank=-1, MPI_Comm comm=MPI_COMM_WORLD); // To be used with one different clusters
 
-	// Symetric constructor without radius
-	HMatrix(IMatrix<T>&, const std::vector<R3>& xt, const std::vector<int>& tabt, const std::vector<double>& gt, bool Symmetry=false, const int& reqrank=-1, MPI_Comm comm=MPI_COMM_WORLD); // To be used with one different clusters
+	// Symmetry constructor without radius
+	HMatrix(IMatrix<T>&, const std::vector<R3>& xt, const std::vector<int>& tabt, const std::vector<double>& gt, char Symmetry='N', char UPLO='N', const int& reqrank=-1, MPI_Comm comm=MPI_COMM_WORLD); // To be used with one different clusters
 
 	// Constructor without mass
-	HMatrix(IMatrix<T>&, const std::vector<R3>& xt, const std::vector<double>& rt, const std::vector<int>& tabt, bool Symmetry=false, const int& reqrank=-1, MPI_Comm comm=MPI_COMM_WORLD); // To be used with one different clusters
+	HMatrix(IMatrix<T>&, const std::vector<R3>& xt, const std::vector<double>& rt, const std::vector<int>& tabt, char Symmetry='N', char UPLO='N', const int& reqrank=-1, MPI_Comm comm=MPI_COMM_WORLD); // To be used with one different clusters
 
 	// Constructor without tab
-	HMatrix(IMatrix<T>&, const std::vector<R3>& xt, const std::vector<double>& rt, const std::vector<double>& gt, bool Symmetry=false, const int& reqrank=-1, MPI_Comm comm=MPI_COMM_WORLD); // To be used with one different clusters
+	HMatrix(IMatrix<T>&, const std::vector<R3>& xt, const std::vector<double>& rt, const std::vector<double>& gt, char Symmetry='N', char UPLO='N', const int& reqrank=-1, MPI_Comm comm=MPI_COMM_WORLD); // To be used with one different clusters
 
 	// Constructor without radius, tab and mass
-	HMatrix(IMatrix<T>&, const std::vector<R3>& xt, bool Symmetry=false, const int& reqrank=-1, MPI_Comm comm=MPI_COMM_WORLD); // To be used with one different clusters
+	HMatrix(IMatrix<T>&, const std::vector<R3>& xt, char Symmetry='N', char UPLO='N', const int& reqrank=-1, MPI_Comm comm=MPI_COMM_WORLD); // To be used with one different clusters
 
 	// Build with precomputed clusters
 	void build(IMatrix<T>& mat, const std::vector<R3>& xt, const std::vector<int>& tabt, const std::vector<R3>&xs, const std::vector<int>& tabs, MPI_Comm comm=MPI_COMM_WORLD); // To be used with two different clusters
@@ -133,14 +141,14 @@ public:
 	// Constructor without tab and with precomputed clusters
 	HMatrix(IMatrix<T>&,  const std::shared_ptr<Cluster<ClusterImpl>>& t, const std::vector<R3>& xt,  const std::shared_ptr<Cluster<ClusterImpl>>& s, const std::vector<R3>&xs, const int& reqrank=-1, MPI_Comm comm=MPI_COMM_WORLD); // To be used with two different clusters
 
-	// Symetric build with precomputed cluster
+	// Symmetry build with precomputed cluster
 	void build(IMatrix<T>& mat,  const std::shared_ptr<Cluster<ClusterImpl>>& t, const std::vector<R3>& xt, const std::vector<int>& tabt, MPI_Comm comm=MPI_COMM_WORLD); // To be used with one different clusters
 
-	// Full symetric constructor with precomputed cluster
-	HMatrix(IMatrix<T>& mat,  const std::shared_ptr<Cluster<ClusterImpl>>& t, const std::vector<R3>& xt, const std::vector<int>& tabt, bool Symmetry=false, const int& reqrank=-1, MPI_Comm comm=MPI_COMM_WORLD); // To be used with one different clusters
+	// Full symmetry constructor with precomputed cluster
+	HMatrix(IMatrix<T>& mat,  const std::shared_ptr<Cluster<ClusterImpl>>& t, const std::vector<R3>& xt, const std::vector<int>& tabt, char Symmetry='N', char UPLO='N', const int& reqrank=-1, MPI_Comm comm=MPI_COMM_WORLD); // To be used with one different clusters
 
 	// Constructor without tab and with precomputed cluster
-	HMatrix(IMatrix<T>&,  const std::shared_ptr<Cluster<ClusterImpl>>& t, const std::vector<R3>& xt, bool Symmetry=false, const int& reqrank=-1, MPI_Comm comm=MPI_COMM_WORLD); // To be used with one different clusters
+	HMatrix(IMatrix<T>&,  const std::shared_ptr<Cluster<ClusterImpl>>& t, const std::vector<R3>& xt, char Symmetry='N', char UPLO='N', const int& reqrank=-1, MPI_Comm comm=MPI_COMM_WORLD); // To be used with one different clusters
 
 
 
@@ -160,7 +168,8 @@ public:
 	int get_local_size() const {return local_size;}
 	int get_local_offset() const {return local_offset;}
 
-	bool IsSymmetric() const {return symmetric;}
+	char get_symmetry_type() const {return symmetry;}
+	char get_storage_type() const {return UPLO;}
 
     const Cluster<ClusterImpl>& get_cluster_tree_t() const{return *(cluster_tree_t.get());}
     const Cluster<ClusterImpl>& get_cluster_tree_s() const{return *(cluster_tree_s.get());}
@@ -216,16 +225,62 @@ public:
 
 };
 
+template<typename T, template<typename,typename> class LowRankMatrix, class ClusterImpl, template<typename> class AdmissibleCondition>
+void HMatrix<T, LowRankMatrix, ClusterImpl, AdmissibleCondition>::check_arguments(IMatrix<T>& mat, const std::vector<R3>& xt, const std::vector<double>& rt, const std::vector<int>& tabt, const std::vector<double>& gt, const std::vector<R3>&xs, const std::vector<double>& rs, const std::vector<int>& tabs, const std::vector<double>& gs, char symmetry, char UPLO) const{
+	if  (!(mat.nb_rows()==tabt.size() && mat.nb_cols()==tabs.size() 
+			&& 
+			mat.nb_rows()==xt.size() && mat.nb_cols()==xs.size()
+			&& 
+			mat.nb_rows()==rt.size() && mat.nb_cols()==rs.size()
+			&& 
+			mat.nb_rows()==gt.size() && mat.nb_cols()==gs.size()
+			&&
+			(symmetry=='N' || symmetry=='H' || symmetry=='S')
+			&&
+			(UPLO=='N' || UPLO=='L' || UPLO=='U')
+			&&
+			((symmetry=='N' && UPLO=='N') || (symmetry!='N' && UPLO!='N'))
+			&&
+			((symmetry=='H' && is_complex<T>()) || symmetry!='H')
+		)){
+			throw std::invalid_argument("[Htool error] Invalid arguments for HMatrix");
+		}
+}
+
+template<typename T, template<typename,typename> class LowRankMatrix, class ClusterImpl, template<typename> class AdmissibleCondition>
+void HMatrix<T, LowRankMatrix, ClusterImpl, AdmissibleCondition>::check_arguments(IMatrix<T>& mat, const std::vector<R3>& xt, const std::vector<int>& tabt, const std::vector<R3>& xs, const std::vector<int>& tabs, char symmetry, char UPLO) const {
+		if  (!(mat.nb_rows()==tabt.size() && mat.nb_cols()==tabs.size() 
+			&& 
+			mat.nb_rows()==xt.size() && mat.nb_cols()==xs.size()
+			&&
+			(symmetry=='N' || symmetry=='H' || symmetry=='S')
+			&&
+			(UPLO=='N' || UPLO=='L' || UPLO=='U')
+			&&
+			((symmetry=='N' && UPLO=='N') || (symmetry!='N' && UPLO!='N'))
+			&&
+			((symmetry=='H' && is_complex<T>()) || symmetry!='H')
+		)){
+			std::cout << symmetry<< " " << UPLO<< std::endl;
+			throw std::invalid_argument("[Htool error] Invalid arguments for HMatrix");
+		}
+}
+
+template<typename T, template<typename,typename> class LowRankMatrix, class ClusterImpl, template<typename> class AdmissibleCondition>
+void HMatrix<T, LowRankMatrix, ClusterImpl, AdmissibleCondition>::check_arguments_sym(IMatrix<T>& mat, const std::vector<R3>& xt, const std::vector<double>& rt, const std::vector<int>& tabt, const std::vector<double>& gt, char symmetry, char UPLO) const{
+	this->check_arguments(mat,xt,rt,tabt,gt,xt,rt,tabt,gt,symmetry,UPLO);
+}
+
+
+
 // build
-template<typename T, template<typename,typename> class LowRankMatrix, class ClusterImpl, template<typename> typename AdmissibleCondition>
+template<typename T, template<typename,typename> class LowRankMatrix, class ClusterImpl, template<typename> class AdmissibleCondition>
 void HMatrix<T, LowRankMatrix, ClusterImpl, AdmissibleCondition>::build(IMatrix<T>& mat, const std::vector<R3>& xt, const std::vector<double>& rt, const std::vector<int>& tabt, const std::vector<double>& gt, const std::vector<R3>&xs, const std::vector<double>& rs, const std::vector<int>& tabs, const std::vector<double>& gs, MPI_Comm comm0){
 
-	assert( mat.nb_rows()==tabt.size() && mat.nb_cols()==tabs.size() );
-
 	MPI_Comm_dup(comm0,&comm);
-  MPI_Comm_size(comm, &sizeWorld);
-  MPI_Comm_rank(comm, &rankWorld);
-  std::vector<double> mytimes(4), maxtime(4), meantime(4);
+	MPI_Comm_size(comm, &sizeWorld);
+	MPI_Comm_rank(comm, &rankWorld);
+	std::vector<double> mytimes(4), maxtime(4), meantime(4);
 
 	// Construction arbre des paquets
 	double time = MPI_Wtime();
@@ -242,7 +297,7 @@ void HMatrix<T, LowRankMatrix, ClusterImpl, AdmissibleCondition>::build(IMatrix<
 	// Construction arbre des blocs
 	time = MPI_Wtime();
 	this->BlockTree.reset(new Block<ClusterImpl,AdmissibleCondition>(*cluster_tree_t,*cluster_tree_s));
-	this->BlockTree->build(symmetric,comm);
+	this->BlockTree->build(UPLO,comm);
 	mytimes[1] = MPI_Wtime() - time;
 
 	// Assemblage des sous-matrices
@@ -255,51 +310,54 @@ void HMatrix<T, LowRankMatrix, ClusterImpl, AdmissibleCondition>::build(IMatrix<
 }
 
 // Full constructor
-template<typename T, template<typename,typename> class LowRankMatrix, class ClusterImpl, template<typename> typename AdmissibleCondition>
-HMatrix<T, LowRankMatrix, ClusterImpl, AdmissibleCondition>::HMatrix(IMatrix<T>& mat, const std::vector<R3>& xt, const std::vector<double>& rt, const std::vector<int>& tabt, const std::vector<double>& gt, const std::vector<R3>&xs, const std::vector<double>& rs, const std::vector<int>& tabs, const std::vector<double>& gs, const int& reqrank0, MPI_Comm comm0): nr(mat.nb_rows()),nc(mat.nb_cols()), symmetric(false), cluster_tree_s(nullptr), cluster_tree_t(nullptr), reqrank(reqrank0) {
+template<typename T, template<typename,typename> class LowRankMatrix, class ClusterImpl, template<typename> class AdmissibleCondition>
+HMatrix<T, LowRankMatrix, ClusterImpl, AdmissibleCondition>::HMatrix(IMatrix<T>& mat, const std::vector<R3>& xt, const std::vector<double>& rt, const std::vector<int>& tabt, const std::vector<double>& gt, const std::vector<R3>&xs, const std::vector<double>& rs, const std::vector<int>& tabs, const std::vector<double>& gs, const int& reqrank0, MPI_Comm comm0): nr(mat.nb_rows()),nc(mat.nb_cols()), symmetry('N'), UPLO('N'), cluster_tree_s(nullptr), cluster_tree_t(nullptr), reqrank(reqrank0) {
+	this->check_arguments(mat, xt, rt, tabt, gt, xs, rs, tabs, gs, this->symmetry, this->UPLO);
 	this->build(mat, xt, rt, tabt, gt, xs, rs, tabs, gs,comm0);
 }
 
 // Constructor without rt and rs
-template<typename T, template<typename,typename> class LowRankMatrix, class ClusterImpl, template<typename> typename AdmissibleCondition>
-HMatrix<T, LowRankMatrix, ClusterImpl, AdmissibleCondition>::HMatrix(IMatrix<T>& mat, const std::vector<R3>& xt, const std::vector<int>& tabt, const std::vector<double>& gt, const std::vector<R3>&xs, const std::vector<int>& tabs, const std::vector<double>& gs, const int& reqrank0, MPI_Comm comm0): nr(mat.nb_rows()),nc(mat.nb_cols()), symmetric(false), cluster_tree_s(nullptr), cluster_tree_t(nullptr), reqrank(reqrank0) {
-
+template<typename T, template<typename,typename> class LowRankMatrix, class ClusterImpl, template<typename> class AdmissibleCondition>
+HMatrix<T, LowRankMatrix, ClusterImpl, AdmissibleCondition>::HMatrix(IMatrix<T>& mat, const std::vector<R3>& xt, const std::vector<int>& tabt, const std::vector<double>& gt, const std::vector<R3>&xs, const std::vector<int>& tabs, const std::vector<double>& gs, const int& reqrank0, MPI_Comm comm0): nr(mat.nb_rows()),nc(mat.nb_cols()), symmetry('N'), UPLO('N'), cluster_tree_s(nullptr), cluster_tree_t(nullptr), reqrank(reqrank0) {
+	this->check_arguments(mat, xt, std::vector<double>(xt.size(),0), tabt, gt, xs, std::vector<double>(xs.size(),0), tabs, gs,this->symmetry, this->UPLO);
 	this->build(mat, xt, std::vector<double>(xt.size(),0), tabt, gt, xs, std::vector<double>(xs.size(),0), tabs, gs, comm0);
 }
 
 // Constructor without gt and gs
-template<typename T, template<typename,typename> class LowRankMatrix, class ClusterImpl, template<typename> typename AdmissibleCondition>
-HMatrix<T, LowRankMatrix, ClusterImpl, AdmissibleCondition>::HMatrix(IMatrix<T>& mat, const std::vector<R3>& xt, const std::vector<double>& rt, const std::vector<int>& tabt, const std::vector<R3>&xs, const std::vector<double>& rs, const std::vector<int>& tabs, const int& reqrank0, MPI_Comm comm0): nr(mat.nb_rows()),nc(mat.nb_cols()), symmetric(false), cluster_tree_s(nullptr), cluster_tree_t(nullptr), reqrank(reqrank0) {
+template<typename T, template<typename,typename> class LowRankMatrix, class ClusterImpl, template<typename> class AdmissibleCondition>
+HMatrix<T, LowRankMatrix, ClusterImpl, AdmissibleCondition>::HMatrix(IMatrix<T>& mat, const std::vector<R3>& xt, const std::vector<double>& rt, const std::vector<int>& tabt, const std::vector<R3>&xs, const std::vector<double>& rs, const std::vector<int>& tabs, const int& reqrank0, MPI_Comm comm0): nr(mat.nb_rows()),nc(mat.nb_cols()), symmetry('N'), UPLO('N'), cluster_tree_s(nullptr), cluster_tree_t(nullptr), reqrank(reqrank0) {
+	this->check_arguments(mat, xt, rt, tabt, std::vector<double>(xt.size(),1), xs, rs, tabs, std::vector<double>(xs.size(),1),this->symmetry, this->UPLO);
 	this->build(mat, xt, rt, tabt, std::vector<double>(xt.size(),1), xs, rs, tabs, std::vector<double>(xs.size(),1), comm0);
 }
 
 // Constructor without tabt and tabs
-template<typename T, template<typename,typename> class LowRankMatrix, class ClusterImpl, template<typename> typename AdmissibleCondition>
-HMatrix<T, LowRankMatrix, ClusterImpl, AdmissibleCondition>::HMatrix(IMatrix<T>& mat, const std::vector<R3>& xt, const std::vector<double>& rt, const std::vector<double>& gt, const std::vector<R3>&xs, const std::vector<double>& rs, const std::vector<double>& gs, const int& reqrank0, MPI_Comm comm0): nr(mat.nb_rows()),nc(mat.nb_cols()), symmetric(false), cluster_tree_s(nullptr), cluster_tree_t(nullptr), reqrank(reqrank0) {
+template<typename T, template<typename,typename> class LowRankMatrix, class ClusterImpl, template<typename> class AdmissibleCondition>
+HMatrix<T, LowRankMatrix, ClusterImpl, AdmissibleCondition>::HMatrix(IMatrix<T>& mat, const std::vector<R3>& xt, const std::vector<double>& rt, const std::vector<double>& gt, const std::vector<R3>&xs, const std::vector<double>& rs, const std::vector<double>& gs, const int& reqrank0, MPI_Comm comm0): nr(mat.nb_rows()),nc(mat.nb_cols()), symmetry('N'), UPLO('N'), cluster_tree_s(nullptr), cluster_tree_t(nullptr), reqrank(reqrank0) {
 	std::vector<int> tabt(xt.size()), tabs(xs.size());
 	std::iota(tabt.begin(),tabt.end(),int(0));
 	std::iota(tabs.begin(),tabs.end(),int(0));
+	this->check_arguments(mat, xt, rt, tabt, gt, xs, rs, tabs, gs,this->symmetry, this->UPLO);
 	this->build(mat, xt, rt, tabt, gt, xs, rs, tabs, gs, comm0);
 }
 
 // Constructor without radius, mass and tab
-template<typename T, template<typename,typename> class LowRankMatrix, class ClusterImpl, template<typename> typename AdmissibleCondition>
-HMatrix<T, LowRankMatrix, ClusterImpl, AdmissibleCondition>::HMatrix(IMatrix<T>& mat, const std::vector<R3>& xt, const std::vector<R3>& xs, const int& reqrank0, MPI_Comm comm0): nr(mat.nb_rows()),nc(mat.nb_cols()), symmetric(false), cluster_tree_s(nullptr), cluster_tree_t(nullptr), reqrank(reqrank0) {
+template<typename T, template<typename,typename> class LowRankMatrix, class ClusterImpl, template<typename> class AdmissibleCondition>
+HMatrix<T, LowRankMatrix, ClusterImpl, AdmissibleCondition>::HMatrix(IMatrix<T>& mat, const std::vector<R3>& xt, const std::vector<R3>& xs, const int& reqrank0, MPI_Comm comm0): nr(mat.nb_rows()),nc(mat.nb_cols()), symmetry('N'), UPLO('N'), cluster_tree_s(nullptr), cluster_tree_t(nullptr), reqrank(reqrank0) {
 	std::vector<int> tabt(xt.size()), tabs(xs.size());
 	std::iota(tabt.begin(),tabt.end(),int(0));
 	std::iota(tabs.begin(),tabs.end(),int(0));
+	this->check_arguments(mat, xt, std::vector<double>(xt.size(),0), tabt, std::vector<double>(xt.size(),1), xs, std::vector<double>(xs.size(),0), tabs, std::vector<double>(xs.size(),1),this->symmetry, this->UPLO);
 	this->build(mat, xt, std::vector<double>(xt.size(),0), tabt, std::vector<double>(xt.size(),1), xs, std::vector<double>(xs.size(),0), tabs, std::vector<double>(xs.size(),1), comm0);
 }
 
-// Symetric build
-template<typename T, template<typename,typename> class LowRankMatrix, class ClusterImpl, template<typename> typename AdmissibleCondition>
+// Symmetry build
+template<typename T, template<typename,typename> class LowRankMatrix, class ClusterImpl, template<typename> class AdmissibleCondition>
 void HMatrix<T, LowRankMatrix, ClusterImpl, AdmissibleCondition>::build(IMatrix<T>& mat,const std::vector<R3>& xt, const std::vector<double>& rt, const std::vector<int>& tabt, const std::vector<double>& gt, MPI_Comm comm0){
-	assert( mat.nb_rows()==tabt.size() && mat.nb_cols()==tabt.size() );
 
 	MPI_Comm_dup(comm0,&comm);
 	MPI_Comm_size(comm, &sizeWorld);
-  MPI_Comm_rank(comm, &rankWorld);
-  std::vector<double> mytimes(4), maxtime(4), meantime(4);
+	MPI_Comm_rank(comm, &rankWorld);
+	std::vector<double> mytimes(4), maxtime(4), meantime(4);
 
 	// Construction arbre des paquets
 	double time = MPI_Wtime();
@@ -315,7 +373,7 @@ void HMatrix<T, LowRankMatrix, ClusterImpl, AdmissibleCondition>::build(IMatrix<
 	time = MPI_Wtime();
 
 	this->BlockTree.reset(new Block<ClusterImpl,AdmissibleCondition>(*cluster_tree_t,*cluster_tree_s));
-	this->BlockTree->build(symmetric,comm);
+	this->BlockTree->build(UPLO,comm);
 
 	mytimes[1] = MPI_Wtime() - time;
 
@@ -329,58 +387,58 @@ void HMatrix<T, LowRankMatrix, ClusterImpl, AdmissibleCondition>::build(IMatrix<
 
 }
 
-// Full symetric constructor
-template<typename T, template<typename,typename> class LowRankMatrix, class ClusterImpl, template<typename> typename AdmissibleCondition>
+// Full symmetry constructor
+template<typename T, template<typename,typename> class LowRankMatrix, class ClusterImpl, template<typename> class AdmissibleCondition>
 HMatrix<T, LowRankMatrix, ClusterImpl, AdmissibleCondition>::HMatrix(IMatrix<T>& mat,
-		 const std::vector<R3>& xt, const std::vector<double>& rt, const std::vector<int>& tabt, const std::vector<double>& gt, bool symmetric0, const int& reqrank0,  MPI_Comm comm0):nr(mat.nb_rows()),nc(mat.nb_cols()), symmetric(symmetric0), cluster_tree_s(nullptr),cluster_tree_t(nullptr),reqrank(reqrank0){
-
+		 const std::vector<R3>& xt, const std::vector<double>& rt, const std::vector<int>& tabt, const std::vector<double>& gt, char symmetry0, char UPLO0, const int& reqrank0,  MPI_Comm comm0):nr(mat.nb_rows()),nc(mat.nb_cols()), symmetry(symmetry0),UPLO(UPLO0), cluster_tree_s(nullptr),cluster_tree_t(nullptr),reqrank(reqrank0){
+		this->check_arguments_sym(mat, xt, rt, tabt, gt, this->symmetry, this->UPLO);
 		this->build(mat,xt,rt,tabt,gt,comm0);
 }
 
-// Symetric constructor without rt
-template<typename T, template<typename,typename> class LowRankMatrix, class ClusterImpl, template<typename> typename AdmissibleCondition>
-HMatrix<T, LowRankMatrix, ClusterImpl, AdmissibleCondition>::HMatrix(IMatrix<T>& mat,
-		 const std::vector<R3>& xt, const std::vector<int>& tabt, const std::vector<double>& gt, bool symmetric0, const int& reqrank0,  MPI_Comm comm0):nr(mat.nb_rows()),nc(mat.nb_cols()), symmetric(symmetric0), cluster_tree_s(nullptr),cluster_tree_t(nullptr),reqrank(reqrank0){
+// Symmetry constructor without rt
+template<typename T, template<typename,typename> class LowRankMatrix, class ClusterImpl, template<typename> class AdmissibleCondition>
+HMatrix<T, LowRankMatrix, ClusterImpl, AdmissibleCondition>::HMatrix(IMatrix<T>& mat, const std::vector<R3>& xt, const std::vector<int>& tabt, const std::vector<double>& gt, char symmetry0, char UPLO0, const int& reqrank0,  MPI_Comm comm0):nr(mat.nb_rows()),nc(mat.nb_cols()), symmetry(symmetry0),UPLO(UPLO0), cluster_tree_s(nullptr),cluster_tree_t(nullptr),reqrank(reqrank0){
+		this->check_arguments_sym(mat, xt, std::vector<double>(xt.size(),0), tabt, gt, this->symmetry, this->UPLO);
 		this->build(mat,xt,std::vector<double>(xt.size(),0),tabt,gt,comm0);
 }
 
 
-// Symetric constructor without tabt
-template<typename T, template<typename,typename> class LowRankMatrix, class ClusterImpl, template<typename> typename AdmissibleCondition>
-HMatrix<T, LowRankMatrix, ClusterImpl, AdmissibleCondition>::HMatrix(IMatrix<T>& mat,
-		 const std::vector<R3>& xt, const std::vector<double>& rt, const std::vector<double>& gt, bool symmetric0, const int& reqrank0,  MPI_Comm comm0):nr(mat.nb_rows()),nc(mat.nb_cols()), symmetric(symmetric0),cluster_tree_s(nullptr),cluster_tree_t(nullptr),reqrank(reqrank0){
+// Symmetry constructor without tabt
+template<typename T, template<typename,typename> class LowRankMatrix, class ClusterImpl, template<typename> class AdmissibleCondition>
+HMatrix<T, LowRankMatrix, ClusterImpl, AdmissibleCondition>::HMatrix(IMatrix<T>& mat, const std::vector<R3>& xt, const std::vector<double>& rt, const std::vector<double>& gt, char symmetry0, char UPLO0, const int& reqrank0,  MPI_Comm comm0):nr(mat.nb_rows()),nc(mat.nb_cols()), symmetry(symmetry0),UPLO(UPLO0),cluster_tree_s(nullptr),cluster_tree_t(nullptr),reqrank(reqrank0){
 		std::vector<int> tabt(xt.size());
  		std::iota(tabt.begin(),tabt.end(),int(0));
+		this->check_arguments_sym(mat, xt, rt, tabt, gt, this->symmetry, this->UPLO);
 		this->build(mat,xt,rt,tabt,gt,comm0);
 }
 
-// Symetric constructor without gt
-template<typename T, template<typename,typename> class LowRankMatrix, class ClusterImpl, template<typename> typename AdmissibleCondition>
+// Symmetry constructor without gt
+template<typename T, template<typename,typename> class LowRankMatrix, class ClusterImpl, template<typename> class AdmissibleCondition>
 HMatrix<T, LowRankMatrix, ClusterImpl, AdmissibleCondition>::HMatrix(IMatrix<T>& mat,
-		 const std::vector<R3>& xt, const std::vector<double>& rt, const std::vector<int>& tabt, bool symmetric0, const int& reqrank0,  MPI_Comm comm0):nr(mat.nb_rows()),nc(mat.nb_cols()), symmetric(symmetric0),cluster_tree_s(nullptr),cluster_tree_t(nullptr),reqrank(reqrank0), comm(comm0){
+		 const std::vector<R3>& xt, const std::vector<double>& rt, const std::vector<int>& tabt, char symmetry0, char UPLO0, const int& reqrank0,  MPI_Comm comm0):nr(mat.nb_rows()),nc(mat.nb_cols()), symmetry(symmetry0),UPLO(UPLO0),cluster_tree_s(nullptr),cluster_tree_t(nullptr),reqrank(reqrank0), comm(comm0){
+		this->check_arguments_sym(mat, xt, rt, tabt, std::vector<double>(xt.size(),1), this->symmetry, this->UPLO);
 		this->build(mat,xt,rt,tabt,std::vector<double>(xt.size(),1),comm0);
 }
 
-// Symetric constructor without rt, tabt and gt
-template<typename T, template<typename,typename> class LowRankMatrix, class ClusterImpl, template<typename> typename AdmissibleCondition>
+// Symmetry constructor without rt, tabt and gt
+template<typename T, template<typename,typename> class LowRankMatrix, class ClusterImpl, template<typename> class AdmissibleCondition>
 HMatrix<T, LowRankMatrix, ClusterImpl, AdmissibleCondition>::HMatrix(IMatrix<T>& mat,
-		 const std::vector<R3>& xt, bool symmetric0, const int& reqrank0,  MPI_Comm comm0):nr(mat.nb_rows()),nc(mat.nb_cols()), symmetric(symmetric0),cluster_tree_s(nullptr),cluster_tree_t(nullptr),reqrank(reqrank0){
+		 const std::vector<R3>& xt, char symmetry0, char UPLO0, const int& reqrank0,  MPI_Comm comm0):nr(mat.nb_rows()),nc(mat.nb_cols()), symmetry(symmetry0),UPLO(UPLO0),cluster_tree_s(nullptr),cluster_tree_t(nullptr),reqrank(reqrank0){
 		std::vector<int> tabt(xt.size());
  		std::iota(tabt.begin(),tabt.end(),int(0));
+		 this->check_arguments_sym(mat, xt, std::vector<double>(xt.size(),0), tabt,std::vector<double>(xt.size(),1), this->symmetry, this->UPLO);
 		this->build(mat,xt,std::vector<double>(xt.size(),0),tabt,std::vector<double>(xt.size(),1),comm0);
 }
 
 
 // build with input cluster
-template<typename T, template<typename,typename> class LowRankMatrix, class ClusterImpl, template<typename> typename AdmissibleCondition>
+template<typename T, template<typename,typename> class LowRankMatrix, class ClusterImpl, template<typename> class AdmissibleCondition>
 void HMatrix<T, LowRankMatrix, ClusterImpl, AdmissibleCondition>::build(IMatrix<T>& mat, const std::vector<R3>& xt, const std::vector<int>& tabt, const std::vector<R3>&xs, const std::vector<int>& tabs, MPI_Comm comm0){
 
-	assert( mat.nb_rows()==tabt.size() && mat.nb_cols()==tabs.size() );
-
 	MPI_Comm_dup(comm0,&comm);
-  MPI_Comm_size(comm, &sizeWorld);
-  MPI_Comm_rank(comm, &rankWorld);
-  std::vector<double> mytimes(4), maxtime(4), meantime(4);
+	MPI_Comm_size(comm, &sizeWorld);
+	MPI_Comm_rank(comm, &rankWorld);
+	std::vector<double> mytimes(4), maxtime(4), meantime(4);
 
 	// Construction arbre des paquets
 	double time = MPI_Wtime();
@@ -394,7 +452,7 @@ void HMatrix<T, LowRankMatrix, ClusterImpl, AdmissibleCondition>::build(IMatrix<
 	// Construction arbre des blocs
 	time = MPI_Wtime();
 	this->BlockTree.reset(new Block<ClusterImpl,AdmissibleCondition>(*cluster_tree_t,*cluster_tree_s));
-	this->BlockTree->build(symmetric,comm);
+	this->BlockTree->build(UPLO,comm);
 	mytimes[1] = MPI_Wtime() - time;
 
 	// Assemblage des sous-matrices
@@ -408,40 +466,44 @@ void HMatrix<T, LowRankMatrix, ClusterImpl, AdmissibleCondition>::build(IMatrix<
 
 
 // Full constructor with precomputed clusters
-template<typename T, template<typename,typename> class LowRankMatrix, class ClusterImpl, template<typename> typename AdmissibleCondition>
-HMatrix<T, LowRankMatrix, ClusterImpl, AdmissibleCondition>::HMatrix(IMatrix<T>& mat,  const std::shared_ptr<Cluster<ClusterImpl>>& t, const std::vector<R3>& xt, const std::vector<int>& tabt, const std::shared_ptr<Cluster<ClusterImpl>>& s, const std::vector<R3>&xs, const std::vector<int>& tabs, const int& reqrank0, MPI_Comm comm0): nr(mat.nb_rows()),nc(mat.nb_cols()), symmetric(false), cluster_tree_t(t), cluster_tree_s(s), reqrank(reqrank0) {
+template<typename T, template<typename,typename> class LowRankMatrix, class ClusterImpl, template<typename> class AdmissibleCondition>
+HMatrix<T, LowRankMatrix, ClusterImpl, AdmissibleCondition>::HMatrix(IMatrix<T>& mat,  const std::shared_ptr<Cluster<ClusterImpl>>& t, const std::vector<R3>& xt, const std::vector<int>& tabt, const std::shared_ptr<Cluster<ClusterImpl>>& s, const std::vector<R3>&xs, const std::vector<int>& tabs, const int& reqrank0, MPI_Comm comm0): nr(mat.nb_rows()),nc(mat.nb_cols()), symmetry('N'), UPLO('N'), cluster_tree_t(t), cluster_tree_s(s), reqrank(reqrank0) {
+	this->check_arguments(mat, xt, tabt, xs, tabs,this->symmetry, this->UPLO);
 	this->build(mat, xt, tabt, xs, tabs, comm0);
 }
 
 // Constructor without tabt and tabs
-template<typename T, template<typename,typename> class LowRankMatrix, class ClusterImpl, template<typename> typename AdmissibleCondition>
-HMatrix<T, LowRankMatrix, ClusterImpl, AdmissibleCondition>::HMatrix(IMatrix<T>& mat, const std::shared_ptr<Cluster<ClusterImpl>>& t, const std::vector<R3>& xt, const std::shared_ptr<Cluster<ClusterImpl>>& s, const std::vector<R3>&xs, const int& reqrank0, MPI_Comm comm0): nr(mat.nb_rows()),nc(mat.nb_cols()), symmetric(false), cluster_tree_t(t), cluster_tree_s(s), reqrank(reqrank0) {
+template<typename T, template<typename,typename> class LowRankMatrix, class ClusterImpl, template<typename> class AdmissibleCondition>
+HMatrix<T, LowRankMatrix, ClusterImpl, AdmissibleCondition>::HMatrix(IMatrix<T>& mat, const std::shared_ptr<Cluster<ClusterImpl>>& t, const std::vector<R3>& xt, const std::shared_ptr<Cluster<ClusterImpl>>& s, const std::vector<R3>&xs, const int& reqrank0, MPI_Comm comm0): nr(mat.nb_rows()),nc(mat.nb_cols()), symmetry('N'), UPLO('N'), cluster_tree_t(t), cluster_tree_s(s), reqrank(reqrank0) {
 	std::vector<int> tabt(xt.size()), tabs(xs.size());
 	std::iota(tabt.begin(),tabt.end(),int(0));
 	std::iota(tabs.begin(),tabs.end(),int(0));
+	this->check_arguments(mat, xt, tabt, xs, tabs,this->symmetry, this->UPLO);
 	this->build(mat, xt, tabt, xs, tabs, comm0);
 }
 
 
-// Full symetric constructor
-template<typename T, template<typename,typename> class LowRankMatrix, class ClusterImpl, template<typename> typename AdmissibleCondition>
-HMatrix<T, LowRankMatrix, ClusterImpl, AdmissibleCondition>::HMatrix(IMatrix<T>& mat, const std::shared_ptr<Cluster<ClusterImpl>>& t, const std::vector<R3>& xt, const std::vector<int>& tabt, bool symmetric0, const int& reqrank0,  MPI_Comm comm0):nr(mat.nb_rows()),nc(mat.nb_cols()), symmetric(symmetric0), cluster_tree_t(t), cluster_tree_s(t), reqrank(reqrank0){
-
-		this->build(mat,xt,tabt,xt,tabt,comm0);
+// Full symmetry constructor
+template<typename T, template<typename,typename> class LowRankMatrix, class ClusterImpl, template<typename> class AdmissibleCondition>
+HMatrix<T, LowRankMatrix, ClusterImpl, AdmissibleCondition>::HMatrix(IMatrix<T>& mat, const std::shared_ptr<Cluster<ClusterImpl>>& t, const std::vector<R3>& xt, const std::vector<int>& tabt, char symmetry0, char UPLO0, const int& reqrank0,  MPI_Comm comm0):nr(mat.nb_rows()),nc(mat.nb_cols()), symmetry(symmetry0),UPLO(UPLO0), cluster_tree_t(t), cluster_tree_s(t), reqrank(reqrank0){
+	this->check_arguments(mat, xt, tabt, xt, tabt,this->symmetry, this->UPLO);
+	this->build(mat,xt,tabt,xt,tabt,comm0);
 }
 
-// Symetric constructor without tabt
-template<typename T, template<typename,typename> class LowRankMatrix, class ClusterImpl, template<typename> typename AdmissibleCondition>
-HMatrix<T, LowRankMatrix, ClusterImpl, AdmissibleCondition>::HMatrix(IMatrix<T>& mat, const std::shared_ptr<Cluster<ClusterImpl>>& t, const std::vector<R3>& xt, bool symmetric0, const int& reqrank0,  MPI_Comm comm0):nr(mat.nb_rows()),nc(mat.nb_cols()), symmetric(symmetric0), cluster_tree_t(t), cluster_tree_s(t), reqrank(reqrank0){
+// Symmetry constructor without tabt
+template<typename T, template<typename,typename> class LowRankMatrix, class ClusterImpl, template<typename> class AdmissibleCondition>
+HMatrix<T, LowRankMatrix, ClusterImpl, AdmissibleCondition>::HMatrix(IMatrix<T>& mat, const std::shared_ptr<Cluster<ClusterImpl>>& t, const std::vector<R3>& xt, char symmetry0, char UPLO0, const int& reqrank0,  MPI_Comm comm0):nr(mat.nb_rows()),nc(mat.nb_cols()), symmetry(symmetry0),UPLO(UPLO0), cluster_tree_t(t), cluster_tree_s(t), reqrank(reqrank0){
+	std::cout << symmetry<<" "<<UPLO<< std::endl;
 	std::vector<int> tabt(xt.size());
 	std::iota(tabt.begin(),tabt.end(),int(0));
-		this->build(mat,xt,tabt,xt,tabt,comm0);
+	this->check_arguments(mat, xt, tabt, xt, tabt,this->symmetry, this->UPLO);
+	this->build(mat,xt,tabt,xt,tabt,comm0);
 }
 
 
 // Compute blocks recursively
 // TODO: recursivity -> stack for compute blocks
-template<typename T, template<typename,typename> class LowRankMatrix, class ClusterImpl, template<typename> typename AdmissibleCondition>
+template<typename T, template<typename,typename> class LowRankMatrix, class ClusterImpl, template<typename> class AdmissibleCondition>
 void HMatrix<T, LowRankMatrix, ClusterImpl, AdmissibleCondition>::ComputeBlocks(IMatrix<T>& mat, const std::vector<R3> xt,const std::vector<int> tabt, const std::vector<R3> xs, const std::vector<int>tabs){
     #if _OPENMP && !defined(PYTHON_INTERFACE)
     #pragma omp parallel
@@ -455,7 +517,7 @@ void HMatrix<T, LowRankMatrix, ClusterImpl, AdmissibleCondition>::ComputeBlocks(
         #endif
 		for (int p=0;p<local_tasks.size();p++){
 			bool not_pushed;
-			if (symmetric){
+			if (symmetry=='H' || symmetry=='S'){
 				not_pushed = UpdateSymBlocks(mat,*(local_tasks[p]),xt,tabt,xs,tabs,MyNearFieldMats_local,MyFarFieldMats_local);
 			}
 			else{
@@ -493,7 +555,7 @@ void HMatrix<T, LowRankMatrix, ClusterImpl, AdmissibleCondition>::ComputeBlocks(
     }
 }
 
-template<typename T, template<typename,typename> class LowRankMatrix, class ClusterImpl, template<typename> typename AdmissibleCondition>
+template<typename T, template<typename,typename> class LowRankMatrix, class ClusterImpl, template<typename> class AdmissibleCondition>
 bool HMatrix<T, LowRankMatrix, ClusterImpl, AdmissibleCondition>::UpdateBlocks(IMatrix<T>& mat, Block<ClusterImpl,AdmissibleCondition>& task, const std::vector<R3> xt,const std::vector<int> tabt, const std::vector<R3> xs, const std::vector<int>tabs, std::vector<std::unique_ptr<SubMatrix<T>>>& MyNearFieldMats_local, std::vector<std::unique_ptr<LowRankMatrix<T,ClusterImpl>>>& MyFarFieldMats_local){
 	if( task.IsAdmissible() ){
 		AddFarFieldMat(mat,task,xt,tabt,xs,tabs,MyFarFieldMats_local,reqrank);
@@ -609,7 +671,7 @@ bool HMatrix<T, LowRankMatrix, ClusterImpl, AdmissibleCondition>::UpdateBlocks(I
 }
 
 
-template<typename T, template<typename,typename> class LowRankMatrix, class ClusterImpl, template<typename> typename AdmissibleCondition>
+template<typename T, template<typename,typename> class LowRankMatrix, class ClusterImpl, template<typename> class AdmissibleCondition>
 bool HMatrix<T, LowRankMatrix, ClusterImpl, AdmissibleCondition>::UpdateSymBlocks(IMatrix<T>& mat, Block<ClusterImpl,AdmissibleCondition>& task, const std::vector<R3> xt,const std::vector<int> tabt, const std::vector<R3> xs, const std::vector<int>tabs, std::vector<std::unique_ptr<SubMatrix<T>>>& MyNearFieldMats_local, std::vector<std::unique_ptr<LowRankMatrix<T,ClusterImpl>>>& MyFarFieldMats_local){
 
 	if( task.IsAdmissible() ){
@@ -698,7 +760,7 @@ bool HMatrix<T, LowRankMatrix, ClusterImpl, AdmissibleCondition>::UpdateSymBlock
 }
 
 // Build a dense block
-template<typename T, template<typename,typename> class LowRankMatrix, class ClusterImpl, template<typename> typename AdmissibleCondition>
+template<typename T, template<typename,typename> class LowRankMatrix, class ClusterImpl, template<typename> class AdmissibleCondition>
 void HMatrix<T, LowRankMatrix, ClusterImpl, AdmissibleCondition>::AddNearFieldMat(IMatrix<T>& mat, Block<ClusterImpl,AdmissibleCondition>& task, std::vector<std::unique_ptr<SubMatrix<T>>>& MyNearFieldMats_local){
 
 	const Cluster<ClusterImpl>& t = task.get_target_cluster();
@@ -710,7 +772,7 @@ void HMatrix<T, LowRankMatrix, ClusterImpl, AdmissibleCondition>::AddNearFieldMa
 }
 
 // Build a low rank block
-template<typename T, template<typename,typename> class LowRankMatrix, class ClusterImpl, template<typename> typename AdmissibleCondition>
+template<typename T, template<typename,typename> class LowRankMatrix, class ClusterImpl, template<typename> class AdmissibleCondition>
 void HMatrix<T, LowRankMatrix, ClusterImpl, AdmissibleCondition>::AddFarFieldMat(IMatrix<T>& mat, Block<ClusterImpl,AdmissibleCondition>& task, const std::vector<R3> xt,const std::vector<int> tabt, const std::vector<R3> xs, const std::vector<int>tabs, std::vector<std::unique_ptr<LowRankMatrix<T,ClusterImpl>>>& MyFarFieldMats_local, const int& reqrank){
 
 	const Cluster<ClusterImpl>& t = task.get_target_cluster();
@@ -722,7 +784,7 @@ void HMatrix<T, LowRankMatrix, ClusterImpl, AdmissibleCondition>::AddFarFieldMat
 }
 
 // Compute infos
-template<typename T, template<typename,typename> class LowRankMatrix, class ClusterImpl, template<typename> typename AdmissibleCondition>
+template<typename T, template<typename,typename> class LowRankMatrix, class ClusterImpl, template<typename> class AdmissibleCondition>
 void HMatrix<T, LowRankMatrix, ClusterImpl, AdmissibleCondition>::ComputeInfos(const std::vector<double>& mytime){
 	// 0 : cluster tree ; 1 : block tree ; 2 : compute blocks ;
 	std::vector<double> maxtime(3), meantime(3);
@@ -825,10 +887,17 @@ void HMatrix<T, LowRankMatrix, ClusterImpl, AdmissibleCondition>::ComputeInfos(c
 
 
 
-template<typename T, template<typename,typename> class LowRankMatrix, class ClusterImpl, template<typename> typename AdmissibleCondition>
+template<typename T, template<typename,typename> class LowRankMatrix, class ClusterImpl, template<typename> class AdmissibleCondition>
 void HMatrix<T, LowRankMatrix, ClusterImpl, AdmissibleCondition>::mymvprod_local(const T* const in, T* const out, const int& mu) const{
 
 	std::fill(out,out+local_size*mu,0);
+
+	// To localize the rhs with multiple rhs, it is transpose. So instead of A*B, we do transpose(B)*transpose(A)
+	char transb = 'T';
+	// In case of a hermitian matrix, the rhs is conjugate transpose
+	if (symmetry=='H'){
+		transb = 'C';
+	}
 
 	// Contribution champ lointain
     #if _OPENMP
@@ -844,8 +913,8 @@ void HMatrix<T, LowRankMatrix, ClusterImpl, AdmissibleCondition>::mymvprod_local
     		int offset_i     = M.get_offset_i();
     		int offset_j     = M.get_offset_j();
 
-			if (!symmetric || offset_i!=offset_j){// remove strictly diagonal blocks
-    			M.add_mvprod_row_major(in+offset_j*mu,temp.data()+(offset_i-local_offset)*mu,mu);
+			if (!(symmetry!='N') || offset_i!=offset_j){// remove strictly diagonal blocks
+    			M.add_mvprod_row_major(in+offset_j*mu,temp.data()+(offset_i-local_offset)*mu,mu,transb);
 			}
     	}
     	// Contribution champ proche
@@ -857,13 +926,19 @@ void HMatrix<T, LowRankMatrix, ClusterImpl, AdmissibleCondition>::mymvprod_local
     		int offset_i     = M.get_offset_i();
     		int offset_j     = M.get_offset_j();
 
-			if (!symmetric || offset_i!=offset_j){// remove strictly diagonal blocks
-    			M.add_mvprod_row_major(in+offset_j*mu,temp.data()+(offset_i-local_offset)*mu,mu);
+			if (!(symmetry!='N')|| offset_i!=offset_j){// remove strictly diagonal blocks
+    			M.add_mvprod_row_major(in+offset_j*mu,temp.data()+(offset_i-local_offset)*mu,mu,transb);
 			}
     	}
 
-		// Symmetric part of the diagonal part
-		if (symmetric){
+		// Symmetry part of the diagonal part
+		if (symmetry!='N'){
+			transb = 'N';
+			char op_sym = 'T';
+			if (symmetry=='H'){
+				op_sym = 'C';
+			}
+
 			#if _OPENMP
 			#pragma omp for schedule(guided)
 			#endif
@@ -873,7 +948,7 @@ void HMatrix<T, LowRankMatrix, ClusterImpl, AdmissibleCondition>::mymvprod_local
 				int offset_j     = M.get_offset_i();
 
 				if (offset_i!=offset_j){// remove strictly diagonal blocks
-					M.add_mvprod_row_major(in+offset_j*mu,temp.data()+(offset_i-local_offset)*mu,mu,'C');
+					M.add_mvprod_row_major(in+offset_j*mu,temp.data()+(offset_i-local_offset)*mu,mu,transb,op_sym);
 				}
 
 			}
@@ -899,7 +974,7 @@ void HMatrix<T, LowRankMatrix, ClusterImpl, AdmissibleCondition>::mymvprod_local
 				int offset_j     = M.get_offset_i();
 				
 				if (offset_i!=offset_j){// remove strictly diagonal blocks
-					M.add_mvprod_row_major(in+offset_j*mu,temp.data()+(offset_i-local_offset)*mu,mu,'C');
+					M.add_mvprod_row_major(in+offset_j*mu,temp.data()+(offset_i-local_offset)*mu,mu,transb,op_sym);
 				}
 			}
 
@@ -910,7 +985,7 @@ void HMatrix<T, LowRankMatrix, ClusterImpl, AdmissibleCondition>::mymvprod_local
 				const SubMatrix<T>&  M  = *(MyStrictlyDiagNearFieldMats[b]);
 				int offset_i     = M.get_offset_j();
 				int offset_j     = M.get_offset_i();
-				M.add_mvprod_row_major_sym(in+offset_j*mu,temp.data()+(offset_i-local_offset)*mu,mu);
+				M.add_mvprod_row_major_sym(in+offset_j*mu,temp.data()+(offset_i-local_offset)*mu,mu,this->UPLO,this->symmetry);
 			}
 		}
     	
@@ -924,7 +999,7 @@ void HMatrix<T, LowRankMatrix, ClusterImpl, AdmissibleCondition>::mymvprod_local
 }
 
 
-// template<typename T, template<typename,typename> class LowRankMatrix, class ClusterImpl, template<typename> typename AdmissibleCondition>
+// template<typename T, template<typename,typename> class LowRankMatrix, class ClusterImpl, template<typename> class AdmissibleCondition>
 // void HMatrix<T, LowRankMatrix, ClusterImpl, AdmissibleCondition>::local_to_global(const T* const in, T* const out, const int& mu) const{
 // 	// Allgather
 // 	std::vector<int> recvcounts(sizeWorld);
@@ -950,7 +1025,7 @@ void HMatrix<T, LowRankMatrix, ClusterImpl, AdmissibleCondition>::mymvprod_local
 //     }
 // }
 
-template<typename T, template<typename,typename> class LowRankMatrix, class ClusterImpl, template<typename> typename AdmissibleCondition>
+template<typename T, template<typename,typename> class LowRankMatrix, class ClusterImpl, template<typename> class AdmissibleCondition>
 void HMatrix<T, LowRankMatrix, ClusterImpl, AdmissibleCondition>::local_to_global(const T* const in, T* const out, const int& mu) const{
   // Allgather
   std::vector<int> recvcounts(sizeWorld);
@@ -975,7 +1050,7 @@ void HMatrix<T, LowRankMatrix, ClusterImpl, AdmissibleCondition>::local_to_globa
 
 
 
-template<typename T, template<typename,typename> class LowRankMatrix, class ClusterImpl, template<typename> typename AdmissibleCondition>
+template<typename T, template<typename,typename> class LowRankMatrix, class ClusterImpl, template<typename> class AdmissibleCondition>
 void HMatrix<T, LowRankMatrix, ClusterImpl, AdmissibleCondition>::mvprod_local(const T* const in, T* const out, T* const work, const int& mu) const{
 	double time = MPI_Wtime();
 
@@ -987,7 +1062,7 @@ void HMatrix<T, LowRankMatrix, ClusterImpl, AdmissibleCondition>::mvprod_local(c
 }
 
 
-template<typename T, template<typename,typename> class LowRankMatrix, class ClusterImpl, template<typename> typename AdmissibleCondition>
+template<typename T, template<typename,typename> class LowRankMatrix, class ClusterImpl, template<typename> class AdmissibleCondition>
 void HMatrix<T, LowRankMatrix, ClusterImpl, AdmissibleCondition>::mvprod_global(const T* const in, T* const out, const int& mu) const{
     double time = MPI_Wtime();
 
@@ -1037,7 +1112,14 @@ void HMatrix<T, LowRankMatrix, ClusterImpl, AdmissibleCondition>::mvprod_global(
             }
         }
 
+		if (symmetry=='H'){
+			conj_if_complex(in_perm.data(),nc*mu);
+		}
+		
+
     	mymvprod_local(in_perm.data(),in_perm.data()+nc*mu,mu);
+
+
 
         // Tranpose
         for (int i=0;i<mu;i++){
@@ -1046,7 +1128,9 @@ void HMatrix<T, LowRankMatrix, ClusterImpl, AdmissibleCondition>::mvprod_global(
             }
         }
 
-
+		if (symmetry=='H'){
+			conj_if_complex(out_perm.data(),out_perm.size());
+		}
 
     	// Allgather
     	std::vector<int> recvcounts(sizeWorld);
@@ -1059,6 +1143,8 @@ void HMatrix<T, LowRankMatrix, ClusterImpl, AdmissibleCondition>::mvprod_global(
     		if (i > 0)
     			displs[i] = displs[i-1] + recvcounts[i-1];
     	}
+
+		
 
     	MPI_Allgatherv(out_perm.data(), recvcounts[rankWorld], wrapper_mpi<T>::mpi_type(), in_perm.data() + mu*nr, &(recvcounts[0]), &(displs[0]), wrapper_mpi<T>::mpi_type(), comm);
 
@@ -1076,7 +1162,7 @@ void HMatrix<T, LowRankMatrix, ClusterImpl, AdmissibleCondition>::mvprod_global(
 	infos["total_time_mat_vec_prod"] = NbrToStr(MPI_Wtime()-time+StrToNbr<double>(infos["total_time_mat_vec_prod"]));
 }
 
-template<typename T, template<typename,typename> class LowRankMatrix, class ClusterImpl, template<typename> typename AdmissibleCondition>
+template<typename T, template<typename,typename> class LowRankMatrix, class ClusterImpl, template<typename> class AdmissibleCondition>
 void HMatrix<T, LowRankMatrix, ClusterImpl, AdmissibleCondition>::mvprod_subrhs(const T* const in, T* const out, const int& mu, const int& offset, const int& size, const int& local_max_size_j) const{
     std::fill(out,out+local_size*mu,0);
 
@@ -1122,13 +1208,13 @@ void HMatrix<T, LowRankMatrix, ClusterImpl, AdmissibleCondition>::mvprod_subrhs(
 
 }
 
-template<typename T, template<typename,typename> class LowRankMatrix, class ClusterImpl, template<typename> typename AdmissibleCondition>
+template<typename T, template<typename,typename> class LowRankMatrix, class ClusterImpl, template<typename> class AdmissibleCondition>
 template<typename U>
 void HMatrix<T, LowRankMatrix, ClusterImpl, AdmissibleCondition>::source_to_cluster_permutation(const U* const in, U* const out) const {
 	cluster_tree_s->global_to_cluster(in,out);
 }
 
-template<typename T, template<typename,typename> class LowRankMatrix, class ClusterImpl, template<typename> typename AdmissibleCondition>
+template<typename T, template<typename,typename> class LowRankMatrix, class ClusterImpl, template<typename> class AdmissibleCondition>
 template<typename U>
 void HMatrix<T, LowRankMatrix, ClusterImpl, AdmissibleCondition>::cluster_to_target_permutation(const U* const in, U* const out) const{
 	cluster_tree_t->cluster_to_global(in,out);
@@ -1137,7 +1223,7 @@ void HMatrix<T, LowRankMatrix, ClusterImpl, AdmissibleCondition>::cluster_to_tar
 
 
 
-template<typename T, template<typename,typename> class LowRankMatrix, class ClusterImpl, template<typename> typename AdmissibleCondition>
+template<typename T, template<typename,typename> class LowRankMatrix, class ClusterImpl, template<typename> class AdmissibleCondition>
 std::vector<T> HMatrix<T, LowRankMatrix, ClusterImpl, AdmissibleCondition>::operator*(const std::vector<T>& x) const{
 	assert(x.size()==nc);
 	std::vector<T> result(nr,0);
@@ -1146,7 +1232,7 @@ std::vector<T> HMatrix<T, LowRankMatrix, ClusterImpl, AdmissibleCondition>::oper
 }
 
 
-template<typename T, template<typename,typename> class LowRankMatrix, class ClusterImpl, template<typename> typename AdmissibleCondition>
+template<typename T, template<typename,typename> class LowRankMatrix, class ClusterImpl, template<typename> class AdmissibleCondition>
 double HMatrix<T, LowRankMatrix, ClusterImpl, AdmissibleCondition>::compression() const{
 
 	double mycomp = 0.;
@@ -1177,7 +1263,7 @@ double HMatrix<T, LowRankMatrix, ClusterImpl, AdmissibleCondition>::compression(
 	return 1-comp;
 }
 
-template<typename T, template<typename,typename> class LowRankMatrix, class ClusterImpl, template<typename> typename AdmissibleCondition>
+template<typename T, template<typename,typename> class LowRankMatrix, class ClusterImpl, template<typename> class AdmissibleCondition>
 void HMatrix<T, LowRankMatrix, ClusterImpl, AdmissibleCondition>::print_infos() const{
 	int rankWorld;
     MPI_Comm_rank(comm, &rankWorld);
@@ -1190,7 +1276,7 @@ void HMatrix<T, LowRankMatrix, ClusterImpl, AdmissibleCondition>::print_infos() 
 	}
 }
 
-template<typename T, template<typename,typename> class LowRankMatrix, class ClusterImpl, template<typename> typename AdmissibleCondition>
+template<typename T, template<typename,typename> class LowRankMatrix, class ClusterImpl, template<typename> class AdmissibleCondition>
 void HMatrix<T, LowRankMatrix, ClusterImpl, AdmissibleCondition>::save_infos(const std::string& outputname,std::ios_base::openmode mode, const std::string& sep) const{
 	int rankWorld;
   MPI_Comm_rank(comm, &rankWorld);
@@ -1209,7 +1295,7 @@ void HMatrix<T, LowRankMatrix, ClusterImpl, AdmissibleCondition>::save_infos(con
 	}
 }
 
-template<typename T, template<typename,typename> class LowRankMatrix, class ClusterImpl, template<typename> typename AdmissibleCondition>
+template<typename T, template<typename,typename> class LowRankMatrix, class ClusterImpl, template<typename> class AdmissibleCondition>
 void HMatrix<T, LowRankMatrix, ClusterImpl, AdmissibleCondition>::save_plot(const std::string& outputname) const{
 
 
@@ -1231,7 +1317,7 @@ void HMatrix<T, LowRankMatrix, ClusterImpl, AdmissibleCondition>::save_plot(cons
 	}
 }
 
-template<typename T, template<typename,typename> class LowRankMatrix, class ClusterImpl, template<typename> typename AdmissibleCondition>
+template<typename T, template<typename,typename> class LowRankMatrix, class ClusterImpl, template<typename> class AdmissibleCondition>
 double Frobenius_absolute_error(const HMatrix<T, LowRankMatrix, ClusterImpl, AdmissibleCondition>& B, const IMatrix<T>& A){
 	double myerr = 0;
 	for(int j=0; j<B.MyFarFieldMats.size(); j++){
@@ -1245,7 +1331,7 @@ double Frobenius_absolute_error(const HMatrix<T, LowRankMatrix, ClusterImpl, Adm
 
 	return std::sqrt(err);
 }
-template<typename T, template<typename,typename> class LowRankMatrix, class ClusterImpl, template<typename> typename AdmissibleCondition>
+template<typename T, template<typename,typename> class LowRankMatrix, class ClusterImpl, template<typename> class AdmissibleCondition>
 Matrix<T> HMatrix<T, LowRankMatrix, ClusterImpl, AdmissibleCondition>::to_dense() const{
     Matrix<T> Dense(nr,nc);
     // Internal dense blocks
@@ -1277,7 +1363,7 @@ Matrix<T> HMatrix<T, LowRankMatrix, ClusterImpl, AdmissibleCondition>::to_dense(
     return Dense;
 }
 
-template<typename T, template<typename,typename> class LowRankMatrix, class ClusterImpl, template<typename> typename AdmissibleCondition>
+template<typename T, template<typename,typename> class LowRankMatrix, class ClusterImpl, template<typename> class AdmissibleCondition>
 Matrix<T> HMatrix<T, LowRankMatrix, ClusterImpl,AdmissibleCondition>::to_local_dense() const{
     Matrix<T> Dense(local_size,nc);
     // Internal dense blocks
@@ -1309,7 +1395,7 @@ Matrix<T> HMatrix<T, LowRankMatrix, ClusterImpl,AdmissibleCondition>::to_local_d
     return Dense;
 }
 
-template<typename T, template<typename,typename> class LowRankMatrix, class ClusterImpl, template<typename> typename AdmissibleCondition>
+template<typename T, template<typename,typename> class LowRankMatrix, class ClusterImpl, template<typename> class AdmissibleCondition>
 Matrix<T> HMatrix<T, LowRankMatrix, ClusterImpl, AdmissibleCondition>::to_dense_perm() const{
 	Matrix<T> Dense(nr,nc);
 	// Internal dense blocks
@@ -1341,7 +1427,7 @@ Matrix<T> HMatrix<T, LowRankMatrix, ClusterImpl, AdmissibleCondition>::to_dense_
 	return Dense;
 }
 
-template<typename T, template<typename,typename> class LowRankMatrix, class ClusterImpl, template<typename> typename AdmissibleCondition>
+template<typename T, template<typename,typename> class LowRankMatrix, class ClusterImpl, template<typename> class AdmissibleCondition>
 void HMatrix<T, LowRankMatrix, ClusterImpl, AdmissibleCondition>::apply_dirichlet(const std::vector<int>& boundary){
     // Renum
     std::vector<int> boundary_renum(boundary.size());

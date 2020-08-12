@@ -1,7 +1,7 @@
 #include <htool/types/hmatrix.hpp>
 #include <htool/lrmat/fullACA.hpp>
 #include <htool/clustering/ncluster.hpp>
-
+#include <htool/htool.hpp>
 using namespace std;
 using namespace htool;
 
@@ -27,13 +27,20 @@ public:
 	 }
 };
 
+#define STR(x)   #x
+#define SHOW_DEFINE(x) printf("%s=%s\n", #x, STR(x))
 
 int main(int argc, char *argv[]) {
 
+#define STR(x)   #x
+#define SHOW_DEFINE(x) printf("%s=%s\n", #x, STR(x))
+SHOW_DEFINE(INTEL_MKL_VERSION);
+SHOW_DEFINE(HPDDM_MKL);
+SHOW_DEFINE(HTOOL_MKL);
 	// Initialize the MPI environment
 	MPI_Init(&argc,&argv);
 
-  // Get the number of processes
+  // Get the number of processescd
   int size;
   MPI_Comm_size(MPI_COMM_WORLD, &size);
 

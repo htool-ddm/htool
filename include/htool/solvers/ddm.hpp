@@ -4,10 +4,11 @@
 #include "../types/matrix.hpp"
 #include "../wrappers/wrapper_mpi.hpp"
 #include "../wrappers/wrapper_hpddm.hpp"
+#include "../misc/misc.hpp"
 
 namespace htool{
 
-template<typename T, template<typename,typename> class LowRankMatrix, class ClusterImpl, template<typename> typename AdmissibleCondition>
+template<typename T, template<typename,typename> class LowRankMatrix, class ClusterImpl, template<typename> class AdmissibleCondition>
 class DDM{
 private:
     int n;
@@ -43,7 +44,16 @@ public:
         double time = MPI_Wtime();
 
         // Building Ai
-        bool sym=hmat_0.IsSymmetric();
+        bool sym=false;
+        if (hmat_0.get_symmetry_type()=='S'  || (hmat_0.get_symmetry_type()=='H' && is_complex<T>())){
+            sym=true;
+            if (hmat_0.get_storage_type()=='U'){
+                throw std::invalid_argument("[Htool error] HPDDM takes lower symmetric/hermitian matrices or regular matrices");
+            }
+            if (hmat_0.get_symmetry_type()=='S' && is_complex<T>()){
+                std::cout<< "[Htool warning] A symmetric matrix with UPLO='L' has been given to DDM solver. It will be considered hermitian by the solver."<< std::endl;
+            }
+        }
         const std::vector<LowRankMatrix<T,ClusterImpl>*>& MyDiagFarFieldMats = hpddm_op.HA.get_MyDiagFarFieldMats();
         const std::vector<SubMatrix<T>*>& MyDiagNearFieldMats= hpddm_op.HA.get_MyDiagNearFieldMats();
 
@@ -126,8 +136,22 @@ public:
           }
         }
 
+        // Symmetry and storage
+        bool sym=false;
+        if (hmat_0.get_symmetry_type()=='S' || (hmat_0.get_symmetry_type()=='H' && is_complex<T>())){
+            sym=true;
+
+            if (hmat_0.get_storage_type()=='U'){
+                throw std::invalid_argument("[Htool error] HPDDM takes lower symmetric/hermitian matrices or regular matrices");
+            }
+            if (hmat_0.get_symmetry_type()=='S' && is_complex<T>()){
+                std::cout<< "[Htool warning] A symmetric matrix with UPLO='L' has been given to DDM solver. It will be considered hermitian by the solver."<< std::endl;
+            }
+        }
+
+        std::cout << "TEST: "<<sym << std::endl;
+
         // Building Ai
-        bool sym=hmat_0.IsSymmetric();
         const std::vector<LowRankMatrix<T,ClusterImpl>*>& MyDiagFarFieldMats = hpddm_op.HA.get_MyDiagFarFieldMats();
         const std::vector<SubMatrix<T>*>& MyDiagNearFieldMats= hpddm_op.HA.get_MyDiagNearFieldMats();
 
@@ -174,7 +198,7 @@ public:
           std::copy_n(diagonal_block.begin()+j*(n-n_inside),n-n_inside,&mat_loc[n_inside+j*n]);
         }
 
-        if (!hmat_0.IsSymmetric()){
+        if (!sym){
             std::vector<T> vertical_block(n_inside,n-n_inside);
             vertical_block = mat0.get_submatrix(std::vector<int>(renum_to_global.begin(),renum_to_global.begin()+n_inside),std::vector<int>(renum_to_global.begin()+n_inside,renum_to_global.end())).get_mat();
             for (int j=n_inside;j<n;j++){
@@ -703,14 +727,15 @@ void build_coarse_space( Matrix<T>& Ki, const std::vector<R3>& x ){
         //
 
         for (int i=0 ;i<mu;i++){
-        if (mu!=1){
-            for (int j=0; j<sizeWorld;j++){
-                std::copy_n(hpddm_op.in_global->data()+mu*nb_rows+displs[j]+i*recvcounts[j]/mu,recvcounts[j]/mu,hpddm_op.in_global->data()+i*nb_rows+displs[j]/mu);
+            if (mu!=1){
+                for (int j=0; j<sizeWorld;j++){
+                    std::copy_n(hpddm_op.in_global->data()+mu*nb_rows+displs[j]+i*recvcounts[j]/mu,recvcounts[j]/mu,hpddm_op.in_global->data()+i*nb_rows+displs[j]/mu);
+                }
+                
             }
-        }
 
-        // Permutation
-        hpddm_op.HA.cluster_to_target_permutation(hpddm_op.in_global->data()+i*nb_rows,x+i*nb_rows);
+            // Permutation
+            hpddm_op.HA.cluster_to_target_permutation(hpddm_op.in_global->data()+i*nb_rows,x+i*nb_rows);
         }
 
 

@@ -80,24 +80,40 @@ int main(int argc, char *argv[]) {
   		MyMatrix A(p1);
 
 
-  		HMatrix<double,fullACA,RegularClustering,RjasanowSteinbach> HA_sym(A,p1,r1,tab1,true);
-  		HA_sym.print_infos();
+  		HMatrix<double,fullACA,RegularClustering,RjasanowSteinbach> HA_L(A,p1,r1,tab1,'S','L');
+  		HA_L.print_infos();
+
+		HMatrix<double,fullACA,RegularClustering,RjasanowSteinbach> HA_U(A,p1,r1,tab1,'S','U');
+  		HA_U.print_infos();
 
       	// Global vectors
-  		std::vector<double> x_global(nc,1),f_global(nr),f_global_test(nr);
+  		std::vector<double> x_global(nc,1),f_global(nr),f_global_L(nr),f_global_U(nr);
 		f_global = A*x_global;
 
       	// Global product
-      	HA_sym.mvprod_global(x_global.data(),f_global_test.data());
+      	HA_L.mvprod_global(x_global.data(),f_global_L.data());
+		HA_U.mvprod_global(x_global.data(),f_global_U.data());
 
 		// Errors
-		double global_diff = norm2(f_global-f_global_test)/norm2(f_global);
+		double global_diff_L = norm2(f_global-f_global_L)/norm2(f_global);
+		double global_diff_U = norm2(f_global-f_global_U)/norm2(f_global);
+		double global_diff_L_U = norm2(f_global_U-f_global_U)/norm2(f_global);
 
 
   		if (rank==0){
-  			cout <<"difference on mat vec prod computed globally: "<<global_diff << endl;
+  			cout <<"difference on mat vec prod computed globally for lower symmetric matrix: "<<global_diff_L << endl;
   		}
-			test = test || !(global_diff<GetEpsilon());
+		test = test || !(global_diff_L<GetEpsilon());
+
+		if (rank==0){
+  			cout <<"difference on mat vec prod computed globally for upper symmetric matrix: "<<global_diff_U << endl;
+  		}
+		test = test || !(global_diff_U<GetEpsilon());
+
+		if (rank==0){
+  			cout <<"difference on mat vec prod computed globally between upper symmetric matrix and lower symmetric matrix: "<<global_diff_L_U << endl; 
+  		}
+		test = test || !(global_diff_L_U<1e-10);
   	}
 		if (rank==0){
 			cout <<"test: "<<test << endl;

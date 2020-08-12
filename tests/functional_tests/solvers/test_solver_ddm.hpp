@@ -10,9 +10,8 @@ using namespace std;
 using namespace htool;
 
 
-
-int test_solver_ddm(int argc, char *argv[], int mu, bool symmetric){
-
+int test_solver_ddm(int argc, char *argv[], int mu, char symmetric){
+std::cout << symmetric << std::endl;
 	// Input file
 	if ( argc < 2 ){ // argc should be 5 or more for correct execution
     // We print argv[0] assuming it is the program name
@@ -49,7 +48,10 @@ int test_solver_ddm(int argc, char *argv[], int mu, bool symmetric){
 	SetEpsilon(tol);
 	SetEta(0.1);
 	SetMinClusterSize(1);
-
+	char UPLO='N';
+	if (symmetric!='N'){
+		UPLO='L';
+	}
 	// Matrix
 	Matrix<complex<double>> A;
 	A.bytes_to_matrix(datapath+"matrix.bin");
@@ -84,7 +86,7 @@ int test_solver_ddm(int argc, char *argv[], int mu, bool symmetric){
 	// Hmatrix
 	if (rank==0)
 	   std::cout << "Creating HMatrix" << std::endl;
-	HMatrix<complex<double>,fullACA,GeometricClustering,RjasanowSteinbach> HA(A,t,p,symmetric);
+	HMatrix<complex<double>,fullACA,GeometricClustering,RjasanowSteinbach> HA(A,t,p,symmetric,UPLO);
 	HA.print_infos();
 	
 	// Global vectors

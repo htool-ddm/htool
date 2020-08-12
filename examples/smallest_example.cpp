@@ -83,7 +83,7 @@ int main(int argc, char *argv[]) {
     // Hmatrix
     MyMatrix A(p,p);
     std::vector<double> x(size,1),result(size,0);
-    HMatrix<double,partialACA,GeometricClustering,RjasanowSteinbach> HA(A,p,true);
+    HMatrix<double,partialACA,GeometricClustering,RjasanowSteinbach> HA(A,p,'S','U');
     result = HA*x;
 
     // Output

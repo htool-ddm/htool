@@ -7,7 +7,7 @@
 namespace htool {
 
 
-template <typename ClusterImpl, template<typename> typename AdmissibilityCondition>
+template <typename ClusterImpl, template<typename> class AdmissibilityCondition>
 class Block: public Parametres{
 
 protected:
@@ -254,11 +254,11 @@ public:
 	// Block& operator=(const Block& b){t=b.t; s=b.s; Admissible=b.Admissible; return *this;}
 
 	// Build
-	void build(bool symmetric, MPI_Comm comm=MPI_COMM_WORLD){
+	void build(char UPLO, MPI_Comm comm=MPI_COMM_WORLD){
 		bool not_pushed;
 		
         // Build block tree and tasks
-		if (symmetric){
+		if (UPLO=='U' || UPLO=='L'){
             not_pushed = this->build_sym_block_tree(comm);
 		}
 		else {
@@ -275,9 +275,15 @@ public:
 
         for(int b=0; b<tasks->size(); b++){
             if (((*tasks)[b])->get_target_cluster().get_rank() == t.get_local_cluster().get_rank()){
-                if (symmetric)
+                if (UPLO=='L')
                 {
                     if (((*((*tasks)[b])).get_source_cluster().get_offset()<=(*((*tasks)[b])).get_target_cluster().get_offset() || (*((*tasks)[b])).get_source_cluster().get_offset()>=local_offset+local_size)){
+                        
+                        local_tasks->push_back((*tasks)[b]);
+                    }
+                }
+                else if (UPLO=='U'){
+                    if (((*((*tasks)[b])).get_source_cluster().get_offset()>=(*((*tasks)[b])).get_target_cluster().get_offset() || (*((*tasks)[b])).get_source_cluster().get_offset()<local_offset)){
                         local_tasks->push_back((*tasks)[b]);
                     }
                 }

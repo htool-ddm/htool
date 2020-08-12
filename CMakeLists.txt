@@ -72,7 +72,6 @@ endif()
 # Options
 option(HTOOL_WITH_EXAMPLES             "Build htool examples ?" ON)
 option(HTOOL_WITH_GUI                  "Build htool visualization tools ?" OFF)
-option(HTOOL_WITH_PYTHON_INTERFACE     "Build htool visualization tools ?" OFF)
 
 
 
@@ -87,15 +86,7 @@ separate_arguments(MPIEXEC_PREFLAGS) # to support multi flags
 
 # OPENMP
 find_package(OpenMP)
-if (OPENMP_FOUND)
-    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${OpenMP_C_FLAGS}")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
-    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${OpenMP_EXE_LINKER_FLAGS}")
-    message("-- OpenMP flags are " "${OpenMP_CXX_FLAGS}" )
-    message("-- OpenMP linker flags are " "${OpenMP_EXE_LINKER_FLAGS}" )
-else()
-    message("-- OpenMP not found")
-endif()
+message(${OpenMP_CXX_LIBRARIES})
 
 # BLAS
 find_package(BLAS REQUIRED)
@@ -118,15 +109,6 @@ if (HTOOL_WITH_GUI)
 	find_package(GLM)
 endif()
 
-if (HTOOL_WITH_PYTHON_INTERFACE)
-	if (${CMAKE_VERSION} VERSION_LESS 3.12)
-		find_package (PythonLibs)
-		set(Python_INCLUDE_DIRS ${PYTHON_INCLUDE_DIRS})
-		set(Python_LIBRARIES ${PYTHON_LIBRARIES})
-	else()
-		find_package (Python COMPONENTS Interpreter Development)
-	endif()
-endif()
 
 #=============================================================================#
 #========================== Libraries ========================================#
@@ -182,45 +164,15 @@ target_link_libraries(htool INTERFACE
 					${MPI_LIBRARIES}
 					${BLAS_LIBRARIES}
 					${LAPACK_LIBRARIES}
-					${ARPACK_LIBRARIES})
+					${ARPACK_LIBRARIES}
+					${OpenMP_CXX_LIBRARIES})
 
 target_compile_features(htool INTERFACE cxx_std_11)
 
-#=== HTOOL python interface as shared library
-if (HTOOL_WITH_PYTHON_INTERFACE)
-	add_library(htool_shared SHARED interface/htool_python.cpp)
-	target_include_directories(htool_shared PRIVATE
-						$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
-						$<INSTALL_INTERFACE:include>
-						${MPI_INCLUDE_PATH}
-						${HPDDM_INCLUDE_DIRS}
-						${MKL_INC_DIR}
-						${Python_INCLUDE_DIRS})
-	target_link_libraries(htool_shared
-						${MPI_LIBRARIES}
-						${BLAS_LIBRARIES}
-						${LAPACK_LIBRARIES}
-						${Python_LIBRARIES})
-	
-	target_compile_features(htool_shared PRIVATE cxx_std_11)
-
-	add_library(htool_shared_complex SHARED interface/htool_python.cpp)
-	target_include_directories(htool_shared_complex PRIVATE
-						$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
-						$<INSTALL_INTERFACE:include>
-						${MPI_INCLUDE_PATH}
-						${HPDDM_INCLUDE_DIRS}
-						${MKL_INC_DIR}
-						${Python_INCLUDE_DIRS})
-	target_link_libraries(htool_shared_complex
-						${MPI_LIBRARIES}
-						${BLAS_LIBRARIES}
-						${LAPACK_LIBRARIES}
-						${Python_LIBRARIES})
-
-	target_compile_features(htool_shared_complex PRIVATE cxx_std_11)
-	target_compile_options(htool_shared_complex PRIVATE -DFORCE_COMPLEX)
+if ("${BLA_VENDOR}" STREQUAL "Intel10_64lp_seq" OR "${BLA_VENDOR}" STREQUAL "Intel10_64lp")
+	target_compile_definitions(htool INTERFACE "-DHPDDM_MKL -DHTOOL_MKL")
 endif()
+
 
 # For headers to show in IDE
 if (NOT "${CMAKE_VERSION}" VERSION_LESS 3.1)
