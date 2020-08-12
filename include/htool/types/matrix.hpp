@@ -9,6 +9,7 @@
 #include <iterator>
 #include "../wrappers/wrapper_blas.hpp"
 #include "vector.hpp"
+#include "../misc/misc.hpp"
 
 namespace htool {
 
@@ -393,7 +394,7 @@ public:
     //! ### Special mvprod
     /*!
     */
-    void mvprod_row_major(const T* const in, T* const out, const int& mu, char op = 'N') const{
+    void mvprod_row_major(const T* const in, T* const out, const int& mu ,char transb, char op = 'N') const{
         int nr = this->nr;
         int nc = this->nc;
         T alpha = 1;
@@ -408,14 +409,13 @@ public:
         else{
             int lda =  mu;
             char transa ='N';
-            char transb ='T';
             int M = mu;
             int N = nr;
             int K = nc;
             int ldb =  nr;
             int ldc = mu;
-
-            if (op=='C'){
+            
+            if (op=='T' || op=='C'){
                 transb='N';
                 N=nc;
                 K=nr;
@@ -429,7 +429,7 @@ public:
     //! ### Special add_mvprod
     /*!
     */
-    void add_mvprod_row_major(const T* const in, T* const out, const int& mu, char op='N') const{
+    void add_mvprod_row_major(const T* const in, T* const out, const int& mu, char transb, char op='N') const{
         int nr = this->nr;
         int nc = this->nc;
         T alpha = 1;
@@ -445,14 +445,13 @@ public:
         else{
             int lda =  mu;
             char transa ='N';
-            char transb ='T';
             int M = mu;
             int N = nr;
             int K = nc;
             int ldb =  nr;
             int ldc = mu;
 
-            if (op=='C'){
+            if (op=='T' || op=='C'){
                 transb='N';
                 N=nc;
                 K=nr;
@@ -463,12 +462,13 @@ public:
         }
     }
 
-    void add_mvprod_row_major_sym(const T* const in, T* const out, const int& mu) const{
+    // see https://stackoverflow.com/questions/6972368/stdenable-if-to-conditionally-compile-a-member-function for why  Q template parameter
+    template<typename Q=T, typename std::enable_if<!is_complex_t<Q>::value, int>::type = 0>
+    void add_mvprod_row_major_sym(const T* const in, T* const out, const int& mu, char UPLO, char symmetry) const{
         int nr = this->nr;
         int nc = this->nc;
         T alpha = 1;
         T beta =1;
-        char UPLO = 'L';
 
 
         if (mu==1){
@@ -486,6 +486,50 @@ public:
             int ldc = mu;
 
             Blas<T>::symm(&side, &UPLO, &M, &N, &alpha, &(this->mat[0]),&lda, in, &ldb, &beta, out,&ldc);
+
+        }
+    }
+
+    template<typename Q=T, typename std::enable_if<is_complex_t<Q>::value, int>::type = 0>
+    void add_mvprod_row_major_sym(const T* const in, T* const out, const int& mu, char UPLO, char symmetry) const{
+        int nr = this->nr;
+        int nc = this->nc;
+        T alpha = 1;
+        T beta =1;
+
+        if (mu==1){
+            int lda =  nr;
+            int incx =1;
+            int incy = 1;
+            if (symmetry=='S'){
+                Blas<T>::symv(&UPLO, &nr, &alpha, &(this->mat[0]), &lda,in, &incx, &beta, out, &incy);
+            }
+            else if (symmetry=='H'){
+                Blas<T>::hemv(&UPLO, &nr, &alpha, &(this->mat[0]), &lda,in, &incx, &beta, out, &incy);
+            }
+            else {
+                throw std::invalid_argument("[Htool error] Invalid arguments for add_mvprod_row_major_sym");
+            }
+           
+        }
+        else{
+            int lda =  nr;
+            char side = 'R';
+            int M = mu;
+            int N = nr;
+            int ldb =  mu;
+            int ldc = mu;
+
+            if (symmetry=='S'){
+                Blas<T>::symm(&side, &UPLO, &M, &N, &alpha, &(this->mat[0]),&lda, in, &ldb, &beta, out,&ldc);
+            }
+            else if (symmetry=='H'){
+                Blas<T>::hemm(&side, &UPLO, &M, &N, &alpha, &(this->mat[0]),&lda, in, &ldb, &beta, out,&ldc);
+            }
+            else {
+                throw std::invalid_argument("[Htool error] Invalid arguments for add_mvprod_row_major_sym");
+            }
+            
 
         }
     }

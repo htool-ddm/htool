@@ -8,10 +8,10 @@
 
 namespace htool{
 
-template<typename T,template<typename,typename> class LowRankMatrix, class ClusterImpl,template<typename> typename AdmissibleCondition>
+template<typename T,template<typename,typename> class LowRankMatrix, class ClusterImpl,template<typename> class AdmissibleCondition>
 class Proto_HPDDM;
 
-template<typename T,template<typename,typename> class LowRankMatrix, class ClusterImpl,template<typename> typename AdmissibleCondition>
+template<typename T,template<typename,typename> class LowRankMatrix, class ClusterImpl,template<typename> class AdmissibleCondition>
 class Proto_DDM{
 private:
     int n;

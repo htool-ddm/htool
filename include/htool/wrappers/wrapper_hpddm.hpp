@@ -15,13 +15,13 @@
 
 namespace htool{
 
-template<typename T, template<typename,typename> class LowRankMatrix, class ClusterImpl, template<typename> typename AdmissibleCondition>
+template<typename T, template<typename,typename> class LowRankMatrix, class ClusterImpl, template<typename> class AdmissibleCondition>
 class DDM;
 
-template<typename T, template<typename,typename> class LowRankMatrix, class ClusterImpl, template<typename> typename AdmissibleCondition>
+template<typename T, template<typename,typename> class LowRankMatrix, class ClusterImpl, template<typename> class AdmissibleCondition>
 class Proto_DDM;
 
-template<typename T, template<typename,typename> class LowRankMatrix, class ClusterImpl, template<typename> typename AdmissibleCondition>
+template<typename T, template<typename,typename> class LowRankMatrix, class ClusterImpl, template<typename> class AdmissibleCondition>
 class HPDDMDense : public HpDense<T, 'G'> {
 private:
     const HMatrix<T,LowRankMatrix,ClusterImpl,AdmissibleCondition>& HA;
@@ -48,6 +48,9 @@ public:
                     (*buffer)[i+j*mu]=in[i*this->getDof()+j];
                 }
             }
+            if (HA.get_symmetry_type()=='H'){
+                conj_if_complex(buffer->data(),local_size*mu);
+            }
         }
 
         // All gather
@@ -62,6 +65,9 @@ public:
 
         // Tranpose
         if (mu!=1){
+            if (HA.get_symmetry_type()=='H'){
+                conj_if_complex(buffer->data()+local_size*mu,local_size*mu);
+            }
             for (int i=0;i<mu;i++){
                 for (int j=0;j<local_size;j++){
                     out[i*this->getDof()+j]=(*buffer)[i+j*mu+local_size*mu];
@@ -86,7 +92,7 @@ public:
 
 };
 
-template<typename T, template<typename,typename> class LowRankMatrix, class ClusterImpl, template<typename> typename AdmissibleCondition>
+template<typename T, template<typename,typename> class LowRankMatrix, class ClusterImpl, template<typename> class AdmissibleCondition>
 class Proto_HPDDM : public HpDense<T, 'G'> {
 private:
     const HMatrix<T,LowRankMatrix,ClusterImpl,AdmissibleCondition>& HA;
@@ -345,7 +351,7 @@ public:
     int get_nevi() const {return P.get_nevi();}
 };
 
-template<typename T, template<typename,typename> class LowRankMatrix, class ClusterImpl, template<typename> typename AdmissibleCondition>
+template<typename T, template<typename,typename> class LowRankMatrix, class ClusterImpl, template<typename> class AdmissibleCondition>
 class Calderon : public HPDDM::EmptyOperator<T> {
 private:
     const HMatrix<T,LowRankMatrix,ClusterImpl,AdmissibleCondition>& HA;
@@ -555,7 +561,7 @@ public:
     std::string get_infos(const std::string& key) const { return infos[key];}
 };
 
-template<typename T, template<typename,typename> class LowRankMatrix, class ClusterImpl, template<typename> typename AdmissibleCondition>
+template<typename T, template<typename,typename> class LowRankMatrix, class ClusterImpl, template<typename> class AdmissibleCondition>
 class ContinuousOperator : public HPDDM::EmptyOperator<T> {
 private:
     const HMatrix<T,LowRankMatrix,ClusterImpl,AdmissibleCondition>& H;

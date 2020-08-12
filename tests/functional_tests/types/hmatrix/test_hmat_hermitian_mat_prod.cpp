@@ -5,18 +5,26 @@
 using namespace std;
 using namespace htool;
 
+double sign(int x){
+	if (x > 0) return 1;
+	if (x < 0) return -1;
+	return 0;
+}
 
-class MyMatrix: public IMatrix<double>{
+class MyMatrix: public IMatrix<complex<double>>{
     const vector<R3>& p1;
 
 public:
 	MyMatrix(const vector<R3>& p10 ):IMatrix(p10.size(),p10.size()),p1(p10) {}
 
-    double get_coef(const int& i, const int& j)const {return 1./(4*M_PI*(1+norm2(p1[i]-p1[j])));}
+	complex<double> get_coef(const int& i, const int& j)const {
+		return (1. + sign(i-j)*std::complex<double>(0,1))/(4*M_PI*(1+norm2(p1[i]-p1[j])));
+		
+	}
 
 
-    std::vector<double> operator*(std::vector<double> a){
-        std::vector<double> result(p1.size(),0);
+    std::vector<complex<double>> operator*(std::vector<complex<double>> a){
+        std::vector<complex<double>> result(p1.size(),0);
         for (int i=0;i<p1.size();i++){
             for (int k=0;k<p1.size();k++){
                 result[i]+=this->get_coef(i,k)*a[k];
@@ -24,7 +32,7 @@ public:
         }
         return result;
     }
-    void mvprod(const double* const in, double* const out, const int& mu) const{
+    void mvprod(const complex<double>* const in, complex<double>* const out, const int& mu) const{
         int nr = this->nr;
         int nc = this->nc;
         for (int i=0;i<nr*mu;i++){
@@ -61,8 +69,8 @@ int main(int argc, char *argv[]) {
     distance[0] = 3; distance[1] = 5; distance[2] = 7; distance[3] = 10;
     int mu = 5;
     SetNdofPerElt(1);
-    SetEpsilon(1e-3);
-    SetEta(10);
+    SetEpsilon(1e-1);
+    SetEta(1000);
 
 
     for(int idist=0; idist<ndistance; idist++)
@@ -72,8 +80,8 @@ int main(int argc, char *argv[]) {
         // we set a constant seed for rand because we want always the same result if we run the check many times
         // (two different initializations with the same seed will generate the same succession of results in the subsequent calls to rand)
 
-        int nr = 2000;
-        int nc = 2000;
+        int nr = 100;
+        int nc = 100;
         vector<int> Ir(nr); // row indices for the lrmatrix
 
         double z1 = 1;
@@ -92,27 +100,41 @@ int main(int argc, char *argv[]) {
 
         MyMatrix A(p1);
 
+        HMatrix<complex<double>,fullACA,RegularClustering,RjasanowSteinbach> HA_L(A,p1,r1,tab1,'H','L');
+        HA_L.print_infos();
 
-        HMatrix<double,fullACA,RegularClustering,RjasanowSteinbach> HA_test(A,p1,r1,tab1);
-        HMatrix<double,fullACA,RegularClustering,RjasanowSteinbach> HA(A,p1,r1,tab1,true);
-        HA.print_infos();
-
+        HMatrix<complex<double>,fullACA,RegularClustering,RjasanowSteinbach> HA_U(A,p1,r1,tab1,'H','U');
+        HA_U.print_infos();
 
 
         // Global vectors
-        std::vector<double> x_global(nc*mu,1),f_global(nr*mu),f_global_test(nr*mu);
+        std::vector<complex<double>> x_global(nc*mu,std::complex<double>(2,2)),f_global(nr*mu),f_global_L(nr*mu),f_global_U(nr*mu);
         A.mvprod(x_global.data(),f_global.data(),mu);
 
         // Global product
-        HA.mvprod_global(x_global.data(),f_global_test.data(),mu);
+        HA_L.mvprod_global(x_global.data(),f_global_L.data(),mu);
+        HA_U.mvprod_global(x_global.data(),f_global_U.data(),mu);
 
+        // std::transform(f_global_U.begin(),f_global_U.end(),f_global_U.begin(),[](std::complex<double>&c){return std::conj(c);});
         // Errors
-        double global_diff = norm2(f_global-f_global_test)/norm2(f_global);
+        double global_diff_L = norm2(f_global-f_global_L)/norm2(f_global);
+        double global_diff_U = norm2(f_global-f_global_U)/norm2(f_global);
+        double global_diff_L_U = norm2(f_global_L-f_global_U)/norm2(f_global);
+        
+        if (rank==0){
+            cout <<"difference on mat mat prod computed globally for lower hermitian matrix: "<<global_diff_L<< endl;
+        }
+        test = test || !(global_diff_L<GetEpsilon());
 
         if (rank==0){
-            cout <<"difference on mat vec prod computed globally: "<<global_diff<< endl;
+            cout <<"difference on mat mat prod computed globally for upper hermitian matrix: "<<global_diff_U<< endl;
         }
-        test = test || !(global_diff<GetEpsilon());
+        test = test || !(global_diff_U<GetEpsilon());
+
+        if (rank==0){
+            cout <<"difference on mat mat prod computed globally between upper hermitian matrix and lower hermitian matrix: "<<global_diff_L_U<< endl;
+        }
+        test = test || !(global_diff_L_U<1e-10);
     }
     if (rank==0){
         cout <<"test: "<<test << endl;

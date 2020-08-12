@@ -27,7 +27,7 @@
 #include "multilrmat/multilrmat.hpp"
 #include "multilrmat/multipartialACA.hpp"
 
-#include "misc/infos.hpp"
+#include "misc/misc.hpp"
 #include "misc/parametres.hpp"
 #include "misc/user.hpp"
 
