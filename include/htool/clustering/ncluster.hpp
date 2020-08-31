@@ -262,7 +262,7 @@ public:
 			for (int p=0;p<nb_sons;p++){
 				test_minclustersize= test_minclustersize && (numbering[p].size() >= Parametres::minclustersize);
 			}
-			if(test_minclustersize) {
+			if(test_minclustersize || curr->rank==-1) {
 				for (int p=0;p<nb_sons;p++){
 					s.push((curr->sons[p]));
 					n.push(numbering[p]);

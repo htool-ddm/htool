@@ -14,6 +14,7 @@
 
 #include "clustering/cluster.hpp"
 #include "clustering/ncluster.hpp"
+#include "clustering/DDM_cluster.hpp"
 
 #include "input_output/geometry.hpp"
 #include "input_output/output.hpp"

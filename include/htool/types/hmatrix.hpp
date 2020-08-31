@@ -1242,7 +1242,7 @@ double HMatrix<T, LowRankMatrix, ClusterImpl, AdmissibleCondition>::compression(
 	for(int j=0; j<MyNearFieldMats.size(); j++){
 		nr_b   = MyNearFieldMats[j]->nb_rows();
 		nc_b   = MyNearFieldMats[j]->nb_cols();
-		if (MyNearFieldMats[j]->get_ir()==MyNearFieldMats[j]->get_ic()){
+		if (MyNearFieldMats[j]->get_ir()==MyNearFieldMats[j]->get_ic() && this->get_symmetry_type()!='N'){
 			mycomp += nr_b*nc_b/(2*size);
 		}
 		else{
