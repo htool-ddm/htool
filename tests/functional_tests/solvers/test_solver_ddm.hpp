@@ -11,7 +11,7 @@ using namespace htool;
 
 
 int test_solver_ddm(int argc, char *argv[], int mu, char symmetric){
-std::cout << symmetric << std::endl;
+
 	// Input file
 	if ( argc < 2 ){ // argc should be 5 or more for correct execution
     // We print argv[0] assuming it is the program name

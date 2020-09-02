@@ -13,6 +13,8 @@ class DDM{
 private:
     int n;
     int n_inside;
+    int nb_cols;
+    int nb_rows;
     const std::vector<int> neighbors;
     std::vector<int> renum_to_global;
     // const std::vector<int> cluster_to_ovr_subdomain;
@@ -38,7 +40,7 @@ public:
     }
 
     // Without overlap
-    DDM(const HMatrix<T,LowRankMatrix,ClusterImpl,AdmissibleCondition>& hmat_0):n(hmat_0.get_local_size()),n_inside(hmat_0.get_local_size()),hpddm_op(hmat_0),mat_loc(n*n),D(n),nevi(0),size_E(0),comm(hmat_0.get_comm()),one_level(0),two_level(0){
+    DDM(const HMatrix<T,LowRankMatrix,ClusterImpl,AdmissibleCondition>& hmat_0):n(hmat_0.get_local_size()),n_inside(hmat_0.get_local_size()),nb_cols(hmat_0.nb_cols()),nb_rows(hmat_0.nb_rows()),hpddm_op(hmat_0),mat_loc(n*n),D(n),nevi(0),size_E(0),comm(hmat_0.get_comm()),one_level(0),two_level(0){
         // Timing
         double mytime, maxtime, meantime;
         double time = MPI_Wtime();
@@ -105,7 +107,7 @@ public:
     const std::vector<int>&  ovr_subdomain_to_global0,
     const std::vector<int>& cluster_to_ovr_subdomain0,
     const std::vector<int>& neighbors0,
-    const std::vector<std::vector<int> >& intersections0): hpddm_op(hmat_0), n(ovr_subdomain_to_global0.size()), n_inside(cluster_to_ovr_subdomain0.size()), neighbors(neighbors0), vec_ovr(n),mat_loc(n*n), D(n), comm(hmat_0.get_comm()),one_level(0),two_level(0) {
+    const std::vector<std::vector<int> >& intersections0): hpddm_op(hmat_0), n(ovr_subdomain_to_global0.size()), n_inside(cluster_to_ovr_subdomain0.size()), nb_cols(hmat_0.nb_cols()), nb_rows(hmat_0.nb_rows()), neighbors(neighbors0), vec_ovr(n),mat_loc(n*n), D(n), comm(hmat_0.get_comm()),one_level(0),two_level(0) {
 
         // Timing
         double mytime, maxtime, meantime;
@@ -148,8 +150,6 @@ public:
                 std::cout<< "[Htool warning] A symmetric matrix with UPLO='L' has been given to DDM solver. It will be considered hermitian by the solver."<< std::endl;
             }
         }
-
-        std::cout << "TEST: "<<sym << std::endl;
 
         // Building Ai
         const std::vector<LowRankMatrix<T,ClusterImpl>*>& MyDiagFarFieldMats = hpddm_op.HA.get_MyDiagFarFieldMats();
@@ -897,6 +897,8 @@ void build_coarse_space( Matrix<T>& Ki, const std::vector<R3>& x ){
     }
 
     int get_nevi() const {return nevi;}
+    int get_nb_cols() const {return nb_cols;};
+    int get_nb_rows() const {return nb_rows;};
 
 };
 

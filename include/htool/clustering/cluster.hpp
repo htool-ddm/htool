@@ -34,9 +34,6 @@ protected:
 	Derived* root;
 	std::vector<std::pair<int,int>> MasterOffset;
 
-	// Root constructor
-	Cluster():depth(0),counter(0),max_depth(0),min_depth(-1),offset(0),permutation(std::make_shared<std::vector<int>>()),root(static_cast<Derived*>(this)),local_cluster(nullptr){}
-
 	// Node constructor
 	Cluster(Derived* root0, int counter0, const int& dep,std::shared_ptr<std::vector<int>> permutation0):ctr(), rad(0.),max_depth(-1),min_depth(-1), offset(0), root(root0),counter(counter0),permutation(permutation0) {
 		for (auto & son : sons){
@@ -45,6 +42,11 @@ protected:
 		depth = dep;
 	}
 
+public:
+
+	// Root constructor
+	Cluster():depth(0),counter(0),max_depth(0),min_depth(-1),offset(0),permutation(std::make_shared<std::vector<int>>()),root(static_cast<Derived*>(this)),local_cluster(nullptr){}
+	
 	// Destructor
     ~Cluster(){
         for (int p=0;p<sons.size();p++){
@@ -52,7 +54,7 @@ protected:
         }
     };
 
-public:
+
 
     // default build cluster tree
 	void build(const std::vector<R3>& x0, const std::vector<double>& r0,const std::vector<int>& tab0, const std::vector<double>& g0, int nb_sons = -1, MPI_Comm comm=MPI_COMM_WORLD){
