@@ -1,0 +1,11 @@
+BasedOnStyle: LLVM
+Language: Cpp
+Standard: Cpp11
+IndentWidth: 4
+BinPackParameters: false
+BinPackArguments: false
+IndentPPDirectives: AfterHash
+AlwaysBreakTemplateDeclarations: true
+BreakBeforeBinaryOperators: NonAssignment
+AlignConsecutiveAssignments: true
+ColumnLimit: 0
