@@ -1,6 +1,6 @@
-# =============================================================================#
-# ============================== Project ======================================#
-# =============================================================================#
+#=============================================================================#
+#============================== Project ======================================#
+#=============================================================================#
 cmake_minimum_required(VERSION 3.10)
 if(${CMAKE_VERSION} VERSION_LESS 3.12)
     project(
@@ -72,10 +72,19 @@ if(CMAKE_PROJECT_NAME STREQUAL PROJECT_NAME)
     # Let's nicely support folders in IDE's
     set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 
-    # Testing only available if this is the main app Note this needs to be done in the main CMakeLists since it calls enable_testing, which must be in the main CMakeLists.
+    # Testing only available if this is the main app
+    # Note this needs to be done in the main CMakeLists
+    # since it calls enable_testing, which must be in the
+    # main CMakeLists.
     include(CTest)
 
-    # # Docs only available if this is the main app find_package(Doxygen) if(Doxygen_FOUND) add_subdirectory(docs) else() message(STATUS "Doxygen not found, not building docs") endif()
+    # # Docs only available if this is the main app
+    # find_package(Doxygen)
+    # if(Doxygen_FOUND)
+    # add_subdirectory(docs)
+    # else()
+    # message(STATUS "Doxygen not found, not building docs")
+    # endif()
 
 endif()
 
@@ -83,9 +92,9 @@ endif()
 option(HTOOL_WITH_EXAMPLES "Build htool examples ?" ON)
 option(HTOOL_WITH_GUI "Build htool visualization tools ?" OFF)
 
-# =============================================================================#
-# ========================== External Libraries ===============================#
-# =============================================================================#
+#=============================================================================#
+#========================== External Libraries ===============================#
+#=============================================================================#
 # MPI
 find_package(MPI REQUIRED)
 message("-- MPI libraries found in " "${MPI_LIBRARIES}")
@@ -104,8 +113,9 @@ message("-- Found Blas implementation:" "${BLAS_LIBRARIES}")
 find_package(LAPACK)
 message("-- Found Lapack:" "${LAPACK_LIBRARIES}")
 
-# # ARPACK find_package(ARPACK) message("-- Found Arpack:"
-# "${ARPACK_LIBRARIES}")
+# # ARPACK
+# find_package(ARPACK)
+# message("-- Found Arpack:" "${ARPACK_LIBRARIES}")
 
 # HPDDM
 find_package(HPDDM)
@@ -115,12 +125,12 @@ if(HTOOL_WITH_GUI)
     find_package(GLM)
 endif()
 
-# =============================================================================#
-# ========================== Libraries ========================================#
-# =============================================================================#
-# === GUI
+#=============================================================================#
+#========================== Libraries ========================================#
+#=============================================================================#
+#=== GUI
 if(HTOOL_WITH_GUI)
-    # === Nanogui and dependencies
+    #=== Nanogui and dependencies
     message("-- Nanogui and its dependencies will be built as submodules")
     execute_process(COMMAND git submodule update --init --recursive external/nanogui WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
 
@@ -156,7 +166,7 @@ if(HTOOL_WITH_GUI)
 
 endif()
 
-# === HTOOL as header only library
+#=== HTOOL as header only library
 add_library(htool INTERFACE)
 target_include_directories(htool INTERFACE $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include> $<INSTALL_INTERFACE:include> ${MPI_INCLUDE_PATH} ${HPDDM_INCLUDE_DIRS} ${MKL_INC_DIR})
 target_link_libraries(htool INTERFACE ${MPI_LIBRARIES} ${BLAS_LIBRARIES} ${LAPACK_LIBRARIES} ${ARPACK_LIBRARIES} ${OpenMP_CXX_LIBRARIES})
@@ -172,10 +182,10 @@ if(NOT "${CMAKE_VERSION}" VERSION_LESS 3.1)
     target_sources(htool INTERFACE ${htool_include_dir})
 endif()
 
-# ===
-# =============================================================================#
-# ========================== Installation =====================================#
-# =============================================================================#
+#===
+#=============================================================================#
+#========================== Installation =====================================#
+#=============================================================================#
 
 # Define target to install
 install(
@@ -200,12 +210,12 @@ install(
 
 install(FILES "${PROJECT_BINARY_DIR}/${PROJECT_NAME}ConfigVersion.cmake" "${PROJECT_BINARY_DIR}/${PROJECT_NAME}Config.cmake" DESTINATION lib/cmake/${PROJECT_NAME})
 
-# install files
+###### install files
 install(DIRECTORY ${PROJECT_SOURCE_DIR}/include/ DESTINATION include)
 
-# =============================================================================#
-# ========================== Repertories ======================================#
-# =============================================================================#
+#=============================================================================#
+#========================== Repertories ======================================#
+#=============================================================================#
 # Add examples
 if(HTOOL_WITH_EXAMPLES)
     add_custom_target(build-examples)
@@ -221,4 +231,11 @@ endif()
 add_subdirectory(src EXCLUDE_FROM_ALL)
 
 #
-# # Testing project enable_testing() add_test(NAME lrmatrix_test COMMAND Test_lrmatrix) add_test(NAME hmatrix_test COMMAND Test_hmatrix) add_test(NAME cluster_test COMMAND Test_cluster) # Add documentation add_subdirectory(doc)
+#
+# # Testing project
+# enable_testing()
+# add_test(NAME lrmatrix_test COMMAND Test_lrmatrix)
+# add_test(NAME hmatrix_test COMMAND Test_hmatrix)
+# add_test(NAME cluster_test COMMAND Test_cluster)
+# # Add documentation
+# add_subdirectory(doc)

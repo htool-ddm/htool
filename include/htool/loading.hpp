@@ -1,59 +1,63 @@
 #ifndef HTOOL_LOADING_HPP
 #define HTOOL_LOADING_HPP
 
+#include "matrix.hpp"
+#include "parametres.hpp"
+#include "user.hpp"
 #include <fstream>
 #include <sstream>
-#include <string>
 #include <stdlib.h>
-#include "matrix.hpp"
-#include "user.hpp"
-#include "parametres.hpp"
+#include <string>
 
 namespace htool {
 
-template<typename T>
-void LoadMatrix(const char* filename, Matrix<T>& m){
+template <typename T>
+void LoadMatrix(const char *filename, Matrix<T> &m) {
 
-	int NbRow, NbCol;
-	std::string      line;
-	int        j0,k0;
-	T        val;
+    int NbRow, NbCol;
+    std::string line;
+    int j0, k0;
+    T val;
 
-	// Ouverture fichier
-	std::ifstream file; file.open(filename);
-	if(!file.good()){
-		std::cout << "Cannot open file."<<std::endl;
-	}
+    // Ouverture fichier
+    std::ifstream file;
+    file.open(filename);
+    if (!file.good()) {
+        std::cout << "Cannot open file." << std::endl;
+    }
 
-	// Lecture parametres
-	int ndofperelt=GetNdofPerElt();
+    // Lecture parametres
+    int ndofperelt = GetNdofPerElt();
 
-	// Lecture nombre de lignes et de colonnes
-	file >> NbRow; file >> NbCol;
-	m.resize(NbRow,NbCol);
+    // Lecture nombre de lignes et de colonnes
+    file >> NbRow;
+    file >> NbCol;
+    m.resize(NbRow, NbCol);
 
-	getline(file,line);
-	getline(file,line);
-	while(!file.eof()){
+    getline(file, line);
+    getline(file, line);
+    while (!file.eof()) {
 
-		// Lecture de la ligne
-		std::istringstream iss(line);
+        // Lecture de la ligne
+        std::istringstream iss(line);
 
-		// Pour chaque ligne, stockage
-		// du bloc d'interaction
-		iss >> j0; j0 = ndofperelt*(j0-1);
-		iss >> k0; k0 = ndofperelt*(k0-1);
+        // Pour chaque ligne, stockage
+        // du bloc d'interaction
+        iss >> j0;
+        j0 = ndofperelt * (j0 - 1);
+        iss >> k0;
+        k0 = ndofperelt * (k0 - 1);
 
-		for(int j=0; j<ndofperelt; j++){
-			for(int k=0; k<ndofperelt; k++){
-				iss >> val;
-				m(j0+j,k0+k) = val;
-			}
-		}
-		getline(file,line);
-	}
+        for (int j = 0; j < ndofperelt; j++) {
+            for (int k = 0; k < ndofperelt; k++) {
+                iss >> val;
+                m(j0 + j, k0 + k) = val;
+            }
+        }
+        getline(file, line);
+    }
 
-	file.close();
+    file.close();
 }
 
 //==================================================//
@@ -128,7 +132,6 @@ void LoadMatrix(const char* filename, Matrix<T>& m){
 // 	m.resize(NbRow,NbCol,NbCoef);
 // }
 
-
 //==================================================//
 //
 //  DESCRIPTION:
@@ -192,6 +195,6 @@ void LoadMatrix(const char* filename, Matrix<T>& m){
 //
 // }
 
-}
+} // namespace htool
 
 #endif
