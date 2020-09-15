@@ -3,22 +3,22 @@
 
 #include <mpi.h>
 
-namespace htool{
-template<typename T>
-struct wrapper_mpi{
-  static MPI_Datatype mpi_type();
+namespace htool {
+template <typename T>
+struct wrapper_mpi {
+    static MPI_Datatype mpi_type();
 };
 
-template<>
+template <>
 inline MPI_Datatype wrapper_mpi<int>::mpi_type() { return MPI_INT; }
-template<>
+template <>
 inline MPI_Datatype wrapper_mpi<float>::mpi_type() { return MPI_FLOAT; }
-template<>
+template <>
 inline MPI_Datatype wrapper_mpi<double>::mpi_type() { return MPI_DOUBLE; }
-template<>
+template <>
 inline MPI_Datatype wrapper_mpi<std::complex<float>>::mpi_type() { return MPI_COMPLEX; }
-template<>
+template <>
 inline MPI_Datatype wrapper_mpi<std::complex<double>>::mpi_type() { return MPI_DOUBLE_COMPLEX; }
 
-}
+} // namespace htool
 #endif
