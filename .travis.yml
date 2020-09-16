@@ -58,4 +58,7 @@ script:
   - docker exec -it -w /root/htool/build -e LSAN_OPTIONS="${LSAN_OPTIONS}" ${TESTING_ENV} bash -c 'ctest --output-on-failure'
   - docker exec -it -w /root/htool/build ${TESTING_ENV} bash -c 'make -j2 build-examples'
   - docker exec -it -w /root/htool/build ${TESTING_ENV} bash -c 'make -j2 build-performance-tests'
+  - docker exec -it -w /root/htool/build ${TESTING_ENV} bash -c 'make format'
+  - docker exec -it -w /root/htool/build ${TESTING_ENV} bash -c 'make cmake-format'
+  - docker exec -it -w /root/htool ${TESTING_ENV} bash -c 'git diff --exit-code'
 
