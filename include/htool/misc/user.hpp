@@ -4,6 +4,7 @@
 #include <ctime>
 #include <iostream>
 #include <mpi.h>
+#include <numeric>
 #include <sstream>
 #include <stack>
 #include <string>

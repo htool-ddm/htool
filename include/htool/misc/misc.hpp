@@ -1,6 +1,7 @@
 #ifndef HTOOL_INFOS_HPP
 #define HTOOL_INFOS_HPP
 
+#include <algorithm>
 #include <complex>
 
 // Check if complex type
