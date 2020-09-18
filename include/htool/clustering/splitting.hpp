@@ -42,6 +42,18 @@ std::vector<std::vector<int>> geometric_splitting(const std::vector<R3> &x, cons
             index     = (index == nb_sons) ? index - 1 : index; // for max
             numbering[index].push_back(num[j]);
         }
+
+        // Check that no son is empty
+        bool empty = false;
+        for (int p = 0; p < numbering.size(); p++) {
+            if (numbering[p].size() == 0) {
+                empty = true;
+            }
+        }
+        // In this case, we do a regular splitting
+        if (empty) {
+            numbering = regular_splitting(x, tab, num, curr_cluster, nb_sons, dir);
+        }
     }
 
     return numbering;

@@ -236,7 +236,6 @@ void HMatrix<T, LowRankMatrix, ClusterImpl, AdmissibleCondition>::check_argument
           && (UPLO == 'N' || UPLO == 'L' || UPLO == 'U')
           && ((symmetry == 'N' && UPLO == 'N') || (symmetry != 'N' && UPLO != 'N'))
           && ((symmetry == 'H' && is_complex<T>()) || symmetry != 'H'))) {
-        std::cout << symmetry << " " << UPLO << std::endl;
         throw std::invalid_argument("[Htool error] Invalid arguments for HMatrix");
     }
 }
@@ -454,7 +453,6 @@ HMatrix<T, LowRankMatrix, ClusterImpl, AdmissibleCondition>::HMatrix(IMatrix<T> 
 // Symmetry constructor without tabt
 template <typename T, template <typename, typename> class LowRankMatrix, class ClusterImpl, template <typename> class AdmissibleCondition>
 HMatrix<T, LowRankMatrix, ClusterImpl, AdmissibleCondition>::HMatrix(IMatrix<T> &mat, const std::shared_ptr<Cluster<ClusterImpl>> &t, const std::vector<R3> &xt, char symmetry0, char UPLO0, const int &reqrank0, const MPI_Comm comm0) : nr(mat.nb_rows()), nc(mat.nb_cols()), symmetry(symmetry0), UPLO(UPLO0), cluster_tree_t(t), cluster_tree_s(t), reqrank(reqrank0), comm(comm0) {
-    std::cout << symmetry << " " << UPLO << std::endl;
     std::vector<int> tabt(xt.size());
     std::iota(tabt.begin(), tabt.end(), int(0));
     this->check_arguments(mat, xt, tabt, xt, tabt, this->symmetry, this->UPLO);
