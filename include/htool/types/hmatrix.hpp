@@ -217,9 +217,9 @@ class HMatrix : public Parametres {
 template <typename T, template <typename, typename> class LowRankMatrix, class ClusterImpl, template <typename> class AdmissibleCondition>
 void HMatrix<T, LowRankMatrix, ClusterImpl, AdmissibleCondition>::check_arguments(IMatrix<T> &mat, const std::vector<R3> &xt, const std::vector<double> &rt, const std::vector<int> &tabt, const std::vector<double> &gt, const std::vector<R3> &xs, const std::vector<double> &rs, const std::vector<int> &tabs, const std::vector<double> &gs, char symmetry, char UPLO) const {
     if (!(mat.nb_rows() == tabt.size() && mat.nb_cols() == tabs.size()
-          && mat.nb_rows() == xt.size() && mat.nb_cols() == xs.size()
-          && mat.nb_rows() == rt.size() && mat.nb_cols() == rs.size()
-          && mat.nb_rows() == gt.size() && mat.nb_cols() == gs.size()
+          && mat.nb_rows() == ndofperelt * xt.size() && mat.nb_cols() == ndofperelt * xs.size()
+          && mat.nb_rows() == ndofperelt * rt.size() && mat.nb_cols() == ndofperelt * rs.size()
+          && mat.nb_rows() == ndofperelt * gt.size() && mat.nb_cols() == ndofperelt * gs.size()
           && (symmetry == 'N' || symmetry == 'H' || symmetry == 'S')
           && (UPLO == 'N' || UPLO == 'L' || UPLO == 'U')
           && ((symmetry == 'N' && UPLO == 'N') || (symmetry != 'N' && UPLO != 'N'))
@@ -231,7 +231,7 @@ void HMatrix<T, LowRankMatrix, ClusterImpl, AdmissibleCondition>::check_argument
 template <typename T, template <typename, typename> class LowRankMatrix, class ClusterImpl, template <typename> class AdmissibleCondition>
 void HMatrix<T, LowRankMatrix, ClusterImpl, AdmissibleCondition>::check_arguments(IMatrix<T> &mat, const std::vector<R3> &xt, const std::vector<int> &tabt, const std::vector<R3> &xs, const std::vector<int> &tabs, char symmetry, char UPLO) const {
     if (!(mat.nb_rows() == tabt.size() && mat.nb_cols() == tabs.size()
-          && mat.nb_rows() == xt.size() && mat.nb_cols() == xs.size()
+          && mat.nb_rows() == ndofperelt * xt.size() && mat.nb_cols() == ndofperelt * xs.size()
           && (symmetry == 'N' || symmetry == 'H' || symmetry == 'S')
           && (UPLO == 'N' || UPLO == 'L' || UPLO == 'U')
           && ((symmetry == 'N' && UPLO == 'N') || (symmetry != 'N' && UPLO != 'N'))
@@ -304,7 +304,7 @@ HMatrix<T, LowRankMatrix, ClusterImpl, AdmissibleCondition>::HMatrix(IMatrix<T> 
 // Constructor without tabt and tabs
 template <typename T, template <typename, typename> class LowRankMatrix, class ClusterImpl, template <typename> class AdmissibleCondition>
 HMatrix<T, LowRankMatrix, ClusterImpl, AdmissibleCondition>::HMatrix(IMatrix<T> &mat, const std::vector<R3> &xt, const std::vector<double> &rt, const std::vector<double> &gt, const std::vector<R3> &xs, const std::vector<double> &rs, const std::vector<double> &gs, const int &reqrank0, const MPI_Comm comm0) : nr(mat.nb_rows()), nc(mat.nb_cols()), symmetry('N'), UPLO('N'), cluster_tree_s(nullptr), cluster_tree_t(nullptr), reqrank(reqrank0), comm(comm0) {
-    std::vector<int> tabt(xt.size()), tabs(xs.size());
+    std::vector<int> tabt(ndofperelt * xt.size()), tabs(ndofperelt * xs.size());
     std::iota(tabt.begin(), tabt.end(), int(0));
     std::iota(tabs.begin(), tabs.end(), int(0));
     this->check_arguments(mat, xt, rt, tabt, gt, xs, rs, tabs, gs, this->symmetry, this->UPLO);
@@ -314,7 +314,7 @@ HMatrix<T, LowRankMatrix, ClusterImpl, AdmissibleCondition>::HMatrix(IMatrix<T> 
 // Constructor without radius, mass and tab
 template <typename T, template <typename, typename> class LowRankMatrix, class ClusterImpl, template <typename> class AdmissibleCondition>
 HMatrix<T, LowRankMatrix, ClusterImpl, AdmissibleCondition>::HMatrix(IMatrix<T> &mat, const std::vector<R3> &xt, const std::vector<R3> &xs, const int &reqrank0, const MPI_Comm comm0) : nr(mat.nb_rows()), nc(mat.nb_cols()), symmetry('N'), UPLO('N'), cluster_tree_s(nullptr), cluster_tree_t(nullptr), reqrank(reqrank0), comm(comm0) {
-    std::vector<int> tabt(xt.size()), tabs(xs.size());
+    std::vector<int> tabt(ndofperelt * xt.size()), tabs(ndofperelt * xs.size());
     std::iota(tabt.begin(), tabt.end(), int(0));
     std::iota(tabs.begin(), tabs.end(), int(0));
     this->check_arguments(mat, xt, std::vector<double>(xt.size(), 0), tabt, std::vector<double>(xt.size(), 1), xs, std::vector<double>(xs.size(), 0), tabs, std::vector<double>(xs.size(), 1), this->symmetry, this->UPLO);
@@ -358,22 +358,22 @@ void HMatrix<T, LowRankMatrix, ClusterImpl, AdmissibleCondition>::build(IMatrix<
 
 // Full symmetry constructor
 template <typename T, template <typename, typename> class LowRankMatrix, class ClusterImpl, template <typename> class AdmissibleCondition>
-HMatrix<T, LowRankMatrix, ClusterImpl, AdmissibleCondition>::HMatrix(IMatrix<T> &mat, const std::vector<R3> &xt, const std::vector<double> &rt, const std::vector<int> &tabt, const std::vector<double> &gt, char symmetry0, char UPLO0, const int &reqrank0, const MPI_Comm comm0) : nr(mat.nb_rows()), nc(mat.nb_cols()), symmetry(symmetry0), UPLO(UPLO0), cluster_tree_s(nullptr), cluster_tree_t(nullptr), reqrank(reqrank0) {
+HMatrix<T, LowRankMatrix, ClusterImpl, AdmissibleCondition>::HMatrix(IMatrix<T> &mat, const std::vector<R3> &xt, const std::vector<double> &rt, const std::vector<int> &tabt, const std::vector<double> &gt, char symmetry0, char UPLO0, const int &reqrank0, const MPI_Comm comm0) : nr(mat.nb_rows()), nc(mat.nb_cols()), symmetry(symmetry0), UPLO(UPLO0), cluster_tree_s(nullptr), cluster_tree_t(nullptr), reqrank(reqrank0), comm(comm0) {
     this->check_arguments_sym(mat, xt, rt, tabt, gt, this->symmetry, this->UPLO);
     this->build(mat, xt, rt, tabt, gt);
 }
 
 // Symmetry constructor without rt
 template <typename T, template <typename, typename> class LowRankMatrix, class ClusterImpl, template <typename> class AdmissibleCondition>
-HMatrix<T, LowRankMatrix, ClusterImpl, AdmissibleCondition>::HMatrix(IMatrix<T> &mat, const std::vector<R3> &xt, const std::vector<int> &tabt, const std::vector<double> &gt, char symmetry0, char UPLO0, const int &reqrank0, const MPI_Comm comm0) : nr(mat.nb_rows()), nc(mat.nb_cols()), symmetry(symmetry0), UPLO(UPLO0), cluster_tree_s(nullptr), cluster_tree_t(nullptr), reqrank(reqrank0) {
+HMatrix<T, LowRankMatrix, ClusterImpl, AdmissibleCondition>::HMatrix(IMatrix<T> &mat, const std::vector<R3> &xt, const std::vector<int> &tabt, const std::vector<double> &gt, char symmetry0, char UPLO0, const int &reqrank0, const MPI_Comm comm0) : nr(mat.nb_rows()), nc(mat.nb_cols()), symmetry(symmetry0), UPLO(UPLO0), cluster_tree_s(nullptr), cluster_tree_t(nullptr), reqrank(reqrank0), comm(comm0) {
     this->check_arguments_sym(mat, xt, std::vector<double>(xt.size(), 0), tabt, gt, this->symmetry, this->UPLO);
     this->build(mat, xt, std::vector<double>(xt.size(), 0), tabt, gt);
 }
 
 // Symmetry constructor without tabt
 template <typename T, template <typename, typename> class LowRankMatrix, class ClusterImpl, template <typename> class AdmissibleCondition>
-HMatrix<T, LowRankMatrix, ClusterImpl, AdmissibleCondition>::HMatrix(IMatrix<T> &mat, const std::vector<R3> &xt, const std::vector<double> &rt, const std::vector<double> &gt, char symmetry0, char UPLO0, const int &reqrank0, const MPI_Comm comm0) : nr(mat.nb_rows()), nc(mat.nb_cols()), symmetry(symmetry0), UPLO(UPLO0), cluster_tree_s(nullptr), cluster_tree_t(nullptr), reqrank(reqrank0) {
-    std::vector<int> tabt(xt.size());
+HMatrix<T, LowRankMatrix, ClusterImpl, AdmissibleCondition>::HMatrix(IMatrix<T> &mat, const std::vector<R3> &xt, const std::vector<double> &rt, const std::vector<double> &gt, char symmetry0, char UPLO0, const int &reqrank0, const MPI_Comm comm0) : nr(mat.nb_rows()), nc(mat.nb_cols()), symmetry(symmetry0), UPLO(UPLO0), cluster_tree_s(nullptr), cluster_tree_t(nullptr), reqrank(reqrank0), comm(comm0) {
+    std::vector<int> tabt(ndofperelt * xt.size());
     std::iota(tabt.begin(), tabt.end(), int(0));
     this->check_arguments_sym(mat, xt, rt, tabt, gt, this->symmetry, this->UPLO);
     this->build(mat, xt, rt, tabt, gt);
@@ -389,7 +389,7 @@ HMatrix<T, LowRankMatrix, ClusterImpl, AdmissibleCondition>::HMatrix(IMatrix<T> 
 // Symmetry constructor without rt, tabt and gt
 template <typename T, template <typename, typename> class LowRankMatrix, class ClusterImpl, template <typename> class AdmissibleCondition>
 HMatrix<T, LowRankMatrix, ClusterImpl, AdmissibleCondition>::HMatrix(IMatrix<T> &mat, const std::vector<R3> &xt, char symmetry0, char UPLO0, const int &reqrank0, const MPI_Comm comm0) : nr(mat.nb_rows()), nc(mat.nb_cols()), symmetry(symmetry0), UPLO(UPLO0), cluster_tree_s(nullptr), cluster_tree_t(nullptr), reqrank(reqrank0), comm(comm0) {
-    std::vector<int> tabt(xt.size());
+    std::vector<int> tabt(ndofperelt * xt.size());
     std::iota(tabt.begin(), tabt.end(), int(0));
     this->check_arguments_sym(mat, xt, std::vector<double>(xt.size(), 0), tabt, std::vector<double>(xt.size(), 1), this->symmetry, this->UPLO);
     this->build(mat, xt, std::vector<double>(xt.size(), 0), tabt, std::vector<double>(xt.size(), 1));
@@ -436,7 +436,7 @@ HMatrix<T, LowRankMatrix, ClusterImpl, AdmissibleCondition>::HMatrix(IMatrix<T> 
 // Constructor without tabt and tabs
 template <typename T, template <typename, typename> class LowRankMatrix, class ClusterImpl, template <typename> class AdmissibleCondition>
 HMatrix<T, LowRankMatrix, ClusterImpl, AdmissibleCondition>::HMatrix(IMatrix<T> &mat, const std::shared_ptr<Cluster<ClusterImpl>> &t, const std::vector<R3> &xt, const std::shared_ptr<Cluster<ClusterImpl>> &s, const std::vector<R3> &xs, const int &reqrank0, const MPI_Comm comm0) : nr(mat.nb_rows()), nc(mat.nb_cols()), symmetry('N'), UPLO('N'), cluster_tree_t(t), cluster_tree_s(s), reqrank(reqrank0), comm(comm0) {
-    std::vector<int> tabt(xt.size()), tabs(xs.size());
+    std::vector<int> tabt(ndofperelt * xt.size()), tabs(ndofperelt * xs.size());
     std::iota(tabt.begin(), tabt.end(), int(0));
     std::iota(tabs.begin(), tabs.end(), int(0));
     this->check_arguments(mat, xt, tabt, xs, tabs, this->symmetry, this->UPLO);
@@ -453,7 +453,7 @@ HMatrix<T, LowRankMatrix, ClusterImpl, AdmissibleCondition>::HMatrix(IMatrix<T> 
 // Symmetry constructor without tabt
 template <typename T, template <typename, typename> class LowRankMatrix, class ClusterImpl, template <typename> class AdmissibleCondition>
 HMatrix<T, LowRankMatrix, ClusterImpl, AdmissibleCondition>::HMatrix(IMatrix<T> &mat, const std::shared_ptr<Cluster<ClusterImpl>> &t, const std::vector<R3> &xt, char symmetry0, char UPLO0, const int &reqrank0, const MPI_Comm comm0) : nr(mat.nb_rows()), nc(mat.nb_cols()), symmetry(symmetry0), UPLO(UPLO0), cluster_tree_t(t), cluster_tree_s(t), reqrank(reqrank0), comm(comm0) {
-    std::vector<int> tabt(xt.size());
+    std::vector<int> tabt(ndofperelt * xt.size());
     std::iota(tabt.begin(), tabt.end(), int(0));
     this->check_arguments(mat, xt, tabt, xt, tabt, this->symmetry, this->UPLO);
     this->build(mat, xt, tabt, xt, tabt);
