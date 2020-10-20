@@ -189,7 +189,7 @@ class Cluster : public Parametres {
         }
     }
 
-    void save_geometry(const std::vector<R3> &x0, std::string filename, const std::vector<int> &depths, MPI_Comm comm = MPI_COMM_WORLD) const {
+    void save_geometry(const std::vector<R3> &x0, std::vector<int> &tab, std::string filename, const std::vector<int> &depths, MPI_Comm comm = MPI_COMM_WORLD) const {
         int rankWorld;
         MPI_Comm_rank(comm, &rankWorld);
         if (rankWorld == 0) {
@@ -208,7 +208,7 @@ class Cluster : public Parametres {
             for (int d = 0; d < 3; d++) {
                 output << "x_" << d << ",";
                 for (int i = 0; i < permutation->size(); ++i) {
-                    output << x0[(*permutation)[i]][d];
+                    output << x0[tab[(*permutation)[i]]][d];
                     if (i != permutation->size() - 1) {
                         output << ",";
                     }

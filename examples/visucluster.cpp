@@ -40,7 +40,7 @@ int main(int argc, char *argv[]) {
     t.build(p, r, tab, g, 2);
 
     // Output
-    t.save_geometry(p, outputname + "/clustering_output", {1, 2, 3});
+    t.save_geometry(p, tab, outputname + "/clustering_output", {1, 2, 3});
 
     std::cout << outputname + "/clustering_output" << std::endl;
     MPI_Finalize();
