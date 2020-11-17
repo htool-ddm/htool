@@ -113,7 +113,7 @@ class Proto_HPDDM : public HpDense<T, 'G'> {
     }
 
     template <bool = true>
-    void apply(const T *const in, T *const out, const unsigned short &mu = 1, T * = nullptr, const unsigned short & = 0) const {
+    int apply(const T *const in, T *const out, const unsigned short &mu = 1, T * = nullptr, const unsigned short & = 0) const {
         P.apply(in, out);
         // std::copy_n(in, this->_n, out);
     }
@@ -400,7 +400,7 @@ class Calderon : public HPDDM::EmptyOperator<T> {
     }
 
     template <bool = true>
-    void apply(const T *const in, T *const out, const unsigned short &mu = 1, T * = nullptr, const unsigned short & = 0) const {
+    int apply(const T *const in, T *const out, const unsigned short &mu = 1, T * = nullptr, const unsigned short & = 0) const {
         int local_size = HB.get_local_size();
         int offset     = HB.get_local_offset();
 
@@ -601,7 +601,7 @@ class ContinuousOperator : public HPDDM::EmptyOperator<T> {
     }
 
     template <bool = true>
-    void apply(const T *const in, T *const out, const unsigned short &mu = 1, T * = nullptr, const unsigned short & = 0) const {
+    int apply(const T *const in, T *const out, const unsigned short &mu = 1, T * = nullptr, const unsigned short & = 0) const {
         int local_size = H.get_local_size();
         int offset     = H.get_local_offset();
         // // Tranpose
