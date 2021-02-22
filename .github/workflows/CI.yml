@@ -110,9 +110,9 @@ jobs:
 
       - name: Build tests
         run: |
-        cd htool && mkdir build && cd build
-        CC=${{ matrix.CC_COMPILER }} CXX=${{ matrix.CXX_COMPILER }} cmake -DHTOOL_WITH_EXAMPLES=1 -DMPIEXEC_PREFLAGS=${{ matrix.MPIEXEC_PREFLAGS }} -DUSE_SANITIZER=${{ matrix.USE_SANITIZER }} -DCMAKE_BUILD_TYPE=${{ matrix.CMAKE_BUILD_TYPE }} ../
-        make -j2 build-tests
+          cd htool && mkdir build && cd build
+          CC=${{ matrix.CC_COMPILER }} CXX=${{ matrix.CXX_COMPILER }} cmake -DHTOOL_WITH_EXAMPLES=1 -DMPIEXEC_PREFLAGS=${{ matrix.MPIEXEC_PREFLAGS }} -DUSE_SANITIZER=${{ matrix.USE_SANITIZER }} -DCMAKE_BUILD_TYPE=${{ matrix.CMAKE_BUILD_TYPE }} ../
+          make -j2 build-tests
 
       - name: Run tests
         run: |
@@ -127,9 +127,9 @@ jobs:
 
       - name: Check format
         run: |
-        make format
-        make cmake-format
-        git diff --exit-code
+          make format
+          make cmake-format
+          git diff --exit-code
   # macos: 
   #   runs-on: macos-latest
   #   name: CI macOS
