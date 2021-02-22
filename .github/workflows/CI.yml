@@ -95,11 +95,12 @@ jobs:
           #   CMAKE_BUILD_TYPE: Debug
 
         
-    container: pierremarchand/scientific_development_env:${{ matrix.container }}
+    container: pierremarchand/htool_testing_environments:${{ matrix.container }}
     
     name: CI (${{ matrix.name }})
     
     # Steps represent a sequence of tasks that will be executed as part of the job
+    if: "!contains(github.event.head_commit.message, '[ci skip]')"
     steps:
 
       - name: Checkout htool
