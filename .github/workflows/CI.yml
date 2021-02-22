@@ -97,7 +97,7 @@ jobs:
         
     container: pierremarchand/scientific_development_env:${{ matrix.container }}
     
-    name: CI Linux (${{ matrix.container }})
+    name: CI (${{ matrix.name }})
     
     # Steps represent a sequence of tasks that will be executed as part of the job
     steps:
@@ -114,7 +114,7 @@ jobs:
       - name: Build tests
         run: |
           cd htool && mkdir build && cd build
-          CC=${{ matrix.CC_COMPILER }} CXX=${{ matrix.CXX_COMPILER }} cmake -DHTOOL_WITH_EXAMPLES=1 -DMPIEXEC_PREFLAGS=${{ matrix.MPIEXEC_PREFLAGS }} -DUSE_SANITIZER=${{ matrix.USE_SANITIZER }} -DCMAKE_BUILD_TYPE=${{ matrix.CMAKE_BUILD_TYPE }} ../
+          CC=${{ matrix.CC_COMPILER }} CXX=${{ matrix.CXX_COMPILER }} cmake -DHTOOL_WITH_EXAMPLES=1 -DMPIEXEC_PREFLAGS="${{ matrix.MPIEXEC_PREFLAGS }}" -DUSE_SANITIZER=${{ matrix.USE_SANITIZER }} -DCMAKE_BUILD_TYPE=${{ matrix.CMAKE_BUILD_TYPE }} ../
           make -j2 build-tests
 
       - name: Run tests
