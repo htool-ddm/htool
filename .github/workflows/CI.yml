@@ -104,17 +104,23 @@ jobs:
 
       - name: Checkout htool
         uses: actions/checkout@v2
-
+        with:
+          path: 'htool'
       - name: Checkout hpddm
         uses: actions/checkout@v2
         with: 
           repository: hpddm/hpddm
           ref: ce6ce80b62e9bc71efedf8b9cb6ffb00dfd6e44e
+          path: 'hpddm'
 
       - name: Build tests
         run: |
           pwd
+      - name: Build tests
+        run: |
           ls
+      - name: Build tests
+        run: |
           ls ../
           cd htool && mkdir build && cd build
 
