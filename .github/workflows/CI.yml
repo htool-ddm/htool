@@ -121,17 +121,23 @@ jobs:
 
       - name: Run tests
         run: |
+          cd htool/build
           export OMP_NUM_THREADS=2
           ctest --output-on-failure
 
       - name: Build examples
-        run: make -j2 build-examples
+        run: |  
+          cd htool/build
+          make -j2 build-examples
 
       - name: Build performance tests
-        run: make -j2 build--performance-tests
+        run: |
+          cd htool/build
+          make -j2 build--performance-tests
 
       - name: Check format
         run: |
+          cd htool/build
           make format
           make cmake-format
           git diff --exit-code
