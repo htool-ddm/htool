@@ -133,7 +133,7 @@ jobs:
       - name: Build performance tests
         run: |
           cd htool/build
-          make -j2 build--performance-tests
+          make -j2 build-performance-tests
 
       - name: Check format
         run: |
