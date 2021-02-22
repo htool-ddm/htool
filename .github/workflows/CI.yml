@@ -34,65 +34,65 @@ jobs:
             USE_SANITIZER: "" 
             CMAKE_BUILD_TYPE: Release
 
-          - name: "Ubuntu OpenMPI clang++"
-            CC_COMPILER: clang 
-            CXX_COMPILER: clang++ 
-            container: "ubuntu_openmpi"
-            MPIEXEC_PREFLAGS: "--allow-run-as-root --oversubscribe" 
-            USE_SANITIZER: "" 
-            CMAKE_BUILD_TYPE: Release
+          # - name: "Ubuntu OpenMPI clang++"
+          #   CC_COMPILER: clang 
+          #   CXX_COMPILER: clang++ 
+          #   container: "ubuntu_openmpi"
+          #   MPIEXEC_PREFLAGS: "--allow-run-as-root --oversubscribe" 
+          #   USE_SANITIZER: "" 
+          #   CMAKE_BUILD_TYPE: Release
 
-          - name: "Ubuntu MPICH g++"
-            CC_COMPILER: gcc 
-            CXX_COMPILER: g++ 
-            container: "ubuntu_mpich"
-            MPIEXEC_PREFLAGS: "" 
-            USE_SANITIZER: "Address" 
-            LSAN_OPTIONS: "suppressions=/root/htool/sanitizers/lsan.blacklist:verbosity=1:log_threads=1"
-            CMAKE_BUILD_TYPE: Debug
+          # - name: "Ubuntu MPICH g++"
+          #   CC_COMPILER: gcc 
+          #   CXX_COMPILER: g++ 
+          #   container: "ubuntu_mpich"
+          #   MPIEXEC_PREFLAGS: "" 
+          #   USE_SANITIZER: "Address" 
+          #   LSAN_OPTIONS: "suppressions=/root/htool/sanitizers/lsan.blacklist:verbosity=1:log_threads=1"
+          #   CMAKE_BUILD_TYPE: Debug
 
-          - name: "Ubuntu MPICH clang++"
-            CC_COMPILER: clang 
-            CXX_COMPILER: clang++ 
-            container: "ubuntu_mpich"
-            MPIEXEC_PREFLAGS: "" 
-            USE_SANITIZER: "Address" 
-            LSAN_OPTIONS: "suppressions=/root/htool/sanitizers/lsan.blacklist:verbosity=1:log_threads=1"
-            CMAKE_BUILD_TYPE: Debug
+          # - name: "Ubuntu MPICH clang++"
+          #   CC_COMPILER: clang 
+          #   CXX_COMPILER: clang++ 
+          #   container: "ubuntu_mpich"
+          #   MPIEXEC_PREFLAGS: "" 
+          #   USE_SANITIZER: "Address" 
+          #   LSAN_OPTIONS: "suppressions=/root/htool/sanitizers/lsan.blacklist:verbosity=1:log_threads=1"
+          #   CMAKE_BUILD_TYPE: Debug
 
-          - name: "Debian OpenMPI g++"
-            CC_COMPILER: gcc 
-            CXX_COMPILER: g++ 
-            container: "debian_openmpi"
-            MPIEXEC_PREFLAGS: "--allow-run-as-root --oversubscribe" 
-            USE_SANITIZER: "" 
-            CMAKE_BUILD_TYPE: Release
+          # - name: "Debian OpenMPI g++"
+          #   CC_COMPILER: gcc 
+          #   CXX_COMPILER: g++ 
+          #   container: "debian_openmpi"
+          #   MPIEXEC_PREFLAGS: "--allow-run-as-root --oversubscribe" 
+          #   USE_SANITIZER: "" 
+          #   CMAKE_BUILD_TYPE: Release
 
-          - name: "Debian OpenMPI clang++"
-            CC_COMPILER: clang 
-            CXX_COMPILER: clang++ 
-            container: "debian_openmpi"
-            MPIEXEC_PREFLAGS: "--allow-run-as-root --oversubscribe" 
-            USE_SANITIZER: "" 
-            CMAKE_BUILD_TYPE: Release
+          # - name: "Debian OpenMPI clang++"
+          #   CC_COMPILER: clang 
+          #   CXX_COMPILER: clang++ 
+          #   container: "debian_openmpi"
+          #   MPIEXEC_PREFLAGS: "--allow-run-as-root --oversubscribe" 
+          #   USE_SANITIZER: "" 
+          #   CMAKE_BUILD_TYPE: Release
 
-          - name: "Debian MPICH g++"
-            CC_COMPILER: gcc 
-            CXX_COMPILER: g++ 
-            container: "debian_mpich"
-            MPIEXEC_PREFLAGS: "" 
-            USE_SANITIZER: "Address" 
-            LSAN_OPTIONS: "suppressions=/root/htool/sanitizers/lsan.blacklist:verbosity=1:log_threads=1"
-            CMAKE_BUILD_TYPE: Debug
+          # - name: "Debian MPICH g++"
+          #   CC_COMPILER: gcc 
+          #   CXX_COMPILER: g++ 
+          #   container: "debian_mpich"
+          #   MPIEXEC_PREFLAGS: "" 
+          #   USE_SANITIZER: "Address" 
+          #   LSAN_OPTIONS: "suppressions=/root/htool/sanitizers/lsan.blacklist:verbosity=1:log_threads=1"
+          #   CMAKE_BUILD_TYPE: Debug
 
-          - name: "Debian MPICH clang++"
-            CC_COMPILER: clang 
-            CXX_COMPILER: clang++ 
-            container: "debian_mpich"
-            MPIEXEC_PREFLAGS: "" 
-            USE_SANITIZER: "Address" 
-            LSAN_OPTIONS: "suppressions=/root/htool/sanitizers/lsan.blacklist:verbosity=1:log_threads=1"
-            CMAKE_BUILD_TYPE: Debug
+          # - name: "Debian MPICH clang++"
+          #   CC_COMPILER: clang 
+          #   CXX_COMPILER: clang++ 
+          #   container: "debian_mpich"
+          #   MPIEXEC_PREFLAGS: "" 
+          #   USE_SANITIZER: "Address" 
+          #   LSAN_OPTIONS: "suppressions=/root/htool/sanitizers/lsan.blacklist:verbosity=1:log_threads=1"
+          #   CMAKE_BUILD_TYPE: Debug
 
         
     container: pierremarchand/scientific_development_env:${{ matrix.container }}
@@ -113,26 +113,31 @@ jobs:
 
       - name: Build tests
         run: |
+          pwd
+          ls
+          ls ../
           cd htool && mkdir build && cd build
-          CC=${{ matrix.CC_COMPILER }} CXX=${{ matrix.CXX_COMPILER }} cmake -DHTOOL_WITH_EXAMPLES=1 -DMPIEXEC_PREFLAGS="${{ matrix.MPIEXEC_PREFLAGS }}" -DUSE_SANITIZER=${{ matrix.USE_SANITIZER }} -DCMAKE_BUILD_TYPE=${{ matrix.CMAKE_BUILD_TYPE }} ../
-          make -j2 build-tests
 
-      - name: Run tests
-        run: |
-          export OMP_NUM_THREADS=2
-          ctest --output-on-failure
+          
+# CC=${{ matrix.CC_COMPILER }} CXX=${{ matrix.CXX_COMPILER }} cmake -DHTOOL_WITH_EXAMPLES=1 -DMPIEXEC_PREFLAGS="${{ matrix.MPIEXEC_PREFLAGS }}" -DUSE_SANITIZER=${{ matrix.USE_SANITIZER }} -DCMAKE_BUILD_TYPE=${{ matrix.CMAKE_BUILD_TYPE }} ../
+# make -j2 build-tests
 
-      - name: Build examples
-        run: make -j2 build-examples
+      # - name: Run tests
+      #   run: |
+      #     export OMP_NUM_THREADS=2
+      #     ctest --output-on-failure
 
-      - name: Build performance tests
-        run: make -j2 build--performance-tests
+      # - name: Build examples
+      #   run: make -j2 build-examples
 
-      - name: Check format
-        run: |
-          make format
-          make cmake-format
-          git diff --exit-code
+      # - name: Build performance tests
+      #   run: make -j2 build--performance-tests
+
+      # - name: Check format
+      #   run: |
+      #     make format
+      #     make cmake-format
+      #     git diff --exit-code
   # macos: 
   #   runs-on: macos-latest
   #   name: CI macOS
