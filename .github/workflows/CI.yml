@@ -30,7 +30,8 @@ jobs:
             CC_COMPILER: gcc 
             CXX_COMPILER: g++ 
             container: "ubuntu_openmpi"
-            MPIEXEC_PREFLAGS: "--allow-run-as-root --oversubscribe" USE_SANITIZER: "" 
+            MPIEXEC_PREFLAGS: "--allow-run-as-root --oversubscribe" 
+            USE_SANITIZER: "" 
             CMAKE_BUILD_TYPE: Release
 
           - name: "Ubuntu OpenMPI clang++"
@@ -63,14 +64,16 @@ jobs:
             CC_COMPILER: gcc 
             CXX_COMPILER: g++ 
             container: "debian_openmpi"
-            MPIEXEC_PREFLAGS: "--allow-run-as-root --oversubscribe" USE_SANITIZER: "" 
+            MPIEXEC_PREFLAGS: "--allow-run-as-root --oversubscribe" 
+            USE_SANITIZER: "" 
             CMAKE_BUILD_TYPE: Release
 
           - name: "Debian OpenMPI clang++"
             CC_COMPILER: clang 
             CXX_COMPILER: clang++ 
             container: "debian_openmpi"
-            MPIEXEC_PREFLAGS: "--allow-run-as-root --oversubscribe" USE_SANITIZER: "" 
+            MPIEXEC_PREFLAGS: "--allow-run-as-root --oversubscribe" 
+            USE_SANITIZER: "" 
             CMAKE_BUILD_TYPE: Release
 
           - name: "Debian MPICH g++"
