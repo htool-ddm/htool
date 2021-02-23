@@ -116,6 +116,7 @@ class Proto_HPDDM : public HpDense<T, 'G'> {
     int apply(const T *const in, T *const out, const unsigned short &mu = 1, T * = nullptr, const unsigned short & = 0) const {
         P.apply(in, out);
         // std::copy_n(in, this->_n, out);
+        return 0;
     }
 
     void build_coarse_space_geev(Matrix<T> &Mi, IMatrix<T> &generator_Bi, const std::vector<R3> &x) {
@@ -644,6 +645,8 @@ class ContinuousOperator : public HPDDM::EmptyOperator<T> {
         //         }
         //     }
         // }
+
+        return 0;
     }
 
     void solve(const T *const rhs, T *const x, const int &mu = 1) {

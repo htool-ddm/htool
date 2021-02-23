@@ -1,0 +1,155 @@
+# This is a basic workflow to help you get started with Actions
+
+name: CI
+
+# Controls when the action will run. 
+on:
+  # Triggers the workflow on push or pull request events but only for the master branch
+  push:
+    branches: [ master, develop ]
+  pull_request:
+    branches: [ master, develop ]
+
+  # Allows you to run this workflow manually from the Actions tab
+  workflow_dispatch:
+  
+  # # Run tests every month
+  # schedule:
+  #   - cron: '0 0 1 * *'
+      
+# A workflow run is made up of one or more jobs that can run sequentially or in parallel
+jobs:
+  # This workflow contains a single job called "build"
+  linux:
+    # The type of runner that the job will run on
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        include:
+          - name: "Ubuntu OpenMPI g++"
+            CC_COMPILER: gcc 
+            CXX_COMPILER: g++ 
+            container: "ubuntu_openmpi"
+            MPIEXEC_PREFLAGS: "--allow-run-as-root --oversubscribe" 
+            USE_SANITIZER: "" 
+            CMAKE_BUILD_TYPE: Release
+            DOCKER_OPTIONS: " "
+
+          - name: "Ubuntu OpenMPI clang++"
+            CC_COMPILER: clang 
+            CXX_COMPILER: clang++ 
+            container: "ubuntu_openmpi"
+            MPIEXEC_PREFLAGS: "--allow-run-as-root --oversubscribe" 
+            USE_SANITIZER: "" 
+            CMAKE_BUILD_TYPE: Release
+            DOCKER_OPTIONS: " "
+
+          - name: "Ubuntu MPICH g++"
+            CC_COMPILER: gcc 
+            CXX_COMPILER: g++ 
+            container: "ubuntu_mpich"
+            MPIEXEC_PREFLAGS: "" 
+            USE_SANITIZER: "Address" 
+            LSAN_OPTIONS: "suppressions=/root/htool/sanitizers/lsan.blacklist:verbosity=1:log_threads=1"
+            CMAKE_BUILD_TYPE: Debug
+            DOCKER_OPTIONS: " "
+
+          - name: "Ubuntu MPICH clang++"
+            CC_COMPILER: clang 
+            CXX_COMPILER: clang++ 
+            container: "ubuntu_mpich"
+            MPIEXEC_PREFLAGS: "" 
+            USE_SANITIZER: "Address" 
+            LSAN_OPTIONS: "suppressions=/root/htool/sanitizers/lsan.blacklist:verbosity=1:log_threads=1"
+            CMAKE_BUILD_TYPE: Debug
+            DOCKER_OPTIONS: " "
+          
+          # Hangs on github
+          # - name: "Debian OpenMPI g++"
+          #   CC_COMPILER: gcc 
+          #   CXX_COMPILER: g++ 
+          #   container: "debian_openmpi"
+          #   MPIEXEC_PREFLAGS: "--allow-run-as-root --oversubscribe --mca btl_vader_single_copy_mechanism none" 
+          #   USE_SANITIZER: "" 
+          #   CMAKE_BUILD_TYPE: Debug
+          #   DOCKER_OPTIONS: "--cap-add SYS_PTRACE"
+
+          # - name: "Debian OpenMPI clang++"
+          #   CC_COMPILER: clang 
+          #   CXX_COMPILER: clang++ 
+          #   container: "debian_openmpi"
+          #   MPIEXEC_PREFLAGS: "--allow-run-as-root --oversubscribe --mca btl_vader_single_copy_mechanism none" 
+          #   USE_SANITIZER: "" 
+          #   CMAKE_BUILD_TYPE: Debug
+          #   DOCKER_OPTIONS: "--cap-add SYS_PTRACE"
+
+          - name: "Debian MPICH g++"
+            CC_COMPILER: gcc 
+            CXX_COMPILER: g++ 
+            container: "debian_mpich"
+            MPIEXEC_PREFLAGS: "" 
+            USE_SANITIZER: "Address" 
+            LSAN_OPTIONS: "suppressions=/root/htool/sanitizers/lsan.blacklist:verbosity=1:log_threads=1"
+            CMAKE_BUILD_TYPE: Debug
+            DOCKER_OPTIONS: " "
+
+          - name: "Debian MPICH clang++"
+            CC_COMPILER: clang 
+            CXX_COMPILER: clang++ 
+            container: "debian_mpich"
+            MPIEXEC_PREFLAGS: "" 
+            USE_SANITIZER: "Address" 
+            LSAN_OPTIONS: "suppressions=/root/htool/sanitizers/lsan.blacklist:verbosity=1:log_threads=1"
+            CMAKE_BUILD_TYPE: Debug
+            DOCKER_OPTIONS: " "
+
+        
+    container: 
+      image: pierremarchand/htool_testing_environments:${{ matrix.container }}
+      options: ${{ matrix.DOCKER_OPTIONS }}
+    
+    name: CI (${{ matrix.name }})
+    
+    # Steps represent a sequence of tasks that will be executed as part of the job
+    if: "!contains(github.event.head_commit.message, '[ci skip]')"
+    steps:
+
+      - name: Checkout htool
+        uses: actions/checkout@v2
+        with:
+          path: 'htool'
+      - name: Checkout hpddm
+        uses: actions/checkout@v2
+        with: 
+          repository: hpddm/hpddm
+          ref: ce6ce80b62e9bc71efedf8b9cb6ffb00dfd6e44e
+          path: 'hpddm'
+
+      - name: Build tests
+        run: |
+          cd htool && mkdir build && cd build
+          CC=${{ matrix.CC_COMPILER }} CXX=${{ matrix.CXX_COMPILER }} cmake -DHTOOL_WITH_EXAMPLES=1 -DMPIEXEC_PREFLAGS="${{ matrix.MPIEXEC_PREFLAGS }}" -DUSE_SANITIZER=${{ matrix.USE_SANITIZER }} -DCMAKE_BUILD_TYPE=${{ matrix.CMAKE_BUILD_TYPE }} ../
+          make -j2 build-tests
+
+      - name: Run tests
+        run: |
+          cd htool/build
+          export OMP_NUM_THREADS=2
+          ctest --output-on-failure
+
+      - name: Build examples
+        run: |  
+          cd htool/build
+          make -j2 build-examples
+
+      - name: Build performance tests
+        run: |
+          cd htool/build
+          make -j2 build-performance-tests
+
+      - name: Check format
+        run: |
+          cd htool/build
+          make format
+          make cmake-format
+          git diff --exit-code

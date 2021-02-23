@@ -103,7 +103,6 @@ separate_arguments(MPIEXEC_PREFLAGS) # to support multi flags
 
 # OPENMP
 find_package(OpenMP)
-message(${OpenMP_CXX_LIBRARIES})
 
 # BLAS
 find_package(BLAS REQUIRED)
