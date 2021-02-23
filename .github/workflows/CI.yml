@@ -68,16 +68,16 @@ jobs:
             CC_COMPILER: gcc 
             CXX_COMPILER: g++ 
             container: "debian_openmpi"
-            MPIEXEC_PREFLAGS: "--allow-run-as-root --oversubscribe" 
+            MPIEXEC_PREFLAGS: "--allow-run-as-root --oversubscribe --mca btl_vader_single_copy_mechanism none" 
             USE_SANITIZER: "" 
             CMAKE_BUILD_TYPE: Release
-            DOCKER_OPTIONS: " "
+            DOCKER_OPTIONS: "--cap-add SYS_PTRACE"
 
           - name: "Debian OpenMPI clang++"
             CC_COMPILER: clang 
             CXX_COMPILER: clang++ 
             container: "debian_openmpi"
-            MPIEXEC_PREFLAGS: "--allow-run-as-root --oversubscribe" 
+            MPIEXEC_PREFLAGS: "--allow-run-as-root --oversubscribe --mca btl_vader_single_copy_mechanism none" 
             USE_SANITIZER: "" 
             CMAKE_BUILD_TYPE: Release
             DOCKER_OPTIONS: "--cap-add SYS_PTRACE"
