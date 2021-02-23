@@ -33,6 +33,7 @@ jobs:
             MPIEXEC_PREFLAGS: "--allow-run-as-root --oversubscribe" 
             USE_SANITIZER: "" 
             CMAKE_BUILD_TYPE: Release
+            DOCKER_OPTIONS: " "
 
           - name: "Ubuntu OpenMPI clang++"
             CC_COMPILER: clang 
@@ -41,6 +42,7 @@ jobs:
             MPIEXEC_PREFLAGS: "--allow-run-as-root --oversubscribe" 
             USE_SANITIZER: "" 
             CMAKE_BUILD_TYPE: Release
+            DOCKER_OPTIONS: " "
 
           - name: "Ubuntu MPICH g++"
             CC_COMPILER: gcc 
@@ -50,6 +52,7 @@ jobs:
             USE_SANITIZER: "Address" 
             LSAN_OPTIONS: "suppressions=/root/htool/sanitizers/lsan.blacklist:verbosity=1:log_threads=1"
             CMAKE_BUILD_TYPE: Debug
+            DOCKER_OPTIONS: " "
 
           - name: "Ubuntu MPICH clang++"
             CC_COMPILER: clang 
@@ -59,6 +62,7 @@ jobs:
             USE_SANITIZER: "Address" 
             LSAN_OPTIONS: "suppressions=/root/htool/sanitizers/lsan.blacklist:verbosity=1:log_threads=1"
             CMAKE_BUILD_TYPE: Debug
+            DOCKER_OPTIONS: " "
 
           - name: "Debian OpenMPI g++"
             CC_COMPILER: gcc 
@@ -67,7 +71,7 @@ jobs:
             MPIEXEC_PREFLAGS: "--allow-run-as-root --oversubscribe" 
             USE_SANITIZER: "" 
             CMAKE_BUILD_TYPE: Release
-            DOCKER_OPTIONS: "--cap-add SYS_PTRACE"
+            DOCKER_OPTIONS: " "
 
           - name: "Debian OpenMPI clang++"
             CC_COMPILER: clang 
@@ -86,6 +90,7 @@ jobs:
             USE_SANITIZER: "Address" 
             LSAN_OPTIONS: "suppressions=/root/htool/sanitizers/lsan.blacklist:verbosity=1:log_threads=1"
             CMAKE_BUILD_TYPE: Debug
+            DOCKER_OPTIONS: " "
 
           - name: "Debian MPICH clang++"
             CC_COMPILER: clang 
@@ -95,11 +100,12 @@ jobs:
             USE_SANITIZER: "Address" 
             LSAN_OPTIONS: "suppressions=/root/htool/sanitizers/lsan.blacklist:verbosity=1:log_threads=1"
             CMAKE_BUILD_TYPE: Debug
+            DOCKER_OPTIONS: " "
 
         
     container: 
       image: pierremarchand/htool_testing_environments:${{ matrix.container }}
-      options: ${{ matrix.DOCKER_OPTIONS }}
+      options: ${{ matrix.container }}
     
     name: CI (${{ matrix.name }})
     
