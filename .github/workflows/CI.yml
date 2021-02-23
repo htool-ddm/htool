@@ -63,24 +63,25 @@ jobs:
             LSAN_OPTIONS: "suppressions=/root/htool/sanitizers/lsan.blacklist:verbosity=1:log_threads=1"
             CMAKE_BUILD_TYPE: Debug
             DOCKER_OPTIONS: " "
+          
+          # Hangs on github
+          # - name: "Debian OpenMPI g++"
+          #   CC_COMPILER: gcc 
+          #   CXX_COMPILER: g++ 
+          #   container: "debian_openmpi"
+          #   MPIEXEC_PREFLAGS: "--allow-run-as-root --oversubscribe --mca btl_vader_single_copy_mechanism none" 
+          #   USE_SANITIZER: "" 
+          #   CMAKE_BUILD_TYPE: Debug
+          #   DOCKER_OPTIONS: "--cap-add SYS_PTRACE"
 
-          - name: "Debian OpenMPI g++"
-            CC_COMPILER: gcc 
-            CXX_COMPILER: g++ 
-            container: "debian_openmpi"
-            MPIEXEC_PREFLAGS: "--allow-run-as-root --oversubscribe --mca btl_vader_single_copy_mechanism none" 
-            USE_SANITIZER: "" 
-            CMAKE_BUILD_TYPE: Debug
-            DOCKER_OPTIONS: "--cap-add SYS_PTRACE"
-
-          - name: "Debian OpenMPI clang++"
-            CC_COMPILER: clang 
-            CXX_COMPILER: clang++ 
-            container: "debian_openmpi"
-            MPIEXEC_PREFLAGS: "--allow-run-as-root --oversubscribe --mca btl_vader_single_copy_mechanism none" 
-            USE_SANITIZER: "" 
-            CMAKE_BUILD_TYPE: Debug
-            DOCKER_OPTIONS: "--cap-add SYS_PTRACE"
+          # - name: "Debian OpenMPI clang++"
+          #   CC_COMPILER: clang 
+          #   CXX_COMPILER: clang++ 
+          #   container: "debian_openmpi"
+          #   MPIEXEC_PREFLAGS: "--allow-run-as-root --oversubscribe --mca btl_vader_single_copy_mechanism none" 
+          #   USE_SANITIZER: "" 
+          #   CMAKE_BUILD_TYPE: Debug
+          #   DOCKER_OPTIONS: "--cap-add SYS_PTRACE"
 
           - name: "Debian MPICH g++"
             CC_COMPILER: gcc 
