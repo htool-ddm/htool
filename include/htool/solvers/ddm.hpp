@@ -869,6 +869,7 @@ class DDM {
     int get_nevi() const { return nevi; }
     int get_nb_cols() const { return nb_cols; };
     int get_nb_rows() const { return nb_rows; };
+    MPI_Comm get_comm() const { return comm; }
 };
 
 } // namespace htool

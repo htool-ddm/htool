@@ -1,4 +1,4 @@
-# HTOOL [![Build Status](https://travis-ci.com/htool-ddm/htool.svg?branch=master)](https://travis-ci.com/htool-ddm/htool.svg?branch=master) [![Documentation Status](https://readthedocs.org/projects/htool-documentation/badge/?version=latest)](https://htool-documentation.readthedocs.io/en/latest/?badge=latest)
+# HTOOL [![CI](https://github.com/htool-ddm/htool/actions/workflows/CI.yml/badge.svg?branch=develop)](https://github.com/htool-ddm/htool/actions/workflows/CI.yml)
 
 ## What is Htool?
 

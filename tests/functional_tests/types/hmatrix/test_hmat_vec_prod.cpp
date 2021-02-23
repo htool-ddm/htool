@@ -25,16 +25,8 @@ class MyMatrix : public IMatrix<double> {
     }
 };
 
-#define STR(x) #x
-#define SHOW_DEFINE(x) printf("%s=%s\n", #x, STR(x))
-
 int main(int argc, char *argv[]) {
 
-#define STR(x) #x
-#define SHOW_DEFINE(x) printf("%s=%s\n", #x, STR(x))
-    SHOW_DEFINE(INTEL_MKL_VERSION);
-    SHOW_DEFINE(HPDDM_MKL);
-    SHOW_DEFINE(HTOOL_MKL);
     // Initialize the MPI environment
     MPI_Init(&argc, &argv);
 
