@@ -70,7 +70,7 @@ jobs:
             container: "debian_openmpi"
             MPIEXEC_PREFLAGS: "--allow-run-as-root --oversubscribe --mca btl_vader_single_copy_mechanism none" 
             USE_SANITIZER: "" 
-            CMAKE_BUILD_TYPE: Release
+            CMAKE_BUILD_TYPE: Debug
             DOCKER_OPTIONS: "--cap-add SYS_PTRACE"
 
           - name: "Debian OpenMPI clang++"
@@ -79,7 +79,7 @@ jobs:
             container: "debian_openmpi"
             MPIEXEC_PREFLAGS: "--allow-run-as-root --oversubscribe --mca btl_vader_single_copy_mechanism none" 
             USE_SANITIZER: "" 
-            CMAKE_BUILD_TYPE: Release
+            CMAKE_BUILD_TYPE: Debug
             DOCKER_OPTIONS: "--cap-add SYS_PTRACE"
 
           - name: "Debian MPICH g++"
