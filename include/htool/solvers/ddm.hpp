@@ -187,10 +187,10 @@ class DDM {
             std::copy_n(horizontal_block.begin() + j * (n - n_inside), n - n_inside, &mat_loc[n_inside + j * n]);
         }
 
-        diagonal_block = mat0.get_submatrix(std::vector<int>(renum_to_global.begin() + n_inside, renum_to_global.end()), std::vector<int>(renum_to_global.begin(), renum_to_global.begin() + n_inside)).get_mat();
+        diagonal_block = mat0.get_submatrix(std::vector<int>(renum_to_global.begin() + n_inside, renum_to_global.end()), std::vector<int>(renum_to_global.begin() + n_inside, renum_to_global.end())).get_mat();
 
         for (int j = 0; j < n - n_inside; j++) {
-            std::copy_n(diagonal_block.begin() + j * (n - n_inside), n - n_inside, &mat_loc[n_inside + j * n]);
+            std::copy_n(diagonal_block.begin() + j * (n - n_inside), n - n_inside, &mat_loc[n_inside + (j + n_inside) * n]);
         }
 
         if (!sym) {
