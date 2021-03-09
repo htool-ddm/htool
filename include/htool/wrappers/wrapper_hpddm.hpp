@@ -743,4 +743,8 @@ class ContinuousOperator : public HPDDM::EmptyOperator<T> {
 };
 
 } // namespace htool
+
+template <typename T, template <typename, typename> class LowRankMatrix, class ClusterImpl, template <typename> class AdmissibleCondition>
+struct HPDDM::hpddm_method_id<htool::HPDDMDense<T, LowRankMatrix, ClusterImpl, AdmissibleCondition>> { static constexpr char value = HPDDM::hpddm_method_id<HpDense<T, 'G'>>::value; };
+
 #endif
