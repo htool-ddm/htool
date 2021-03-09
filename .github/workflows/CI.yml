@@ -122,7 +122,7 @@ jobs:
         uses: actions/checkout@v2
         with: 
           repository: hpddm/hpddm
-          ref: ce6ce80b62e9bc71efedf8b9cb6ffb00dfd6e44e
+          ref: 273856efc9d1a5eb73a8c46cf7600110b1989d5a
           path: 'hpddm'
 
       - name: Build tests
