@@ -120,9 +120,9 @@ jobs:
           path: 'htool'
       - name: Checkout hpddm
         uses: actions/checkout@v2
-        with: 
+        with:
           repository: hpddm/hpddm
-          ref: 273856efc9d1a5eb73a8c46cf7600110b1989d5a
+          ref: b442b4541c5112efc797e864a6a608d5d20fbaef
           path: 'hpddm'
 
       - name: Build tests
