@@ -1132,7 +1132,6 @@ void HMatrix<T, LowRankMatrix, ClusterImpl, AdmissibleCondition>::mvprod_subrhs(
 
                 if ((offset_j <= offset + size && offset <= offset_j + size_j) && offset_i != offset_j) { // remove strictly diagonal blocks
                     M.add_mvprod_row_major(in + (offset_j - offset + margin) * mu, temp.data() + (offset_i - local_offset) * mu, mu, transb, op_sym);
-                    std::cout << "DiagFar" << std::endl;
                 }
             }
 
@@ -1148,7 +1147,6 @@ void HMatrix<T, LowRankMatrix, ClusterImpl, AdmissibleCondition>::mvprod_subrhs(
 
                 if ((offset_j <= offset + size && offset <= offset_j + size_j) && offset_i != offset_j) { // remove strictly diagonal blocks
                     M.add_mvprod_row_major(in + (offset_j - offset + margin) * mu, temp.data() + (offset_i - local_offset) * mu, mu, transb, op_sym);
-                    std::cout << "DiagNear" << std::endl;
                 }
             }
 #if _OPENMP
@@ -1161,7 +1159,6 @@ void HMatrix<T, LowRankMatrix, ClusterImpl, AdmissibleCondition>::mvprod_subrhs(
                 int size_j            = M.nb_cols();
                 if (offset_j <= offset + size && offset <= offset_j + size_j) {
                     M.add_mvprod_row_major_sym(in + (offset_j - offset + margin) * mu, temp.data() + (offset_i - local_offset) * mu, mu, this->UPLO, this->symmetry);
-                    std::cout << "StrictDiag" << std::endl;
                 }
             }
         }

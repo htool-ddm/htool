@@ -188,6 +188,12 @@ int test_solver_ddm(int argc, char *argv[], int mu, char symmetric) {
         std::cout << "ASM one level with overlap:" << std::endl;
     MPI_Barrier(MPI_COMM_WORLD);
     opt.parse("-hpddm_schwarz_method asm ");
+    Matrix<complex<double>> Ki;
+    if (symmetric == 'S' && size > 1) {
+        Ki.bytes_to_matrix(datapath + "Ki_" + NbrToStr(size) + "_" + NbrToStr(rank) + ".bin");
+        ddm_with_overlap.build_coarse_space(Ki);
+    }
+
     ddm_with_overlap.facto_one_level();
     ddm_with_overlap.solve(f_global.data(), x_global.data(), mu);
     ddm_with_overlap.print_infos();
@@ -216,6 +222,40 @@ int test_solver_ddm(int argc, char *argv[], int mu, char symmetric) {
     test = test || !(error2 < tol);
 
     x_global = 0;
+
+    // DDM two level ASM with overlap
+    if (symmetric == 'S' && size > 1) {
+        if (rank == 0)
+            std::cout << "ASM two level with overlap:" << std::endl;
+        MPI_Barrier(MPI_COMM_WORLD);
+        opt.parse("-hpddm_schwarz_method asm -hpddm_schwarz_coarse_correction additive");
+        ddm_with_overlap.solve(f_global.data(), x_global.data(), mu);
+        ddm_with_overlap.print_infos();
+        error2 = normFrob(f_global - A * x_global) / normFrob(f_global);
+        if (rank == 0) {
+            cout << "error: " << error2 << endl;
+        }
+
+        test = test || !(error2 < tol);
+
+        x_global = 0;
+
+        if (rank == 0)
+            std::cout << "RAS two level with overlap:" << std::endl;
+        MPI_Barrier(MPI_COMM_WORLD);
+        opt.parse("-hpddm_schwarz_method ras -hpddm_schwarz_coarse_correction additive");
+        ddm_with_overlap.solve(f_global.data(), x_global.data(), mu);
+        ddm_with_overlap.print_infos();
+        ddm_with_overlap.clean();
+        error2 = normFrob(f_global - A * x_global) / normFrob(f_global);
+        if (rank == 0) {
+            cout << "error: " << error2 << endl;
+        }
+
+        test = test || !(error2 < tol);
+
+        x_global = 0;
+    }
 
     //Finalize the MPI environment.
     MPI_Finalize();
