@@ -57,7 +57,7 @@ class LowRankMatrix : public Parametres {
         }
     }
 
-    void add_mvprod_row_major(const T *const in, T *const out, const int &mu, char transb = 'N', char op = 'N') const {
+    void add_mvprod_row_major(const T *const in, T *const out, const int &mu, char transb = 'T', char op = 'N') const {
         if (rank != 0) {
             std::vector<T> a(this->rank * mu);
             if (op == 'N') {

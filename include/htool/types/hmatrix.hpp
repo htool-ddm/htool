@@ -192,7 +192,7 @@ class HMatrix : public Parametres {
     void mvprod_global(const T *const in, T *const out, const int &mu = 1) const;
     void mvprod_local(const T *const in, T *const out, T *const work, const int &mu) const;
     void mymvprod_local(const T *const in, T *const out, const int &mu) const;
-    void mvprod_subrhs(const T *const in, T *const out, const int &mu, const int &offset, const int &size, const int &local_max_size_j) const;
+    void mvprod_subrhs(const T *const in, T *const out, const int &mu, const int &offset, const int &size, const int &margin) const;
     std::vector<T> operator*(const std::vector<T> &x) const;
     Matrix<T> operator*(const Matrix<T> &x) const;
 
@@ -1070,8 +1070,15 @@ void HMatrix<T, LowRankMatrix, ClusterImpl, AdmissibleCondition>::mvprod_global(
 }
 
 template <typename T, template <typename, typename> class LowRankMatrix, class ClusterImpl, template <typename> class AdmissibleCondition>
-void HMatrix<T, LowRankMatrix, ClusterImpl, AdmissibleCondition>::mvprod_subrhs(const T *const in, T *const out, const int &mu, const int &offset, const int &size, const int &local_max_size_j) const {
+void HMatrix<T, LowRankMatrix, ClusterImpl, AdmissibleCondition>::mvprod_subrhs(const T *const in, T *const out, const int &mu, const int &offset, const int &size, const int &margin) const {
     std::fill(out, out + local_size * mu, 0);
+
+    // To localize the rhs with multiple rhs, it is transpose. So instead of A*B, we do transpose(B)*transpose(A)
+    char transb = 'T';
+    // In case of a hermitian matrix, the rhs is conjugate transpose
+    if (symmetry == 'H') {
+        transb = 'C';
+    }
 
     // Contribution champ lointain
 #if _OPENMP
@@ -1088,8 +1095,8 @@ void HMatrix<T, LowRankMatrix, ClusterImpl, AdmissibleCondition>::mvprod_subrhs(
             int offset_j                           = M.get_offset_j();
             int size_j                             = M.nb_cols();
 
-            if (offset_j <= offset + size && offset <= offset_j + size_j) {
-                M.add_mvprod_row_major(in + (offset_j - offset + local_max_size_j) * mu, temp.data() + (offset_i - local_offset) * mu, mu);
+            if ((offset_j <= offset + size && offset <= offset_j + size_j) && (symmetry == 'N' || offset_i != offset_j)) {
+                M.add_mvprod_row_major(in + (offset_j - offset + margin) * mu, temp.data() + (offset_i - local_offset) * mu, mu, transb);
             }
         }
 // Contribution champ proche
@@ -1102,8 +1109,60 @@ void HMatrix<T, LowRankMatrix, ClusterImpl, AdmissibleCondition>::mvprod_subrhs(
             int offset_j          = M.get_offset_j();
             int size_j            = M.nb_cols();
 
-            if (offset_j <= offset + size && offset <= offset_j + size_j) {
-                M.add_mvprod_row_major(in + (offset_j - offset + local_max_size_j) * mu, temp.data() + (offset_i - local_offset) * mu, mu);
+            if ((offset_j <= offset + size && offset <= offset_j + size_j) && (symmetry == 'N' || offset_i != offset_j)) {
+                M.add_mvprod_row_major(in + (offset_j - offset + margin) * mu, temp.data() + (offset_i - local_offset) * mu, mu, transb);
+            }
+        }
+
+        // Symmetry part of the diagonal part
+        if (symmetry != 'N') {
+            transb      = 'N';
+            char op_sym = 'T';
+            if (symmetry == 'H') {
+                op_sym = 'C';
+            }
+#if _OPENMP
+#    pragma omp for schedule(guided)
+#endif
+            for (int b = 0; b < MyDiagFarFieldMats.size(); b++) {
+                const LowRankMatrix<T, ClusterImpl> &M = *(MyDiagFarFieldMats[b]);
+                int offset_i                           = M.get_offset_j();
+                int offset_j                           = M.get_offset_i();
+                int size_j                             = M.nb_rows();
+
+                if ((offset_j <= offset + size && offset <= offset_j + size_j) && offset_i != offset_j) { // remove strictly diagonal blocks
+                    M.add_mvprod_row_major(in + (offset_j - offset + margin) * mu, temp.data() + (offset_i - local_offset) * mu, mu, transb, op_sym);
+                    std::cout << "DiagFar" << std::endl;
+                }
+            }
+
+// Contribution champ proche
+#if _OPENMP
+#    pragma omp for schedule(guided)
+#endif
+            for (int b = 0; b < MyDiagNearFieldMats.size(); b++) {
+                const SubMatrix<T> &M = *(MyDiagNearFieldMats[b]);
+                int offset_i          = M.get_offset_j();
+                int offset_j          = M.get_offset_i();
+                int size_j            = M.nb_rows();
+
+                if ((offset_j <= offset + size && offset <= offset_j + size_j) && offset_i != offset_j) { // remove strictly diagonal blocks
+                    M.add_mvprod_row_major(in + (offset_j - offset + margin) * mu, temp.data() + (offset_i - local_offset) * mu, mu, transb, op_sym);
+                    std::cout << "DiagNear" << std::endl;
+                }
+            }
+#if _OPENMP
+#    pragma omp for schedule(guided)
+#endif
+            for (int b = 0; b < MyStrictlyDiagNearFieldMats.size(); b++) {
+                const SubMatrix<T> &M = *(MyStrictlyDiagNearFieldMats[b]);
+                int offset_i          = M.get_offset_j();
+                int offset_j          = M.get_offset_i();
+                int size_j            = M.nb_cols();
+                if (offset_j <= offset + size && offset <= offset_j + size_j) {
+                    M.add_mvprod_row_major_sym(in + (offset_j - offset + margin) * mu, temp.data() + (offset_i - local_offset) * mu, mu, this->UPLO, this->symmetry);
+                    std::cout << "StrictDiag" << std::endl;
+                }
             }
         }
 #if _OPENMP
