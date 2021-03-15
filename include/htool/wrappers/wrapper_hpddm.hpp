@@ -72,7 +72,10 @@ class HPDDMDense : public HpDense<T, 'G'> {
                 for (int j = 0; j < local_size; j++) {
                     out[i * this->getDof() + j] = (*buffer)[i + j * mu + local_size * mu];
                 }
+                std::fill(out + local_size + i * this->getDof(), out + (i + 1) * this->getDof(), 0);
             }
+        } else {
+            std::fill(out + local_size, out + this->getDof(), 0);
         }
         bool allocate = this->getMap().size() > 0 && this->getBuffer()[0] == nullptr ? this->setBuffer() : false;
         this->exchange(out, mu);

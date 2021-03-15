@@ -5,7 +5,7 @@
 using namespace std;
 using namespace htool;
 
-template <typename Cluster_type, template <typename> typename AdmissibilityCondition>
+template <typename Cluster_type, template <typename> class AdmissibilityCondition>
 int test_blocks(int argc, char *argv[], bool symmetric) {
 
     int rankWorld, sizeWorld;
