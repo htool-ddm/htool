@@ -33,7 +33,7 @@ class Cluster : public Parametres {
     std::vector<std::pair<int, int>> MasterOffset;
 
     // Node constructor
-    Cluster(Derived *root0, int counter0, const int &dep, std::shared_ptr<std::vector<int>> permutation0) : ctr(), rad(0.), max_depth(-1), min_depth(-1), offset(0), root(root0), counter(counter0), permutation(permutation0) {
+    Cluster(Derived *root0, int counter0, const int &dep, std::shared_ptr<std::vector<int>> permutation0) : counter(counter0), rad(0.), ctr(), max_depth(-1), min_depth(-1), offset(0), permutation(permutation0), root(root0) {
         for (auto &son : sons) {
             son = 0;
         }
@@ -42,7 +42,7 @@ class Cluster : public Parametres {
 
   public:
     // Root constructor
-    Cluster() : depth(0), counter(0), max_depth(0), min_depth(-1), offset(0), permutation(std::make_shared<std::vector<int>>()), root(static_cast<Derived *>(this)), local_cluster(nullptr) {}
+    Cluster() : depth(0), counter(0), max_depth(0), min_depth(-1), offset(0), permutation(std::make_shared<std::vector<int>>()), local_cluster(nullptr), root(static_cast<Derived *>(this)) {}
 
     // Destructor
     ~Cluster() {
@@ -95,7 +95,6 @@ class Cluster : public Parametres {
         cluster_input.push(local_cluster);
         std::stack<Derived *> cluster_output;
         cluster_output.push(copy_local_cluster->root);
-        int count = 0;
         while (!cluster_input.empty()) {
             Derived *curr_input  = cluster_input.top();
             Derived *curr_output = cluster_output.top();
