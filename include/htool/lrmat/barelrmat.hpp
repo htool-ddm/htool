@@ -17,7 +17,7 @@ template <typename T, typename ClusterImpl>
 class MultipartialACA;
 
 template <typename T, typename ClusterImpl>
-class bareLowRankMatrix : public LowRankMatrix<T, ClusterImpl> {
+class bareLowRankMatrix final : public LowRankMatrix<T, ClusterImpl> {
   private:
     // Friend
     friend class MultipartialACA<T, ClusterImpl>;

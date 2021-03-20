@@ -86,7 +86,6 @@ std::vector<double> Frobenius_absolute_error(const MultiLowRankMatrix<std::compl
     std::vector<int> ir = lrmat.get_ir();
     std::vector<int> ic = lrmat.get_ic();
     std::vector<std::complex<T>> aux(lrmat.nb_lrmats());
-    double test_time = MPI_Wtime();
     for (int j = 0; j < lrmat.nb_rows(); j++) {
         for (int k = 0; k < lrmat.nb_cols(); k++) {
             aux = ref.get_coefs(ir[j], ic[k]);

@@ -445,7 +445,6 @@ class Matrix : public IMatrix<T> {
     template <typename Q = T, typename std::enable_if<!is_complex_t<Q>::value, int>::type = 0>
     void add_mvprod_row_major_sym(const T *const in, T *const out, const int &mu, char UPLO, char symmetry) const {
         int nr  = this->nr;
-        int nc  = this->nc;
         T alpha = 1;
         T beta  = 1;
 
@@ -469,7 +468,6 @@ class Matrix : public IMatrix<T> {
     template <typename Q = T, typename std::enable_if<is_complex_t<Q>::value, int>::type = 0>
     void add_mvprod_row_major_sym(const T *const in, T *const out, const int &mu, char UPLO, char symmetry) const {
         int nr  = this->nr;
-        int nc  = this->nc;
         T alpha = 1;
         T beta  = 1;
 
@@ -575,7 +573,6 @@ class Matrix : public IMatrix<T> {
     int print(std::ostream &os, const std::string &delimiter) {
 
         int rows = this->nr;
-        int cols = this->nc;
         for (int i = 0; i < rows; i++) {
             std::vector<T> row = this->get_row(i);
             std::copy(row.begin(), row.end() - 1, std::ostream_iterator<T>(os, delimiter.c_str()));

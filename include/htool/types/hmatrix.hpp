@@ -313,7 +313,7 @@ HMatrix<T, LowRankMatrix, ClusterImpl, AdmissibleCondition>::HMatrix(IMatrix<T> 
 
 // Constructor without radius, mass and tab
 template <typename T, template <typename, typename> class LowRankMatrix, class ClusterImpl, template <typename> class AdmissibleCondition>
-HMatrix<T, LowRankMatrix, ClusterImpl, AdmissibleCondition>::HMatrix(IMatrix<T> &mat, const std::vector<R3> &xt, const std::vector<R3> &xs, const int &reqrank0, const MPI_Comm comm0) : nr(mat.nb_rows()), nc(mat.nb_cols()), symmetry('N'), UPLO('N'), cluster_tree_s(nullptr), cluster_tree_t(nullptr), reqrank(reqrank0), comm(comm0) {
+HMatrix<T, LowRankMatrix, ClusterImpl, AdmissibleCondition>::HMatrix(IMatrix<T> &mat, const std::vector<R3> &xt, const std::vector<R3> &xs, const int &reqrank0, const MPI_Comm comm0) : nr(mat.nb_rows()), nc(mat.nb_cols()), reqrank(reqrank0), symmetry('N'), UPLO('N'), cluster_tree_s(nullptr), cluster_tree_t(nullptr), comm(comm0) {
     std::vector<int> tabt(ndofperelt * xt.size()), tabs(ndofperelt * xs.size());
     std::iota(tabt.begin(), tabt.end(), int(0));
     std::iota(tabs.begin(), tabs.end(), int(0));
@@ -1390,7 +1390,6 @@ void HMatrix<T, LowRankMatrix, ClusterImpl, AdmissibleCondition>::apply_dirichle
         int local_nr         = submat.nb_rows();
         int local_nc         = submat.nb_cols();
         int offset_i         = submat.get_offset_i();
-        int offset_j         = submat.get_offset_j();
         for (int i = offset_i; i < offset_i + std::min(local_nr, local_nc); i++) {
             if (boundary_renum[i])
                 submat(i - offset_i, i - offset_i) = 1e30;

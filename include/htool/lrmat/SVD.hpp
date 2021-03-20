@@ -8,7 +8,7 @@
 namespace htool {
 
 template <typename T, typename ClusterImpl>
-class SVD : public LowRankMatrix<T, ClusterImpl> {
+class SVD final : public LowRankMatrix<T, ClusterImpl> {
 
   private:
     // Data member

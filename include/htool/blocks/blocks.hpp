@@ -219,12 +219,12 @@ class Block : public Parametres {
 
   public:
     // Root constructor
-    Block(const Cluster<ClusterImpl> &t0, const Cluster<ClusterImpl> &s0) : t(t0), s(s0), admissible(false), root(this), diagonal_block(nullptr), tasks(std::make_shared<std::vector<Block *>>()), local_tasks(std::make_shared<std::vector<Block *>>()) {
+    Block(const Cluster<ClusterImpl> &t0, const Cluster<ClusterImpl> &s0) : t(t0), s(s0), admissible(false), diagonal_block(nullptr), root(this), tasks(std::make_shared<std::vector<Block *>>()), local_tasks(std::make_shared<std::vector<Block *>>()) {
         admissible = AdmissibilityCondition<ClusterImpl>::ComputeAdmissibility(t, s, eta);
     }
 
     // Node constructor
-    Block(const Cluster<ClusterImpl> &t0, const Cluster<ClusterImpl> &s0, Block *root0, std::shared_ptr<std::vector<Block *>> tasks0, std::shared_ptr<std::vector<Block *>> local_tasks0) : t(t0), s(s0), admissible(false), root(root0), diagonal_block(nullptr), tasks(tasks0), local_tasks(local_tasks0) {
+    Block(const Cluster<ClusterImpl> &t0, const Cluster<ClusterImpl> &s0, Block *root0, std::shared_ptr<std::vector<Block *>> tasks0, std::shared_ptr<std::vector<Block *>> local_tasks0) : t(t0), s(s0), admissible(false), diagonal_block(nullptr), root(root0), tasks(tasks0), local_tasks(local_tasks0) {
 
         admissible = AdmissibilityCondition<ClusterImpl>::ComputeAdmissibility(t, s, eta);
     }

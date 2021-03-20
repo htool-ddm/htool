@@ -29,7 +29,7 @@ namespace htool {
 //
 //=================================//
 template <typename T, typename ClusterImpl>
-class fullACA : public LowRankMatrix<T, ClusterImpl> {
+class fullACA final : public LowRankMatrix<T, ClusterImpl> {
 
   public:
     //=========================//
