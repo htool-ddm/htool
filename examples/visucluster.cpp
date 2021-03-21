@@ -37,7 +37,7 @@ int main(int argc, char *argv[]) {
 
     // Clustering
     GeometricClustering t;
-    t.build(p, r, tab, g, 2);
+    t.build_global(p, r, tab, g, 2);
 
     // Output
     t.save_geometry(p, tab, outputname + "/clustering_output", {1, 2, 3});

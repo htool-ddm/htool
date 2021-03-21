@@ -26,6 +26,8 @@ class Cluster : public Parametres {
     int offset;
     int size;
 
+    bool LocalPermutation;
+
     std::shared_ptr<std::vector<int>> permutation;
 
     Derived *local_cluster;
@@ -54,9 +56,26 @@ class Cluster : public Parametres {
         }
     };
 
-    // default build cluster tree
-    void build(const std::vector<R3> &x0, const std::vector<double> &r0, const std::vector<int> &tab0, const std::vector<double> &g0, int nb_sons = -1, MPI_Comm comm = MPI_COMM_WORLD) {
-        static_cast<Derived *>(this)->build(x0, r0, tab0, g0, nb_sons, comm);
+    // global build cluster tree
+    void build_global(const std::vector<R3> &x0, const std::vector<double> &r0, const std::vector<int> &tab0, const std::vector<double> &g0, int nb_sons = -1, MPI_Comm comm = MPI_COMM_WORLD) {
+        static_cast<Derived *>(this)->build_global(x0, r0, tab0, g0, nb_sons, comm);
+    }
+
+    void build_global_auto(const std::vector<R3> &x0, int nb_sons = -1, MPI_Comm comm = MPI_COMM_WORLD) {
+        std::vector<int> tab(ndofperelt * x0.size());
+        std::iota(tab.begin(), tab.end(), int(0));
+        this->build_global(x0, std::vector<double>(x0.size(), 0), tab, std::vector<double>(x0.size(), 1), nb_sons, comm);
+    }
+
+    // local build cluster tree
+    void build_local(const std::vector<R3> &x0, const std::vector<double> &r0, const std::vector<int> &tab0, const std::vector<double> &g0, std::vector<std::pair<int, int>> MasterOffset0, int nb_sons = -1, MPI_Comm comm = MPI_COMM_WORLD) {
+        static_cast<Derived *>(this)->build_local(x0, r0, tab0, g0, MasterOffset0, nb_sons, comm);
+    }
+
+    void build_local_auto(const std::vector<R3> &x0, std::vector<std::pair<int, int>> MasterOffset0, int nb_sons = -1, MPI_Comm comm = MPI_COMM_WORLD) {
+        std::vector<int> tab(ndofperelt * x0.size());
+        std::iota(tab.begin(), tab.end(), int(0));
+        this->build_local(x0, std::vector<double>(x0.size(), 0), tab, std::vector<double>(x0.size(), 1), MasterOffset0, nb_sons, comm);
     }
 
     //// Getters for local data
@@ -139,16 +158,43 @@ class Cluster : public Parametres {
 
     // Permutations
     template <typename T>
-    void cluster_to_global(const T *const in, T *const out) {
+    void cluster_to_global(const T *const in, T *const out) const {
         for (int i = 0; i < permutation->size(); i++) {
             out[(*permutation)[i]] = in[i];
         }
     }
 
     template <typename T>
-    void global_to_cluster(const T *const in, T *const out) {
+    void global_to_cluster(const T *const in, T *const out) const {
         for (int i = 0; i < permutation->size(); i++) {
             out[i] = in[(*permutation)[i]];
+        }
+    }
+
+    // Permutations
+    template <typename T>
+    void local_cluster_to_local(const T *const in, T *const out, MPI_Comm comm = MPI_COMM_WORLD) const {
+        if (!LocalPermutation) {
+            throw std::logic_error("Permutation is not local");
+        } else {
+            int rankWorld;
+            MPI_Comm_rank(MPI_COMM_WORLD, &rankWorld);
+            for (int i = 0; i < MasterOffset[rankWorld].second; i++) {
+                out[(*permutation)[MasterOffset[rankWorld].first + i] - MasterOffset[rankWorld].first] = in[i];
+            }
+        }
+    }
+
+    template <typename T>
+    void local_to_local_cluster(const T *const in, T *const out, MPI_Comm comm = MPI_COMM_WORLD) const {
+        if (!LocalPermutation) {
+            throw std::logic_error("Permutation is not local");
+        } else {
+            int rankWorld;
+            MPI_Comm_rank(MPI_COMM_WORLD, &rankWorld);
+            for (int i = 0; i < MasterOffset[rankWorld].second; i++) {
+                out[i] = in[(*permutation)[MasterOffset[rankWorld].first + i] - MasterOffset[rankWorld].first];
+            }
         }
     }
 
@@ -156,6 +202,7 @@ class Cluster : public Parametres {
     // void get_size(std::vector<int> & J, int i) const;
     // void get_ctr(std::vector<R3> & ctrs, int i) const;
 
+    bool IsLocal() const { return LocalPermutation; }
     //// Setters
     void set_rank(int rank0) { rank = rank0; }
     void set_offset(int offset0) { offset = offset0; }

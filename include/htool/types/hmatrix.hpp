@@ -189,9 +189,12 @@ class HMatrix : public Parametres {
     friend double Frobenius_absolute_error<T, LowRankMatrix, ClusterImpl>(const HMatrix<T, LowRankMatrix, ClusterImpl, AdmissibleCondition> &B, const IMatrix<T> &A);
 
     // Mat vec prod
-    void mvprod_global(const T *const in, T *const out, const int &mu = 1) const;
-    void mvprod_local(const T *const in, T *const out, T *const work, const int &mu) const;
-    void mymvprod_local(const T *const in, T *const out, const int &mu) const;
+    void mvprod_global_to_global(const T *const in, T *const out, const int &mu = 1) const;
+    void mvprod_local_to_local(const T *const in, T *const out, const int &mu = 1, T *work = nullptr) const;
+
+    void mymvprod_local_to_local(const T *const in, T *const out, const int &mu = 1, T *work = nullptr) const;
+    void mymvprod_global_to_local(const T *const in, T *const out, const int &mu = 1) const;
+
     void mvprod_subrhs(const T *const in, T *const out, const int &mu, const int &offset, const int &size, const int &margin) const;
     std::vector<T> operator*(const std::vector<T> &x) const;
     Matrix<T> operator*(const Matrix<T> &x) const;
@@ -203,12 +206,14 @@ class HMatrix : public Parametres {
     void cluster_to_target_permutation(const U *const in, U *const out) const;
 
     // local to global
-    void local_to_global(const T *const in, T *const out, const int &mu) const;
+    void local_to_global_source(const T *const in, T *const out, const int &mu) const;
+    void local_to_global_target(const T *const in, T *const out, const int &mu) const;
 
     // Convert
     Matrix<T> to_dense() const;
     Matrix<T> to_local_dense() const;
     Matrix<T> to_dense_perm() const;
+    Matrix<T> to_local_dense_perm() const;
 
     // Apply Dirichlet condition
     void apply_dirichlet(const std::vector<int> &boundary);
@@ -257,8 +262,8 @@ void HMatrix<T, LowRankMatrix, ClusterImpl, AdmissibleCondition>::build(IMatrix<
     double time    = MPI_Wtime();
     cluster_tree_t = std::make_shared<ClusterImpl>(); // target
     cluster_tree_s = std::make_shared<ClusterImpl>(); // source
-    cluster_tree_t->build(xt, rt, tabt, gt, -1, comm);
-    cluster_tree_s->build(xs, rs, tabs, gs, -1, comm);
+    cluster_tree_t->build_global(xt, rt, tabt, gt, -1, comm);
+    cluster_tree_s->build_global(xs, rs, tabs, gs, -1, comm);
 
     local_size   = cluster_tree_t->get_local_size();
     local_offset = cluster_tree_t->get_local_offset();
@@ -333,7 +338,7 @@ void HMatrix<T, LowRankMatrix, ClusterImpl, AdmissibleCondition>::build(IMatrix<
     double time    = MPI_Wtime();
     cluster_tree_t = std::make_shared<ClusterImpl>();
     cluster_tree_s = cluster_tree_t;
-    cluster_tree_t->build(xt, rt, tabt, gt, -1, comm);
+    cluster_tree_t->build_global(xt, rt, tabt, gt, -1, comm);
     local_size   = cluster_tree_t->get_local_size();
     local_offset = cluster_tree_t->get_local_offset();
 
@@ -816,7 +821,7 @@ void HMatrix<T, LowRankMatrix, ClusterImpl, AdmissibleCondition>::ComputeInfos(c
 }
 
 template <typename T, template <typename, typename> class LowRankMatrix, class ClusterImpl, template <typename> class AdmissibleCondition>
-void HMatrix<T, LowRankMatrix, ClusterImpl, AdmissibleCondition>::mymvprod_local(const T *const in, T *const out, const int &mu) const {
+void HMatrix<T, LowRankMatrix, ClusterImpl, AdmissibleCondition>::mymvprod_global_to_local(const T *const in, T *const out, const int &mu) const {
 
     std::fill(out, out + local_size * mu, 0);
 
@@ -923,34 +928,8 @@ void HMatrix<T, LowRankMatrix, ClusterImpl, AdmissibleCondition>::mymvprod_local
     }
 }
 
-// template<typename T, template<typename,typename> class LowRankMatrix, class ClusterImpl, template<typename> class AdmissibleCondition>
-// void HMatrix<T, LowRankMatrix, ClusterImpl, AdmissibleCondition>::local_to_global(const T* const in, T* const out, const int& mu) const{
-// 	// Allgather
-// 	std::vector<int> recvcounts(sizeWorld);
-// 	std::vector<int>  displs(sizeWorld);
-//
-// 	displs[0] = 0;
-//
-// 	for (int i=0; i<sizeWorld; i++) {
-// 		recvcounts[i] = (cluster_tree_t->get_masteroffset(i).second)*mu;
-// 		if (i > 0)
-// 			displs[i] = displs[i-1] + recvcounts[i-1];
-// 	}
-//
-// 	MPI_Allgatherv(in, recvcounts[rankWorld], wrapper_mpi<T>::mpi_type(), out + (mu==1 ? 0 : mu*nc), &(recvcounts[0]), &(displs[0]), wrapper_mpi<T>::mpi_type(), comm);
-//
-//     //
-//     if (mu!=1){
-//         for (int i=0 ;i<mu;i++){
-//             for (int j=0; j<sizeWorld;j++){
-//                 std::copy_n(out+mu*nc+displs[j]+i*recvcounts[j]/mu,recvcounts[j]/mu,out+i*nc+displs[j]/mu);
-//             }
-//         }
-//     }
-// }
-
 template <typename T, template <typename, typename> class LowRankMatrix, class ClusterImpl, template <typename> class AdmissibleCondition>
-void HMatrix<T, LowRankMatrix, ClusterImpl, AdmissibleCondition>::local_to_global(const T *const in, T *const out, const int &mu) const {
+void HMatrix<T, LowRankMatrix, ClusterImpl, AdmissibleCondition>::local_to_global_target(const T *const in, T *const out, const int &mu) const {
     // Allgather
     std::vector<int> recvcounts(sizeWorld);
     std::vector<int> displs(sizeWorld);
@@ -967,18 +946,42 @@ void HMatrix<T, LowRankMatrix, ClusterImpl, AdmissibleCondition>::local_to_globa
 }
 
 template <typename T, template <typename, typename> class LowRankMatrix, class ClusterImpl, template <typename> class AdmissibleCondition>
-void HMatrix<T, LowRankMatrix, ClusterImpl, AdmissibleCondition>::mvprod_local(const T *const in, T *const out, T *const work, const int &mu) const {
-    double time = MPI_Wtime();
+void HMatrix<T, LowRankMatrix, ClusterImpl, AdmissibleCondition>::local_to_global_source(const T *const in, T *const out, const int &mu) const {
+    // Allgather
+    std::vector<int> recvcounts(sizeWorld);
+    std::vector<int> displs(sizeWorld);
 
-    this->local_to_global(in, work, mu);
-    this->mymvprod_local(work, out, mu);
+    displs[0] = 0;
 
+    for (int i = 0; i < sizeWorld; i++) {
+        recvcounts[i] = (cluster_tree_s->get_masteroffset(i).second) * mu;
+        if (i > 0)
+            displs[i] = displs[i - 1] + recvcounts[i - 1];
+    }
+    MPI_Allgatherv(in, recvcounts[rankWorld], wrapper_mpi<T>::mpi_type(), out, &(recvcounts[0]), &(displs[0]), wrapper_mpi<T>::mpi_type(), comm);
+}
+
+template <typename T, template <typename, typename> class LowRankMatrix, class ClusterImpl, template <typename> class AdmissibleCondition>
+void HMatrix<T, LowRankMatrix, ClusterImpl, AdmissibleCondition>::mymvprod_local_to_local(const T *const in, T *const out, const int &mu, T *work) const {
+    double time      = MPI_Wtime();
+    bool need_delete = false;
+    if (work == nullptr) {
+        work        = new T[this->nc * mu];
+        need_delete = true;
+    }
+    this->local_to_global_source(in, work, mu);
+    this->mymvprod_global_to_local(work, out, mu);
+
+    if (need_delete) {
+        delete[] work;
+        work = nullptr;
+    }
     infos["nb_mat_vec_prod"]         = NbrToStr(1 + StrToNbr<int>(infos["nb_mat_vec_prod"]));
     infos["total_time_mat_vec_prod"] = NbrToStr(MPI_Wtime() - time + StrToNbr<double>(infos["total_time_mat_vec_prod"]));
 }
 
 template <typename T, template <typename, typename> class LowRankMatrix, class ClusterImpl, template <typename> class AdmissibleCondition>
-void HMatrix<T, LowRankMatrix, ClusterImpl, AdmissibleCondition>::mvprod_global(const T *const in, T *const out, const int &mu) const {
+void HMatrix<T, LowRankMatrix, ClusterImpl, AdmissibleCondition>::mvprod_global_to_global(const T *const in, T *const out, const int &mu) const {
     double time = MPI_Wtime();
 
     if (mu == 1) {
@@ -989,7 +992,7 @@ void HMatrix<T, LowRankMatrix, ClusterImpl, AdmissibleCondition>::mvprod_global(
         cluster_tree_s->global_to_cluster(in, buffer.data());
 
         //
-        mymvprod_local(buffer.data(), out_perm.data(), 1);
+        mymvprod_global_to_local(buffer.data(), out_perm.data(), 1);
 
         // Allgather
         std::vector<int> recvcounts(sizeWorld);
@@ -1028,7 +1031,7 @@ void HMatrix<T, LowRankMatrix, ClusterImpl, AdmissibleCondition>::mvprod_global(
             conj_if_complex(in_perm.data(), nc * mu);
         }
 
-        mymvprod_local(in_perm.data(), in_perm.data() + nc * mu, mu);
+        mymvprod_global_to_local(in_perm.data(), in_perm.data() + nc * mu, mu);
 
         // Tranpose
         for (int i = 0; i < mu; i++) {
@@ -1063,6 +1066,75 @@ void HMatrix<T, LowRankMatrix, ClusterImpl, AdmissibleCondition>::mvprod_global(
             // Permutation
             cluster_tree_t->cluster_to_global(in_perm.data() + i * nr, out + i * nr);
         }
+    }
+    // Timing
+    infos["nb_mat_vec_prod"]         = NbrToStr(1 + StrToNbr<int>(infos["nb_mat_vec_prod"]));
+    infos["total_time_mat_vec_prod"] = NbrToStr(MPI_Wtime() - time + StrToNbr<double>(infos["total_time_mat_vec_prod"]));
+}
+
+template <typename T, template <typename, typename> class LowRankMatrix, class ClusterImpl, template <typename> class AdmissibleCondition>
+void HMatrix<T, LowRankMatrix, ClusterImpl, AdmissibleCondition>::mvprod_local_to_local(const T *const in, T *const out, const int &mu, T *work) const {
+    double time      = MPI_Wtime();
+    bool need_delete = false;
+    if (work == nullptr) {
+        work        = new T[this->nc * mu];
+        need_delete = true;
+    }
+
+    int local_size_source = cluster_tree_s->get_masteroffset(rankWorld).second;
+
+    if (!(cluster_tree_s->IsLocal()) || !(cluster_tree_t->IsLocal())) {
+        throw std::logic_error("Permutations are not local.");
+    }
+    if (mu == 1) {
+        std::vector<T> in_perm(local_size_source), out_perm(local_size);
+
+        // local permutation
+        cluster_tree_s->local_to_local_cluster(in, in_perm.data());
+
+        // prod
+        mymvprod_local_to_local(in_perm.data(), out_perm.data(), 1, work);
+
+        // permutation
+        cluster_tree_t->local_cluster_to_local(out_perm.data(), out);
+
+    } else {
+
+        std::vector<T> in_perm(local_size_source * mu);
+        std::vector<T> out_perm(local_size * mu);
+        std::vector<T> buffer(local_size_source * mu);
+
+        for (int i = 0; i < mu; i++) {
+            // local permutation
+            cluster_tree_s->local_to_local_cluster(in + i * local_size_source, buffer.data());
+
+            // Transpose
+            for (int j = 0; j < local_size_source; j++) {
+                in_perm[i + j * mu] = buffer[j];
+            }
+        }
+
+        if (symmetry == 'H') {
+            conj_if_complex(in_perm.data(), local_size_source * mu);
+        }
+        std::cout << "OK " << rankWorld << std::endl;
+        mymvprod_local_to_local(in_perm.data(), out_perm.data(), mu, work);
+
+        // Tranpose
+        for (int i = 0; i < mu; i++) {
+            for (int j = 0; j < local_size; j++) {
+                out[i * local_size + j] = out_perm[i + j * mu];
+            }
+        }
+
+        if (symmetry == 'H') {
+            conj_if_complex(out, out_perm.size());
+        }
+    }
+
+    if (need_delete) {
+        delete[] work;
+        work = nullptr;
     }
     // Timing
     infos["nb_mat_vec_prod"]         = NbrToStr(1 + StrToNbr<int>(infos["nb_mat_vec_prod"]));
@@ -1185,7 +1257,7 @@ template <typename T, template <typename, typename> class LowRankMatrix, class C
 std::vector<T> HMatrix<T, LowRankMatrix, ClusterImpl, AdmissibleCondition>::operator*(const std::vector<T> &x) const {
     assert(x.size() == nc);
     std::vector<T> result(nr, 0);
-    mvprod_global(x.data(), result.data(), 1);
+    mvprod_global_to_global(x.data(), result.data(), 1);
     return result;
 }
 
@@ -1374,6 +1446,45 @@ Matrix<T> HMatrix<T, LowRankMatrix, ClusterImpl, AdmissibleCondition>::to_dense_
         for (int k = 0; k < local_nc; k++)
             for (int j = 0; j < local_nr; j++)
                 Dense(get_permt(j + offset_i), get_perms(k + offset_j)) = FarFielBlock(j, k);
+    }
+    return Dense;
+}
+
+template <typename T, template <typename, typename> class LowRankMatrix, class ClusterImpl, template <typename> class AdmissibleCondition>
+Matrix<T> HMatrix<T, LowRankMatrix, ClusterImpl, AdmissibleCondition>::to_local_dense_perm() const {
+    if (!(cluster_tree_t->IsLocal())) {
+        throw std::logic_error("Permutation is not local, to_local_dense_perm is not possible");
+    }
+    Matrix<T> Dense(local_size, nc);
+    // Internal dense blocks
+    for (int l = 0; l < MyNearFieldMats.size(); l++) {
+        const SubMatrix<T> &submat = *(MyNearFieldMats[l]);
+        int local_nr               = submat.nb_rows();
+        int local_nc               = submat.nb_cols();
+        int offset_i               = submat.get_offset_i();
+        int offset_j               = submat.get_offset_j();
+        for (int k = 0; k < local_nc; k++) {
+            for (int j = 0; j < local_nr; j++) {
+                Dense(get_permt(j + offset_i) - local_offset, get_perms(k + offset_j)) = submat(j, k);
+            }
+        }
+    }
+
+    // Internal compressed block
+    Matrix<T> FarFielBlock(local_size, local_size);
+    for (int l = 0; l < MyFarFieldMats.size(); l++) {
+        const LowRankMatrix<T, ClusterImpl> &lmat = *(MyFarFieldMats[l]);
+        int local_nr                              = lmat.nb_rows();
+        int local_nc                              = lmat.nb_cols();
+        int offset_i                              = lmat.get_offset_i();
+        int offset_j                              = lmat.get_offset_j();
+        FarFielBlock.resize(local_nr, local_nc);
+        lmat.get_whole_matrix(&(FarFielBlock(0, 0)));
+        for (int k = 0; k < local_nc; k++) {
+            for (int j = 0; j < local_nr; j++) {
+                Dense(get_permt(j + offset_i) - local_offset, get_perms(k + offset_j)) = FarFielBlock(j, k);
+            }
+        }
     }
     return Dense;
 }

@@ -155,7 +155,7 @@ int test_solver_ddm(int argc, char *argv[], int mu, char symmetric) {
     opt.parse("-hpddm_schwarz_method ras ");
     ddm_wo_overlap.solve(f_global.data(), x_global.data(), mu);
     ddm_wo_overlap.print_infos();
-    HA.mvprod_global(x_global.data(), test_global.data(), mu);
+    HA.mvprod_global_to_global(x_global.data(), test_global.data(), mu);
     error2 = normFrob(f_global - A * x_global) / normFrob(f_global);
 
     if (rank == 0) {

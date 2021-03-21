@@ -112,8 +112,8 @@ int main(int argc, char *argv[]) {
         A.mvprod(x_global.data(), f_global.data(), mu);
 
         // Global product
-        HA_L.mvprod_global(x_global.data(), f_global_L.data(), mu);
-        HA_U.mvprod_global(x_global.data(), f_global_U.data(), mu);
+        HA_L.mvprod_global_to_global(x_global.data(), f_global_L.data(), mu);
+        HA_U.mvprod_global_to_global(x_global.data(), f_global_U.data(), mu);
 
         // std::transform(f_global_U.begin(),f_global_U.end(),f_global_U.begin(),[](std::complex<double>&c){return std::conj(c);});
         // Errors

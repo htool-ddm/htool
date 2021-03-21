@@ -106,8 +106,8 @@ int hmat(int argc, char *argv[]) {
     // Clustering
     std::shared_ptr<ClusterImpl> t = make_shared<ClusterImpl>();
     std::shared_ptr<ClusterImpl> s = make_shared<ClusterImpl>();
-    t->build(p1, r1, tab1, g1, 2);
-    s->build(p2, r2, tab2, g2, 2);
+    t->build_global(p1, r1, tab1, g1, 2);
+    s->build_global(p2, r2, tab2, g2, 2);
     // Hmatrix
     HMatrix<double, LowRankMatrix, ClusterImpl, RjasanowSteinbach> HA(A, p1, p2);
 

@@ -34,7 +34,7 @@ int test_blocks(int argc, char *argv[], bool symmetric) {
     }
 
     Cluster_type t;
-    t.build(p, r, tab, g);
+    t.build_global(p, r, tab, g);
 
     Block<Cluster_type, AdmissibilityCondition> B(t, t);
     B.build(symmetric);

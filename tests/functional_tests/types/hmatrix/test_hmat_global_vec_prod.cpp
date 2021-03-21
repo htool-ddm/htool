@@ -107,7 +107,7 @@ int main(int argc, char *argv[]) {
         f_global = A * x_global;
 
         // Global product
-        HA.mvprod_global(x_global.data(), f_global_test.data());
+        HA.mvprod_global_to_global(x_global.data(), f_global_test.data());
 
         // Errors
         double global_diff = norm2(f_global - f_global_test) / norm2(f_global);

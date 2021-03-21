@@ -1,4 +1,5 @@
-#include "test_cluster.hpp"
+#include "test_cluster_global.hpp"
+#include "test_cluster_local.hpp"
 #include <htool/clustering/ncluster.hpp>
 
 using namespace std;
@@ -8,7 +9,9 @@ int main(int argc, char *argv[]) {
 
     MPI_Init(&argc, &argv);
 
-    bool test = test_cluster<GeometricClustering>(argc, argv);
+    bool test = test_cluster_global<GeometricClustering>(argc, argv);
+
+    test = test || test_cluster_local<GeometricClustering>(argc, argv);
 
     MPI_Finalize();
     return test;

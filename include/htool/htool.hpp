@@ -9,7 +9,6 @@
 #    endif
 #endif
 
-#include "clustering/DDM_cluster.hpp"
 #include "clustering/cluster.hpp"
 #include "clustering/ncluster.hpp"
 
