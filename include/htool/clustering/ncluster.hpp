@@ -1,5 +1,5 @@
-#ifndef HTOOL_CLUSTERING_NCLUSTER_HPP
-#define HTOOL_CLUSTERING_NCLUSTER_HPP
+#ifndef HTOOL_CLUSTERING_NCluster_HPP
+#define HTOOL_CLUSTERING_NCluster_HPP
 
 #include "cluster.hpp"
 #include "splitting.hpp"
@@ -9,96 +9,21 @@ namespace htool {
 
 template <SplittingTypes SplittingType>
 class NCluster : public Cluster<NCluster<SplittingType>> {
-
-  public:
-    // Inherhits son constructor
-    using Cluster<NCluster<SplittingType>>::Cluster;
-
-    // build cluster tree
-    // nb_sons=-1 means nb_sons = sizeworld if sizeworld!=1 and nb_sons = 2 otherwise
-    // nb_sons>0 means we check that sizeworld//nb_sons if sizeworld>1
-    void build(const std::vector<R3> &x, const std::vector<double> &r, const std::vector<int> &tab, const std::vector<double> &g, int nb_sons = -1, MPI_Comm comm = MPI_COMM_WORLD) {
-        assert(tab.size() == x.size() * this->ndofperelt);
-        assert(x.size() == g.size());
-        assert(x.size() == r.size());
-        assert(nb_sons != 0);
+  private:
+    void recursive_build(const std::vector<R3> &x, const std::vector<double> &r, const std::vector<int> &tab, const std::vector<double> &g, int nb_sons, MPI_Comm comm, std::stack<NCluster *> &s, std::stack<std::vector<int>> &n) {
 
         // MPI parameters
         int rankWorld, sizeWorld;
         MPI_Comm_size(comm, &sizeWorld);
         MPI_Comm_rank(comm, &rankWorld);
 
-        // Impossible value for nb_sons
-        try {
-            if (nb_sons == 0 || nb_sons == 1)
-                throw std::string("Impossible value for nb_sons");
-        } catch (std::string const &error) {
-            if (rankWorld) {
-                std::cerr << error << std::endl;
-            }
-            exit(1);
-        }
-
-        //// Check compatibility between nb_sons and sizeworld
-        if (nb_sons > 0 && sizeWorld != 1) {
-            try {
-                if (!(sizeWorld % nb_sons == 0))
-                    throw std::pair<int, int>(sizeWorld, nb_sons);
-            } catch (std::pair<int, int> error) {
-                if (rankWorld == 0) {
-                    std::cerr << "Number of MPI proccesus and number of sons in clustering are not compatible:" << std::endl;
-                    std::cerr << "Number of MPI proccesus = " << error.first << std::endl;
-                    std::cerr << "Number of sons in the cluster tree = " << error.second << std::endl;
-                }
-                exit(1);
-            }
-            this->rank = -1;
-            this->MasterOffset.resize(sizeWorld);
-
-        }
-        // We fix the number of sons without MPI
-        else if (nb_sons > 0 && sizeWorld == 1) {
-            this->rank          = 0;
-            this->local_cluster = this->root;
-            this->MasterOffset.push_back(std::pair<int, int>(0, tab.size()));
-        }
-        // Automatic but no parallelisation, just a sane choice
-        else if (nb_sons < 0 && sizeWorld == 1) {
-            nb_sons             = 2;
-            this->rank          = 0;
-            this->local_cluster = this->root;
-            this->MasterOffset.push_back(std::pair<int, int>(0, tab.size()));
-        }
-        // Automatic with parallelisation, works well for a small number of processors...
-        else {
-            nb_sons    = sizeWorld;
-            this->rank = -1;
-            this->MasterOffset.resize(nb_sons);
-        }
-
-        // Initialisation
-        this->rad  = 0;
-        this->size = tab.size();
-        this->sons.resize(nb_sons);
-        for (auto &son : this->sons) {
-            son = nullptr;
-        }
-        this->depth = 0; // ce constructeur est appele' juste pour la racine
-
-        this->permutation->resize(tab.size());
-        std::iota(this->permutation->begin(), this->permutation->end(), 0); // perm[i]=i
-
-        // Recursion
-        std::stack<NCluster *> s;
-        std::stack<std::vector<int>> n;
-        s.push(this);
-        n.push(*(this->permutation));
-
         while (!s.empty()) {
             NCluster *curr       = s.top();
             std::vector<int> num = n.top();
             s.pop();
             n.pop();
+
+            int curr_nb_sons = curr->depth == 0 ? sizeWorld : nb_sons;
 
             // Mass of the cluster
             int nb_pt = curr->size;
@@ -140,25 +65,28 @@ class NCluster : public Cluster<NCluster<SplittingType>> {
             R3 dir;
             Matrix<double> prod(3, 3);
             if (p1 < 1e-16) {
-                dir[0] = 0;
-                dir[1] = 0;
-                dir[2] = 0;
                 // cov is diagonal.
-                eigs[0]                     = cov(0, 0);
-                eigs[1]                     = cov(1, 1);
-                eigs[2]                     = cov(2, 2);
-                std::vector<int> index_eigs = {0, 1, 2};
-                std::sort(index_eigs.begin(), index_eigs.end(), [&eigs](size_t i1, size_t i2) { return eigs[i1] < eigs[i2]; });
-                dir[index_eigs[0]] = 1;
-
-                if (eigs[index_eigs[1]] - 1e-10 < eigs[index_eigs[0]] < eigs[index_eigs[1]] + 1e-10) {
-                    dir[index_eigs[0]] = 1. / std::sqrt(2);
-                    dir[index_eigs[1]] = 1. / std::sqrt(2);
+                eigs[0] = cov(0, 0);
+                eigs[1] = cov(1, 1);
+                eigs[2] = cov(2, 2);
+                dir[0]  = 1;
+                dir[1]  = 0;
+                dir[2]  = 0;
+                if (eigs[0] < eigs[1]) {
+                    double tmp = eigs[0];
+                    eigs[0]    = eigs[1];
+                    eigs[1]    = tmp;
+                    dir[0]     = 0;
+                    dir[1]     = 1;
+                    dir[2]     = 0;
                 }
-                if (eigs[index_eigs[2]] - 1e-10 < eigs[index_eigs[0]] < eigs[index_eigs[2]] + 1e-10) {
-                    dir[0] = 1. / std::sqrt(3);
-                    dir[1] = 1. / std::sqrt(3);
-                    dir[2] = 1. / std::sqrt(3);
+                if (eigs[0] < eigs[2]) {
+                    double tmp = eigs[0];
+                    eigs[0]    = eigs[2];
+                    eigs[2]    = tmp;
+                    dir[0]     = 0;
+                    dir[1]     = 0;
+                    dir[2]     = 1;
                 }
             } else {
                 double q  = (cov(0, 0) + cov(1, 1) + cov(2, 2)) / 3.;
@@ -207,54 +135,43 @@ class NCluster : public Cluster<NCluster<SplittingType>> {
             }
 
             // Creating sons
-            curr->sons.resize(nb_sons);
-            for (int p = 0; p < nb_sons; p++) {
-                curr->sons[p] = new NCluster(this, (curr->counter) * nb_sons + p, curr->depth + 1, this->permutation);
+            curr->sons.resize(curr_nb_sons);
+            for (int p = 0; p < curr_nb_sons; p++) {
+                curr->sons[p] = new NCluster(this, (curr->counter) * curr_nb_sons + p, curr->depth + 1, this->permutation);
             }
 
             // Compute numbering
-
-            std::vector<std::vector<int>> numbering = this->splitting(x, tab, num, curr, nb_sons, dir);
+            std::vector<std::vector<int>> numbering = this->splitting(x, tab, num, curr, curr_nb_sons, dir);
 
             // Set offsets, size and rank of sons
-            int count              = 0;
-            int sons_at_next_level = std::pow(nb_sons, curr->depth + 1);
-            for (int p = 0; p < nb_sons; p++) {
+            int count = 0;
+
+            for (int p = 0; p < curr_nb_sons; p++) {
                 curr->sons[p]->set_offset(curr->offset + count);
                 curr->sons[p]->set_size(numbering[p].size());
                 count += numbering[p].size();
 
-                if (sizeWorld > 1) {
-                    // level of parallelization
-                    if (sons_at_next_level == sizeWorld) {
-
-                        curr->sons[p]->set_rank(curr->sons[p]->get_counter());
-                        if (rankWorld == curr->sons[p]->get_counter()) {
-                            this->local_cluster = (curr->sons[p]);
-                        }
-                        this->MasterOffset[curr->sons[p]->get_counter()] = std::pair<int, int>(curr->sons[p]->get_offset(), curr->sons[p]->get_size());
-
+                // level of parallelization
+                if (curr->depth == 0) {
+                    curr->sons[p]->set_rank(curr->sons[p]->get_counter());
+                    if (rankWorld == curr->sons[p]->get_counter()) {
+                        this->local_cluster = (curr->sons[p]);
                     }
-                    // before level of parallelization
-                    else if (sons_at_next_level < sizeWorld) {
-                        curr->sons[p]->set_rank(-1);
-                    }
-                    // after level of parallelization
-                    else {
-                        curr->sons[p]->set_rank(curr->rank);
-                    }
-                } else {
+                    this->MasterOffset[curr->sons[p]->get_counter()] = std::pair<int, int>(curr->sons[p]->get_offset(), curr->sons[p]->get_size());
+                }
+                // after level of parallelization
+                else {
                     curr->sons[p]->set_rank(curr->rank);
                 }
             }
 
             // Recursivite
             bool test_minclustersize = true;
-            for (int p = 0; p < nb_sons; p++) {
+            for (int p = 0; p < curr_nb_sons; p++) {
                 test_minclustersize = test_minclustersize && (numbering[p].size() >= Parametres::minclustersize);
             }
             if (test_minclustersize || curr->rank == -1) {
-                for (int p = 0; p < nb_sons; p++) {
+                for (int p = 0; p < curr_nb_sons; p++) {
                     s.push((curr->sons[p]));
                     n.push(numbering[p]);
                 }
@@ -276,6 +193,107 @@ class NCluster : public Cluster<NCluster<SplittingType>> {
         }
     }
 
+  public:
+    // Inherhits son constructor
+    using Cluster<NCluster<SplittingType>>::Cluster;
+
+    // build cluster tree
+    // nb_sons=-1 means nb_sons = 2
+    void build_global(const std::vector<R3> &x, const std::vector<double> &r, const std::vector<int> &tab, const std::vector<double> &g, int nb_sons = 2, MPI_Comm comm = MPI_COMM_WORLD) {
+        assert(tab.size() == x.size() * this->ndofperelt);
+        assert(x.size() == g.size());
+        assert(x.size() == r.size());
+
+        // MPI parameters
+        int rankWorld, sizeWorld;
+        MPI_Comm_size(comm, &sizeWorld);
+        MPI_Comm_rank(comm, &rankWorld);
+
+        // Impossible value for nb_sons
+        if (nb_sons == 0 || nb_sons == 1)
+            throw std::string("Impossible value for nb_sons:" + NbrToStr<int>(nb_sons));
+
+        // nb_sons=-1 is automatic mode
+        if (nb_sons == -1) {
+            nb_sons = 2;
+        }
+        // Initialisation
+        this->rad  = 0;
+        this->size = tab.size();
+        this->rank = -1;
+        this->MasterOffset.resize(sizeWorld);
+        this->sons.resize(sizeWorld);
+        this->LocalPermutation = false;
+        for (auto &son : this->sons) {
+            son = nullptr;
+        }
+        this->depth = 0; // ce constructeur est appele' juste pour la racine
+
+        this->permutation->resize(tab.size());
+        std::iota(this->permutation->begin(), this->permutation->end(), 0); // perm[i]=i
+
+        // Recursion
+        std::stack<NCluster *> s;
+        std::stack<std::vector<int>> n;
+        s.push(this);
+        n.push(*(this->permutation));
+
+        this->recursive_build(x, r, tab, g, nb_sons, comm, s, n);
+    }
+
+    // build cluster tree from given partition
+    void build_local(const std::vector<R3> &x, const std::vector<double> &r, const std::vector<int> &tab, const std::vector<double> &g, std::vector<std::pair<int, int>> MasterOffset0, int nb_sons = 2, MPI_Comm comm = MPI_COMM_WORLD) {
+        assert(tab.size() == x.size() * this->ndofperelt);
+        assert(x.size() == g.size());
+        assert(x.size() == r.size());
+
+        // MPI parameters
+        int rankWorld, sizeWorld;
+        MPI_Comm_size(comm, &sizeWorld);
+        MPI_Comm_rank(comm, &rankWorld);
+
+        // Impossible value for nb_sons
+        if (nb_sons == 0 || nb_sons == 1)
+            throw std::string("Impossible value for nb_sons:" + NbrToStr<int>(nb_sons));
+
+        // nb_sons=-1 is automatic mode
+        if (nb_sons == -1) {
+            nb_sons = 2;
+        }
+
+        // Initialisation of root
+        this->rad          = 0;
+        this->size         = tab.size();
+        this->rank         = -1;
+        this->MasterOffset = MasterOffset0;
+        this->permutation->resize(tab.size());
+
+        this->depth            = 0; // ce constructeur est appele' juste pour la racine
+        this->LocalPermutation = true;
+
+        std::iota(this->permutation->begin(), this->permutation->end(), 0); // perm[i]=i
+        // Build level of depth 1 with the given partition and prepare recursion
+        std::stack<NCluster *> s;
+        std::stack<std::vector<int>> n;
+
+        this->sons.resize(sizeWorld);
+        for (int p = 0; p < sizeWorld; p++) {
+            this->sons[p] = new NCluster(this, p, this->depth + 1, this->permutation);
+            this->sons[p]->set_offset(this->MasterOffset[p].first);
+            this->sons[p]->set_size(this->MasterOffset[p].second);
+            this->sons[p]->set_rank(p);
+
+            if (rankWorld == this->sons[p]->get_counter()) {
+                this->local_cluster = this->sons[p];
+            }
+
+            s.push(this->sons[p]);
+            n.push(std::vector<int>(this->permutation->begin() + this->sons[p]->get_offset(), this->permutation->begin() + this->sons[p]->get_offset() + this->sons[p]->get_size()));
+        }
+
+        // Recursion
+        this->recursive_build(x, r, tab, g, nb_sons, comm, s, n);
+    }
     std::vector<std::vector<int>> splitting(const std::vector<R3> &x, const std::vector<int> &tab, std::vector<int> &num, Cluster<NCluster<SplittingType>> const *const curr_cluster, int nb_sons, R3 dir);
 };
 

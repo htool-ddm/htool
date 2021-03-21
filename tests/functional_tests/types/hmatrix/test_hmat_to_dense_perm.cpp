@@ -88,17 +88,37 @@ int main(int argc, char *argv[]) {
 
     MyMatrix A(p1, p2);
 
+    int size_numbering = p1.size() / size;
+    int count_size     = 0;
+    std::vector<std::pair<int, int>> MasterOffset_target;
+    for (int p = 0; p < size - 1; p++) {
+        MasterOffset_target.push_back(std::pair<int, int>(count_size, size_numbering));
+
+        count_size += size_numbering;
+    }
+    MasterOffset_target.push_back(std::pair<int, int>(count_size, p1.size() - count_size));
+
+    size_numbering = p2.size() / size;
+    count_size     = 0;
+    std::vector<std::pair<int, int>> MasterOffset_source;
+    for (int p = 0; p < size - 1; p++) {
+        MasterOffset_source.push_back(std::pair<int, int>(count_size, size_numbering));
+
+        count_size += size_numbering;
+    }
+    MasterOffset_source.push_back(std::pair<int, int>(count_size, p2.size() - count_size));
+
     // Hmatrix
     std::shared_ptr<GeometricClustering> t = make_shared<GeometricClustering>();
     std::shared_ptr<GeometricClustering> s = make_shared<GeometricClustering>();
-    t->build_global(p1, r1, tab1, g1);
-    s->build_global(p2, r2, tab2, g2);
+    t->build_local_auto(p1, MasterOffset_target);
+    s->build_local_auto(p2, MasterOffset_source);
     HMatrix<double, fullACA, GeometricClustering, RjasanowSteinbach> HA(A, t, p1, tab1, s, p2, tab2);
     HA.print_infos();
 
     // Dense Matrix
-    Matrix<double> DA       = HA.to_dense();
-    Matrix<double> DA_local = HA.to_local_dense();
+    Matrix<double> DA       = HA.to_dense_perm();
+    Matrix<double> DA_local = HA.to_local_dense_perm();
 
     // Test dense matrices
     double error = 0;
@@ -112,29 +132,6 @@ int main(int argc, char *argv[]) {
         cout << "Difference between dense matrix and local dense matrix: " << error << endl;
     }
     test = test || !(error < 1e-10);
-
-    // Global vectors
-    std::vector<double> x_global(nc, 1), f_hmat(nr), temp(nr), f_dense(nr);
-
-    // Global product
-    HA.mvprod_global_to_global(x_global.data(), f_hmat.data());
-    DA.mvprod(x_global.data(), temp.data());
-
-    if (rank == 0)
-        MPI_Reduce(MPI_IN_PLACE, temp.data(), temp.size(), MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
-    else
-        MPI_Reduce(temp.data(), temp.data(), temp.size(), MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
-
-    if (rank == 0)
-        HA.cluster_to_target_permutation(temp.data(), f_dense.data());
-
-    // Errors
-    if (rank == 0) {
-        double diff = norm2(f_hmat - f_dense) / norm2(f_hmat);
-        cout << "difference on mat vec prod computed globally: " << diff << endl;
-        test = test || !(diff < 1e-8);
-        cout << "test: " << test << endl;
-    }
 
     // Finalize the MPI environment.
     MPI_Finalize();

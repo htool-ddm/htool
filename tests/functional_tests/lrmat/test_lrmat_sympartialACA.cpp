@@ -45,8 +45,8 @@ int main(int argc, char *argv[]) {
         std::vector<int> tabt(xt.size()), tabs(xs.size());
         std::iota(tabt.begin(), tabt.end(), int(0));
         std::iota(tabs.begin(), tabs.end(), int(0));
-        t.build(xt, std::vector<double>(xt.size(), 0), tabt, std::vector<double>(xt.size(), 1));
-        s.build(xs, std::vector<double>(xs.size(), 0), tabs, std::vector<double>(xs.size(), 1));
+        t.build_global(xt, std::vector<double>(xt.size(), 0), tabt, std::vector<double>(xt.size(), 1));
+        s.build_global(xs, std::vector<double>(xs.size(), 0), tabs, std::vector<double>(xs.size(), 1));
 
         MyMatrix A(xt, xs);
 

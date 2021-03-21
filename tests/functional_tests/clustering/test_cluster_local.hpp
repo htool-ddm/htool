@@ -1,11 +1,11 @@
-#include <htool/clustering/cluster.hpp>
+#include <htool/clustering/ncluster.hpp>
 #include <random>
 
 using namespace std;
 using namespace htool;
 
 template <typename Cluster_type>
-int test_cluster(int argc, char *argv[]) {
+int test_cluster_local(int argc, char *argv[]) {
 
     int rankWorld, sizeWorld;
     MPI_Comm_size(MPI_COMM_WORLD, &sizeWorld);
@@ -15,6 +15,7 @@ int test_cluster(int argc, char *argv[]) {
     srand(1);
     bool test = 0;
 
+    // Geometry
     int size = 20;
     double z = 1;
     vector<R3> p(size);
@@ -32,6 +33,22 @@ int test_cluster(int argc, char *argv[]) {
         tab[j] = j;
     }
 
+    // Compute permutation and partition along the x axis
+    // std::vector<int> permutation(size);
+    // std::iota(permutation.begin(), permutation.end(), int(0));
+    // std::sort(permutation.begin(), permutation.end(), [&](int a, int b) { return p[tab[a]][0] < p[tab[b]][0]; });
+
+    int size_numbering = size / sizeWorld;
+    int count_size     = 0;
+    std::vector<std::pair<int, int>> MasterOffset;
+    for (int p = 0; p < sizeWorld - 1; p++) {
+        MasterOffset.push_back(std::pair<int, int>(count_size, size_numbering));
+
+        count_size += size_numbering;
+    }
+    MasterOffset.push_back(std::pair<int, int>(count_size, size - count_size));
+
+    // Tests
     std::vector<int> nb_sons_test{2, 4, -1};
     for (auto &nb_sons : nb_sons_test) {
         if (rankWorld == 0) {
@@ -39,7 +56,7 @@ int test_cluster(int argc, char *argv[]) {
         }
 
         Cluster_type t;
-        t.build(p, r, tab, g, nb_sons);
+        t.build_local(p, r, tab, g, MasterOffset, nb_sons);
         t.print();
         MPI_Barrier(MPI_COMM_WORLD);
 
@@ -103,35 +120,6 @@ int test_cluster(int argc, char *argv[]) {
             }
         }
 
-        // Testing save and read cluster
-        t.save_cluster("test_cluster");
-        MPI_Barrier(MPI_COMM_WORLD);
-        Cluster_type copy_t;
-        copy_t.read_cluster("test_cluster_permutation.csv", "test_cluster_tree.csv");
-
-        std::stack<Cluster_type const *> s_save;
-        std::stack<Cluster_type const *> s_read;
-        s_save.push(&t);
-        s_read.push(&(copy_t));
-        while (!s_save.empty()) {
-            Cluster_type const *curr_1 = s_save.top();
-            Cluster_type const *curr_2 = s_read.top();
-            s_save.pop();
-            s_read.pop();
-
-            test = test || !(curr_1->get_offset() == curr_2->get_offset());
-            test = test || !(curr_1->get_size() == curr_2->get_size());
-
-            if (!curr_2->IsLeaf()) {
-                // test num inclusion
-
-                for (int l = 0; l < curr_2->get_nb_sons(); l++) {
-                    s_save.push(&(curr_1->get_son(l)));
-                    s_read.push(&(curr_2->get_son(l)));
-                }
-            }
-        }
-
         // Random vector
         double lower_bound = 0;
         double upper_bound = 10000;
@@ -150,6 +138,15 @@ int test_cluster(int argc, char *argv[]) {
         // Test permutations
         test = test || !(norm2(random_vector_in - random_vector_out) < 1e-16);
 
+        // Random local vector
+        std::vector<double> random_local_vector_in(MasterOffset[rankWorld].second), local_temp(MasterOffset[rankWorld].second), random_local_vector_out(MasterOffset[rankWorld].second);
+        generate(begin(random_local_vector_in), end(random_local_vector_in), gen);
+        t.local_cluster_to_local(random_local_vector_in.data(), local_temp.data());
+        t.local_to_local_cluster(local_temp.data(), random_local_vector_out.data());
+
+        // Test local permutations
+        test = test || !(norm2(random_local_vector_in - random_local_vector_out) < 1e-16);
+
         // Test access to local clusters
         if (sizeWorld > 1) {
             test = test || !(t.get_local_cluster().get_rank() == rankWorld);
@@ -164,7 +161,7 @@ int test_cluster(int argc, char *argv[]) {
     }
 
     if (rankWorld == 0) {
-        std::cout << "test " << test << std::endl;
+        std::cout << "test local " << test << std::endl;
     }
 
     return test;

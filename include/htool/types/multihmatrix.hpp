@@ -112,8 +112,8 @@ void MultiHMatrix<T, MultiLowRankMatrix, ClusterImpl, AdmissibleCondition>::buil
     double time    = MPI_Wtime();
     cluster_tree_t = std::make_shared<ClusterImpl>(); // target
     cluster_tree_s = std::make_shared<ClusterImpl>(); // source
-    cluster_tree_t->build(xt, rt, tabt, gt, -1, comm);
-    cluster_tree_s->build(xs, rs, tabs, gs, -1, comm);
+    cluster_tree_t->build_global(xt, rt, tabt, gt, -1, comm);
+    cluster_tree_s->build_global(xs, rs, tabs, gs, -1, comm);
 
     local_size   = cluster_tree_t->get_local_size();
     local_offset = cluster_tree_t->get_local_offset();

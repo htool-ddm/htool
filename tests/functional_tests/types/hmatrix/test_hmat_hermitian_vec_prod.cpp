@@ -98,8 +98,8 @@ int main(int argc, char *argv[]) {
         f_global = A * x_global;
 
         // Global product
-        HA_L.mvprod_global(x_global.data(), f_global_L.data());
-        HA_U.mvprod_global(x_global.data(), f_global_U.data());
+        HA_L.mvprod_global_to_global(x_global.data(), f_global_L.data());
+        HA_U.mvprod_global_to_global(x_global.data(), f_global_U.data());
 
         // Errors
         double global_diff_L   = norm2(f_global - f_global_L) / norm2(f_global);

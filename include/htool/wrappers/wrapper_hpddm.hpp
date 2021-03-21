@@ -58,9 +58,9 @@ class HPDDMDense : public HpDense<T, 'G'> {
 
         // All gather
         if (mu == 1) { // C'est moche
-            HA.mvprod_local(in, out, in_global->data(), mu);
+            HA.mymvprod_local_to_local(in, out, mu, in_global->data());
         } else {
-            HA.mvprod_local(buffer->data(), buffer->data() + local_size * mu, in_global->data(), mu);
+            HA.mymvprod_local_to_local(buffer->data(), buffer->data() + local_size * mu, mu, in_global->data());
         }
 
         // Tranpose

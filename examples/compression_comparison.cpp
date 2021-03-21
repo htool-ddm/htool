@@ -103,8 +103,8 @@ int main(int argc, char *argv[]) {
     // Clustering
 
     GeometricClustering t, s;
-    t.build(p1, r1, tab1, g1);
-    s.build(p2, r2, tab2, g2);
+    t.build_global(p1, r1, tab1, g1);
+    s.build_global(p2, r2, tab2, g2);
 
     MyMatrix A(p1, p2);
     double norm_A = A.normFrob();
