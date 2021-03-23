@@ -65,8 +65,8 @@ int main(int argc, char *argv[]) {
         // we set a constant seed for rand because we want always the same result if we run the check many times
         // (two different initializations with the same seed will generate the same succession of results in the subsequent calls to rand)
 
-        int nr = 2000;
-        int nc = 2000;
+        int nr = 200;
+        int nc = 200;
         vector<int> Ir(nr); // row indices for the lrmatrix
         vector<int> Ic(nc); // column indices for the lrmatrix
 

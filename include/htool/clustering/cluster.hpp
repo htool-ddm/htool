@@ -178,7 +178,7 @@ class Cluster : public Parametres {
             throw std::logic_error("Permutation is not local");
         } else {
             int rankWorld;
-            MPI_Comm_rank(MPI_COMM_WORLD, &rankWorld);
+            MPI_Comm_rank(comm, &rankWorld);
             for (int i = 0; i < MasterOffset[rankWorld].second; i++) {
                 out[(*permutation)[MasterOffset[rankWorld].first + i] - MasterOffset[rankWorld].first] = in[i];
             }
@@ -191,7 +191,7 @@ class Cluster : public Parametres {
             throw std::logic_error("Permutation is not local");
         } else {
             int rankWorld;
-            MPI_Comm_rank(MPI_COMM_WORLD, &rankWorld);
+            MPI_Comm_rank(comm, &rankWorld);
             for (int i = 0; i < MasterOffset[rankWorld].second; i++) {
                 out[i] = in[(*permutation)[MasterOffset[rankWorld].first + i] - MasterOffset[rankWorld].first];
             }

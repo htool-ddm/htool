@@ -234,11 +234,11 @@ class Block : public Parametres {
     // Block& operator=(const Block& b){t=b.t; s=b.s; Admissible=b.Admissible; return *this;}
 
     // Build
-    void build(char UPLO, MPI_Comm comm = MPI_COMM_WORLD) {
+    void build(char UPLO, bool force_sym = false, MPI_Comm comm = MPI_COMM_WORLD) {
         bool not_pushed;
 
         // Build block tree and tasks
-        if (UPLO == 'U' || UPLO == 'L') {
+        if (UPLO == 'U' || UPLO == 'L' || force_sym) {
             not_pushed = this->build_sym_block_tree(comm);
         } else {
             not_pushed = this->build_block_tree(comm);

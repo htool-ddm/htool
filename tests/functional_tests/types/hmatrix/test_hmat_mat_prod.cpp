@@ -1,7 +1,7 @@
 #include <htool/clustering/ncluster.hpp>
-#include <htool/htool.hpp>
 #include <htool/lrmat/fullACA.hpp>
 #include <htool/types/hmatrix.hpp>
+
 using namespace std;
 using namespace htool;
 
@@ -23,6 +23,20 @@ class MyMatrix : public IMatrix<double> {
         }
         return result;
     }
+    void mvprod(const double *const in, double *const out, const int &mu) const {
+        int nr = this->nr;
+        int nc = this->nc;
+        for (int i = 0; i < nr * mu; i++) {
+            out[i] = 0;
+        }
+        for (int m = 0; m < mu; m++) {
+            for (int i = 0; i < nr; i++) {
+                for (int j = 0; j < nc; j++) {
+                    out[nr * m + i] += this->get_coef(i, j) * in[j + m * nc];
+                }
+            }
+        }
+    }
 };
 
 int main(int argc, char *argv[]) {
@@ -30,7 +44,7 @@ int main(int argc, char *argv[]) {
     // Initialize the MPI environment
     MPI_Init(&argc, &argv);
 
-    // Get the number of processescd
+    // Get the number of processes
     int size;
     MPI_Comm_size(MPI_COMM_WORLD, &size);
 
@@ -46,6 +60,7 @@ int main(int argc, char *argv[]) {
     distance[1] = 5;
     distance[2] = 7;
     distance[3] = 10;
+    int mu      = 5;
     SetNdofPerElt(1);
     SetEpsilon(1e-6);
     SetEta(0.1);
@@ -91,31 +106,70 @@ int main(int argc, char *argv[]) {
         }
 
         MyMatrix A(p1, p2);
-        //   vector<double> g2(nc,1);
-        //   vector<double> g1(nr,1);
-        // std::shared_ptr<RegularClustering> t=make_shared<RegularClustering>();
-        // std::shared_ptr<RegularClustering> s=make_shared<RegularClustering>();
-        // t->build(p1,r1,tab1,g1,2);
-        // s->build(p2,r2,tab2,g2,2);
-        // HMatrix<double,fullACA,RegularClustering> HA(A,t,p1,tab1,s,p2,tab2);
 
-        HMatrix<double, fullACA, RegularClustering, RjasanowSteinbach> HA(A, p1, r1, tab1, p2, r2, tab2);
+        int size_numbering = p1.size() / size;
+        int count_size     = 0;
+        std::vector<std::pair<int, int>> MasterOffset_target;
+        for (int p = 0; p < size - 1; p++) {
+            MasterOffset_target.push_back(std::pair<int, int>(count_size, size_numbering));
+
+            count_size += size_numbering;
+        }
+        MasterOffset_target.push_back(std::pair<int, int>(count_size, p1.size() - count_size));
+
+        size_numbering = p2.size() / size;
+        count_size     = 0;
+
+        std::vector<std::pair<int, int>> MasterOffset_source;
+        for (int p = 0; p < size - 1; p++) {
+            MasterOffset_source.push_back(std::pair<int, int>(count_size, size_numbering));
+
+            count_size += size_numbering;
+        }
+        MasterOffset_source.push_back(std::pair<int, int>(count_size, p2.size() - count_size));
+
+        // local clustering
+        std::shared_ptr<GeometricClustering> t = make_shared<GeometricClustering>();
+        std::shared_ptr<GeometricClustering> s = make_shared<GeometricClustering>();
+        t->build_local_auto(p1, MasterOffset_target, 2);
+        s->build_local_auto(p2, MasterOffset_source, 2);
+
+        HMatrix<double, fullACA, GeometricClustering, RjasanowSteinbach> HA(A, t, p1, s, p2);
         HA.print_infos();
 
         // Global vectors
-        std::vector<double> x_global(nc, 1), f_global(nr), f_global_test(nr);
-        f_global = A * x_global;
+        std::vector<double> x_global(nc * mu, 1), f_global(nr * mu), f_global_test(nr * mu);
+        A.mvprod(x_global.data(), f_global.data(), mu);
 
         // Global product
-        HA.mvprod_global_to_global(x_global.data(), f_global_test.data());
+        HA.mvprod_global_to_global(x_global.data(), f_global_test.data(), mu);
 
         // Errors
         double global_diff = norm2(f_global - f_global_test) / norm2(f_global);
 
         if (rank == 0) {
-            cout << "difference on mat vec prod computed globally: " << global_diff << endl;
+            cout << "difference on mat mat prod computed globally: " << global_diff << endl;
         }
         test = test || !(global_diff < GetEpsilon());
+
+        // Local vectors
+        std::vector<double> x_local(MasterOffset_source[rank].second * mu, 1), f_local(MasterOffset_target[rank].second * mu), f_local_to_global(nr * mu);
+
+        // Local product
+        HA.mvprod_local_to_local(x_local.data(), f_local.data(), mu);
+
+        // Error
+        double global_local_diff = 0;
+        for (int i = 0; i < MasterOffset_target[rank].second; i++) {
+            for (int j = 0; j < mu; j++) {
+                global_local_diff += std::pow(f_global_test[i + MasterOffset_target[rank].first + j * nr] - f_local[i + j * MasterOffset_target[rank].second], 2);
+            }
+        }
+
+        if (rank == 0) {
+            cout << "difference on mat mat prod computed globally and locally: " << std::sqrt(global_local_diff) << endl;
+        }
+        test = test || !(std::sqrt(global_local_diff) < 1e-10);
     }
     if (rank == 0) {
         cout << "test: " << test << endl;
