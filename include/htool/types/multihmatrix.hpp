@@ -128,7 +128,8 @@ void MultiHMatrix<T, MultiLowRankMatrix, ClusterImpl, AdmissibleCondition>::buil
     // Construction arbre des blocs
     time = MPI_Wtime();
     this->BlockTree.reset(new Block<ClusterImpl, AdmissibleCondition>(*cluster_tree_t, *cluster_tree_s));
-    this->BlockTree->build(false, comm);
+    bool force_sym = false;
+    this->BlockTree->build('N', force_sym, comm);
     mytimes[1] = MPI_Wtime() - time;
 
     // Assemblage des sous-matrices
