@@ -1,15 +1,12 @@
 #ifndef HTOOL_VECTOR_HPP
 #define HTOOL_VECTOR_HPP
 
-#include "point.hpp"
 #include <algorithm>
 #include <cassert>
 #include <complex>
 #include <fstream>
-#include <functional>
 #include <iomanip>
 #include <iostream>
-#include <iterator>
 #include <numeric>
 #include <vector>
 

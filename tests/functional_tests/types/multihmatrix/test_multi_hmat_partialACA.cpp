@@ -1,4 +1,6 @@
 #include "test_multi_hmat.hpp"
+#include <htool/testing/geometry.hpp>
+#include <htool/testing/imatrix_test.hpp>
 
 using namespace std;
 using namespace htool;
@@ -23,29 +25,32 @@ int main(int argc, char *argv[]) {
     distance[1] = 20;
     distance[2] = 30;
     distance[3] = 40;
-    SetNdofPerElt(1);
-    SetEpsilon(1e-8);
-    SetEta(0.1);
+
+    double epsilon = 1e-8;
+    double eta     = 0.1;
+
     int nr = 500;
     int nc = 400;
-    std::vector<R3> xt(nr);
-    std::vector<R3> xs(nc);
-    std::vector<int> tabt(nr);
-    std::vector<int> tabs(nc);
+    std::vector<double> xt(3 * nr);
+    std::vector<double> xs(3 * nc);
 
     bool test = 0;
 
     //
     for (int idist = 0; idist < ndistance; idist++) {
 
-        create_geometry(distance[idist], xt, tabt, xs, tabs);
+        srand(1);
+        create_disk(3, 0, nr, xt.data());
+        create_disk(3, distance[idist], nc, xs.data());
 
         vector<double> rhs(xs.size(), 1);
-        MyMultiMatrix MultiA(xt, xs);
+        MyMultiMatrix MultiA(3, nr, nc, xt, xs);
         int nm = MultiA.nb_matrix();
-        MyMatrix A(xt, xs);
-        MultiHMatrix<double, MultipartialACA, GeometricClustering, RjasanowSteinbach> MultiHA(MultiA, xt, xs);
-        HMatrix<double, partialACA, GeometricClustering, RjasanowSteinbach> HA(A, xt, xs);
+        IMatrixTestDouble A(3, nr, nc, xt, xs);
+        MultiHMatrix<double, MultipartialACA, GeometricClustering, RjasanowSteinbach> MultiHA(3, epsilon, eta);
+        MultiHA.build_auto(MultiA, xt.data(), xs.data());
+        HMatrix<double, partialACA, GeometricClustering, RjasanowSteinbach> HA(3, epsilon, eta);
+        HA.build_auto(A, xt.data(), xs.data());
 
         // Comparison with HMatrix
         std::vector<double> one(nc, 1);

@@ -3,7 +3,6 @@
 
 #include "../wrappers/wrapper_lapack.hpp"
 #include "lrmat.hpp"
-#include <cassert>
 
 namespace htool {
 
@@ -94,7 +93,7 @@ class SVD final : public LowRankMatrix<T, ClusterImpl> {
         }
     }
 
-    void build(const IMatrix<T> &A, const Cluster<ClusterImpl> &t, const std::vector<R3> &xt, const std::vector<int> &tabt, const Cluster<ClusterImpl> &s, const std::vector<R3> &xs, const std::vector<int> &tabs) {
+    void build(const IMatrix<T> &A, const Cluster<ClusterImpl> &t, const double *const xt, const int *const tabt, const Cluster<ClusterImpl> &s, const double *const xs, const int *const tabs) {
         this->build(A);
     }
     T get_singular_value(int i) { return singular_values[i]; }

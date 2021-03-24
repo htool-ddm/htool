@@ -25,39 +25,43 @@ int main(int argc, char *argv[]) {
     distance[2] = 30;
     distance[3] = 40;
 
-    SetNdofPerElt(1);
-    SetEpsilon(0.0001);
+    double epsilon = 0.0001;
 
     int nr = 500;
     int nc = 100;
-    std::vector<R3> xt(nr);
-    std::vector<R3> xs(nc);
+    std::vector<double> xt(3 * nr);
+    std::vector<double> xs(3 * nc);
     std::vector<int> tabt(500);
     std::vector<int> tabs(100);
     bool test = 0;
     for (int idist = 0; idist < ndistance; idist++) {
 
-        create_geometry(distance[idist], xt, tabt, xs, tabs, verbose);
+        srand(1);
+        // we set a constant seed for rand because we want always the same result if we run the check many times
+        // (two different initializations with the same seed will generate the same succession of results in the subsequent calls to rand)
+        create_disk(3, 0, nr, xt.data(), tabt.data());
+        create_disk(3, distance[idist], nc, xs.data(), tabs.data());
 
         GeometricClustering t, s;
 
         std::vector<int> tabt(xt.size()), tabs(xs.size());
         std::iota(tabt.begin(), tabt.end(), int(0));
         std::iota(tabs.begin(), tabs.end(), int(0));
-        t.build_global(xt, std::vector<double>(xt.size(), 0), tabt, std::vector<double>(xt.size(), 1));
-        s.build_global(xs, std::vector<double>(xs.size(), 0), tabs, std::vector<double>(xs.size(), 1));
+        t.build_global_auto(nr, xt.data());
+        s.build_global_auto(nc, xs.data());
 
-        MyMatrix A(xt, xs);
+        IMatrixTestDouble A(3, nr, nc, xt, xs);
 
         // partialACA fixed rank
         int reqrank_max = 10;
-        partialACA<double, GeometricClustering> A_partialACA_fixed(t.get_perm(), s.get_perm(), reqrank_max);
-        A_partialACA_fixed.build(A, t, xt, tabt, s, xs, tabs);
+        partialACA<double, GeometricClustering> A_partialACA_fixed(t.get_perm(), s.get_perm(), reqrank_max, epsilon);
+        A_partialACA_fixed.build(A, t, xt.data(), tabt.data(), s, xs.data(), tabs.data());
         ;
 
         // ACA automatic building
         partialACA<double, GeometricClustering> A_partialACA(t.get_perm(), s.get_perm());
-        A_partialACA.build(A, t, xt, tabt, s, xs, tabs);
+        A_partialACA.set_epsilon(epsilon);
+        A_partialACA.build(A, t, xt.data(), tabt.data(), s, xs.data(), tabs.data());
 
         std::pair<double, double> fixed_compression_interval(0.87, 0.89);
         std::pair<double, double> auto_compression_interval(0.93, 0.96);

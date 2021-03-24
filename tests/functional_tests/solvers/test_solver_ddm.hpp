@@ -41,10 +41,10 @@ int test_solver_ddm(int argc, char *argv[], int mu, char symmetric) {
     opt.parse("-hpddm_max_it 200");
 
     // HTOOL
-    SetNdofPerElt(1);
-    SetEpsilon(tol);
-    SetEta(0.1);
-    SetMinClusterSize(1);
+    double epsilon     = tol;
+    double eta         = 0.1;
+    int minclustersize = 1;
+
     char UPLO = 'N';
     if (symmetric != 'N') {
         UPLO = 'L';
@@ -71,7 +71,7 @@ int test_solver_ddm(int argc, char *argv[], int mu, char symmetric) {
         std::cout << "Creating cluster tree" << std::endl;
     std::shared_ptr<htool::GeometricClustering> t = std::make_shared<htool::GeometricClustering>();
     (*t).read_cluster(datapath + "cluster_" + NbrToStr(size) + "_permutation.csv", datapath + "cluster_" + NbrToStr(size) + "_tree.csv");
-
+    t->set_minclustersize(minclustersize);
     // std::vector<int>tab(n);
     // std::iota(tab.begin(),tab.end(),int(0));
     // t->build(p,std::vector<double>(n,0),tab,std::vector<double>(n,1),2);
@@ -82,7 +82,8 @@ int test_solver_ddm(int argc, char *argv[], int mu, char symmetric) {
     // Hmatrix
     if (rank == 0)
         std::cout << "Creating HMatrix" << std::endl;
-    HMatrix<complex<double>, fullACA, GeometricClustering, RjasanowSteinbach> HA(A, t, p, symmetric, UPLO);
+    HMatrix<complex<double>, fullACA, GeometricClustering, RjasanowSteinbach> HA(t, t, epsilon, eta, symmetric, UPLO);
+    HA.build_auto_sym(A, p);
     HA.print_infos();
 
     // Global vectors
@@ -111,8 +112,8 @@ int test_solver_ddm(int argc, char *argv[], int mu, char symmetric) {
     double error2;
 
     // Solve
-    DDM<complex<double>, fullACA, GeometricClustering, RjasanowSteinbach> ddm_wo_overlap(HA);
-    DDM<complex<double>, fullACA, GeometricClustering, RjasanowSteinbach> ddm_with_overlap(A, HA, ovr_subdomain_to_global, cluster_to_ovr_subdomain, neighbors, intersections);
+    DDM<complex<double>> ddm_wo_overlap(&HA);
+    DDM<complex<double>> ddm_with_overlap(A, &HA, ovr_subdomain_to_global, cluster_to_ovr_subdomain, neighbors, intersections);
 
     // No precond wo overlap
     if (rank == 0)

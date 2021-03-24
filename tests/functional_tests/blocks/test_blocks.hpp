@@ -1,5 +1,7 @@
 #include <htool/blocks/admissibility_conditions.hpp>
 #include <htool/blocks/blocks.hpp>
+#include <htool/testing/geometry.hpp>
+#include <htool/testing/imatrix_test.hpp>
 #include <random>
 
 using namespace std;
@@ -12,29 +14,20 @@ int test_blocks(int argc, char *argv[], bool symmetric) {
     MPI_Comm_size(MPI_COMM_WORLD, &sizeWorld);
     MPI_Comm_rank(MPI_COMM_WORLD, &rankWorld);
 
-    SetMinClusterSize(1);
     srand(1);
     bool test = 0;
 
     int size = 20;
     double z = 1;
-    vector<R3> p(size);
-    vector<double> r(size, 0);
-    vector<double> g(size, 1);
-    vector<int> tab(size);
+    vector<double> p(3 * size);
 
-    for (int j = 0; j < size; j++) {
-        double rho   = ((double)rand() / (double)(RAND_MAX)); // (double) otherwise integer division!
-        double theta = ((double)rand() / (double)(RAND_MAX));
-        p[j][0]      = sqrt(rho) * cos(2 * M_PI * theta);
-        p[j][1]      = sqrt(rho) * sin(2 * M_PI * theta);
-        p[j][2]      = z;
-        // sqrt(rho) otherwise the points would be concentrated in the center of the disk
-        tab[j] = j;
-    }
+    srand(1);
+    // we set a constant seed for rand because we want always the same result if we run the check many times
+    // (two different initializations with the same seed will generate the same succession of results in the subsequent calls to rand)
+    create_disk(3, z, size, p.data());
 
     Cluster_type t;
-    t.build_global(p, r, tab, g);
+    t.build_global_auto(size, p.data());
 
     Block<Cluster_type, AdmissibilityCondition> B(t, t);
     B.build(symmetric);

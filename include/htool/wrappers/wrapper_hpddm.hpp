@@ -9,28 +9,28 @@
 #define DLAPACK
 #define EIGENSOLVER 1
 #include "../solvers/proto_ddm.hpp"
-#include "../types/hmatrix.hpp"
+#include "../types/hmatrix_virtual.hpp"
 #include "../types/matrix.hpp"
 #include <HPDDM.hpp>
 
 namespace htool {
 
-template <typename T, template <typename, typename> class LowRankMatrix, class ClusterImpl, template <typename> class AdmissibleCondition>
+template <typename T>
 class DDM;
 
 template <typename T, template <typename, typename> class LowRankMatrix, class ClusterImpl, template <typename> class AdmissibleCondition>
 class Proto_DDM;
 
-template <typename T, template <typename, typename> class LowRankMatrix, class ClusterImpl, template <typename> class AdmissibleCondition>
+template <typename T>
 class HPDDMDense : public HpDense<T, 'G'> {
   private:
-    const HMatrix<T, LowRankMatrix, ClusterImpl, AdmissibleCondition> &HA;
+    const HMatrixVirtual<T> *const HA;
     std::vector<T> *in_global, *buffer;
 
   public:
     typedef HpDense<T, 'G'> super;
 
-    HPDDMDense(const HMatrix<T, LowRankMatrix, ClusterImpl, AdmissibleCondition> &A) : HA(A) {
+    HPDDMDense(const HMatrixVirtual<T> *const A) : HA(A) {
         in_global = new std::vector<T>;
         buffer    = new std::vector<T>;
     }
@@ -42,7 +42,7 @@ class HPDDMDense : public HpDense<T, 'G'> {
     }
 
     virtual int GMV(const T *const in, T *const out, const int &mu = 1) const override {
-        int local_size = HA.get_local_size();
+        int local_size = HA->get_local_size();
 
         // Tranpose without overlap
         if (mu != 1) {
@@ -51,21 +51,21 @@ class HPDDMDense : public HpDense<T, 'G'> {
                     (*buffer)[i + j * mu] = in[i * this->getDof() + j];
                 }
             }
-            if (HA.get_symmetry_type() == 'H') {
+            if (HA->get_symmetry_type() == 'H') {
                 conj_if_complex(buffer->data(), local_size * mu);
             }
         }
 
         // All gather
         if (mu == 1) { // C'est moche
-            HA.mymvprod_local_to_local(in, out, mu, in_global->data());
+            HA->mymvprod_local_to_local(in, out, mu, in_global->data());
         } else {
-            HA.mymvprod_local_to_local(buffer->data(), buffer->data() + local_size * mu, mu, in_global->data());
+            HA->mymvprod_local_to_local(buffer->data(), buffer->data() + local_size * mu, mu, in_global->data());
         }
 
         // Tranpose
         if (mu != 1) {
-            if (HA.get_symmetry_type() == 'H') {
+            if (HA->get_symmetry_type() == 'H') {
                 conj_if_complex(buffer->data() + local_size * mu, local_size * mu);
             }
             for (int i = 0; i < mu; i++) {
@@ -91,7 +91,7 @@ class HPDDMDense : public HpDense<T, 'G'> {
 
     void setType(typename super::Prcndtnr type) { this->_type = type; };
 
-    friend class DDM<T, LowRankMatrix, ClusterImpl, AdmissibleCondition>;
+    friend class DDM<T>;
 };
 
 template <typename T, template <typename, typename> class LowRankMatrix, class ClusterImpl, template <typename> class AdmissibleCondition>
@@ -747,7 +747,6 @@ class ContinuousOperator : public HPDDM::EmptyOperator<T> {
 
 } // namespace htool
 
-template <typename T, template <typename, typename> class LowRankMatrix, class ClusterImpl, template <typename> class AdmissibleCondition>
-struct HPDDM::hpddm_method_id<htool::HPDDMDense<T, LowRankMatrix, ClusterImpl, AdmissibleCondition>> { static constexpr char value = HPDDM::hpddm_method_id<HpDense<T, 'G'>>::value; };
-
+template <typename T>
+struct HPDDM::hpddm_method_id<htool::HPDDMDense<T>> { static constexpr char value = HPDDM::hpddm_method_id<HpDense<T, 'G'>>::value; };
 #endif

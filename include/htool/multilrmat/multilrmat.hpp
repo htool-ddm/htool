@@ -8,7 +8,7 @@
 namespace htool {
 
 template <typename T, typename ClusterImpl>
-class MultiLowRankMatrix : public Parametres {
+class MultiLowRankMatrix {
 
   protected:
     // Data member
@@ -20,22 +20,25 @@ class MultiLowRankMatrix : public Parametres {
     int offset_i;
     int offset_j;
 
+    double epsilon;
+    unsigned int ndofperelt;
+
   public:
     // Constructors
     MultiLowRankMatrix() = delete;
-    MultiLowRankMatrix(const std::vector<int> &ir0, const std::vector<int> &ic0, int nm0, int rank0 = -1) : rank(rank0), nr(ir0.size()), nc(ic0.size()), nm(nm0), ir(ir0), ic(ic0), offset_i(0), offset_j(0) {
+    MultiLowRankMatrix(const std::vector<int> &ir0, const std::vector<int> &ic0, int nm0, int rank0 = -1, double epsilon0 = 1e-3) : rank(rank0), nr(ir0.size()), nc(ic0.size()), nm(nm0), ir(ir0), ic(ic0), offset_i(0), offset_j(0), epsilon(epsilon0), ndofperelt(1) {
         for (int l = 0; l < nm; l++) {
-            LowRankMatrices.emplace_back(ir, ic, rank0);
+            LowRankMatrices.emplace_back(ir, ic, offset_i, offset_j, rank0, epsilon);
         }
     }
-    MultiLowRankMatrix(const std::vector<int> &ir0, const std::vector<int> &ic0, int nm0, int offset_i0, int offset_j0, int rank0 = -1) : rank(rank0), nr(ir0.size()), nc(ic0.size()), nm(nm0), ir(ir0), ic(ic0), offset_i(offset_i0), offset_j(offset_j0) {
+    MultiLowRankMatrix(const std::vector<int> &ir0, const std::vector<int> &ic0, int nm0, int offset_i0, int offset_j0, int rank0 = -1, double epsilon0 = 1e-3) : rank(rank0), nr(ir0.size()), nc(ic0.size()), nm(nm0), ir(ir0), ic(ic0), offset_i(offset_i0), offset_j(offset_j0), epsilon(epsilon0), ndofperelt(1) {
         for (int l = 0; l < nm; l++) {
-            LowRankMatrices.emplace_back(ir, ic, offset_i, offset_j, rank0);
+            LowRankMatrices.emplace_back(ir, ic, offset_i, offset_j, rank0, epsilon);
         }
     }
 
     // VIrtual function
-    virtual void build(const MultiIMatrix<T> &A, const Cluster<ClusterImpl> &t, const std::vector<R3> &xt, const std::vector<int> &tabt, const Cluster<ClusterImpl> &s, const std::vector<R3> &xs, const std::vector<int> &tabs) = 0;
+    virtual void build(const MultiIMatrix<T> &A, const Cluster<ClusterImpl> &t, const double *const xt, const int *const tabt, const Cluster<ClusterImpl> &s, const double *const xs, const int *const tabs) = 0;
 
     // Getters
     int nb_rows() const { return this->nr; }
@@ -46,6 +49,11 @@ class MultiLowRankMatrix : public Parametres {
     std::vector<int> get_ic() const { return this->ic; }
     int get_offset_i() const { return this->offset_i; }
     int get_offset_j() const { return this->offset_j; }
+    double get_epsilon() const { return this->epsilon; }
+    int get_ndofperelt() const { return this->ndofperelt; }
+
+    void set_epsilon(double epsilon0) { this->epsilon = epsilon0; }
+    void set_ndofperelt(unsigned int ndofperelt0) { this->ndofperelt = ndofperelt0; }
 
     bareLowRankMatrix<T, ClusterImpl> &operator[](int j) { return LowRankMatrices[j]; };
     const bareLowRankMatrix<T, ClusterImpl> &operator[](int j) const { return LowRankMatrices[j]; };
@@ -103,6 +111,72 @@ std::vector<double> Frobenius_absolute_error(const MultiLowRankMatrix<std::compl
 
     std::transform(err.begin(), err.end(), err.begin(), (double (*)(double))sqrt);
     return err;
+}
+
+template <typename T, typename ClusterImpl>
+double Frobenius_absolute_error(const LowRankMatrix<std::complex<T>, ClusterImpl> &lrmat, const IMatrix<std::complex<T>> &ref, int reqrank = -1) {
+    assert(reqrank <= lrmat.rank_of());
+    if (reqrank == -1) {
+        reqrank = lrmat.rank_of();
+    }
+    T err               = 0;
+    std::vector<int> ir = lrmat.get_ir();
+    std::vector<int> ic = lrmat.get_ic();
+
+    for (int j = 0; j < lrmat.nb_rows(); j++) {
+        for (int k = 0; k < lrmat.nb_cols(); k++) {
+            std::complex<T> aux = ref.get_coef(ir[j], ic[k]);
+            for (int l = 0; l < reqrank; l++) {
+                aux = aux - lrmat.get_U(j, l) * lrmat.get_V(l, k);
+            }
+            err += std::pow(std::abs(aux), 2);
+        }
+    }
+    return std::sqrt(err);
+}
+
+template <typename T, typename ClusterImpl>
+double Frobenius_absolute_error(const LowRankMatrix<T, ClusterImpl> &lrmat, const MultiIMatrix<T> &ref, int l, int reqrank = -1) {
+    assert(reqrank <= lrmat.rank_of());
+    if (reqrank == -1) {
+        reqrank = lrmat.rank_of();
+    }
+    T err               = 0;
+    std::vector<int> ir = lrmat.get_ir();
+    std::vector<int> ic = lrmat.get_ic();
+
+    for (int j = 0; j < lrmat.nb_rows(); j++) {
+        for (int k = 0; k < lrmat.nb_cols(); k++) {
+            T aux = ref.get_coefs(ir[j], ic[k])[l];
+            for (int l = 0; l < reqrank; l++) {
+                aux = aux - lrmat.get_U(j, l) * lrmat.get_V(l, k);
+            }
+            err += std::pow(std::abs(aux), 2);
+        }
+    }
+    return std::sqrt(err);
+}
+
+template <typename T, typename ClusterImpl>
+double Frobenius_absolute_error(const LowRankMatrix<std::complex<T>, ClusterImpl> &lrmat, const MultiIMatrix<std::complex<T>> &ref, int l, int reqrank = -1) {
+    assert(reqrank <= lrmat.rank_of());
+    if (reqrank == -1) {
+        reqrank = lrmat.rank_of();
+    }
+    T err               = 0;
+    std::vector<int> ir = lrmat.get_ir();
+    std::vector<int> ic = lrmat.get_ic();
+
+    for (int j = 0; j < lrmat.nb_rows(); j++) {
+        for (int k = 0; k < lrmat.nb_cols(); k++) {
+            std::complex<T> aux = ref.get_coefs(ir[j], ic[k])[l];
+            for (int l = 0; l < reqrank; l++) {
+                aux = aux - lrmat.get_U(j, l) * lrmat.get_V(l, k);
+            }
+            err += std::pow(std::abs(aux), 2);
+        }
+    }
+    return std::sqrt(err);
 }
 
 } // namespace htool

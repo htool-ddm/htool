@@ -4,23 +4,24 @@ using namespace std;
 using namespace htool;
 
 class MyMatrix : public IMatrix<double> {
-    const vector<R3> &p1;
-    const vector<R3> &p2;
+    const vector<double> &p1;
+    const vector<double> &p2;
+    int space_dim;
 
   public:
     // Constructor
-    MyMatrix(const vector<R3> &p10, const vector<R3> &p20) : IMatrix(p10.size(), p20.size()), p1(p10), p2(p20) {}
+    MyMatrix(int space_dim0, int nr, int nc, const vector<double> &p10, const vector<double> &p20) : IMatrix(nr, nc), p1(p10), p2(p20), space_dim(space_dim0) {}
 
     // Virtual function to overload
     double get_coef(const int &k, const int &j) const {
-        return 1. / (1e-5 + norm2(p1[j] - p2[k]));
+        return (1.) / (4 * M_PI * std::sqrt(1e-5 + std::inner_product(p1.begin() + space_dim * k, p1.begin() + space_dim * k + space_dim, p2.begin() + space_dim * j, double(0), std::plus<double>(), [](double u, double v) { return (u - v) * (u - v); })));
     }
 
     // Matrix vector product
     std::vector<double> operator*(std::vector<double> a) {
-        std::vector<double> result(p1.size(), 0);
-        for (int j = 0; j < p1.size(); j++) {
-            for (int k = 0; k < p2.size(); k++) {
+        std::vector<double> result(nr, 0);
+        for (int j = 0; j < nr; j++) {
+            for (int k = 0; k < nc; k++) {
                 result[j] += this->get_coef(j, k) * a[k];
             }
         }
@@ -30,8 +31,8 @@ class MyMatrix : public IMatrix<double> {
     // Frobenius norm
     double norm() {
         double norm = 0;
-        for (int j = 0; j < p1.size(); j++) {
-            for (int k = 0; k < p2.size(); k++) {
+        for (int j = 0; j < nr; j++) {
+            for (int k = 0; k < nc; k++) {
                 norm += this->get_coef(j, k);
             }
         }
@@ -57,37 +58,35 @@ int main(int argc, char *argv[]) {
     std::string outputpath = argv[1];
 
     // Htool parameters
-    SetEpsilon(0.001);
-    SetEta(100);
-    SetMinClusterSize(10);
+    double epsilon = 0.001;
+    double eta     = 100;
 
     // n² points on a regular grid in a square
     int n    = std::sqrt(4761);
     int size = n * n;
-    vector<int> I(size); // indices for the hmatrix
 
     // p1: points in a square in the plane z=z1
     double z = 1;
-    vector<R3> p(size);
+    vector<double> p(3 * size);
     for (int j = 0; j < n; j++) {
         for (int k = 0; k < n; k++) {
-            I[j + k * n]    = j + k * n;
-            p[j + k * n][0] = j;
-            p[j + k * n][1] = k;
-            p[j + k * n][2] = z;
+            p[3 * (j + k * n) + 0] = j;
+            p[3 * (j + k * n) + 1] = k;
+            p[3 * (j + k * n) + 2] = z;
         }
     }
 
     // Hmatrix
-    MyMatrix A(p, p);
+    MyMatrix A(3, size, size, p, p);
     std::vector<double> x(size, 1), result(size, 0);
-    HMatrix<double, partialACA, GeometricClustering, RjasanowSteinbach> HA(A, p, 'S', 'U');
+    HMatrix<double, partialACA, GeometricClustering, RjasanowSteinbach> HA(3, epsilon, eta, 'S', 'U');
+    HA.build_auto_sym(A, p.data());
     result = HA * x;
 
     // Output
     HA.print_infos();
     HA.save_plot(outputpath + "/smallest_example_plot");
-    HA.get_cluster_tree_t().save_geometry(p, I, outputpath + "/smallest_example_cluster", {1, 2, 3});
+    HA.get_cluster_tree_t().save_geometry(p.data(), outputpath + "/smallest_example_cluster", {1, 2, 3});
     std::cout << outputpath + "/smallest_example_plot" << std::endl;
     std::cout << Frobenius_absolute_error(HA, A) / A.norm() << std::endl;
     std::cout << norm2(A * x - result) / norm2(A * x) << std::endl;

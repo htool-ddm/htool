@@ -1,36 +1,30 @@
 #include <htool/clustering/cluster.hpp>
+#include <htool/testing/geometry.hpp>
 #include <random>
 
 using namespace std;
 using namespace htool;
 
-template <typename Cluster_type>
+template <typename Cluster_type, int dim>
 int test_cluster_global(int argc, char *argv[]) {
 
     int rankWorld, sizeWorld;
     MPI_Comm_size(MPI_COMM_WORLD, &sizeWorld);
     MPI_Comm_rank(MPI_COMM_WORLD, &rankWorld);
 
-    SetMinClusterSize(1);
     srand(1);
     bool test = 0;
 
-    int size = 20;
-    double z = 1;
-    vector<R3> p(size);
+    int size = 200;
+    vector<double> p(size * dim);
     vector<double> r(size, 0);
     vector<double> g(size, 1);
     vector<int> tab(size);
 
-    for (int j = 0; j < size; j++) {
-        double rho   = ((double)rand() / (double)(RAND_MAX)); // (double) otherwise integer division!
-        double theta = ((double)rand() / (double)(RAND_MAX));
-        p[j][0]      = sqrt(rho) * cos(2 * M_PI * theta);
-        p[j][1]      = sqrt(rho) * sin(2 * M_PI * theta);
-        p[j][2]      = z;
-        // sqrt(rho) otherwise the points would be concentrated in the center of the disk
-        tab[j] = j;
-    }
+    srand(1);
+    // we set a constant seed for rand because we want always the same result if we run the check many times
+    // (two different initializations with the same seed will generate the same succession of results in the subsequent calls to rand)
+    create_disk(dim, 0, size, p.data(), tab.data());
 
     std::vector<int> nb_sons_test{2, 4, -1};
     for (auto &nb_sons : nb_sons_test) {
@@ -38,8 +32,9 @@ int test_cluster_global(int argc, char *argv[]) {
             cout << "Number of sons : " << nb_sons << endl;
         }
 
-        Cluster_type t;
-        t.build_global(p, r, tab, g, nb_sons);
+        Cluster_type t(dim);
+        t.set_minclustersize(1);
+        t.build_global(size, p.data(), r.data(), tab.data(), g.data(), nb_sons);
         t.print();
         MPI_Barrier(MPI_COMM_WORLD);
 
@@ -106,7 +101,7 @@ int test_cluster_global(int argc, char *argv[]) {
         // Testing save and read cluster
         t.save_cluster("test_cluster");
         MPI_Barrier(MPI_COMM_WORLD);
-        Cluster_type copy_t;
+        Cluster_type copy_t(dim);
         copy_t.read_cluster("test_cluster_permutation.csv", "test_cluster_tree.csv");
 
         std::stack<Cluster_type const *> s_save;

@@ -1,15 +1,17 @@
 #ifndef HTOOL_CLUSTERING_CLUSTER_HPP
 #define HTOOL_CLUSTERING_CLUSTER_HPP
 
-#include "../misc/parametres.hpp"
+#include "../misc/user.hpp"
 #include "../types/matrix.hpp"
-#include "../types/point.hpp"
+#include <functional>
 #include <memory>
+#include <mpi.h>
+#include <stack>
 
 namespace htool {
 
 template <typename Derived>
-class Cluster : public Parametres {
+class Cluster {
   protected:
     // Data member
     std::vector<Derived *> sons; // Sons
@@ -17,14 +19,19 @@ class Cluster : public Parametres {
     int rank;    // Rank for dofs of the current cluster
     int depth;   // depth of the current cluster
     int counter; // numbering of the nodes level-wise
+    int space_dim;
+    int nb_pt;
 
     double rad;
-    R3 ctr;
+    std::vector<double> ctr;
 
     int max_depth;
     int min_depth;
     int offset;
     int size;
+
+    unsigned int minclustersize;
+    unsigned int ndofperelt;
 
     bool LocalPermutation;
 
@@ -35,7 +42,7 @@ class Cluster : public Parametres {
     std::vector<std::pair<int, int>> MasterOffset;
 
     // Node constructor
-    Cluster(Derived *root0, int counter0, const int &dep, std::shared_ptr<std::vector<int>> permutation0) : counter(counter0), rad(0.), ctr(), max_depth(-1), min_depth(-1), offset(0), permutation(permutation0), root(root0) {
+    Cluster(Derived *root0, int counter0, const int &dep, std::shared_ptr<std::vector<int>> permutation0) : counter(counter0), space_dim(root0->space_dim), nb_pt(0), rad(0.), ctr(root0->space_dim), max_depth(-1), min_depth(-1), offset(0), size(0), minclustersize(root0->minclustersize), ndofperelt(root0->ndofperelt), LocalPermutation(false), permutation(permutation0), root(root0) {
         for (auto &son : sons) {
             son = 0;
         }
@@ -44,7 +51,7 @@ class Cluster : public Parametres {
 
   public:
     // Root constructor
-    Cluster() : depth(0), counter(0), max_depth(0), min_depth(-1), offset(0), permutation(std::make_shared<std::vector<int>>()), local_cluster(nullptr), root(static_cast<Derived *>(this)) {}
+    Cluster(int space_dim0 = 3) : depth(0), counter(0), space_dim(space_dim0), nb_pt(0), rad(0), ctr(space_dim0), max_depth(0), min_depth(-1), offset(0), size(0), minclustersize(10), ndofperelt(1), LocalPermutation(false), permutation(std::make_shared<std::vector<int>>()), local_cluster(nullptr), root(static_cast<Derived *>(this)) {}
 
     // Destructor
     ~Cluster() {
@@ -57,36 +64,43 @@ class Cluster : public Parametres {
     };
 
     // global build cluster tree
-    void build_global(const std::vector<R3> &x0, const std::vector<double> &r0, const std::vector<int> &tab0, const std::vector<double> &g0, int nb_sons = -1, MPI_Comm comm = MPI_COMM_WORLD) {
-        static_cast<Derived *>(this)->build_global(x0, r0, tab0, g0, nb_sons, comm);
+    void build_global(int nb_pt0, const double *const x0, const double *const r0, const int *const tab0, const double *const g0, int nb_sons = -1, MPI_Comm comm = MPI_COMM_WORLD) {
+        this->nb_pt = nb_pt0;
+        static_cast<Derived *>(this)->build_global(nb_pt0, x0, r0, tab0, g0, nb_sons, comm);
     }
 
-    void build_global_auto(const std::vector<R3> &x0, int nb_sons = -1, MPI_Comm comm = MPI_COMM_WORLD) {
-        std::vector<int> tab(ndofperelt * x0.size());
+    void build_global_auto(int nb_pt0, const double *const x0, int nb_sons = -1, MPI_Comm comm = MPI_COMM_WORLD) {
+        this->nb_pt = nb_pt0;
+        std::vector<int> tab(ndofperelt * nb_pt0);
         std::iota(tab.begin(), tab.end(), int(0));
-        this->build_global(x0, std::vector<double>(x0.size(), 0), tab, std::vector<double>(x0.size(), 1), nb_sons, comm);
+        this->build_global(nb_pt0, x0, std::vector<double>(nb_pt0, 0).data(), tab.data(), std::vector<double>(nb_pt0, 1).data(), nb_sons, comm);
     }
 
     // local build cluster tree
-    void build_local(const std::vector<R3> &x0, const std::vector<double> &r0, const std::vector<int> &tab0, const std::vector<double> &g0, std::vector<std::pair<int, int>> MasterOffset0, int nb_sons = -1, MPI_Comm comm = MPI_COMM_WORLD) {
-        static_cast<Derived *>(this)->build_local(x0, r0, tab0, g0, MasterOffset0, nb_sons, comm);
+    void build_local(int nb_pt0, const double *const x0, const double *const r0, const int *const tab0, const double *const g0, const int *const MasterOffset0, int nb_sons = -1, MPI_Comm comm = MPI_COMM_WORLD) {
+        this->nb_pt = nb_pt0;
+        static_cast<Derived *>(this)->build_local(nb_pt0, x0, r0, tab0, g0, MasterOffset0, nb_sons, comm);
     }
 
-    void build_local_auto(const std::vector<R3> &x0, std::vector<std::pair<int, int>> MasterOffset0, int nb_sons = -1, MPI_Comm comm = MPI_COMM_WORLD) {
-        std::vector<int> tab(ndofperelt * x0.size());
+    void build_local_auto(int nb_pt0, const double *const x0, const int *const MasterOffset0, int nb_sons = -1, MPI_Comm comm = MPI_COMM_WORLD) {
+        this->nb_pt = nb_pt0;
+        std::vector<int> tab(ndofperelt * nb_pt0);
         std::iota(tab.begin(), tab.end(), int(0));
-        this->build_local(x0, std::vector<double>(x0.size(), 0), tab, std::vector<double>(x0.size(), 1), MasterOffset0, nb_sons, comm);
+        this->build_local(nb_pt0, x0, std::vector<double>(nb_pt0, 0).data(), tab.data(), std::vector<double>(nb_pt0, 1).data(), MasterOffset0, nb_sons, comm);
     }
 
     //// Getters for local data
     const double &get_rad() const { return rad; }
-    const R3 &get_ctr() const { return ctr; }
+    const std::vector<double> &get_ctr() const { return ctr; }
     const Derived &get_son(const int &j) const { return *(sons[j]); }
     Derived &get_son(const int &j) { return *(sons[j]); }
     int get_depth() const { return depth; }
     int get_rank() const { return rank; }
     int get_offset() const { return offset; }
     int get_size() const { return size; }
+    int get_space_dim() const { return space_dim; }
+    int get_minclustersize() const { return minclustersize; }
+    int get_ndofperelt() const { return ndofperelt; }
     int get_nb_sons() const { return sons.size(); }
     int get_counter() const { return counter; }
     const Derived &get_local_cluster(MPI_Comm comm = MPI_COMM_WORLD) const {
@@ -175,7 +189,7 @@ class Cluster : public Parametres {
     template <typename T>
     void local_cluster_to_local(const T *const in, T *const out, MPI_Comm comm = MPI_COMM_WORLD) const {
         if (!LocalPermutation) {
-            throw std::logic_error("Permutation is not local");
+            throw std::logic_error("[Htool error] Permutation is not local, local_cluster_to_local cannot be used");
         } else {
             int rankWorld;
             MPI_Comm_rank(comm, &rankWorld);
@@ -188,7 +202,7 @@ class Cluster : public Parametres {
     template <typename T>
     void local_to_local_cluster(const T *const in, T *const out, MPI_Comm comm = MPI_COMM_WORLD) const {
         if (!LocalPermutation) {
-            throw std::logic_error("Permutation is not local");
+            throw std::logic_error("[Htool error] Permutation is not local, local_to_local_cluster cannot be used");
         } else {
             int rankWorld;
             MPI_Comm_rank(comm, &rankWorld);
@@ -207,6 +221,13 @@ class Cluster : public Parametres {
     void set_rank(int rank0) { rank = rank0; }
     void set_offset(int offset0) { offset = offset0; }
     void set_size(int size0) { size = size0; }
+    void set_minclustersize(unsigned int minclustersize0) {
+        if (minclustersize0 == 0) {
+            throw std::invalid_argument("[Htool error] MinClusterSize parameter cannot be zero");
+        }
+        minclustersize = minclustersize0;
+    }
+    void set_ndofperelt(unsigned int ndofperelt0) { ndofperelt = ndofperelt0; }
 
     bool IsLeaf() const {
         if (sons.size() == 0) {
@@ -218,7 +239,7 @@ class Cluster : public Parametres {
     // Output
     void print(MPI_Comm comm = MPI_COMM_WORLD) const {
         int rankWorld;
-        MPI_Comm_rank(MPI_COMM_WORLD, &rankWorld);
+        MPI_Comm_rank(comm, &rankWorld);
         if (rankWorld == 0) {
             if (!permutation->empty()) {
                 std::cout << '[';
@@ -234,8 +255,12 @@ class Cluster : public Parametres {
             }
         }
     }
-
-    void save_geometry(const std::vector<R3> &x0, std::vector<int> &tab, std::string filename, const std::vector<int> &depths, MPI_Comm comm = MPI_COMM_WORLD) const {
+    void save_geometry(const double *const x0, std::string filename, const std::vector<int> &depths, MPI_Comm comm = MPI_COMM_WORLD) const {
+        std::vector<int> tab(ndofperelt * nb_pt);
+        std::iota(tab.begin(), tab.end(), int(0));
+        this->save_geometry(x0, tab.data(), filename, depths, comm);
+    }
+    void save_geometry(const double *const x0, const int *const tab, std::string filename, const std::vector<int> &depths, MPI_Comm comm = MPI_COMM_WORLD) const {
         int rankWorld;
         MPI_Comm_rank(comm, &rankWorld);
         if (rankWorld == 0) {
@@ -251,10 +276,10 @@ class Cluster : public Parametres {
             }
 
             // Permuted geometric points
-            for (int d = 0; d < 3; d++) {
+            for (int d = 0; d < this->space_dim; d++) {
                 output << "x_" << d << ",";
                 for (int i = 0; i < permutation->size(); ++i) {
-                    output << x0[tab[(*permutation)[i]]][d];
+                    output << x0[this->space_dim * tab[(*permutation)[i]] + d];
                     if (i != permutation->size() - 1) {
                         output << ",";
                     }
@@ -321,7 +346,10 @@ class Cluster : public Parametres {
                 Cluster<Derived> const *curr = s.top();
                 s.pop();
 
-                std::vector<std::string> infos_str = {NbrToStr(curr->sons.size()), NbrToStr(curr->rank), NbrToStr(curr->offset), NbrToStr(curr->size), NbrToStr(curr->rad), NbrToStr(curr->ctr[0]), NbrToStr(curr->ctr[1]), NbrToStr(curr->ctr[2])};
+                std::vector<std::string> infos_str = {NbrToStr(curr->sons.size()), NbrToStr(curr->rank), NbrToStr(curr->offset), NbrToStr(curr->size), NbrToStr(curr->rad)};
+                for (int p = 0; p < this->space_dim; p++) {
+                    infos_str.push_back(NbrToStr(curr->ctr[p]));
+                }
 
                 std::string infos = join("|", infos_str);
                 outputs[curr->depth].push_back(infos);
@@ -391,13 +419,14 @@ class Cluster : public Parametres {
 
         this->counter = 0;
         this->sons.resize(StrToNbr<int>(local_info_str[0]));
-        this->rank      = StrToNbr<int>(local_info_str[1]);
-        this->offset    = StrToNbr<int>(local_info_str[2]);
-        this->size      = StrToNbr<int>(local_info_str[3]);
-        this->rad       = StrToNbr<double>(local_info_str[4]);
-        this->ctr[0]    = StrToNbr<double>(local_info_str[5]);
-        this->ctr[1]    = StrToNbr<double>(local_info_str[6]);
-        this->ctr[2]    = StrToNbr<double>(local_info_str[7]);
+        this->rank   = StrToNbr<int>(local_info_str[1]);
+        this->offset = StrToNbr<int>(local_info_str[2]);
+        this->size   = StrToNbr<int>(local_info_str[3]);
+        this->rad    = StrToNbr<double>(local_info_str[4]);
+        for (int p = 0; p < space_dim; p++) {
+            this->ctr[p] = StrToNbr<double>(local_info_str[5 + p]);
+        }
+
         this->max_depth = outputs.size() + 1;
         if (sizeWorld == 1) {
             this->local_cluster = this->root;
@@ -420,9 +449,9 @@ class Cluster : public Parametres {
                 curr->sons[p]->offset = StrToNbr<int>(local_info_str[2]);
                 curr->sons[p]->size   = StrToNbr<int>(local_info_str[3]);
                 curr->sons[p]->rad    = StrToNbr<double>(local_info_str[4]);
-                curr->sons[p]->ctr[0] = StrToNbr<double>(local_info_str[5]);
-                curr->sons[p]->ctr[1] = StrToNbr<double>(local_info_str[6]);
-                curr->sons[p]->ctr[2] = StrToNbr<double>(local_info_str[7]);
+                for (int l = 0; l < space_dim; l++) {
+                    curr->sons[p]->ctr[l] = StrToNbr<double>(local_info_str[5 + l]);
+                }
 
                 if (sizeWorld > 1 && outputs[curr->depth + 1].size() == sizeWorld) {
                     this->MasterOffset[curr->sons[p]->get_counter()] = std::pair<int, int>(curr->sons[p]->get_offset(), curr->sons[p]->get_size());

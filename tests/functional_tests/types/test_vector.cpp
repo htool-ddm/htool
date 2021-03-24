@@ -16,7 +16,6 @@ int main(int argc, char const *argv[]) {
     vector<int> aidiv3  = ai;
     int iprod           = 0;
     double inorm        = 0;
-    int imax            = 0;
     int imean           = 0;
     for (int i = 0; i < ai.size(); i++) {
         ai[i]     = i;
@@ -66,7 +65,6 @@ int main(int argc, char const *argv[]) {
     vector<double> addiv3  = ad;
     double ddprod          = 0;
     double dnorm           = 0;
-    double dmax            = 0;
     double dmean           = 0;
     for (int i = 0; i < ad.size(); i++) {
         ad[i]     = i;
@@ -115,7 +113,6 @@ int main(int argc, char const *argv[]) {
     vector<complex<double>> acddiv3  = acd;
     complex<double> cddprod          = 0;
     double cdnorm                    = 0;
-    complex<double> cdmax            = 0;
     complex<double> cdmean           = 0;
     for (int i = 0; i < acd.size(); i++) {
         acd[i]     = complex<double>(i, 1);

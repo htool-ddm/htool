@@ -20,27 +20,23 @@ int main(int argc, char *argv[]) {
     // Geometry
     int size = 1000;
     double z = 1;
-    vector<R3> p(size);
-    vector<double> r(size, 0);
-    vector<double> g(size, 1);
-    vector<int> tab(size);
+    vector<double> p(3 * size);
 
     for (int j = 0; j < size; j++) {
         double rho   = ((double)rand() / (double)(RAND_MAX)); // (double) otherwise integer division!
         double theta = ((double)rand() / (double)(RAND_MAX));
-        p[j][0]      = sqrt(rho) * cos(2 * M_PI * theta);
-        p[j][1]      = sqrt(rho) * sin(2 * M_PI * theta);
-        p[j][2]      = z;
+        p[j + 0]     = sqrt(rho) * cos(2 * M_PI * theta);
+        p[j + 1]     = sqrt(rho) * sin(2 * M_PI * theta);
+        p[j + 2]     = z;
         // sqrt(rho) otherwise the points would be concentrated in the center of the disk
-        tab[j] = j;
     }
 
     // Clustering
     GeometricClustering t;
-    t.build_global(p, r, tab, g, 2);
+    t.build_global_auto(size, p.data(), 2);
 
     // Output
-    t.save_geometry(p, tab, outputname + "/clustering_output", {1, 2, 3});
+    t.save_geometry(p.data(), outputname + "/clustering_output", {1, 2, 3});
 
     std::cout << outputname + "/clustering_output" << std::endl;
     MPI_Finalize();

@@ -2,10 +2,6 @@
 #define HTOOL_PARTIALACA_HPP
 
 #include "lrmat.hpp"
-#include <cassert>
-#include <complex>
-#include <fstream>
-#include <iostream>
 #include <vector>
 
 namespace htool {
@@ -39,7 +35,7 @@ class partialACA final : public LowRankMatrix<T, ClusterImpl> {
     // otherwise, we use the required rank for the stopping criterion (!: at the end the rank could be lower)
     using LowRankMatrix<T, ClusterImpl>::LowRankMatrix;
 
-    void build(const IMatrix<T> &A, const Cluster<ClusterImpl> &t, const std::vector<R3> &xt, const std::vector<int> &tabt, const Cluster<ClusterImpl> &s, const std::vector<R3> &xs, const std::vector<int> &tabs) {
+    void build(const IMatrix<T> &A, const Cluster<ClusterImpl> &t, const double *const xt, const int *const tabt, const Cluster<ClusterImpl> &s, const double *const xs, const int *const tabs) {
         if (this->rank == 0) {
             this->U.resize(this->nr, 1);
             this->V.resize(1, this->nc);
@@ -48,11 +44,11 @@ class partialACA final : public LowRankMatrix<T, ClusterImpl> {
             //// Choice of the first row (see paragraph 3.4.3 page 151 Bebendorf)
             double dist = 1e30;
             int I       = 0;
-            for (int i = 0; i < int(this->nr / Parametres::ndofperelt); i++) {
-                double aux_dist = norm2(xt[tabt[this->ir[i * Parametres::ndofperelt]]] - t.get_ctr());
+            for (int i = 0; i < int(this->nr / this->ndofperelt); i++) {
+                double aux_dist = std::sqrt(std::inner_product(xt + (t.get_space_dim() * tabt[this->ir[i * this->ndofperelt]]), xt + (t.get_space_dim() * tabt[this->ir[i * this->ndofperelt]]) + t.get_space_dim(), t.get_ctr().begin(), double(0), std::plus<double>(), [](double u, double v) { return (u - v) * (u - v); }));
                 if (dist > aux_dist) {
                     dist = aux_dist;
-                    I    = i * Parametres::ndofperelt;
+                    I    = i * this->ndofperelt;
                 }
             }
             // Partial pivot

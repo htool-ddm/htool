@@ -21,50 +21,51 @@ int main(int argc, char *argv[]) {
     distance[2] = 30;
     distance[3] = 40;
 
-    SetNdofPerElt(1);
-    SetEpsilon(0.0001);
+    double epsilon = 0.0001;
 
     int nr = 500;
     int nc = 100;
 
-    std::vector<R3> xt(nr);
-    std::vector<R3> xs(nc);
+    std::vector<double> xt(3 * nr);
+    std::vector<double> xs(3 * nc);
     std::vector<int> tabt(nr);
     std::vector<int> tabs(nc);
     bool test = 0;
 
-    double test_time;
-
     for (int idist = 0; idist < ndistance; idist++) {
 
-        create_geometry(distance[idist], xt, tabt, xs, tabs);
+        srand(1);
+        // we set a constant seed for rand because we want always the same result if we run the check many times
+        // (two different initializations with the same seed will generate the same succession of results in the subsequent calls to rand)
+
+        create_disk(3, 0, nr, xt.data(), tabt.data());
+        create_disk(3, distance[idist], nc, xs.data(), tabs.data());
 
         GeometricClustering t, s;
 
-        std::vector<int> tabt(xt.size()), tabs(xs.size());
-        std::iota(tabt.begin(), tabt.end(), int(0));
-        std::iota(tabs.begin(), tabs.end(), int(0));
-        t.build_global(xt, std::vector<double>(xt.size(), 0), tabt, std::vector<double>(xt.size(), 1));
-        s.build_global(xs, std::vector<double>(xs.size(), 0), tabs, std::vector<double>(xs.size(), 1));
+        t.build_global_auto(nr, xt.data());
+        s.build_global_auto(nc, xs.data());
 
-        MyMultiMatrix A(xt, xs);
+        MyMultiMatrix A(3, nr, nc, xt, xs);
         int nm = A.nb_matrix();
-        MyMatrix A_test(xt, xs);
+        IMatrixTestDouble A_test(3, nr, nc, xt, xs);
 
         // partialACA fixed rank
         int reqrank_max = 10;
-        MultipartialACA<double, GeometricClustering> A_partialACA_fixed(t.get_perm(), s.get_perm(), nm, reqrank_max);
-        partialACA<double, GeometricClustering> A_partialACA_fixed_test(t.get_perm(), s.get_perm(), reqrank_max);
-        A_partialACA_fixed.build(A, t, xt, tabt, s, xs, tabs);
+        MultipartialACA<double, GeometricClustering> A_partialACA_fixed(t.get_perm(), s.get_perm(), nm, reqrank_max, epsilon);
+        partialACA<double, GeometricClustering> A_partialACA_fixed_test(t.get_perm(), s.get_perm(), reqrank_max, epsilon);
+        A_partialACA_fixed.build(A, t, xt.data(), tabt.data(), s, xs.data(), tabs.data());
         ;
-        A_partialACA_fixed_test.build(A_test, t, xt, tabt, s, xs, tabs);
+        A_partialACA_fixed_test.build(A_test, t, xt.data(), tabt.data(), s, xs.data(), tabs.data());
         ;
 
         // ACA automatic building
         MultipartialACA<double, GeometricClustering> A_partialACA(t.get_perm(), s.get_perm(), nm);
-        A_partialACA.build(A, t, xt, tabt, s, xs, tabs);
+        A_partialACA.set_epsilon(epsilon);
+        A_partialACA.build(A, t, xt.data(), tabt.data(), s, xs.data(), tabs.data());
         partialACA<double, GeometricClustering> A_partialACA_test(t.get_perm(), s.get_perm());
-        A_partialACA_test.build(A_test, t, xt, tabt, s, xs, tabs);
+        A_partialACA_test.set_epsilon(epsilon);
+        A_partialACA_test.build(A_test, t, xt.data(), tabt.data(), s, xs.data(), tabs.data());
         ;
 
         // Comparison with lrmat
