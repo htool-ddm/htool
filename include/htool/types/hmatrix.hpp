@@ -46,8 +46,8 @@ class HMatrix : public Parametres {
     char symmetry;
     char UPLO;
 
-    std::shared_ptr<Cluster<ClusterImpl>> cluster_tree_s;
     std::shared_ptr<Cluster<ClusterImpl>> cluster_tree_t;
+    std::shared_ptr<Cluster<ClusterImpl>> cluster_tree_s;
 
     std::unique_ptr<Block<ClusterImpl, AdmissibleCondition>> BlockTree;
 
