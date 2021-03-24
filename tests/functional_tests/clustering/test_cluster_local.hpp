@@ -1,52 +1,43 @@
 #include <htool/clustering/ncluster.hpp>
+#include <htool/testing/geometry.hpp>
 #include <random>
 
 using namespace std;
 using namespace htool;
 
-template <typename Cluster_type>
+template <typename Cluster_type, int dim>
 int test_cluster_local(int argc, char *argv[]) {
 
     int rankWorld, sizeWorld;
     MPI_Comm_size(MPI_COMM_WORLD, &sizeWorld);
     MPI_Comm_rank(MPI_COMM_WORLD, &rankWorld);
 
-    SetMinClusterSize(1);
     srand(1);
     bool test = 0;
 
     // Geometry
-    int size = 20;
-    double z = 1;
-    vector<R3> p(size);
+    int size = 200;
+    vector<double> pt(size * dim);
     vector<double> r(size, 0);
     vector<double> g(size, 1);
     vector<int> tab(size);
 
-    for (int j = 0; j < size; j++) {
-        double rho   = ((double)rand() / (double)(RAND_MAX)); // (double) otherwise integer division!
-        double theta = ((double)rand() / (double)(RAND_MAX));
-        p[j][0]      = sqrt(rho) * cos(2 * M_PI * theta);
-        p[j][1]      = sqrt(rho) * sin(2 * M_PI * theta);
-        p[j][2]      = z;
-        // sqrt(rho) otherwise the points would be concentrated in the center of the disk
-        tab[j] = j;
-    }
-
-    // Compute permutation and partition along the x axis
-    // std::vector<int> permutation(size);
-    // std::iota(permutation.begin(), permutation.end(), int(0));
-    // std::sort(permutation.begin(), permutation.end(), [&](int a, int b) { return p[tab[a]][0] < p[tab[b]][0]; });
+    srand(1);
+    // we set a constant seed for rand because we want always the same result if we run the check many times
+    // (two different initializations with the same seed will generate the same succession of results in the subsequent calls to rand)
+    create_disk(dim, 0, size, pt.data(), tab.data());
 
     int size_numbering = size / sizeWorld;
     int count_size     = 0;
-    std::vector<std::pair<int, int>> MasterOffset;
+    std::vector<int> MasterOffset;
     for (int p = 0; p < sizeWorld - 1; p++) {
-        MasterOffset.push_back(std::pair<int, int>(count_size, size_numbering));
+        MasterOffset.push_back(count_size);
+        MasterOffset.push_back(size_numbering);
 
         count_size += size_numbering;
     }
-    MasterOffset.push_back(std::pair<int, int>(count_size, size - count_size));
+    MasterOffset.push_back(count_size);
+    MasterOffset.push_back(size - count_size);
 
     // Tests
     std::vector<int> nb_sons_test{2, 4, -1};
@@ -55,8 +46,9 @@ int test_cluster_local(int argc, char *argv[]) {
             cout << "Number of sons : " << nb_sons << endl;
         }
 
-        Cluster_type t;
-        t.build_local(p, r, tab, g, MasterOffset, nb_sons);
+        Cluster_type t(dim);
+        t.set_minclustersize(1);
+        t.build_local(size, pt.data(), r.data(), tab.data(), g.data(), MasterOffset.data(), nb_sons);
         t.print();
         MPI_Barrier(MPI_COMM_WORLD);
 
@@ -139,7 +131,7 @@ int test_cluster_local(int argc, char *argv[]) {
         test = test || !(norm2(random_vector_in - random_vector_out) < 1e-16);
 
         // Random local vector
-        std::vector<double> random_local_vector_in(MasterOffset[rankWorld].second), local_temp(MasterOffset[rankWorld].second), random_local_vector_out(MasterOffset[rankWorld].second);
+        std::vector<double> random_local_vector_in(MasterOffset[2 * rankWorld + 1]), local_temp(MasterOffset[2 * rankWorld + 1]), random_local_vector_out(MasterOffset[2 * rankWorld + 1]);
         generate(begin(random_local_vector_in), end(random_local_vector_in), gen);
         t.local_cluster_to_local(random_local_vector_in.data(), local_temp.data());
         t.local_to_local_cluster(local_temp.data(), random_local_vector_out.data());

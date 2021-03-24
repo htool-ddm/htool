@@ -1,7 +1,6 @@
 #ifndef HTOOL_GEOMETRY_HPP
 #define HTOOL_GEOMETRY_HPP
 
-#include "../misc/parametres.hpp"
 #include "../types/point.hpp"
 #include <fstream>
 #include <sstream>

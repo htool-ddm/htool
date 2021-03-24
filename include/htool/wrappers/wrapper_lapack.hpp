@@ -26,17 +26,19 @@ using underlying_type = typename underlying_type_spec<T>::type;
     void HTOOL_LAPACK_F77(B##gesvd)(const char *, const char *, const int *, const int *, U *, const int *, U *, U *, const int *, U *, const int *, U *, const int *, int *); \
     void HTOOL_LAPACK_F77(C##gesvd)(const char *, const char *, const int *, const int *, T *, const int *, U *, T *, const int *, T *, const int *, T *, const int *, U *, int *);
 
-#ifndef _MKL_H_
-#    ifdef __cplusplus
+#if !defined(PETSC_HAVE_BLASLAPACK)
+#    ifndef _MKL_H_
+#        ifdef __cplusplus
 extern "C" {
 HTOOL_GENERATE_EXTERN_LAPACK_COMPLEX(c, std::complex<float>, s, float)
 HTOOL_GENERATE_EXTERN_LAPACK_COMPLEX(z, std::complex<double>, d, double)
 }
-#    else
+#        else
 HTOOL_GENERATE_EXTERN_LAPACK_COMPLEX(c, void, s, float)
 HTOOL_GENERATE_EXTERN_LAPACK_COMPLEX(z, void, d, double)
-#    endif // __cplusplus
-#endif     // _MKL_H_
+#        endif // __cplusplus
+#    endif     // _MKL_H_
+#endif
 
 #ifdef __cplusplus
 namespace htool {

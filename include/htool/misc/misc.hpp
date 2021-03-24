@@ -20,9 +20,15 @@ void conj_if_complex(T *in, int size) {}
 
 template <typename T, typename std::enable_if<is_complex_t<T>::value, int>::type = 0>
 void conj_if_complex(T *in, int size) {
-    if (is_complex<T>()) {
-        std::transform(in, in + size, in, [](const T &c) { return std::conj(c); });
-    }
+    std::transform(in, in + size, in, [](const T &c) { return std::conj(c); });
+}
+
+template <typename T, typename std::enable_if<!is_complex_t<T>::value, int>::type = 0>
+T conj_if_complex(T in) { return in; }
+
+template <typename T, typename std::enable_if<is_complex_t<T>::value, int>::type = 0>
+T conj_if_complex(T in) {
+    return std::conj(in);
 }
 
 #endif

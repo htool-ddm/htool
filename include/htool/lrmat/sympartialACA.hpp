@@ -2,10 +2,6 @@
 #define HTOOL_SYMPARTIALACA_HPP
 
 #include "lrmat.hpp"
-#include <cassert>
-#include <complex>
-#include <fstream>
-#include <iostream>
 #include <vector>
 
 namespace htool {
@@ -39,7 +35,7 @@ class sympartialACA final : public LowRankMatrix<T, ClusterImpl> {
     // otherwise, we use the required rank for the stopping criterion (!: at the end the rank could be lower)
     using LowRankMatrix<T, ClusterImpl>::LowRankMatrix;
 
-    void build(const IMatrix<T> &A, const Cluster<ClusterImpl> &t, const std::vector<R3> &xt, const std::vector<int> &tabt, const Cluster<ClusterImpl> &s, const std::vector<R3> &xs, const std::vector<int> &tabs) {
+    void build(const IMatrix<T> &A, const Cluster<ClusterImpl> &t, const double *const xt, const int *const tabt, const Cluster<ClusterImpl> &s, const double *const xs, const int *const tabs) {
         if (this->rank == 0) {
             this->U.resize(this->nr, 1);
             this->V.resize(1, this->nc);
@@ -48,12 +44,9 @@ class sympartialACA final : public LowRankMatrix<T, ClusterImpl> {
             int n1, n2;
             std::vector<int> const *i1;
             std::vector<int> const *i2;
-            std::vector<int> const *tab1;
-            std::vector<int> const *tab2;
-            std::vector<R3> const *x1;
-            std::vector<R3> const *x2;
+            const int *tab1;
+            const double *x1;
             Cluster<ClusterImpl> const *cluster_1;
-            Cluster<ClusterImpl> const *cluster_2;
 
             if (this->offset_i >= this->offset_j) {
 
@@ -61,33 +54,28 @@ class sympartialACA final : public LowRankMatrix<T, ClusterImpl> {
                 n2        = this->nc;
                 i1        = &(this->ir);
                 i2        = &(this->ic);
-                tab1      = &tabt;
-                tab2      = &tabs;
-                x1        = &xt;
-                x2        = &xs;
+                tab1      = tabt;
+                x1        = xt;
                 cluster_1 = &t;
-                cluster_2 = &s;
             } else {
                 n1        = this->nc;
                 n2        = this->nr;
                 i1        = &(this->ic);
                 i2        = &(this->ir);
-                tab1      = &tabs;
-                tab2      = &tabt;
-                x1        = &xs;
-                x2        = &xt;
+                tab1      = tabs;
+                x1        = xs;
                 cluster_1 = &s;
-                cluster_2 = &t;
             }
 
             //// Choice of the first row (see paragraph 3.4.3 page 151 Bebendorf)
             double dist = 1e30;
             int I1      = 0;
-            for (int i = 0; i < int(n1 / Parametres::ndofperelt); i++) {
-                double aux_dist = norm2((*x1)[(*tab1)[(*i1)[i * Parametres::ndofperelt]]] - (*cluster_1).get_ctr());
+            for (int i = 0; i < int(n1 / this->ndofperelt); i++) {
+                double aux_dist = std::sqrt(std::inner_product(x1 + (cluster_1->get_space_dim() * tab1[(*i1)[i * this->ndofperelt]]), x1 + (cluster_1->get_space_dim() * tab1[(*i1)[i * this->ndofperelt]]) + cluster_1->get_space_dim(), cluster_1->get_ctr().begin(), double(0), std::plus<double>(), [](double u, double v) { return (u - v) * (u - v); }));
+
                 if (dist > aux_dist) {
                     dist = aux_dist;
-                    I1   = i * Parametres::ndofperelt;
+                    I1   = i * this->ndofperelt;
                 }
             }
             // Partial pivot

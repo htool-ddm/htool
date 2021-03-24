@@ -1,43 +1,11 @@
 #include <htool/clustering/ncluster.hpp>
 #include <htool/lrmat/fullACA.hpp>
+#include <htool/testing/geometry.hpp>
+#include <htool/testing/imatrix_test.hpp>
 #include <htool/types/hmatrix.hpp>
 
 using namespace std;
 using namespace htool;
-
-class MyMatrix : public IMatrix<double> {
-    const vector<R3> &p1;
-    const vector<R3> &p2;
-
-  public:
-    MyMatrix(const vector<R3> &p10, const vector<R3> &p20) : IMatrix(p10.size(), p20.size()), p1(p10), p2(p20) {}
-
-    double get_coef(const int &i, const int &j) const { return 1. / (4 * M_PI * norm2(p1[i] - p2[j])); }
-
-    std::vector<double> operator*(std::vector<double> a) {
-        std::vector<double> result(p1.size(), 0);
-        for (int i = 0; i < p1.size(); i++) {
-            for (int k = 0; k < p2.size(); k++) {
-                result[i] += this->get_coef(i, k) * a[k];
-            }
-        }
-        return result;
-    }
-    void mvprod(const double *const in, double *const out, const int &mu) const {
-        int nr = this->nr;
-        int nc = this->nc;
-        for (int i = 0; i < nr * mu; i++) {
-            out[i] = 0;
-        }
-        for (int m = 0; m < mu; m++) {
-            for (int i = 0; i < nr; i++) {
-                for (int j = 0; j < nc; j++) {
-                    out[nr * m + i] += this->get_coef(i, j) * in[j + m * nc];
-                }
-            }
-        }
-    }
-};
 
 int main(int argc, char *argv[]) {
 
@@ -61,9 +29,9 @@ int main(int argc, char *argv[]) {
     distance[2] = 7;
     distance[3] = 10;
     int mu      = 5;
-    SetNdofPerElt(1);
-    SetEpsilon(1e-6);
-    SetEta(0.1);
+
+    double epsilon = 1e-8;
+    double eta     = -0.1;
 
     for (int idist = 0; idist < ndistance; idist++) {
 
@@ -71,98 +39,92 @@ int main(int argc, char *argv[]) {
         // we set a constant seed for rand because we want always the same result if we run the check many times
         // (two different initializations with the same seed will generate the same succession of results in the subsequent calls to rand)
 
-        int nr = 2000;
-        int nc = 1000;
-        vector<int> Ir(nr); // row indices for the lrmatrix
-        vector<int> Ic(nc); // column indices for the lrmatrix
+        int nr = 20;
+        int nc = 10;
 
         double z1 = 1;
-        vector<R3> p1(nr);
-        vector<double> r1(nr, 0);
-        vector<int> tab1(nr);
-        for (int j = 0; j < nr; j++) {
-            Ir[j]        = j;
-            double rho   = ((double)rand() / (double)(RAND_MAX)); // (double) otherwise integer division!
-            double theta = ((double)rand() / (double)(RAND_MAX));
-            p1[j][0]     = sqrt(rho) * cos(2 * M_PI * theta);
-            p1[j][1]     = sqrt(rho) * sin(2 * M_PI * theta);
-            p1[j][2]     = z1;
-            // sqrt(rho) otherwise the points would be concentrated in the center of the disk
-            tab1[j] = j;
-        }
-        // p2: points in a unit disk of the plane z=z2
         double z2 = 1 + distance[idist];
-        vector<R3> p2(nc);
-        vector<double> r2(nc, 0);
-        vector<int> tab2(nc);
-        for (int j = 0; j < nc; j++) {
-            Ic[j]        = j;
-            double rho   = ((double)rand() / (RAND_MAX)); // (double) otherwise integer division!
-            double theta = ((double)rand() / (RAND_MAX));
-            p2[j][0]     = sqrt(rho) * cos(2 * M_PI * theta);
-            p2[j][1]     = sqrt(rho) * sin(2 * M_PI * theta);
-            p2[j][2]     = z2;
-            tab2[j]      = j;
-        }
+        vector<double> p1(3 * nr);
+        vector<double> p2(3 * nc);
 
-        MyMatrix A(p1, p2);
+        srand(1);
+        // we set a constant seed for rand because we want always the same result if we run the check many times
+        // (two different initializations with the same seed will generate the same succession of results in the subsequent calls to rand)
+        create_disk(3, z1, nr, p1.data());
+        create_disk(3, z2, nc, p2.data());
 
-        int size_numbering = p1.size() / size;
+        IMatrixTestDouble A(3, nr, nc, p1, p2);
+
+        int size_numbering = nr / (size);
         int count_size     = 0;
-        std::vector<std::pair<int, int>> MasterOffset_target;
+        std::vector<int> MasterOffset_target;
         for (int p = 0; p < size - 1; p++) {
-            MasterOffset_target.push_back(std::pair<int, int>(count_size, size_numbering));
+            MasterOffset_target.push_back(count_size);
+            MasterOffset_target.push_back(size_numbering);
 
             count_size += size_numbering;
         }
-        MasterOffset_target.push_back(std::pair<int, int>(count_size, p1.size() - count_size));
+        MasterOffset_target.push_back(count_size);
+        MasterOffset_target.push_back(nr - count_size);
 
-        size_numbering = p2.size() / size;
+        size_numbering = nc / size;
         count_size     = 0;
 
-        std::vector<std::pair<int, int>> MasterOffset_source;
+        std::vector<int> MasterOffset_source;
         for (int p = 0; p < size - 1; p++) {
-            MasterOffset_source.push_back(std::pair<int, int>(count_size, size_numbering));
+            MasterOffset_source.push_back(count_size);
+            MasterOffset_source.push_back(size_numbering);
 
             count_size += size_numbering;
         }
-        MasterOffset_source.push_back(std::pair<int, int>(count_size, p2.size() - count_size));
+        MasterOffset_source.push_back(count_size);
+        MasterOffset_source.push_back(nc - count_size);
 
         // local clustering
+        double time                            = MPI_Wtime();
         std::shared_ptr<GeometricClustering> t = make_shared<GeometricClustering>();
         std::shared_ptr<GeometricClustering> s = make_shared<GeometricClustering>();
-        t->build_local_auto(p1, MasterOffset_target, 2);
-        s->build_local_auto(p2, MasterOffset_source, 2);
-
-        HMatrix<double, fullACA, GeometricClustering, RjasanowSteinbach> HA(A, t, p1, s, p2);
+        t->build_local_auto(nr, p1.data(), MasterOffset_target.data(), 2);
+        s->build_local_auto(nc, p2.data(), MasterOffset_source.data(), 2);
+        std::cout << MPI_Wtime() - time << std::endl;
+        time = MPI_Wtime() - time;
+        HMatrix<double, fullACA, GeometricClustering, RjasanowSteinbach> HA(t, s, epsilon, eta);
+        std::cout << MPI_Wtime() - time << std::endl;
+        time = MPI_Wtime() - time;
+        HA.build_auto(A, p1.data(), p2.data());
+        std::cout << MPI_Wtime() - time << std::endl;
+        time = MPI_Wtime() - time;
         HA.print_infos();
 
         // Global vectors
         std::vector<double> x_global(nc * mu, 1), f_global(nr * mu), f_global_test(nr * mu);
         A.mvprod(x_global.data(), f_global.data(), mu);
-
+        std::cout << MPI_Wtime() - time << std::endl;
+        time = MPI_Wtime() - time;
         // Global product
-        HA.mvprod_global_to_global(x_global.data(), f_global_test.data(), mu);
 
+        HA.mvprod_global_to_global(x_global.data(), f_global_test.data(), mu);
+        std::cout << MPI_Wtime() - time << std::endl;
+        time = MPI_Wtime() - time;
         // Errors
         double global_diff = norm2(f_global - f_global_test) / norm2(f_global);
 
         if (rank == 0) {
             cout << "difference on mat mat prod computed globally: " << global_diff << endl;
         }
-        test = test || !(global_diff < GetEpsilon());
+        test = test || !(global_diff < HA.get_epsilon());
 
         // Local vectors
-        std::vector<double> x_local(MasterOffset_source[rank].second * mu, 1), f_local(MasterOffset_target[rank].second * mu), f_local_to_global(nr * mu);
+        std::vector<double> x_local(MasterOffset_source[2 * rank + 1] * mu, 1), f_local(MasterOffset_target[2 * rank + 1] * mu), f_local_to_global(nr * mu);
 
         // Local product
         HA.mvprod_local_to_local(x_local.data(), f_local.data(), mu);
 
         // Error
         double global_local_diff = 0;
-        for (int i = 0; i < MasterOffset_target[rank].second; i++) {
+        for (int i = 0; i < MasterOffset_target[2 * rank + 1]; i++) {
             for (int j = 0; j < mu; j++) {
-                global_local_diff += std::pow(f_global_test[i + MasterOffset_target[rank].first + j * nr] - f_local[i + j * MasterOffset_target[rank].second], 2);
+                global_local_diff += std::pow(f_global_test[i + MasterOffset_target[2 * rank] + j * nr] - f_local[i + j * MasterOffset_target[2 * rank + 1]], 2);
             }
         }
 

@@ -1,13 +1,7 @@
 #ifndef HTOOL_HTOOL_HPP
 #define HTOOL_HTOOL_HPP
 
-#ifndef HTOOL_MKL
-#    ifdef INTEL_MKL_VERSION
-#        define HTOOL_MKL 1
-#    else
-#        define HTOOL_MKL 0
-#    endif
-#endif
+#include "misc/define.hpp"
 
 #include "clustering/cluster.hpp"
 #include "clustering/ncluster.hpp"
@@ -25,10 +19,10 @@
 #include "multilrmat/multipartialACA.hpp"
 
 #include "misc/misc.hpp"
-#include "misc/parametres.hpp"
 #include "misc/user.hpp"
 
 #include "types/hmatrix.hpp"
+#include "types/hmatrix_virtual.hpp"
 #include "types/matrix.hpp"
 #include "types/multihmatrix.hpp"
 #include "types/multimatrix.hpp"
@@ -40,10 +34,5 @@
 #endif
 #include "wrappers/wrapper_blas.hpp"
 #include "wrappers/wrapper_mpi.hpp"
-
-#ifdef WITH_HPDDM
-#    include "solvers/ddm.hpp"
-#    include "solvers/proto_ddm.hpp"
-#endif
 
 #endif

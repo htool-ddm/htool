@@ -3,6 +3,7 @@
 #=============================================================================#
 
 add_subdirectory(hmatrix)
+add_subdirectory(hmatrix_virtual)
 add_subdirectory(multihmatrix)
 
 add_executable(Test_matrix test_matrix.cpp)

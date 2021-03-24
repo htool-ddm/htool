@@ -1,52 +1,11 @@
 #include <htool/clustering/ncluster.hpp>
 #include <htool/lrmat/fullACA.hpp>
+#include <htool/testing/geometry.hpp>
+#include <htool/testing/imatrix_test.hpp>
 #include <htool/types/hmatrix.hpp>
 
 using namespace std;
 using namespace htool;
-
-double sign(int x) {
-    if (x > 0)
-        return 1;
-    if (x < 0)
-        return -1;
-    return 0;
-}
-
-class MyMatrix : public IMatrix<complex<double>> {
-    const vector<R3> &p1;
-
-  public:
-    MyMatrix(const vector<R3> &p10) : IMatrix(p10.size(), p10.size()), p1(p10) {}
-
-    complex<double> get_coef(const int &i, const int &j) const {
-        return (1. + sign(i - j) * std::complex<double>(0, 1)) / (4 * M_PI * (1 + norm2(p1[i] - p1[j])));
-    }
-
-    std::vector<complex<double>> operator*(std::vector<complex<double>> a) {
-        std::vector<complex<double>> result(p1.size(), 0);
-        for (int i = 0; i < p1.size(); i++) {
-            for (int k = 0; k < p1.size(); k++) {
-                result[i] += this->get_coef(i, k) * a[k];
-            }
-        }
-        return result;
-    }
-    void mvprod(const complex<double> *const in, complex<double> *const out, const int &mu) const {
-        int nr = this->nr;
-        int nc = this->nc;
-        for (int i = 0; i < nr * mu; i++) {
-            out[i] = 0;
-        }
-        for (int m = 0; m < mu; m++) {
-            for (int i = 0; i < nr; i++) {
-                for (int j = 0; j < nc; j++) {
-                    out[nr * m + i] += this->get_coef(i, j) * in[j + m * nc];
-                }
-            }
-        }
-    }
-};
 
 int main(int argc, char *argv[]) {
 
@@ -70,9 +29,9 @@ int main(int argc, char *argv[]) {
     distance[2] = 7;
     distance[3] = 10;
     int mu      = 5;
-    SetNdofPerElt(1);
-    SetEpsilon(1e-1);
-    SetEta(1000);
+
+    double epsilon = 1e-3;
+    double eta     = 0.1;
 
     for (int idist = 0; idist < ndistance; idist++) {
 
@@ -80,31 +39,22 @@ int main(int argc, char *argv[]) {
         // we set a constant seed for rand because we want always the same result if we run the check many times
         // (two different initializations with the same seed will generate the same succession of results in the subsequent calls to rand)
 
-        int nr = 100;
-        int nc = 100;
-        vector<int> Ir(nr); // row indices for the lrmatrix
-
+        int nr    = 500;
+        int nc    = 500;
         double z1 = 1;
-        vector<R3> p1(nr);
-        vector<double> r1(nr, 0);
-        vector<int> tab1(nr);
-        for (int j = 0; j < nr; j++) {
-            Ir[j]        = j;
-            double rho   = ((double)rand() / (double)(RAND_MAX)); // (double) otherwise integer division!
-            double theta = ((double)rand() / (double)(RAND_MAX));
-            p1[j][0]     = sqrt(rho) * cos(2 * M_PI * theta);
-            p1[j][1]     = sqrt(rho) * sin(2 * M_PI * theta);
-            p1[j][2]     = z1;
-            // sqrt(rho) otherwise the points would be concentrated in the center of the disk
-            tab1[j] = j;
-        }
+        vector<double> p1(3 * nr);
+        srand(1);
+        // we set a constant seed for rand because we want always the same result if we run the check many times
+        // (two different initializations with the same seed will generate the same succession of results in the subsequent calls to rand)
+        create_disk(3, z1, nr, p1.data());
+        IMatrixTestComplexHermitian A(3, nr, p1, 1);
 
-        MyMatrix A(p1);
-
-        HMatrix<complex<double>, fullACA, RegularClustering, RjasanowSteinbach> HA_L(A, p1, r1, tab1, 'H', 'L');
+        HMatrix<complex<double>, fullACA, RegularClustering, RjasanowSteinbach> HA_L(3, epsilon, eta, 'H', 'L');
+        HA_L.build_auto_sym(A, p1.data());
         HA_L.print_infos();
 
-        HMatrix<complex<double>, fullACA, RegularClustering, RjasanowSteinbach> HA_U(A, p1, r1, tab1, 'H', 'U');
+        HMatrix<complex<double>, fullACA, RegularClustering, RjasanowSteinbach> HA_U(3, epsilon, eta, 'H', 'U');
+        HA_U.build_auto_sym(A, p1.data());
         HA_U.print_infos();
 
         // Global vectors
@@ -124,12 +74,12 @@ int main(int argc, char *argv[]) {
         if (rank == 0) {
             cout << "difference on mat mat prod computed globally for lower hermitian matrix: " << global_diff_L << endl;
         }
-        test = test || !(global_diff_L < GetEpsilon());
+        test = test || !(global_diff_L < HA_L.get_epsilon());
 
         if (rank == 0) {
             cout << "difference on mat mat prod computed globally for upper hermitian matrix: " << global_diff_U << endl;
         }
-        test = test || !(global_diff_U < GetEpsilon());
+        test = test || !(global_diff_U < HA_U.get_epsilon());
 
         if (rank == 0) {
             cout << "difference on mat mat prod computed globally between upper hermitian matrix and lower hermitian matrix: " << global_diff_L_U << endl;

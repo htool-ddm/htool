@@ -1,46 +1,12 @@
 #ifndef HTOOL_USER_HPP
 #define HTOOL_USER_HPP
 
-#include <ctime>
-#include <iostream>
-#include <mpi.h>
 #include <numeric>
 #include <sstream>
-#include <stack>
 #include <string>
 #include <vector>
 
 namespace htool {
-//  Timing
-std::stack<clock_t> htool_tictoc_stack;
-
-inline void tic(MPI_Comm comm = MPI_COMM_WORLD) {
-    MPI_Barrier(comm);
-    int rank;
-    MPI_Comm_rank(comm, &rank);
-    if (rank == 0) {
-        htool_tictoc_stack.push(clock());
-    }
-}
-
-inline void toc(MPI_Comm comm = MPI_COMM_WORLD) {
-    MPI_Barrier(comm);
-
-    int rank;
-    MPI_Comm_rank(comm, &rank);
-    if (rank == 0) {
-        double time = ((double)(clock() - htool_tictoc_stack.top())) / CLOCKS_PER_SEC;
-        std::cout << "Time elapsed: " << time << std::endl;
-        htool_tictoc_stack.pop();
-    }
-}
-
-inline void toc(std::vector<double> &times) {
-    double time = ((double)(clock() - htool_tictoc_stack.top())) / CLOCKS_PER_SEC;
-    std::cout << "Time elapsed: " << time << std::endl;
-    times.push_back(time);
-    htool_tictoc_stack.pop();
-}
 
 // Conversions
 template <typename T>
@@ -77,24 +43,5 @@ std::string join(std::string delimiter, std::vector<std::string> x) {
     return std::accumulate(std::begin(x), std::end(x), std::string(), [&](std::string &ss, std::string &s) { return ss.empty() ? s : ss + delimiter + s; });
 }
 } // namespace htool
-
-// Number of instances
-// http://www.drdobbs.com/cpp/counting-objects-in-c/184403484?pgno=2
-template <typename T>
-class Counter {
-  public:
-    Counter() { ++count; }
-    Counter(const Counter &) { ++count; }
-    ~Counter() { --count; }
-
-    static size_t howMany() { return count; }
-
-  private:
-    static size_t count;
-};
-
-template <typename T>
-size_t
-    Counter<T>::count = 0;
 
 #endif

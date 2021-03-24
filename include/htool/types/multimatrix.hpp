@@ -105,14 +105,14 @@ class MultiSubMatrix : public MultiIMatrix<T> {
     int offset_j;
 
   public:
-    MultiSubMatrix(const std::vector<int> &ir0, const std::vector<int> &ic0, int nm) : MultiIMatrix<T>(ir0.size(), ic0.size(), nm), ir(ir0), ic(ic0), offset_i(0), offset_j(0), SubMatrices(nm, SubMatrix<T>(ir0, ic0)) {
+    MultiSubMatrix(const std::vector<int> &ir0, const std::vector<int> &ic0, int nm) : MultiIMatrix<T>(ir0.size(), ic0.size(), nm), SubMatrices(nm, SubMatrix<T>(ir0.size(), ic0.size(), ir0.data(), ic0.data())), ir(ir0), ic(ic0), offset_i(0), offset_j(0) {
     }
 
-    MultiSubMatrix(const MultiIMatrix<T> &mat0, const std::vector<int> &ir0, const std::vector<int> &ic0) : MultiIMatrix<T>(ir0.size(), ic0.size(), mat0.nb_matrix()), ir(ir0), ic(ic0), offset_i(0), offset_j(0), SubMatrices(mat0.nb_matrix(), SubMatrix<T>(ir0, ic0)) {
+    MultiSubMatrix(const MultiIMatrix<T> &mat0, const std::vector<int> &ir0, const std::vector<int> &ic0) : MultiIMatrix<T>(ir0.size(), ic0.size(), mat0.nb_matrix()), ir(ir0), ic(ic0), offset_i(0), offset_j(0), SubMatrices(mat0.nb_matrix(), SubMatrix<T>(ir0.size(), ic0.size(), ir0.data(), ic0.data())) {
         *this = mat0.get_submatrices(ir0, ic0);
     }
 
-    MultiSubMatrix(const MultiIMatrix<T> &mat0, const std::vector<int> &ir0, const std::vector<int> &ic0, const int &offset_i0, const int &offset_j0) : MultiIMatrix<T>(ir0.size(), ic0.size(), mat0.nb_matrix()), ir(ir0), ic(ic0), offset_i(offset_i0), offset_j(offset_j0), SubMatrices(mat0.nb_matrix(), SubMatrix<T>(ir0, ic0, offset_i0, offset_j0)) {
+    MultiSubMatrix(const MultiIMatrix<T> &mat0, const std::vector<int> &ir0, const std::vector<int> &ic0, const int &offset_i0, const int &offset_j0) : MultiIMatrix<T>(ir0.size(), ic0.size(), mat0.nb_matrix()), SubMatrices(mat0.nb_matrix(), SubMatrix<T>(ir0.size(), ic0.size(), ir0.data(), ic0.data(), offset_i0, offset_j0)), ir(ir0), ic(ic0), offset_i(offset_i0), offset_j(offset_j0) {
 
         *this    = mat0.get_submatrices(ir0, ic0);
         offset_i = offset_i0;

@@ -1,6 +1,7 @@
 #ifndef HTOOL_CLUSTERING_NCluster_HPP
 #define HTOOL_CLUSTERING_NCluster_HPP
 
+#include "../misc/evp.hpp"
 #include "cluster.hpp"
 #include "splitting.hpp"
 #include <stack>
@@ -10,7 +11,7 @@ namespace htool {
 template <SplittingTypes SplittingType>
 class NCluster : public Cluster<NCluster<SplittingType>> {
   private:
-    void recursive_build(const std::vector<R3> &x, const std::vector<double> &r, const std::vector<int> &tab, const std::vector<double> &g, int nb_sons, MPI_Comm comm, std::stack<NCluster *> &s, std::stack<std::vector<int>> &n) {
+    void recursive_build(const double *const x, const double *const r, const int *const tab, const double *const g, int nb_sons, MPI_Comm comm, std::stack<NCluster *> &s, std::stack<std::vector<int>> &n) {
 
         // MPI parameters
         int rankWorld, sizeWorld;
@@ -33,22 +34,28 @@ class NCluster : public Cluster<NCluster<SplittingType>> {
             }
 
             // Center of the cluster
-            R3 xc;
-            xc.fill(0);
+            std::vector<double> xc(this->space_dim, 0);
             for (int j = 0; j < nb_pt; j++) {
-                xc += g[tab[num[j]]] * x[tab[num[j]]];
+                for (int p = 0; p < this->space_dim; p++) {
+                    xc[p] += g[tab[num[j]]] * x[this->space_dim * tab[num[j]] + p];
+                }
             }
-            xc        = (1. / G) * xc;
+            std::transform(xc.begin(), xc.end(), xc.begin(), std::bind(std::multiplies<double>(), std::placeholders::_1, 1. / G));
+
             curr->ctr = xc;
 
             // Radius and covariance matrix
-            Matrix<double> cov(3, 3);
+            Matrix<double> cov(this->space_dim, this->space_dim);
             double rad = 0;
             for (int j = 0; j < nb_pt; j++) {
-                R3 u = x[tab[num[j]]] - xc;
-                rad  = std::max(rad, norm2(u) + r[tab[num[j]]]);
-                for (int p = 0; p < 3; p++) {
-                    for (int q = 0; q < 3; q++) {
+                std::vector<double> u(3, 0);
+                for (int p = 0; p < this->space_dim; p++) {
+                    u[p] = x[this->space_dim * tab[num[j]] + p] - xc[p];
+                }
+
+                rad = std::max(rad, norm2(u) + r[tab[num[j]]]);
+                for (int p = 0; p < this->space_dim; p++) {
+                    for (int q = 0; q < this->space_dim; q++) {
                         cov(p, q) += g[tab[num[j]]] * u[p] * u[q];
                     }
                 }
@@ -56,82 +63,13 @@ class NCluster : public Cluster<NCluster<SplittingType>> {
             curr->rad = rad;
 
             // Direction of largest extent
-            double p1 = pow(cov(0, 1), 2) + pow(cov(0, 2), 2) + pow(cov(1, 2), 2);
-            std::vector<double> eigs(3);
-            Matrix<double> I(3, 3);
-            I(0, 0) = 1;
-            I(1, 1) = 1;
-            I(2, 2) = 1;
-            R3 dir;
-            Matrix<double> prod(3, 3);
-            if (p1 < 1e-16) {
-                // cov is diagonal.
-                eigs[0] = cov(0, 0);
-                eigs[1] = cov(1, 1);
-                eigs[2] = cov(2, 2);
-                dir[0]  = 1;
-                dir[1]  = 0;
-                dir[2]  = 0;
-                if (eigs[0] < eigs[1]) {
-                    double tmp = eigs[0];
-                    eigs[0]    = eigs[1];
-                    eigs[1]    = tmp;
-                    dir[0]     = 0;
-                    dir[1]     = 1;
-                    dir[2]     = 0;
-                }
-                if (eigs[0] < eigs[2]) {
-                    double tmp = eigs[0];
-                    eigs[0]    = eigs[2];
-                    eigs[2]    = tmp;
-                    dir[0]     = 0;
-                    dir[1]     = 0;
-                    dir[2]     = 1;
-                }
+            std::vector<double> dir;
+            if (this->space_dim == 2) {
+                dir = solve_EVP_2(cov);
+            } else if (this->space_dim == 3) {
+                dir = solve_EVP_3(cov);
             } else {
-                double q  = (cov(0, 0) + cov(1, 1) + cov(2, 2)) / 3.;
-                double p2 = pow(cov(0, 0) - q, 2) + pow(cov(1, 1) - q, 2) + pow(cov(2, 2) - q, 2) + 2. * p1;
-                double p  = sqrt(p2 / 6.);
-                Matrix<double> B(3, 3);
-                B           = (1. / p) * (cov - q * I);
-                double detB = B(0, 0) * (B(1, 1) * B(2, 2) - B(1, 2) * B(2, 1))
-                              - B(0, 1) * (B(1, 0) * B(2, 2) - B(1, 2) * B(2, 0))
-                              + B(0, 2) * (B(1, 0) * B(2, 1) - B(1, 1) * B(2, 0));
-                double r = detB / 2.;
-
-                // In exact arithmetic for a symmetric matrix  -1 <= r <= 1
-                // but computation error can leave it slightly outside this range.
-                double phi;
-                if (r <= -1)
-                    phi = M_PI / 3.;
-                else if (r >= 1)
-                    phi = 0;
-                else
-                    phi = acos(r) / 3.;
-
-                // the eigenvalues satisfy eig3 <= eig2 <= eig1
-                eigs[0] = q + 2. * p * cos(phi);
-                eigs[2] = q + 2. * p * cos(phi + (2. * M_PI / 3.));
-                eigs[1] = 3. * q - eigs[0] - eigs[2]; // since trace(cov) = eig1 + eig2 + eig3
-
-                if (std::abs(eigs[0]) < 1.e-16)
-                    dir *= 0.;
-                else {
-                    prod           = (cov - eigs[1] * I) * (cov - eigs[2] * I);
-                    int ind        = 0;
-                    double dirnorm = 0;
-                    do {
-                        dir[0]  = prod(0, ind);
-                        dir[1]  = prod(1, ind);
-                        dir[2]  = prod(2, ind);
-                        dirnorm = sqrt(dir[0] * dir[0] + dir[1] * dir[1] + dir[2] * dir[2]);
-                        ind++;
-                    } while ((dirnorm < 1.e-15) && (ind < 3));
-                    assert(dirnorm >= 1.e-15);
-                    dir[0] /= dirnorm;
-                    dir[1] /= dirnorm;
-                    dir[2] /= dirnorm;
-                }
+                throw std::logic_error("[Htool error] clustering not define for spatial dimension !=2 and !=3");
             }
 
             // Creating sons
@@ -141,7 +79,7 @@ class NCluster : public Cluster<NCluster<SplittingType>> {
             }
 
             // Compute numbering
-            std::vector<std::vector<int>> numbering = this->splitting(x, tab, num, curr, curr_nb_sons, dir);
+            std::vector<std::vector<int>> numbering = this->splitting(this->nb_pt, x, tab, num, curr, curr_nb_sons, dir);
 
             // Set offsets, size and rank of sons
             int count = 0;
@@ -168,7 +106,7 @@ class NCluster : public Cluster<NCluster<SplittingType>> {
             // Recursivite
             bool test_minclustersize = true;
             for (int p = 0; p < curr_nb_sons; p++) {
-                test_minclustersize = test_minclustersize && (numbering[p].size() >= Parametres::minclustersize);
+                test_minclustersize = test_minclustersize && (numbering[p].size() >= this->minclustersize);
             }
             if (test_minclustersize || curr->rank == -1) {
                 for (int p = 0; p < curr_nb_sons; p++) {
@@ -199,11 +137,7 @@ class NCluster : public Cluster<NCluster<SplittingType>> {
 
     // build cluster tree
     // nb_sons=-1 means nb_sons = 2
-    void build_global(const std::vector<R3> &x, const std::vector<double> &r, const std::vector<int> &tab, const std::vector<double> &g, int nb_sons = 2, MPI_Comm comm = MPI_COMM_WORLD) {
-        assert(tab.size() == x.size() * this->ndofperelt);
-        assert(x.size() == g.size());
-        assert(x.size() == r.size());
-
+    void build_global(int nb_pt0, const double *const x, const double *const r, const int *const tab, const double *const g, int nb_sons = -1, MPI_Comm comm = MPI_COMM_WORLD) {
         // MPI parameters
         int rankWorld, sizeWorld;
         MPI_Comm_size(comm, &sizeWorld);
@@ -218,9 +152,10 @@ class NCluster : public Cluster<NCluster<SplittingType>> {
             nb_sons = 2;
         }
         // Initialisation
-        this->rad  = 0;
-        this->size = tab.size();
-        this->rank = -1;
+        this->rad   = 0;
+        this->size  = nb_pt0;
+        this->nb_pt = nb_pt0;
+        this->rank  = -1;
         this->MasterOffset.resize(sizeWorld);
         this->sons.resize(sizeWorld);
         this->LocalPermutation = false;
@@ -229,7 +164,7 @@ class NCluster : public Cluster<NCluster<SplittingType>> {
         }
         this->depth = 0; // ce constructeur est appele' juste pour la racine
 
-        this->permutation->resize(tab.size());
+        this->permutation->resize(nb_pt0);
         std::iota(this->permutation->begin(), this->permutation->end(), 0); // perm[i]=i
 
         // Recursion
@@ -242,10 +177,7 @@ class NCluster : public Cluster<NCluster<SplittingType>> {
     }
 
     // build cluster tree from given partition
-    void build_local(const std::vector<R3> &x, const std::vector<double> &r, const std::vector<int> &tab, const std::vector<double> &g, std::vector<std::pair<int, int>> MasterOffset0, int nb_sons = 2, MPI_Comm comm = MPI_COMM_WORLD) {
-        assert(tab.size() == x.size() * this->ndofperelt);
-        assert(x.size() == g.size());
-        assert(x.size() == r.size());
+    void build_local(int nb_pt0, const double *const x, const double *const r, const int *const tab, const double *const g, const int *const MasterOffset0, int nb_sons = -1, MPI_Comm comm = MPI_COMM_WORLD) {
 
         // MPI parameters
         int rankWorld, sizeWorld;
@@ -262,11 +194,16 @@ class NCluster : public Cluster<NCluster<SplittingType>> {
         }
 
         // Initialisation of root
-        this->rad          = 0;
-        this->size         = tab.size();
-        this->rank         = -1;
-        this->MasterOffset = MasterOffset0;
-        this->permutation->resize(tab.size());
+        this->rad   = 0;
+        this->nb_pt = nb_pt0;
+        this->size  = this->nb_pt;
+        this->rank  = -1;
+        this->MasterOffset.resize(sizeWorld);
+        for (int p = 0; p < sizeWorld; p++) {
+            this->MasterOffset[p].first  = MasterOffset0[2 * p];
+            this->MasterOffset[p].second = MasterOffset0[2 * p + 1];
+        }
+        this->permutation->resize(this->nb_pt);
 
         this->depth            = 0; // ce constructeur est appele' juste pour la racine
         this->LocalPermutation = true;
@@ -294,15 +231,15 @@ class NCluster : public Cluster<NCluster<SplittingType>> {
         // Recursion
         this->recursive_build(x, r, tab, g, nb_sons, comm, s, n);
     }
-    std::vector<std::vector<int>> splitting(const std::vector<R3> &x, const std::vector<int> &tab, std::vector<int> &num, Cluster<NCluster<SplittingType>> const *const curr_cluster, int nb_sons, R3 dir);
+    std::vector<std::vector<int>> splitting(int nb_pt0, const double *const x, const int *const tab, std::vector<int> &num, Cluster<NCluster<SplittingType>> const *const curr_cluster, int nb_sons, const std::vector<double> &dir);
 };
 
 // Specialization of splitting
 template <>
-std::vector<std::vector<int>> NCluster<SplittingTypes::GeometricSplitting>::splitting(const std::vector<R3> &x, const std::vector<int> &tab, std::vector<int> &num, Cluster<NCluster<SplittingTypes::GeometricSplitting>> const *const curr_cluster, int nb_sons, R3 dir) { return geometric_splitting(x, tab, num, curr_cluster, nb_sons, dir); }
+std::vector<std::vector<int>> NCluster<SplittingTypes::GeometricSplitting>::splitting(int nb_pt0, const double *const x, const int *const tab, std::vector<int> &num, Cluster<NCluster<SplittingTypes::GeometricSplitting>> const *const curr_cluster, int nb_sons, const std::vector<double> &dir) { return geometric_splitting(nb_pt0, x, tab, num, curr_cluster, nb_sons, dir); }
 
 template <>
-std::vector<std::vector<int>> NCluster<SplittingTypes::RegularSplitting>::splitting(const std::vector<R3> &x, const std::vector<int> &tab, std::vector<int> &num, Cluster<NCluster<SplittingTypes::RegularSplitting>> const *const curr_cluster, int nb_sons, R3 dir) { return regular_splitting(x, tab, num, curr_cluster, nb_sons, dir); }
+std::vector<std::vector<int>> NCluster<SplittingTypes::RegularSplitting>::splitting(int nb_pt0, const double *const x, const int *const tab, std::vector<int> &num, Cluster<NCluster<SplittingTypes::RegularSplitting>> const *const curr_cluster, int nb_sons, const std::vector<double> &dir) { return regular_splitting(nb_pt0, x, tab, num, curr_cluster, nb_sons, dir); }
 
 // Typdef with specific splitting
 typedef NCluster<SplittingTypes::GeometricSplitting> GeometricClustering;

@@ -5,10 +5,11 @@
 #include "../types/matrix.hpp"
 #include "../wrappers/wrapper_hpddm.hpp"
 #include "../wrappers/wrapper_mpi.hpp"
+#include "coarse_space.hpp"
 
 namespace htool {
 
-template <typename T, template <typename, typename> class LowRankMatrix, class ClusterImpl, template <typename> class AdmissibleCondition>
+template <typename T>
 class DDM {
   private:
     int n;
@@ -20,7 +21,7 @@ class DDM {
     // const std::vector<int> cluster_to_ovr_subdomain;
     std::vector<std::vector<int>> intersections;
     std::vector<T> vec_ovr;
-    HPDDMDense<T, LowRankMatrix, ClusterImpl, AdmissibleCondition> hpddm_op;
+    HPDDMDense<T> hpddm_op;
     std::vector<T> mat_loc;
     std::vector<double> D;
     const MPI_Comm comm;
@@ -34,57 +35,29 @@ class DDM {
 
   public:
     void clean() {
-        hpddm_op.~HPDDMDense<T, LowRankMatrix, ClusterImpl, AdmissibleCondition>();
+        hpddm_op.~HPDDMDense();
     }
 
     // Without overlap
-    DDM(const HMatrix<T, LowRankMatrix, ClusterImpl, AdmissibleCondition> &hmat_0) : n(hmat_0.get_local_size()), n_inside(hmat_0.get_local_size()), nb_cols(hmat_0.nb_cols()), nb_rows(hmat_0.nb_rows()), hpddm_op(hmat_0), mat_loc(n * n), D(n), nevi(0), size_E(0), comm(hmat_0.get_comm()), one_level(0), two_level(0) {
+    DDM(const HMatrixVirtual<T> *const hmat_0) : n(hmat_0->get_local_size()), n_inside(hmat_0->get_local_size()), nb_cols(hmat_0->nb_cols()), nb_rows(hmat_0->nb_rows()), hpddm_op(hmat_0), mat_loc(n * n), D(n), comm(hmat_0->get_comm()), nevi(0), size_E(0), one_level(0), two_level(0) {
         // Timing
-        double mytime, maxtime, meantime;
+        double mytime, maxtime;
         double time = MPI_Wtime();
 
         // Building Ai
         bool sym = false;
-        if (hmat_0.get_symmetry_type() == 'S' || (hmat_0.get_symmetry_type() == 'H' && is_complex<T>())) {
+        if (hmat_0->get_symmetry_type() == 'S' || (hmat_0->get_symmetry_type() == 'H' && is_complex<T>())) {
             sym = true;
-            if (hmat_0.get_storage_type() == 'U') {
+            if (hmat_0->get_storage_type() == 'U') {
                 throw std::invalid_argument("[Htool error] HPDDM takes lower symmetric/hermitian matrices or regular matrices");
             }
-            if (hmat_0.get_symmetry_type() == 'S' && is_complex<T>()) {
+            if (hmat_0->get_symmetry_type() == 'S' && is_complex<T>()) {
                 std::cout << "[Htool warning] A symmetric matrix with UPLO='L' has been given to DDM solver. It will be considered hermitian by the solver." << std::endl;
             }
         }
-        const std::vector<LowRankMatrix<T, ClusterImpl> *> &MyDiagFarFieldMats = hpddm_op.HA.get_MyDiagFarFieldMats();
-        const std::vector<SubMatrix<T> *> &MyDiagNearFieldMats                 = hpddm_op.HA.get_MyDiagNearFieldMats();
 
-        // Internal dense blocks
-        for (int l = 0; l < MyDiagNearFieldMats.size(); l++) {
-            const SubMatrix<T> &submat = *(MyDiagNearFieldMats[l]);
-            int local_nr               = submat.nb_rows();
-            int local_nc               = submat.nb_cols();
-            int offset_i               = submat.get_offset_i() - hpddm_op.HA.get_local_offset();
-            ;
-            int offset_j = submat.get_offset_j() - hpddm_op.HA.get_local_offset();
-            for (int k = 0; k < local_nc; k++) {
-                std::copy_n(&(submat(0, k)), local_nr, &mat_loc[offset_i + (offset_j + k) * n]);
-            }
-        }
-
-        // Internal compressed block
-        Matrix<T> FarFielBlock(n, n);
-        for (int l = 0; l < MyDiagFarFieldMats.size(); l++) {
-            const LowRankMatrix<T, ClusterImpl> &lmat = *(MyDiagFarFieldMats[l]);
-            int local_nr                              = lmat.nb_rows();
-            int local_nc                              = lmat.nb_cols();
-            int offset_i                              = lmat.get_offset_i() - hpddm_op.HA.get_local_offset();
-            int offset_j                              = lmat.get_offset_j() - hpddm_op.HA.get_local_offset();
-            ;
-            FarFielBlock.resize(local_nr, local_nc);
-            lmat.get_whole_matrix(&(FarFielBlock(0, 0)));
-            for (int k = 0; k < local_nc; k++) {
-                std::copy_n(&(FarFielBlock(0, k)), local_nr, &mat_loc[offset_i + (offset_j + k) * n]);
-            }
-        }
+        Matrix<T> diagonal_block = hpddm_op.HA->get_local_diagonal_block(false);
+        std::copy_n(diagonal_block.data(), diagonal_block.nb_rows() * diagonal_block.nb_cols(), mat_loc.data());
 
         std::vector<int> neighbors;
         std::vector<std::vector<int>> intersections;
@@ -93,7 +66,7 @@ class DDM {
         fill(D.begin(), D.begin() + n_inside, 1);
         fill(D.begin() + n_inside, D.end(), 0);
 
-        hpddm_op.HPDDMDense<T, LowRankMatrix, ClusterImpl, AdmissibleCondition>::super::super::initialize(D.data());
+        hpddm_op.HPDDMDense<T>::super::super::initialize(D.data());
         mytime = MPI_Wtime() - time;
 
         // Timing
@@ -103,10 +76,9 @@ class DDM {
     }
 
     // With overlap
-    DDM(const IMatrix<T> &mat0, const HMatrix<T, LowRankMatrix, ClusterImpl, AdmissibleCondition> &hmat_0, const std::vector<int> &ovr_subdomain_to_global0, const std::vector<int> &cluster_to_ovr_subdomain0, const std::vector<int> &neighbors0, const std::vector<std::vector<int>> &intersections0) : hpddm_op(hmat_0), n(ovr_subdomain_to_global0.size()), n_inside(cluster_to_ovr_subdomain0.size()), nb_cols(hmat_0.nb_cols()), nb_rows(hmat_0.nb_rows()), neighbors(neighbors0), vec_ovr(n), mat_loc(n * n), D(n), comm(hmat_0.get_comm()), one_level(0), two_level(0) {
-
+    DDM(const IMatrix<T> &mat0, const HMatrixVirtual<T> *const hmat_0, const std::vector<int> &ovr_subdomain_to_global0, const std::vector<int> &cluster_to_ovr_subdomain0, const std::vector<int> &neighbors0, const std::vector<std::vector<int>> &intersections0) : hpddm_op(hmat_0), n(ovr_subdomain_to_global0.size()), n_inside(cluster_to_ovr_subdomain0.size()), nb_cols(hmat_0->nb_cols()), nb_rows(hmat_0->nb_rows()), neighbors(neighbors0), vec_ovr(n), mat_loc(n * n), D(n), comm(hmat_0->get_comm()), one_level(0), two_level(0) {
         // Timing
-        double mytime, maxtime, meantime;
+        double mytime, maxtime;
         double time = MPI_Wtime();
 
         std::vector<int> renum(n, -1);
@@ -135,48 +107,21 @@ class DDM {
 
         // Symmetry and storage
         bool sym = false;
-        if (hmat_0.get_symmetry_type() == 'S' || (hmat_0.get_symmetry_type() == 'H' && is_complex<T>())) {
+        if (hmat_0->get_symmetry_type() == 'S' || (hmat_0->get_symmetry_type() == 'H' && is_complex<T>())) {
             sym = true;
 
-            if (hmat_0.get_storage_type() == 'U') {
+            if (hmat_0->get_storage_type() == 'U') {
                 throw std::invalid_argument("[Htool error] HPDDM takes lower symmetric/hermitian matrices or regular matrices");
             }
-            if (hmat_0.get_symmetry_type() == 'S' && is_complex<T>()) {
+            if (hmat_0->get_symmetry_type() == 'S' && is_complex<T>()) {
                 std::cout << "[Htool warning] A symmetric matrix with UPLO='L' has been given to DDM solver. It will be considered hermitian by the solver." << std::endl;
             }
         }
 
         // Building Ai
-        const std::vector<LowRankMatrix<T, ClusterImpl> *> &MyDiagFarFieldMats = hpddm_op.HA.get_MyDiagFarFieldMats();
-        const std::vector<SubMatrix<T> *> &MyDiagNearFieldMats                 = hpddm_op.HA.get_MyDiagNearFieldMats();
-
-        // Internal dense blocks
-        for (int l = 0; l < MyDiagNearFieldMats.size(); l++) {
-            const SubMatrix<T> &submat = *(MyDiagNearFieldMats[l]);
-            int local_nr               = submat.nb_rows();
-            int local_nc               = submat.nb_cols();
-            int offset_i               = submat.get_offset_i() - hpddm_op.HA.get_local_offset();
-            ;
-            int offset_j = submat.get_offset_j() - hpddm_op.HA.get_local_offset();
-            for (int k = 0; k < local_nc; k++) {
-                std::copy_n(&(submat(0, k)), local_nr, &mat_loc[offset_i + (offset_j + k) * n]);
-            }
-        }
-
-        // Internal compressed block
-        Matrix<T> FarFielBlock(n, n);
-        for (int l = 0; l < MyDiagFarFieldMats.size(); l++) {
-            const LowRankMatrix<T, ClusterImpl> &lmat = *(MyDiagFarFieldMats[l]);
-            int local_nr                              = lmat.nb_rows();
-            int local_nc                              = lmat.nb_cols();
-            int offset_i                              = lmat.get_offset_i() - hpddm_op.HA.get_local_offset();
-            int offset_j                              = lmat.get_offset_j() - hpddm_op.HA.get_local_offset();
-            ;
-            FarFielBlock.resize(local_nr, local_nc);
-            lmat.get_whole_matrix(&(FarFielBlock(0, 0)));
-            for (int k = 0; k < local_nc; k++) {
-                std::copy_n(&(FarFielBlock(0, k)), local_nr, &mat_loc[offset_i + (offset_j + k) * n]);
-            }
+        Matrix<T> main_diagonal_block = hpddm_op.HA->get_local_diagonal_block(false);
+        for (int j = 0; j < n_inside; j++) {
+            std::copy_n(main_diagonal_block.data() + j * n_inside, n_inside, mat_loc.data() + j * n);
         }
 
         // Overlap
@@ -216,7 +161,7 @@ class DDM {
         fill(D.begin(), D.begin() + n_inside, 1);
         fill(D.begin() + n_inside, D.end(), 0);
 
-        hpddm_op.HPDDMDense<T, LowRankMatrix, ClusterImpl, AdmissibleCondition>::super::super::initialize(D.data());
+        hpddm_op.HPDDMDense<T>::super::super::initialize(D.data());
         mytime = MPI_Wtime() - time;
 
         // Timing
@@ -238,103 +183,102 @@ class DDM {
         one_level                        = 1;
     }
 
-    void build_coarse_space(Matrix<T> &Mi, IMatrix<T> &generator_Bi, const std::vector<R3> &x) {
+    // TODO: take local HMatrixVirtual instead
+    // void build_coarse_space(Matrix<T> &Mi, IMatrix<T> &generator_Bi, const std::vector<R3> &x) {
+    //     // Timing
+    //     double mytime, maxtime;
+    //     double time = MPI_Wtime();
 
-        // Timing
-        double mytime, maxtime;
-        double time = MPI_Wtime();
+    //     //
+    //     int info;
 
-        //
-        int info;
+    //     // Building Neumann matrix
+    //     htool::HMatrixVirtual *const Bi(generator_Bi, hpddm_op.HA.get_cluster_tree_t().get_local_cluster_tree(), x, -1, MPI_COMM_SELF);
+    //     Matrix<T> Bi(n, n);
 
-        // Building Neumann matrix
-        htool::HMatrix<T, LowRankMatrix, ClusterImpl, AdmissibleCondition> HBi(generator_Bi, hpddm_op.HA.get_cluster_tree_t().get_local_cluster_tree(), x, -1, MPI_COMM_SELF);
-        Matrix<T> Bi(n, n);
+    //     // Building Bi
+    //     bool sym                                                                = false;
+    //     const std::vector<LowRankMatrix<T, ClusterImpl> *> &MyLocalFarFieldMats = HBi.get_MyFarFieldMats();
+    //     const std::vector<SubMatrix<T> *> &MyLocalNearFieldMats                 = HBi.get_MyNearFieldMats();
 
-        // Building Bi
-        bool sym                                                                = false;
-        const std::vector<LowRankMatrix<T, ClusterImpl> *> &MyLocalFarFieldMats = HBi.get_MyFarFieldMats();
-        const std::vector<SubMatrix<T> *> &MyLocalNearFieldMats                 = HBi.get_MyNearFieldMats();
+    //     // Internal dense blocks
+    //     for (int i = 0; i < MyLocalNearFieldMats.size(); i++) {
+    //         const SubMatrix<T> &submat = *(MyLocalNearFieldMats[i]);
+    //         int local_nr               = submat.nb_rows();
+    //         int local_nc               = submat.nb_cols();
+    //         int offset_i               = submat.get_offset_i() - hpddm_op.HA.get_local_offset();
+    //         int offset_j               = submat.get_offset_j() - hpddm_op.HA.get_local_offset();
+    //         for (int i = 0; i < local_nc; i++) {
+    //             std::copy_n(&(submat(0, i)), local_nr, Bi.data() + offset_i + (offset_j + i) * n);
+    //         }
+    //     }
 
-        // Internal dense blocks
-        for (int i = 0; i < MyLocalNearFieldMats.size(); i++) {
-            const SubMatrix<T> &submat = *(MyLocalNearFieldMats[i]);
-            int local_nr               = submat.nb_rows();
-            int local_nc               = submat.nb_cols();
-            int offset_i               = submat.get_offset_i() - hpddm_op.HA.get_local_offset();
-            int offset_j               = submat.get_offset_j() - hpddm_op.HA.get_local_offset();
-            for (int i = 0; i < local_nc; i++) {
-                std::copy_n(&(submat(0, i)), local_nr, Bi.data() + offset_i + (offset_j + i) * n);
-            }
-        }
+    //     // Internal compressed block
+    //     Matrix<T> FarFielBlock(n, n);
+    //     for (int i = 0; i < MyLocalFarFieldMats.size(); i++) {
+    //         const LowRankMatrix<T, ClusterImpl> &lmat = *(MyLocalFarFieldMats[i]);
+    //         int local_nr                              = lmat.nb_rows();
+    //         int local_nc                              = lmat.nb_cols();
+    //         int offset_i                              = lmat.get_offset_i() - hpddm_op.HA.get_local_offset();
+    //         int offset_j                              = lmat.get_offset_j() - hpddm_op.HA.get_local_offset();
+    //         ;
+    //         FarFielBlock.resize(local_nr, local_nc);
+    //         lmat.get_whole_matrix(&(FarFielBlock(0, 0)));
+    //         for (int i = 0; i < local_nc; i++) {
+    //             std::copy_n(&(FarFielBlock(0, i)), local_nr, Bi.data() + offset_i + (offset_j + i) * n);
+    //         }
+    //     }
 
-        // Internal compressed block
-        Matrix<T> FarFielBlock(n, n);
-        for (int i = 0; i < MyLocalFarFieldMats.size(); i++) {
-            const LowRankMatrix<T, ClusterImpl> &lmat = *(MyLocalFarFieldMats[i]);
-            int local_nr                              = lmat.nb_rows();
-            int local_nc                              = lmat.nb_cols();
-            int offset_i                              = lmat.get_offset_i() - hpddm_op.HA.get_local_offset();
-            int offset_j                              = lmat.get_offset_j() - hpddm_op.HA.get_local_offset();
-            ;
-            FarFielBlock.resize(local_nr, local_nc);
-            lmat.get_whole_matrix(&(FarFielBlock(0, 0)));
-            for (int i = 0; i < local_nc; i++) {
-                std::copy_n(&(FarFielBlock(0, i)), local_nr, Bi.data() + offset_i + (offset_j + i) * n);
-            }
-        }
+    //     // Overlap
+    //     std::vector<T> horizontal_block(n - n_inside, n_inside), vertical_block(n, n - n_inside);
+    //     horizontal_block = generator_Bi.get_submatrix(std::vector<int>(renum_to_global.begin() + n_inside, renum_to_global.end()), std::vector<int>(renum_to_global.begin(), renum_to_global.begin() + n_inside)).get_mat();
+    //     vertical_block   = generator_Bi.get_submatrix(renum_to_global, std::vector<int>(renum_to_global.begin() + n_inside, renum_to_global.end())).get_mat();
+    //     for (int j = 0; j < n_inside; j++) {
+    //         std::copy_n(horizontal_block.begin() + j * (n - n_inside), n - n_inside, Bi.data() + n_inside + j * n);
+    //     }
+    //     for (int j = n_inside; j < n; j++) {
+    //         std::copy_n(vertical_block.begin() + (j - n_inside) * n, n, Bi.data() + j * n);
+    //     }
 
-        // Overlap
-        std::vector<T> horizontal_block(n - n_inside, n_inside), vertical_block(n, n - n_inside);
-        horizontal_block = generator_Bi.get_submatrix(std::vector<int>(renum_to_global.begin() + n_inside, renum_to_global.end()), std::vector<int>(renum_to_global.begin(), renum_to_global.begin() + n_inside)).get_mat();
-        vertical_block   = generator_Bi.get_submatrix(renum_to_global, std::vector<int>(renum_to_global.begin() + n_inside, renum_to_global.end())).get_mat();
-        for (int j = 0; j < n_inside; j++) {
-            std::copy_n(horizontal_block.begin() + j * (n - n_inside), n - n_inside, Bi.data() + n_inside + j * n);
-        }
-        for (int j = n_inside; j < n; j++) {
-            std::copy_n(vertical_block.begin() + (j - n_inside) * n, n, Bi.data() + j * n);
-        }
+    //     // LU facto for mass matrix
+    //     int lda = n;
+    //     std::vector<int> _ipiv_mass(n);
+    //     HPDDM::Lapack<Cplx>::getrf(&n, &n, Mi.data(), &lda, _ipiv_mass.data(), &info);
 
-        // LU facto for mass matrix
-        int lda = n;
-        std::vector<int> _ipiv_mass(n);
-        HPDDM::Lapack<Cplx>::getrf(&n, &n, Mi.data(), &lda, _ipiv_mass.data(), &info);
+    //     // Partition of unity
+    //     Matrix<T> DAiD(n, n);
+    //     for (int i = 0; i < n_inside; i++) {
+    //         std::copy_n(&(mat_loc[i * n]), n_inside, &(DAiD(0, i)));
+    //     }
 
-        // Partition of unity
-        Matrix<T> DAiD(n, n);
-        for (int i = 0; i < n_inside; i++) {
-            std::copy_n(&(mat_loc[i * n]), n_inside, &(DAiD(0, i)));
-        }
+    //     // M^-1
+    //     const char l = 'N';
+    //     lda          = n;
+    //     int ldb      = n;
+    //     HPDDM::Lapack<Cplx>::getrs(&l, &n, &n, Mi.data(), &lda, _ipiv_mass.data(), DAiD.data(), &ldb, &info);
+    //     HPDDM::Lapack<Cplx>::getrs(&l, &n, &n, Mi.data(), &lda, _ipiv_mass.data(), Bi.data(), &ldb, &info);
 
-        // M^-1
-        const char l = 'N';
-        lda          = n;
-        int ldb      = n;
-        HPDDM::Lapack<Cplx>::getrs(&l, &n, &n, Mi.data(), &lda, _ipiv_mass.data(), DAiD.data(), &ldb, &info);
-        HPDDM::Lapack<Cplx>::getrs(&l, &n, &n, Mi.data(), &lda, _ipiv_mass.data(), Bi.data(), &ldb, &info);
+    //     // Build local eigenvalue problem
+    //     Matrix<T> evp(n, n);
+    //     Bi.mvprod(DAiD.data(), evp.data(), n);
 
-        // Build local eigenvalue problem
-        Matrix<T> evp(n, n);
-        Bi.mvprod(DAiD.data(), evp.data(), n);
+    //     // eigenvalue problem
+    //     hpddm_op.solveEVP(evp.data());
+    //     T *const *Z        = const_cast<T *const *>(hpddm_op.getVectors());
+    //     HPDDM::Option &opt = *HPDDM::Option::get();
+    //     nevi               = opt.val("geneo_nu", 2);
 
-        // eigenvalue problem
-        hpddm_op.solveEVP(evp.data());
-        T *const *Z        = const_cast<T *const *>(hpddm_op.getVectors());
-        HPDDM::Option &opt = *HPDDM::Option::get();
-        nevi               = opt.val("geneo_nu", 2);
+    //     // timing
+    //     mytime = MPI_Wtime() - time;
+    //     time   = MPI_Wtime();
+    //     MPI_Reduce(&(mytime), &(maxtime), 1, MPI_DOUBLE, MPI_MAX, 0, this->comm);
+    //     infos["DDM_geev_max"] = NbrToStr(maxtime);
 
-        // timing
-        mytime = MPI_Wtime() - time;
-        time   = MPI_Wtime();
-        MPI_Reduce(&(mytime), &(maxtime), 1, MPI_DOUBLE, MPI_MAX, 0, this->comm);
-        infos["DDM_geev_max"] = NbrToStr(maxtime);
-
-        //
-        build_E(Z);
-    }
+    //     //
+    //     build_E(Z);
+    // }
 
     void build_coarse_space(Matrix<T> &Ki) {
-
         // Timing
         double mytime, maxtime;
         double time = MPI_Wtime();
@@ -397,7 +341,7 @@ class DDM {
 
         // timing
         mytime = MPI_Wtime() - time;
-        MPI_Barrier(hpddm_op.HA.get_comm());
+        MPI_Barrier(hpddm_op.HA->get_comm());
         time = MPI_Wtime();
         MPI_Reduce(&(mytime), &(maxtime), 1, MPI_DOUBLE, MPI_MAX, 0, this->comm);
         infos["DDM_geev_max"] = NbrToStr(maxtime);
@@ -407,12 +351,8 @@ class DDM {
     }
 
     void build_E(T *const *Z) {
-
         //
-        int n_global  = hpddm_op.HA.nb_cols();
-        int sizeWorld = hpddm_op.HA.get_sizeworld();
-        int rankWorld = hpddm_op.HA.get_rankworld();
-        int info;
+        int sizeWorld = hpddm_op.HA->get_sizeworld();
 
         // Timing
         std::vector<double> mytime(2), maxtime(2);
@@ -421,103 +361,18 @@ class DDM {
         // Allgather
         std::vector<int> recvcounts(sizeWorld);
         std::vector<int> displs(sizeWorld);
-        MPI_Allgather(&nevi, 1, MPI_INT, recvcounts.data(), 1, MPI_INT, comm);
+        MPI_Allgather(&nevi, 1, MPI_INT, recvcounts.data(), 1, MPI_INT, hpddm_op.HA->get_comm());
 
         displs[0] = 0;
-
         for (int i = 1; i < sizeWorld; i++) {
             displs[i] = displs[i - 1] + recvcounts[i - 1];
         }
 
-        size_E       = std::accumulate(recvcounts.begin(), recvcounts.end(), 0);
-        int nevi_max = *std::max_element(recvcounts.begin(), recvcounts.end());
-        std::vector<T> evi(nevi * n, 0);
-        for (int i = 0; i < nevi; i++) {
-            std::copy_n(Z[i], n_inside, evi.data() + i * n);
-        }
-
-        int local_max_size_j                                                              = 0;
-        int local_max_size_i                                                              = 0;
-        int local_max_size                                                                = 0;
-        const std::vector<std::unique_ptr<LowRankMatrix<T, ClusterImpl>>> &MyFarFieldMats = hpddm_op.HA.get_MyFarFieldMats();
-        const std::vector<std::unique_ptr<SubMatrix<T>>> &MyNearFieldMats                 = hpddm_op.HA.get_MyNearFieldMats();
-        for (int i = 0; i < MyFarFieldMats.size(); i++) {
-            if (local_max_size_j < (*MyFarFieldMats[i]).nb_cols())
-                local_max_size_j = (*MyFarFieldMats[i]).nb_cols();
-            if (local_max_size_i < (*MyFarFieldMats[i]).nb_rows())
-                local_max_size_i = (*MyFarFieldMats[i]).nb_rows();
-        }
-        for (int i = 0; i < MyNearFieldMats.size(); i++) {
-            if (local_max_size_j < (*MyNearFieldMats[i]).nb_cols())
-                local_max_size_j = (*MyNearFieldMats[i]).nb_cols();
-            if (local_max_size_i < (*MyNearFieldMats[i]).nb_rows())
-                local_max_size_i = (*MyNearFieldMats[i]).nb_rows();
-        }
-        local_max_size = std::max(local_max_size_i, local_max_size_j);
-        int margin     = local_max_size_j;
-        if (hpddm_op.HA.get_symmetry_type() != 'N') {
-            margin = local_max_size;
-        }
-        std::vector<T> AZ(nevi_max * n_inside, 0);
         std::vector<T> E;
-        E.resize(size_E * size_E, 0);
+        build_coarse_space_outside(hpddm_op.HA, nevi, n, Z, E);
 
-        for (int i = 0; i < sizeWorld; i++) {
-            std::vector<T> buffer((hpddm_op.HA.get_MasterOffset_t(i).second + 2 * margin) * recvcounts[i], 0);
-            std::fill_n(AZ.data(), recvcounts[i] * n_inside, 0);
-
-            if (rankWorld == i) {
-                for (int j = 0; j < recvcounts[i]; j++) {
-                    for (int k = 0; k < n_inside; k++) {
-                        buffer[recvcounts[i] * (k + margin) + j] = evi[j * n + k];
-                    }
-                }
-            }
-            MPI_Bcast(buffer.data() + margin * recvcounts[i], hpddm_op.HA.get_MasterOffset_t(i).second * recvcounts[i], wrapper_mpi<T>::mpi_type(), i, comm);
-            if (hpddm_op.HA.get_symmetry_type() == 'H') {
-                conj_if_complex(buffer.data(), buffer.size());
-            }
-            hpddm_op.HA.mvprod_subrhs(buffer.data(), AZ.data(), recvcounts[i], hpddm_op.HA.get_MasterOffset_t(i).first, hpddm_op.HA.get_MasterOffset_t(i).second, margin);
-
-            if (hpddm_op.HA.get_symmetry_type() == 'H') {
-                conj_if_complex(AZ.data(), AZ.size());
-            }
-
-            for (int j = 0; j < recvcounts[i]; j++) {
-                for (int k = 0; k < n_inside; k++) {
-                    vec_ovr[k] = AZ[j + recvcounts[i] * k];
-                }
-                // Parce que partition de l'unité...
-                // synchronize(true);
-                for (int jj = 0; jj < nevi; jj++) {
-                    int coord_E_i                     = displs[i] + j;
-                    int coord_E_j                     = displs[rankWorld] + jj;
-                    E[coord_E_i + coord_E_j * size_E] = std::inner_product(evi.data() + jj * n, evi.data() + jj * n + n_inside, vec_ovr.data(), T(0), std::plus<T>(), [](T u, T v) { return u * std::conj(v); });
-                }
-            }
-        }
-        if (rankWorld == 0)
-            MPI_Reduce(MPI_IN_PLACE, E.data(), E.size(), wrapper_mpi<T>::mpi_type(), MPI_SUM, 0, comm);
-        else
-            MPI_Reduce(E.data(), E.data(), E.size(), wrapper_mpi<T>::mpi_type(), MPI_SUM, 0, comm);
-
-        // if (rankWorld == 0) {
-        //     double norme = 0;
-        //     std::cout << "size E :" << E.size() << std::endl;
-        //     std::cout << "[";
-        //     for (int i = 0; i < nevi * sizeWorld; i++) {
-        //         std::cout << "[";
-        //         for (int j = 0; j < nevi * sizeWorld; j++) {
-        //             std::cout << std::real(E[i + j * nevi * sizeWorld]) << "+" << std::imag(E[i + j * nevi * sizeWorld]) << "i,";
-        //             norme += std::abs(E[i + j * nevi * sizeWorld] * std::conj(E[i + j * nevi * sizeWorld]));
-        //         }
-        //         std::cout << "];";
-        //     }
-        //     std::cout << "]" << std::endl;
-        //     std::cout << "NORME : " << norme << std::endl;
-        // }
         mytime[0] = MPI_Wtime() - time;
-        MPI_Barrier(hpddm_op.HA.get_comm());
+        MPI_Barrier(hpddm_op.HA->get_comm());
         time = MPI_Wtime();
 
         hpddm_op.buildTwo(MPI_COMM_WORLD, E.data());
@@ -543,13 +398,13 @@ class DDM {
         HPDDM::Option &opt = *HPDDM::Option::get();
         switch (opt.val("schwarz_method", 0)) {
         case HPDDM_SCHWARZ_METHOD_NONE:
-            hpddm_op.setType(HPDDMDense<T, LowRankMatrix, ClusterImpl, AdmissibleCondition>::Prcndtnr::NO);
+            hpddm_op.setType(HPDDMDense<T>::Prcndtnr::NO);
             break;
         case HPDDM_SCHWARZ_METHOD_RAS:
-            hpddm_op.setType(HPDDMDense<T, LowRankMatrix, ClusterImpl, AdmissibleCondition>::Prcndtnr::GE);
+            hpddm_op.setType(HPDDMDense<T>::Prcndtnr::GE);
             break;
         case HPDDM_SCHWARZ_METHOD_ASM:
-            hpddm_op.setType(HPDDMDense<T, LowRankMatrix, ClusterImpl, AdmissibleCondition>::Prcndtnr::SY);
+            hpddm_op.setType(HPDDMDense<T>::Prcndtnr::SY);
             break;
             // case HPDDM_SCHWARZ_METHOD_OSM:
             // hpddm_op.setType(HPDDM::Schwarz::Prcndtnr::NO);
@@ -563,13 +418,13 @@ class DDM {
         }
 
         //
-        int rankWorld   = hpddm_op.HA.get_rankworld();
-        int sizeWorld   = hpddm_op.HA.get_sizeworld();
-        int offset      = hpddm_op.HA.get_local_offset();
-        int size        = hpddm_op.HA.get_local_size();
-        int nb_cols     = hpddm_op.HA.nb_cols();
-        int nb_rows     = hpddm_op.HA.nb_rows();
-        int nb_vec_prod = StrToNbr<int>(hpddm_op.HA.get_infos("nb_mat_vec_prod"));
+        int rankWorld = hpddm_op.HA->get_rankworld();
+        int sizeWorld = hpddm_op.HA->get_sizeworld();
+        int offset    = hpddm_op.HA->get_local_offset();
+        // int size        = hpddm_op.HA->get_local_size();
+        int nb_cols     = hpddm_op.HA->nb_cols();
+        int nb_rows     = hpddm_op.HA->nb_rows();
+        int nb_vec_prod = StrToNbr<int>(hpddm_op.HA->get_infos("nb_mat_vec_prod"));
         double time     = MPI_Wtime();
 
         //
@@ -582,7 +437,7 @@ class DDM {
         // TODO: blocking ?
         for (int i = 0; i < mu; i++) {
             // Permutation
-            hpddm_op.HA.source_to_cluster_permutation(rhs + i * nb_cols, rhs_perm.data());
+            hpddm_op.HA->source_to_cluster_permutation(rhs + i * nb_cols, rhs_perm.data());
 
             std::copy_n(rhs_perm.begin() + offset, n_inside, local_rhs.begin() + i * n);
         }
@@ -602,14 +457,14 @@ class DDM {
         }
 
         // Local to global
-        // hpddm_op.HA.local_to_global(x_local.data(),hpddm_op.in_global->data(),mu);
+        // hpddm_op.HA->local_to_global(x_local.data(),hpddm_op.in_global->data(),mu);
         std::vector<int> recvcounts(sizeWorld);
         std::vector<int> displs(sizeWorld);
 
         displs[0] = 0;
 
         for (int i = 0; i < sizeWorld; i++) {
-            recvcounts[i] = (hpddm_op.HA.get_MasterOffset_t(i).second) * mu;
+            recvcounts[i] = (hpddm_op.HA->get_MasterOffset_t(i).second) * mu;
             if (i > 0)
                 displs[i] = displs[i - 1] + recvcounts[i - 1];
         }
@@ -626,7 +481,7 @@ class DDM {
             }
 
             // Permutation
-            hpddm_op.HA.cluster_to_target_permutation(hpddm_op.in_global->data() + i * nb_rows, x + i * nb_rows);
+            hpddm_op.HA->cluster_to_target_permutation(hpddm_op.in_global->data() + i * nb_rows, x + i * nb_rows);
         }
 
         // Infos
@@ -634,8 +489,8 @@ class DDM {
         infos["Solve"]                  = NbrToStr(time);
         infos["Nb_it"]                  = NbrToStr(nb_it);
         infos["Nb_subdomains"]          = NbrToStr(sizeWorld);
-        infos["nb_mat_vec_prod"]        = NbrToStr(StrToNbr<int>(hpddm_op.HA.get_infos("nb_mat_vec_prod")) - nb_vec_prod);
-        infos["mean_time_mat_vec_prod"] = NbrToStr(StrToNbr<double>(hpddm_op.HA.get_infos("total_time_mat_vec_prod")) / StrToNbr<double>(hpddm_op.HA.get_infos("nb_mat_vec_prod")));
+        infos["nb_mat_vec_prod"]        = NbrToStr(StrToNbr<int>(hpddm_op.HA->get_infos("nb_mat_vec_prod")) - nb_vec_prod);
+        infos["mean_time_mat_vec_prod"] = NbrToStr(StrToNbr<double>(hpddm_op.HA->get_infos("total_time_mat_vec_prod")) / StrToNbr<double>(hpddm_op.HA->get_infos("nb_mat_vec_prod")));
         switch (opt.val("schwarz_method", 0)) {
         case HPDDM_SCHWARZ_METHOD_NONE:
             infos["Precond"] = "None";
@@ -735,7 +590,7 @@ class DDM {
     }
 
     void print_infos() const {
-        if (hpddm_op.HA.get_rankworld() == 0) {
+        if (hpddm_op.HA->get_rankworld() == 0) {
             for (std::map<std::string, std::string>::const_iterator it = infos.begin(); it != infos.end(); ++it) {
                 std::cout << it->first << "\t" << it->second << std::endl;
             }
@@ -744,7 +599,7 @@ class DDM {
     }
 
     void save_infos(const std::string &outputname, std::ios_base::openmode mode = std::ios_base::app, const std::string &sep = " = ") const {
-        if (hpddm_op.HA.get_rankworld() == 0) {
+        if (hpddm_op.HA->get_rankworld() == 0) {
             std::ofstream outputfile(outputname, mode);
             if (outputfile) {
                 for (std::map<std::string, std::string>::const_iterator it = infos.begin(); it != infos.end(); ++it) {
@@ -758,7 +613,7 @@ class DDM {
     }
 
     void add_infos(std::string key, std::string value) const {
-        if (hpddm_op.HA.get_rankworld() == 0) {
+        if (hpddm_op.HA->get_rankworld() == 0) {
             if (infos.find(key) == infos.end()) {
                 infos[key] = value;
             } else {
@@ -768,22 +623,30 @@ class DDM {
     }
 
     void set_infos(std::string key, std::string value) const {
-        if (hpddm_op.HA.get_rankworld() == 0) {
+        if (hpddm_op.HA->get_rankworld() == 0) {
             infos[key] = value;
         }
     }
 
     std::string get_infos(const std::string &key) const {
-        if (hpddm_op.HA.get_rankworld() == 0) {
+        if (hpddm_op.HA->get_rankworld() == 0) {
             return infos[key];
         }
         return "";
     }
 
-    int get_nevi() const { return nevi; }
-    int get_nb_cols() const { return nb_cols; };
-    int get_nb_rows() const { return nb_rows; };
-    MPI_Comm get_comm() const { return comm; }
+    int get_nevi() const {
+        return nevi;
+    }
+    int get_nb_cols() const {
+        return nb_cols;
+    };
+    int get_nb_rows() const {
+        return nb_rows;
+    };
+    MPI_Comm get_comm() const {
+        return comm;
+    }
 };
 
 } // namespace htool

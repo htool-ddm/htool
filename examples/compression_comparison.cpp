@@ -8,17 +8,21 @@ using namespace std;
 using namespace htool;
 
 class MyMatrix : public IMatrix<double> {
-    const vector<R3> &p1;
-    const vector<R3> &p2;
+    const vector<double> &p1;
+    const vector<double> &p2;
+    int space_dim;
 
   public:
-    MyMatrix(const vector<R3> &p10, const vector<R3> &p20) : IMatrix<double>(p10.size(), p20.size()), p1(p10), p2(p20) {}
-    double get_coef(const int &i, const int &j) const { return 1. / (norm2(p1[i] - p2[j])); }
+    // Constructor
+    MyMatrix(int space_dim0, int nr, int nc, const vector<double> &p10, const vector<double> &p20) : IMatrix(nr, nc), p1(p10), p2(p20), space_dim(space_dim0) {}
+    double get_coef(const int &k, const int &j) const {
+        return 1. / (1 + std::sqrt(std::inner_product(p1.begin() + space_dim * k, p1.begin() + space_dim * k + space_dim, p2.begin() + space_dim * j, double(0), std::plus<double>(), [](double u, double v) { return (u - v) * (u - v); })));
+    }
 
     std::vector<double> operator*(std::vector<double> a) {
-        std::vector<double> result(p1.size(), 0);
-        for (int i = 0; i < p1.size(); i++) {
-            for (int k = 0; k < p2.size(); k++) {
+        std::vector<double> result(nr, 0);
+        for (int i = 0; i < nr; i++) {
+            for (int k = 0; k < nc; k++) {
                 result[i] += this->get_coef(i, k) * a[k];
             }
         }
@@ -27,8 +31,8 @@ class MyMatrix : public IMatrix<double> {
 
     double normFrob() {
         double norm = 0;
-        for (int i = 0; i < p1.size(); i++) {
-            for (int k = 0; k < p2.size(); k++) {
+        for (int i = 0; i < nr; i++) {
+            for (int k = 0; k < nc; k++) {
                 norm = norm + std::pow(this->get_coef(i, k), 2);
             }
         }
@@ -55,8 +59,7 @@ int main(int argc, char *argv[]) {
     std::string outputfile = argv[2];
     std::string outputpath = argv[3];
 
-    SetNdofPerElt(1);
-    SetEpsilon(0.0001);
+    double epsilon  = 0.0001;
     int reqrank_max = 50;
     srand(1);
     // we set a constant seed for rand because we want always the same result if we run the check many times
@@ -64,78 +67,73 @@ int main(int argc, char *argv[]) {
 
     int nr = 500;
     int nc = 100;
-    vector<int> Ir(nr); // row indices for the lrmatrix
-    vector<int> Ic(nc); // column indices for the lrmatrix
 
     double z1 = 1;
-    vector<R3> p1(nr);
-    vector<double> r1(nr);
-    vector<double> g1(nc, 1);
-    vector<int> tab1(nr);
+    vector<double> p1(3 * nr);
+    std::vector<int> tab1(nr);
+
     for (int j = 0; j < nr; j++) {
-        Ir[j]        = j;
-        double rho   = ((double)rand() / (double)(RAND_MAX)); // (double) otherwise integer division!
-        double theta = ((double)rand() / (double)(RAND_MAX));
-        p1[j][0]     = sqrt(rho) * cos(2 * M_PI * theta);
-        p1[j][1]     = sqrt(rho) * sin(2 * M_PI * theta);
-        p1[j][2]     = z1;
-        // sqrt(rho) otherwise the points would be concentrated in the center of the disk
-        r1[j]   = 0.;
-        tab1[j] = j;
+
+        double rho    = ((double)rand() / (double)(RAND_MAX)); // (double) otherwise integer division!
+        double theta  = ((double)rand() / (double)(RAND_MAX));
+        p1[3 * j + 0] = sqrt(rho) * cos(2 * M_PI * theta);
+        p1[3 * j + 1] = sqrt(rho) * sin(2 * M_PI * theta);
+        p1[3 * j + 2] = z1;
+        tab1[j]       = j;
     }
     // p2: points in a unit disk of the plane z=z2
     double z2 = 1 + distance;
-    vector<R3> p2(nc);
-    vector<double> r2(nc);
-    vector<double> g2(nc, 1);
-    vector<int> tab2(nc);
+    vector<double> p2(3 * nc);
+    std::vector<int> tab2(nc);
     for (int j = 0; j < nc; j++) {
-        Ic[j]        = j;
-        double rho   = ((double)rand() / (RAND_MAX)); // (double) otherwise integer division!
-        double theta = ((double)rand() / (RAND_MAX));
-        p2[j][0]     = sqrt(rho) * cos(2 * M_PI * theta);
-        p2[j][1]     = sqrt(rho) * sin(2 * M_PI * theta);
-        p2[j][2]     = z2;
-        r2[j]        = 0.;
-        tab2[j]      = j;
+        double rho    = ((double)rand() / (RAND_MAX)); // (double) otherwise integer division!
+        double theta  = ((double)rand() / (RAND_MAX));
+        p2[3 * j + 0] = sqrt(rho) * cos(2 * M_PI * theta);
+        p2[3 * j + 1] = sqrt(rho) * sin(2 * M_PI * theta);
+        p2[3 * j + 2] = z2;
+        tab2[j]       = j;
     }
 
     // Clustering
 
     GeometricClustering t, s;
-    t.build_global(p1, r1, tab1, g1);
-    s.build_global(p2, r2, tab2, g2);
+    t.build_global_auto(nr, p1.data());
+    s.build_global_auto(nc, p2.data());
 
-    MyMatrix A(p1, p2);
+    MyMatrix A(3, nr, nc, p1, p2);
     double norm_A = A.normFrob();
 
     // SVD with fixed rank
-    SVD<double, GeometricClustering> A_SVD(t.get_perm(), s.get_perm(), reqrank_max);
-    A_SVD.build(A, t, p1, tab1, s, p2, tab2);
+    SVD<double, GeometricClustering> A_SVD(t.get_perm(), s.get_perm(), reqrank_max, epsilon);
+    A_SVD.build(A, t, p1.data(), tab1.data(), s, p2.data(), tab2.data());
     std::vector<double> SVD_fixed_errors;
     for (int k = 0; k < A_SVD.rank_of() + 1; k++) {
         SVD_fixed_errors.push_back(Frobenius_absolute_error(A_SVD, A, k) / norm_A);
     }
+    std::cout << SVD_fixed_errors << std::endl;
 
     // fullACA with fixed rank
-    fullACA<double, GeometricClustering> A_fullACA_fixed(t.get_perm(), s.get_perm(), reqrank_max);
-    A_fullACA_fixed.build(A, t, p1, tab1, s, p2, tab2);
+    fullACA<double, GeometricClustering> A_fullACA_fixed(t.get_perm(), s.get_perm(), reqrank_max, epsilon);
+    A_fullACA_fixed.build(A, t, p1.data(), tab1.data(), s, p2.data(), tab2.data());
     std::vector<double> fullACA_fixed_errors;
     for (int k = 0; k < A_fullACA_fixed.rank_of() + 1; k++) {
         fullACA_fixed_errors.push_back(Frobenius_absolute_error(A_fullACA_fixed, A, k) / norm_A);
     }
+    std::cout << fullACA_fixed_errors << std::endl;
 
     // partialACA with fixed rank
-    partialACA<double, GeometricClustering> A_partialACA_fixed(t.get_perm(), s.get_perm(), reqrank_max);
-    A_partialACA_fixed.build(A, t, p1, tab1, s, p2, tab2);
+    partialACA<double, GeometricClustering> A_partialACA_fixed(t.get_perm(), s.get_perm(), reqrank_max, epsilon);
+    A_partialACA_fixed.build(A, t, p1.data(), tab1.data(), s, p2.data(), tab2.data());
     std::vector<double> partialACA_fixed_errors;
+    std::cout << A_partialACA_fixed.rank_of() << " " << reqrank_max << std::endl;
     for (int k = 0; k < A_partialACA_fixed.rank_of() + 1; k++) {
         partialACA_fixed_errors.push_back(Frobenius_absolute_error(A_partialACA_fixed, A, k) / norm_A);
     }
 
+    std::cout << partialACA_fixed_errors << std::endl;
     // sympartialACA with fixed rank
-    sympartialACA<double, GeometricClustering> A_sympartialACA_fixed(t.get_perm(), s.get_perm(), reqrank_max);
-    A_sympartialACA_fixed.build(A, t, p1, tab1, s, p2, tab2);
+    sympartialACA<double, GeometricClustering> A_sympartialACA_fixed(t.get_perm(), s.get_perm(), reqrank_max, epsilon);
+    A_sympartialACA_fixed.build(A, t, p1.data(), tab1.data(), s, p2.data(), tab2.data());
     std::vector<double> sympartialACA_fixed_errors;
     for (int k = 0; k < A_sympartialACA_fixed.rank_of() + 1; k++) {
         sympartialACA_fixed_errors.push_back(Frobenius_absolute_error(A_sympartialACA_fixed, A, k) / norm_A);
@@ -150,12 +148,12 @@ int main(int argc, char *argv[]) {
 
     ofstream geometry_1((outputpath + "/geometry_1_" + outputfile).c_str());
     for (int i = 0; i < nr; i++) {
-        geometry_1 << p1[i][0] << "," << p1[i][1] << "," << p1[i][2] << endl;
+        geometry_1 << p1[i + 0] << "," << p1[i + 1] << "," << p1[i + 2] << endl;
     }
 
     ofstream geometry_2((outputpath + "/geometry_2_" + outputfile).c_str());
     for (int i = 0; i < nc; i++) {
-        geometry_2 << p2[i][0] << "," << p2[i][1] << "," << p2[i][2] << endl;
+        geometry_2 << p2[i + 0] << "," << p2[i + 1] << "," << p2[i + 2] << endl;
     }
 
     // Finalize the MPI environment.

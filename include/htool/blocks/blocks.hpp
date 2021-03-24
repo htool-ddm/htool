@@ -7,7 +7,7 @@
 namespace htool {
 
 template <typename ClusterImpl, template <typename> class AdmissibilityCondition>
-class Block : public Parametres {
+class Block {
 
   protected:
     // Data member
@@ -15,6 +15,11 @@ class Block : public Parametres {
     const Cluster<ClusterImpl> &t;
     const Cluster<ClusterImpl> &s;
     bool admissible;
+
+    double eta;
+    int mintargetdepth;
+    int minsourcedepth;
+    unsigned int maxblocksize;
 
     Block *diagonal_block;
     Block *root;
@@ -43,7 +48,7 @@ class Block : public Parametres {
 
         ///////////////////// Recursion
         // Admissible
-        if (this->IsAdmissible() && this->t.get_rank() >= 0 && this->t.get_depth() >= GetMinTargetDepth() && this->s.get_depth() >= GetMinSourceDepth()) {
+        if (this->IsAdmissible() && this->t.get_rank() >= 0 && this->t.get_depth() >= this->mintargetdepth && this->s.get_depth() >= this->minsourcedepth) {
             this->tasks->push_back(this);
             return false;
         }
@@ -60,7 +65,7 @@ class Block : public Parametres {
                 }
 
                 // All sons are non admissible and not pushed to tasks -> the current block is not pushed
-                if ((bsize <= maxblocksize) && std::all_of(Blocks_not_pushed.begin(), Blocks_not_pushed.end(), [](bool i) { return i; }) && this->t.get_rank() >= 0 && this->t.get_depth() >= GetMinTargetDepth() && this->s.get_depth() >= GetMinSourceDepth()) {
+                if ((bsize <= maxblocksize) && std::all_of(Blocks_not_pushed.begin(), Blocks_not_pushed.end(), [](bool i) { return i; }) && this->t.get_rank() >= 0 && this->t.get_depth() >= this->mintargetdepth && this->s.get_depth() >= this->minsourcedepth) {
                     sons.clear();
                     return true;
                 }
@@ -82,7 +87,7 @@ class Block : public Parametres {
                     Blocks_not_pushed[p] = sons[p]->build_block_tree(comm);
                 }
 
-                if ((bsize <= maxblocksize) && std::all_of(Blocks_not_pushed.begin(), Blocks_not_pushed.end(), [](bool i) { return i; }) && this->t.get_rank() >= 0 && this->t.get_depth() >= GetMinTargetDepth() && this->s.get_depth() >= GetMinSourceDepth()) {
+                if ((bsize <= maxblocksize) && std::all_of(Blocks_not_pushed.begin(), Blocks_not_pushed.end(), [](bool i) { return i; }) && this->t.get_rank() >= 0 && this->t.get_depth() >= this->mintargetdepth && this->s.get_depth() >= this->minsourcedepth) {
                     sons.clear();
                     return true;
                 } else {
@@ -100,7 +105,7 @@ class Block : public Parametres {
                         sons.push_back(std::unique_ptr<Block>(new Block(this->t.get_son(p), s, this->root, this->tasks, local_tasks)));
                         Blocks_not_pushed[p] = sons[p]->build_block_tree(comm);
                     }
-                    if ((bsize <= maxblocksize) && std::all_of(Blocks_not_pushed.begin(), Blocks_not_pushed.end(), [](bool i) { return i; }) && this->t.get_rank() >= 0 && this->t.get_depth() >= GetMinTargetDepth() && this->s.get_depth() >= GetMinSourceDepth()) {
+                    if ((bsize <= maxblocksize) && std::all_of(Blocks_not_pushed.begin(), Blocks_not_pushed.end(), [](bool i) { return i; }) && this->t.get_rank() >= 0 && this->t.get_depth() >= this->mintargetdepth && this->s.get_depth() >= this->minsourcedepth) {
                         sons.clear();
                         return true;
                     } else {
@@ -117,7 +122,7 @@ class Block : public Parametres {
                         sons.push_back(std::unique_ptr<Block>(new Block(t, this->s.get_son(p), this->root, this->tasks, local_tasks)));
                         Blocks_not_pushed[p] = sons[p]->build_block_tree(comm);
                     }
-                    if ((bsize <= maxblocksize) && std::all_of(Blocks_not_pushed.begin(), Blocks_not_pushed.end(), [](bool i) { return i; }) && this->t.get_rank() >= 0 && this->t.get_depth() >= GetMinTargetDepth() && this->s.get_depth() >= GetMinSourceDepth()) {
+                    if ((bsize <= maxblocksize) && std::all_of(Blocks_not_pushed.begin(), Blocks_not_pushed.end(), [](bool i) { return i; }) && this->t.get_rank() >= 0 && this->t.get_depth() >= this->mintargetdepth && this->s.get_depth() >= this->minsourcedepth) {
                         sons.clear();
                         return true;
                     } else {
@@ -146,7 +151,7 @@ class Block : public Parametres {
 
         ///////////////////// Recursion
         // Admissible
-        if (this->IsAdmissible() && t.get_rank() >= 0 && t.get_depth() >= GetMinTargetDepth() && s.get_depth() >= GetMinSourceDepth() && ((t.get_offset() == s.get_offset() && t.get_size() == s.get_size()) || (t.get_offset() != s.get_offset() && ((t.get_offset() < s.get_offset() && s.get_offset() - t.get_offset() >= t.get_size()) || (s.get_offset() < t.get_offset() && t.get_offset() - s.get_offset() >= s.get_size()))))) {
+        if (this->IsAdmissible() && t.get_rank() >= 0 && t.get_depth() >= this->mintargetdepth && s.get_depth() >= this->minsourcedepth && ((t.get_offset() == s.get_offset() && t.get_size() == s.get_size()) || (t.get_offset() != s.get_offset() && ((t.get_offset() < s.get_offset() && s.get_offset() - t.get_offset() >= t.get_size()) || (s.get_offset() < t.get_offset() && t.get_offset() - s.get_offset() >= s.get_size()))))) {
             this->tasks->push_back(this);
             return false;
         } else if (s.IsLeaf()) {
@@ -161,7 +166,7 @@ class Block : public Parametres {
                 }
 
                 // All sons are non admissible and not pushed to tasks -> the current block is not pushed
-                if ((bsize <= maxblocksize) && std::all_of(Blocks_not_pushed.begin(), Blocks_not_pushed.end(), [](bool i) { return i; }) && t.get_rank() >= 0 && t.get_depth() >= GetMinTargetDepth() && s.get_depth() >= GetMinSourceDepth() && ((t.get_offset() == s.get_offset() && t.get_size() == s.get_size()) || (t.get_offset() != s.get_offset() && ((t.get_offset() < s.get_offset() && s.get_offset() - t.get_offset() >= t.get_size()) || (s.get_offset() < t.get_offset() && t.get_offset() - s.get_offset() >= s.get_size()))))) {
+                if ((bsize <= maxblocksize) && std::all_of(Blocks_not_pushed.begin(), Blocks_not_pushed.end(), [](bool i) { return i; }) && t.get_rank() >= 0 && t.get_depth() >= this->mintargetdepth && s.get_depth() >= this->minsourcedepth && ((t.get_offset() == s.get_offset() && t.get_size() == s.get_size()) || (t.get_offset() != s.get_offset() && ((t.get_offset() < s.get_offset() && s.get_offset() - t.get_offset() >= t.get_size()) || (s.get_offset() < t.get_offset() && t.get_offset() - s.get_offset() >= s.get_size()))))) {
                     sons.clear();
                     return true;
                 }
@@ -183,7 +188,7 @@ class Block : public Parametres {
                     Blocks_not_pushed[p] = sons[p]->build_sym_block_tree(comm);
                 }
 
-                if ((bsize <= maxblocksize) && std::all_of(Blocks_not_pushed.begin(), Blocks_not_pushed.end(), [](bool i) { return i; }) && t.get_rank() >= 0 && t.get_depth() >= GetMinTargetDepth() && s.get_depth() >= GetMinSourceDepth() && ((t.get_offset() == s.get_offset() && t.get_size() == s.get_size()) || (t.get_offset() != s.get_offset() && ((t.get_offset() < s.get_offset() && s.get_offset() - t.get_offset() >= t.get_size()) || (s.get_offset() < t.get_offset() && t.get_offset() - s.get_offset() >= s.get_size()))))) {
+                if ((bsize <= maxblocksize) && std::all_of(Blocks_not_pushed.begin(), Blocks_not_pushed.end(), [](bool i) { return i; }) && t.get_rank() >= 0 && t.get_depth() >= this->mintargetdepth && s.get_depth() >= this->minsourcedepth && ((t.get_offset() == s.get_offset() && t.get_size() == s.get_size()) || (t.get_offset() != s.get_offset() && ((t.get_offset() < s.get_offset() && s.get_offset() - t.get_offset() >= t.get_size()) || (s.get_offset() < t.get_offset() && t.get_offset() - s.get_offset() >= s.get_size()))))) {
                     sons.clear();
                     return true;
                 } else {
@@ -202,7 +207,7 @@ class Block : public Parametres {
                         Blocks_not_pushed[p + l * t.get_nb_sons()] = sons[p + l * t.get_nb_sons()]->build_sym_block_tree(comm);
                     }
                 }
-                if ((bsize <= maxblocksize) && std::all_of(Blocks_not_pushed.begin(), Blocks_not_pushed.end(), [](bool i) { return i; }) && t.get_rank() >= 0 && t.get_depth() >= GetMinTargetDepth() && s.get_depth() >= GetMinSourceDepth() && ((t.get_offset() == s.get_offset() && t.get_size() == s.get_size()) || (t.get_offset() != s.get_offset() && ((t.get_offset() < s.get_offset() && s.get_offset() - t.get_offset() >= t.get_size()) || (s.get_offset() < t.get_offset() && t.get_offset() - s.get_offset() >= s.get_size()))))) {
+                if ((bsize <= maxblocksize) && std::all_of(Blocks_not_pushed.begin(), Blocks_not_pushed.end(), [](bool i) { return i; }) && t.get_rank() >= 0 && t.get_depth() >= this->mintargetdepth && s.get_depth() >= this->minsourcedepth && ((t.get_offset() == s.get_offset() && t.get_size() == s.get_size()) || (t.get_offset() != s.get_offset() && ((t.get_offset() < s.get_offset() && s.get_offset() - t.get_offset() >= t.get_size()) || (s.get_offset() < t.get_offset() && t.get_offset() - s.get_offset() >= s.get_size()))))) {
                     sons.clear();
                     return true;
                 } else {
@@ -219,12 +224,11 @@ class Block : public Parametres {
 
   public:
     // Root constructor
-    Block(const Cluster<ClusterImpl> &t0, const Cluster<ClusterImpl> &s0) : t(t0), s(s0), admissible(false), diagonal_block(nullptr), root(this), tasks(std::make_shared<std::vector<Block *>>()), local_tasks(std::make_shared<std::vector<Block *>>()) {
-        admissible = AdmissibilityCondition<ClusterImpl>::ComputeAdmissibility(t, s, eta);
+    Block(const Cluster<ClusterImpl> &t0, const Cluster<ClusterImpl> &s0) : t(t0), s(s0), admissible(false), eta(10), mintargetdepth(0), minsourcedepth(0), maxblocksize(1000000), diagonal_block(nullptr), root(this), tasks(std::make_shared<std::vector<Block *>>()), local_tasks(std::make_shared<std::vector<Block *>>()) {
     }
 
     // Node constructor
-    Block(const Cluster<ClusterImpl> &t0, const Cluster<ClusterImpl> &s0, Block *root0, std::shared_ptr<std::vector<Block *>> tasks0, std::shared_ptr<std::vector<Block *>> local_tasks0) : t(t0), s(s0), admissible(false), diagonal_block(nullptr), root(root0), tasks(tasks0), local_tasks(local_tasks0) {
+    Block(const Cluster<ClusterImpl> &t0, const Cluster<ClusterImpl> &s0, Block *root0, std::shared_ptr<std::vector<Block *>> tasks0, std::shared_ptr<std::vector<Block *>> local_tasks0) : t(t0), s(s0), admissible(false), eta(root0->eta), mintargetdepth(root0->mintargetdepth), minsourcedepth(root0->minsourcedepth), maxblocksize(root0->maxblocksize), diagonal_block(nullptr), root(root0), tasks(tasks0), local_tasks(local_tasks0) {
 
         admissible = AdmissibilityCondition<ClusterImpl>::ComputeAdmissibility(t, s, eta);
     }
@@ -236,6 +240,9 @@ class Block : public Parametres {
     // Build
     void build(char UPLO, bool force_sym = false, MPI_Comm comm = MPI_COMM_WORLD) {
         bool not_pushed;
+
+        // Admissibility of root
+        admissible = AdmissibilityCondition<ClusterImpl>::ComputeAdmissibility(t, s, this->eta);
 
         // Build block tree and tasks
         if (UPLO == 'U' || UPLO == 'L' || force_sym) {
@@ -297,8 +304,24 @@ class Block : public Parametres {
         return *local_tasks;
     }
 
+    double get_eta() const { return eta; }
+    int get_mintargetdepth() const { return mintargetdepth; }
+    int get_minsourcedepth() const { return minsourcedepth; }
+    int get_maxblocksize() const { return maxblocksize; }
+
     bool IsAdmissible() const {
         return admissible;
+    }
+
+    // Setters
+    void set_eta(double eta0) { eta = eta0; }
+    void set_mintargetdepth(int mintargetdepth0) { mintargetdepth = mintargetdepth0; }
+    void set_minsourcedepth(int minsourcedepth0) { minsourcedepth = minsourcedepth0; }
+    void set_maxblocksize(unsigned int maxblocksize0) {
+        if (maxblocksize0 == 0) {
+            throw std::invalid_argument("[Htool error] MaxBlockSize parameter cannot be zero");
+        }
+        maxblocksize = maxblocksize0;
     }
 
     // Ordering
@@ -310,20 +333,6 @@ class Block : public Parametres {
         }
     }
 };
-
-// struct comp_block
-// {
-//     template <typename ClusterImpl>
-//     inline bool operator() (const Block<ClusterImpl,AdmissibilityCondition>* block1, const Block<ClusterImpl,AdmissibilityCondition>* block2)
-//     {
-//         if (block1->get_target_cluster().get_offset()==block2->get_target_cluster().get_offset()){
-//             return block1->get_source_cluster().get_offset()<block2->get_source_cluster().get_offset();
-//         }
-//         else {
-//             return block1->get_target_cluster().get_offset()<block2->get_target_cluster().get_offset();
-//         }
-//     }
-// };
 
 } // namespace htool
 
