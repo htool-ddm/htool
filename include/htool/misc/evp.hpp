@@ -8,7 +8,7 @@
 
 namespace htool {
 
-std::vector<double> solve_EVP_2(const Matrix<double> &cov) {
+inline std::vector<double> solve_EVP_2(const Matrix<double> &cov) {
     std::vector<double> dir(2, 0);
     std::vector<double> eigs(2);
     Matrix<double> I(2, 2);
@@ -37,7 +37,7 @@ std::vector<double> solve_EVP_2(const Matrix<double> &cov) {
     return dir;
 }
 
-std::vector<double> solve_EVP_3(const Matrix<double> &cov) {
+inline std::vector<double> solve_EVP_3(const Matrix<double> &cov) {
     std::vector<double> dir(3, 0);
     double p1 = pow(cov(0, 1), 2) + pow(cov(0, 2), 2) + pow(cov(1, 2), 2);
     std::vector<double> eigs(3);
