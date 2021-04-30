@@ -25,7 +25,7 @@ T StrToNbr(const std::string &Text) {
 
 //  String operations
 
-std::vector<std::string> split(const std::string &s, const std::string &delim) {
+inline std::vector<std::string> split(const std::string &s, const std::string &delim) {
     std::vector<std::string> elems;
     std::string line = s;
     size_t pos       = 0;
@@ -39,7 +39,7 @@ std::vector<std::string> split(const std::string &s, const std::string &delim) {
     return elems;
 }
 
-std::string join(std::string delimiter, std::vector<std::string> x) {
+inline std::string join(std::string delimiter, std::vector<std::string> x) {
     return std::accumulate(std::begin(x), std::end(x), std::string(), [&](std::string &ss, std::string &s) { return ss.empty() ? s : ss + delimiter + s; });
 }
 } // namespace htool

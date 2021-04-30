@@ -236,10 +236,10 @@ class NCluster : public Cluster<NCluster<SplittingType>> {
 
 // Specialization of splitting
 template <>
-std::vector<std::vector<int>> NCluster<SplittingTypes::GeometricSplitting>::splitting(int nb_pt0, const double *const x, const int *const tab, std::vector<int> &num, Cluster<NCluster<SplittingTypes::GeometricSplitting>> const *const curr_cluster, int nb_sons, const std::vector<double> &dir) { return geometric_splitting(nb_pt0, x, tab, num, curr_cluster, nb_sons, dir); }
+inline std::vector<std::vector<int>> NCluster<SplittingTypes::GeometricSplitting>::splitting(int nb_pt0, const double *const x, const int *const tab, std::vector<int> &num, Cluster<NCluster<SplittingTypes::GeometricSplitting>> const *const curr_cluster, int nb_sons, const std::vector<double> &dir) { return geometric_splitting(nb_pt0, x, tab, num, curr_cluster, nb_sons, dir); }
 
 template <>
-std::vector<std::vector<int>> NCluster<SplittingTypes::RegularSplitting>::splitting(int nb_pt0, const double *const x, const int *const tab, std::vector<int> &num, Cluster<NCluster<SplittingTypes::RegularSplitting>> const *const curr_cluster, int nb_sons, const std::vector<double> &dir) { return regular_splitting(nb_pt0, x, tab, num, curr_cluster, nb_sons, dir); }
+inline std::vector<std::vector<int>> NCluster<SplittingTypes::RegularSplitting>::splitting(int nb_pt0, const double *const x, const int *const tab, std::vector<int> &num, Cluster<NCluster<SplittingTypes::RegularSplitting>> const *const curr_cluster, int nb_sons, const std::vector<double> &dir) { return regular_splitting(nb_pt0, x, tab, num, curr_cluster, nb_sons, dir); }
 
 // Typdef with specific splitting
 typedef NCluster<SplittingTypes::GeometricSplitting> GeometricClustering;

@@ -102,7 +102,7 @@ T norm2(const std::array<T, dim> &u) { return std::sqrt(std::abs(dprod(u, u))); 
 template <typename T, std::size_t dim>
 T norm2(const std::array<std::complex<T>, dim> &u) { return std::sqrt(std::abs(dprod(u, u))); }
 
-R3 operator^(const R3 &N, const R3 &P) {
+inline R3 operator^(const R3 &N, const R3 &P) {
     R3 res;
     res[0] = N[1] * P[2] - N[2] * P[1];
     res[1] = N[2] * P[0] - N[0] * P[2];
