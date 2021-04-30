@@ -85,7 +85,7 @@ std::vector<double> solve_EVP_3(const Matrix<double> &cov) {
         // but computation error can leave it slightly outside this range.
         double phi;
         if (r <= -1)
-            phi = M_PI / 3.;
+            phi = 3.14159265358979323846 / 3.;
         else if (r >= 1)
             phi = 0;
         else
@@ -93,7 +93,7 @@ std::vector<double> solve_EVP_3(const Matrix<double> &cov) {
 
         // the eigenvalues satisfy eig3 <= eig2 <= eig1
         eigs[0] = q + 2. * p * cos(phi);
-        eigs[2] = q + 2. * p * cos(phi + (2. * M_PI / 3.));
+        eigs[2] = q + 2. * p * cos(phi + (2. * 3.14159265358979323846 / 3.));
         eigs[1] = 3. * q - eigs[0] - eigs[2]; // since trace(cov) = eig1 + eig2 + eig3
 
         if (std::abs(eigs[0]) < 1.e-16)
