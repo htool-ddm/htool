@@ -15,4 +15,18 @@
 #    endif
 #endif
 
+#include <complex>
+
+namespace htool {
+template <class T>
+struct underlying_type_spec {
+    typedef T type;
+};
+template <class T>
+struct underlying_type_spec<std::complex<T>> {
+    typedef T type;
+};
+template <class T>
+using underlying_type = typename underlying_type_spec<T>::type;
+} // namespace htool
 #endif

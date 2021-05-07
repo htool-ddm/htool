@@ -61,11 +61,15 @@ class partialACA final : public LowRankMatrix<T, ClusterImpl> {
 
             double frob = 0;
             double aux  = 0;
+            double pivot, tmp, coef;
+            int incx(1), incy(1);
+            std::vector<T> r(this->nc), c(this->nr);
             // Either we have a required rank
             // Or it is negative and we have to check the relative error between two iterations.
             //But to do that we need a least two iterations.
             while (((reqrank > 0) && (q < std::min(reqrank, std::min(this->nr, this->nc)))) || ((reqrank < 0) && (q == 0 || sqrt(aux / frob) > this->epsilon))) {
-
+                // if (q != 0)
+                // std::cout << sqrt(aux / frob) << " " << this->epsilon << " " << (sqrt(aux / frob) > this->epsilon) << std::endl;
                 // Next current rank
                 q += 1;
 
@@ -73,22 +77,28 @@ class partialACA final : public LowRankMatrix<T, ClusterImpl> {
                     q = -1;
                     break;
                 } else {
-                    std::vector<T> r(this->nc), c(this->nr);
 
                     // Compute the first cross
                     //==================//
                     // Look for a column
-                    double pivot     = 0.;
-                    SubMatrix<T> row = A.get_submatrix(std::vector<int>{this->ir[I]}, this->ic);
+
+                    A.copy_submatrix(1, this->nc, &(this->ir[I]), (this->ic).data(), r.data());
+                    for (int j = 0; j < uu.size(); j++) {
+                        coef = -uu[j][I];
+                        Blas<T>::axpy(&(this->nc), &(coef), vv[j].data(), &incx, r.data(), &incy);
+                    }
+
+                    pivot = 0.;
+                    tmp   = 0;
                     for (int k = 0; k < this->nc; k++) {
-                        r[k] = row(0, k); //A.get_coef(this->ir[I],this->ic[k]);
-                        for (int j = 0; j < uu.size(); j++) {
-                            r[k] += -uu[j][I] * vv[j][k];
-                        }
-                        if (std::abs(r[k]) > pivot && !visited_col[k]) {
-                            J     = k;
-                            pivot = std::abs(r[k]);
-                        }
+                        if (visited_col[k])
+                            continue;
+                        tmp = std::abs(r[k]);
+                        if (tmp < pivot)
+                            continue;
+                        pivot = tmp;
+                        J     = k;
+                        // std::cout << pivot << " " << J << std::endl;
                     }
 
                     visited_row[I] = true;
@@ -96,32 +106,40 @@ class partialACA final : public LowRankMatrix<T, ClusterImpl> {
                     //==================//
                     // Look for a line
                     if (std::abs(r[J]) > 1e-15) {
-                        double cmax      = 0.;
-                        SubMatrix<T> col = A.get_submatrix(this->ir, std::vector<int>{this->ic[J]});
-                        for (int j = 0; j < this->nr; j++) {
-                            c[j] = col(j, 0); //A.get_coef(this->ir[j],this->ic[J]);
-                            for (int k = 0; k < uu.size(); k++) {
-                                c[j] += -uu[k][j] * vv[k][J];
-                            }
-                            c[j] = gamma * c[j];
-                            if (std::abs(c[j]) > cmax && !visited_row[j]) {
-                                I    = j;
-                                cmax = std::abs(c[j]);
-                            }
+
+                        A.copy_submatrix(this->nr, 1, (this->ir).data(), &(this->ic[J]), c.data());
+                        for (int k = 0; k < uu.size(); k++) {
+                            coef = -vv[k][J];
+                            Blas<T>::axpy(&(this->nr), &(coef), uu[k].data(), &incx, c.data(), &incy);
+                        }
+                        c *= gamma;
+                        pivot = 0.;
+                        tmp   = 0;
+                        for (int k = 0; k < this->nr; k++) {
+                            if (visited_row[k])
+                                continue;
+                            tmp = std::abs(c[k]);
+                            if (tmp < pivot)
+                                continue;
+                            pivot = tmp;
+                            I     = k;
                         }
                         visited_col[J] = true;
                         // Test if no given rank
                         if (reqrank < 0) {
                             // Error estimator
                             T frob_aux = 0.;
-                            aux        = std::abs(dprod(c, c) * dprod(r, r));
+                            // aux        = std::abs(dprod(c, c) * dprod(r, r));
+                            aux = std::abs(Blas<T>::dot(&(this->nr), c.data(), &incx, c.data(), &incx)) * std::abs(Blas<T>::dot(&(this->nc), r.data(), &incx, r.data(), &incx));
+
                             // aux: terme quadratiques du developpement du carre' de la norme de Frobenius de la matrice low rank
                             for (int j = 0; j < uu.size(); j++) {
-                                frob_aux += dprod(r, vv[j]) * dprod(c, uu[j]);
+                                frob_aux += Blas<T>::dot(&(this->nc), r.data(), &incx, vv[j].data(), &incy) * Blas<T>::dot(&(this->nr), c.data(), &(incx), uu[j].data(), &(incy));
                             }
                             // frob_aux: termes croises du developpement du carre' de la norme de Frobenius de la matrice low rank
                             frob += aux + 2 * std::real(frob_aux); // frob: Frobenius norm of the low rank matrix
-                                                                   //==================//
+                            // std::cout << frob << " " << aux << " " << frob_aux << std::endl;
+                            //==================//
                         }
                         // Matrix<T> M=A.get_submatrix(this->ir,this->ic);
                         // uu.push_back(M.get_col(J));

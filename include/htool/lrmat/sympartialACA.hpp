@@ -89,6 +89,10 @@ class sympartialACA final : public LowRankMatrix<T, ClusterImpl> {
             double frob = 0;
             double aux  = 0;
 
+            double pivot, tmp, coef;
+            int incx(1), incy(1);
+            std::vector<T> u1(n2), u2(n1);
+
             // Either we have a required rank
             // Or it is negative and we have to check the relative error between two iterations.
             //But to do that we need a least two iterations.
@@ -101,70 +105,56 @@ class sympartialACA final : public LowRankMatrix<T, ClusterImpl> {
                     q = -1;
                     break;
                 } else {
-                    std::vector<T> line2(n2), line1(n1);
 
-                    // Compute the first cross
-                    //==================//
-                    // Look for a column
-                    double pivot = 0.;
                     if (this->offset_i >= this->offset_j) {
-                        SubMatrix<T> submat1 = A.get_submatrix(std::vector<int>{(*i1)[I1]}, *i2);
-                        for (int k = 0; k < n2; k++) {
-                            line2[k] = submat1(0, k); //A.get_coef(this->ir[I],this->ic[k]);
-                            for (int j = 0; j < uu.size(); j++) {
-                                line2[k] += -uu[j][I1] * vv[j][k];
-                            }
-                            if (std::abs(line2[k]) > pivot && !visited_2[k]) {
-                                I2    = k;
-                                pivot = std::abs(line2[k]);
-                            }
-                        }
+                        A.copy_submatrix(1, n2, &((*i1)[I1]), i2->data(), u1.data());
                     } else {
-                        SubMatrix<T> submat1 = A.get_submatrix(*i2, std::vector<int>{(*i1)[I1]});
-                        for (int k = 0; k < n2; k++) {
-                            line2[k] = submat1(k, 0); //A.get_coef(this->ir[I],this->ic[k]);
-                            for (int j = 0; j < uu.size(); j++) {
-                                line2[k] += -uu[j][I1] * vv[j][k];
-                            }
-                            if (std::abs(line2[k]) > pivot && !visited_2[k]) {
-                                I2    = k;
-                                pivot = std::abs(line2[k]);
-                            }
-                        }
+                        A.copy_submatrix(n2, 1, i2->data(), &((*i1)[I1]), u1.data());
+                    }
+
+                    for (int j = 0; j < uu.size(); j++) {
+                        coef = -uu[j][I1];
+                        Blas<T>::axpy(&(n2), &(coef), vv[j].data(), &incx, u1.data(), &incy);
+                    }
+
+                    pivot = 0.;
+                    tmp   = 0;
+                    for (int k = 0; k < n2; k++) {
+                        if (visited_2[k])
+                            continue;
+                        tmp = std::abs(u1[k]);
+                        if (tmp < pivot)
+                            continue;
+                        pivot = tmp;
+                        I2    = k;
                     }
                     visited_1[I1] = true;
-                    T gamma       = T(1.) / line2[I2];
+                    T gamma       = T(1.) / u1[I2];
 
                     //==================//
                     // Look for a line
-                    if (std::abs(line2[I2]) > 1e-15) {
+                    if (std::abs(u1[I2]) > 1e-15) {
                         double cmax = 0.;
                         if (this->offset_i >= this->offset_j) {
-                            SubMatrix<T> submat2 = A.get_submatrix(*i1, std::vector<int>{(*i2)[I2]});
-                            for (int j = 0; j < n1; j++) {
-                                line1[j] = submat2(j, 0); //A.get_coef(this->ir[j],this->ic[J]);
-                                for (int k = 0; k < uu.size(); k++) {
-                                    line1[j] += -uu[k][j] * vv[k][I2];
-                                }
-                                line1[j] = gamma * line1[j];
-                                if (std::abs(line1[j]) > cmax && !visited_1[j]) {
-                                    I1   = j;
-                                    cmax = std::abs(line1[j]);
-                                }
-                            }
+                            A.copy_submatrix(n1, 1, i1->data(), &((*i2)[I2]), u2.data());
                         } else {
-                            SubMatrix<T> submat2 = A.get_submatrix(std::vector<int>{(*i2)[I2]}, *i1);
-                            for (int j = 0; j < n1; j++) {
-                                line1[j] = submat2(0, j); //A.get_coef(this->ir[j],this->ic[J]);
-                                for (int k = 0; k < uu.size(); k++) {
-                                    line1[j] += -uu[k][j] * vv[k][I2];
-                                }
-                                line1[j] = gamma * line1[j];
-                                if (std::abs(line1[j]) > cmax && !visited_1[j]) {
-                                    I1   = j;
-                                    cmax = std::abs(line1[j]);
-                                }
-                            }
+                            A.copy_submatrix(1, n1, &((*i2)[I2]), i1->data(), u2.data());
+                        }
+                        for (int k = 0; k < uu.size(); k++) {
+                            coef = -vv[k][I2];
+                            Blas<T>::axpy(&(n1), &(coef), uu[k].data(), &incx, u2.data(), &incy);
+                        }
+                        u2 *= gamma;
+                        pivot = 0.;
+                        tmp   = 0;
+                        for (int k = 0; k < n1; k++) {
+                            if (visited_1[k])
+                                continue;
+                            tmp = std::abs(u2[k]);
+                            if (tmp < pivot)
+                                continue;
+                            pivot = tmp;
+                            I1    = k;
                         }
                         visited_2[I2] = true;
 
@@ -172,10 +162,11 @@ class sympartialACA final : public LowRankMatrix<T, ClusterImpl> {
                         if (reqrank < 0) {
                             // Error estimator
                             T frob_aux = 0.;
-                            aux        = std::abs(dprod(line2, line2) * dprod(line1, line1));
+                            aux        = std::abs(Blas<T>::dot(&(n1), u2.data(), &incx, u2.data(), &incx)) * std::abs(Blas<T>::dot(&(n2), u1.data(), &incx, u1.data(), &incx));
+
                             // aux: terme quadratiques du developpement du carre' de la norme de Frobenius de la matrice low rank
                             for (int j = 0; j < uu.size(); j++) {
-                                frob_aux += dprod(line2, vv[j]) * dprod(line1, uu[j]);
+                                frob_aux += Blas<T>::dot(&(n2), u1.data(), &incx, vv[j].data(), &incy) * Blas<T>::dot(&(n1), u2.data(), &(incx), uu[j].data(), &(incy));
                             }
                             // frob_aux: termes croises du developpement du carre' de la norme de Frobenius de la matrice low rank
                             frob += aux + 2 * std::real(frob_aux); // frob: Frobenius norm of the low rank matrix
@@ -185,8 +176,8 @@ class sympartialACA final : public LowRankMatrix<T, ClusterImpl> {
                         // uu.push_back(M.get_col(J));
                         // vv.push_back(M.get_row(I)/M(I,J));
                         // New cross added
-                        uu.push_back(line1);
-                        vv.push_back(line2);
+                        uu.push_back(u2);
+                        vv.push_back(u1);
 
                     } else {
                         // std::cout << "There is a zero row in the starting submatrix and ACA didn't work" << std::endl;
