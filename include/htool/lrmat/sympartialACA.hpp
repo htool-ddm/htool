@@ -86,10 +86,11 @@ class sympartialACA final : public LowRankMatrix<T, ClusterImpl> {
             std::vector<bool> visited_1(n1, false);
             std::vector<bool> visited_2(n2, false);
 
-            double frob = 0;
-            double aux  = 0;
+            underlying_type<T> frob = 0;
+            underlying_type<T> aux  = 0;
 
-            double pivot, tmp, coef;
+            underlying_type<T> pivot, tmp;
+            T coef;
             int incx(1), incy(1);
             std::vector<T> u1(n2), u2(n1);
 

@@ -59,9 +59,10 @@ class partialACA final : public LowRankMatrix<T, ClusterImpl> {
             std::vector<bool> visited_row(this->nr, false);
             std::vector<bool> visited_col(this->nc, false);
 
-            double frob = 0;
-            double aux  = 0;
-            double pivot, tmp, coef;
+            underlying_type<T> frob = 0;
+            underlying_type<T> aux  = 0;
+            underlying_type<T> pivot, tmp;
+            T coef;
             int incx(1), incy(1);
             std::vector<T> r(this->nc), c(this->nr);
             // Either we have a required rank
