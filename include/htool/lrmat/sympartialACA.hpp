@@ -135,7 +135,6 @@ class sympartialACA final : public LowRankMatrix<T, ClusterImpl> {
                     //==================//
                     // Look for a line
                     if (std::abs(u1[I2]) > 1e-15) {
-                        double cmax = 0.;
                         if (this->offset_i >= this->offset_j) {
                             A.copy_submatrix(n1, 1, i1->data(), &((*i2)[I2]), u2.data());
                         } else {
