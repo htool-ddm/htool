@@ -68,14 +68,8 @@ class LowRankMatrix {
         if (rank != 0) {
             std::vector<T> a(this->rank * mu);
             if (op == 'N') {
-                std::cout << "BOUH1" << std::endl;
                 V.mvprod_row_major(in, a.data(), mu, transb, op);
-                std::cout << "BOUH2" << std::endl;
-                for (int i = 0; i < nr; i++) {
-                    std::cout << out[i] << " ";
-                }
                 U.add_mvprod_row_major(a.data(), out, mu, transb, op);
-                std::cout << "BOUH3" << std::endl;
             } else if (op == 'C' || op == 'T') {
                 U.mvprod_row_major(in, a.data(), mu, transb, op);
                 V.add_mvprod_row_major(a.data(), out, mu, transb, op);
@@ -115,19 +109,20 @@ class LowRankMatrix {
 };
 
 template <typename T>
-double Frobenius_relative_error(const LowRankMatrix<T> &lrmat, const IMatrix<T> &ref, int reqrank = -1) {
+underlying_type<T> Frobenius_relative_error(const LowRankMatrix<T> &lrmat, const IMatrix<T> &ref, int reqrank = -1) {
     assert(reqrank <= lrmat.rank_of());
     if (reqrank == -1) {
         reqrank = lrmat.rank_of();
     }
-    T norm              = 0;
-    T err               = 0;
-    std::vector<int> ir = lrmat.get_ir();
-    std::vector<int> ic = lrmat.get_ic();
+    underlying_type<T> norm = 0;
+    underlying_type<T> err  = 0;
+    std::vector<int> ir     = lrmat.get_ir();
+    std::vector<int> ic     = lrmat.get_ic();
 
     for (int j = 0; j < lrmat.nb_rows(); j++) {
         for (int k = 0; k < lrmat.nb_cols(); k++) {
-            T aux = ref.get_coef(ir[j], ic[k]);
+            T aux;
+            ref.copy_submatrix(1, 1, &(ir[j]), &(ic[k]), &aux);
             norm += std::pow(std::abs(aux), 2);
             for (int l = 0; l < reqrank; l++) {
                 aux = aux - lrmat.get_U(j, l) * lrmat.get_V(l, k);
@@ -140,18 +135,19 @@ double Frobenius_relative_error(const LowRankMatrix<T> &lrmat, const IMatrix<T> 
 }
 
 template <typename T>
-double Frobenius_absolute_error(const LowRankMatrix<T> &lrmat, const IMatrix<T> &ref, int reqrank = -1) {
+underlying_type<T> Frobenius_absolute_error(const LowRankMatrix<T> &lrmat, const IMatrix<T> &ref, int reqrank = -1) {
     assert(reqrank <= lrmat.rank_of());
     if (reqrank == -1) {
         reqrank = lrmat.rank_of();
     }
-    T err               = 0;
-    std::vector<int> ir = lrmat.get_ir();
-    std::vector<int> ic = lrmat.get_ic();
+    underlying_type<T> err = 0;
+    std::vector<int> ir    = lrmat.get_ir();
+    std::vector<int> ic    = lrmat.get_ic();
 
     for (int j = 0; j < lrmat.nb_rows(); j++) {
         for (int k = 0; k < lrmat.nb_cols(); k++) {
-            T aux = ref.get_coef(ir[j], ic[k]);
+            T aux;
+            ref.copy_submatrix(1, 1, &(ir[j]), &(ic[k]), &aux);
             for (int l = 0; l < reqrank; l++) {
                 aux = aux - lrmat.get_U(j, l) * lrmat.get_V(l, k);
             }

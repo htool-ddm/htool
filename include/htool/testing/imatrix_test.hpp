@@ -20,6 +20,8 @@ class IMatrixTest : public IMatrix<T> {
 
     explicit IMatrixTest(int space_dim0, int nr, const std::vector<double> &p10, T coef0 = 0) : IMatrix<T>(nr, nr), p1(p10), p2(p10), space_dim(space_dim0), coef(coef0) {}
 
+    virtual T get_coef(const int &i, const int &j) const = 0;
+
     std::vector<T>
     operator*(std::vector<T> &a) const {
         std::vector<T> result(this->nr, 0);
@@ -59,9 +61,16 @@ class IMatrixTest : public IMatrix<T> {
 class IMatrixTestDouble : public IMatrixTest<double> {
   public:
     using IMatrixTest::IMatrixTest;
-
-    double get_coef(const int &i, const int &j) const {
+    double get_coef(const int &i, const int &j) const override {
         return 1. / (4 * M_PI * std::sqrt(this->coef + std::inner_product(p1.begin() + this->space_dim * i, this->p1.begin() + this->space_dim * i + this->space_dim, p2.begin() + this->space_dim * j, double(0), std::plus<double>(), [](double u, double v) { return (u - v) * (u - v); })));
+    }
+
+    void copy_submatrix(int M, int N, const int *const rows, const int *const cols, double *ptr) const override {
+        for (int i = 0; i < M; i++) {
+            for (int j = 0; j < N; j++) {
+                ptr[i + M * j] = this->get_coef(rows[i], cols[j]);
+            }
+        }
     }
 };
 
@@ -69,8 +78,16 @@ class IMatrixTestComplex : public IMatrixTest<std::complex<double>> {
   public:
     using IMatrixTest::IMatrixTest;
 
-    std::complex<double> get_coef(const int &i, const int &j) const {
+    std::complex<double> get_coef(const int &i, const int &j) const override {
         return (1. + std::complex<double>(0, 1)) / (4 * M_PI * std::sqrt(coef + std::inner_product(p1.begin() + space_dim * i, p1.begin() + space_dim * i + space_dim, p2.begin() + space_dim * j, double(0), std::plus<double>(), [](double u, double v) { return (u - v) * (u - v); })));
+    }
+
+    void copy_submatrix(int M, int N, const int *const rows, const int *const cols, std::complex<double> *ptr) const override {
+        for (int i = 0; i < M; i++) {
+            for (int j = 0; j < N; j++) {
+                ptr[i + M * j] = this->get_coef(rows[i], cols[j]);
+            }
+        }
     }
 };
 
@@ -85,8 +102,16 @@ class IMatrixTestComplexHermitian : public IMatrixTest<std::complex<double>> {
   public:
     using IMatrixTest::IMatrixTest;
 
-    std::complex<double> get_coef(const int &i, const int &j) const {
+    std::complex<double> get_coef(const int &i, const int &j) const override {
         return (1. + sign(i - j) * std::complex<double>(0, 1)) / (4 * M_PI * std::sqrt(coef + std::inner_product(p1.begin() + space_dim * i, p1.begin() + space_dim * i + space_dim, p2.begin() + space_dim * j, double(0), std::plus<double>(), [](double u, double v) { return (u - v) * (u - v); })));
+    }
+
+    void copy_submatrix(int M, int N, const int *const rows, const int *const cols, std::complex<double> *ptr) const override {
+        for (int i = 0; i < M; i++) {
+            for (int j = 0; j < N; j++) {
+                ptr[i + M * j] = this->get_coef(rows[i], cols[j]);
+            }
+        }
     }
 };
 

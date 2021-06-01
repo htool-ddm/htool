@@ -17,6 +17,15 @@ class MyMatrix : public IMatrix<double> {
         return (1.) / (4 * M_PI * std::sqrt(1e-5 + std::inner_product(p1.begin() + space_dim * k, p1.begin() + space_dim * k + space_dim, p2.begin() + space_dim * j, double(0), std::plus<double>(), [](double u, double v) { return (u - v) * (u - v); })));
     }
 
+    // Virtual function to overload
+    void copy_submatrix(int M, int N, const int *const rows, const int *const cols, double *ptr) const override {
+        for (int j = 0; j < M; j++) {
+            for (int k = 0; k < N; k++) {
+                ptr[j + M * k] = this->get_coef(rows[j], cols[k]);
+            }
+        }
+    }
+
     // Matrix vector product
     std::vector<double> operator*(std::vector<double> a) {
         std::vector<double> result(nr, 0);

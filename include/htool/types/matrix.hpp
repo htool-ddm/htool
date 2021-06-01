@@ -36,14 +36,8 @@ class IMatrix {
     IMatrix(const IMatrix &)       = default;      // copy constructor
     IMatrix &operator=(const IMatrix &) = default; // copy assignement operator
 
-    virtual T get_coef(const int &j, const int &k) const = 0;
-
     // C style
-    virtual void copy_submatrix(int M, int N, const int *const rows, const int *const cols, T *ptr) const {
-        for (int j = 0; j < M; j++)
-            for (int k = 0; k < N; k++)
-                ptr[j + k * M] = this->get_coef(rows[j], cols[k]);
-    }
+    virtual void copy_submatrix(int M, int N, const int *const rows, const int *const cols, T *ptr) const = 0;
     SubMatrix<T> get_submatrix(int M, int N, const int *const rows, const int *const cols) const {
         SubMatrix<T> mat(M, N, rows, cols);
         this->copy_submatrix(M, N, rows, cols, mat.data());
@@ -150,14 +144,12 @@ class Matrix : public IMatrix<T> {
     T get_coef(const int &j, const int &k) const {
         return this->mat[j + k * this->nr];
     }
-    // SubMatrix<T> get_submatrix(const std::vector<int>& J, const std::vector<int>& K) const
-    // {
-    //   SubMatrix<T> mat(J,K);
-    // 	for (int i=0; i<mat.nb_rows(); i++)
-    // 		for (int j=0; j<mat.nb_cols(); j++)
-    // 			mat(i,j) = this->get_coef(J[i], K[j]);
-    //   return mat;
-    // }
+
+    void copy_submatrix(int M, int N, const int *const rows, const int *const cols, T *ptr) const {
+        for (int i = 0; i < M; i++)
+            for (int j = 0; j < N; j++)
+                ptr[i + M * j] = this->get_coef(rows[i], cols[j]);
+    }
 
     //! ### Access operator
     /*!

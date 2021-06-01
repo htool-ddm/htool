@@ -11,16 +11,43 @@ enum class SplittingTypes { GeometricSplitting,
 std::vector<std::vector<int>> regular_splitting(const double *const x, const int *const tab, std::vector<int> &num, VirtualCluster const *const curr_cluster, int nb_sons, const std::vector<double> &dir) {
 
     std::vector<std::vector<int>> numbering(nb_sons);
-    int space_dim = curr_cluster->get_space_dim();
+    std::vector<double> xc = curr_cluster->get_ctr();
+    int space_dim          = curr_cluster->get_space_dim();
 
+    // Sort along direction
     std::sort(num.begin(), num.end(), [&](int a, int b) {
         double c = std::inner_product(x + space_dim * tab[a], x + space_dim * (1 + tab[a]), dir.data(), double(0));
         double d = std::inner_product(x + space_dim * tab[b], x + space_dim * (1 + tab[b]), dir.data(), double(0));
         return c < d;
     });
 
+    // Choose a way dir (1) or -dir (2)
+    int dist1          = 0; // number of non local permutation
+    int dist2          = 0; // number of non local permutation
     int size_numbering = num.size() / nb_sons;
     int count_size     = 0;
+    auto rnum_ptr      = num.rbegin();
+
+    for (int p = 0; p < nb_sons - 1; p++) {
+        for (int i = count_size; i < count_size + size_numbering; i++) {
+            dist1 += !((count_size <= num[i]) && (num[i] < count_size + size_numbering));
+        }
+        for (int i = count_size; i < count_size + size_numbering; i++) {
+            dist2 += !((count_size <= rnum_ptr[i]) && (rnum_ptr[i] < count_size + size_numbering));
+        }
+        count_size += size_numbering;
+    }
+    for (int i = count_size; i < num.size(); i++) {
+        dist1 += !((count_size <= num[i]) && (num[i] < num.size()));
+    }
+    for (int i = count_size; i < num.size(); i++) {
+        dist2 += !((count_size <= rnum_ptr[i]) && (rnum_ptr[i] < num.size()));
+    }
+    if (dist2 < dist1)
+        std::reverse(num.begin(), num.end());
+
+    // Split
+    count_size = 0;
     for (int p = 0; p < nb_sons - 1; p++) {
         numbering[p].resize(size_numbering);
         std::copy_n(num.begin() + count_size, size_numbering, numbering[p].begin());

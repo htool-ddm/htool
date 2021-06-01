@@ -1,12 +1,16 @@
 #ifndef HTOOL_WRAPPER_MPI_HPP
 #define HTOOL_WRAPPER_MPI_HPP
 
+#include "../misc/define.hpp"
 #include <mpi.h>
 
 namespace htool {
 template <typename T>
 struct wrapper_mpi {
     static MPI_Datatype mpi_type();
+    static MPI_Datatype mpi_underlying_type() {
+        return wrapper_mpi<underlying_type<T>>::mpi_type();
+    }
 };
 
 template <>

@@ -26,6 +26,7 @@
 #include "types/vector.hpp"
 
 #ifdef WITH_HPDDM
+#    include "solvers/ddm.hpp"
 #    include "wrappers/wrapper_hpddm.hpp"
 #endif
 #include "wrappers/wrapper_blas.hpp"

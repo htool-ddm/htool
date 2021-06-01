@@ -106,3 +106,12 @@ add_test(NAME Test_hmat_local_get_1 COMMAND ${MPIEXEC} ${MPIEXEC_NUMPROC_FLAG} 1
 add_test(NAME Test_hmat_local_get_2 COMMAND ${MPIEXEC} ${MPIEXEC_NUMPROC_FLAG} 2 ${MPIEXEC_PREFLAGS} ${CMAKE_CURRENT_BINARY_DIR}/Test_hmat_local_get)
 add_test(NAME Test_hmat_local_get_3 COMMAND ${MPIEXEC} ${MPIEXEC_NUMPROC_FLAG} 3 ${MPIEXEC_PREFLAGS} ${CMAKE_CURRENT_BINARY_DIR}/Test_hmat_local_get)
 add_test(NAME Test_hmat_local_get_4 COMMAND ${MPIEXEC} ${MPIEXEC_NUMPROC_FLAG} 4 ${MPIEXEC_PREFLAGS} ${CMAKE_CURRENT_BINARY_DIR}/Test_hmat_local_get)
+
+#=== local get
+add_executable(Test_hmat_permutation test_hmat_permutation.cpp)
+target_link_libraries(Test_hmat_permutation htool)
+add_dependencies(build-tests Test_hmat_permutation)
+add_test(NAME Test_hmat_permutation_1 COMMAND ${MPIEXEC} ${MPIEXEC_NUMPROC_FLAG} 1 ${MPIEXEC_PREFLAGS} ${CMAKE_CURRENT_BINARY_DIR}/Test_hmat_permutation)
+add_test(NAME Test_hmat_permutation_2 COMMAND ${MPIEXEC} ${MPIEXEC_NUMPROC_FLAG} 2 ${MPIEXEC_PREFLAGS} ${CMAKE_CURRENT_BINARY_DIR}/Test_hmat_permutation)
+add_test(NAME Test_hmat_permutation_3 COMMAND ${MPIEXEC} ${MPIEXEC_NUMPROC_FLAG} 3 ${MPIEXEC_PREFLAGS} ${CMAKE_CURRENT_BINARY_DIR}/Test_hmat_permutation)
+add_test(NAME Test_hmat_permutation_4 COMMAND ${MPIEXEC} ${MPIEXEC_NUMPROC_FLAG} 4 ${MPIEXEC_PREFLAGS} ${CMAKE_CURRENT_BINARY_DIR}/Test_hmat_permutation)
