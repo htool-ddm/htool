@@ -30,8 +30,8 @@ int main(int argc, char *argv[]) {
     distance[3] = 10;
     int mu      = 5;
 
-    double epsilon = 1e-8;
-    double eta     = -0.1;
+    double epsilon = 1e-3;
+    double eta     = 0.1;
 
     for (int idist = 0; idist < ndistance; idist++) {
 
@@ -39,8 +39,8 @@ int main(int argc, char *argv[]) {
         // we set a constant seed for rand because we want always the same result if we run the check many times
         // (two different initializations with the same seed will generate the same succession of results in the subsequent calls to rand)
 
-        int nr = 20;
-        int nc = 10;
+        int nr = 200;
+        int nc = 100;
 
         double z1 = 1;
         double z2 = 1 + distance[idist];

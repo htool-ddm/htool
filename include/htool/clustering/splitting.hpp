@@ -47,7 +47,7 @@ std::vector<std::vector<int>> regular_splitting(const double *const x, const int
         std::reverse(num.begin(), num.end());
 
     // Split
-    int count_size = 0;
+    count_size = 0;
     for (int p = 0; p < nb_sons - 1; p++) {
         numbering[p].resize(size_numbering);
         std::copy_n(num.begin() + count_size, size_numbering, numbering[p].begin());

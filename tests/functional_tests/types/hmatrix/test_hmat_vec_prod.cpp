@@ -30,7 +30,7 @@ int main(int argc, char *argv[]) {
     distance[2] = 7;
     distance[3] = 10;
 
-    double epsilon = 1e-6;
+    double epsilon = 1e-3;
     double eta     = 0.1;
 
     for (int idist = 0; idist < ndistance; idist++) {

@@ -47,6 +47,7 @@ class HMatrix : public VirtualHMatrix<T> {
     char symmetry;
     char UPLO;
     int false_positive;
+    bool use_permutation;
 
     // Parameters
     int ndofperelt;
@@ -69,6 +70,7 @@ class HMatrix : public VirtualHMatrix<T> {
     std::vector<LowRankMatrix<T> *> MyStrictlyDiagFarFieldMats;
     std::vector<SubMatrix<T> *> MyStrictlyDiagNearFieldMats;
 
+    std::vector<int> no_permutation_target, no_permutation_source;
     mutable std::map<std::string, std::string> infos;
 
     const MPI_Comm comm;
@@ -95,10 +97,11 @@ class HMatrix : public VirtualHMatrix<T> {
 
   public:
     // Special constructor for hand-made build (for MultiHMatrix for example)
-    HMatrix(int space_dim0, int nr0, int nc0, const std::shared_ptr<VirtualCluster> &cluster_tree_t0, const std::shared_ptr<VirtualCluster> &cluster_tree_s0, char symmetry0 = 'N', char UPLO = 'N', const MPI_Comm comm0 = MPI_COMM_WORLD) : nr(nr0), nc(nc0), space_dim(space_dim0), symmetry(symmetry0), cluster_tree_t(cluster_tree_t0), cluster_tree_s(cluster_tree_s0), comm(comm0){};
+
+    HMatrix(int space_dim0, int nr0, int nc0, const std::shared_ptr<VirtualCluster> &cluster_tree_t0, const std::shared_ptr<VirtualCluster> &cluster_tree_s0, char symmetry0 = 'N', char UPLO = 'N', const MPI_Comm comm0 = MPI_COMM_WORLD) : nr(nr0), nc(nc0), space_dim(space_dim0), symmetry(symmetry0), use_permutation(true), cluster_tree_t(cluster_tree_t0), cluster_tree_s(cluster_tree_s0), comm(comm0){};
 
     // Constructor
-    HMatrix(const std::shared_ptr<VirtualCluster> &cluster_tree_t0, const std::shared_ptr<VirtualCluster> &cluster_tree_s0, double epsilon0 = 1e-6, double eta0 = 10, char Symmetry = 'N', char UPLO = 'N', const int &reqrank0 = -1, const MPI_Comm comm0 = MPI_COMM_WORLD) : nr(0), nc(0), space_dim(cluster_tree_t0->get_space_dim()), reqrank(reqrank0), local_size(0), local_offset(0), symmetry(Symmetry), UPLO(UPLO), false_positive(0), ndofperelt(1), epsilon(epsilon0), eta(eta0), minclustersize(10), maxblocksize(1e6), minsourcedepth(0), mintargetdepth(0), cluster_tree_t(cluster_tree_t0), cluster_tree_s(cluster_tree_s0), comm(comm0) {
+    HMatrix(const std::shared_ptr<VirtualCluster> &cluster_tree_t0, const std::shared_ptr<VirtualCluster> &cluster_tree_s0, double epsilon0 = 1e-6, double eta0 = 10, char Symmetry = 'N', char UPLO = 'N', const int &reqrank0 = -1, const MPI_Comm comm0 = MPI_COMM_WORLD) : nr(0), nc(0), space_dim(cluster_tree_t0->get_space_dim()), reqrank(reqrank0), local_size(0), local_offset(0), symmetry(Symmetry), UPLO(UPLO), false_positive(0), use_permutation(true), ndofperelt(1), epsilon(epsilon0), eta(eta0), minclustersize(10), maxblocksize(1e6), minsourcedepth(0), mintargetdepth(0), cluster_tree_t(cluster_tree_t0), cluster_tree_s(cluster_tree_s0), comm(comm0) {
         if (!((symmetry == 'N' || symmetry == 'H' || symmetry == 'S')
               && (UPLO == 'N' || UPLO == 'L' || UPLO == 'U')
               && ((symmetry == 'N' && UPLO == 'N') || (symmetry != 'N' && UPLO != 'N'))
@@ -228,6 +231,7 @@ class HMatrix : public VirtualHMatrix<T> {
     void set_minsourcedepth(unsigned int minsourcedepth0) { this->minsourcedepth = minsourcedepth0; };
     void set_mintargetdepth(unsigned int mintargetdepth0) { this->mintargetdepth = mintargetdepth0; };
     void set_maxblocksize(unsigned int maxblocksize0) { this->maxblocksize = maxblocksize0; };
+    void set_use_permutation(bool choice) { this->use_permutation = choice; };
 
     // Infos
     const std::map<std::string, std::string> &get_infos() const { return infos; }
@@ -312,6 +316,14 @@ void HMatrix<T, LowRankMatrix, AdmissibleCondition>::build(IMatrix<T> &mat, cons
     this->nc = mat.nb_cols();
     this->nr = mat.nb_rows();
 
+    // Use no_permutation if needed
+    if (use_permutation == false) {
+        no_permutation_target.resize(nr);
+        no_permutation_source.resize(nc);
+        std::iota(no_permutation_target.begin(), no_permutation_target.end(), int(0));
+        std::iota(no_permutation_source.begin(), no_permutation_source.end(), int(0));
+    }
+
     // Construction arbre des paquets
     local_size   = cluster_tree_t->get_local_size();
     local_offset = cluster_tree_t->get_local_offset();
@@ -346,6 +358,14 @@ void HMatrix<T, LowRankMatrix, AdmissibleCondition>::build_sym(IMatrix<T> &mat, 
 
     this->nc = mat.nb_cols();
     this->nr = mat.nb_rows();
+
+    // Use no_permutation if needed
+    if (use_permutation == false) {
+        no_permutation_target.resize(nr);
+        no_permutation_source.resize(nc);
+        std::iota(no_permutation_target.begin(), no_permutation_target.end(), int(0));
+        std::iota(no_permutation_source.begin(), no_permutation_source.end(), int(0));
+    }
 
     // Construction arbre des paquets
     local_size   = cluster_tree_t->get_local_size();
@@ -644,7 +664,11 @@ void HMatrix<T, LowRankMatrix, AdmissibleCondition>::AddNearFieldMat(IMatrix<T> 
     const VirtualCluster &t = task.get_target_cluster();
     const VirtualCluster &s = task.get_source_cluster();
 
-    MyNearFieldMats_local.emplace_back(new SubMatrix<T>(mat, t.get_size(), s.get_size(), cluster_tree_t->get_perm().data() + t.get_offset(), cluster_tree_s->get_perm().data() + s.get_offset(), t.get_offset(), s.get_offset()));
+    if (use_permutation) {
+        MyNearFieldMats_local.emplace_back(new SubMatrix<T>(mat, t.get_size(), s.get_size(), cluster_tree_t->get_perm().data() + t.get_offset(), cluster_tree_s->get_perm().data() + s.get_offset(), t.get_offset(), s.get_offset()));
+    } else {
+        MyNearFieldMats_local.emplace_back(new SubMatrix<T>(mat, t.get_size(), s.get_size(), no_permutation_target.data() + t.get_offset(), no_permutation_source.data() + s.get_offset(), t.get_offset(), s.get_offset()));
+    }
 }
 
 // Build a low rank block
@@ -654,7 +678,13 @@ void HMatrix<T, LowRankMatrix, AdmissibleCondition>::AddFarFieldMat(IMatrix<T> &
     const VirtualCluster &t = task.get_target_cluster();
     const VirtualCluster &s = task.get_source_cluster();
 
-    MyFarFieldMats_local.emplace_back(new LowRankMatrix<T>(std::vector<int>(cluster_tree_t->get_perm_start() + t.get_offset(), cluster_tree_t->get_perm_start() + t.get_offset() + t.get_size()), std::vector<int>(cluster_tree_s->get_perm_start() + s.get_offset(), cluster_tree_s->get_perm_start() + s.get_offset() + s.get_size()), t.get_offset(), s.get_offset(), reqrank, this->epsilon));
+    if (use_permutation) {
+        MyFarFieldMats_local.emplace_back(new LowRankMatrix<T>(std::vector<int>(cluster_tree_t->get_perm_start() + t.get_offset(), cluster_tree_t->get_perm_start() + t.get_offset() + t.get_size()), std::vector<int>(cluster_tree_s->get_perm_start() + s.get_offset(), cluster_tree_s->get_perm_start() + s.get_offset() + s.get_size()), t.get_offset(), s.get_offset(), reqrank, this->epsilon));
+    }
+
+    else {
+        MyFarFieldMats_local.emplace_back(new LowRankMatrix<T>(std::vector<int>(no_permutation_target.data() + t.get_offset(), no_permutation_target.data() + t.get_offset() + t.get_size()), std::vector<int>(no_permutation_source.data() + s.get_offset(), no_permutation_source.data() + s.get_offset() + s.get_size()), t.get_offset(), s.get_offset(), reqrank, this->epsilon));
+    }
     MyFarFieldMats_local.back()->set_ndofperelt(this->ndofperelt);
     MyFarFieldMats_local.back()->build(mat, t, xt, tabt, s, xs, tabs);
 }
@@ -927,10 +957,26 @@ void HMatrix<T, LowRankMatrix, AdmissibleCondition>::mvprod_global_to_global(con
         std::vector<T> buffer(std::max(nc, nr));
 
         // Permutation
-        this->source_to_cluster_permutation(in, buffer.data());
-        std::cout << "BOUH" << std::endl;
-        //
-        mymvprod_global_to_local(buffer.data(), out_perm.data(), 1);
+        if (use_permutation) {
+            this->source_to_cluster_permutation(in, buffer.data());
+            mymvprod_global_to_local(buffer.data(), out_perm.data(), 1);
+
+        } else {
+            mymvprod_global_to_local(in, out_perm.data(), 1);
+            // Allgather
+            std::vector<int> recvcounts(sizeWorld);
+            std::vector<int> displs(sizeWorld);
+
+            displs[0] = 0;
+
+            for (int i = 0; i < sizeWorld; i++) {
+                recvcounts[i] = cluster_tree_t->get_masteroffset(i).second * mu;
+                if (i > 0)
+                    displs[i] = displs[i - 1] + recvcounts[i - 1];
+            }
+
+            MPI_Allgatherv(out, recvcounts[rankWorld], wrapper_mpi<T>::mpi_type(), buffer.data(), &(recvcounts[0]), &(displs[0]), wrapper_mpi<T>::mpi_type(), comm);
+        }
 
         // Allgather
         std::vector<int> recvcounts(sizeWorld);
@@ -944,10 +990,14 @@ void HMatrix<T, LowRankMatrix, AdmissibleCondition>::mvprod_global_to_global(con
                 displs[i] = displs[i - 1] + recvcounts[i - 1];
         }
 
-        MPI_Allgatherv(out_perm.data(), recvcounts[rankWorld], wrapper_mpi<T>::mpi_type(), buffer.data(), &(recvcounts[0]), &(displs[0]), wrapper_mpi<T>::mpi_type(), comm);
+        if (use_permutation) {
+            MPI_Allgatherv(out_perm.data(), recvcounts[rankWorld], wrapper_mpi<T>::mpi_type(), buffer.data(), &(recvcounts[0]), &(displs[0]), wrapper_mpi<T>::mpi_type(), comm);
 
-        // Permutation
-        this->cluster_to_target_permutation(buffer.data(), out);
+            // Permutation
+            this->cluster_to_target_permutation(buffer.data(), out);
+        } else {
+            MPI_Allgatherv(out_perm.data(), recvcounts[rankWorld], wrapper_mpi<T>::mpi_type(), out, &(recvcounts[0]), &(displs[0]), wrapper_mpi<T>::mpi_type(), comm);
+        }
 
     } else {
 
@@ -957,11 +1007,17 @@ void HMatrix<T, LowRankMatrix, AdmissibleCondition>::mvprod_global_to_global(con
 
         for (int i = 0; i < mu; i++) {
             // Permutation
-            this->source_to_cluster_permutation(in + i * nc, buffer.data());
-
-            // Transpose
-            for (int j = 0; j < nc; j++) {
-                in_perm[i + j * mu] = buffer[j];
+            if (use_permutation) {
+                this->source_to_cluster_permutation(in + i * nc, buffer.data());
+                // Transpose
+                for (int j = 0; j < nc; j++) {
+                    in_perm[i + j * mu] = buffer[j];
+                }
+            } else {
+                // Transpose
+                for (int j = 0; j < nc; j++) {
+                    in_perm[i + j * mu] = in[j + i * nc];
+                }
             }
         }
 
@@ -997,12 +1053,18 @@ void HMatrix<T, LowRankMatrix, AdmissibleCondition>::mvprod_global_to_global(con
         MPI_Allgatherv(out_perm.data(), recvcounts[rankWorld], wrapper_mpi<T>::mpi_type(), in_perm.data() + mu * nr, &(recvcounts[0]), &(displs[0]), wrapper_mpi<T>::mpi_type(), comm);
 
         for (int i = 0; i < mu; i++) {
-            for (int j = 0; j < sizeWorld; j++) {
-                std::copy_n(in_perm.data() + mu * nr + displs[j] + i * recvcounts[j] / mu, recvcounts[j] / mu, in_perm.data() + i * nr + displs[j] / mu);
-            }
+            if (use_permutation) {
+                for (int j = 0; j < sizeWorld; j++) {
+                    std::copy_n(in_perm.data() + mu * nr + displs[j] + i * recvcounts[j] / mu, recvcounts[j] / mu, in_perm.data() + i * nr + displs[j] / mu);
+                }
 
-            // Permutation
-            this->cluster_to_target_permutation(in_perm.data() + i * nr, out + i * nr);
+                // Permutation
+                this->cluster_to_target_permutation(in_perm.data() + i * nr, out + i * nr);
+            } else {
+                for (int j = 0; j < sizeWorld; j++) {
+                    std::copy_n(in_perm.data() + mu * nr + displs[j] + i * recvcounts[j] / mu, recvcounts[j] / mu, out + i * nr + displs[j] / mu);
+                }
+            }
         }
     }
     // Timing
@@ -1028,13 +1090,19 @@ void HMatrix<T, LowRankMatrix, AdmissibleCondition>::mvprod_local_to_local(const
         std::vector<T> in_perm(local_size_source), out_perm(local_size);
 
         // local permutation
-        this->local_source_to_local_cluster(in, in_perm.data());
+        if (use_permutation) {
+            this->local_source_to_local_cluster(in, in_perm.data());
 
-        // prod
-        mymvprod_local_to_local(in_perm.data(), out_perm.data(), 1, work);
+            // prod
+            mymvprod_local_to_local(in_perm.data(), out_perm.data(), 1, work);
 
-        // permutation
-        this->local_cluster_to_local_target(out_perm.data(), out, comm);
+            // permutation
+            if (use_permutation) {
+                this->local_cluster_to_local_target(out_perm.data(), out, comm);
+            }
+        } else {
+            mymvprod_local_to_local(in, out, 1, work);
+        }
 
     } else {
 
@@ -1044,11 +1112,18 @@ void HMatrix<T, LowRankMatrix, AdmissibleCondition>::mvprod_local_to_local(const
 
         for (int i = 0; i < mu; i++) {
             // local permutation
-            this->local_source_to_local_cluster(in + i * local_size_source, buffer.data());
+            if (use_permutation) {
+                this->local_source_to_local_cluster(in + i * local_size_source, buffer.data());
 
-            // Transpose
-            for (int j = 0; j < local_size_source; j++) {
-                in_perm[i + j * mu] = buffer[j];
+                // Transpose
+                for (int j = 0; j < local_size_source; j++) {
+                    in_perm[i + j * mu] = buffer[j];
+                }
+            } else {
+                // Transpose
+                for (int j = 0; j < local_size_source; j++) {
+                    in_perm[i + j * mu] = in[j + i * local_size_source];
+                }
             }
         }
 
@@ -1059,13 +1134,20 @@ void HMatrix<T, LowRankMatrix, AdmissibleCondition>::mvprod_local_to_local(const
         mymvprod_local_to_local(in_perm.data(), out_perm.data(), mu, work);
 
         for (int i = 0; i < mu; i++) {
-            // Tranpose
-            for (int j = 0; j < local_size; j++) {
-                buffer[j] = out_perm[i + j * mu];
-            }
+            if (use_permutation) {
+                // Tranpose
+                for (int j = 0; j < local_size; j++) {
+                    buffer[j] = out_perm[i + j * mu];
+                }
 
-            // local permutation
-            this->local_cluster_to_local_target(buffer.data(), out + i * local_size);
+                // local permutation
+                this->local_cluster_to_local_target(buffer.data(), out + i * local_size);
+            } else {
+                // Tranpose
+                for (int j = 0; j < local_size; j++) {
+                    out[j + i * local_size] = out_perm[i + j * mu];
+                }
+            }
         }
 
         if (symmetry == 'H') {
