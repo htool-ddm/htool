@@ -127,7 +127,8 @@ double Frobenius_relative_error(const LowRankMatrix<T> &lrmat, const IMatrix<T> 
 
     for (int j = 0; j < lrmat.nb_rows(); j++) {
         for (int k = 0; k < lrmat.nb_cols(); k++) {
-            T aux = ref.get_coef(ir[j], ic[k]);
+            T aux;
+            ref.copy_submatrix(1, 1, &(ir[j]), &(ic[k]), &aux);
             norm += std::pow(std::abs(aux), 2);
             for (int l = 0; l < reqrank; l++) {
                 aux = aux - lrmat.get_U(j, l) * lrmat.get_V(l, k);
@@ -151,7 +152,8 @@ double Frobenius_absolute_error(const LowRankMatrix<T> &lrmat, const IMatrix<T> 
 
     for (int j = 0; j < lrmat.nb_rows(); j++) {
         for (int k = 0; k < lrmat.nb_cols(); k++) {
-            T aux = ref.get_coef(ir[j], ic[k]);
+            T aux;
+            ref.copy_submatrix(1, 1, &(ir[j]), &(ic[k]), &aux);
             for (int l = 0; l < reqrank; l++) {
                 aux = aux - lrmat.get_U(j, l) * lrmat.get_V(l, k);
             }
