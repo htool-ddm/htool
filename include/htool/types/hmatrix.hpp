@@ -46,6 +46,7 @@ class HMatrix : public HMatrixVirtual<T> {
     int local_offset;
     char symmetry;
     char UPLO;
+    int false_positive;
 
     // Parameters
     int ndofperelt;
@@ -76,8 +77,8 @@ class HMatrix : public HMatrixVirtual<T> {
     // Internal methods
     void ComputeBlocks(IMatrix<T> &mat, const double *const xt, const int *const tabt, const double *const xs, const int *const tabs);
     void ComputeSymBlocks(IMatrix<T> &mat, const double *const xt, const int *const tabt, const double *const xs, const int *const tabs);
-    bool UpdateBlocks(IMatrix<T> &mat, Block<ClusterImpl, AdmissibleCondition> &task, const double *const xt, const int *const tabt, const double *const xs, const int *const tabs, std::vector<std::unique_ptr<SubMatrix<T>>> &, std::vector<std::unique_ptr<LowRankMatrix<T, ClusterImpl>>> &);
-    bool UpdateSymBlocks(IMatrix<T> &mat, Block<ClusterImpl, AdmissibleCondition> &task, const double *const xt, const int *const tabt, const double *const xs, const int *const tabs, std::vector<std::unique_ptr<SubMatrix<T>>> &, std::vector<std::unique_ptr<LowRankMatrix<T, ClusterImpl>>> &);
+    bool UpdateBlocks(IMatrix<T> &mat, Block<ClusterImpl, AdmissibleCondition> &task, const double *const xt, const int *const tabt, const double *const xs, const int *const tabs, std::vector<std::unique_ptr<SubMatrix<T>>> &, std::vector<std::unique_ptr<LowRankMatrix<T, ClusterImpl>>> &, int &);
+    bool UpdateSymBlocks(IMatrix<T> &mat, Block<ClusterImpl, AdmissibleCondition> &task, const double *const xt, const int *const tabt, const double *const xs, const int *const tabs, std::vector<std::unique_ptr<SubMatrix<T>>> &, std::vector<std::unique_ptr<LowRankMatrix<T, ClusterImpl>>> &, int &);
     void AddNearFieldMat(IMatrix<T> &mat, Block<ClusterImpl, AdmissibleCondition> &task, std::vector<std::unique_ptr<SubMatrix<T>>> &);
     void AddFarFieldMat(IMatrix<T> &mat, Block<ClusterImpl, AdmissibleCondition> &task, const double *const xt, const int *const tabt, const double *const xs, const int *const tabs, std::vector<std::unique_ptr<LowRankMatrix<T, ClusterImpl>>> &, const int &reqrank = -1);
     void ComputeInfos(const std::vector<double> &mytimes);
@@ -97,7 +98,7 @@ class HMatrix : public HMatrixVirtual<T> {
     HMatrix(int space_dim0, int nr0, int nc0, const std::shared_ptr<Cluster<ClusterImpl>> &cluster_tree_t0, const std::shared_ptr<Cluster<ClusterImpl>> &cluster_tree_s0, char symmetry0 = 'N', char UPLO = 'N', const MPI_Comm comm0 = MPI_COMM_WORLD) : nr(nr0), nc(nc0), space_dim(space_dim0), symmetry(symmetry0), cluster_tree_t(cluster_tree_t0), cluster_tree_s(cluster_tree_s0), comm(comm0){};
 
     // Constructor
-    HMatrix(int space_dim0, double epsilon0 = 1e-6, double eta0 = 10, char Symmetry = 'N', char UPLO = 'N', const int &reqrank0 = -1, const MPI_Comm comm0 = MPI_COMM_WORLD) : nr(0), nc(0), space_dim(space_dim0), reqrank(reqrank0), local_size(0), local_offset(0), symmetry(Symmetry), UPLO(UPLO), ndofperelt(1), epsilon(epsilon0), eta(eta0), minclustersize(10), maxblocksize(1e6), minsourcedepth(0), mintargetdepth(0), cluster_tree_t(nullptr), cluster_tree_s(nullptr), comm(comm0) {
+    HMatrix(int space_dim0, double epsilon0 = 1e-6, double eta0 = 10, char Symmetry = 'N', char UPLO = 'N', const int &reqrank0 = -1, const MPI_Comm comm0 = MPI_COMM_WORLD) : nr(0), nc(0), space_dim(space_dim0), reqrank(reqrank0), local_size(0), local_offset(0), symmetry(Symmetry), UPLO(UPLO), false_positive(0), ndofperelt(1), epsilon(epsilon0), eta(eta0), minclustersize(10), maxblocksize(1e6), minsourcedepth(0), mintargetdepth(0), cluster_tree_t(nullptr), cluster_tree_s(nullptr), comm(comm0) {
         if (!((symmetry == 'N' || symmetry == 'H' || symmetry == 'S')
               && (UPLO == 'N' || UPLO == 'L' || UPLO == 'U')
               && ((symmetry == 'N' && UPLO == 'N') || (symmetry != 'N' && UPLO != 'N'))
@@ -107,7 +108,7 @@ class HMatrix : public HMatrixVirtual<T> {
     };
 
     // Constructor with precomputed clusters
-    HMatrix(const std::shared_ptr<Cluster<ClusterImpl>> &cluster_tree_t0, const std::shared_ptr<Cluster<ClusterImpl>> &cluster_tree_s0, double epsilon0 = 1e-6, double eta0 = 10, char Symmetry = 'N', char UPLO = 'N', const int &reqrank0 = -1, const MPI_Comm comm0 = MPI_COMM_WORLD) : nr(0), nc(0), space_dim(cluster_tree_t0->get_space_dim()), reqrank(reqrank0), local_size(0), local_offset(0), symmetry(Symmetry), UPLO(UPLO), ndofperelt(1), epsilon(epsilon0), eta(eta0), minclustersize(10), maxblocksize(1e6), minsourcedepth(0), mintargetdepth(0), cluster_tree_t(cluster_tree_t0), cluster_tree_s(cluster_tree_s0), comm(comm0) {
+    HMatrix(const std::shared_ptr<Cluster<ClusterImpl>> &cluster_tree_t0, const std::shared_ptr<Cluster<ClusterImpl>> &cluster_tree_s0, double epsilon0 = 1e-6, double eta0 = 10, char Symmetry = 'N', char UPLO = 'N', const int &reqrank0 = -1, const MPI_Comm comm0 = MPI_COMM_WORLD) : nr(0), nc(0), space_dim(cluster_tree_t0->get_space_dim()), reqrank(reqrank0), local_size(0), local_offset(0), symmetry(Symmetry), UPLO(UPLO), false_positive(0), ndofperelt(1), epsilon(epsilon0), eta(eta0), minclustersize(10), maxblocksize(1e6), minsourcedepth(0), mintargetdepth(0), cluster_tree_t(cluster_tree_t0), cluster_tree_s(cluster_tree_s0), comm(comm0) {
         if (!((symmetry == 'N' || symmetry == 'H' || symmetry == 'S')
               && (UPLO == 'N' || UPLO == 'L' || UPLO == 'U')
               && ((symmetry == 'N' && UPLO == 'N') || (symmetry != 'N' && UPLO != 'N'))
@@ -436,15 +437,17 @@ void HMatrix<T, LowRankMatrix, ClusterImpl, AdmissibleCondition>::ComputeBlocks(
         std::vector<std::unique_ptr<SubMatrix<T>>> MyNearFieldMats_local;
         std::vector<std::unique_ptr<LowRankMatrix<T, ClusterImpl>>> MyFarFieldMats_local;
         std::vector<Block<ClusterImpl, AdmissibleCondition> *> local_tasks = BlockTree->get_local_tasks();
+
+        int false_positive_local = 0;
 #if _OPENMP && !defined(PYTHON_INTERFACE)
 #    pragma omp for schedule(guided)
 #endif
         for (int p = 0; p < local_tasks.size(); p++) {
             bool not_pushed;
             if (symmetry == 'H' || symmetry == 'S') {
-                not_pushed = UpdateSymBlocks(mat, *(local_tasks[p]), xt, tabt, xs, tabs, MyNearFieldMats_local, MyFarFieldMats_local);
+                not_pushed = UpdateSymBlocks(mat, *(local_tasks[p]), xt, tabt, xs, tabs, MyNearFieldMats_local, MyFarFieldMats_local, false_positive_local);
             } else {
-                not_pushed = UpdateBlocks(mat, *(local_tasks[p]), xt, tabt, xs, tabs, MyNearFieldMats_local, MyFarFieldMats_local);
+                not_pushed = UpdateBlocks(mat, *(local_tasks[p]), xt, tabt, xs, tabs, MyNearFieldMats_local, MyFarFieldMats_local, false_positive_local);
             }
 
             if (not_pushed) {
@@ -457,6 +460,7 @@ void HMatrix<T, LowRankMatrix, ClusterImpl, AdmissibleCondition>::ComputeBlocks(
         {
             MyFarFieldMats.insert(MyFarFieldMats.end(), std::make_move_iterator(MyFarFieldMats_local.begin()), std::make_move_iterator(MyFarFieldMats_local.end()));
             MyNearFieldMats.insert(MyNearFieldMats.end(), std::make_move_iterator(MyNearFieldMats_local.begin()), std::make_move_iterator(MyNearFieldMats_local.end()));
+            false_positive += false_positive_local;
         }
     }
 
@@ -478,21 +482,21 @@ void HMatrix<T, LowRankMatrix, ClusterImpl, AdmissibleCondition>::ComputeBlocks(
 }
 
 template <typename T, template <typename, typename> class LowRankMatrix, class ClusterImpl, template <typename> class AdmissibleCondition>
-bool HMatrix<T, LowRankMatrix, ClusterImpl, AdmissibleCondition>::UpdateBlocks(IMatrix<T> &mat, Block<ClusterImpl, AdmissibleCondition> &task, const double *const xt, const int *const tabt, const double *const xs, const int *const tabs, std::vector<std::unique_ptr<SubMatrix<T>>> &MyNearFieldMats_local, std::vector<std::unique_ptr<LowRankMatrix<T, ClusterImpl>>> &MyFarFieldMats_local) {
+bool HMatrix<T, LowRankMatrix, ClusterImpl, AdmissibleCondition>::UpdateBlocks(IMatrix<T> &mat, Block<ClusterImpl, AdmissibleCondition> &task, const double *const xt, const int *const tabt, const double *const xs, const int *const tabs, std::vector<std::unique_ptr<SubMatrix<T>>> &MyNearFieldMats_local, std::vector<std::unique_ptr<LowRankMatrix<T, ClusterImpl>>> &MyFarFieldMats_local, int &false_positive_local) {
     if (task.IsAdmissible()) {
         AddFarFieldMat(mat, task, xt, tabt, xs, tabs, MyFarFieldMats_local, reqrank);
         if (MyFarFieldMats_local.back()->rank_of() != -1) {
             return false;
         } else {
             MyFarFieldMats_local.pop_back();
-            // AddNearFieldMat(mat,task,MyNearFieldMats_local);
+            false_positive_local += 1;
+            // AddNearFieldMat(mat, task, MyNearFieldMats_local);
             // return false;
         }
+    } else {
+        AddNearFieldMat(mat, task, MyNearFieldMats_local);
+        return false;
     }
-    // else {
-    // 	AddNearFieldMat(mat,task,MyNearFieldMats_local);
-    // 	return false;
-    // }
 
     int bsize                     = task.get_size();
     const Cluster<ClusterImpl> &t = task.get_target_cluster();
@@ -507,7 +511,7 @@ bool HMatrix<T, LowRankMatrix, ClusterImpl, AdmissibleCondition>::UpdateBlocks(I
             for (int p = 0; p < t.get_nb_sons(); p++) {
                 task.build_son(t.get_son(p), s);
 
-                Blocks_not_pushed[p] = UpdateBlocks(mat, task.get_son(p), xt, tabt, xs, tabs, MyNearFieldMats_local, MyFarFieldMats_local);
+                Blocks_not_pushed[p] = UpdateBlocks(mat, task.get_son(p), xt, tabt, xs, tabs, MyNearFieldMats_local, MyFarFieldMats_local, false_positive_local);
             }
 
             if ((bsize <= maxblocksize) && std::all_of(Blocks_not_pushed.begin(), Blocks_not_pushed.end(), [](bool i) { return i; })) {
@@ -527,7 +531,7 @@ bool HMatrix<T, LowRankMatrix, ClusterImpl, AdmissibleCondition>::UpdateBlocks(I
             std::vector<bool> Blocks_not_pushed(s.get_nb_sons());
             for (int p = 0; p < s.get_nb_sons(); p++) {
                 task.build_son(t, s.get_son(p));
-                Blocks_not_pushed[p] = UpdateBlocks(mat, task.get_son(p), xt, tabt, xs, tabs, MyNearFieldMats_local, MyFarFieldMats_local);
+                Blocks_not_pushed[p] = UpdateBlocks(mat, task.get_son(p), xt, tabt, xs, tabs, MyNearFieldMats_local, MyFarFieldMats_local, false_positive_local);
             }
 
             if ((bsize <= maxblocksize) && std::all_of(Blocks_not_pushed.begin(), Blocks_not_pushed.end(), [](bool i) { return i; })) {
@@ -546,7 +550,7 @@ bool HMatrix<T, LowRankMatrix, ClusterImpl, AdmissibleCondition>::UpdateBlocks(I
                 std::vector<bool> Blocks_not_pushed(t.get_nb_sons());
                 for (int p = 0; p < t.get_nb_sons(); p++) {
                     task.build_son(t.get_son(p), s);
-                    Blocks_not_pushed[p] = UpdateBlocks(mat, task.get_son(p), xt, tabt, xs, tabs, MyNearFieldMats_local, MyFarFieldMats_local);
+                    Blocks_not_pushed[p] = UpdateBlocks(mat, task.get_son(p), xt, tabt, xs, tabs, MyNearFieldMats_local, MyFarFieldMats_local, false_positive_local);
                 }
 
                 if ((bsize <= maxblocksize) && std::all_of(Blocks_not_pushed.begin(), Blocks_not_pushed.end(), [](bool i) { return i; })) {
@@ -564,7 +568,7 @@ bool HMatrix<T, LowRankMatrix, ClusterImpl, AdmissibleCondition>::UpdateBlocks(I
                 std::vector<bool> Blocks_not_pushed(s.get_nb_sons());
                 for (int p = 0; p < s.get_nb_sons(); p++) {
                     task.build_son(t, s.get_son(p));
-                    Blocks_not_pushed[p] = UpdateBlocks(mat, task.get_son(p), xt, tabt, xs, tabs, MyNearFieldMats_local, MyFarFieldMats_local);
+                    Blocks_not_pushed[p] = UpdateBlocks(mat, task.get_son(p), xt, tabt, xs, tabs, MyNearFieldMats_local, MyFarFieldMats_local, false_positive_local);
                 }
 
                 if ((bsize <= maxblocksize) && std::all_of(Blocks_not_pushed.begin(), Blocks_not_pushed.end(), [](bool i) { return i; })) {
@@ -584,7 +588,7 @@ bool HMatrix<T, LowRankMatrix, ClusterImpl, AdmissibleCondition>::UpdateBlocks(I
 }
 
 template <typename T, template <typename, typename> class LowRankMatrix, class ClusterImpl, template <typename> class AdmissibleCondition>
-bool HMatrix<T, LowRankMatrix, ClusterImpl, AdmissibleCondition>::UpdateSymBlocks(IMatrix<T> &mat, Block<ClusterImpl, AdmissibleCondition> &task, const double *const xt, const int *const tabt, const double *const xs, const int *const tabs, std::vector<std::unique_ptr<SubMatrix<T>>> &MyNearFieldMats_local, std::vector<std::unique_ptr<LowRankMatrix<T, ClusterImpl>>> &MyFarFieldMats_local) {
+bool HMatrix<T, LowRankMatrix, ClusterImpl, AdmissibleCondition>::UpdateSymBlocks(IMatrix<T> &mat, Block<ClusterImpl, AdmissibleCondition> &task, const double *const xt, const int *const tabt, const double *const xs, const int *const tabs, std::vector<std::unique_ptr<SubMatrix<T>>> &MyNearFieldMats_local, std::vector<std::unique_ptr<LowRankMatrix<T, ClusterImpl>>> &MyFarFieldMats_local, int &false_positive_local) {
 
     if (task.IsAdmissible()) {
 
@@ -593,9 +597,14 @@ bool HMatrix<T, LowRankMatrix, ClusterImpl, AdmissibleCondition>::UpdateSymBlock
             return false;
         } else {
             MyFarFieldMats_local.pop_back();
+            false_positive_local += 1;
+            // AddNearFieldMat(mat, task, MyNearFieldMats_local);
+            // return false;
         }
+    } else {
+        AddNearFieldMat(mat, task, MyNearFieldMats_local);
+        return false;
     }
-
     int bsize                     = task.get_size();
     const Cluster<ClusterImpl> &t = task.get_target_cluster();
     const Cluster<ClusterImpl> &s = task.get_source_cluster();
@@ -607,7 +616,7 @@ bool HMatrix<T, LowRankMatrix, ClusterImpl, AdmissibleCondition>::UpdateSymBlock
             std::vector<bool> Blocks_not_pushed(t.get_nb_sons());
             for (int p = 0; p < t.get_nb_sons(); p++) {
                 task.build_son(t.get_son(p), s);
-                Blocks_not_pushed[p] = UpdateSymBlocks(mat, task.get_son(p), xt, tabt, xs, tabs, MyNearFieldMats_local, MyFarFieldMats_local);
+                Blocks_not_pushed[p] = UpdateSymBlocks(mat, task.get_son(p), xt, tabt, xs, tabs, MyNearFieldMats_local, MyFarFieldMats_local, false_positive_local);
             }
 
             if ((bsize <= maxblocksize) && std::all_of(Blocks_not_pushed.begin(), Blocks_not_pushed.end(), [](bool i) { return i; })) {
@@ -627,7 +636,7 @@ bool HMatrix<T, LowRankMatrix, ClusterImpl, AdmissibleCondition>::UpdateSymBlock
             std::vector<bool> Blocks_not_pushed(s.get_nb_sons());
             for (int p = 0; p < s.get_nb_sons(); p++) {
                 task.build_son(t, s.get_son(p));
-                Blocks_not_pushed[p] = UpdateSymBlocks(mat, task.get_son(p), xt, tabt, xs, tabs, MyNearFieldMats_local, MyFarFieldMats_local);
+                Blocks_not_pushed[p] = UpdateSymBlocks(mat, task.get_son(p), xt, tabt, xs, tabs, MyNearFieldMats_local, MyFarFieldMats_local, false_positive_local);
             }
 
             if ((bsize <= maxblocksize) && std::all_of(Blocks_not_pushed.begin(), Blocks_not_pushed.end(), [](bool i) { return i; })) {
@@ -646,7 +655,7 @@ bool HMatrix<T, LowRankMatrix, ClusterImpl, AdmissibleCondition>::UpdateSymBlock
             for (int l = 0; l < s.get_nb_sons(); l++) {
                 for (int p = 0; p < t.get_nb_sons(); p++) {
                     task.build_son(t.get_son(p), s.get_son(l));
-                    Blocks_not_pushed[p + l * t.get_nb_sons()] = UpdateSymBlocks(mat, task.get_son(p + l * t.get_nb_sons()), xt, tabt, xs, tabs, MyNearFieldMats_local, MyFarFieldMats_local);
+                    Blocks_not_pushed[p + l * t.get_nb_sons()] = UpdateSymBlocks(mat, task.get_son(p + l * t.get_nb_sons()), xt, tabt, xs, tabs, MyNearFieldMats_local, MyFarFieldMats_local, false_positive_local);
                 }
             }
             if ((bsize <= maxblocksize) && std::all_of(Blocks_not_pushed.begin(), Blocks_not_pushed.end(), [](bool i) { return i; })) {
@@ -719,10 +728,12 @@ void HMatrix<T, LowRankMatrix, ClusterImpl, AdmissibleCondition>::ComputeInfos(c
         MPI_Reduce(MPI_IN_PLACE, &(maxinfos[0]), 4, MPI_INT, MPI_MAX, 0, comm);
         MPI_Reduce(MPI_IN_PLACE, &(mininfos[0]), 4, MPI_INT, MPI_MIN, 0, comm);
         MPI_Reduce(MPI_IN_PLACE, &(meaninfos[0]), 4, MPI_DOUBLE, MPI_SUM, 0, comm);
+        MPI_Reduce(MPI_IN_PLACE, &(false_positive), 1, MPI_INT, MPI_SUM, 0, comm);
     } else {
         MPI_Reduce(&(maxinfos[0]), &(maxinfos[0]), 4, MPI_INT, MPI_MAX, 0, comm);
         MPI_Reduce(&(mininfos[0]), &(mininfos[0]), 4, MPI_INT, MPI_MIN, 0, comm);
         MPI_Reduce(&(meaninfos[0]), &(meaninfos[0]), 4, MPI_DOUBLE, MPI_SUM, 0, comm);
+        MPI_Reduce(&(false_positive), &(false_positive), 1, MPI_INT, MPI_SUM, 0, comm);
     }
 
     int nlrmat   = this->get_nlrmat();
@@ -758,15 +769,16 @@ void HMatrix<T, LowRankMatrix, ClusterImpl, AdmissibleCondition>::ComputeInfos(c
     infos["Low_rank_block_size_mean"] = NbrToStr(meaninfos[1]);
     infos["Low_rank_block_size_min"]  = NbrToStr(mininfos[1]);
 
-    infos["Rank_max"]        = NbrToStr(maxinfos[2]);
-    infos["Rank_mean"]       = NbrToStr(meaninfos[2]);
-    infos["Rank_min"]        = NbrToStr(mininfos[2]);
-    infos["Number_of_lrmat"] = NbrToStr(nlrmat);
-    infos["Number_of_dmat"]  = NbrToStr(ndmat);
-    infos["Compression"]     = NbrToStr(this->compression());
-    infos["Local_size_max"]  = NbrToStr(maxinfos[3]);
-    infos["Local_size_mean"] = NbrToStr(meaninfos[3]);
-    infos["Local_size_min"]  = NbrToStr(mininfos[3]);
+    infos["Rank_max"]                 = NbrToStr(maxinfos[2]);
+    infos["Rank_mean"]                = NbrToStr(meaninfos[2]);
+    infos["Rank_min"]                 = NbrToStr(mininfos[2]);
+    infos["Number_of_lrmat"]          = NbrToStr(nlrmat);
+    infos["Number_of_dmat"]           = NbrToStr(ndmat);
+    infos["Number_of_false_positive"] = NbrToStr(false_positive);
+    infos["Compression"]              = NbrToStr(this->compression());
+    infos["Local_size_max"]           = NbrToStr(maxinfos[3]);
+    infos["Local_size_mean"]          = NbrToStr(meaninfos[3]);
+    infos["Local_size_min"]           = NbrToStr(mininfos[3]);
 
     infos["Number_of_MPI_tasks"] = NbrToStr(sizeWorld);
 #if _OPENMP
@@ -776,10 +788,13 @@ void HMatrix<T, LowRankMatrix, ClusterImpl, AdmissibleCondition>::ComputeInfos(c
     infos["Number_of_procs"] = NbrToStr(sizeWorld);
 #endif
 
-    infos["Eta"]            = NbrToStr(eta);
-    infos["Eps"]            = NbrToStr(epsilon);
-    infos["MinTargetDepth"] = NbrToStr(mintargetdepth);
-    infos["MinSourceDepth"] = NbrToStr(minsourcedepth);
+    infos["Eta"]                  = NbrToStr(eta);
+    infos["Eps"]                  = NbrToStr(epsilon);
+    infos["MinTargetDepth"]       = NbrToStr(mintargetdepth);
+    infos["MinSourceDepth"]       = NbrToStr(minsourcedepth);
+    infos["MinClusterSizeTarget"] = NbrToStr(cluster_tree_t->get_minclustersize());
+    infos["MinClusterSizeSource"] = NbrToStr(cluster_tree_s->get_minclustersize());
+    infos["MaxBlockSize"]         = NbrToStr(maxblocksize);
 }
 
 template <typename T, template <typename, typename> class LowRankMatrix, class ClusterImpl, template <typename> class AdmissibleCondition>
