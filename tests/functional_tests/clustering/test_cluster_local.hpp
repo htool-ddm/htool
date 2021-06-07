@@ -53,6 +53,16 @@ int test_cluster_local(int argc, char *argv[]) {
         t.print();
         MPI_Barrier(MPI_COMM_WORLD);
 
+        // Testing get permutations
+        std::vector<int> permutation = t.get_perm();
+        std::vector<int> local_permutation_1(t.get_local_size());
+        std::copy_n(permutation.data() + t.get_local_offset(), t.get_local_size(), local_permutation_1.data());
+        std::vector<int> local_permutation_2 = t.get_local_perm();
+
+        std::cout << "BOUH" << std::endl;
+        std::cout << norm2(local_permutation_1 - local_permutation_2) << std::endl;
+        test = test || !(norm2(local_permutation_1 - local_permutation_2) < 1e-16);
+
         // Testing recursivity
         std::stack<VirtualCluster *> s;
         s.push(&t);

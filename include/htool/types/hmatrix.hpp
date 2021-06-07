@@ -204,6 +204,8 @@ class HMatrix : public VirtualHMatrix<T> {
     std::pair<int, int> get_MasterOffset_s(int i) const { return cluster_tree_s->get_masteroffset(i); }
     const std::vector<int> &get_permt() const { return cluster_tree_t->get_perm(); }
     const std::vector<int> &get_perms() const { return cluster_tree_s->get_perm(); }
+    std::vector<int> get_local_perm_target() const { return cluster_tree_t->get_local_perm(); }
+    std::vector<int> get_local_perm_source() const { return cluster_tree_s->get_local_perm(); }
     int get_permt(int i) const { return cluster_tree_t->get_perm(i); }
     int get_perms(int i) const { return cluster_tree_s->get_perm(i); }
     const std::vector<std::unique_ptr<SubMatrix<T>>> &get_MyNearFieldMats() const { return MyNearFieldMats; }
