@@ -1,4 +1,5 @@
-#include <htool/clustering/ncluster.hpp>
+#include <htool/clustering/bounding_box_1.hpp>
+#include <htool/clustering/pca.hpp>
 #include <htool/testing/geometry.hpp>
 #include <random>
 
@@ -48,16 +49,16 @@ int test_cluster_local(int argc, char *argv[]) {
 
         Cluster_type t(dim);
         t.set_minclustersize(1);
-        t.build_local(size, pt.data(), r.data(), tab.data(), g.data(), MasterOffset.data(), nb_sons);
+        t.build(size, pt.data(), r.data(), tab.data(), g.data(), MasterOffset.data(), nb_sons);
         t.print();
         MPI_Barrier(MPI_COMM_WORLD);
 
         // Testing recursivity
-        std::stack<Cluster_type *> s;
+        std::stack<VirtualCluster *> s;
         s.push(&t);
         int depth = 0;
         while (!s.empty()) {
-            Cluster_type *curr = s.top();
+            VirtualCluster *curr = s.top();
             s.pop();
             if (!curr->IsLeaf()) {
                 // test num inclusion
@@ -79,23 +80,23 @@ int test_cluster_local(int argc, char *argv[]) {
         int local_offset = t.get_local_offset();
 
         // Testing getters for root cluster
-        int root_size   = t.get_root().get_size();
-        int root_offset = t.get_root().get_offset();
+        int root_size   = t.get_root()->get_size();
+        int root_offset = t.get_root()->get_offset();
         test            = test || !(root_size == size);
         test            = test || !(root_offset == 0);
 
         // Testing to get local cluster
-        std::shared_ptr<Cluster_type> local_cluster = t.get_local_cluster_tree();
-        test                                        = test || !(local_size == local_cluster->get_size());
-        test                                        = test || !(local_offset == local_cluster->get_offset());
-        std::stack<Cluster_type const *> s_local_1;
-        std::stack<Cluster_type const *> s_local_2;
+        std::shared_ptr<VirtualCluster> local_cluster = t.get_local_cluster_tree();
+        test                                          = test || !(local_size == local_cluster->get_size());
+        test                                          = test || !(local_offset == local_cluster->get_offset());
+        std::stack<VirtualCluster const *> s_local_1;
+        std::stack<VirtualCluster const *> s_local_2;
         s_local_1.push(local_cluster.get());
         s_local_2.push(&(t.get_local_cluster()));
         depth = 0;
         while (!s_local_1.empty()) {
-            Cluster_type const *curr_1 = s_local_1.top();
-            Cluster_type const *curr_2 = s_local_2.top();
+            VirtualCluster const *curr_1 = s_local_1.top();
+            VirtualCluster const *curr_2 = s_local_2.top();
             s_local_1.pop();
             s_local_2.pop();
 
@@ -111,33 +112,6 @@ int test_cluster_local(int argc, char *argv[]) {
                 }
             }
         }
-
-        // Random vector
-        double lower_bound = 0;
-        double upper_bound = 10000;
-        std::random_device rd;
-        std::mt19937 mersenne_engine(rd());
-        std::uniform_real_distribution<double> dist(lower_bound, upper_bound);
-        auto gen = [&dist, &mersenne_engine]() {
-            return dist(mersenne_engine);
-        };
-
-        std::vector<double> random_vector_in(size), temp(size), random_vector_out(size);
-        generate(begin(random_vector_in), end(random_vector_in), gen);
-        t.cluster_to_global(random_vector_in.data(), temp.data());
-        t.global_to_cluster(temp.data(), random_vector_out.data());
-
-        // Test permutations
-        test = test || !(norm2(random_vector_in - random_vector_out) < 1e-16);
-
-        // Random local vector
-        std::vector<double> random_local_vector_in(MasterOffset[2 * rankWorld + 1]), local_temp(MasterOffset[2 * rankWorld + 1]), random_local_vector_out(MasterOffset[2 * rankWorld + 1]);
-        generate(begin(random_local_vector_in), end(random_local_vector_in), gen);
-        t.local_cluster_to_local(random_local_vector_in.data(), local_temp.data());
-        t.local_to_local_cluster(local_temp.data(), random_local_vector_out.data());
-
-        // Test local permutations
-        test = test || !(norm2(random_local_vector_in - random_local_vector_out) < 1e-16);
 
         // Test access to local clusters
         if (sizeWorld > 1) {

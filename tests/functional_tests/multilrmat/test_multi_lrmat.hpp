@@ -3,7 +3,7 @@
 #include <random>
 #include <vector>
 
-#include <htool/clustering/ncluster.hpp>
+#include <htool/clustering/pca.hpp>
 #include <htool/multilrmat/multilrmat.hpp>
 #include <htool/testing/geometry.hpp>
 #include <htool/testing/imatrix_test.hpp>

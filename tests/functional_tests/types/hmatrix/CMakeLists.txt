@@ -2,35 +2,12 @@
 #=========================== Executables =====================================#
 #=============================================================================#
 
-set(cluster_types "geometric_splitting")
-list(APPEND cluster_types "regular_splitting")
-
-set(compression_types "SVD")
-list(APPEND compression_types "partialACA")
-list(APPEND compression_types "fullACA")
-list(APPEND compression_types "sympartialACA")
-
-foreach(compression_type ${compression_types})
-
-    foreach(cluster_type ${cluster_types})
-
-        add_executable(Test_hmat_auto_${cluster_type}_${compression_type} test_hmat_auto_${cluster_type}_${compression_type}.cpp)
-        target_link_libraries(Test_hmat_auto_${cluster_type}_${compression_type} htool)
-        add_dependencies(build-tests Test_hmat_auto_${cluster_type}_${compression_type})
-        add_test(NAME Test_hmat_auto_${cluster_type}_${compression_type}_1 COMMAND ${MPIEXEC} ${MPIEXEC_NUMPROC_FLAG} 1 ${MPIEXEC_PREFLAGS} ${CMAKE_CURRENT_BINARY_DIR}/Test_hmat_auto_${cluster_type}_${compression_type})
-        add_test(NAME Test_hmat_auto_${cluster_type}_${compression_type}_2 COMMAND ${MPIEXEC} ${MPIEXEC_NUMPROC_FLAG} 2 ${MPIEXEC_PREFLAGS} ${CMAKE_CURRENT_BINARY_DIR}/Test_hmat_auto_${cluster_type}_${compression_type})
-        add_test(NAME Test_hmat_auto_${cluster_type}_${compression_type}_3 COMMAND ${MPIEXEC} ${MPIEXEC_NUMPROC_FLAG} 3 ${MPIEXEC_PREFLAGS} ${CMAKE_CURRENT_BINARY_DIR}/Test_hmat_auto_${cluster_type}_${compression_type})
-        add_test(NAME Test_hmat_auto_${cluster_type}_${compression_type}_4 COMMAND ${MPIEXEC} ${MPIEXEC_NUMPROC_FLAG} 4 ${MPIEXEC_PREFLAGS} ${CMAKE_CURRENT_BINARY_DIR}/Test_hmat_auto_${cluster_type}_${compression_type})
-
-        add_executable(Test_hmat_${cluster_type}_${compression_type} test_hmat_${cluster_type}_${compression_type}.cpp)
-        target_link_libraries(Test_hmat_${cluster_type}_${compression_type} htool)
-        add_dependencies(build-tests Test_hmat_${cluster_type}_${compression_type})
-        add_test(NAME Test_hmat_${cluster_type}_${compression_type}_1 COMMAND ${MPIEXEC} ${MPIEXEC_NUMPROC_FLAG} 1 ${MPIEXEC_PREFLAGS} ${CMAKE_CURRENT_BINARY_DIR}/Test_hmat_${cluster_type}_${compression_type})
-        add_test(NAME Test_hmat_${cluster_type}_${compression_type}_2 COMMAND ${MPIEXEC} ${MPIEXEC_NUMPROC_FLAG} 2 ${MPIEXEC_PREFLAGS} ${CMAKE_CURRENT_BINARY_DIR}/Test_hmat_${cluster_type}_${compression_type})
-        add_test(NAME Test_hmat_${cluster_type}_${compression_type}_4 COMMAND ${MPIEXEC} ${MPIEXEC_NUMPROC_FLAG} 4 ${MPIEXEC_PREFLAGS} ${CMAKE_CURRENT_BINARY_DIR}/Test_hmat_${cluster_type}_${compression_type})
-
-    endforeach()
-endforeach()
+add_executable(Test_hmat_cluster test_hmat_cluster.cpp)
+target_link_libraries(Test_hmat_cluster htool)
+add_dependencies(build-tests Test_hmat_cluster)
+add_test(NAME Test_hmat_cluster_1 COMMAND ${MPIEXEC} ${MPIEXEC_NUMPROC_FLAG} 1 ${MPIEXEC_PREFLAGS} ${CMAKE_CURRENT_BINARY_DIR}/Test_hmat_cluster)
+add_test(NAME Test_hmat_cluster_2 COMMAND ${MPIEXEC} ${MPIEXEC_NUMPROC_FLAG} 2 ${MPIEXEC_PREFLAGS} ${CMAKE_CURRENT_BINARY_DIR}/Test_hmat_cluster)
+add_test(NAME Test_hmat_cluster_4 COMMAND ${MPIEXEC} ${MPIEXEC_NUMPROC_FLAG} 4 ${MPIEXEC_PREFLAGS} ${CMAKE_CURRENT_BINARY_DIR}/Test_hmat_cluster)
 
 #=== hmat_vec_prod
 add_executable(Test_hmat_vec_prod test_hmat_vec_prod.cpp)

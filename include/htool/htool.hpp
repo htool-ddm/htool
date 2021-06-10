@@ -3,8 +3,9 @@
 
 #include "misc/define.hpp"
 
+#include "clustering/bounding_box_1.hpp"
 #include "clustering/cluster.hpp"
-#include "clustering/ncluster.hpp"
+#include "clustering/pca.hpp"
 
 #include "input_output/geometry.hpp"
 #include "input_output/output.hpp"
@@ -15,17 +16,12 @@
 #include "lrmat/partialACA.hpp"
 #include "lrmat/sympartialACA.hpp"
 
-#include "multilrmat/multilrmat.hpp"
-#include "multilrmat/multipartialACA.hpp"
-
 #include "misc/misc.hpp"
 #include "misc/user.hpp"
 
 #include "types/hmatrix.hpp"
 #include "types/hmatrix_virtual.hpp"
 #include "types/matrix.hpp"
-#include "types/multihmatrix.hpp"
-#include "types/multimatrix.hpp"
 #include "types/point.hpp"
 #include "types/vector.hpp"
 

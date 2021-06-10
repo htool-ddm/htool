@@ -3,5 +3,5 @@
 
 int main(int argc, char *argv[]) {
 
-    return test_hmat_virtual_cluster<GeometricClustering, fullACA>(argc, argv);
+    return test_hmat_virtual_cluster<fullACA>(argc, argv);
 }

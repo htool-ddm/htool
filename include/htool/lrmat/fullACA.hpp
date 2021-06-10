@@ -24,8 +24,8 @@ namespace htool {
 //           et en particulier le paragraphe 3.2
 //
 //=================================//
-template <typename T, typename ClusterImpl>
-class fullACA final : public LowRankMatrix<T, ClusterImpl> {
+template <typename T>
+class fullACA final : public LowRankMatrix<T> {
 
   public:
     //=========================//
@@ -33,7 +33,7 @@ class fullACA final : public LowRankMatrix<T, ClusterImpl> {
     //=========================//
     // If reqrank=-1 (default value), we use the precision given by epsilon for the stopping criterion;
     // otherwise, we use the required rank for the stopping criterion (!: at the end the rank could be lower)
-    using LowRankMatrix<T, ClusterImpl>::LowRankMatrix;
+    using LowRankMatrix<T>::LowRankMatrix;
 
     void build(const IMatrix<T> &A) {
         if (this->rank == 0) {
@@ -85,7 +85,7 @@ class fullACA final : public LowRankMatrix<T, ClusterImpl> {
             }
         }
     }
-    void build(const IMatrix<T> &A, const Cluster<ClusterImpl> &t, const double *const xt, const int *const tabt, const Cluster<ClusterImpl> &s, const double *const xs, const int *const tabs) {
+    void build(const IMatrix<T> &A, const VirtualCluster &t, const double *const xt, const int *const tabt, const VirtualCluster &s, const double *const xs, const int *const tabs) {
         this->build(A);
     }
 };

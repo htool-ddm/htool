@@ -3,7 +3,7 @@
 #include <vector>
 
 #include "test_lrmat.hpp"
-#include <htool/clustering/ncluster.hpp>
+#include <htool/clustering/pca.hpp>
 #include <htool/lrmat/SVD.hpp>
 
 using namespace std;
@@ -38,15 +38,15 @@ int main(int argc, char *argv[]) {
         create_disk(3, 0, nr, xt.data());
         create_disk(3, distance[idist], nc, xs.data());
 
-        GeometricClustering t, s;
-        t.build_global_auto(nr, xt.data());
-        s.build_global_auto(nc, xs.data());
+        Cluster<PCAGeometricClustering> t, s;
+        t.build(nr, xt.data());
+        s.build(nc, xs.data());
 
         IMatrixTestDouble A(3, nr, nc, xt, xs);
 
         // SVD fixed rank
         int reqrank_max = 10;
-        SVD<double, GeometricClustering> A_SVD_fixed(t.get_perm(), s.get_perm(), reqrank_max, epsilon);
+        SVD<double> A_SVD_fixed(t.get_perm(), s.get_perm(), reqrank_max, epsilon);
         A_SVD_fixed.build(A);
         std::vector<double> SVD_fixed_errors;
         std::vector<double> SVD_errors_check(reqrank_max, 0);
@@ -66,7 +66,7 @@ int main(int argc, char *argv[]) {
         cout << "> Errors computed with the remaining eigenvalues : " << SVD_errors_check << endl;
 
         // ACA automatic building
-        SVD<double, GeometricClustering> A_SVD(t.get_perm(), s.get_perm());
+        SVD<double> A_SVD(t.get_perm(), s.get_perm());
         A_SVD.set_epsilon(epsilon);
         A_SVD.build(A);
 

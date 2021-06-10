@@ -13,19 +13,19 @@
 namespace htool {
 
 // Forward declaration
-template <typename T, typename ClusterImpl>
+template <typename T>
 class MultipartialACA;
 
-template <typename T, typename ClusterImpl>
-class bareLowRankMatrix final : public LowRankMatrix<T, ClusterImpl> {
+template <typename T>
+class bareLowRankMatrix final : public LowRankMatrix<T> {
   private:
     // Friend
-    friend class MultipartialACA<T, ClusterImpl>;
+    friend class MultipartialACA<T>;
 
   public:
-    using LowRankMatrix<T, ClusterImpl>::LowRankMatrix;
+    using LowRankMatrix<T>::LowRankMatrix;
 
-    void build(const IMatrix<T> &A, const Cluster<ClusterImpl> &t, const double *const xt, const int *const tabt, const Cluster<ClusterImpl> &s, const double *const xs, const int *const tabs) {}
+    void build(const IMatrix<T> &A, const VirtualCluster &t, const double *const xt, const int *const tabt, const VirtualCluster &s, const double *const xs, const int *const tabs) {}
 };
 } // namespace htool
 #endif

@@ -1,4 +1,4 @@
-#include <htool/clustering/ncluster.hpp>
+#include <htool/clustering/pca.hpp>
 #include <htool/input_output/geometry.hpp>
 #include <htool/lrmat/fullACA.hpp>
 #include <htool/solvers/ddm.hpp>
@@ -69,7 +69,7 @@ int test_solver_ddm(int argc, char *argv[], int mu, char symmetric) {
     // Clustering
     if (rank == 0)
         std::cout << "Creating cluster tree" << std::endl;
-    std::shared_ptr<htool::GeometricClustering> t = std::make_shared<htool::GeometricClustering>();
+    std::shared_ptr<Cluster<PCAGeometricClustering>> t = std::make_shared<Cluster<PCAGeometricClustering>>();
     (*t).read_cluster(datapath + "cluster_" + NbrToStr(size) + "_permutation.csv", datapath + "cluster_" + NbrToStr(size) + "_tree.csv");
     t->set_minclustersize(minclustersize);
     // std::vector<int>tab(n);
@@ -82,7 +82,7 @@ int test_solver_ddm(int argc, char *argv[], int mu, char symmetric) {
     // Hmatrix
     if (rank == 0)
         std::cout << "Creating HMatrix" << std::endl;
-    HMatrix<complex<double>, fullACA, GeometricClustering, RjasanowSteinbach> HA(t, t, epsilon, eta, symmetric, UPLO);
+    HMatrix<complex<double>, fullACA, RjasanowSteinbach> HA(t, t, epsilon, eta, symmetric, UPLO);
     HA.build_auto_sym(A, p);
     HA.print_infos();
 

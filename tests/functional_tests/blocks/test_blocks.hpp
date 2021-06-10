@@ -1,5 +1,6 @@
 #include <htool/blocks/admissibility_conditions.hpp>
 #include <htool/blocks/blocks.hpp>
+#include <htool/clustering/pca.hpp>
 #include <htool/testing/geometry.hpp>
 #include <htool/testing/imatrix_test.hpp>
 #include <random>
@@ -7,7 +8,7 @@
 using namespace std;
 using namespace htool;
 
-template <typename Cluster_type, template <typename> class AdmissibilityCondition>
+template <class AdmissibilityCondition>
 int test_blocks(int argc, char *argv[], bool symmetric) {
 
     int rankWorld, sizeWorld;
@@ -26,14 +27,14 @@ int test_blocks(int argc, char *argv[], bool symmetric) {
     // (two different initializations with the same seed will generate the same succession of results in the subsequent calls to rand)
     create_disk(3, z, size, p.data());
 
-    Cluster_type t;
-    t.build_global_auto(size, p.data());
+    Cluster<PCAGeometricClustering> t;
+    t.build(size, p.data());
 
-    Block<Cluster_type, AdmissibilityCondition> B(t, t);
+    Block<AdmissibilityCondition> B(t, t);
     B.build(symmetric);
 
     // Test diagonal blocks
-    const Block<Cluster_type, AdmissibilityCondition> &diagonal_block = B.get_local_diagonal_block();
+    const Block<AdmissibilityCondition> &diagonal_block = B.get_local_diagonal_block();
 
     if (diagonal_block.get_source_cluster().get_offset() != t.get_local_offset() && diagonal_block.get_source_cluster().get_size() != t.get_local_size() && diagonal_block.get_target_cluster().get_offset() != t.get_local_offset() && diagonal_block.get_target_cluster().get_size() != t.get_local_size()) {
         test = true;
@@ -42,7 +43,7 @@ int test_blocks(int argc, char *argv[], bool symmetric) {
 
     // Check that the whole matrix is here
     std::vector<int> represented(size * size, 0);
-    const std::vector<Block<Cluster_type, AdmissibilityCondition> *> &tasks = B.get_tasks();
+    const std::vector<Block<AdmissibilityCondition> *> &tasks = B.get_tasks();
 
     for (auto block : tasks) {
         std::cout << block->get_target_cluster().get_offset() << " " << block->get_target_cluster().get_size() << " " << block->get_source_cluster().get_offset() << " " << block->get_source_cluster().get_size() << " " << std::endl;
@@ -62,7 +63,7 @@ int test_blocks(int argc, char *argv[], bool symmetric) {
     std::cout << "Full representation " << test << std::endl;
 
     // Check ordering of local blocks
-    const std::vector<Block<Cluster_type, AdmissibilityCondition> *> &local_tasks = B.get_local_tasks();
+    const std::vector<Block<AdmissibilityCondition> *> &local_tasks = B.get_local_tasks();
     for (int i = 0; i < local_tasks.size() - 1; i++) {
         if (local_tasks[i]->get_target_cluster().get_offset() == local_tasks[i + 1]->get_target_cluster().get_offset()) {
             test = test || !(local_tasks[i]->get_source_cluster().get_offset() < local_tasks[i + 1]->get_source_cluster().get_offset());

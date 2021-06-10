@@ -1,4 +1,4 @@
-#include <htool/clustering/ncluster.hpp>
+#include <htool/clustering/pca.hpp>
 #include <htool/lrmat/fullACA.hpp>
 #include <htool/testing/geometry.hpp>
 #include <htool/testing/imatrix_test.hpp>
@@ -49,13 +49,13 @@ int main(int argc, char *argv[]) {
     IMatrixTestDouble A(3, nr, nc, p1, p2);
 
     // Hmatrix
-    std::shared_ptr<GeometricClustering> t = make_shared<GeometricClustering>();
-    std::shared_ptr<GeometricClustering> s = make_shared<GeometricClustering>();
-    t->build_global_auto(nr, p1.data());
-    s->build_global_auto(nc, p2.data());
+    std::shared_ptr<Cluster<PCAGeometricClustering>> t = make_shared<Cluster<PCAGeometricClustering>>();
+    std::shared_ptr<Cluster<PCAGeometricClustering>> s = make_shared<Cluster<PCAGeometricClustering>>();
+    t->build(nr, p1.data());
+    s->build(nc, p2.data());
     t->set_minclustersize(minclustersize);
     s->set_minclustersize(minclustersize);
-    HMatrix<double, fullACA, GeometricClustering, RjasanowSteinbach> HA(t, s, epsilon, eta);
+    HMatrix<double, fullACA, RjasanowSteinbach> HA(t, s, epsilon, eta);
     HA.build_auto(A, p1.data(), p2.data());
     HA.print_infos();
 

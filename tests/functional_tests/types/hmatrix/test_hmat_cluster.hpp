@@ -4,7 +4,7 @@
 #include <vector>
 
 #include <htool/clustering/cluster.hpp>
-#include <htool/clustering/ncluster.hpp>
+#include <htool/clustering/pca.hpp>
 #include <htool/lrmat/SVD.hpp>
 #include <htool/lrmat/fullACA.hpp>
 #include <htool/lrmat/partialACA.hpp>
@@ -16,11 +16,8 @@
 using namespace std;
 using namespace htool;
 
-template <typename ClusterImpl, template <typename, typename> class LowRankMatrix>
+template <typename ClusterImpl, template <typename> class LowRankMatrix>
 int test_hmat_cluster(int argc, char *argv[], double margin = 0) {
-
-    // Initialize the MPI environment
-    MPI_Init(&argc, &argv);
 
     // Get the number of processes
     int size;
@@ -67,10 +64,10 @@ int test_hmat_cluster(int argc, char *argv[], double margin = 0) {
         IMatrixTestDouble A(3, nr, nc, p1, p2);
         std::shared_ptr<ClusterImpl> t = make_shared<ClusterImpl>();
         std::shared_ptr<ClusterImpl> s = make_shared<ClusterImpl>();
-        t->build_global_auto(nr, p1.data(), 2);
-        s->build_global_auto(nc, p2.data(), 2);
+        t->build(nr, p1.data(), 2);
+        s->build(nc, p2.data(), 2);
 
-        HMatrix<double, LowRankMatrix, ClusterImpl, RjasanowSteinbach> HA(t, s, epsilon, eta);
+        HMatrix<double, LowRankMatrix, RjasanowSteinbach> HA(t, s, epsilon, eta);
         HA.build_auto(A, p1.data(), p2.data());
         HA.print_infos();
 
@@ -105,7 +102,5 @@ int test_hmat_cluster(int argc, char *argv[], double margin = 0) {
         }
     }
 
-    // Finalize the MPI environment.
-    MPI_Finalize();
     return test;
 }

@@ -1,4 +1,4 @@
-#include <htool/clustering/ncluster.hpp>
+#include <htool/clustering/pca.hpp>
 #include <htool/lrmat/fullACA.hpp>
 #include <htool/testing/geometry.hpp>
 #include <htool/testing/imatrix_test.hpp>
@@ -81,14 +81,14 @@ int main(int argc, char *argv[]) {
         MasterOffset_source.push_back(nc - count_size);
 
         // local clustering
-        double time                            = MPI_Wtime();
-        std::shared_ptr<GeometricClustering> t = make_shared<GeometricClustering>();
-        std::shared_ptr<GeometricClustering> s = make_shared<GeometricClustering>();
-        t->build_local_auto(nr, p1.data(), MasterOffset_target.data(), 2);
-        s->build_local_auto(nc, p2.data(), MasterOffset_source.data(), 2);
+        double time                                        = MPI_Wtime();
+        std::shared_ptr<Cluster<PCAGeometricClustering>> t = make_shared<Cluster<PCAGeometricClustering>>();
+        std::shared_ptr<Cluster<PCAGeometricClustering>> s = make_shared<Cluster<PCAGeometricClustering>>();
+        t->build(nr, p1.data(), MasterOffset_target.data(), 2);
+        s->build(nc, p2.data(), MasterOffset_source.data(), 2);
         std::cout << MPI_Wtime() - time << std::endl;
         time = MPI_Wtime() - time;
-        HMatrix<double, fullACA, GeometricClustering, RjasanowSteinbach> HA(t, s, epsilon, eta);
+        HMatrix<double, fullACA, RjasanowSteinbach> HA(t, s, epsilon, eta);
         std::cout << MPI_Wtime() - time << std::endl;
         time = MPI_Wtime() - time;
         HA.build_auto(A, p1.data(), p2.data());

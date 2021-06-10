@@ -96,15 +96,15 @@ int main(int argc, char *argv[]) {
 
     // Clustering
 
-    GeometricClustering t, s;
-    t.build_global_auto(nr, p1.data());
-    s.build_global_auto(nc, p2.data());
+    Cluster<PCAGeometricClustering> t, s;
+    t.build(nr, p1.data());
+    s.build(nc, p2.data());
 
     MyMatrix A(3, nr, nc, p1, p2);
     double norm_A = A.normFrob();
 
     // SVD with fixed rank
-    SVD<double, GeometricClustering> A_SVD(t.get_perm(), s.get_perm(), reqrank_max, epsilon);
+    SVD<double> A_SVD(t.get_perm(), s.get_perm(), reqrank_max, epsilon);
     A_SVD.build(A, t, p1.data(), tab1.data(), s, p2.data(), tab2.data());
     std::vector<double> SVD_fixed_errors;
     for (int k = 0; k < A_SVD.rank_of() + 1; k++) {
@@ -113,7 +113,7 @@ int main(int argc, char *argv[]) {
     std::cout << SVD_fixed_errors << std::endl;
 
     // fullACA with fixed rank
-    fullACA<double, GeometricClustering> A_fullACA_fixed(t.get_perm(), s.get_perm(), reqrank_max, epsilon);
+    fullACA<double> A_fullACA_fixed(t.get_perm(), s.get_perm(), reqrank_max, epsilon);
     A_fullACA_fixed.build(A, t, p1.data(), tab1.data(), s, p2.data(), tab2.data());
     std::vector<double> fullACA_fixed_errors;
     for (int k = 0; k < A_fullACA_fixed.rank_of() + 1; k++) {
@@ -122,7 +122,7 @@ int main(int argc, char *argv[]) {
     std::cout << fullACA_fixed_errors << std::endl;
 
     // partialACA with fixed rank
-    partialACA<double, GeometricClustering> A_partialACA_fixed(t.get_perm(), s.get_perm(), reqrank_max, epsilon);
+    partialACA<double> A_partialACA_fixed(t.get_perm(), s.get_perm(), reqrank_max, epsilon);
     A_partialACA_fixed.build(A, t, p1.data(), tab1.data(), s, p2.data(), tab2.data());
     std::vector<double> partialACA_fixed_errors;
     std::cout << A_partialACA_fixed.rank_of() << " " << reqrank_max << std::endl;
@@ -132,7 +132,7 @@ int main(int argc, char *argv[]) {
 
     std::cout << partialACA_fixed_errors << std::endl;
     // sympartialACA with fixed rank
-    sympartialACA<double, GeometricClustering> A_sympartialACA_fixed(t.get_perm(), s.get_perm(), reqrank_max, epsilon);
+    sympartialACA<double> A_sympartialACA_fixed(t.get_perm(), s.get_perm(), reqrank_max, epsilon);
     A_sympartialACA_fixed.build(A, t, p1.data(), tab1.data(), s, p2.data(), tab2.data());
     std::vector<double> sympartialACA_fixed_errors;
     for (int k = 0; k < A_sympartialACA_fixed.rank_of() + 1; k++) {

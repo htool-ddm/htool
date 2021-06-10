@@ -6,15 +6,15 @@
 
 namespace htool {
 
-template <typename T, typename ClusterImpl>
-class SVD final : public LowRankMatrix<T, ClusterImpl> {
+template <typename T>
+class SVD final : public LowRankMatrix<T> {
 
   private:
     // Data member
     std::vector<underlying_type<T>> singular_values;
 
   public:
-    using LowRankMatrix<T, ClusterImpl>::LowRankMatrix;
+    using LowRankMatrix<T>::LowRankMatrix;
 
     void build(const IMatrix<T> &A) {
         int reqrank = 0;
@@ -93,7 +93,7 @@ class SVD final : public LowRankMatrix<T, ClusterImpl> {
         }
     }
 
-    void build(const IMatrix<T> &A, const Cluster<ClusterImpl> &t, const double *const xt, const int *const tabt, const Cluster<ClusterImpl> &s, const double *const xs, const int *const tabs) {
+    void build(const IMatrix<T> &A, const VirtualCluster &t, const double *const xt, const int *const tabt, const VirtualCluster &s, const double *const xs, const int *const tabs) {
         this->build(A);
     }
     T get_singular_value(int i) { return singular_values[i]; }

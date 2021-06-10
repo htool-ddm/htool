@@ -4,7 +4,7 @@
 #include <vector>
 
 #include <htool/clustering/cluster.hpp>
-#include <htool/clustering/ncluster.hpp>
+#include <htool/clustering/pca.hpp>
 #include <htool/lrmat/SVD.hpp>
 #include <htool/lrmat/fullACA.hpp>
 #include <htool/lrmat/partialACA.hpp>
@@ -18,10 +18,10 @@ using namespace std;
 using namespace htool;
 
 struct struct_hmat_virtual {
-    HMatrixVirtual<double> *hmat;
+    VirtualHMatrix<double> *hmat;
 };
 
-template <typename ClusterImpl, template <typename, typename> class LowRankMatrix>
+template <template <typename> class LowRankMatrix>
 int test_hmat_virtual_cluster(int argc, char *argv[], double margin = 0) {
 
     // Initialize the MPI environment
@@ -72,12 +72,12 @@ int test_hmat_virtual_cluster(int argc, char *argv[], double margin = 0) {
 
         vector<double> rhs(p2.size(), 1);
         IMatrixTestDouble A(3, nr, nc, p1, p2);
-        std::shared_ptr<ClusterImpl> t = make_shared<ClusterImpl>();
-        std::shared_ptr<ClusterImpl> s = make_shared<ClusterImpl>();
-        t->build_global_auto(nr, p1.data(), 2);
-        s->build_global_auto(nc, p2.data(), 2);
+        std::shared_ptr<Cluster<PCAGeometricClustering>> t = make_shared<Cluster<PCAGeometricClustering>>();
+        std::shared_ptr<Cluster<PCAGeometricClustering>> s = make_shared<Cluster<PCAGeometricClustering>>();
+        t->build(nr, p1.data(), 2);
+        s->build(nc, p2.data(), 2);
 
-        hmat_virtual.hmat = dynamic_cast<HMatrixVirtual<double> *>(new HMatrix<double, LowRankMatrix, ClusterImpl, RjasanowSteinbach>(t, s, epsilon, eta));
+        hmat_virtual.hmat = dynamic_cast<VirtualHMatrix<double> *>(new HMatrix<double, LowRankMatrix, RjasanowSteinbach>(t, s, epsilon, eta));
         hmat_virtual.hmat->build_auto(A, p1.data(), p2.data());
         hmat_virtual.hmat->print_infos();
 

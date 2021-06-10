@@ -31,7 +31,7 @@ class Proto_DDM {
     std::vector<T> evi;
     std::vector<int> renum_to_global;
     Matrix<T> E;
-    const HMatrix<T, LowRankMatrix, ClusterImpl, AdmissibleCondition> &hmat;
+    const HMatrix<T, LowRankMatrix, AdmissibleCondition> &hmat;
     const T *const *Z;
     std::vector<int> recvcounts;
     std::vector<int> displs;

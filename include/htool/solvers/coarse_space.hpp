@@ -9,7 +9,7 @@
 
 namespace htool {
 template <typename T>
-void build_coarse_space_outside(const HMatrixVirtual<T> *const HA, int nevi, int n, const T *const *Z, std::vector<T> &E) {
+void build_coarse_space_outside(const VirtualHMatrix<T> *const HA, int nevi, int n, const T *const *Z, std::vector<T> &E) {
     //
     int n_inside  = HA->get_local_size();
     int sizeWorld = HA->get_sizeworld();
