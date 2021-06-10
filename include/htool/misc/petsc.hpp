@@ -11,7 +11,8 @@
 
 #include "define.hpp"
 
-#include "../clustering/ncluster.hpp"
+#include "../clustering/bounding_box_1.hpp"
+#include "../clustering/pca.hpp"
 #include "../lrmat/SVD.hpp"
 #include "../lrmat/fullACA.hpp"
 #include "../lrmat/lrmat.hpp"
