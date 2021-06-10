@@ -1,4 +1,4 @@
-#include <htool/clustering/ncluster.hpp>
+#include <htool/clustering/pca.hpp>
 #include <htool/lrmat/fullACA.hpp>
 #include <htool/testing/geometry.hpp>
 #include <htool/testing/imatrix_test.hpp>
@@ -66,13 +66,13 @@ int test_hmat_to_dense_perm(int argc, char *argv[]) {
     MasterOffset_source.push_back(nc - count_size);
 
     // Hmatrix
-    std::shared_ptr<GeometricClustering> t = make_shared<GeometricClustering>();
-    std::shared_ptr<GeometricClustering> s = make_shared<GeometricClustering>();
+    std::shared_ptr<Cluster<PCAGeometricClustering>> t = make_shared<Cluster<PCAGeometricClustering>>();
+    std::shared_ptr<Cluster<PCAGeometricClustering>> s = make_shared<Cluster<PCAGeometricClustering>>();
     t->set_minclustersize(minclustersize);
     s->set_minclustersize(minclustersize);
-    t->build_local_auto(nr, p1.data(), MasterOffset_target.data());
-    s->build_local_auto(nc, p2.data(), MasterOffset_source.data());
-    HMatrix<double, fullACA, GeometricClustering, RjasanowSteinbach> HA(t, s, epsilon, eta);
+    t->build(nr, p1.data(), MasterOffset_target.data());
+    s->build(nc, p2.data(), MasterOffset_source.data());
+    HMatrix<double, fullACA, RjasanowSteinbach> HA(t, s, epsilon, eta);
     HA.build_auto(A, p1.data(), p2.data());
     HA.print_infos();
 
@@ -145,10 +145,10 @@ int test_hmat_to_dense_perm_sym(int argc, char *argv[], char UPLO) {
     MasterOffset_target.push_back(nr - count_size);
 
     // Hmatrix
-    std::shared_ptr<GeometricClustering> t = make_shared<GeometricClustering>();
+    std::shared_ptr<Cluster<PCAGeometricClustering>> t = make_shared<Cluster<PCAGeometricClustering>>();
     t->set_minclustersize(minclustersize);
-    t->build_local_auto(nr, p1.data(), MasterOffset_target.data());
-    HMatrix<double, fullACA, GeometricClustering, RjasanowSteinbach> HA(t, t, epsilon, eta, 'S', UPLO);
+    t->build(nr, p1.data(), MasterOffset_target.data());
+    HMatrix<double, fullACA, RjasanowSteinbach> HA(t, t, epsilon, eta, 'S', UPLO);
     HA.build_auto_sym(A, p1.data());
     HA.print_infos();
 
@@ -222,10 +222,10 @@ int test_hmat_to_dense_perm_sym_complex(int argc, char *argv[], char UPLO) {
     MasterOffset_target.push_back(nr - count_size);
 
     // Hmatrix
-    std::shared_ptr<GeometricClustering> t = make_shared<GeometricClustering>();
+    std::shared_ptr<Cluster<PCAGeometricClustering>> t = make_shared<Cluster<PCAGeometricClustering>>();
     t->set_minclustersize(minclustersize);
-    t->build_local_auto(nr, p1.data(), MasterOffset_target.data());
-    HMatrix<std::complex<double>, fullACA, GeometricClustering, RjasanowSteinbach> HA(t, t, epsilon, eta, 'S', UPLO);
+    t->build(nr, p1.data(), MasterOffset_target.data());
+    HMatrix<std::complex<double>, fullACA, RjasanowSteinbach> HA(t, t, epsilon, eta, 'S', UPLO);
     HA.build_auto_sym(A, p1.data());
     HA.print_infos();
 
@@ -299,10 +299,10 @@ int test_hmat_to_dense_perm_hermitian_complex(int argc, char *argv[], char UPLO)
     MasterOffset_target.push_back(nr - count_size);
 
     // Hmatrix
-    std::shared_ptr<GeometricClustering> t = make_shared<GeometricClustering>();
+    std::shared_ptr<Cluster<PCAGeometricClustering>> t = make_shared<Cluster<PCAGeometricClustering>>();
     t->set_minclustersize(minclustersize);
-    t->build_local_auto(nr, p1.data(), MasterOffset_target.data());
-    HMatrix<std::complex<double>, fullACA, GeometricClustering, RjasanowSteinbach> HA(t, t, epsilon, eta, 'H', UPLO);
+    t->build(nr, p1.data(), MasterOffset_target.data());
+    HMatrix<std::complex<double>, fullACA, RjasanowSteinbach> HA(t, t, epsilon, eta, 'H', UPLO);
     HA.build_auto_sym(A, p1.data());
     HA.print_infos();
 

@@ -2,8 +2,8 @@
 #=========================== Executables =====================================#
 #=============================================================================#
 
-set(cluster_types "ncluster")
-# list(APPEND cluster_types "DDM")
+set(cluster_types "pca")
+list(APPEND cluster_types "bounding_box")
 
 set(splitting_types "geometric_splitting")
 list(APPEND splitting_types "regular_splitting")

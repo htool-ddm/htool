@@ -3,18 +3,18 @@
 
 #include "../misc/user.hpp"
 #include "../types/matrix.hpp"
+#include "virtual_cluster.hpp"
 #include <functional>
 #include <memory>
 #include <mpi.h>
 #include <stack>
 
 namespace htool {
-
-template <typename Derived>
-class Cluster {
+template <typename ClusteringType>
+class Cluster : public VirtualCluster {
   protected:
     // Data member
-    std::vector<Derived *> sons; // Sons
+    std::vector<std::unique_ptr<Cluster>> sons; // Sons
 
     int rank;    // Rank for dofs of the current cluster
     int depth;   // depth of the current cluster
@@ -37,63 +37,135 @@ class Cluster {
 
     std::shared_ptr<std::vector<int>> permutation;
 
-    Derived *local_cluster;
-    Derived *root;
+    Cluster *local_cluster;
+    Cluster *const root;
     std::vector<std::pair<int, int>> MasterOffset;
 
-    // Node constructor
-    Cluster(Derived *root0, int counter0, const int &dep, std::shared_ptr<std::vector<int>> permutation0) : counter(counter0), space_dim(root0->space_dim), nb_pt(0), rad(0.), ctr(root0->space_dim), max_depth(-1), min_depth(-1), offset(0), size(0), minclustersize(root0->minclustersize), ndofperelt(root0->ndofperelt), LocalPermutation(false), permutation(permutation0), root(root0) {
-        for (auto &son : sons) {
-            son = 0;
-        }
-        depth = dep;
-    }
+    //
+    ClusteringType clustering_type;
 
   public:
     // Root constructor
-    Cluster(int space_dim0 = 3) : depth(0), counter(0), space_dim(space_dim0), nb_pt(0), rad(0), ctr(space_dim0), max_depth(0), min_depth(-1), offset(0), size(0), minclustersize(10), ndofperelt(1), LocalPermutation(false), permutation(std::make_shared<std::vector<int>>()), local_cluster(nullptr), root(static_cast<Derived *>(this)) {}
+    Cluster(int space_dim0 = 3) : depth(0), counter(0), space_dim(space_dim0), nb_pt(0), rad(0), ctr(space_dim0), max_depth(0), min_depth(-1), offset(0), size(0), minclustersize(10), ndofperelt(1), LocalPermutation(false), permutation(std::make_shared<std::vector<int>>()), local_cluster(nullptr), root(this) {}
 
-    // Destructor
-    ~Cluster() {
-        for (int p = 0; p < sons.size(); p++) {
-            if (sons[p] != nullptr) {
-                delete sons[p];
-                sons[p] = nullptr;
-            }
-        }
-    };
-
-    // global build cluster tree
-    void build_global(int nb_pt0, const double *const x0, const double *const r0, const int *const tab0, const double *const g0, int nb_sons = -1, MPI_Comm comm = MPI_COMM_WORLD) {
-        this->nb_pt = nb_pt0;
-        static_cast<Derived *>(this)->build_global(nb_pt0, x0, r0, tab0, g0, nb_sons, comm);
+    // Node constructor
+    Cluster(Cluster *const root0, int counter0, const int &dep, std::shared_ptr<std::vector<int>> permutation0) : counter(counter0), space_dim(root0->space_dim), nb_pt(0), rad(0.), ctr(root0->space_dim), max_depth(-1), min_depth(-1), offset(0), size(0), minclustersize(root0->minclustersize), ndofperelt(root0->ndofperelt), LocalPermutation(false), permutation(permutation0), root(root0) {
+        depth = dep;
     }
 
-    void build_global_auto(int nb_pt0, const double *const x0, int nb_sons = -1, MPI_Comm comm = MPI_COMM_WORLD) {
+    // global build cluster tree
+    void build(int nb_pt0, const double *const x0, const double *const r0, const int *const tab0, const double *const g0, int nb_sons = -1, MPI_Comm comm = MPI_COMM_WORLD) {
+        this->nb_pt = nb_pt0;
+
+        // MPI parameters
+        int rankWorld, sizeWorld;
+        MPI_Comm_size(comm, &sizeWorld);
+        MPI_Comm_rank(comm, &rankWorld);
+
+        // Impossible value for nb_sons
+        if (nb_sons == 0 || nb_sons == 1)
+            throw std::string("Impossible value for nb_sons:" + NbrToStr<int>(nb_sons));
+
+        // nb_sons=-1 is automatic mode
+        if (nb_sons == -1) {
+            nb_sons = 2;
+        }
+        // Initialisation
+        this->rad   = 0;
+        this->size  = nb_pt0;
+        this->nb_pt = nb_pt0;
+        this->rank  = -1;
+        this->MasterOffset.resize(sizeWorld);
+        this->LocalPermutation = false;
+        this->depth            = 0; // ce constructeur est appele' juste pour la racine
+
+        this->permutation->resize(nb_pt0);
+        std::iota(this->permutation->begin(), this->permutation->end(), 0); // perm[i]=i
+
+        // Recursion
+        std::stack<Cluster *> s;
+        std::stack<std::vector<int>> n;
+        s.push(this);
+        n.push(*(this->permutation));
+
+        clustering_type.recursive_build(x0, r0, tab0, g0, nb_sons, comm, s, n);
+    }
+
+    void build(int nb_pt0, const double *const x0, int nb_sons = -1, MPI_Comm comm = MPI_COMM_WORLD) {
         this->nb_pt = nb_pt0;
         std::vector<int> tab(ndofperelt * nb_pt0);
         std::iota(tab.begin(), tab.end(), int(0));
-        this->build_global(nb_pt0, x0, std::vector<double>(nb_pt0, 0).data(), tab.data(), std::vector<double>(nb_pt0, 1).data(), nb_sons, comm);
+        this->build(nb_pt0, x0, std::vector<double>(nb_pt0, 0).data(), tab.data(), std::vector<double>(nb_pt0, 1).data(), nb_sons, comm);
     }
 
     // local build cluster tree
-    void build_local(int nb_pt0, const double *const x0, const double *const r0, const int *const tab0, const double *const g0, const int *const MasterOffset0, int nb_sons = -1, MPI_Comm comm = MPI_COMM_WORLD) {
+    void build(int nb_pt0, const double *const x0, const double *const r0, const int *const tab0, const double *const g0, const int *const MasterOffset0, int nb_sons = -1, MPI_Comm comm = MPI_COMM_WORLD) {
         this->nb_pt = nb_pt0;
-        static_cast<Derived *>(this)->build_local(nb_pt0, x0, r0, tab0, g0, MasterOffset0, nb_sons, comm);
+        // MPI parameters
+        int rankWorld, sizeWorld;
+        MPI_Comm_size(comm, &sizeWorld);
+        MPI_Comm_rank(comm, &rankWorld);
+
+        // Impossible value for nb_sons
+        if (nb_sons == 0 || nb_sons == 1)
+            throw std::string("Impossible value for nb_sons:" + NbrToStr<int>(nb_sons));
+
+        // nb_sons=-1 is automatic mode
+        if (nb_sons == -1) {
+            nb_sons = 2;
+        }
+
+        // Initialisation of root
+        this->rad   = 0;
+        this->nb_pt = nb_pt0;
+        this->size  = this->nb_pt;
+        this->rank  = -1;
+        this->MasterOffset.resize(sizeWorld);
+        for (int p = 0; p < sizeWorld; p++) {
+            this->MasterOffset[p].first  = MasterOffset0[2 * p];
+            this->MasterOffset[p].second = MasterOffset0[2 * p + 1];
+        }
+        this->permutation->resize(this->nb_pt);
+
+        this->depth            = 0; // ce constructeur est appele' juste pour la racine
+        this->LocalPermutation = true;
+
+        std::iota(this->permutation->begin(), this->permutation->end(), 0); // perm[i]=i
+        // Build level of depth 1 with the given partition and prepare recursion
+        std::stack<Cluster *> s;
+        std::stack<std::vector<int>> n;
+
+        for (int p = 0; p < sizeWorld; p++) {
+            this->sons.emplace_back(new Cluster(this, p, this->depth + 1, this->permutation));
+            this->sons[p]->set_offset(this->MasterOffset[p].first);
+            this->sons[p]->set_size(this->MasterOffset[p].second);
+            this->sons[p]->set_rank(p);
+
+            if (rankWorld == this->sons[p]->get_counter()) {
+                this->local_cluster = this->sons[p].get();
+            }
+
+            s.push(this->sons[p].get());
+            n.push(std::vector<int>(this->permutation->begin() + this->sons[p]->get_offset(), this->permutation->begin() + this->sons[p]->get_offset() + this->sons[p]->get_size()));
+        }
+
+        // Recursion
+        clustering_type.recursive_build(x0, r0, tab0, g0, nb_sons, comm, s, n);
     }
 
-    void build_local_auto(int nb_pt0, const double *const x0, const int *const MasterOffset0, int nb_sons = -1, MPI_Comm comm = MPI_COMM_WORLD) {
+    void build(int nb_pt0, const double *const x0, const int *const MasterOffset0, int nb_sons = -1, MPI_Comm comm = MPI_COMM_WORLD) {
         this->nb_pt = nb_pt0;
         std::vector<int> tab(ndofperelt * nb_pt0);
         std::iota(tab.begin(), tab.end(), int(0));
-        this->build_local(nb_pt0, x0, std::vector<double>(nb_pt0, 0).data(), tab.data(), std::vector<double>(nb_pt0, 1).data(), MasterOffset0, nb_sons, comm);
+        this->build(nb_pt0, x0, std::vector<double>(nb_pt0, 0).data(), tab.data(), std::vector<double>(nb_pt0, 1).data(), MasterOffset0, nb_sons, comm);
     }
 
     //// Getters for local data
-    const double &get_rad() const { return rad; }
+    double get_rad() const { return rad; }
     const std::vector<double> &get_ctr() const { return ctr; }
-    const Derived &get_son(const int &j) const { return *(sons[j]); }
-    Derived &get_son(const int &j) { return *(sons[j]); }
+    const VirtualCluster &get_son(const int &j) const { return *(sons[j]); }
+    VirtualCluster &get_son(const int &j) { return *(sons[j]); }
+    Cluster *get_son_ptr(const int &j) { return sons[j].get(); }
     int get_depth() const { return depth; }
     int get_rank() const { return rank; }
     int get_offset() const { return offset; }
@@ -103,7 +175,7 @@ class Cluster {
     int get_ndofperelt() const { return ndofperelt; }
     int get_nb_sons() const { return sons.size(); }
     int get_counter() const { return counter; }
-    const Derived &get_local_cluster(MPI_Comm comm = MPI_COMM_WORLD) const {
+    const VirtualCluster &get_local_cluster(MPI_Comm comm = MPI_COMM_WORLD) const {
         int rankWorld, sizeWorld;
         MPI_Comm_size(comm, &sizeWorld);
         MPI_Comm_rank(comm, &rankWorld);
@@ -111,11 +183,11 @@ class Cluster {
         return *(root->local_cluster);
     }
 
-    std::shared_ptr<Derived> get_local_cluster_tree(MPI_Comm comm = MPI_COMM_WORLD) {
+    std::shared_ptr<VirtualCluster> get_local_cluster_tree(MPI_Comm comm = MPI_COMM_WORLD) {
         int rankWorld;
         MPI_Comm_rank(comm, &rankWorld);
 
-        std::shared_ptr<Derived> copy_local_cluster = std::make_shared<Derived>();
+        std::shared_ptr<Cluster> copy_local_cluster = std::make_shared<Cluster>();
 
         copy_local_cluster->MasterOffset.push_back(std::make_pair(this->MasterOffset[rankWorld].first, this->MasterOffset[rankWorld].second));
 
@@ -124,13 +196,13 @@ class Cluster {
         copy_local_cluster->permutation = this->permutation;
 
         // Recursion
-        std::stack<Derived *> cluster_input;
+        std::stack<Cluster *> cluster_input;
         cluster_input.push(local_cluster);
-        std::stack<Derived *> cluster_output;
+        std::stack<Cluster *> cluster_output;
         cluster_output.push(copy_local_cluster->root);
         while (!cluster_input.empty()) {
-            Derived *curr_input  = cluster_input.top();
-            Derived *curr_output = cluster_output.top();
+            Cluster *curr_input  = cluster_input.top();
+            Cluster *curr_output = cluster_output.top();
 
             cluster_input.pop();
             cluster_output.pop();
@@ -142,26 +214,36 @@ class Cluster {
             curr_output->size   = curr_input->size;
 
             int nb_sons = curr_input->sons.size();
-            curr_output->sons.resize(nb_sons);
-            for (int p = 0; p < nb_sons; p++) {
-                curr_output->sons[p] = new Derived(copy_local_cluster.get(), (curr_output->counter) * nb_sons + p, curr_output->depth + 1, this->permutation);
 
-                cluster_input.push(curr_input->sons[p]);
-                cluster_output.push(curr_output->sons[p]);
+            for (int p = 0; p < nb_sons; p++) {
+                curr_output->sons.emplace_back(new Cluster(copy_local_cluster.get(), (curr_output->counter) * nb_sons + p, curr_output->depth + 1, this->permutation));
+
+                cluster_input.push(curr_input->get_son_ptr(p));
+                cluster_output.push(curr_output->get_son_ptr(p));
             }
         }
 
         return copy_local_cluster;
     }
 
+    std::vector<int> get_local_perm() const {
+        if (!LocalPermutation) {
+            throw std::logic_error("[Htool error] Permutation is not local, get_local_perm cannot be used");
+        } else {
+            return std::vector<int>(permutation->data() + root->local_cluster->get_offset(), permutation->data() + root->local_cluster->get_offset() + root->local_cluster->get_size());
+        }
+    }
+
     //// Getters for global data
     int get_max_depth() const { return root->max_depth; }
     int get_min_depth() const { return root->min_depth; }
     const std::vector<int> &get_perm() const { return *permutation; };
+    std::shared_ptr<std::vector<int>> get_perm_ptr() const { return permutation; };
     int get_perm(int i) const { return (*permutation)[i]; };
     std::vector<int>::const_iterator get_perm_start() const { return permutation->begin(); }
-    const Derived &get_root() const {
-        return *(root);
+    std::vector<int>::iterator get_perm_start() { return permutation->begin(); }
+    VirtualCluster *const get_root() const {
+        return root;
     }
 
     //// Getter for MasterOffsets
@@ -170,57 +252,23 @@ class Cluster {
     const std::vector<std::pair<int, int>> &get_masteroffset() const { return root->MasterOffset; }
     std::pair<int, int> get_masteroffset(int i) const { return root->MasterOffset[i]; }
 
-    // Permutations
-    template <typename T>
-    void cluster_to_global(const T *const in, T *const out) const {
-        for (int i = 0; i < permutation->size(); i++) {
-            out[(*permutation)[i]] = in[i];
-        }
-    }
-
-    template <typename T>
-    void global_to_cluster(const T *const in, T *const out) const {
-        for (int i = 0; i < permutation->size(); i++) {
-            out[i] = in[(*permutation)[i]];
-        }
-    }
-
-    // Permutations
-    template <typename T>
-    void local_cluster_to_local(const T *const in, T *const out, MPI_Comm comm = MPI_COMM_WORLD) const {
-        if (!LocalPermutation) {
-            throw std::logic_error("[Htool error] Permutation is not local, local_cluster_to_local cannot be used");
-        } else {
-            int rankWorld;
-            MPI_Comm_rank(comm, &rankWorld);
-            for (int i = 0; i < MasterOffset[rankWorld].second; i++) {
-                out[(*permutation)[MasterOffset[rankWorld].first + i] - MasterOffset[rankWorld].first] = in[i];
-            }
-        }
-    }
-
-    template <typename T>
-    void local_to_local_cluster(const T *const in, T *const out, MPI_Comm comm = MPI_COMM_WORLD) const {
-        if (!LocalPermutation) {
-            throw std::logic_error("[Htool error] Permutation is not local, local_to_local_cluster cannot be used");
-        } else {
-            int rankWorld;
-            MPI_Comm_rank(comm, &rankWorld);
-            for (int i = 0; i < MasterOffset[rankWorld].second; i++) {
-                out[i] = in[(*permutation)[MasterOffset[rankWorld].first + i] - MasterOffset[rankWorld].first];
-            }
-        }
-    }
-
-    // void get_offset(std::vector<int> & J, int i) const;
-    // void get_size(std::vector<int> & J, int i) const;
-    // void get_ctr(std::vector<R3> & ctrs, int i) const;
-
     bool IsLocal() const { return LocalPermutation; }
     //// Setters
     void set_rank(int rank0) { rank = rank0; }
     void set_offset(int offset0) { offset = offset0; }
     void set_size(int size0) { size = size0; }
+    void set_rad(double rad0) { rad = rad0; }
+    void set_ctr(std::vector<double> ctr0) { ctr = ctr0; }
+    void set_local_cluster(Cluster *local_cluster0) { root->local_cluster = local_cluster0; }
+    void set_MasterOffset(int p, std::pair<int, int> pair0) { this->root->MasterOffset[p] = pair0; }
+
+    void add_son(int counter0, const int &dep, std::shared_ptr<std::vector<int>> permutation0) {
+        sons.emplace_back(new Cluster(root, counter0, dep, permutation0));
+    }
+
+    void set_max_depth(int max_depth0) const { root->max_depth = max_depth0; }
+    void set_min_depth(int min_depth0) const { root->min_depth = min_depth0; }
+
     void set_minclustersize(unsigned int minclustersize0) {
         if (minclustersize0 == 0) {
             throw std::invalid_argument("[Htool error] MinClusterSize parameter cannot be zero");
@@ -234,6 +282,11 @@ class Cluster {
             return true;
         }
         return false;
+    }
+
+    void clear_sons() {
+        sons.clear();
+        sons.resize(0);
     }
 
     // Output
@@ -265,7 +318,7 @@ class Cluster {
         MPI_Comm_rank(comm, &rankWorld);
         if (rankWorld == 0) {
 
-            std::stack<Cluster<Derived> const *> s;
+            std::stack<VirtualCluster const *> s;
             s.push(this);
             std::ofstream output(filename + ".csv");
 
@@ -288,13 +341,13 @@ class Cluster {
             }
 
             while (!s.empty()) {
-                Cluster<Derived> const *curr = s.top();
+                VirtualCluster const *curr = s.top();
                 s.pop();
-                std::vector<int>::const_iterator it = std::find(depths.begin(), depths.end(), curr->depth);
+                std::vector<int>::const_iterator it = std::find(depths.begin(), depths.end(), curr->get_depth());
 
                 if (it != depths.end()) {
                     int index = std::distance(depths.begin(), it);
-                    std::fill_n(outputs[index].begin() + curr->offset, curr->size, counters[index]);
+                    std::fill_n(outputs[index].begin() + curr->get_offset(), curr->get_size(), counters[index]);
                     counters[index] += 1;
                 }
 
@@ -302,7 +355,7 @@ class Cluster {
                 if (!curr->IsLeaf()) {
 
                     for (int p = 0; p < curr->get_nb_sons(); p++) {
-                        s.push((curr->sons[p]));
+                        s.push(&(curr->get_son(p)));
                     }
                 }
             }
@@ -336,28 +389,28 @@ class Cluster {
             }
 
             // Tree
-            std::stack<Cluster<Derived> const *> s;
+            std::stack<VirtualCluster const *> s;
             s.push(this);
             std::ofstream output_tree(filename + "_tree.csv");
 
             std::vector<std::vector<std::string>> outputs(this->max_depth + 1);
 
             while (!s.empty()) {
-                Cluster<Derived> const *curr = s.top();
+                VirtualCluster const *curr = s.top();
                 s.pop();
 
-                std::vector<std::string> infos_str = {NbrToStr(curr->sons.size()), NbrToStr(curr->rank), NbrToStr(curr->offset), NbrToStr(curr->size), NbrToStr(curr->rad)};
+                std::vector<std::string> infos_str = {NbrToStr(curr->get_nb_sons()), NbrToStr(curr->get_rank()), NbrToStr(curr->get_offset()), NbrToStr(curr->get_size()), NbrToStr(curr->get_rad())};
                 for (int p = 0; p < this->space_dim; p++) {
-                    infos_str.push_back(NbrToStr(curr->ctr[p]));
+                    infos_str.push_back(NbrToStr(curr->get_ctr()[p]));
                 }
 
                 std::string infos = join("|", infos_str);
-                outputs[curr->depth].push_back(infos);
+                outputs[curr->get_depth()].push_back(infos);
 
                 // Recursion
                 if (!curr->IsLeaf()) {
                     for (int p = curr->get_nb_sons() - 1; p != -1; p--) {
-                        s.push((curr->sons[p]));
+                        s.push(&(curr->get_son(p)));
                     }
                 }
             }
@@ -399,8 +452,8 @@ class Cluster {
         }
 
         // Tree
-        std::stack<Derived *> s;
-        s.push(static_cast<Derived *>(this));
+        std::stack<std::pair<Cluster *, int>> s;
+
         std::ifstream input_tree(file_tree);
         if (!input_tree) {
             std::cerr << "Cannot open file containing tree" << std::endl;
@@ -417,12 +470,12 @@ class Cluster {
         std::vector<int> counter_offset(outputs.size(), 0);
         std::vector<std::string> local_info_str = split(outputs[0][0], "|");
 
+        int nb_sons   = StrToNbr<int>(local_info_str[0]);
         this->counter = 0;
-        this->sons.resize(StrToNbr<int>(local_info_str[0]));
-        this->rank   = StrToNbr<int>(local_info_str[1]);
-        this->offset = StrToNbr<int>(local_info_str[2]);
-        this->size   = StrToNbr<int>(local_info_str[3]);
-        this->rad    = StrToNbr<double>(local_info_str[4]);
+        this->rank    = StrToNbr<int>(local_info_str[1]);
+        this->offset  = StrToNbr<int>(local_info_str[2]);
+        this->size    = StrToNbr<int>(local_info_str[3]);
+        this->rad     = StrToNbr<double>(local_info_str[4]);
         for (int p = 0; p < space_dim; p++) {
             this->ctr[p] = StrToNbr<double>(local_info_str[5 + p]);
         }
@@ -434,17 +487,19 @@ class Cluster {
         } else {
             this->MasterOffset.resize(sizeWorld);
         }
+
+        s.push(std::pair<Cluster *, int>(this, nb_sons));
         while (!s.empty()) {
-            Derived *curr = s.top();
+            Cluster *curr = s.top().first;
+            nb_sons       = s.top().second;
+            std::vector<int> nb_sons_next(nb_sons, 0);
             s.pop();
 
             // Creating sons
-            int nb_sons = curr->get_nb_sons();
             for (int p = 0; p < nb_sons; p++) {
-                curr->sons[p] = new Derived(static_cast<Derived *>(this), counter_offset[curr->depth + 1] + p, curr->depth + 1, this->permutation);
-
-                local_info_str = split(outputs[curr->depth + 1][counter_offset[curr->depth + 1] + p], "|");
-                curr->sons[p]->sons.resize(StrToNbr<int>(local_info_str[0]));
+                curr->add_son(counter_offset[curr->depth + 1] + p, curr->depth + 1, this->permutation);
+                local_info_str        = split(outputs[curr->depth + 1][counter_offset[curr->depth + 1] + p], "|");
+                nb_sons_next[p]       = StrToNbr<int>(local_info_str[0]);
                 curr->sons[p]->rank   = StrToNbr<int>(local_info_str[1]);
                 curr->sons[p]->offset = StrToNbr<int>(local_info_str[2]);
                 curr->sons[p]->size   = StrToNbr<int>(local_info_str[3]);
@@ -456,7 +511,7 @@ class Cluster {
                 if (sizeWorld > 1 && outputs[curr->depth + 1].size() == sizeWorld) {
                     this->MasterOffset[curr->sons[p]->get_counter()] = std::pair<int, int>(curr->sons[p]->get_offset(), curr->sons[p]->get_size());
                     if (rankWorld == curr->sons[p]->get_counter()) {
-                        this->local_cluster = (curr->sons[p]);
+                        this->set_local_cluster(curr->get_son_ptr(p));
                     }
                 }
             }
@@ -465,7 +520,7 @@ class Cluster {
             if (!curr->IsLeaf()) {
                 counter_offset[curr->depth + 1] += nb_sons;
                 for (int p = curr->get_nb_sons() - 1; p != -1; p--) {
-                    s.push((curr->sons[p]));
+                    s.push(std::pair<Cluster *, int>(curr->get_son_ptr(p), nb_sons_next[p]));
                 }
             } else {
                 this->min_depth = std::min(this->min_depth, curr->depth);

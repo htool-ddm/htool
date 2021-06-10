@@ -6,9 +6,9 @@
 namespace htool {
 
 // Rjasanow - Steinbach (3.15) p111 Chap Approximation of Boundary Element Matrices
-template <typename ClusterImpl>
+
 struct RjasanowSteinbach {
-    static bool ComputeAdmissibility(const Cluster<ClusterImpl> &target, const Cluster<ClusterImpl> &source, double eta) {
+    static bool ComputeAdmissibility(const VirtualCluster &target, const VirtualCluster &source, double eta) {
         bool admissible = 2 * std::min(target.get_rad(), source.get_rad()) < eta * std::max((norm2(target.get_ctr() - source.get_ctr()) - target.get_rad() - source.get_rad()), 0.);
         return admissible;
     }

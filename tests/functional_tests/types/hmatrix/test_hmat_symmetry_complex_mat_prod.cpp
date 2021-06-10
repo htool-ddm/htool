@@ -1,4 +1,4 @@
-#include <htool/clustering/ncluster.hpp>
+#include <htool/clustering/pca.hpp>
 #include <htool/lrmat/fullACA.hpp>
 #include <htool/testing/geometry.hpp>
 #include <htool/testing/imatrix_test.hpp>
@@ -49,11 +49,14 @@ int main(int argc, char *argv[]) {
         create_disk(3, z1, nr, p1.data());
         IMatrixTestComplex A(3, nr, p1, 1);
 
-        HMatrix<complex<double>, fullACA, RegularClustering, RjasanowSteinbach> HA_L(3, epsilon, eta, 'S', 'L');
+        std::shared_ptr<Cluster<PCARegularClustering>> t = make_shared<Cluster<PCARegularClustering>>();
+        t->build(nr, p1.data(), 2);
+
+        HMatrix<complex<double>, fullACA, RjasanowSteinbach> HA_L(t, t, epsilon, eta, 'S', 'L');
         HA_L.build_auto_sym(A, p1.data());
         HA_L.print_infos();
 
-        HMatrix<complex<double>, fullACA, RegularClustering, RjasanowSteinbach> HA_U(3, epsilon, eta, 'S', 'U');
+        HMatrix<complex<double>, fullACA, RjasanowSteinbach> HA_U(t, t, epsilon, eta, 'S', 'U');
         HA_U.build_auto_sym(A, p1.data());
         HA_U.print_infos();
 

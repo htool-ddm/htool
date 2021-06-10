@@ -1,4 +1,4 @@
-#include <htool/clustering/ncluster.hpp>
+#include <htool/clustering/pca.hpp>
 
 using namespace std;
 using namespace htool;
@@ -32,8 +32,8 @@ int main(int argc, char *argv[]) {
     }
 
     // Clustering
-    GeometricClustering t;
-    t.build_global_auto(size, p.data(), 2);
+    Cluster<PCA<SplittingTypes::GeometricSplitting>> t(3);
+    t.build(size, p.data(), 2);
 
     // Output
     t.save_geometry(p.data(), outputname + "/clustering_output", {1, 2, 3});

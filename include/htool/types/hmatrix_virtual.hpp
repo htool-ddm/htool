@@ -8,7 +8,7 @@
 
 namespace htool {
 template <class T>
-class HMatrixVirtual {
+class VirtualHMatrix {
   public:
     // Getters
     virtual int nb_rows() const                                         = 0;
@@ -31,20 +31,17 @@ class HMatrixVirtual {
     virtual std::pair<int, int> get_MasterOffset_s(int i) const         = 0;
 
     // Getters/setters for parameters
-    virtual double get_epsilon() const                            = 0;
-    virtual double get_eta() const                                = 0;
-    virtual int get_ndofperelt() const                            = 0;
-    virtual int get_minclustersize() const                        = 0;
-    virtual int get_minsourcedepth() const                        = 0;
-    virtual int get_mintargetdepth() const                        = 0;
-    virtual int get_maxblocksize() const                          = 0;
-    virtual void set_epsilon(double epsilon0)                     = 0;
-    virtual void set_eta(double eta0)                             = 0;
-    virtual void set_ndofperelt(unsigned int ndofperelt0)         = 0;
-    virtual void set_minclustersize(unsigned int minclustersize0) = 0;
-    virtual void set_minsourcedepth(unsigned int minsourcedepth0) = 0;
-    virtual void set_mintargetdepth(unsigned int mintargetdepth0) = 0;
-    virtual void set_maxblocksize(unsigned int maxblocksize)      = 0;
+    virtual double get_epsilon() const                       = 0;
+    virtual double get_eta() const                           = 0;
+    virtual int get_ndofperelt() const                       = 0;
+    virtual int get_minclustersize() const                   = 0;
+    virtual int get_minsourcedepth() const                   = 0;
+    virtual int get_mintargetdepth() const                   = 0;
+    virtual int get_maxblocksize() const                     = 0;
+    virtual void set_epsilon(double epsilon0)                = 0;
+    virtual void set_eta(double eta0)                        = 0;
+    virtual void set_ndofperelt(unsigned int ndofperelt0)    = 0;
+    virtual void set_maxblocksize(unsigned int maxblocksize) = 0;
 
     // Build
     virtual void build(IMatrix<T> &mat, const double *const xt, const double *const rt, const int *const tabt, const double *const gt, const double *const xs, const double *const rs, const int *const tabs, const double *const gs) = 0;
@@ -75,7 +72,7 @@ class HMatrixVirtual {
     virtual Matrix<T> get_local_dense_perm() const = 0;
     virtual void copy_local_dense_perm(T *) const  = 0;
 
-    virtual ~HMatrixVirtual(){};
+    virtual ~VirtualHMatrix(){};
 };
 
 } // namespace htool

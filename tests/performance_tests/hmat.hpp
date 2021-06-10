@@ -5,7 +5,7 @@
 using namespace std;
 using namespace htool;
 
-template <typename ClusterImpl, template <typename, typename> class LowRankMatrix>
+template <typename ClusterImpl, template <typename> class LowRankMatrix>
 int hmat(int argc, char *argv[]) {
 
     // Initialize the MPI environment
@@ -61,11 +61,13 @@ int hmat(int argc, char *argv[]) {
     // Clustering
     std::shared_ptr<ClusterImpl> t = make_shared<ClusterImpl>();
     std::shared_ptr<ClusterImpl> s = make_shared<ClusterImpl>();
-    t->build_global_auto(nr, p1.data(), 2);
-    s->build_global_auto(nc, p2.data(), 2);
+    t->build(nr, p1.data(), 2);
+    s->build(nc, p2.data(), 2);
+    t->set_minclustersize(minclustersize);
+    s->set_minclustersize(minclustersize);
+
     // Hmatrix
-    HMatrix<double, LowRankMatrix, ClusterImpl, RjasanowSteinbach> HA(3, epsilon, eta);
-    HA.set_minclustersize(minclustersize);
+    HMatrix<double, LowRankMatrix, RjasanowSteinbach> HA(t, s, epsilon, eta);
     HA.build_auto(A, p1.data(), p2.data());
 
     double mytime, maxtime, meantime;

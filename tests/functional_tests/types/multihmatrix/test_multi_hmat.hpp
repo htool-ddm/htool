@@ -3,7 +3,7 @@
 #include <random>
 #include <vector>
 
-#include <htool/clustering/ncluster.hpp>
+#include <htool/clustering/pca.hpp>
 #include <htool/lrmat/SVD.hpp>
 #include <htool/lrmat/fullACA.hpp>
 #include <htool/lrmat/partialACA.hpp>
@@ -50,8 +50,8 @@ class MyMultiMatrix : public MultiIMatrix<double> {
     }
 };
 
-template <template <typename, typename> class MultiLowRankMatrix>
-int test_multi_hmat_cluster(const MyMultiMatrix &MultiA, const MultiHMatrix<double, MultiLowRankMatrix, GeometricClustering, RjasanowSteinbach> &MultiHA, int l) {
+template <template <typename> class MultiLowRankMatrix>
+int test_multi_hmat_cluster(const MyMultiMatrix &MultiA, const MultiHMatrix<double, MultiLowRankMatrix, RjasanowSteinbach> &MultiHA, int l) {
     bool test = 0;
     int rank;
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);

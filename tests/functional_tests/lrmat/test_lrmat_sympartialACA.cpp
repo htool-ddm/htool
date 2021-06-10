@@ -3,7 +3,7 @@
 #include <vector>
 
 #include "test_lrmat.hpp"
-#include <htool/clustering/ncluster.hpp>
+#include <htool/clustering/pca.hpp>
 #include <htool/lrmat/sympartialACA.hpp>
 
 using namespace std;
@@ -44,21 +44,21 @@ int main(int argc, char *argv[]) {
         create_disk(3, 0, nr, xt.data(), tabt.data());
         create_disk(3, distance[idist], nc, xs.data(), tabs.data());
 
-        GeometricClustering t, s;
+        Cluster<PCAGeometricClustering> t, s;
 
-        t.build_global_auto(nr, xt.data());
-        s.build_global_auto(nc, xs.data());
+        t.build(nr, xt.data());
+        s.build(nc, xs.data());
 
         IMatrixTestDouble A(3, nr, nc, xt, xs);
 
         // sympartialACA fixed rank
         int reqrank_max = 10;
-        sympartialACA<double, GeometricClustering> A_sympartialACA_fixed(t.get_perm(), s.get_perm(), reqrank_max, epsilon);
+        sympartialACA<double> A_sympartialACA_fixed(t.get_perm(), s.get_perm(), reqrank_max, epsilon);
         A_sympartialACA_fixed.build(A, t, xt.data(), tabt.data(), s, xs.data(), tabs.data());
         ;
 
         // ACA automatic building
-        sympartialACA<double, GeometricClustering> A_sympartialACA(t.get_perm(), s.get_perm());
+        sympartialACA<double> A_sympartialACA(t.get_perm(), s.get_perm());
         A_sympartialACA.set_epsilon(epsilon);
         A_sympartialACA.build(A, t, xt.data(), tabt.data(), s, xs.data(), tabs.data());
 

@@ -2,7 +2,7 @@
 
 int main(int argc, char *argv[]) {
 
-    hmat<GeometricClustering, partialACA>(argc, argv);
+    hmat<Cluster<PCARegularClustering>, partialACA>(argc, argv);
 
     return 0;
 }

@@ -1,4 +1,4 @@
-#include <htool/clustering/ncluster.hpp>
+#include <htool/clustering/pca.hpp>
 #include <htool/htool.hpp>
 #include <htool/lrmat/fullACA.hpp>
 #include <htool/testing/geometry.hpp>
@@ -52,10 +52,10 @@ int test_hmat_local_get(int argc, char *argv[], char symmetry, char UPLO) {
     MasterOffset.push_back(nr - count_size);
 
     // local clustering
-    std::shared_ptr<GeometricClustering> t = make_shared<GeometricClustering>();
-    t->build_local_auto(nr, p1.data(), MasterOffset.data(), 2);
+    std::shared_ptr<Cluster<PCARegularClustering>> t = make_shared<Cluster<PCARegularClustering>>();
+    t->build(nr, p1.data(), MasterOffset.data(), 2);
 
-    HMatrix<double, SVD, GeometricClustering, RjasanowSteinbach> HA(t, t, epsilon, eta, symmetry, UPLO);
+    HMatrix<double, SVD, RjasanowSteinbach> HA(t, t, epsilon, eta, symmetry, UPLO);
     HA.build_auto_sym(A, p1.data());
     HA.print_infos();
 
@@ -143,10 +143,10 @@ int test_hmat_local_get_complex(int argc, char *argv[], char symmetry, char UPLO
     MasterOffset.push_back(nr - count_size);
 
     // local clustering
-    std::shared_ptr<GeometricClustering> t = make_shared<GeometricClustering>();
-    t->build_local_auto(nr, p1.data(), MasterOffset.data(), 2);
+    std::shared_ptr<Cluster<PCAGeometricClustering>> t = make_shared<Cluster<PCAGeometricClustering>>();
+    t->build(nr, p1.data(), MasterOffset.data(), 2);
 
-    HMatrix<std::complex<double>, SVD, GeometricClustering, RjasanowSteinbach> HA(t, t, epsilon, eta, symmetry, UPLO);
+    HMatrix<std::complex<double>, SVD, RjasanowSteinbach> HA(t, t, epsilon, eta, symmetry, UPLO);
     HA.build_auto_sym(A, p1.data());
     HA.print_infos();
 
@@ -234,10 +234,10 @@ int test_hmat_local_get_complex_hermitian(int argc, char *argv[], char symmetry,
     MasterOffset.push_back(nr - count_size);
 
     // local clustering
-    std::shared_ptr<GeometricClustering> t = make_shared<GeometricClustering>();
-    t->build_local_auto(nr, p1.data(), MasterOffset.data(), 2);
+    std::shared_ptr<Cluster<PCAGeometricClustering>> t = make_shared<Cluster<PCAGeometricClustering>>();
+    t->build(nr, p1.data(), MasterOffset.data(), 2);
 
-    HMatrix<std::complex<double>, SVD, GeometricClustering, RjasanowSteinbach> HA(t, t, epsilon, eta, symmetry, UPLO);
+    HMatrix<std::complex<double>, SVD, RjasanowSteinbach> HA(t, t, epsilon, eta, symmetry, UPLO);
     HA.build_auto_sym(A, p1.data());
     HA.print_infos();
 

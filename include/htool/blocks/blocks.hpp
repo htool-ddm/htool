@@ -6,14 +6,14 @@
 
 namespace htool {
 
-template <typename ClusterImpl, template <typename> class AdmissibilityCondition>
+template <class AdmissibilityCondition>
 class Block {
 
   protected:
     // Data member
     std::vector<std::unique_ptr<Block>> sons; // Sons
-    const Cluster<ClusterImpl> &t;
-    const Cluster<ClusterImpl> &s;
+    const VirtualCluster &t;
+    const VirtualCluster &s;
     bool admissible;
 
     double eta;
@@ -224,16 +224,16 @@ class Block {
 
   public:
     // Root constructor
-    Block(const Cluster<ClusterImpl> &t0, const Cluster<ClusterImpl> &s0) : t(t0), s(s0), admissible(false), eta(10), mintargetdepth(0), minsourcedepth(0), maxblocksize(1000000), diagonal_block(nullptr), root(this), tasks(std::make_shared<std::vector<Block *>>()), local_tasks(std::make_shared<std::vector<Block *>>()) {
+    Block(const VirtualCluster &t0, const VirtualCluster &s0) : t(t0), s(s0), admissible(false), eta(10), mintargetdepth(0), minsourcedepth(0), maxblocksize(1000000), diagonal_block(nullptr), root(this), tasks(std::make_shared<std::vector<Block *>>()), local_tasks(std::make_shared<std::vector<Block *>>()) {
     }
 
     // Node constructor
-    Block(const Cluster<ClusterImpl> &t0, const Cluster<ClusterImpl> &s0, Block *root0, std::shared_ptr<std::vector<Block *>> tasks0, std::shared_ptr<std::vector<Block *>> local_tasks0) : t(t0), s(s0), admissible(false), eta(root0->eta), mintargetdepth(root0->mintargetdepth), minsourcedepth(root0->minsourcedepth), maxblocksize(root0->maxblocksize), diagonal_block(nullptr), root(root0), tasks(tasks0), local_tasks(local_tasks0) {
+    Block(const VirtualCluster &t0, const VirtualCluster &s0, Block *root0, std::shared_ptr<std::vector<Block *>> tasks0, std::shared_ptr<std::vector<Block *>> local_tasks0) : t(t0), s(s0), admissible(false), eta(root0->eta), mintargetdepth(root0->mintargetdepth), minsourcedepth(root0->minsourcedepth), maxblocksize(root0->maxblocksize), diagonal_block(nullptr), root(root0), tasks(tasks0), local_tasks(local_tasks0) {
 
-        admissible = AdmissibilityCondition<ClusterImpl>::ComputeAdmissibility(t, s, eta);
+        admissible = AdmissibilityCondition::ComputeAdmissibility(t, s, eta);
     }
 
-    // Block(const Cluster<ClusterImpl>& t0, const Cluster<ClusterImpl>& s0):  t(&t0), s(&s0), Admissible(-1) {};
+    // Block(const VirtualCluster& t0, const VirtualCluster& s0):  t(&t0), s(&s0), Admissible(-1) {};
     // Block(const Block& b): t(b.t), s(b.s), Admissible(b.Admissible) {};
     // Block& operator=(const Block& b){t=b.t; s=b.s; Admissible=b.Admissible; return *this;}
 
@@ -242,7 +242,7 @@ class Block {
         bool not_pushed;
 
         // Admissibility of root
-        admissible = AdmissibilityCondition<ClusterImpl>::ComputeAdmissibility(t, s, this->eta);
+        admissible = AdmissibilityCondition::ComputeAdmissibility(t, s, this->eta);
 
         // Build block tree and tasks
         if (UPLO == 'U' || UPLO == 'L' || force_sym) {
@@ -281,14 +281,14 @@ class Block {
         });
     }
 
-    void build_son(const Cluster<ClusterImpl> &t, const Cluster<ClusterImpl> &s) {
+    void build_son(const VirtualCluster &t, const VirtualCluster &s) {
         sons.push_back(std::unique_ptr<Block>(new Block(t, s, this->root, this->tasks, local_tasks)));
     }
     void clear_sons() { sons.clear(); }
 
     // Getters
-    const Cluster<ClusterImpl> &get_target_cluster() const { return t; }
-    const Cluster<ClusterImpl> &get_source_cluster() const { return s; }
+    const VirtualCluster &get_target_cluster() const { return t; }
+    const VirtualCluster &get_source_cluster() const { return s; }
     const Block &get_local_diagonal_block() const {
         return *(root->diagonal_block);
     }

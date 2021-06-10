@@ -96,6 +96,12 @@ inline std::vector<double> solve_EVP_3(const Matrix<double> &cov) {
         eigs[2] = q + 2. * p * cos(phi + (2. * 3.14159265358979323846 / 3.));
         eigs[1] = 3. * q - eigs[0] - eigs[2]; // since trace(cov) = eig1 + eig2 + eig3
 
+        // clean up near zero values to zeros (needed when cov has a kernel)
+        if (std::abs(eigs[1]) < 1.e-12)
+            eigs[1] = 0.;
+        if (std::abs(eigs[2]) < 1.e-12)
+            eigs[2] = 0.;
+
         if (std::abs(eigs[0]) < 1.e-16)
             dir *= 0.;
         else {

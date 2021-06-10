@@ -39,7 +39,7 @@ class DDM {
     }
 
     // Without overlap
-    DDM(const HMatrixVirtual<T> *const hmat_0) : n(hmat_0->get_local_size()), n_inside(hmat_0->get_local_size()), nb_cols(hmat_0->nb_cols()), nb_rows(hmat_0->nb_rows()), hpddm_op(hmat_0), mat_loc(n * n), D(n), comm(hmat_0->get_comm()), nevi(0), size_E(0), one_level(0), two_level(0) {
+    DDM(const VirtualHMatrix<T> *const hmat_0) : n(hmat_0->get_local_size()), n_inside(hmat_0->get_local_size()), nb_cols(hmat_0->nb_cols()), nb_rows(hmat_0->nb_rows()), hpddm_op(hmat_0), mat_loc(n * n), D(n), comm(hmat_0->get_comm()), nevi(0), size_E(0), one_level(0), two_level(0) {
         // Timing
         double mytime, maxtime;
         double time = MPI_Wtime();
@@ -76,7 +76,7 @@ class DDM {
     }
 
     // With overlap
-    DDM(const IMatrix<T> &mat0, const HMatrixVirtual<T> *const hmat_0, const std::vector<int> &ovr_subdomain_to_global0, const std::vector<int> &cluster_to_ovr_subdomain0, const std::vector<int> &neighbors0, const std::vector<std::vector<int>> &intersections0) : hpddm_op(hmat_0), n(ovr_subdomain_to_global0.size()), n_inside(cluster_to_ovr_subdomain0.size()), nb_cols(hmat_0->nb_cols()), nb_rows(hmat_0->nb_rows()), neighbors(neighbors0), vec_ovr(n), mat_loc(n * n), D(n), comm(hmat_0->get_comm()), one_level(0), two_level(0) {
+    DDM(const IMatrix<T> &mat0, const VirtualHMatrix<T> *const hmat_0, const std::vector<int> &ovr_subdomain_to_global0, const std::vector<int> &cluster_to_ovr_subdomain0, const std::vector<int> &neighbors0, const std::vector<std::vector<int>> &intersections0) : hpddm_op(hmat_0), n(ovr_subdomain_to_global0.size()), n_inside(cluster_to_ovr_subdomain0.size()), nb_cols(hmat_0->nb_cols()), nb_rows(hmat_0->nb_rows()), neighbors(neighbors0), vec_ovr(n), mat_loc(n * n), D(n), comm(hmat_0->get_comm()), one_level(0), two_level(0) {
         // Timing
         double mytime, maxtime;
         double time = MPI_Wtime();
@@ -183,7 +183,7 @@ class DDM {
         one_level                        = 1;
     }
 
-    // TODO: take local HMatrixVirtual instead
+    // TODO: take local VirtualHMatrix instead
     // void build_coarse_space(Matrix<T> &Mi, IMatrix<T> &generator_Bi, const std::vector<R3> &x) {
     //     // Timing
     //     double mytime, maxtime;
@@ -193,7 +193,7 @@ class DDM {
     //     int info;
 
     //     // Building Neumann matrix
-    //     htool::HMatrixVirtual *const Bi(generator_Bi, hpddm_op.HA.get_cluster_tree_t().get_local_cluster_tree(), x, -1, MPI_COMM_SELF);
+    //     htool::VirtualHMatrix *const Bi(generator_Bi, hpddm_op.HA.get_cluster_tree_t().get_local_cluster_tree(), x, -1, MPI_COMM_SELF);
     //     Matrix<T> Bi(n, n);
 
     //     // Building Bi

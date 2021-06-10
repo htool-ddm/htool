@@ -41,10 +41,10 @@ int main(int argc, char *argv[]) {
         create_disk(3, 0, nr, xt.data(), tabt.data());
         create_disk(3, distance[idist], nc, xs.data(), tabs.data());
 
-        GeometricClustering t, s;
+        Cluster<PCAGeometricClustering> t, s;
 
-        t.build_global_auto(nr, xt.data());
-        s.build_global_auto(nc, xs.data());
+        t.build(nr, xt.data());
+        s.build(nc, xs.data());
 
         MyMultiMatrix A(3, nr, nc, xt, xs);
         int nm = A.nb_matrix();
@@ -52,18 +52,18 @@ int main(int argc, char *argv[]) {
 
         // partialACA fixed rank
         int reqrank_max = 10;
-        MultipartialACA<double, GeometricClustering> A_partialACA_fixed(t.get_perm(), s.get_perm(), nm, reqrank_max, epsilon);
-        partialACA<double, GeometricClustering> A_partialACA_fixed_test(t.get_perm(), s.get_perm(), reqrank_max, epsilon);
+        MultipartialACA<double> A_partialACA_fixed(t.get_perm(), s.get_perm(), nm, reqrank_max, epsilon);
+        partialACA<double> A_partialACA_fixed_test(t.get_perm(), s.get_perm(), reqrank_max, epsilon);
         A_partialACA_fixed.build(A, t, xt.data(), tabt.data(), s, xs.data(), tabs.data());
         ;
         A_partialACA_fixed_test.build(A_test, t, xt.data(), tabt.data(), s, xs.data(), tabs.data());
         ;
 
         // ACA automatic building
-        MultipartialACA<double, GeometricClustering> A_partialACA(t.get_perm(), s.get_perm(), nm);
+        MultipartialACA<double> A_partialACA(t.get_perm(), s.get_perm(), nm);
         A_partialACA.set_epsilon(epsilon);
         A_partialACA.build(A, t, xt.data(), tabt.data(), s, xs.data(), tabs.data());
-        partialACA<double, GeometricClustering> A_partialACA_test(t.get_perm(), s.get_perm());
+        partialACA<double> A_partialACA_test(t.get_perm(), s.get_perm());
         A_partialACA_test.set_epsilon(epsilon);
         A_partialACA_test.build(A_test, t, xt.data(), tabt.data(), s, xs.data(), tabs.data());
         ;
