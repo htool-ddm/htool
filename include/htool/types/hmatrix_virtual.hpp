@@ -29,6 +29,8 @@ class VirtualHMatrix {
     virtual std::vector<std::pair<int, int>> get_MasterOffset_s() const = 0;
     virtual std::pair<int, int> get_MasterOffset_t(int i) const         = 0;
     virtual std::pair<int, int> get_MasterOffset_s(int i) const         = 0;
+    virtual std::vector<int> get_local_perm_target() const              = 0;
+    virtual std::vector<int> get_local_perm_source() const              = 0;
 
     // Getters/setters for parameters
     virtual double get_epsilon() const                            = 0;
