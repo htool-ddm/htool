@@ -68,14 +68,8 @@ class LowRankMatrix {
         if (rank != 0) {
             std::vector<T> a(this->rank * mu);
             if (op == 'N') {
-                std::cout << "BOUH1" << std::endl;
                 V.mvprod_row_major(in, a.data(), mu, transb, op);
-                std::cout << "BOUH2" << std::endl;
-                for (int i = 0; i < nr; i++) {
-                    std::cout << out[i] << " ";
-                }
                 U.add_mvprod_row_major(a.data(), out, mu, transb, op);
-                std::cout << "BOUH3" << std::endl;
             } else if (op == 'C' || op == 'T') {
                 U.mvprod_row_major(in, a.data(), mu, transb, op);
                 V.add_mvprod_row_major(a.data(), out, mu, transb, op);
