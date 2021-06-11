@@ -44,6 +44,7 @@ class VirtualHMatrix {
     virtual void set_maxblocksize(unsigned int maxblocksize)      = 0;
     virtual void set_minsourcedepth(unsigned int minsourcedepth0) = 0;
     virtual void set_mintargetdepth(unsigned int mintargetdepth0) = 0;
+    virtual void set_use_permutation(bool choice)                 = 0;
 
     // Build
     virtual void build(IMatrix<T> &mat, const double *const xt, const double *const rt, const int *const tabt, const double *const gt, const double *const xs, const double *const rs, const int *const tabs, const double *const gs) = 0;
