@@ -115,7 +115,7 @@ inline std::vector<double> solve_EVP_3(const Matrix<double> &cov) {
                 dirnorm = sqrt(dir[0] * dir[0] + dir[1] * dir[1] + dir[2] * dir[2]);
                 ind++;
             } while ((dirnorm < 1.e-15) && (ind < 3));
-            if (dirnorm >= 1.e-15) {
+            if (dirnorm < 1.e-15) {
                 dir[0] = 1;
                 dir[1] = 0;
                 dir[2] = 0;
