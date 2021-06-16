@@ -109,15 +109,15 @@ class LowRankMatrix {
 };
 
 template <typename T>
-double Frobenius_relative_error(const LowRankMatrix<T> &lrmat, const IMatrix<T> &ref, int reqrank = -1) {
+underlying_type<T> Frobenius_relative_error(const LowRankMatrix<T> &lrmat, const IMatrix<T> &ref, int reqrank = -1) {
     assert(reqrank <= lrmat.rank_of());
     if (reqrank == -1) {
         reqrank = lrmat.rank_of();
     }
-    T norm              = 0;
-    T err               = 0;
-    std::vector<int> ir = lrmat.get_ir();
-    std::vector<int> ic = lrmat.get_ic();
+    underlying_type<T> norm = 0;
+    underlying_type<T> err  = 0;
+    std::vector<int> ir     = lrmat.get_ir();
+    std::vector<int> ic     = lrmat.get_ic();
 
     for (int j = 0; j < lrmat.nb_rows(); j++) {
         for (int k = 0; k < lrmat.nb_cols(); k++) {
@@ -135,14 +135,14 @@ double Frobenius_relative_error(const LowRankMatrix<T> &lrmat, const IMatrix<T> 
 }
 
 template <typename T>
-double Frobenius_absolute_error(const LowRankMatrix<T> &lrmat, const IMatrix<T> &ref, int reqrank = -1) {
+underlying_type<T> Frobenius_absolute_error(const LowRankMatrix<T> &lrmat, const IMatrix<T> &ref, int reqrank = -1) {
     assert(reqrank <= lrmat.rank_of());
     if (reqrank == -1) {
         reqrank = lrmat.rank_of();
     }
-    T err               = 0;
-    std::vector<int> ir = lrmat.get_ir();
-    std::vector<int> ic = lrmat.get_ic();
+    underlying_type<T> err = 0;
+    std::vector<int> ir    = lrmat.get_ir();
+    std::vector<int> ic    = lrmat.get_ic();
 
     for (int j = 0; j < lrmat.nb_rows(); j++) {
         for (int k = 0; k < lrmat.nb_cols(); k++) {

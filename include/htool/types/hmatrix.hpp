@@ -30,7 +30,7 @@ template <typename T, template <typename> class LowRankMatrix, class AdmissibleC
 class HMatrix;
 
 template <typename T, template <typename> class LowRankMatrix, class AdmissibleCondition>
-double Frobenius_absolute_error(const HMatrix<T, LowRankMatrix, AdmissibleCondition> &B, const IMatrix<T> &A);
+underlying_type<T> Frobenius_absolute_error(const HMatrix<T, LowRankMatrix, AdmissibleCondition> &B, const IMatrix<T> &A);
 
 // Class
 template <typename T, template <typename> class LowRankMatrix, class AdmissibleCondition>
@@ -243,7 +243,7 @@ class HMatrix : public VirtualHMatrix<T> {
     void save_infos(const std::string &outputname, std::ios_base::openmode mode = std::ios_base::app, const std::string &sep = " = ") const;
     void save_plot(const std::string &outputname) const;
     double compression() const; // 1- !!!
-    friend double Frobenius_absolute_error<T, LowRankMatrix>(const HMatrix<T, LowRankMatrix, AdmissibleCondition> &B, const IMatrix<T> &A);
+    friend underlying_type<T> Frobenius_absolute_error<T, LowRankMatrix>(const HMatrix<T, LowRankMatrix, AdmissibleCondition> &B, const IMatrix<T> &A);
 
     // Mat vec prod
     void mvprod_global_to_global(const T *const in, T *const out, const int &mu = 1) const;
@@ -1395,15 +1395,15 @@ void HMatrix<T, LowRankMatrix, AdmissibleCondition>::save_plot(const std::string
 }
 
 template <typename T, template <typename> class LowRankMatrix, class AdmissibleCondition>
-double Frobenius_absolute_error(const HMatrix<T, LowRankMatrix, AdmissibleCondition> &B, const IMatrix<T> &A) {
-    double myerr = 0;
+underlying_type<T> Frobenius_absolute_error(const HMatrix<T, LowRankMatrix, AdmissibleCondition> &B, const IMatrix<T> &A) {
+    underlying_type<T> myerr = 0;
     for (int j = 0; j < B.MyFarFieldMats.size(); j++) {
-        double test = Frobenius_absolute_error(*(B.MyFarFieldMats[j]), A);
+        underlying_type<T> test = Frobenius_absolute_error(*(B.MyFarFieldMats[j]), A);
         myerr += std::pow(test, 2);
     }
 
-    double err = 0;
-    MPI_Allreduce(&myerr, &err, 1, MPI_DOUBLE, MPI_SUM, B.comm);
+    underlying_type<T> err = 0;
+    MPI_Allreduce(&myerr, &err, 1, wrapper_mpi<T>::mpi_underlying_type(), MPI_SUM, B.comm);
 
     return std::sqrt(err);
 }

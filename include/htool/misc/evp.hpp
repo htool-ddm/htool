@@ -2,7 +2,6 @@
 #define HTOOL_EVP_HPP
 
 #include "../types/matrix.hpp"
-#include <cassert>
 #include <iostream>
 #include <vector>
 
@@ -30,9 +29,13 @@ inline std::vector<double> solve_EVP_2(const Matrix<double> &cov) {
             dirnorm = sqrt(dir[0] * dir[0] + dir[1] * dir[1]);
             ind++;
         } while ((dirnorm < 1.e-15) && (ind < 2));
-        assert(dirnorm >= 1.e-15);
-        dir[0] /= dirnorm;
-        dir[1] /= dirnorm;
+        if (dirnorm < 1.e-15) {
+            dir[0] = 1;
+            dir[1] = 0;
+        } else {
+            dir[0] /= dirnorm;
+            dir[1] /= dirnorm;
+        }
     }
     return dir;
 }
