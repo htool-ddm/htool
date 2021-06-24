@@ -242,7 +242,8 @@ class HMatrix : public VirtualHMatrix<T> {
     void print_infos() const;
     void save_infos(const std::string &outputname, std::ios_base::openmode mode = std::ios_base::app, const std::string &sep = " = ") const;
     void save_plot(const std::string &outputname) const;
-    double compression() const; // 1- !!!
+    double compression_ratio() const;
+    double space_saving() const;
     friend underlying_type<T> Frobenius_absolute_error<T, LowRankMatrix>(const HMatrix<T, LowRankMatrix, AdmissibleCondition> &B, const IMatrix<T> &A);
 
     // Mat vec prod
@@ -769,7 +770,8 @@ void HMatrix<T, LowRankMatrix, AdmissibleCondition>::ComputeInfos(const std::vec
     infos["Number_of_lrmat"]          = NbrToStr(nlrmat);
     infos["Number_of_dmat"]           = NbrToStr(ndmat);
     infos["Number_of_false_positive"] = NbrToStr(false_positive);
-    infos["Compression"]              = NbrToStr(this->compression());
+    infos["Compression_ratio"]        = NbrToStr(this->compression_ratio());
+    infos["Space_saving"]             = NbrToStr(this->space_saving());
     infos["Local_size_max"]           = NbrToStr(maxinfos[3]);
     infos["Local_size_mean"]          = NbrToStr(meaninfos[3]);
     infos["Local_size_min"]           = NbrToStr(mininfos[3]);
@@ -1315,33 +1317,63 @@ std::vector<T> HMatrix<T, LowRankMatrix, AdmissibleCondition>::operator*(const s
 }
 
 template <typename T, template <typename> class LowRankMatrix, class AdmissibleCondition>
-double HMatrix<T, LowRankMatrix, AdmissibleCondition>::compression() const {
+double HMatrix<T, LowRankMatrix, AdmissibleCondition>::compression_ratio() const {
 
-    double mycomp = 0.;
-    double size   = ((long int)this->nr) * this->nc;
+    double my_compressed_size = 0.;
+    double uncompressed_size  = ((long int)this->nr) * this->nc;
     double nr_b, nc_b, rank;
 
     for (int j = 0; j < MyFarFieldMats.size(); j++) {
         nr_b = MyFarFieldMats[j]->nb_rows();
         nc_b = MyFarFieldMats[j]->nb_cols();
         rank = MyFarFieldMats[j]->rank_of();
-        mycomp += rank * (nr_b + nc_b) / size;
+        my_compressed_size += rank * (nr_b + nc_b);
     }
 
     for (int j = 0; j < MyNearFieldMats.size(); j++) {
         nr_b = MyNearFieldMats[j]->nb_rows();
         nc_b = MyNearFieldMats[j]->nb_cols();
         if (MyNearFieldMats[j]->get_offset_i() == MyNearFieldMats[j]->get_offset_j() && this->get_symmetry_type() != 'N' && nr_b == nc_b) {
-            mycomp += nr_b * nc_b / (2 * size);
+            my_compressed_size += (nr_b * (nc_b + 1)) / 2;
         } else {
-            mycomp += nr_b * nc_b / size;
+            my_compressed_size += nr_b * nc_b;
         }
     }
 
-    double comp = 0;
-    MPI_Allreduce(&mycomp, &comp, 1, MPI_DOUBLE, MPI_SUM, comm);
+    double compressed_size = 0;
+    MPI_Allreduce(&my_compressed_size, &compressed_size, 1, MPI_DOUBLE, MPI_SUM, comm);
 
-    return 1 - comp;
+    return uncompressed_size / compressed_size;
+}
+
+template <typename T, template <typename> class LowRankMatrix, class AdmissibleCondition>
+double HMatrix<T, LowRankMatrix, AdmissibleCondition>::space_saving() const {
+
+    double my_compressed_size = 0.;
+    double uncompressed_size  = ((long int)this->nr) * this->nc;
+    double nr_b, nc_b, rank;
+
+    for (int j = 0; j < MyFarFieldMats.size(); j++) {
+        nr_b = MyFarFieldMats[j]->nb_rows();
+        nc_b = MyFarFieldMats[j]->nb_cols();
+        rank = MyFarFieldMats[j]->rank_of();
+        my_compressed_size += rank * (nr_b + nc_b);
+    }
+
+    for (int j = 0; j < MyNearFieldMats.size(); j++) {
+        nr_b = MyNearFieldMats[j]->nb_rows();
+        nc_b = MyNearFieldMats[j]->nb_cols();
+        if (MyNearFieldMats[j]->get_offset_i() == MyNearFieldMats[j]->get_offset_j() && this->get_symmetry_type() != 'N' && nr_b == nc_b) {
+            my_compressed_size += (nr_b * (nc_b + 1)) / 2;
+        } else {
+            my_compressed_size += nr_b * nc_b;
+        }
+    }
+
+    double compressed_size = 0;
+    MPI_Allreduce(&my_compressed_size, &compressed_size, 1, MPI_DOUBLE, MPI_SUM, comm);
+
+    return 1 - compressed_size / uncompressed_size;
 }
 
 template <typename T, template <typename> class LowRankMatrix, class AdmissibleCondition>
