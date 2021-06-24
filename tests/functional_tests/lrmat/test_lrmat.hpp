@@ -39,9 +39,9 @@ int test_lrmat(const IMatrixTestDouble &A, const LowRankMatrix &Fixed_approximat
         cout << "> Errors with Frobenius norm : " << fixed_errors << endl;
 
     // Test compression
-    test = test || !(fixed_compression_interval.first < Fixed_approximation.compression() && Fixed_approximation.compression() < fixed_compression_interval.second);
+    test = test || !(fixed_compression_interval.first < Fixed_approximation.space_saving() && Fixed_approximation.space_saving() < fixed_compression_interval.second);
     if (verbose)
-        cout << "> Compression rate : " << Fixed_approximation.compression() << endl;
+        cout << "> Compression rate : " << Fixed_approximation.space_saving() << endl;
 
     // Random vector
     double lower_bound = 0;
@@ -85,9 +85,9 @@ int test_lrmat(const IMatrixTestDouble &A, const LowRankMatrix &Fixed_approximat
         cout << "> Errors with Frobenius norm: " << auto_errors << endl;
 
     // Test compression rate
-    test = test || !(auto_compression_interval.first < Auto_approximation.compression() && Auto_approximation.compression() < auto_compression_interval.second);
+    test = test || !(auto_compression_interval.first < Auto_approximation.space_saving() && Auto_approximation.space_saving() < auto_compression_interval.second);
     if (verbose)
-        cout << "> Compression rate : " << Auto_approximation.compression() << endl;
+        cout << "> Compression rate : " << Auto_approximation.space_saving() << endl;
 
     // Test mat vec prod
     out = Auto_approximation * f;

@@ -92,7 +92,11 @@ class LowRankMatrix {
         Blas<T>::gemm(&transa, &transb, &M, &N, &K, &alpha, &(U(0, 0)), &lda, &(V(0, 0)), &ldb, &beta, out, &ldc);
     }
 
-    double compression() const {
+    double compression_ratio() const {
+        return (this->nr * this->nc) / (double)(this->rank * (this->nr + this->nc));
+    }
+
+    double space_saving() const {
         return (1 - (this->rank * (1. / double(this->nr) + 1. / double(this->nc))));
     }
 

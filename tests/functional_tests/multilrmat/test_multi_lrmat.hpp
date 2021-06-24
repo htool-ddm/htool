@@ -86,8 +86,8 @@ int test_multi_lrmat(const MyMultiMatrix &A, const MultiLowRankMatrix &Fixed_app
     for (int l = 0; l < A.nb_matrix(); l++) {
 
         // Test compression
-        test = test || !(fixed_compression_interval.first < Fixed_approximation[l].compression() && Fixed_approximation[l].compression() < fixed_compression_interval.second);
-        cout << "> Compression rate : " << Fixed_approximation[l].compression() << endl;
+        test = test || !(fixed_compression_interval.first < Fixed_approximation[l].space_saving() && Fixed_approximation[l].space_saving() < fixed_compression_interval.second);
+        cout << "> Compression rate : " << Fixed_approximation[l].space_saving() << endl;
 
         // Test mat vec prod
         std::vector<double> out_perm(nr);
@@ -116,8 +116,8 @@ int test_multi_lrmat(const MyMultiMatrix &A, const MultiLowRankMatrix &Fixed_app
     for (int l = 0; l < A.nb_matrix(); l++) {
 
         // Test compression rate
-        test = test || !(auto_compression_interval.first < Auto_approximation[l].compression() && Auto_approximation[l].compression() < auto_compression_interval.second);
-        cout << "> Compression rate : " << Auto_approximation[l].compression() << endl;
+        test = test || !(auto_compression_interval.first < Auto_approximation[l].space_saving() && Auto_approximation[l].space_saving() < auto_compression_interval.second);
+        cout << "> Compression rate : " << Auto_approximation[l].space_saving() << endl;
 
         // Test mat vec prod
         std::vector<double> out_perm(nr);
