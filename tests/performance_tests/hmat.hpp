@@ -1,6 +1,6 @@
 #include <htool/htool.hpp>
+#include <htool/testing/generator_test.hpp>
 #include <htool/testing/geometry.hpp>
-#include <htool/testing/imatrix_test.hpp>
 
 using namespace std;
 using namespace htool;
@@ -56,7 +56,7 @@ int hmat(int argc, char *argv[]) {
     create_disk(3, z2, nc, p2.data());
 
     // Matrix
-    IMatrixTestDouble A(3, nr, nc, p1, p2);
+    GeneratorTestDouble A(3, nr, nc, p1, p2);
 
     // Clustering
     std::shared_ptr<ClusterImpl> t = make_shared<ClusterImpl>();

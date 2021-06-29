@@ -35,7 +35,7 @@ class partialACA final : public LowRankMatrix<T> {
     // otherwise, we use the required rank for the stopping criterion (!: at the end the rank could be lower)
     using LowRankMatrix<T>::LowRankMatrix;
 
-    void build(const IMatrix<T> &A, const VirtualCluster &t, const double *const xt, const int *const tabt, const VirtualCluster &s, const double *const xs, const int *const tabs) {
+    void build(const VirtualGenerator<T> &A, const VirtualCluster &t, const double *const xt, const int *const tabt, const VirtualCluster &s, const double *const xs, const int *const tabs) {
         if (this->rank == 0) {
             this->U.resize(this->nr, 1);
             this->V.resize(1, this->nc);

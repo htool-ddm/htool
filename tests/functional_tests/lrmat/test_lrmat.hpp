@@ -4,14 +4,14 @@
 #include <vector>
 
 #include <htool/lrmat/sympartialACA.hpp>
+#include <htool/testing/generator_test.hpp>
 #include <htool/testing/geometry.hpp>
-#include <htool/testing/imatrix_test.hpp>
 
 using namespace std;
 using namespace htool;
 
 template <class LowRankMatrix>
-int test_lrmat(const IMatrixTestDouble &A, const LowRankMatrix &Fixed_approximation, const LowRankMatrix &Auto_approximation, const std::vector<int> &permt, const std::vector<int> &perms, std::pair<double, double> fixed_compression_interval, std::pair<double, double> auto_compression_interval, bool verbose = 0, double margin = 0) {
+int test_lrmat(const GeneratorTestDouble &A, const LowRankMatrix &Fixed_approximation, const LowRankMatrix &Auto_approximation, const std::vector<int> &permt, const std::vector<int> &perms, std::pair<double, double> fixed_compression_interval, std::pair<double, double> auto_compression_interval, bool verbose = 0, double margin = 0) {
 
     bool test = 0;
     int nr    = permt.size();

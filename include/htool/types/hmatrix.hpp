@@ -8,7 +8,8 @@
 #include "../blocks/blocks.hpp"
 #include "../clustering/virtual_cluster.hpp"
 #include "../misc/misc.hpp"
-#include "../types/hmatrix_virtual.hpp"
+#include "../types/virtual_generator.hpp"
+#include "../types/virtual_hmatrix.hpp"
 #include "../wrappers/wrapper_mpi.hpp"
 #include "matrix.hpp"
 #include "point.hpp"
@@ -30,7 +31,7 @@ template <typename T, template <typename> class LowRankMatrix, class AdmissibleC
 class HMatrix;
 
 template <typename T, template <typename> class LowRankMatrix, class AdmissibleCondition>
-underlying_type<T> Frobenius_absolute_error(const HMatrix<T, LowRankMatrix, AdmissibleCondition> &B, const IMatrix<T> &A);
+underlying_type<T> Frobenius_absolute_error(const HMatrix<T, LowRankMatrix, AdmissibleCondition> &B, const VirtualGenerator<T> &A);
 
 // Class
 template <typename T, template <typename> class LowRankMatrix, class AdmissibleCondition>
@@ -63,10 +64,12 @@ class HMatrix : public VirtualHMatrix<T> {
 
     std::unique_ptr<Block<AdmissibleCondition>> BlockTree;
 
-    std::vector<std::unique_ptr<LowRankMatrix<T>>> MyFarFieldMats;
-    std::vector<std::unique_ptr<SubMatrix<T>>> MyNearFieldMats;
+    std::vector<std::unique_ptr<IMatrix<T>>> MyComputedBlocks;
+    std::vector<LowRankMatrix<T> *> MyFarFieldMats;
+    std::vector<SubMatrix<T> *> MyNearFieldMats;
     std::vector<LowRankMatrix<T> *> MyDiagFarFieldMats;
     std::vector<SubMatrix<T> *> MyDiagNearFieldMats;
+    std::vector<IMatrix<T> *> MyDiagComputedBlocks;
     std::vector<LowRankMatrix<T> *> MyStrictlyDiagFarFieldMats;
     std::vector<SubMatrix<T> *> MyStrictlyDiagNearFieldMats;
 
@@ -77,19 +80,19 @@ class HMatrix : public VirtualHMatrix<T> {
     int rankWorld, sizeWorld;
 
     // Internal methods
-    void ComputeBlocks(IMatrix<T> &mat, const double *const xt, const int *const tabt, const double *const xs, const int *const tabs);
-    void ComputeSymBlocks(IMatrix<T> &mat, const double *const xt, const int *const tabt, const double *const xs, const int *const tabs);
-    bool UpdateBlocks(IMatrix<T> &mat, Block<AdmissibleCondition> &task, const double *const xt, const int *const tabt, const double *const xs, const int *const tabs, std::vector<std::unique_ptr<SubMatrix<T>>> &, std::vector<std::unique_ptr<LowRankMatrix<T>>> &, int &);
-    bool UpdateSymBlocks(IMatrix<T> &mat, Block<AdmissibleCondition> &task, const double *const xt, const int *const tabt, const double *const xs, const int *const tabs, std::vector<std::unique_ptr<SubMatrix<T>>> &, std::vector<std::unique_ptr<LowRankMatrix<T>>> &, int &);
-    void AddNearFieldMat(IMatrix<T> &mat, Block<AdmissibleCondition> &task, std::vector<std::unique_ptr<SubMatrix<T>>> &);
-    void AddFarFieldMat(IMatrix<T> &mat, Block<AdmissibleCondition> &task, const double *const xt, const int *const tabt, const double *const xs, const int *const tabs, std::vector<std::unique_ptr<LowRankMatrix<T>>> &, const int &reqrank = -1);
+    void ComputeBlocks(VirtualGenerator<T> &mat, const double *const xt, const int *const tabt, const double *const xs, const int *const tabs);
+    void ComputeSymBlocks(VirtualGenerator<T> &mat, const double *const xt, const int *const tabt, const double *const xs, const int *const tabs);
+    bool UpdateBlocks(VirtualGenerator<T> &mat, Block<AdmissibleCondition> &task, const double *const xt, const int *const tabt, const double *const xs, const int *const tabs, std::vector<std::unique_ptr<IMatrix<T>>> &MyComputedBlocks_local, std::vector<SubMatrix<T> *> &, std::vector<LowRankMatrix<T> *> &, int &);
+    bool UpdateSymBlocks(VirtualGenerator<T> &mat, Block<AdmissibleCondition> &task, const double *const xt, const int *const tabt, const double *const xs, const int *const tabs, std::vector<std::unique_ptr<IMatrix<T>>> &MyComputedBlocks_local, std::vector<SubMatrix<T> *> &, std::vector<LowRankMatrix<T> *> &, int &);
+    void AddNearFieldMat(VirtualGenerator<T> &mat, Block<AdmissibleCondition> &task, std::vector<std::unique_ptr<IMatrix<T>>> &, std::vector<SubMatrix<T> *> &);
+    void AddFarFieldMat(VirtualGenerator<T> &mat, Block<AdmissibleCondition> &task, const double *const xt, const int *const tabt, const double *const xs, const int *const tabs, std::vector<std::unique_ptr<IMatrix<T>>> &, std::vector<LowRankMatrix<T> *> &, const int &reqrank = -1);
     void ComputeInfos(const std::vector<double> &mytimes);
 
     // Check arguments
-    void check_arguments(IMatrix<T> &mat, const std::vector<R3> &xt, const std::vector<double> &rt, const std::vector<int> &tabt, const std::vector<double> &gt, const std::vector<R3> &xs, const std::vector<double> &rs, const std::vector<int> &tabs, const std::vector<double> &gs) const;
-    void check_arguments(IMatrix<T> &mat, const std::vector<R3> &xt, const std::vector<int> &tabt, const std::vector<R3> &xs, const std::vector<int> &tabs) const;
-    void check_arguments_sym(IMatrix<T> &mat, const std::vector<R3> &xt, const std::vector<double> &rt, const std::vector<int> &tabt, const std::vector<double> &gt) const;
-    void check_arguments_sym(IMatrix<T> &mat, const std::vector<R3> &xt, const std::vector<int> &tabt) const;
+    void check_arguments(VirtualGenerator<T> &mat, const std::vector<R3> &xt, const std::vector<double> &rt, const std::vector<int> &tabt, const std::vector<double> &gt, const std::vector<R3> &xs, const std::vector<double> &rs, const std::vector<int> &tabs, const std::vector<double> &gs) const;
+    void check_arguments(VirtualGenerator<T> &mat, const std::vector<R3> &xt, const std::vector<int> &tabt, const std::vector<R3> &xs, const std::vector<int> &tabs) const;
+    void check_arguments_sym(VirtualGenerator<T> &mat, const std::vector<R3> &xt, const std::vector<double> &rt, const std::vector<int> &tabt, const std::vector<double> &gt) const;
+    void check_arguments_sym(VirtualGenerator<T> &mat, const std::vector<R3> &xt, const std::vector<int> &tabt) const;
 
     // Friends
     template <typename U, template <typename> class MultiLowRankMatrix, class AdmissibleConditionU>
@@ -111,9 +114,9 @@ class HMatrix : public VirtualHMatrix<T> {
     };
 
     // Build
-    void build(IMatrix<T> &mat, const double *const xt, const double *const rt, const int *const tabt, const double *const gt, const double *const xs, const double *const rs, const int *const tabs, const double *const gs);
+    void build(VirtualGenerator<T> &mat, const double *const xt, const double *const rt, const int *const tabt, const double *const gt, const double *const xs, const double *const rs, const int *const tabs, const double *const gs);
 
-    void build(IMatrix<T> &mat, const std::vector<R3> &xt, const std::vector<double> &rt, const std::vector<int> &tabt, const std::vector<double> &gt, const std::vector<R3> &xs, const std::vector<double> &rs, const std::vector<int> &tabs, const std::vector<double> &gs) {
+    void build(VirtualGenerator<T> &mat, const std::vector<R3> &xt, const std::vector<double> &rt, const std::vector<int> &tabt, const std::vector<double> &gt, const std::vector<R3> &xs, const std::vector<double> &rs, const std::vector<int> &tabs, const std::vector<double> &gs) {
         if (this->space_dim != 3) {
             throw std::logic_error("[Htool error] Wrong space dimension");
         }
@@ -129,9 +132,9 @@ class HMatrix : public VirtualHMatrix<T> {
     }
 
     // Symmetry build
-    void build_sym(IMatrix<T> &mat, const double *const xt, const double *const rt, const int *const tabt, const double *const gt);
+    void build_sym(VirtualGenerator<T> &mat, const double *const xt, const double *const rt, const int *const tabt, const double *const gt);
 
-    void build_sym(IMatrix<T> &mat, const std::vector<R3> &xt, const std::vector<double> &rt, const std::vector<int> &tabt, const std::vector<double> &gt) {
+    void build_sym(VirtualGenerator<T> &mat, const std::vector<R3> &xt, const std::vector<double> &rt, const std::vector<int> &tabt, const std::vector<double> &gt) {
         if (this->space_dim != 3) {
             throw std::logic_error("[Htool error] Wrong space dimension");
         }
@@ -144,9 +147,9 @@ class HMatrix : public VirtualHMatrix<T> {
     }
 
     // Build auto
-    void build_auto(IMatrix<T> &mat, const double *const xt, const double *const xs);
+    void build_auto(VirtualGenerator<T> &mat, const double *const xt, const double *const xs);
 
-    void build_auto(IMatrix<T> &mat, const std::vector<R3> &xt, const std::vector<R3> &xs) {
+    void build_auto(VirtualGenerator<T> &mat, const std::vector<R3> &xt, const std::vector<R3> &xs) {
         if (this->space_dim != 3) {
             throw std::logic_error("[Htool error] Wrong space dimension");
         }
@@ -161,9 +164,9 @@ class HMatrix : public VirtualHMatrix<T> {
     }
 
     // Symmetry auto build
-    void build_auto_sym(IMatrix<T> &mat, const double *const xt);
+    void build_auto_sym(VirtualGenerator<T> &mat, const double *const xt);
 
-    void build_auto_sym(IMatrix<T> &mat, const std::vector<R3> &xt) {
+    void build_auto_sym(VirtualGenerator<T> &mat, const std::vector<R3> &xt) {
         if (this->space_dim != 3) {
             throw std::logic_error("[Htool error] Wrong space dimension");
         }
@@ -244,7 +247,7 @@ class HMatrix : public VirtualHMatrix<T> {
     void save_plot(const std::string &outputname) const;
     double compression_ratio() const;
     double space_saving() const;
-    friend underlying_type<T> Frobenius_absolute_error<T, LowRankMatrix>(const HMatrix<T, LowRankMatrix, AdmissibleCondition> &B, const IMatrix<T> &A);
+    friend underlying_type<T> Frobenius_absolute_error<T, LowRankMatrix>(const HMatrix<T, LowRankMatrix, AdmissibleCondition> &B, const VirtualGenerator<T> &A);
 
     // Mat vec prod
     void mvprod_global_to_global(const T *const in, T *const out, const int &mu = 1) const;
@@ -281,7 +284,7 @@ class HMatrix : public VirtualHMatrix<T> {
 };
 
 template <typename T, template <typename> class LowRankMatrix, class AdmissibleCondition>
-void HMatrix<T, LowRankMatrix, AdmissibleCondition>::check_arguments(IMatrix<T> &mat, const std::vector<R3> &xt, const std::vector<double> &rt, const std::vector<int> &tabt, const std::vector<double> &gt, const std::vector<R3> &xs, const std::vector<double> &rs, const std::vector<int> &tabs, const std::vector<double> &gs) const {
+void HMatrix<T, LowRankMatrix, AdmissibleCondition>::check_arguments(VirtualGenerator<T> &mat, const std::vector<R3> &xt, const std::vector<double> &rt, const std::vector<int> &tabt, const std::vector<double> &gt, const std::vector<R3> &xs, const std::vector<double> &rs, const std::vector<int> &tabs, const std::vector<double> &gs) const {
     if (!(mat.nb_rows() == tabt.size() && mat.nb_cols() == tabs.size()
           && mat.nb_rows() == ndofperelt * xt.size() && mat.nb_cols() == ndofperelt * xs.size()
           && mat.nb_rows() == ndofperelt * rt.size() && mat.nb_cols() == ndofperelt * rs.size()
@@ -291,7 +294,7 @@ void HMatrix<T, LowRankMatrix, AdmissibleCondition>::check_arguments(IMatrix<T> 
 }
 
 template <typename T, template <typename> class LowRankMatrix, class AdmissibleCondition>
-void HMatrix<T, LowRankMatrix, AdmissibleCondition>::check_arguments(IMatrix<T> &mat, const std::vector<R3> &xt, const std::vector<int> &tabt, const std::vector<R3> &xs, const std::vector<int> &tabs) const {
+void HMatrix<T, LowRankMatrix, AdmissibleCondition>::check_arguments(VirtualGenerator<T> &mat, const std::vector<R3> &xt, const std::vector<int> &tabt, const std::vector<R3> &xs, const std::vector<int> &tabs) const {
     if (!(mat.nb_rows() == tabt.size() && mat.nb_cols() == tabs.size()
           && mat.nb_rows() == ndofperelt * xt.size() && mat.nb_cols() == ndofperelt * xs.size())) {
         throw std::invalid_argument("[Htool error] Invalid size in arguments for building HMatrix");
@@ -299,18 +302,18 @@ void HMatrix<T, LowRankMatrix, AdmissibleCondition>::check_arguments(IMatrix<T> 
 }
 
 template <typename T, template <typename> class LowRankMatrix, class AdmissibleCondition>
-void HMatrix<T, LowRankMatrix, AdmissibleCondition>::check_arguments_sym(IMatrix<T> &mat, const std::vector<R3> &xt, const std::vector<double> &rt, const std::vector<int> &tabt, const std::vector<double> &gt) const {
+void HMatrix<T, LowRankMatrix, AdmissibleCondition>::check_arguments_sym(VirtualGenerator<T> &mat, const std::vector<R3> &xt, const std::vector<double> &rt, const std::vector<int> &tabt, const std::vector<double> &gt) const {
     this->check_arguments(mat, xt, rt, tabt, gt, xt, rt, tabt, gt);
 }
 
 template <typename T, template <typename> class LowRankMatrix, class AdmissibleCondition>
-void HMatrix<T, LowRankMatrix, AdmissibleCondition>::check_arguments_sym(IMatrix<T> &mat, const std::vector<R3> &xt, const std::vector<int> &tabt) const {
+void HMatrix<T, LowRankMatrix, AdmissibleCondition>::check_arguments_sym(VirtualGenerator<T> &mat, const std::vector<R3> &xt, const std::vector<int> &tabt) const {
     this->check_arguments(mat, xt, tabt, xt, tabt);
 }
 
 // build
 template <typename T, template <typename> class LowRankMatrix, class AdmissibleCondition>
-void HMatrix<T, LowRankMatrix, AdmissibleCondition>::build(IMatrix<T> &mat, const double *const xt, const double *const rt, const int *const tabt, const double *const gt, const double *const xs, const double *const rs, const int *const tabs, const double *const gs) {
+void HMatrix<T, LowRankMatrix, AdmissibleCondition>::build(VirtualGenerator<T> &mat, const double *const xt, const double *const rt, const int *const tabt, const double *const gt, const double *const xs, const double *const rs, const int *const tabs, const double *const gs) {
 
     MPI_Comm_size(comm, &sizeWorld);
     MPI_Comm_rank(comm, &rankWorld);
@@ -353,7 +356,7 @@ void HMatrix<T, LowRankMatrix, AdmissibleCondition>::build(IMatrix<T> &mat, cons
 
 // Symmetry build
 template <typename T, template <typename> class LowRankMatrix, class AdmissibleCondition>
-void HMatrix<T, LowRankMatrix, AdmissibleCondition>::build_sym(IMatrix<T> &mat, const double *const xt, const double *const rt, const int *const tabt, const double *const gt) {
+void HMatrix<T, LowRankMatrix, AdmissibleCondition>::build_sym(VirtualGenerator<T> &mat, const double *const xt, const double *const rt, const int *const tabt, const double *const gt) {
 
     MPI_Comm_size(comm, &sizeWorld);
     MPI_Comm_rank(comm, &rankWorld);
@@ -398,7 +401,7 @@ void HMatrix<T, LowRankMatrix, AdmissibleCondition>::build_sym(IMatrix<T> &mat, 
 
 // Build auto
 template <typename T, template <typename> class LowRankMatrix, class AdmissibleCondition>
-void HMatrix<T, LowRankMatrix, AdmissibleCondition>::build_auto(IMatrix<T> &mat, const double *const xt, const double *const xs) {
+void HMatrix<T, LowRankMatrix, AdmissibleCondition>::build_auto(VirtualGenerator<T> &mat, const double *const xt, const double *const xs) {
     std::vector<int> tabt(this->ndofperelt * mat.nb_rows()), tabs(this->ndofperelt * mat.nb_cols());
     std::iota(tabt.begin(), tabt.end(), int(0));
     std::iota(tabs.begin(), tabs.end(), int(0));
@@ -407,7 +410,7 @@ void HMatrix<T, LowRankMatrix, AdmissibleCondition>::build_auto(IMatrix<T> &mat,
 
 // Symmetry auto build
 template <typename T, template <typename> class LowRankMatrix, class AdmissibleCondition>
-void HMatrix<T, LowRankMatrix, AdmissibleCondition>::build_auto_sym(IMatrix<T> &mat, const double *const xt) {
+void HMatrix<T, LowRankMatrix, AdmissibleCondition>::build_auto_sym(VirtualGenerator<T> &mat, const double *const xt) {
     std::vector<int> tabt(this->ndofperelt * mat.nb_rows());
     std::iota(tabt.begin(), tabt.end(), int(0));
     this->build_sym(mat, xt, std::vector<double>(mat.nb_rows(), 0).data(), tabt.data(), std::vector<double>(mat.nb_rows(), 1).data());
@@ -416,13 +419,14 @@ void HMatrix<T, LowRankMatrix, AdmissibleCondition>::build_auto_sym(IMatrix<T> &
 // Compute blocks recursively
 // TODO: recursivity -> stack for compute blocks
 template <typename T, template <typename> class LowRankMatrix, class AdmissibleCondition>
-void HMatrix<T, LowRankMatrix, AdmissibleCondition>::ComputeBlocks(IMatrix<T> &mat, const double *const xt, const int *const tabt, const double *const xs, const int *const tabs) {
+void HMatrix<T, LowRankMatrix, AdmissibleCondition>::ComputeBlocks(VirtualGenerator<T> &mat, const double *const xt, const int *const tabt, const double *const xs, const int *const tabs) {
 #if _OPENMP && !defined(PYTHON_INTERFACE)
 #    pragma omp parallel
 #endif
     {
-        std::vector<std::unique_ptr<SubMatrix<T>>> MyNearFieldMats_local;
-        std::vector<std::unique_ptr<LowRankMatrix<T>>> MyFarFieldMats_local;
+        std::vector<SubMatrix<T> *> MyNearFieldMats_local;
+        std::vector<LowRankMatrix<T> *> MyFarFieldMats_local;
+        std::vector<std::unique_ptr<IMatrix<T>>> MyComputedBlocks_local;
         std::vector<Block<AdmissibleCondition> *> local_tasks = BlockTree->get_local_tasks();
 
         int false_positive_local = 0;
@@ -432,56 +436,76 @@ void HMatrix<T, LowRankMatrix, AdmissibleCondition>::ComputeBlocks(IMatrix<T> &m
         for (int p = 0; p < local_tasks.size(); p++) {
             bool not_pushed;
             if (symmetry == 'H' || symmetry == 'S') {
-                not_pushed = UpdateSymBlocks(mat, *(local_tasks[p]), xt, tabt, xs, tabs, MyNearFieldMats_local, MyFarFieldMats_local, false_positive_local);
+                not_pushed = UpdateSymBlocks(mat, *(local_tasks[p]), xt, tabt, xs, tabs, MyComputedBlocks_local, MyNearFieldMats_local, MyFarFieldMats_local, false_positive_local);
             } else {
-                not_pushed = UpdateBlocks(mat, *(local_tasks[p]), xt, tabt, xs, tabs, MyNearFieldMats_local, MyFarFieldMats_local, false_positive_local);
+                not_pushed = UpdateBlocks(mat, *(local_tasks[p]), xt, tabt, xs, tabs, MyComputedBlocks_local, MyNearFieldMats_local, MyFarFieldMats_local, false_positive_local);
             }
 
             if (not_pushed) {
-                AddNearFieldMat(mat, *(local_tasks[p]), MyNearFieldMats_local);
+                AddNearFieldMat(mat, *(local_tasks[p]), MyComputedBlocks_local, MyNearFieldMats_local);
             }
         }
 #if _OPENMP && !defined(PYTHON_INTERFACE)
 #    pragma omp critical
 #endif
         {
+            MyComputedBlocks.insert(MyComputedBlocks.end(), std::make_move_iterator(MyComputedBlocks_local.begin()), std::make_move_iterator(MyComputedBlocks_local.end()));
+
             MyFarFieldMats.insert(MyFarFieldMats.end(), std::make_move_iterator(MyFarFieldMats_local.begin()), std::make_move_iterator(MyFarFieldMats_local.end()));
+
             MyNearFieldMats.insert(MyNearFieldMats.end(), std::make_move_iterator(MyNearFieldMats_local.begin()), std::make_move_iterator(MyNearFieldMats_local.end()));
+
             false_positive += false_positive_local;
         }
     }
 
     // Build vectors of pointers for diagonal blocks
+    for (int i = 0; i < MyComputedBlocks.size(); i++) {
+        if (local_offset <= MyComputedBlocks[i]->get_offset_j() && MyComputedBlocks[i]->get_offset_j() < local_offset + local_size) {
+            MyDiagComputedBlocks.push_back(MyComputedBlocks[i].get());
+            // if (MyComputedBlocks[i]->get_offset_j() == MyComputedBlocks[i]->get_offset_i())
+            //     MyStrictlyDiagFarFieldMats.push_back(MyComputedBlocks[i]);
+        }
+    }
+
     for (int i = 0; i < MyFarFieldMats.size(); i++) {
         if (local_offset <= MyFarFieldMats[i]->get_offset_j() && MyFarFieldMats[i]->get_offset_j() < local_offset + local_size) {
-            MyDiagFarFieldMats.push_back(MyFarFieldMats[i].get());
+            MyDiagFarFieldMats.push_back(MyFarFieldMats[i]);
             if (MyFarFieldMats[i]->get_offset_j() == MyFarFieldMats[i]->get_offset_i())
-                MyStrictlyDiagFarFieldMats.push_back(MyFarFieldMats[i].get());
+                MyStrictlyDiagFarFieldMats.push_back(MyFarFieldMats[i]);
         }
     }
     for (int i = 0; i < MyNearFieldMats.size(); i++) {
         if (local_offset <= MyNearFieldMats[i]->get_offset_j() && MyNearFieldMats[i]->get_offset_j() < local_offset + local_size) {
-            MyDiagNearFieldMats.push_back(MyNearFieldMats[i].get());
+            MyDiagNearFieldMats.push_back(MyNearFieldMats[i]);
             if (MyNearFieldMats[i]->get_offset_j() == MyNearFieldMats[i]->get_offset_i())
-                MyStrictlyDiagNearFieldMats.push_back(MyNearFieldMats[i].get());
+                MyStrictlyDiagNearFieldMats.push_back(MyNearFieldMats[i]);
         }
     }
+
+    std::sort(MyComputedBlocks.begin(), MyComputedBlocks.end(), [](std::unique_ptr<IMatrix<T>> &a, std::unique_ptr<IMatrix<T>> &b) {
+        if (a->get_offset_i() == b->get_offset_i()) {
+            return a->get_offset_j() < b->get_offset_j();
+        } else {
+            return a->get_offset_i() < b->get_offset_i();
+        }
+    });
 }
 
 template <typename T, template <typename> class LowRankMatrix, class AdmissibleCondition>
-bool HMatrix<T, LowRankMatrix, AdmissibleCondition>::UpdateBlocks(IMatrix<T> &mat, Block<AdmissibleCondition> &task, const double *const xt, const int *const tabt, const double *const xs, const int *const tabs, std::vector<std::unique_ptr<SubMatrix<T>>> &MyNearFieldMats_local, std::vector<std::unique_ptr<LowRankMatrix<T>>> &MyFarFieldMats_local, int &false_positive_local) {
+bool HMatrix<T, LowRankMatrix, AdmissibleCondition>::UpdateBlocks(VirtualGenerator<T> &mat, Block<AdmissibleCondition> &task, const double *const xt, const int *const tabt, const double *const xs, const int *const tabs, std::vector<std::unique_ptr<IMatrix<T>>> &MyComputedBlocks_local, std::vector<SubMatrix<T> *> &MyNearFieldMats_local, std::vector<LowRankMatrix<T> *> &MyFarFieldMats_local, int &false_positive_local) {
     if (task.IsAdmissible()) {
-        AddFarFieldMat(mat, task, xt, tabt, xs, tabs, MyFarFieldMats_local, reqrank);
+        AddFarFieldMat(mat, task, xt, tabt, xs, tabs, MyComputedBlocks_local, MyFarFieldMats_local, reqrank);
         if (MyFarFieldMats_local.back()->rank_of() != -1) {
             return false;
         } else {
             MyFarFieldMats_local.pop_back();
             false_positive_local += 1;
-            // AddNearFieldMat(mat, task, MyNearFieldMats_local);
+            // AddNearFieldMat(mat, task,MyComputedBlocks_local, MyNearFieldMats_local);
             // return false;
         }
     } else {
-        AddNearFieldMat(mat, task, MyNearFieldMats_local);
+        AddNearFieldMat(mat, task, MyComputedBlocks_local, MyNearFieldMats_local);
         return false;
     }
 
@@ -498,7 +522,7 @@ bool HMatrix<T, LowRankMatrix, AdmissibleCondition>::UpdateBlocks(IMatrix<T> &ma
             for (int p = 0; p < t.get_nb_sons(); p++) {
                 task.build_son(t.get_son(p), s);
 
-                Blocks_not_pushed[p] = UpdateBlocks(mat, task.get_son(p), xt, tabt, xs, tabs, MyNearFieldMats_local, MyFarFieldMats_local, false_positive_local);
+                Blocks_not_pushed[p] = UpdateBlocks(mat, task.get_son(p), xt, tabt, xs, tabs, MyComputedBlocks_local, MyNearFieldMats_local, MyFarFieldMats_local, false_positive_local);
             }
 
             if ((bsize <= maxblocksize) && std::all_of(Blocks_not_pushed.begin(), Blocks_not_pushed.end(), [](bool i) { return i; })) {
@@ -507,7 +531,7 @@ bool HMatrix<T, LowRankMatrix, AdmissibleCondition>::UpdateBlocks(IMatrix<T> &ma
             } else {
                 for (int p = 0; p < t.get_nb_sons(); p++) {
                     if (Blocks_not_pushed[p]) {
-                        AddNearFieldMat(mat, task.get_son(p), MyNearFieldMats_local);
+                        AddNearFieldMat(mat, task.get_son(p), MyComputedBlocks_local, MyNearFieldMats_local);
                     }
                 }
                 return false;
@@ -518,7 +542,7 @@ bool HMatrix<T, LowRankMatrix, AdmissibleCondition>::UpdateBlocks(IMatrix<T> &ma
             std::vector<bool> Blocks_not_pushed(s.get_nb_sons());
             for (int p = 0; p < s.get_nb_sons(); p++) {
                 task.build_son(t, s.get_son(p));
-                Blocks_not_pushed[p] = UpdateBlocks(mat, task.get_son(p), xt, tabt, xs, tabs, MyNearFieldMats_local, MyFarFieldMats_local, false_positive_local);
+                Blocks_not_pushed[p] = UpdateBlocks(mat, task.get_son(p), xt, tabt, xs, tabs, MyComputedBlocks_local, MyNearFieldMats_local, MyFarFieldMats_local, false_positive_local);
             }
 
             if ((bsize <= maxblocksize) && std::all_of(Blocks_not_pushed.begin(), Blocks_not_pushed.end(), [](bool i) { return i; })) {
@@ -527,7 +551,7 @@ bool HMatrix<T, LowRankMatrix, AdmissibleCondition>::UpdateBlocks(IMatrix<T> &ma
             } else {
                 for (int p = 0; p < s.get_nb_sons(); p++) {
                     if (Blocks_not_pushed[p]) {
-                        AddNearFieldMat(mat, task.get_son(p), MyNearFieldMats_local);
+                        AddNearFieldMat(mat, task.get_son(p), MyComputedBlocks_local, MyNearFieldMats_local);
                     }
                 }
                 return false;
@@ -537,7 +561,7 @@ bool HMatrix<T, LowRankMatrix, AdmissibleCondition>::UpdateBlocks(IMatrix<T> &ma
                 std::vector<bool> Blocks_not_pushed(t.get_nb_sons());
                 for (int p = 0; p < t.get_nb_sons(); p++) {
                     task.build_son(t.get_son(p), s);
-                    Blocks_not_pushed[p] = UpdateBlocks(mat, task.get_son(p), xt, tabt, xs, tabs, MyNearFieldMats_local, MyFarFieldMats_local, false_positive_local);
+                    Blocks_not_pushed[p] = UpdateBlocks(mat, task.get_son(p), xt, tabt, xs, tabs, MyComputedBlocks_local, MyNearFieldMats_local, MyFarFieldMats_local, false_positive_local);
                 }
 
                 if ((bsize <= maxblocksize) && std::all_of(Blocks_not_pushed.begin(), Blocks_not_pushed.end(), [](bool i) { return i; })) {
@@ -546,7 +570,7 @@ bool HMatrix<T, LowRankMatrix, AdmissibleCondition>::UpdateBlocks(IMatrix<T> &ma
                 } else {
                     for (int p = 0; p < t.get_nb_sons(); p++) {
                         if (Blocks_not_pushed[p]) {
-                            AddNearFieldMat(mat, task.get_son(p), MyNearFieldMats_local);
+                            AddNearFieldMat(mat, task.get_son(p), MyComputedBlocks_local, MyNearFieldMats_local);
                         }
                     }
                     return false;
@@ -555,7 +579,7 @@ bool HMatrix<T, LowRankMatrix, AdmissibleCondition>::UpdateBlocks(IMatrix<T> &ma
                 std::vector<bool> Blocks_not_pushed(s.get_nb_sons());
                 for (int p = 0; p < s.get_nb_sons(); p++) {
                     task.build_son(t, s.get_son(p));
-                    Blocks_not_pushed[p] = UpdateBlocks(mat, task.get_son(p), xt, tabt, xs, tabs, MyNearFieldMats_local, MyFarFieldMats_local, false_positive_local);
+                    Blocks_not_pushed[p] = UpdateBlocks(mat, task.get_son(p), xt, tabt, xs, tabs, MyComputedBlocks_local, MyNearFieldMats_local, MyFarFieldMats_local, false_positive_local);
                 }
 
                 if ((bsize <= maxblocksize) && std::all_of(Blocks_not_pushed.begin(), Blocks_not_pushed.end(), [](bool i) { return i; })) {
@@ -564,7 +588,7 @@ bool HMatrix<T, LowRankMatrix, AdmissibleCondition>::UpdateBlocks(IMatrix<T> &ma
                 } else {
                     for (int p = 0; p < s.get_nb_sons(); p++) {
                         if (Blocks_not_pushed[p]) {
-                            AddNearFieldMat(mat, task.get_son(p), MyNearFieldMats_local);
+                            AddNearFieldMat(mat, task.get_son(p), MyComputedBlocks_local, MyNearFieldMats_local);
                         }
                     }
                     return false;
@@ -575,21 +599,21 @@ bool HMatrix<T, LowRankMatrix, AdmissibleCondition>::UpdateBlocks(IMatrix<T> &ma
 }
 
 template <typename T, template <typename> class LowRankMatrix, class AdmissibleCondition>
-bool HMatrix<T, LowRankMatrix, AdmissibleCondition>::UpdateSymBlocks(IMatrix<T> &mat, Block<AdmissibleCondition> &task, const double *const xt, const int *const tabt, const double *const xs, const int *const tabs, std::vector<std::unique_ptr<SubMatrix<T>>> &MyNearFieldMats_local, std::vector<std::unique_ptr<LowRankMatrix<T>>> &MyFarFieldMats_local, int &false_positive_local) {
+bool HMatrix<T, LowRankMatrix, AdmissibleCondition>::UpdateSymBlocks(VirtualGenerator<T> &mat, Block<AdmissibleCondition> &task, const double *const xt, const int *const tabt, const double *const xs, const int *const tabs, std::vector<std::unique_ptr<IMatrix<T>>> &MyComputedBlocks_local, std::vector<SubMatrix<T> *> &MyNearFieldMats_local, std::vector<LowRankMatrix<T> *> &MyFarFieldMats_local, int &false_positive_local) {
 
     if (task.IsAdmissible()) {
 
-        AddFarFieldMat(mat, task, xt, tabt, xs, tabs, MyFarFieldMats_local, reqrank);
+        AddFarFieldMat(mat, task, xt, tabt, xs, tabs, MyComputedBlocks_local, MyFarFieldMats_local, reqrank);
         if (MyFarFieldMats_local.back()->rank_of() != -1) {
             return false;
         } else {
             MyFarFieldMats_local.pop_back();
             false_positive_local += 1;
-            // AddNearFieldMat(mat, task, MyNearFieldMats_local);
+            // AddNearFieldMat(mat, task,MyComputedBlocks_local, MyNearFieldMats_local);
             // return false;
         }
     } else {
-        AddNearFieldMat(mat, task, MyNearFieldMats_local);
+        AddNearFieldMat(mat, task, MyComputedBlocks_local, MyNearFieldMats_local);
         return false;
     }
     int bsize               = task.get_size();
@@ -603,7 +627,7 @@ bool HMatrix<T, LowRankMatrix, AdmissibleCondition>::UpdateSymBlocks(IMatrix<T> 
             std::vector<bool> Blocks_not_pushed(t.get_nb_sons());
             for (int p = 0; p < t.get_nb_sons(); p++) {
                 task.build_son(t.get_son(p), s);
-                Blocks_not_pushed[p] = UpdateSymBlocks(mat, task.get_son(p), xt, tabt, xs, tabs, MyNearFieldMats_local, MyFarFieldMats_local, false_positive_local);
+                Blocks_not_pushed[p] = UpdateSymBlocks(mat, task.get_son(p), xt, tabt, xs, tabs, MyComputedBlocks_local, MyNearFieldMats_local, MyFarFieldMats_local, false_positive_local);
             }
 
             if ((bsize <= maxblocksize) && std::all_of(Blocks_not_pushed.begin(), Blocks_not_pushed.end(), [](bool i) { return i; })) {
@@ -612,7 +636,7 @@ bool HMatrix<T, LowRankMatrix, AdmissibleCondition>::UpdateSymBlocks(IMatrix<T> 
             } else {
                 for (int p = 0; p < t.get_nb_sons(); p++) {
                     if (Blocks_not_pushed[p]) {
-                        AddNearFieldMat(mat, task.get_son(p), MyNearFieldMats_local);
+                        AddNearFieldMat(mat, task.get_son(p), MyComputedBlocks_local, MyNearFieldMats_local);
                     }
                 }
                 return false;
@@ -623,7 +647,7 @@ bool HMatrix<T, LowRankMatrix, AdmissibleCondition>::UpdateSymBlocks(IMatrix<T> 
             std::vector<bool> Blocks_not_pushed(s.get_nb_sons());
             for (int p = 0; p < s.get_nb_sons(); p++) {
                 task.build_son(t, s.get_son(p));
-                Blocks_not_pushed[p] = UpdateSymBlocks(mat, task.get_son(p), xt, tabt, xs, tabs, MyNearFieldMats_local, MyFarFieldMats_local, false_positive_local);
+                Blocks_not_pushed[p] = UpdateSymBlocks(mat, task.get_son(p), xt, tabt, xs, tabs, MyComputedBlocks_local, MyNearFieldMats_local, MyFarFieldMats_local, false_positive_local);
             }
 
             if ((bsize <= maxblocksize) && std::all_of(Blocks_not_pushed.begin(), Blocks_not_pushed.end(), [](bool i) { return i; })) {
@@ -632,7 +656,7 @@ bool HMatrix<T, LowRankMatrix, AdmissibleCondition>::UpdateSymBlocks(IMatrix<T> 
             } else {
                 for (int p = 0; p < s.get_nb_sons(); p++) {
                     if (Blocks_not_pushed[p]) {
-                        AddNearFieldMat(mat, task.get_son(p), MyNearFieldMats_local);
+                        AddNearFieldMat(mat, task.get_son(p), MyComputedBlocks_local, MyNearFieldMats_local);
                     }
                 }
                 return false;
@@ -642,7 +666,7 @@ bool HMatrix<T, LowRankMatrix, AdmissibleCondition>::UpdateSymBlocks(IMatrix<T> 
             for (int l = 0; l < s.get_nb_sons(); l++) {
                 for (int p = 0; p < t.get_nb_sons(); p++) {
                     task.build_son(t.get_son(p), s.get_son(l));
-                    Blocks_not_pushed[p + l * t.get_nb_sons()] = UpdateSymBlocks(mat, task.get_son(p + l * t.get_nb_sons()), xt, tabt, xs, tabs, MyNearFieldMats_local, MyFarFieldMats_local, false_positive_local);
+                    Blocks_not_pushed[p + l * t.get_nb_sons()] = UpdateSymBlocks(mat, task.get_son(p + l * t.get_nb_sons()), xt, tabt, xs, tabs, MyComputedBlocks_local, MyNearFieldMats_local, MyFarFieldMats_local, false_positive_local);
                 }
             }
             if ((bsize <= maxblocksize) && std::all_of(Blocks_not_pushed.begin(), Blocks_not_pushed.end(), [](bool i) { return i; })) {
@@ -651,7 +675,7 @@ bool HMatrix<T, LowRankMatrix, AdmissibleCondition>::UpdateSymBlocks(IMatrix<T> 
             } else {
                 for (int p = 0; p < Blocks_not_pushed.size(); p++) {
                     if (Blocks_not_pushed[p]) {
-                        AddNearFieldMat(mat, task.get_son(p), MyNearFieldMats_local);
+                        AddNearFieldMat(mat, task.get_son(p), MyComputedBlocks_local, MyNearFieldMats_local);
                     }
                 }
                 return false;
@@ -662,32 +686,36 @@ bool HMatrix<T, LowRankMatrix, AdmissibleCondition>::UpdateSymBlocks(IMatrix<T> 
 
 // Build a dense block
 template <typename T, template <typename> class LowRankMatrix, class AdmissibleCondition>
-void HMatrix<T, LowRankMatrix, AdmissibleCondition>::AddNearFieldMat(IMatrix<T> &mat, Block<AdmissibleCondition> &task, std::vector<std::unique_ptr<SubMatrix<T>>> &MyNearFieldMats_local) {
+void HMatrix<T, LowRankMatrix, AdmissibleCondition>::AddNearFieldMat(VirtualGenerator<T> &mat, Block<AdmissibleCondition> &task, std::vector<std::unique_ptr<IMatrix<T>>> &MyComputedBlocks_local, std::vector<SubMatrix<T> *> &MyNearFieldMats_local) {
 
     const VirtualCluster &t = task.get_target_cluster();
     const VirtualCluster &s = task.get_source_cluster();
 
     if (use_permutation) {
-        MyNearFieldMats_local.emplace_back(new SubMatrix<T>(mat, t.get_size(), s.get_size(), cluster_tree_t->get_perm().data() + t.get_offset(), cluster_tree_s->get_perm().data() + s.get_offset(), t.get_offset(), s.get_offset()));
+        MyComputedBlocks_local.emplace_back(new SubMatrix<T>(mat, t.get_size(), s.get_size(), cluster_tree_t->get_perm().data() + t.get_offset(), cluster_tree_s->get_perm().data() + s.get_offset(), t.get_offset(), s.get_offset()));
     } else {
-        MyNearFieldMats_local.emplace_back(new SubMatrix<T>(mat, t.get_size(), s.get_size(), no_permutation_target.data() + t.get_offset(), no_permutation_source.data() + s.get_offset(), t.get_offset(), s.get_offset()));
+        MyComputedBlocks_local.emplace_back(new SubMatrix<T>(mat, t.get_size(), s.get_size(), no_permutation_target.data() + t.get_offset(), no_permutation_source.data() + s.get_offset(), t.get_offset(), s.get_offset()));
     }
+
+    MyNearFieldMats_local.push_back(dynamic_cast<SubMatrix<T> *>(MyComputedBlocks_local.back().get()));
 }
 
 // Build a low rank block
 template <typename T, template <typename> class LowRankMatrix, class AdmissibleCondition>
-void HMatrix<T, LowRankMatrix, AdmissibleCondition>::AddFarFieldMat(IMatrix<T> &mat, Block<AdmissibleCondition> &task, const double *const xt, const int *const tabt, const double *const xs, const int *const tabs, std::vector<std::unique_ptr<LowRankMatrix<T>>> &MyFarFieldMats_local, const int &reqrank) {
+void HMatrix<T, LowRankMatrix, AdmissibleCondition>::AddFarFieldMat(VirtualGenerator<T> &mat, Block<AdmissibleCondition> &task, const double *const xt, const int *const tabt, const double *const xs, const int *const tabs, std::vector<std::unique_ptr<IMatrix<T>>> &MyComputedBlocks_local, std::vector<LowRankMatrix<T> *> &MyFarFieldMats_local, const int &reqrank) {
 
     const VirtualCluster &t = task.get_target_cluster();
     const VirtualCluster &s = task.get_source_cluster();
 
     if (use_permutation) {
-        MyFarFieldMats_local.emplace_back(new LowRankMatrix<T>(std::vector<int>(cluster_tree_t->get_perm_start() + t.get_offset(), cluster_tree_t->get_perm_start() + t.get_offset() + t.get_size()), std::vector<int>(cluster_tree_s->get_perm_start() + s.get_offset(), cluster_tree_s->get_perm_start() + s.get_offset() + s.get_size()), t.get_offset(), s.get_offset(), reqrank, this->epsilon));
+        MyComputedBlocks_local.emplace_back(new LowRankMatrix<T>(std::vector<int>(cluster_tree_t->get_perm_start() + t.get_offset(), cluster_tree_t->get_perm_start() + t.get_offset() + t.get_size()), std::vector<int>(cluster_tree_s->get_perm_start() + s.get_offset(), cluster_tree_s->get_perm_start() + s.get_offset() + s.get_size()), t.get_offset(), s.get_offset(), reqrank, this->epsilon));
     }
 
     else {
-        MyFarFieldMats_local.emplace_back(new LowRankMatrix<T>(std::vector<int>(no_permutation_target.data() + t.get_offset(), no_permutation_target.data() + t.get_offset() + t.get_size()), std::vector<int>(no_permutation_source.data() + s.get_offset(), no_permutation_source.data() + s.get_offset() + s.get_size()), t.get_offset(), s.get_offset(), reqrank, this->epsilon));
+        MyComputedBlocks_local.emplace_back(new LowRankMatrix<T>(std::vector<int>(no_permutation_target.data() + t.get_offset(), no_permutation_target.data() + t.get_offset() + t.get_size()), std::vector<int>(no_permutation_source.data() + s.get_offset(), no_permutation_source.data() + s.get_offset() + s.get_size()), t.get_offset(), s.get_offset(), reqrank, this->epsilon));
     }
+
+    MyFarFieldMats_local.push_back(dynamic_cast<LowRankMatrix<T> *>(MyComputedBlocks_local.back().get()));
     MyFarFieldMats_local.back()->set_ndofperelt(this->ndofperelt);
     MyFarFieldMats_local.back()->build(mat, t, xt, tabt, s, xs, tabs);
 }
@@ -784,19 +812,25 @@ void HMatrix<T, LowRankMatrix, AdmissibleCondition>::ComputeInfos(const std::vec
     infos["Number_of_procs"] = NbrToStr(sizeWorld);
 #endif
 
-    infos["Eta"]                  = NbrToStr(eta);
-    infos["Eps"]                  = NbrToStr(epsilon);
-    infos["MinTargetDepth"]       = NbrToStr(mintargetdepth);
-    infos["MinSourceDepth"]       = NbrToStr(minsourcedepth);
-    infos["MinClusterSizeTarget"] = NbrToStr(cluster_tree_t->get_minclustersize());
-    infos["MinClusterSizeSource"] = NbrToStr(cluster_tree_s->get_minclustersize());
-    infos["MaxBlockSize"]         = NbrToStr(maxblocksize);
+    infos["Eta"]                   = NbrToStr(eta);
+    infos["Eps"]                   = NbrToStr(epsilon);
+    infos["MinTargetDepth"]        = NbrToStr(mintargetdepth);
+    infos["MinSourceDepth"]        = NbrToStr(minsourcedepth);
+    infos["MinClusterSizeTarget"]  = NbrToStr(cluster_tree_t->get_minclustersize());
+    infos["MinClusterSizeSource"]  = NbrToStr(cluster_tree_s->get_minclustersize());
+    infos["MinClusterDepthTarget"] = NbrToStr(cluster_tree_t->get_min_depth());
+    infos["MaxClusterDepthTarget"] = NbrToStr(cluster_tree_t->get_max_depth());
+    infos["MinClusterDepthSource"] = NbrToStr(cluster_tree_s->get_min_depth());
+    infos["MaxClusterDepthSource"] = NbrToStr(cluster_tree_s->get_max_depth());
+    infos["MaxBlockSize"]          = NbrToStr(maxblocksize);
 }
 
 template <typename T, template <typename> class LowRankMatrix, class AdmissibleCondition>
 void HMatrix<T, LowRankMatrix, AdmissibleCondition>::mymvprod_global_to_local(const T *const in, T *const out, const int &mu) const {
 
     std::fill(out, out + local_size * mu, 0);
+    int incx(1), incy(1), local_size_rhs(local_size * mu);
+    T da(1);
 
     // To localize the rhs with multiple rhs, it is transpose. So instead of A*B, we do transpose(B)*transpose(A)
     char transb = 'T';
@@ -812,27 +846,13 @@ void HMatrix<T, LowRankMatrix, AdmissibleCondition>::mymvprod_global_to_local(co
     {
         std::vector<T> temp(local_size * mu, 0);
 #if _OPENMP
-#    pragma omp for schedule(guided)
+#    pragma omp for schedule(guided) nowait
 #endif
-        for (int b = 0; b < MyFarFieldMats.size(); b++) {
-            const LowRankMatrix<T> &M = *(MyFarFieldMats[b]);
-            int offset_i              = M.get_offset_i();
-            int offset_j              = M.get_offset_j();
+        for (int b = 0; b < MyComputedBlocks.size(); b++) {
+            int offset_i = MyComputedBlocks[b]->get_offset_i();
+            int offset_j = MyComputedBlocks[b]->get_offset_j();
             if (!(symmetry != 'N') || offset_i != offset_j) { // remove strictly diagonal blocks
-                M.add_mvprod_row_major(in + offset_j * mu, temp.data() + (offset_i - local_offset) * mu, mu, transb);
-            }
-        }
-// Contribution champ proche
-#if _OPENMP
-#    pragma omp for schedule(guided)
-#endif
-        for (int b = 0; b < MyNearFieldMats.size(); b++) {
-            const SubMatrix<T> &M = *(MyNearFieldMats[b]);
-            int offset_i          = M.get_offset_i();
-            int offset_j          = M.get_offset_j();
-
-            if (!(symmetry != 'N') || offset_i != offset_j) { // remove strictly diagonal blocks
-                M.add_mvprod_row_major(in + offset_j * mu, temp.data() + (offset_i - local_offset) * mu, mu, transb);
+                MyComputedBlocks[b]->add_mvprod_row_major(in + offset_j * mu, temp.data() + (offset_i - local_offset) * mu, mu, transb);
             }
         }
 
@@ -845,45 +865,19 @@ void HMatrix<T, LowRankMatrix, AdmissibleCondition>::mymvprod_global_to_local(co
             }
 
 #if _OPENMP
-#    pragma omp for schedule(guided)
+#    pragma omp for schedule(guided) nowait
 #endif
-            for (int b = 0; b < MyDiagFarFieldMats.size(); b++) {
-                const LowRankMatrix<T> &M = *(MyDiagFarFieldMats[b]);
-                int offset_i              = M.get_offset_j();
-                int offset_j              = M.get_offset_i();
+            for (int b = 0; b < MyDiagComputedBlocks.size(); b++) {
+                int offset_i = MyDiagComputedBlocks[b]->get_offset_j();
+                int offset_j = MyDiagComputedBlocks[b]->get_offset_i();
 
                 if (offset_i != offset_j) { // remove strictly diagonal blocks
-                    M.add_mvprod_row_major(in + offset_j * mu, temp.data() + (offset_i - local_offset) * mu, mu, transb, op_sym);
-                }
-            }
-// #if _OPENMP
-// #pragma omp for schedule(guided)
-// #endif
-// for(int b=0; b<MyStrictlyDiagFarFieldMats.size(); b++){
-// 	const LowRankMatrix<T,ClusterImpl>&  M  = *(MyStrictlyDiagFarFieldMats[b]);
-// 	int offset_i     = M.get_offset_j();
-// 	int offset_j     = M.get_offset_i();
-
-// 	M.add_mvprod_row_major_sym(in+offset_j*mu,temp.data()+(offset_i-local_offset)*mu,mu);
-
-// }
-
-// Contribution champ proche
-#if _OPENMP
-#    pragma omp for schedule(guided)
-#endif
-            for (int b = 0; b < MyDiagNearFieldMats.size(); b++) {
-                const SubMatrix<T> &M = *(MyDiagNearFieldMats[b]);
-                int offset_i          = M.get_offset_j();
-                int offset_j          = M.get_offset_i();
-
-                if (offset_i != offset_j) { // remove strictly diagonal blocks
-                    M.add_mvprod_row_major(in + offset_j * mu, temp.data() + (offset_i - local_offset) * mu, mu, transb, op_sym);
+                    MyDiagComputedBlocks[b]->add_mvprod_row_major(in + offset_j * mu, temp.data() + (offset_i - local_offset) * mu, mu, transb, op_sym);
                 }
             }
 
 #if _OPENMP
-#    pragma omp for schedule(guided)
+#    pragma omp for schedule(guided) nowait
 #endif
             for (int b = 0; b < MyStrictlyDiagNearFieldMats.size(); b++) {
                 const SubMatrix<T> &M = *(MyStrictlyDiagNearFieldMats[b]);
@@ -896,7 +890,7 @@ void HMatrix<T, LowRankMatrix, AdmissibleCondition>::mymvprod_global_to_local(co
 #if _OPENMP
 #    pragma omp critical
 #endif
-        std::transform(temp.begin(), temp.end(), out, out, std::plus<T>());
+        Blas<T>::axpy(&local_size_rhs, &da, temp.data(), &incx, out, &incy);
     }
 }
 
@@ -1414,10 +1408,10 @@ void HMatrix<T, LowRankMatrix, AdmissibleCondition>::save_plot(const std::string
 
     if (outputfile) {
         outputfile << nr << "," << nc << std::endl;
-        for (typename std::vector<std::unique_ptr<SubMatrix<T>>>::const_iterator it = MyNearFieldMats.begin(); it != MyNearFieldMats.end(); ++it) {
+        for (typename std::vector<SubMatrix<T> *>::const_iterator it = MyNearFieldMats.begin(); it != MyNearFieldMats.end(); ++it) {
             outputfile << (*it)->get_offset_i() << "," << (*it)->get_ir().size() << "," << (*it)->get_offset_j() << "," << (*it)->get_ic().size() << "," << -1 << std::endl;
         }
-        for (typename std::vector<std::unique_ptr<LowRankMatrix<T>>>::const_iterator it = MyFarFieldMats.begin(); it != MyFarFieldMats.end(); ++it) {
+        for (typename std::vector<LowRankMatrix<T> *>::const_iterator it = MyFarFieldMats.begin(); it != MyFarFieldMats.end(); ++it) {
             outputfile << (*it)->get_offset_i() << "," << (*it)->get_ir().size() << "," << (*it)->get_offset_j() << "," << (*it)->get_ic().size() << "," << (*it)->rank_of() << std::endl;
         }
         outputfile.close();
@@ -1427,7 +1421,7 @@ void HMatrix<T, LowRankMatrix, AdmissibleCondition>::save_plot(const std::string
 }
 
 template <typename T, template <typename> class LowRankMatrix, class AdmissibleCondition>
-underlying_type<T> Frobenius_absolute_error(const HMatrix<T, LowRankMatrix, AdmissibleCondition> &B, const IMatrix<T> &A) {
+underlying_type<T> Frobenius_absolute_error(const HMatrix<T, LowRankMatrix, AdmissibleCondition> &B, const VirtualGenerator<T> &A) {
     underlying_type<T> myerr = 0;
     for (int j = 0; j < B.MyFarFieldMats.size(); j++) {
         underlying_type<T> test = Frobenius_absolute_error(*(B.MyFarFieldMats[j]), A);

@@ -16,7 +16,7 @@ class SVD final : public LowRankMatrix<T> {
   public:
     using LowRankMatrix<T>::LowRankMatrix;
 
-    void build(const IMatrix<T> &A) {
+    void build(const VirtualGenerator<T> &A) {
         int reqrank = 0;
         if (this->rank == 0) {
             this->U.resize(this->nr, 1);
@@ -24,18 +24,17 @@ class SVD final : public LowRankMatrix<T> {
             return;
         } else {
             //// Matrix assembling
-            double Norm         = 0;
-            SubMatrix<T> submat = A.get_submatrix(this->ir, this->ic);
-            for (int i = 0; i < submat.nb_rows(); i++) {
-                for (int j = 0; j < submat.nb_cols(); j++) {
-                    Norm += std::pow(std::abs(submat(i, j)), 2);
-                }
+            double Norm = 0;
+            std::vector<T> mat(this->nb_rows() * this->nb_cols());
+            A.copy_submatrix(this->nb_rows(), this->nb_cols(), this->ir.data(), this->ic.data(), mat.data());
+            for (int i = 0; i < mat.size(); i++) {
+                Norm += std::abs(mat[i] * mat[i]);
             }
             Norm = sqrt(Norm);
 
             //// SVD
-            int m     = submat.nb_rows();
-            int n     = submat.nb_cols();
+            int m     = this->nb_rows();
+            int n     = this->nb_cols();
             int lda   = m;
             int ldu   = m;
             int ldvt  = n;
@@ -48,10 +47,10 @@ class SVD final : public LowRankMatrix<T> {
             std::vector<T> work(std::min(m, n));
             std::vector<underlying_type<T>> rwork(5 * std::min(m, n));
 
-            Lapack<T>::gesvd("A", "A", &m, &n, submat.data(), &lda, singular_values.data(), u.data(), &ldu, vt.data(), &ldvt, work.data(), &lwork, rwork.data(), &info);
+            Lapack<T>::gesvd("A", "A", &m, &n, mat.data(), &lda, singular_values.data(), u.data(), &ldu, vt.data(), &ldvt, work.data(), &lwork, rwork.data(), &info);
             lwork = (int)std::real(work[0]);
             work.resize(lwork);
-            Lapack<T>::gesvd("A", "A", &m, &n, submat.data(), &lda, singular_values.data(), u.data(), &ldu, vt.data(), &ldvt, work.data(), &lwork, rwork.data(), &info);
+            Lapack<T>::gesvd("A", "A", &m, &n, mat.data(), &lda, singular_values.data(), u.data(), &ldu, vt.data(), &ldvt, work.data(), &lwork, rwork.data(), &info);
 
             if (this->rank == -1) {
 
@@ -76,16 +75,16 @@ class SVD final : public LowRankMatrix<T> {
             }
 
             if (this->rank > 0) {
-                this->U.resize(submat.nb_rows(), reqrank);
-                this->V.resize(reqrank, submat.nb_cols());
+                this->U.resize(this->nr, reqrank);
+                this->V.resize(reqrank, this->nc);
 
-                for (int i = 0; i < submat.nb_rows(); i++) {
+                for (int i = 0; i < this->nr; i++) {
                     for (int j = 0; j < reqrank; j++) {
                         this->U(i, j) = u(i, j) * singular_values[j];
                     }
                 }
                 for (int i = 0; i < reqrank; i++) {
-                    for (int j = 0; j < submat.nb_cols(); j++) {
+                    for (int j = 0; j < this->nc; j++) {
                         this->V(i, j) = vt(i, j);
                     }
                 }
@@ -93,7 +92,7 @@ class SVD final : public LowRankMatrix<T> {
         }
     }
 
-    void build(const IMatrix<T> &A, const VirtualCluster &t, const double *const xt, const int *const tabt, const VirtualCluster &s, const double *const xs, const int *const tabs) {
+    void build(const VirtualGenerator<T> &A, const VirtualCluster &t, const double *const xt, const int *const tabt, const VirtualCluster &s, const double *const xs, const int *const tabs) {
         this->build(A);
     }
     T get_singular_value(int i) { return singular_values[i]; }

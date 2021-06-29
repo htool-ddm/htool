@@ -2,7 +2,6 @@
 #include <htool/blocks/blocks.hpp>
 #include <htool/clustering/pca.hpp>
 #include <htool/testing/geometry.hpp>
-#include <htool/testing/imatrix_test.hpp>
 #include <random>
 
 using namespace std;

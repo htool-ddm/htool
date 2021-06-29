@@ -3,6 +3,7 @@
 
 #include "../misc/misc.hpp"
 #include "../types/matrix.hpp"
+#include "../types/virtual_generator.hpp"
 #include "../wrappers/wrapper_hpddm.hpp"
 #include "../wrappers/wrapper_mpi.hpp"
 #include "coarse_space.hpp"
@@ -76,7 +77,7 @@ class DDM {
     }
 
     // With overlap
-    DDM(const IMatrix<T> &mat0, const VirtualHMatrix<T> *const hmat_0, const std::vector<int> &ovr_subdomain_to_global0, const std::vector<int> &cluster_to_ovr_subdomain0, const std::vector<int> &neighbors0, const std::vector<std::vector<int>> &intersections0) : hpddm_op(hmat_0), n(ovr_subdomain_to_global0.size()), n_inside(cluster_to_ovr_subdomain0.size()), nb_cols(hmat_0->nb_cols()), nb_rows(hmat_0->nb_rows()), neighbors(neighbors0), vec_ovr(n), mat_loc(n * n), D(n), comm(hmat_0->get_comm()), one_level(0), two_level(0) {
+    DDM(const VirtualGenerator<T> &mat0, const VirtualHMatrix<T> *const hmat_0, const std::vector<int> &ovr_subdomain_to_global0, const std::vector<int> &cluster_to_ovr_subdomain0, const std::vector<int> &neighbors0, const std::vector<std::vector<int>> &intersections0) : hpddm_op(hmat_0), n(ovr_subdomain_to_global0.size()), n_inside(cluster_to_ovr_subdomain0.size()), nb_cols(hmat_0->nb_cols()), nb_rows(hmat_0->nb_rows()), neighbors(neighbors0), vec_ovr(n), mat_loc(n * n), D(n), comm(hmat_0->get_comm()), one_level(0), two_level(0) {
         // Timing
         double mytime, maxtime;
         double time = MPI_Wtime();
@@ -125,22 +126,24 @@ class DDM {
         }
 
         // Overlap
-        std::vector<T> horizontal_block(n - n_inside, n_inside), diagonal_block(n - n_inside, n - n_inside);
+        std::vector<T> horizontal_block((n - n_inside) * n_inside), diagonal_block((n - n_inside) * (n - n_inside));
 
-        horizontal_block = mat0.get_submatrix(std::vector<int>(renum_to_global.begin() + n_inside, renum_to_global.end()), std::vector<int>(renum_to_global.begin(), renum_to_global.begin() + n_inside)).get_mat();
+        std::vector<int> overlap_num(renum_to_global.begin() + n_inside, renum_to_global.end());
+        std::vector<int> inside_num(renum_to_global.begin(), renum_to_global.begin() + n_inside);
+
+        mat0.copy_submatrix(n - n_inside, n_inside, overlap_num.data(), inside_num.data(), horizontal_block.data());
         for (int j = 0; j < n_inside; j++) {
             std::copy_n(horizontal_block.begin() + j * (n - n_inside), n - n_inside, &mat_loc[n_inside + j * n]);
         }
 
-        diagonal_block = mat0.get_submatrix(std::vector<int>(renum_to_global.begin() + n_inside, renum_to_global.end()), std::vector<int>(renum_to_global.begin() + n_inside, renum_to_global.end())).get_mat();
-
+        mat0.copy_submatrix(n - n_inside, n - n_inside, overlap_num.data(), overlap_num.data(), diagonal_block.data());
         for (int j = 0; j < n - n_inside; j++) {
             std::copy_n(diagonal_block.begin() + j * (n - n_inside), n - n_inside, &mat_loc[n_inside + (j + n_inside) * n]);
         }
 
         if (!sym) {
-            std::vector<T> vertical_block(n_inside, n - n_inside);
-            vertical_block = mat0.get_submatrix(std::vector<int>(renum_to_global.begin(), renum_to_global.begin() + n_inside), std::vector<int>(renum_to_global.begin() + n_inside, renum_to_global.end())).get_mat();
+            std::vector<T> vertical_block(n_inside * (n - n_inside));
+            mat0.copy_submatrix(n_inside, n - n_inside, inside_num.data(), overlap_num.data(), vertical_block.data());
             for (int j = n_inside; j < n; j++) {
                 std::copy_n(vertical_block.begin() + (j - n_inside) * n_inside, n_inside, &mat_loc[j * n]);
             }
@@ -184,7 +187,7 @@ class DDM {
     }
 
     // TODO: take local VirtualHMatrix instead
-    // void build_coarse_space(Matrix<T> &Mi, IMatrix<T> &generator_Bi, const std::vector<R3> &x) {
+    // void build_coarse_space(Matrix<T> &Mi, VirtualGenerator<T> &generator_Bi, const std::vector<R3> &x) {
     //     // Timing
     //     double mytime, maxtime;
     //     double time = MPI_Wtime();

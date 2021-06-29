@@ -9,8 +9,8 @@
 #include <htool/lrmat/fullACA.hpp>
 #include <htool/lrmat/partialACA.hpp>
 #include <htool/lrmat/sympartialACA.hpp>
+#include <htool/testing/generator_test.hpp>
 #include <htool/testing/geometry.hpp>
-#include <htool/testing/imatrix_test.hpp>
 #include <htool/types/hmatrix.hpp>
 
 using namespace std;
@@ -61,7 +61,7 @@ int test_hmat_cluster(int argc, char *argv[], double margin = 0) {
         create_disk(3, z2, nc, p2.data());
 
         vector<double> rhs(p2.size(), 1);
-        IMatrixTestDouble A(3, nr, nc, p1, p2);
+        GeneratorTestDouble A(3, nr, nc, p1, p2);
         std::shared_ptr<ClusterImpl> t = make_shared<ClusterImpl>();
         std::shared_ptr<ClusterImpl> s = make_shared<ClusterImpl>();
         t->build(nr, p1.data(), 2);

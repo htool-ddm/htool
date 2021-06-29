@@ -9,8 +9,8 @@
 #define DLAPACK
 #define EIGENSOLVER 1
 // #include "../solvers/proto_ddm.hpp"
-#include "../types/hmatrix_virtual.hpp"
 #include "../types/matrix.hpp"
+#include "../types/virtual_hmatrix.hpp"
 #include <HPDDM.hpp>
 
 namespace htool {

@@ -3,14 +3,14 @@
 using namespace std;
 using namespace htool;
 
-class MyMatrix : public IMatrix<double> {
+class MyMatrix : public VirtualGenerator<double> {
     const vector<double> &p1;
     const vector<double> &p2;
     int space_dim;
 
   public:
     // Constructor
-    MyMatrix(int space_dim0, int nr, int nc, const vector<double> &p10, const vector<double> &p20) : IMatrix(nr, nc), p1(p10), p2(p20), space_dim(space_dim0) {}
+    MyMatrix(int space_dim0, int nr, int nc, const vector<double> &p10, const vector<double> &p20) : VirtualGenerator(nr, nc), p1(p10), p2(p20), space_dim(space_dim0) {}
 
     // Virtual function to overload
     double get_coef(const int &k, const int &j) const {

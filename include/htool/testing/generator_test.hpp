@@ -1,6 +1,6 @@
 
-#ifndef HTOOL_TESTING_IMATRIX_HPP
-#define HTOOL_TESTING_IMATRIX_HPP
+#ifndef HTOOL_TESTING_GENERATOR_TEST_HPP
+#define HTOOL_TESTING_GENERATOR_TEST_HPP
 
 #include "../types/matrix.hpp"
 #include <vector>
@@ -8,7 +8,7 @@
 namespace htool {
 
 template <typename T>
-class IMatrixTest : public IMatrix<T> {
+class GeneratorTest : public VirtualGenerator<T> {
   protected:
     const std::vector<double> &p1;
     const std::vector<double> &p2;
@@ -16,9 +16,9 @@ class IMatrixTest : public IMatrix<T> {
     T coef;
 
   public:
-    explicit IMatrixTest(int space_dim0, int nr, int nc, const std::vector<double> &p10, const std::vector<double> &p20, T coef0 = 0) : IMatrix<T>(nr, nc), p1(p10), p2(p20), space_dim(space_dim0), coef(coef0) {}
+    explicit GeneratorTest(int space_dim0, int nr, int nc, const std::vector<double> &p10, const std::vector<double> &p20, T coef0 = 0) : VirtualGenerator<T>(nr, nc), p1(p10), p2(p20), space_dim(space_dim0), coef(coef0) {}
 
-    explicit IMatrixTest(int space_dim0, int nr, const std::vector<double> &p10, T coef0 = 0) : IMatrix<T>(nr, nr), p1(p10), p2(p10), space_dim(space_dim0), coef(coef0) {}
+    explicit GeneratorTest(int space_dim0, int nr, const std::vector<double> &p10, T coef0 = 0) : VirtualGenerator<T>(nr, nr), p1(p10), p2(p10), space_dim(space_dim0), coef(coef0) {}
 
     virtual T get_coef(const int &i, const int &j) const = 0;
 
@@ -58,9 +58,9 @@ class IMatrixTest : public IMatrix<T> {
     }
 };
 
-class IMatrixTestDouble : public IMatrixTest<double> {
+class GeneratorTestDouble : public GeneratorTest<double> {
   public:
-    using IMatrixTest::IMatrixTest;
+    using GeneratorTest::GeneratorTest;
     double get_coef(const int &i, const int &j) const override {
         return 1. / (4 * M_PI * std::sqrt(this->coef + std::inner_product(p1.begin() + this->space_dim * i, this->p1.begin() + this->space_dim * i + this->space_dim, p2.begin() + this->space_dim * j, double(0), std::plus<double>(), [](double u, double v) { return (u - v) * (u - v); })));
     }
@@ -74,9 +74,9 @@ class IMatrixTestDouble : public IMatrixTest<double> {
     }
 };
 
-class IMatrixTestComplex : public IMatrixTest<std::complex<double>> {
+class GeneratorTestComplex : public GeneratorTest<std::complex<double>> {
   public:
-    using IMatrixTest::IMatrixTest;
+    using GeneratorTest::GeneratorTest;
 
     std::complex<double> get_coef(const int &i, const int &j) const override {
         return (1. + std::complex<double>(0, 1)) / (4 * M_PI * std::sqrt(coef + std::inner_product(p1.begin() + space_dim * i, p1.begin() + space_dim * i + space_dim, p2.begin() + space_dim * j, double(0), std::plus<double>(), [](double u, double v) { return (u - v) * (u - v); })));
@@ -98,9 +98,9 @@ double sign(int x) {
         return -1;
     return 0;
 }
-class IMatrixTestComplexHermitian : public IMatrixTest<std::complex<double>> {
+class GeneratorTestComplexHermitian : public GeneratorTest<std::complex<double>> {
   public:
-    using IMatrixTest::IMatrixTest;
+    using GeneratorTest::GeneratorTest;
 
     std::complex<double> get_coef(const int &i, const int &j) const override {
         return (1. + sign(i - j) * std::complex<double>(0, 1)) / (4 * M_PI * std::sqrt(coef + std::inner_product(p1.begin() + space_dim * i, p1.begin() + space_dim * i + space_dim, p2.begin() + space_dim * j, double(0), std::plus<double>(), [](double u, double v) { return (u - v) * (u - v); })));
@@ -110,6 +110,22 @@ class IMatrixTestComplexHermitian : public IMatrixTest<std::complex<double>> {
         for (int i = 0; i < M; i++) {
             for (int j = 0; j < N; j++) {
                 ptr[i + M * j] = this->get_coef(rows[i], cols[j]);
+            }
+        }
+    }
+};
+
+template <typename T>
+class GeneratorFromMatrix : public VirtualGenerator<T> {
+    const Matrix<T> &A;
+
+  public:
+    explicit GeneratorFromMatrix(const Matrix<T> &A0) : VirtualGenerator<T>(A0.nb_rows(), A0.nb_cols()), A(A0) {}
+
+    void copy_submatrix(int M, int N, const int *const rows, const int *const cols, T *ptr) const override {
+        for (int i = 0; i < M; i++) {
+            for (int j = 0; j < N; j++) {
+                ptr[i + M * j] = A(rows[i], cols[j]);
             }
         }
     }

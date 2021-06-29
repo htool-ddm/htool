@@ -3,17 +3,19 @@
 
 #include "../clustering/cluster.hpp"
 #include "../types/matrix.hpp"
+#include "../types/virtual_generator.hpp"
 #include <cassert>
 #include <vector>
 
 namespace htool {
 
 template <typename T>
-class LowRankMatrix {
+class LowRankMatrix : public IMatrix<T> {
 
   protected:
     // Data member
-    int rank, nr, nc;
+    int rank;
+    // nr, nc;
     Matrix<T> U, V;
     std::vector<int> ir;
     std::vector<int> ic;
@@ -25,15 +27,15 @@ class LowRankMatrix {
   public:
     // Constructors
     LowRankMatrix() = delete;
-    LowRankMatrix(const std::vector<int> &ir0, const std::vector<int> &ic0, int rank0 = -1, double epsilon0 = 1e-3) : rank(rank0), nr(ir0.size()), nc(ic0.size()), U(ir0.size(), 1), V(1, ic0.size()), ir(ir0), ic(ic0), offset_i(0), offset_j(0), epsilon(epsilon0), ndofperelt(1) {}
-    LowRankMatrix(const std::vector<int> &ir0, const std::vector<int> &ic0, int offset_i0, int offset_j0, int rank0 = -1, double epsilon0 = 1e-3) : rank(rank0), nr(ir0.size()), nc(ic0.size()), U(ir0.size(), 1), V(1, ic0.size()), ir(ir0), ic(ic0), offset_i(offset_i0), offset_j(offset_j0), epsilon(epsilon0), ndofperelt(1) {}
+    LowRankMatrix(const std::vector<int> &ir0, const std::vector<int> &ic0, int rank0 = -1, double epsilon0 = 1e-3) : IMatrix<T>(ir0.size(), ic0.size()), rank(rank0), U(ir0.size(), 1), V(1, ic0.size()), ir(ir0), ic(ic0), offset_i(0), offset_j(0), epsilon(epsilon0), ndofperelt(1) {}
+    LowRankMatrix(const std::vector<int> &ir0, const std::vector<int> &ic0, int offset_i0, int offset_j0, int rank0 = -1, double epsilon0 = 1e-3) : IMatrix<T>(ir0.size(), ic0.size()), rank(rank0), U(ir0.size(), 1), V(1, ic0.size()), ir(ir0), ic(ic0), offset_i(offset_i0), offset_j(offset_j0), epsilon(epsilon0), ndofperelt(1) {}
 
     // VIrtual function
-    virtual void build(const IMatrix<T> &A, const VirtualCluster &t, const double *const xt, const int *const tabt, const VirtualCluster &s, const double *const xs, const int *const tabs) = 0;
+    virtual void build(const VirtualGenerator<T> &A, const VirtualCluster &t, const double *const xt, const int *const tabt, const VirtualCluster &s, const double *const xs, const int *const tabs) = 0;
 
     // Getters
-    int nb_rows() const { return this->nr; }
-    int nb_cols() const { return this->nc; }
+    // int nb_rows() const { return this->nr; }
+    // int nb_cols() const { return this->nc; }
     int rank_of() const { return this->rank; }
     std::vector<int> get_ir() const { return this->ir; }
     std::vector<int> get_ic() const { return this->ic; }
@@ -56,7 +58,7 @@ class LowRankMatrix {
     }
     void mvprod(const T *const in, T *const out) const {
         if (rank == 0) {
-            std::fill(out, out + nr, 0);
+            std::fill(out, out + this->nr, 0);
         } else {
             std::vector<T> a(this->rank);
             V.mvprod(in, a.data());
@@ -113,7 +115,7 @@ class LowRankMatrix {
 };
 
 template <typename T>
-underlying_type<T> Frobenius_relative_error(const LowRankMatrix<T> &lrmat, const IMatrix<T> &ref, int reqrank = -1) {
+underlying_type<T> Frobenius_relative_error(const LowRankMatrix<T> &lrmat, const VirtualGenerator<T> &ref, int reqrank = -1) {
     assert(reqrank <= lrmat.rank_of());
     if (reqrank == -1) {
         reqrank = lrmat.rank_of();
@@ -139,7 +141,7 @@ underlying_type<T> Frobenius_relative_error(const LowRankMatrix<T> &lrmat, const
 }
 
 template <typename T>
-underlying_type<T> Frobenius_absolute_error(const LowRankMatrix<T> &lrmat, const IMatrix<T> &ref, int reqrank = -1) {
+underlying_type<T> Frobenius_absolute_error(const LowRankMatrix<T> &lrmat, const VirtualGenerator<T> &ref, int reqrank = -1) {
     assert(reqrank <= lrmat.rank_of());
     if (reqrank == -1) {
         reqrank = lrmat.rank_of();
