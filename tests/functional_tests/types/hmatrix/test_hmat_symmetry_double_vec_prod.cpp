@@ -1,7 +1,7 @@
 #include <htool/clustering/pca.hpp>
 #include <htool/lrmat/fullACA.hpp>
+#include <htool/testing/generator_test.hpp>
 #include <htool/testing/geometry.hpp>
-#include <htool/testing/imatrix_test.hpp>
 #include <htool/types/hmatrix.hpp>
 
 using namespace std;
@@ -49,7 +49,7 @@ int main(int argc, char *argv[]) {
         // (two different initializations with the same seed will generate the same succession of results in the subsequent calls to rand)
         create_disk(3, z1, nr, p1.data());
 
-        IMatrixTestDouble A(3, nr, p1, 1);
+        GeneratorTestDouble A(3, nr, p1, 1);
 
         std::shared_ptr<Cluster<PCARegularClustering>> t = make_shared<Cluster<PCARegularClustering>>();
         t->build(nr, p1.data(), 2);

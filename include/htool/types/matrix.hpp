@@ -2,6 +2,7 @@
 #define HTOOL_MATRIX_HPP
 
 #include "../misc/misc.hpp"
+#include "../types/virtual_generator.hpp"
 #include "../wrappers/wrapper_blas.hpp"
 #include "vector.hpp"
 #include <cassert>
@@ -12,11 +13,6 @@ namespace htool {
 //=================================================================//
 //                         CLASS MATRIX
 //*****************************************************************//
-template <typename T>
-class Matrix;
-
-template <typename T>
-class SubMatrix;
 
 template <typename T>
 class IMatrix {
@@ -25,31 +21,8 @@ class IMatrix {
     int nr;
     int nc;
 
-    // Constructors and cie
-    IMatrix() = delete; // no default constructor
-
   public:
     IMatrix(int nr0, int nc0) : nr(nr0), nc(nc0) {}
-
-    IMatrix(IMatrix &&) = default;                 // move constructor
-    IMatrix &operator=(IMatrix &&) = default;      // move assignement operator
-    IMatrix(const IMatrix &)       = default;      // copy constructor
-    IMatrix &operator=(const IMatrix &) = default; // copy assignement operator
-
-    // C style
-    virtual void copy_submatrix(int M, int N, const int *const rows, const int *const cols, T *ptr) const = 0;
-    SubMatrix<T> get_submatrix(int M, int N, const int *const rows, const int *const cols) const {
-        SubMatrix<T> mat(M, N, rows, cols);
-        this->copy_submatrix(M, N, rows, cols, mat.data());
-        return mat;
-    }
-
-    // C++ style
-    SubMatrix<T> get_submatrix(const std::vector<int> &J, const std::vector<int> &K) const {
-        SubMatrix<T> mat(J, K);
-        this->copy_submatrix(J.size(), K.size(), J.data(), K.data(), mat.data());
-        return mat;
-    }
 
     //! ### Access to number of rows
     /*!
@@ -62,6 +35,11 @@ class IMatrix {
     Returns the number of columns of the input argument _A_.
     */
     const int &nb_cols() const { return nc; }
+
+    virtual int get_offset_i() const = 0;
+    virtual int get_offset_j() const = 0;
+
+    virtual void add_mvprod_row_major(const T *const in, T *const out, const int &mu, char transb = 'T', char op = 'N') const = 0;
 
     virtual ~IMatrix(){};
 };
@@ -132,23 +110,6 @@ class Matrix : public IMatrix<T> {
         this->nc  = std::move(A.nc);
 
         return *this;
-    }
-
-    //! ### Access operator
-    /*!
-    If _A_ is the instance calling the operator
-    _A.get_coef(j,k)_ returns the entry of _A_ located
-    jth row and kth column.
-    */
-
-    T get_coef(const int &j, const int &k) const {
-        return this->mat[j + k * this->nr];
-    }
-
-    void copy_submatrix(int M, int N, const int *const rows, const int *const cols, T *ptr) const {
-        for (int i = 0; i < M; i++)
-            for (int j = 0; j < N; j++)
-                ptr[i + M * j] = this->get_coef(rows[i], cols[j]);
     }
 
     //! ### Access operator
@@ -504,6 +465,9 @@ class Matrix : public IMatrix<T> {
         }
     }
 
+    int get_offset_i() const { return 0; }
+    int get_offset_j() const { return 0; }
+
     friend std::ostream &operator<<(std::ostream &out, const Matrix &m) {
         if (!(m.mat.empty())) {
             std::cout << m.nr << " " << m.nc << std::endl;
@@ -634,7 +598,7 @@ class SubMatrix : public Matrix<T> {
     SubMatrix(int M, int N, const int *const rows, const int *const cols, int offset_i0 = 0, int offset_j0 = 0) : Matrix<T>(M, N), ir(rows, rows + M), ic(cols, cols + N), offset_i(offset_i0), offset_j(offset_j0) {
     }
 
-    SubMatrix(const IMatrix<T> &mat0, int M, int N, const int *const rows, const int *const cols, int offset_i0 = 0, int offset_j0 = 0) : SubMatrix(M, N, rows, cols, offset_i0, offset_j0) {
+    SubMatrix(const VirtualGenerator<T> &mat0, int M, int N, const int *const rows, const int *const cols, int offset_i0 = 0, int offset_j0 = 0) : SubMatrix(M, N, rows, cols, offset_i0, offset_j0) {
         mat0.copy_submatrix(M, N, rows, cols, this->mat.data());
     }
 
@@ -645,12 +609,12 @@ class SubMatrix : public Matrix<T> {
 
     SubMatrix(const std::vector<int> &ir0, const std::vector<int> &ic0, const int &offset_i0, const int &offset_j0) : SubMatrix(ir0.begin(), ir0.end(), ic0.begin(), ic0.end(), offset_i0, offset_j0) {}
 
-    SubMatrix(const IMatrix<T> &mat0, const std::vector<int> &ir0, const std::vector<int> &ic0) : SubMatrix(ir0.begin(), ir0.end(), ic0.begin(), ic0.end(), 0, 0) {
+    SubMatrix(const VirtualGenerator<T> &mat0, const std::vector<int> &ir0, const std::vector<int> &ic0) : SubMatrix(ir0.begin(), ir0.end(), ic0.begin(), ic0.end(), 0, 0) {
 
         *this = mat0.get_submatrix(ir0, ic0);
     }
 
-    SubMatrix(const IMatrix<T> &mat0, const std::vector<int> &ir0, const std::vector<int> &ic0, const int &offset_i0, const int &offset_j0) : SubMatrix(ir0.begin(), ir0.end(), ic0.begin(), ic0.end(), offset_i0, offset_j0) {
+    SubMatrix(const VirtualGenerator<T> &mat0, const std::vector<int> &ir0, const std::vector<int> &ic0, const int &offset_i0, const int &offset_j0) : SubMatrix(ir0.begin(), ir0.end(), ic0.begin(), ic0.end(), offset_i0, offset_j0) {
 
         *this    = mat0.get_submatrix(ir0, ic0);
         offset_i = offset_i0;

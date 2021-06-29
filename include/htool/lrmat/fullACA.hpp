@@ -35,14 +35,15 @@ class fullACA final : public LowRankMatrix<T> {
     // otherwise, we use the required rank for the stopping criterion (!: at the end the rank could be lower)
     using LowRankMatrix<T>::LowRankMatrix;
 
-    void build(const IMatrix<T> &A) {
+    void build(const VirtualGenerator<T> &A) {
         if (this->rank == 0) {
             this->U.resize(this->nr, 1);
             this->V.resize(1, this->nc);
         } else {
 
             // Matrix assembling
-            Matrix<T> M = A.get_submatrix(this->ir, this->ic);
+            Matrix<T> M(this->nr, this->nc);
+            A.copy_submatrix(this->nr, this->nc, this->ir.data(), this->ic.data(), M.data());
 
             // Full pivot
             int q       = 0;
@@ -85,7 +86,7 @@ class fullACA final : public LowRankMatrix<T> {
             }
         }
     }
-    void build(const IMatrix<T> &A, const VirtualCluster &t, const double *const xt, const int *const tabt, const VirtualCluster &s, const double *const xs, const int *const tabs) {
+    void build(const VirtualGenerator<T> &A, const VirtualCluster &t, const double *const xt, const int *const tabt, const VirtualCluster &s, const double *const xs, const int *const tabs) {
         this->build(A);
     }
 };

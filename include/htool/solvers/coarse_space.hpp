@@ -3,7 +3,7 @@
 
 #include "../misc/misc.hpp"
 #include "../types/hmatrix.hpp"
-#include "../types/hmatrix_virtual.hpp"
+#include "../types/virtual_hmatrix.hpp"
 #include <algorithm>
 #include <numeric>
 

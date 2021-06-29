@@ -2,6 +2,7 @@
 #include <htool/input_output/geometry.hpp>
 #include <htool/lrmat/fullACA.hpp>
 #include <htool/solvers/ddm.hpp>
+#include <htool/testing/generator_test.hpp>
 #include <htool/types/hmatrix.hpp>
 #include <htool/types/point.hpp>
 
@@ -52,6 +53,7 @@ int test_solver_ddm(int argc, char *argv[], int mu, char symmetric) {
     // Matrix
     Matrix<complex<double>> A;
     A.bytes_to_matrix(datapath + "matrix.bin");
+    GeneratorFromMatrix<complex<double>> Generator(A);
     int n = A.nb_rows();
 
     // Right-hand side
@@ -83,7 +85,7 @@ int test_solver_ddm(int argc, char *argv[], int mu, char symmetric) {
     if (rank == 0)
         std::cout << "Creating HMatrix" << std::endl;
     HMatrix<complex<double>, fullACA, RjasanowSteinbach> HA(t, t, epsilon, eta, symmetric, UPLO);
-    HA.build_auto_sym(A, p);
+    HA.build_auto_sym(Generator, p);
     HA.print_infos();
 
     // Global vectors
@@ -113,7 +115,7 @@ int test_solver_ddm(int argc, char *argv[], int mu, char symmetric) {
 
     // Solve
     DDM<complex<double>> ddm_wo_overlap(&HA);
-    DDM<complex<double>> ddm_with_overlap(A, &HA, ovr_subdomain_to_global, cluster_to_ovr_subdomain, neighbors, intersections);
+    DDM<complex<double>> ddm_with_overlap(Generator, &HA, ovr_subdomain_to_global, cluster_to_ovr_subdomain, neighbors, intersections);
 
     // No precond wo overlap
     if (rank == 0)

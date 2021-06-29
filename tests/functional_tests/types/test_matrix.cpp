@@ -1,3 +1,4 @@
+#include "htool/testing/generator_test.hpp"
 #include "htool/types/matrix.hpp"
 
 using namespace std;
@@ -180,7 +181,8 @@ int main(int argc, char const *argv[]) {
     // Submatrix - double
     std::vector<int> ir = {0, 1};
     std::vector<int> ic = {0, 1};
-    SubMatrix<double> SMd(Md, ir.size(), ic.size(), ir.data(), ic.data());
+    GeneratorFromMatrix<double> Generator(Md);
+    SubMatrix<double> SMd(Generator, ir.size(), ic.size(), ir.data(), ic.data());
     double diffs = 0;
     for (int i = 0; i < ir.size(); i++) {
         for (int j = 0; j < ic.size(); j++) {

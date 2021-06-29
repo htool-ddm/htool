@@ -1,7 +1,7 @@
 #ifndef HTOOL_HMATRIX_VIRTUAL_HPP
 #define HTOOL_HMATRIX_VIRTUAL_HPP
 
-#include "matrix.hpp"
+#include "virtual_generator.hpp"
 #include <map>
 #include <mpi.h>
 #include <vector>
@@ -49,11 +49,11 @@ class VirtualHMatrix {
     virtual void set_use_permutation(bool choice)                 = 0;
 
     // Build
-    virtual void build(IMatrix<T> &mat, const double *const xt, const double *const rt, const int *const tabt, const double *const gt, const double *const xs, const double *const rs, const int *const tabs, const double *const gs) = 0;
-    virtual void build_sym(IMatrix<T> &mat, const double *const xt, const double *const rt, const int *const tabt, const double *const gt)                                                                                            = 0;
+    virtual void build(VirtualGenerator<T> &mat, const double *const xt, const double *const rt, const int *const tabt, const double *const gt, const double *const xs, const double *const rs, const int *const tabs, const double *const gs) = 0;
+    virtual void build_sym(VirtualGenerator<T> &mat, const double *const xt, const double *const rt, const int *const tabt, const double *const gt)                                                                                            = 0;
 
-    virtual void build_auto(IMatrix<T> &mat, const double *const xt, const double *const xs) = 0;
-    virtual void build_auto_sym(IMatrix<T> &mat, const double *const xt)                     = 0;
+    virtual void build_auto(VirtualGenerator<T> &mat, const double *const xt, const double *const xs) = 0;
+    virtual void build_auto_sym(VirtualGenerator<T> &mat, const double *const xt)                     = 0;
 
     // Mat vec prod
     virtual void mvprod_global_to_global(const T *const in, T *const out, const int &mu = 1) const                  = 0;

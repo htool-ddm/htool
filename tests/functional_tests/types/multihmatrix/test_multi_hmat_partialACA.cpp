@@ -1,6 +1,6 @@
 #include "test_multi_hmat.hpp"
+#include <htool/testing/generator_test.hpp>
 #include <htool/testing/geometry.hpp>
-#include <htool/testing/imatrix_test.hpp>
 
 using namespace std;
 using namespace htool;
@@ -46,7 +46,7 @@ int main(int argc, char *argv[]) {
         vector<double> rhs(xs.size(), 1);
         MyMultiMatrix MultiA(3, nr, nc, xt, xs);
         int nm = MultiA.nb_matrix();
-        IMatrixTestDouble A(3, nr, nc, xt, xs);
+        GeneratorTestDouble A(3, nr, nc, xt, xs);
 
         std::shared_ptr<Cluster<PCAGeometricClustering>> t = make_shared<Cluster<PCAGeometricClustering>>();
         std::shared_ptr<Cluster<PCAGeometricClustering>> s = make_shared<Cluster<PCAGeometricClustering>>();

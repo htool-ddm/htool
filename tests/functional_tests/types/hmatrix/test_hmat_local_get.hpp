@@ -1,8 +1,8 @@
 #include <htool/clustering/pca.hpp>
 #include <htool/htool.hpp>
 #include <htool/lrmat/fullACA.hpp>
+#include <htool/testing/generator_test.hpp>
 #include <htool/testing/geometry.hpp>
-#include <htool/testing/imatrix_test.hpp>
 #include <htool/types/hmatrix.hpp>
 
 using namespace std;
@@ -37,7 +37,7 @@ int test_hmat_local_get(int argc, char *argv[], char symmetry, char UPLO) {
     // (two different initializations with the same seed will generate the same succession of results in the subsequent calls to rand)
     create_disk(3, z1, nr, p1.data());
 
-    IMatrixTestDouble A(3, nr, nr, p1, p1, 1);
+    GeneratorTestDouble A(3, nr, nr, p1, p1, 1);
 
     int size_numbering = nr / size;
     int count_size     = 0;
@@ -128,7 +128,7 @@ int test_hmat_local_get_complex(int argc, char *argv[], char symmetry, char UPLO
     // (two different initializations with the same seed will generate the same succession of results in the subsequent calls to rand)
     create_disk(3, z1, nr, p1.data());
 
-    IMatrixTestComplex A(3, nr, nr, p1, p1, 1);
+    GeneratorTestComplex A(3, nr, nr, p1, p1, 1);
 
     int size_numbering = nr / size;
     int count_size     = 0;
@@ -219,7 +219,7 @@ int test_hmat_local_get_complex_hermitian(int argc, char *argv[], char symmetry,
     // (two different initializations with the same seed will generate the same succession of results in the subsequent calls to rand)
     create_disk(3, z1, nr, p1.data());
 
-    IMatrixTestComplexHermitian A(3, nr, nr, p1, p1, 1);
+    GeneratorTestComplexHermitian A(3, nr, nr, p1, p1, 1);
 
     int size_numbering = nr / size;
     int count_size     = 0;

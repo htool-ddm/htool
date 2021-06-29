@@ -25,7 +25,7 @@ class bareLowRankMatrix final : public LowRankMatrix<T> {
   public:
     using LowRankMatrix<T>::LowRankMatrix;
 
-    void build(const IMatrix<T> &A, const VirtualCluster &t, const double *const xt, const int *const tabt, const VirtualCluster &s, const double *const xs, const int *const tabs) {}
+    void build(const VirtualGenerator<T> &A, const VirtualCluster &t, const double *const xt, const int *const tabt, const VirtualCluster &s, const double *const xs, const int *const tabs) {}
 };
 } // namespace htool
 #endif

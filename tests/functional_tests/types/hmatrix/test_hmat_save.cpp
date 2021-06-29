@@ -4,8 +4,8 @@
 
 #include <htool/clustering/pca.hpp>
 #include <htool/lrmat/fullACA.hpp>
+#include <htool/testing/generator_test.hpp>
 #include <htool/testing/geometry.hpp>
-#include <htool/testing/imatrix_test.hpp>
 #include <htool/types/hmatrix.hpp>
 using namespace std;
 using namespace htool;
@@ -56,7 +56,7 @@ int main(int argc, char *argv[]) {
         create_disk(3, z1, nr, p1.data());
         create_disk(3, z2, nc, p2.data());
 
-        IMatrixTestDouble A(3, nr, nc, p1, p2);
+        GeneratorTestDouble A(3, nr, nc, p1, p2);
         std::shared_ptr<Cluster<PCAGeometricClustering>> t = make_shared<Cluster<PCAGeometricClustering>>();
         std::shared_ptr<Cluster<PCAGeometricClustering>> s = make_shared<Cluster<PCAGeometricClustering>>();
         t->build(nr, p1.data());

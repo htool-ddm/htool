@@ -6,8 +6,8 @@
 #include <htool/clustering/pca.hpp>
 #include <htool/lrmat/SVD.hpp>
 #include <htool/lrmat/partialACA.hpp>
+#include <htool/testing/generator_test.hpp>
 #include <htool/testing/geometry.hpp>
-#include <htool/testing/imatrix_test.hpp>
 #include <htool/types/hmatrix.hpp>
 
 using namespace std;
@@ -85,7 +85,7 @@ int main(int argc, char *argv[]) {
         MasterOffset_source.push_back(nc - count_size);
 
         vector<double> rhs(p2.size(), 1);
-        IMatrixTestDouble A(3, nr, nc, p1, p2);
+        GeneratorTestDouble A(3, nr, nc, p1, p2);
         std::shared_ptr<Cluster<PCARegularClustering>> t = make_shared<Cluster<PCARegularClustering>>();
         std::shared_ptr<Cluster<PCARegularClustering>> s = make_shared<Cluster<PCARegularClustering>>();
         t->build(nr, p1.data(), MasterOffset_target.data(), 2);
@@ -110,7 +110,7 @@ int main(int argc, char *argv[]) {
             p2_perm[i * 3 + 2] = p2[s->get_perm(i) * 3 + 2];
         }
 
-        IMatrixTestDouble A_perm(3, nr, nc, p1_perm, p2_perm);
+        GeneratorTestDouble A_perm(3, nr, nc, p1_perm, p2_perm);
         HMatrix<double, partialACA, RjasanowSteinbach> HA_not_using_perm(t, s, epsilon, eta);
         HA_not_using_perm.set_use_permutation(false);
         HA_not_using_perm.build_auto(A_perm, p1_perm.data(), p2_perm.data());

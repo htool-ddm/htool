@@ -48,7 +48,7 @@ int main(int argc, char *argv[]) {
 
         MyMultiMatrix A(3, nr, nc, xt, xs);
         int nm = A.nb_matrix();
-        IMatrixTestDouble A_test(3, nr, nc, xt, xs);
+        GeneratorTestDouble A_test(3, nr, nc, xt, xs);
 
         // partialACA fixed rank
         int reqrank_max = 10;

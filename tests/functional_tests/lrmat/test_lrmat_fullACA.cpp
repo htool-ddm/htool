@@ -41,7 +41,7 @@ int main(int argc, char *argv[]) {
         t.build(nr, xt.data());
         s.build(nc, xs.data());
 
-        IMatrixTestDouble A(3, nr, nc, xt, xs);
+        GeneratorTestDouble A(3, nr, nc, xt, xs);
 
         // fullACA fixed rank
         int reqrank_max = 10;

@@ -20,10 +20,11 @@
 #include "misc/user.hpp"
 
 #include "types/hmatrix.hpp"
-#include "types/hmatrix_virtual.hpp"
 #include "types/matrix.hpp"
 #include "types/point.hpp"
 #include "types/vector.hpp"
+#include "types/virtual_generator.hpp"
+#include "types/virtual_hmatrix.hpp"
 
 #ifdef WITH_HPDDM
 #    include "solvers/ddm.hpp"
