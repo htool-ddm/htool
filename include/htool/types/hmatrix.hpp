@@ -82,8 +82,8 @@ class HMatrix : public VirtualHMatrix<T> {
     // Internal methods
     void ComputeBlocks(VirtualGenerator<T> &mat, const double *const xt, const int *const tabt, const double *const xs, const int *const tabs);
     void ComputeSymBlocks(VirtualGenerator<T> &mat, const double *const xt, const int *const tabt, const double *const xs, const int *const tabs);
-    bool UpdateBlocks(VirtualGenerator<T> &mat, Block<AdmissibleCondition> &task, const double *const xt, const int *const tabt, const double *const xs, const int *const tabs, std::vector<std::unique_ptr<IMatrix<T>>> &MyComputedBlocks_local, std::vector<SubMatrix<T> *> &, std::vector<LowRankMatrix<T> *> &, int &);
-    bool UpdateSymBlocks(VirtualGenerator<T> &mat, Block<AdmissibleCondition> &task, const double *const xt, const int *const tabt, const double *const xs, const int *const tabs, std::vector<std::unique_ptr<IMatrix<T>>> &MyComputedBlocks_local, std::vector<SubMatrix<T> *> &, std::vector<LowRankMatrix<T> *> &, int &);
+    bool ComputeAdmissibleBlock(VirtualGenerator<T> &mat, Block<AdmissibleCondition> &task, const double *const xt, const int *const tabt, const double *const xs, const int *const tabs, std::vector<std::unique_ptr<IMatrix<T>>> &MyComputedBlocks_local, std::vector<SubMatrix<T> *> &, std::vector<LowRankMatrix<T> *> &, int &);
+    bool ComputeAdmissibleBlocksSym(VirtualGenerator<T> &mat, Block<AdmissibleCondition> &task, const double *const xt, const int *const tabt, const double *const xs, const int *const tabs, std::vector<std::unique_ptr<IMatrix<T>>> &MyComputedBlocks_local, std::vector<SubMatrix<T> *> &, std::vector<LowRankMatrix<T> *> &, int &);
     void AddNearFieldMat(VirtualGenerator<T> &mat, Block<AdmissibleCondition> &task, std::vector<std::unique_ptr<IMatrix<T>>> &, std::vector<SubMatrix<T> *> &);
     void AddFarFieldMat(VirtualGenerator<T> &mat, Block<AdmissibleCondition> &task, const double *const xt, const int *const tabt, const double *const xs, const int *const tabs, std::vector<std::unique_ptr<IMatrix<T>>> &, std::vector<LowRankMatrix<T> *> &, const int &reqrank = -1);
     void ComputeInfos(const std::vector<double> &mytimes);
@@ -434,15 +434,19 @@ void HMatrix<T, LowRankMatrix, AdmissibleCondition>::ComputeBlocks(VirtualGenera
 #    pragma omp for schedule(guided)
 #endif
         for (int p = 0; p < local_tasks.size(); p++) {
-            bool not_pushed;
-            if (symmetry == 'H' || symmetry == 'S') {
-                not_pushed = UpdateSymBlocks(mat, *(local_tasks[p]), xt, tabt, xs, tabs, MyComputedBlocks_local, MyNearFieldMats_local, MyFarFieldMats_local, false_positive_local);
-            } else {
-                not_pushed = UpdateBlocks(mat, *(local_tasks[p]), xt, tabt, xs, tabs, MyComputedBlocks_local, MyNearFieldMats_local, MyFarFieldMats_local, false_positive_local);
-            }
-
-            if (not_pushed) {
+            if (!local_tasks[p]->IsAdmissible()) {
                 AddNearFieldMat(mat, *(local_tasks[p]), MyComputedBlocks_local, MyNearFieldMats_local);
+            } else {
+                bool not_pushed;
+                if (symmetry == 'H' || symmetry == 'S') {
+                    not_pushed = ComputeAdmissibleBlocksSym(mat, *(local_tasks[p]), xt, tabt, xs, tabs, MyComputedBlocks_local, MyNearFieldMats_local, MyFarFieldMats_local, false_positive_local);
+                } else {
+                    not_pushed = ComputeAdmissibleBlock(mat, *(local_tasks[p]), xt, tabt, xs, tabs, MyComputedBlocks_local, MyNearFieldMats_local, MyFarFieldMats_local, false_positive_local);
+                }
+
+                if (not_pushed) {
+                    AddNearFieldMat(mat, *(local_tasks[p]), MyComputedBlocks_local, MyNearFieldMats_local);
+                }
             }
         }
 #if _OPENMP && !defined(PYTHON_INTERFACE)
@@ -493,23 +497,24 @@ void HMatrix<T, LowRankMatrix, AdmissibleCondition>::ComputeBlocks(VirtualGenera
 }
 
 template <typename T, template <typename> class LowRankMatrix, class AdmissibleCondition>
-bool HMatrix<T, LowRankMatrix, AdmissibleCondition>::UpdateBlocks(VirtualGenerator<T> &mat, Block<AdmissibleCondition> &task, const double *const xt, const int *const tabt, const double *const xs, const int *const tabs, std::vector<std::unique_ptr<IMatrix<T>>> &MyComputedBlocks_local, std::vector<SubMatrix<T> *> &MyNearFieldMats_local, std::vector<LowRankMatrix<T> *> &MyFarFieldMats_local, int &false_positive_local) {
-    if (task.IsAdmissible()) {
+bool HMatrix<T, LowRankMatrix, AdmissibleCondition>::ComputeAdmissibleBlock(VirtualGenerator<T> &mat, Block<AdmissibleCondition> &task, const double *const xt, const int *const tabt, const double *const xs, const int *const tabs, std::vector<std::unique_ptr<IMatrix<T>>> &MyComputedBlocks_local, std::vector<SubMatrix<T> *> &MyNearFieldMats_local, std::vector<LowRankMatrix<T> *> &MyFarFieldMats_local, int &false_positive_local) {
+    if (task.IsAdmissible()) { // When called recursively, it may not be admissible
         AddFarFieldMat(mat, task, xt, tabt, xs, tabs, MyComputedBlocks_local, MyFarFieldMats_local, reqrank);
         if (MyFarFieldMats_local.back()->rank_of() != -1) {
             return false;
         } else {
             MyFarFieldMats_local.pop_back();
+            MyComputedBlocks_local.pop_back();
             false_positive_local += 1;
-            // AddNearFieldMat(mat, task,MyComputedBlocks_local, MyNearFieldMats_local);
-            // return false;
         }
-    } else {
-        AddNearFieldMat(mat, task, MyComputedBlocks_local, MyNearFieldMats_local);
-        return false;
     }
+    // We could compute a dense block if its size is small enough, we focus on improving compression for now
+    // else if (task.get_size()<maxblocksize){
+    //     AddNearFieldMat(mat,task,MyComputedBlocks_local, MyNearFieldMats_local);
+    //     return false;
+    // }
 
-    int bsize               = task.get_size();
+    std::size_t bsize       = task.get_size();
     const VirtualCluster &t = task.get_target_cluster();
     const VirtualCluster &s = task.get_source_cluster();
 
@@ -517,12 +522,11 @@ bool HMatrix<T, LowRankMatrix, AdmissibleCondition>::UpdateBlocks(VirtualGenerat
         if (t.IsLeaf()) {
             return true;
         } else {
-
             std::vector<bool> Blocks_not_pushed(t.get_nb_sons());
             for (int p = 0; p < t.get_nb_sons(); p++) {
                 task.build_son(t.get_son(p), s);
 
-                Blocks_not_pushed[p] = UpdateBlocks(mat, task.get_son(p), xt, tabt, xs, tabs, MyComputedBlocks_local, MyNearFieldMats_local, MyFarFieldMats_local, false_positive_local);
+                Blocks_not_pushed[p] = ComputeAdmissibleBlock(mat, task.get_son(p), xt, tabt, xs, tabs, MyComputedBlocks_local, MyNearFieldMats_local, MyFarFieldMats_local, false_positive_local);
             }
 
             if ((bsize <= maxblocksize) && std::all_of(Blocks_not_pushed.begin(), Blocks_not_pushed.end(), [](bool i) { return i; })) {
@@ -542,7 +546,7 @@ bool HMatrix<T, LowRankMatrix, AdmissibleCondition>::UpdateBlocks(VirtualGenerat
             std::vector<bool> Blocks_not_pushed(s.get_nb_sons());
             for (int p = 0; p < s.get_nb_sons(); p++) {
                 task.build_son(t, s.get_son(p));
-                Blocks_not_pushed[p] = UpdateBlocks(mat, task.get_son(p), xt, tabt, xs, tabs, MyComputedBlocks_local, MyNearFieldMats_local, MyFarFieldMats_local, false_positive_local);
+                Blocks_not_pushed[p] = ComputeAdmissibleBlock(mat, task.get_son(p), xt, tabt, xs, tabs, MyComputedBlocks_local, MyNearFieldMats_local, MyFarFieldMats_local, false_positive_local);
             }
 
             if ((bsize <= maxblocksize) && std::all_of(Blocks_not_pushed.begin(), Blocks_not_pushed.end(), [](bool i) { return i; })) {
@@ -561,7 +565,7 @@ bool HMatrix<T, LowRankMatrix, AdmissibleCondition>::UpdateBlocks(VirtualGenerat
                 std::vector<bool> Blocks_not_pushed(t.get_nb_sons());
                 for (int p = 0; p < t.get_nb_sons(); p++) {
                     task.build_son(t.get_son(p), s);
-                    Blocks_not_pushed[p] = UpdateBlocks(mat, task.get_son(p), xt, tabt, xs, tabs, MyComputedBlocks_local, MyNearFieldMats_local, MyFarFieldMats_local, false_positive_local);
+                    Blocks_not_pushed[p] = ComputeAdmissibleBlock(mat, task.get_son(p), xt, tabt, xs, tabs, MyComputedBlocks_local, MyNearFieldMats_local, MyFarFieldMats_local, false_positive_local);
                 }
 
                 if ((bsize <= maxblocksize) && std::all_of(Blocks_not_pushed.begin(), Blocks_not_pushed.end(), [](bool i) { return i; })) {
@@ -579,7 +583,7 @@ bool HMatrix<T, LowRankMatrix, AdmissibleCondition>::UpdateBlocks(VirtualGenerat
                 std::vector<bool> Blocks_not_pushed(s.get_nb_sons());
                 for (int p = 0; p < s.get_nb_sons(); p++) {
                     task.build_son(t, s.get_son(p));
-                    Blocks_not_pushed[p] = UpdateBlocks(mat, task.get_son(p), xt, tabt, xs, tabs, MyComputedBlocks_local, MyNearFieldMats_local, MyFarFieldMats_local, false_positive_local);
+                    Blocks_not_pushed[p] = ComputeAdmissibleBlock(mat, task.get_son(p), xt, tabt, xs, tabs, MyComputedBlocks_local, MyNearFieldMats_local, MyFarFieldMats_local, false_positive_local);
                 }
 
                 if ((bsize <= maxblocksize) && std::all_of(Blocks_not_pushed.begin(), Blocks_not_pushed.end(), [](bool i) { return i; })) {
@@ -599,7 +603,7 @@ bool HMatrix<T, LowRankMatrix, AdmissibleCondition>::UpdateBlocks(VirtualGenerat
 }
 
 template <typename T, template <typename> class LowRankMatrix, class AdmissibleCondition>
-bool HMatrix<T, LowRankMatrix, AdmissibleCondition>::UpdateSymBlocks(VirtualGenerator<T> &mat, Block<AdmissibleCondition> &task, const double *const xt, const int *const tabt, const double *const xs, const int *const tabs, std::vector<std::unique_ptr<IMatrix<T>>> &MyComputedBlocks_local, std::vector<SubMatrix<T> *> &MyNearFieldMats_local, std::vector<LowRankMatrix<T> *> &MyFarFieldMats_local, int &false_positive_local) {
+bool HMatrix<T, LowRankMatrix, AdmissibleCondition>::ComputeAdmissibleBlocksSym(VirtualGenerator<T> &mat, Block<AdmissibleCondition> &task, const double *const xt, const int *const tabt, const double *const xs, const int *const tabs, std::vector<std::unique_ptr<IMatrix<T>>> &MyComputedBlocks_local, std::vector<SubMatrix<T> *> &MyNearFieldMats_local, std::vector<LowRankMatrix<T> *> &MyFarFieldMats_local, int &false_positive_local) {
 
     if (task.IsAdmissible()) {
 
@@ -608,15 +612,19 @@ bool HMatrix<T, LowRankMatrix, AdmissibleCondition>::UpdateSymBlocks(VirtualGene
             return false;
         } else {
             MyFarFieldMats_local.pop_back();
+            MyComputedBlocks_local.pop_back();
             false_positive_local += 1;
             // AddNearFieldMat(mat, task,MyComputedBlocks_local, MyNearFieldMats_local);
             // return false;
         }
-    } else {
-        AddNearFieldMat(mat, task, MyComputedBlocks_local, MyNearFieldMats_local);
-        return false;
     }
-    int bsize               = task.get_size();
+    // We could compute a dense block if its size is small enough, we focus on improving compression for now
+    // else if (task.get_size()<maxblocksize){
+    //     AddNearFieldMat(mat,task,MyComputedBlocks_local, MyNearFieldMats_local);
+    //     return false;
+    // }
+
+    std::size_t bsize       = task.get_size();
     const VirtualCluster &t = task.get_target_cluster();
     const VirtualCluster &s = task.get_source_cluster();
 
@@ -627,7 +635,7 @@ bool HMatrix<T, LowRankMatrix, AdmissibleCondition>::UpdateSymBlocks(VirtualGene
             std::vector<bool> Blocks_not_pushed(t.get_nb_sons());
             for (int p = 0; p < t.get_nb_sons(); p++) {
                 task.build_son(t.get_son(p), s);
-                Blocks_not_pushed[p] = UpdateSymBlocks(mat, task.get_son(p), xt, tabt, xs, tabs, MyComputedBlocks_local, MyNearFieldMats_local, MyFarFieldMats_local, false_positive_local);
+                Blocks_not_pushed[p] = ComputeAdmissibleBlocksSym(mat, task.get_son(p), xt, tabt, xs, tabs, MyComputedBlocks_local, MyNearFieldMats_local, MyFarFieldMats_local, false_positive_local);
             }
 
             if ((bsize <= maxblocksize) && std::all_of(Blocks_not_pushed.begin(), Blocks_not_pushed.end(), [](bool i) { return i; })) {
@@ -647,7 +655,7 @@ bool HMatrix<T, LowRankMatrix, AdmissibleCondition>::UpdateSymBlocks(VirtualGene
             std::vector<bool> Blocks_not_pushed(s.get_nb_sons());
             for (int p = 0; p < s.get_nb_sons(); p++) {
                 task.build_son(t, s.get_son(p));
-                Blocks_not_pushed[p] = UpdateSymBlocks(mat, task.get_son(p), xt, tabt, xs, tabs, MyComputedBlocks_local, MyNearFieldMats_local, MyFarFieldMats_local, false_positive_local);
+                Blocks_not_pushed[p] = ComputeAdmissibleBlocksSym(mat, task.get_son(p), xt, tabt, xs, tabs, MyComputedBlocks_local, MyNearFieldMats_local, MyFarFieldMats_local, false_positive_local);
             }
 
             if ((bsize <= maxblocksize) && std::all_of(Blocks_not_pushed.begin(), Blocks_not_pushed.end(), [](bool i) { return i; })) {
@@ -666,7 +674,7 @@ bool HMatrix<T, LowRankMatrix, AdmissibleCondition>::UpdateSymBlocks(VirtualGene
             for (int l = 0; l < s.get_nb_sons(); l++) {
                 for (int p = 0; p < t.get_nb_sons(); p++) {
                     task.build_son(t.get_son(p), s.get_son(l));
-                    Blocks_not_pushed[p + l * t.get_nb_sons()] = UpdateSymBlocks(mat, task.get_son(p + l * t.get_nb_sons()), xt, tabt, xs, tabs, MyComputedBlocks_local, MyNearFieldMats_local, MyFarFieldMats_local, false_positive_local);
+                    Blocks_not_pushed[p + l * t.get_nb_sons()] = ComputeAdmissibleBlocksSym(mat, task.get_son(p + l * t.get_nb_sons()), xt, tabt, xs, tabs, MyComputedBlocks_local, MyNearFieldMats_local, MyFarFieldMats_local, false_positive_local);
                 }
             }
             if ((bsize <= maxblocksize) && std::all_of(Blocks_not_pushed.begin(), Blocks_not_pushed.end(), [](bool i) { return i; })) {
@@ -726,20 +734,20 @@ void HMatrix<T, LowRankMatrix, AdmissibleCondition>::ComputeInfos(const std::vec
     // 0 : block tree ; 1 : compute blocks ;
     std::vector<double> maxtime(2), meantime(2);
     // 0 : dense mat ; 1 : lr mat ; 2 : rank ; 3 : local_size
-    std::vector<int> maxinfos(4, 0), mininfos(4, std::max(nc, nr));
+    std::vector<std::size_t> maxinfos(4, 0), mininfos(4, std::max(nc, nr));
     std::vector<double> meaninfos(4, 0);
     // Infos
     for (int i = 0; i < MyNearFieldMats.size(); i++) {
-        int size    = MyNearFieldMats[i]->nb_rows() * MyNearFieldMats[i]->nb_cols();
-        maxinfos[0] = std::max(maxinfos[0], size);
-        mininfos[0] = std::min(mininfos[0], size);
+        std::size_t size = MyNearFieldMats[i]->nb_rows() * MyNearFieldMats[i]->nb_cols();
+        maxinfos[0]      = std::max(maxinfos[0], size);
+        mininfos[0]      = std::min(mininfos[0], size);
         meaninfos[0] += size;
     }
     for (int i = 0; i < MyFarFieldMats.size(); i++) {
-        int size    = MyFarFieldMats[i]->nb_rows() * MyFarFieldMats[i]->nb_cols();
-        int rank    = MyFarFieldMats[i]->rank_of();
-        maxinfos[1] = std::max(maxinfos[1], size);
-        mininfos[1] = std::min(mininfos[1], size);
+        std::size_t size = MyFarFieldMats[i]->nb_rows() * MyFarFieldMats[i]->nb_cols();
+        std::size_t rank = MyFarFieldMats[i]->rank_of();
+        maxinfos[1]      = std::max(maxinfos[1], size);
+        mininfos[1]      = std::min(mininfos[1], size);
         meaninfos[1] += size;
         maxinfos[2] = std::max(maxinfos[2], rank);
         mininfos[2] = std::min(mininfos[2], rank);
@@ -750,13 +758,13 @@ void HMatrix<T, LowRankMatrix, AdmissibleCondition>::ComputeInfos(const std::vec
     meaninfos[3] = local_size;
 
     if (rankWorld == 0) {
-        MPI_Reduce(MPI_IN_PLACE, &(maxinfos[0]), 4, MPI_INT, MPI_MAX, 0, comm);
-        MPI_Reduce(MPI_IN_PLACE, &(mininfos[0]), 4, MPI_INT, MPI_MIN, 0, comm);
+        MPI_Reduce(MPI_IN_PLACE, &(maxinfos[0]), 4, my_MPI_SIZE_T, MPI_MAX, 0, comm);
+        MPI_Reduce(MPI_IN_PLACE, &(mininfos[0]), 4, my_MPI_SIZE_T, MPI_MIN, 0, comm);
         MPI_Reduce(MPI_IN_PLACE, &(meaninfos[0]), 4, MPI_DOUBLE, MPI_SUM, 0, comm);
         MPI_Reduce(MPI_IN_PLACE, &(false_positive), 1, MPI_INT, MPI_SUM, 0, comm);
     } else {
-        MPI_Reduce(&(maxinfos[0]), &(maxinfos[0]), 4, MPI_INT, MPI_MAX, 0, comm);
-        MPI_Reduce(&(mininfos[0]), &(mininfos[0]), 4, MPI_INT, MPI_MIN, 0, comm);
+        MPI_Reduce(&(maxinfos[0]), &(maxinfos[0]), 4, my_MPI_SIZE_T, MPI_MAX, 0, comm);
+        MPI_Reduce(&(mininfos[0]), &(mininfos[0]), 4, my_MPI_SIZE_T, MPI_MIN, 0, comm);
         MPI_Reduce(&(meaninfos[0]), &(meaninfos[0]), 4, MPI_DOUBLE, MPI_SUM, 0, comm);
         MPI_Reduce(&(false_positive), &(false_positive), 1, MPI_INT, MPI_SUM, 0, comm);
     }
