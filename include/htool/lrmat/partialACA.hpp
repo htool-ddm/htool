@@ -135,7 +135,7 @@ class partialACA final : public LowRankMatrix<T> {
 
                             // aux: terme quadratiques du developpement du carre' de la norme de Frobenius de la matrice low rank
                             for (int j = 0; j < uu.size(); j++) {
-                                frob_aux += Blas<T>::dot(&(this->nc), r.data(), &incx, vv[j].data(), &incy) * Blas<T>::dot(&(this->nr), c.data(), &(incx), uu[j].data(), &(incy));
+                                frob_aux += Blas<T>::dot(&(this->nc), vv[j].data(), &incx, r.data(), &incy) * Blas<T>::dot(&(this->nr), uu[j].data(), &(incx), c.data(), &(incy));
                             }
                             // frob_aux: termes croises du developpement du carre' de la norme de Frobenius de la matrice low rank
                             frob += aux + 2 * std::real(frob_aux); // frob: Frobenius norm of the low rank matrix

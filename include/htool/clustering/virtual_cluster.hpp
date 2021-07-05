@@ -53,7 +53,7 @@ class VirtualCluster {
     virtual const std::vector<int> &get_perm() const                = 0;
     virtual int get_perm(int i) const                               = 0;
     virtual std::vector<int>::const_iterator get_perm_start() const = 0;
-    virtual const VirtualCluster *const get_root() const            = 0;
+    virtual const VirtualCluster *get_root() const                  = 0;
 
     //// Getter for MasterOffsets
     virtual int get_local_offset() const                                     = 0;

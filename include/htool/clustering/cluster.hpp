@@ -242,7 +242,7 @@ class Cluster : public VirtualCluster {
     int get_perm(int i) const { return (*permutation)[i]; };
     std::vector<int>::const_iterator get_perm_start() const { return permutation->begin(); }
     std::vector<int>::iterator get_perm_start() { return permutation->begin(); }
-    VirtualCluster *const get_root() const {
+    const VirtualCluster *get_root() const {
         return root;
     }
 

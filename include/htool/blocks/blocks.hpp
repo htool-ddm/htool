@@ -36,7 +36,7 @@ class Block {
     // True  <=> current block not pushed to tasks
     bool build_block_tree(MPI_Comm comm = MPI_COMM_WORLD) {
 
-        int bsize = this->t.get_size() * this->s.get_size();
+        std::size_t bsize = std::size_t(this->t.get_size()) * std::size_t(this->s.get_size());
 
         ///////////////////// Diagonal blocks
         int rankWorld;
@@ -139,7 +139,7 @@ class Block {
     }
     bool build_sym_block_tree(MPI_Comm comm = MPI_COMM_WORLD) {
 
-        int bsize = t.get_size() * s.get_size();
+        std::size_t bsize = std::size_t(this->t.get_size()) * std::size_t(this->s.get_size());
 
         ///////////////////// Diagonal blocks
         int rankWorld;
@@ -293,7 +293,7 @@ class Block {
         return *(root->diagonal_block);
     }
 
-    int get_size() const { return t.get_size() * s.get_size(); }
+    std::size_t get_size() const { return std::size_t(this->t.get_size()) * std::size_t(this->s.get_size()); }
     const Block &get_son(int j) const { return *(sons[j]); }
     Block &get_son(int j) { return *(sons[j]); }
 
