@@ -211,8 +211,8 @@ class HMatrix : public VirtualHMatrix<T> {
     std::vector<int> get_local_perm_source() const { return cluster_tree_s->get_local_perm(); }
     int get_permt(int i) const { return cluster_tree_t->get_perm(i); }
     int get_perms(int i) const { return cluster_tree_s->get_perm(i); }
-    const std::vector<SubMatrix<T>*> &get_MyNearFieldMats() const { return MyNearFieldMats; }
-    const std::vector<LowRankMatrix<T>*> &get_MyFarFieldMats() const { return MyFarFieldMats; }
+    const std::vector<SubMatrix<T> *> &get_MyNearFieldMats() const { return MyNearFieldMats; }
+    const std::vector<LowRankMatrix<T> *> &get_MyFarFieldMats() const { return MyFarFieldMats; }
     const std::vector<SubMatrix<T> *> &get_MyDiagNearFieldMats() const { return MyDiagNearFieldMats; }
     const std::vector<LowRankMatrix<T> *> &get_MyDiagFarFieldMats() const { return MyDiagFarFieldMats; }
     const std::vector<SubMatrix<T> *> &get_MyStrictlyDiagNearFieldMats() const { return MyStrictlyDiagNearFieldMats; }
