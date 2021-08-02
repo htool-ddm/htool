@@ -106,8 +106,8 @@ class MultiHMatrix {
 
     // Internal methods
     void ComputeBlocks(MultiIMatrix<T> &mat, const double *const xt, const int *const tabt, const double *const xs, const int *const tabs);
-    void AddNearFieldMat(MultiIMatrix<T> &mat, Block<AdmissibleCondition> &task, std::vector<std::unique_ptr<SubMatrix<T>>> &);
-    bool AddFarFieldMat(MultiIMatrix<T> &mat, Block<AdmissibleCondition> &task, const double *const xt, const int *const tabt, const double *const xs, const int *const tabs, std::vector<std::unique_ptr<bareLowRankMatrix<T>>> &, const int &reqrank = -1);
+    void AddNearFieldMat(MultiIMatrix<T> &mat, Block<AdmissibleCondition> &task, std::vector<std::unique_ptr<IMatrix<T>>> &, std::vector<SubMatrix<T> *> &);
+    bool AddFarFieldMat(MultiIMatrix<T> &mat, Block<AdmissibleCondition> &task, const double *const xt, const int *const tabt, const double *const xs, const int *const tabs, std::vector<std::unique_ptr<IMatrix<T>>> &, std::vector<bareLowRankMatrix<T> *> &, const int &reqrank = -1);
 
     HMatrix<T, bareLowRankMatrix, AdmissibleCondition> &operator[](int j) { return HMatrices[j]; };
     const HMatrix<T, bareLowRankMatrix, AdmissibleCondition> &operator[](int j) const { return HMatrices[j]; };
@@ -226,22 +226,22 @@ void MultiHMatrix<T, MultiLowRankMatrix, AdmissibleCondition>::ComputeBlocks(Mul
 #    pragma omp parallel
 #endif
     {
-        std::vector<std::unique_ptr<SubMatrix<T>>> MyNearFieldMats_local;
-        std::vector<std::unique_ptr<bareLowRankMatrix<T>>> MyFarFieldMats_local;
+        std::vector<SubMatrix<T> *> MyNearFieldMats_local;
+        std::vector<bareLowRankMatrix<T> *> MyFarFieldMats_local;
+        std::vector<std::unique_ptr<IMatrix<T>>> MyComputedBlocks_local;
         std::vector<Block<AdmissibleCondition> *> local_tasks = BlockTree->get_local_tasks();
 #if _OPENMP
 #    pragma omp for schedule(guided)
 #endif
         for (int p = 0; p < local_tasks.size(); p++) {
-
             if (local_tasks[p]->IsAdmissible()) {
-                bool test = AddFarFieldMat(mat, *(local_tasks[p]), xt, tabt, xs, tabs, MyFarFieldMats_local, reqrank);
+                bool test = AddFarFieldMat(mat, *(local_tasks[p]), xt, tabt, xs, tabs, MyComputedBlocks_local, MyFarFieldMats_local, reqrank);
 
                 if (test) {
-                    AddNearFieldMat(mat, *(local_tasks[p]), MyNearFieldMats_local);
+                    AddNearFieldMat(mat, *(local_tasks[p]), MyComputedBlocks_local, MyNearFieldMats_local);
                 }
             } else {
-                AddNearFieldMat(mat, *(local_tasks[p]), MyNearFieldMats_local);
+                AddNearFieldMat(mat, *(local_tasks[p]), MyComputedBlocks_local, MyNearFieldMats_local);
             }
         }
 
@@ -251,13 +251,18 @@ void MultiHMatrix<T, MultiLowRankMatrix, AdmissibleCondition>::ComputeBlocks(Mul
         {
             for (int l = 0; l < nb_hmatrix; l++) {
                 int count = l;
+                while (count < MyComputedBlocks_local.size()) {
+                    HMatrices[l].MyComputedBlocks.emplace_back(std::move(MyComputedBlocks_local[count]));
+                    count += nb_hmatrix;
+                }
+
                 while (count < MyFarFieldMats_local.size()) {
-                    HMatrices[l].MyFarFieldMats.push_back(std::move(MyFarFieldMats_local[count]));
+                    HMatrices[l].MyFarFieldMats.emplace_back(std::move(MyFarFieldMats_local[count]));
                     count += nb_hmatrix;
                 }
                 count = l;
                 while (count < MyNearFieldMats_local.size()) {
-                    HMatrices[l].MyNearFieldMats.push_back(std::move(MyNearFieldMats_local[count]));
+                    HMatrices[l].MyNearFieldMats.emplace_back(std::move(MyNearFieldMats_local[count]));
                     count += nb_hmatrix;
                 }
             }
@@ -267,7 +272,7 @@ void MultiHMatrix<T, MultiLowRankMatrix, AdmissibleCondition>::ComputeBlocks(Mul
 
 // Build a dense block
 template <typename T, template <typename> class MultiLowRankMatrix, class AdmissibleCondition>
-void MultiHMatrix<T, MultiLowRankMatrix, AdmissibleCondition>::AddNearFieldMat(MultiIMatrix<T> &mat, Block<AdmissibleCondition> &task, std::vector<std::unique_ptr<SubMatrix<T>>> &MyNearFieldMats_local) {
+void MultiHMatrix<T, MultiLowRankMatrix, AdmissibleCondition>::AddNearFieldMat(MultiIMatrix<T> &mat, Block<AdmissibleCondition> &task, std::vector<std::unique_ptr<IMatrix<T>>> &MyComputedBlocks_local, std::vector<SubMatrix<T> *> &MyNearFieldMats_local) {
 
     const VirtualCluster &t = task.get_target_cluster();
     const VirtualCluster &s = task.get_source_cluster();
@@ -276,13 +281,14 @@ void MultiHMatrix<T, MultiLowRankMatrix, AdmissibleCondition>::AddNearFieldMat(M
 
     for (int l = 0; l < nb_hmatrix; l++) {
         SubMatrix<T> *submat = new SubMatrix<T>(Local_MultiSubMatrix[l]);
-        MyNearFieldMats_local.emplace_back(submat);
+        MyComputedBlocks_local.emplace_back(submat);
+        MyNearFieldMats_local.push_back(dynamic_cast<SubMatrix<T> *>(submat));
     }
 }
 
 // Build a low rank block
 template <typename T, template <typename> class MultiLowRankMatrix, class AdmissibleCondition>
-bool MultiHMatrix<T, MultiLowRankMatrix, AdmissibleCondition>::AddFarFieldMat(MultiIMatrix<T> &mat, Block<AdmissibleCondition> &task, const double *const xt, const int *const tabt, const double *const xs, const int *const tabs, std::vector<std::unique_ptr<bareLowRankMatrix<T>>> &MyFarFieldMats_local, const int &reqrank) {
+bool MultiHMatrix<T, MultiLowRankMatrix, AdmissibleCondition>::AddFarFieldMat(MultiIMatrix<T> &mat, Block<AdmissibleCondition> &task, const double *const xt, const int *const tabt, const double *const xs, const int *const tabs, std::vector<std::unique_ptr<IMatrix<T>>> &MyComputedBlocks_local, std::vector<bareLowRankMatrix<T> *> &MyFarFieldMats_local, const int &reqrank) {
 
     const VirtualCluster &t = task.get_target_cluster();
     const VirtualCluster &s = task.get_source_cluster();
@@ -293,7 +299,8 @@ bool MultiHMatrix<T, MultiLowRankMatrix, AdmissibleCondition>::AddFarFieldMat(Mu
     if (Local_MultiLowRankMatrix.rank_of() != -1) {
         for (int l = 0; l < nb_hmatrix; l++) {
             bareLowRankMatrix<T> *lrmat = new bareLowRankMatrix<T>(Local_MultiLowRankMatrix[l]);
-            MyFarFieldMats_local.emplace_back(lrmat);
+            MyComputedBlocks_local.emplace_back(lrmat);
+            MyFarFieldMats_local.emplace_back(dynamic_cast<bareLowRankMatrix<T> *>(lrmat));
         }
         return 0;
     } else {
