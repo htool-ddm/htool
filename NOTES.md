@@ -7,34 +7,26 @@ We rely heavily on polymorphism to make the library easy to extend in terms of f
 `HMatrix` follows a [policy-based design](https://en.wikipedia.org/wiki/Modern_C%2B%2B_Design#Policy-based_design) (strategy pattern compile time variant), where the policies are
 
 - the type of compression
-- the type of clustering
+- the type of admissible condition
 
-These policies are made explicit respectively by the abstract classes `LowRankMatrix` and `Cluster`. These two classes define the interface used by `HMatrix` and they are abstract, meaning that they have both a function `build` that need to be implemented to define concret compression and clustering techniques. It allows to add new types of compression and clustering easily.
+The first policy is made explicit by the abstract class `LowRankMatrix`. This class defines the interface used by `HMatrix`, meaning that it has a function `build` that need to be implemented to define concrete compression. It allows adding new types of compression easily.
 
-Note also that the `Cluster` is a shared ressource with a shared pointer, so that it can be shared by several instance of `HMatrix`.
+Note also that the `Cluster` is a shared resource with a shared pointer, so that it can be shared by several instances of `HMatrix`.
 
-## Low rank matrix
+## Low-rank matrix
 
 `LowRankMatrix` is an Abstract Base Class (ABC) that makes explicit the interface used by `HMatrix`. The pure virtual function is
 
 ```c++
-virtual void build(const IMatrix<T>& A, const Cluster& t, const std::vector<R3>& xt,const std::vector<int>& tabt, const Cluster& s, const std::vector<R3>& xs, const std::vector<int>& tabs) = 0;
+virtual void build(const VirtualGenerator<T> &A, const VirtualCluster &t, const double *const xt, const int *const tabt, const VirtualCluster &s, const double *const xs, const int *const tabs) = 0;
 ```
 
 If you want to add another type of compression, you need to define a derived class from `LowRankMatrix` that implement such a function. In this function you need to populate the data of a `LowRankMatrix`.
 
-
-IMatrix -> runtime polymorphism, we could use CRTP to do static polymorphism, but is it worth it ?
-
-
 ## Clustering
 
-The clustering interface used by HMatrix is defined by `Cluster` in `cluster.hpp`. Using CRTP, implementations of clustering techniques can be defined as derived classes of `Cluster` using themselves as template parameter of `Cluster`. Then, one can define
+`HMatrix` needs cluster objects that follows the interface defined with `VirtualCluster`. In particular, Htool defines `Cluster` in `cluster.hpp`, which also follows a [policy-based design](https://en.wikipedia.org/wiki/Modern_C%2B%2B_Design#Policy-based_design). The policy is the type of clustering, for example `PCA`, which defines how the clusters are divided recursively. It needs to implement the following method:
 
 ```c++
-void build(const std::vector<R3>& x0, const std::vector<double>& r0,const std::vector<int>& tab0, const std::vector<double>& g0, int nb_sons = -1, MPI_Comm comm=MPI_COMM_WORLD)
+void recursive_build(const double *const x, const double *const r, const int *const tab, const double *const g, int nb_sons, MPI_Comm comm, std::stack<Cluster<PCA> *> &s, std::stack<std::vector<int>> &n)
 ```
-
-to use this implementation automatically in `HMatrix`. If one needs other inputs to define a clustering technique, another build function can be used, but instances of clustering techniques not using this `build` function need to be given to `HMatrix` after building them externally.
-
-## IMatrix

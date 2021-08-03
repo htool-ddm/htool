@@ -24,13 +24,14 @@
 
 All notable changes to this project will be documented in this file.
 
-## [Unreleased]
+## [0.5] - 2021-08-03
 
 ### Added
 
-- `Cluster` class and its derivative `NCluster` with different splitting choices (`geometric_splitting` and `regular_splitting`)
-- `Block` class with different admissible condition used in `Block` (only `RjasanowSteinbach` at the moment)
-- `LowRankMatrix` and its derivatives (`SVD`, `fullACA`, `partialACA`, and `sympartialACA`)
-- `IMatrix` class and its derivatives `Matrix` and `SubMatrix`
-- `HMatrix` class and basic linear algebra (hmatrix-vector product, hmatrix-matrix product)
-- `DDM` solvers via HPDDM, and coarse space building
+- Interface for clustering via `VirtualCluster`, implementation with `Cluster` whose template parameter is the type of clustering (supported now: `PCARegularClustering`, `PCAGeometricClustering`, `BoundingBox1RegularClustering` and `BoundingBoxGeometricClustering`).
+- Interface for hmatrix objects via `VirtualHMatrix`, implementation with HMatrix whose template parameter is the type of compressor (supported now: `SVD`, `fullACA`, `partialACA`, `sympartialACA`, all derived from abstract class `LowRankMatrix`).
+- Interface for generator via `VirtualGenerator`. The user needs to define an object deriving from `VirtualGenerator` to populate a hmatrix.
+- `Block` class with different admissible condition used in `Block` (only `RjasanowSteinbach` at the moment).
+- Interface for a sub-block via `IMatrix`, from which both `SubMatrix` and `LowRankMatrix` inherit. They respectively correspond to dense and compressed sub-blocks.
+- `DDM` solvers via HPDDM, and coarse space building.
+- Test suite and CI with GitHub action.
