@@ -24,6 +24,20 @@
 
 All notable changes to this project will be documented in this file.
 
+## [Unreleased]
+
+### Added
+
+### Changed
+
+## [0.6] - 2021-08-03
+
+### Changed
+
+- Python interface with ctypes deprecated, see new python [interface](https://github.com/htool-ddm/htool_python) with pybind11.
+- Performance tests removed, see dedicated [repository](https://github.com/PierreMarchand20/htool_benchmarks).
+- GUI deprecated.
+
 ## [0.5] - 2021-08-03
 
 ### Added

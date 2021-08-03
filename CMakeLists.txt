@@ -5,12 +5,12 @@ cmake_minimum_required(VERSION 3.10)
 if(${CMAKE_VERSION} VERSION_LESS 3.12)
     project(
         Htool
-        VERSION 0.5
+        VERSION 0.6
         LANGUAGES CXX)
 else()
     project(
         Htool
-        VERSION 0.5
+        VERSION 0.6
         DESCRIPTION "A header only c++ library that provides Hierarchical matrices."
         HOMEPAGE_URL "https://github.com/htool-ddm/htool"
         LANGUAGES CXX)
@@ -226,15 +226,3 @@ if((CMAKE_PROJECT_NAME STREQUAL PROJECT_NAME OR MODERN_CMAKE_BUILD_TESTING) AND 
     add_custom_target(build-tests)
     add_subdirectory(tests EXCLUDE_FROM_ALL)
 endif()
-
-add_subdirectory(src EXCLUDE_FROM_ALL)
-
-#
-#
-# # Testing project
-# enable_testing()
-# add_test(NAME lrmatrix_test COMMAND Test_lrmatrix)
-# add_test(NAME hmatrix_test COMMAND Test_hmatrix)
-# add_test(NAME cluster_test COMMAND Test_cluster)
-# # Add documentation
-# add_subdirectory(doc)
