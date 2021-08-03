@@ -2,21 +2,21 @@
 
 name: CI
 
-# Controls when the action will run. 
+# Controls when the action will run.
 on:
   # Triggers the workflow on push or pull request events but only for the master branch
   push:
-    branches: [ main, develop ]
+    branches: [main, develop]
   pull_request:
-    branches: [ main, develop ]
+    branches: [main, develop]
 
   # Allows you to run this workflow manually from the Actions tab
   workflow_dispatch:
-  
+
   # # Run tests every month
   # schedule:
   #   - cron: '0 0 1 * *'
-      
+
 # A workflow run is made up of one or more jobs that can run sequentially or in parallel
 jobs:
   # This workflow contains a single job called "build"
@@ -27,103 +27,101 @@ jobs:
       matrix:
         include:
           - name: "Ubuntu OpenMPI g++"
-            CC_COMPILER: gcc 
-            CXX_COMPILER: g++ 
+            CC_COMPILER: gcc
+            CXX_COMPILER: g++
             container: "ubuntu_openmpi"
-            MPIEXEC_PREFLAGS: "--allow-run-as-root --oversubscribe" 
-            USE_SANITIZER: "" 
+            MPIEXEC_PREFLAGS: "--allow-run-as-root --oversubscribe"
+            USE_SANITIZER: ""
             CMAKE_BUILD_TYPE: Release
             DOCKER_OPTIONS: " "
 
           - name: "Ubuntu OpenMPI clang++"
-            CC_COMPILER: clang 
-            CXX_COMPILER: clang++ 
+            CC_COMPILER: clang
+            CXX_COMPILER: clang++
             container: "ubuntu_openmpi"
-            MPIEXEC_PREFLAGS: "--allow-run-as-root --oversubscribe" 
-            USE_SANITIZER: "" 
+            MPIEXEC_PREFLAGS: "--allow-run-as-root --oversubscribe"
+            USE_SANITIZER: ""
             CMAKE_BUILD_TYPE: Release
             DOCKER_OPTIONS: " "
 
           - name: "Ubuntu MPICH g++"
-            CC_COMPILER: gcc 
-            CXX_COMPILER: g++ 
+            CC_COMPILER: gcc
+            CXX_COMPILER: g++
             container: "ubuntu_mpich"
-            MPIEXEC_PREFLAGS: "" 
-            USE_SANITIZER: "Address" 
+            MPIEXEC_PREFLAGS: ""
+            USE_SANITIZER: "Address"
             LSAN_OPTIONS: "suppressions=/root/htool/sanitizers/lsan.blacklist:verbosity=1:log_threads=1"
             CMAKE_BUILD_TYPE: Debug
             DOCKER_OPTIONS: " "
 
           - name: "Ubuntu MPICH clang++"
-            CC_COMPILER: clang 
-            CXX_COMPILER: clang++ 
+            CC_COMPILER: clang
+            CXX_COMPILER: clang++
             container: "ubuntu_mpich"
-            MPIEXEC_PREFLAGS: "" 
-            USE_SANITIZER: "Address" 
+            MPIEXEC_PREFLAGS: ""
+            USE_SANITIZER: "Address"
             LSAN_OPTIONS: "suppressions=/root/htool/sanitizers/lsan.blacklist:verbosity=1:log_threads=1"
             CMAKE_BUILD_TYPE: Debug
             DOCKER_OPTIONS: " "
-          
+
           # Hangs on github
           # - name: "Debian OpenMPI g++"
-          #   CC_COMPILER: gcc 
-          #   CXX_COMPILER: g++ 
+          #   CC_COMPILER: gcc
+          #   CXX_COMPILER: g++
           #   container: "debian_openmpi"
-          #   MPIEXEC_PREFLAGS: "--allow-run-as-root --oversubscribe --mca btl_vader_single_copy_mechanism none" 
-          #   USE_SANITIZER: "" 
+          #   MPIEXEC_PREFLAGS: "--allow-run-as-root --oversubscribe --mca btl_vader_single_copy_mechanism none"
+          #   USE_SANITIZER: ""
           #   CMAKE_BUILD_TYPE: Debug
           #   DOCKER_OPTIONS: "--cap-add SYS_PTRACE"
 
           # - name: "Debian OpenMPI clang++"
-          #   CC_COMPILER: clang 
-          #   CXX_COMPILER: clang++ 
+          #   CC_COMPILER: clang
+          #   CXX_COMPILER: clang++
           #   container: "debian_openmpi"
-          #   MPIEXEC_PREFLAGS: "--allow-run-as-root --oversubscribe --mca btl_vader_single_copy_mechanism none" 
-          #   USE_SANITIZER: "" 
+          #   MPIEXEC_PREFLAGS: "--allow-run-as-root --oversubscribe --mca btl_vader_single_copy_mechanism none"
+          #   USE_SANITIZER: ""
           #   CMAKE_BUILD_TYPE: Debug
           #   DOCKER_OPTIONS: "--cap-add SYS_PTRACE"
 
           - name: "Debian MPICH g++"
-            CC_COMPILER: gcc 
-            CXX_COMPILER: g++ 
+            CC_COMPILER: gcc
+            CXX_COMPILER: g++
             container: "debian_mpich"
-            MPIEXEC_PREFLAGS: "" 
-            USE_SANITIZER: "Address" 
+            MPIEXEC_PREFLAGS: ""
+            USE_SANITIZER: "Address"
             LSAN_OPTIONS: "suppressions=/root/htool/sanitizers/lsan.blacklist:verbosity=1:log_threads=1"
             CMAKE_BUILD_TYPE: Debug
             DOCKER_OPTIONS: " "
 
           - name: "Debian MPICH clang++"
-            CC_COMPILER: clang 
-            CXX_COMPILER: clang++ 
+            CC_COMPILER: clang
+            CXX_COMPILER: clang++
             container: "debian_mpich"
-            MPIEXEC_PREFLAGS: "" 
-            USE_SANITIZER: "Address" 
+            MPIEXEC_PREFLAGS: ""
+            USE_SANITIZER: "Address"
             LSAN_OPTIONS: "suppressions=/root/htool/sanitizers/lsan.blacklist:verbosity=1:log_threads=1"
             CMAKE_BUILD_TYPE: Debug
             DOCKER_OPTIONS: " "
 
-        
-    container: 
+    container:
       image: pierremarchand/htool_testing_environments:${{ matrix.container }}
       options: ${{ matrix.DOCKER_OPTIONS }}
-    
+
     name: CI (${{ matrix.name }})
-    
+
     # Steps represent a sequence of tasks that will be executed as part of the job
     if: "!contains(github.event.head_commit.message, '[ci skip]')"
     steps:
-
       - name: Checkout htool
         uses: actions/checkout@v2
         with:
-          path: 'htool'
+          path: "htool"
       - name: Checkout hpddm
         uses: actions/checkout@v2
         with:
           repository: hpddm/hpddm
           ref: 964539730eaef7e78dff8b0a2d9060fb62be3316
-          path: 'hpddm'
+          path: "hpddm"
 
       - name: Build tests
         run: |
@@ -138,14 +136,9 @@ jobs:
           ctest --output-on-failure
 
       - name: Build examples
-        run: |  
-          cd htool/build
-          make -j2 build-examples
-
-      - name: Build performance tests
         run: |
           cd htool/build
-          make -j2 build-performance-tests
+          make -j2 build-examples
 
       - name: Check format
         run: |
