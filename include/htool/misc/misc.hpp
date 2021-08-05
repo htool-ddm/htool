@@ -16,7 +16,7 @@ constexpr bool is_complex() { return is_complex_t<T>::value; }
 
 // https://stackoverflow.com/a/63316255/5913047
 template <typename T, typename std::enable_if<!is_complex_t<T>::value, int>::type = 0>
-void conj_if_complex(T *in, int size) {}
+void conj_if_complex(T *, int) {}
 
 template <typename T, typename std::enable_if<is_complex_t<T>::value, int>::type = 0>
 void conj_if_complex(T *in, int size) {

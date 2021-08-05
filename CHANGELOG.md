@@ -28,7 +28,12 @@ All notable changes to this project will be documented in this file.
 
 ### Added
 
+- CMakefile checks consistency of version number across git/c++/CMake
+- Test for warnings coming from `include/htool/*`
+  
 ### Changed
+
+- Remove unnecessary arguments in HMatrix interface
 
 ## [0.6] - 2021-08-03
 

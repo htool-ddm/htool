@@ -403,7 +403,7 @@ class Matrix : public IMatrix<T> {
 
     // see https://stackoverflow.com/questions/6972368/stdenable-if-to-conditionally-compile-a-member-function for why  Q template parameter
     template <typename Q = T, typename std::enable_if<!is_complex_t<Q>::value, int>::type = 0>
-    void add_mvprod_row_major_sym(const T *const in, T *const out, const int &mu, char UPLO, char symmetry) const {
+    void add_mvprod_row_major_sym(const T *const in, T *const out, const int &mu, char UPLO, char) const {
         int nr  = this->nr;
         T alpha = 1;
         T beta  = 1;
