@@ -49,8 +49,8 @@ class VirtualHMatrix {
     virtual void set_use_permutation(bool choice)                 = 0;
 
     // Build
-    virtual void build(VirtualGenerator<T> &mat, const double *const xt, const double *const rt, const int *const tabt, const double *const gt, const double *const xs, const double *const rs, const int *const tabs, const double *const gs) = 0;
-    virtual void build_sym(VirtualGenerator<T> &mat, const double *const xt, const double *const rt, const int *const tabt, const double *const gt)                                                                                            = 0;
+    virtual void build(VirtualGenerator<T> &mat, const double *const xt, const int *const tabt, const double *const xs, const int *const tabs) = 0;
+    virtual void build_sym(VirtualGenerator<T> &mat, const double *const xt, const int *const tabt)                                            = 0;
 
     virtual void build_auto(VirtualGenerator<T> &mat, const double *const xt, const double *const xs) = 0;
     virtual void build_auto_sym(VirtualGenerator<T> &mat, const double *const xt)                     = 0;

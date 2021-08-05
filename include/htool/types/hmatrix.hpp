@@ -89,9 +89,7 @@ class HMatrix : public VirtualHMatrix<T> {
     void ComputeInfos(const std::vector<double> &mytimes);
 
     // Check arguments
-    void check_arguments(VirtualGenerator<T> &mat, const std::vector<R3> &xt, const std::vector<double> &rt, const std::vector<int> &tabt, const std::vector<double> &gt, const std::vector<R3> &xs, const std::vector<double> &rs, const std::vector<int> &tabs, const std::vector<double> &gs) const;
     void check_arguments(VirtualGenerator<T> &mat, const std::vector<R3> &xt, const std::vector<int> &tabt, const std::vector<R3> &xs, const std::vector<int> &tabs) const;
-    void check_arguments_sym(VirtualGenerator<T> &mat, const std::vector<R3> &xt, const std::vector<double> &rt, const std::vector<int> &tabt, const std::vector<double> &gt) const;
     void check_arguments_sym(VirtualGenerator<T> &mat, const std::vector<R3> &xt, const std::vector<int> &tabt) const;
 
     // Friends
@@ -101,7 +99,7 @@ class HMatrix : public VirtualHMatrix<T> {
   public:
     // Special constructor for hand-made build (for MultiHMatrix for example)
 
-    HMatrix(int space_dim0, int nr0, int nc0, const std::shared_ptr<VirtualCluster> &cluster_tree_t0, const std::shared_ptr<VirtualCluster> &cluster_tree_s0, char symmetry0 = 'N', char UPLO = 'N', const MPI_Comm comm0 = MPI_COMM_WORLD) : nr(nr0), nc(nc0), space_dim(space_dim0), symmetry(symmetry0), use_permutation(true), cluster_tree_t(cluster_tree_t0), cluster_tree_s(cluster_tree_s0), comm(comm0){};
+    HMatrix(int space_dim0, int nr0, int nc0, const std::shared_ptr<VirtualCluster> &cluster_tree_t0, const std::shared_ptr<VirtualCluster> &cluster_tree_s0, char symmetry0 = 'N', char UPLO = 'N', const MPI_Comm comm0 = MPI_COMM_WORLD) : nr(nr0), nc(nc0), space_dim(space_dim0), symmetry(symmetry0), UPLO(UPLO), use_permutation(true), cluster_tree_t(cluster_tree_t0), cluster_tree_s(cluster_tree_s0), comm(comm0){};
 
     // Constructor
     HMatrix(const std::shared_ptr<VirtualCluster> &cluster_tree_t0, const std::shared_ptr<VirtualCluster> &cluster_tree_s0, double epsilon0 = 1e-6, double eta0 = 10, char Symmetry = 'N', char UPLO = 'N', const int &reqrank0 = -1, const MPI_Comm comm0 = MPI_COMM_WORLD) : nr(0), nc(0), space_dim(cluster_tree_t0->get_space_dim()), reqrank(reqrank0), local_size(0), local_offset(0), symmetry(Symmetry), UPLO(UPLO), false_positive(0), use_permutation(true), ndofperelt(1), epsilon(epsilon0), eta(eta0), minclustersize(10), maxblocksize(1e6), minsourcedepth(0), mintargetdepth(0), cluster_tree_t(cluster_tree_t0), cluster_tree_s(cluster_tree_s0), comm(comm0) {
@@ -114,9 +112,9 @@ class HMatrix : public VirtualHMatrix<T> {
     };
 
     // Build
-    void build(VirtualGenerator<T> &mat, const double *const xt, const double *const rt, const int *const tabt, const double *const gt, const double *const xs, const double *const rs, const int *const tabs, const double *const gs);
+    void build(VirtualGenerator<T> &mat, const double *const xt, const int *const tabt, const double *const xs, const int *const tabs);
 
-    void build(VirtualGenerator<T> &mat, const std::vector<R3> &xt, const std::vector<double> &rt, const std::vector<int> &tabt, const std::vector<double> &gt, const std::vector<R3> &xs, const std::vector<double> &rs, const std::vector<int> &tabs, const std::vector<double> &gs) {
+    void build(VirtualGenerator<T> &mat, const std::vector<R3> &xt, const std::vector<int> &tabt, const std::vector<R3> &xs, const std::vector<int> &tabs) {
         if (this->space_dim != 3) {
             throw std::logic_error("[Htool error] Wrong space dimension");
         }
@@ -127,14 +125,14 @@ class HMatrix : public VirtualHMatrix<T> {
         for (int p = 0; p < xs.size(); p++) {
             std::copy_n(xs[p].data(), space_dim, &(x_array_s[this->space_dim * p]));
         }
-        this->check_arguments(mat, xt, rt, tabt, gt, xs, rs, tabs, gs);
-        this->build(mat, x_array_t.data(), rt.data(), tabt.data(), gt.data(), x_array_s.data(), rs.data(), tabs.data(), gs.data());
+        this->check_arguments(mat, xt, tabt, xs, tabs);
+        this->build(mat, x_array_t.data(), tabt.data(), x_array_s.data(), tabs.data());
     }
 
     // Symmetry build
-    void build_sym(VirtualGenerator<T> &mat, const double *const xt, const double *const rt, const int *const tabt, const double *const gt);
+    void build_sym(VirtualGenerator<T> &mat, const double *const xt, const int *const tabt);
 
-    void build_sym(VirtualGenerator<T> &mat, const std::vector<R3> &xt, const std::vector<double> &rt, const std::vector<int> &tabt, const std::vector<double> &gt) {
+    void build_sym(VirtualGenerator<T> &mat, const std::vector<R3> &xt, const std::vector<int> &tabt) {
         if (this->space_dim != 3) {
             throw std::logic_error("[Htool error] Wrong space dimension");
         }
@@ -142,8 +140,8 @@ class HMatrix : public VirtualHMatrix<T> {
         for (int p = 0; p < xt.size(); p++) {
             std::copy_n(xt[p].data(), space_dim, &(x_array_t[this->space_dim * p]));
         }
-        this->check_arguments_sym(mat, xt, rt, tabt, gt);
-        this->build_sym(mat, x_array_t.data(), rt.data(), tabt.data(), gt.data());
+        this->check_arguments_sym(mat, xt, tabt);
+        this->build_sym(mat, x_array_t.data(), tabt.data());
     }
 
     // Build auto
@@ -284,26 +282,11 @@ class HMatrix : public VirtualHMatrix<T> {
 };
 
 template <typename T, template <typename> class LowRankMatrix, class AdmissibleCondition>
-void HMatrix<T, LowRankMatrix, AdmissibleCondition>::check_arguments(VirtualGenerator<T> &mat, const std::vector<R3> &xt, const std::vector<double> &rt, const std::vector<int> &tabt, const std::vector<double> &gt, const std::vector<R3> &xs, const std::vector<double> &rs, const std::vector<int> &tabs, const std::vector<double> &gs) const {
-    if (!(mat.nb_rows() == tabt.size() && mat.nb_cols() == tabs.size()
-          && mat.nb_rows() == ndofperelt * xt.size() && mat.nb_cols() == ndofperelt * xs.size()
-          && mat.nb_rows() == ndofperelt * rt.size() && mat.nb_cols() == ndofperelt * rs.size()
-          && mat.nb_rows() == ndofperelt * gt.size() && mat.nb_cols() == ndofperelt * gs.size())) {
-        throw std::invalid_argument("[Htool error] Invalid size in arguments for building HMatrix");
-    }
-}
-
-template <typename T, template <typename> class LowRankMatrix, class AdmissibleCondition>
 void HMatrix<T, LowRankMatrix, AdmissibleCondition>::check_arguments(VirtualGenerator<T> &mat, const std::vector<R3> &xt, const std::vector<int> &tabt, const std::vector<R3> &xs, const std::vector<int> &tabs) const {
     if (!(mat.nb_rows() == tabt.size() && mat.nb_cols() == tabs.size()
           && mat.nb_rows() == ndofperelt * xt.size() && mat.nb_cols() == ndofperelt * xs.size())) {
         throw std::invalid_argument("[Htool error] Invalid size in arguments for building HMatrix");
     }
-}
-
-template <typename T, template <typename> class LowRankMatrix, class AdmissibleCondition>
-void HMatrix<T, LowRankMatrix, AdmissibleCondition>::check_arguments_sym(VirtualGenerator<T> &mat, const std::vector<R3> &xt, const std::vector<double> &rt, const std::vector<int> &tabt, const std::vector<double> &gt) const {
-    this->check_arguments(mat, xt, rt, tabt, gt, xt, rt, tabt, gt);
 }
 
 template <typename T, template <typename> class LowRankMatrix, class AdmissibleCondition>
@@ -313,7 +296,7 @@ void HMatrix<T, LowRankMatrix, AdmissibleCondition>::check_arguments_sym(Virtual
 
 // build
 template <typename T, template <typename> class LowRankMatrix, class AdmissibleCondition>
-void HMatrix<T, LowRankMatrix, AdmissibleCondition>::build(VirtualGenerator<T> &mat, const double *const xt, const double *const rt, const int *const tabt, const double *const gt, const double *const xs, const double *const rs, const int *const tabs, const double *const gs) {
+void HMatrix<T, LowRankMatrix, AdmissibleCondition>::build(VirtualGenerator<T> &mat, const double *const xt, const int *const tabt, const double *const xs, const int *const tabs) {
 
     MPI_Comm_size(comm, &sizeWorld);
     MPI_Comm_rank(comm, &rankWorld);
@@ -356,7 +339,7 @@ void HMatrix<T, LowRankMatrix, AdmissibleCondition>::build(VirtualGenerator<T> &
 
 // Symmetry build
 template <typename T, template <typename> class LowRankMatrix, class AdmissibleCondition>
-void HMatrix<T, LowRankMatrix, AdmissibleCondition>::build_sym(VirtualGenerator<T> &mat, const double *const xt, const double *const rt, const int *const tabt, const double *const gt) {
+void HMatrix<T, LowRankMatrix, AdmissibleCondition>::build_sym(VirtualGenerator<T> &mat, const double *const xt, const int *const tabt) {
 
     MPI_Comm_size(comm, &sizeWorld);
     MPI_Comm_rank(comm, &rankWorld);
@@ -405,7 +388,7 @@ void HMatrix<T, LowRankMatrix, AdmissibleCondition>::build_auto(VirtualGenerator
     std::vector<int> tabt(this->ndofperelt * mat.nb_rows()), tabs(this->ndofperelt * mat.nb_cols());
     std::iota(tabt.begin(), tabt.end(), int(0));
     std::iota(tabs.begin(), tabs.end(), int(0));
-    this->build(mat, xt, std::vector<double>(mat.nb_rows(), 0).data(), tabt.data(), std::vector<double>(mat.nb_rows(), 1).data(), xs, std::vector<double>(mat.nb_cols(), 0).data(), tabs.data(), std::vector<double>(mat.nb_cols(), 1).data());
+    this->build(mat, xt, tabt.data(), xs, tabs.data());
 }
 
 // Symmetry auto build
@@ -413,7 +396,7 @@ template <typename T, template <typename> class LowRankMatrix, class AdmissibleC
 void HMatrix<T, LowRankMatrix, AdmissibleCondition>::build_auto_sym(VirtualGenerator<T> &mat, const double *const xt) {
     std::vector<int> tabt(this->ndofperelt * mat.nb_rows());
     std::iota(tabt.begin(), tabt.end(), int(0));
-    this->build_sym(mat, xt, std::vector<double>(mat.nb_rows(), 0).data(), tabt.data(), std::vector<double>(mat.nb_rows(), 1).data());
+    this->build_sym(mat, xt, tabt.data());
 }
 
 // Compute blocks recursively

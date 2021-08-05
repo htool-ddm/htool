@@ -116,6 +116,7 @@ jobs:
         uses: actions/checkout@v2
         with:
           path: "htool"
+          fetch-depth: 0 # to get tags
       - name: Checkout hpddm
         uses: actions/checkout@v2
         with:

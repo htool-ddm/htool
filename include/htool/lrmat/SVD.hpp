@@ -92,7 +92,7 @@ class SVD final : public LowRankMatrix<T> {
         }
     }
 
-    void build(const VirtualGenerator<T> &A, const VirtualCluster &t, const double *const xt, const int *const tabt, const VirtualCluster &s, const double *const xs, const int *const tabs) {
+    void build(const VirtualGenerator<T> &A, const VirtualCluster &, const double *const, const int *const, const VirtualCluster &, const double *const, const int *const) {
         this->build(A);
     }
     T get_singular_value(int i) { return singular_values[i]; }
