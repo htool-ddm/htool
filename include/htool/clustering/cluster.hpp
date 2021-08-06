@@ -64,7 +64,7 @@ class Cluster : public VirtualCluster {
 
         // Impossible value for nb_sons
         if (nb_sons == 0 || nb_sons == 1)
-            throw std::string("Impossible value for nb_sons:" + NbrToStr<int>(nb_sons));
+            throw std::string("Impossible value for nb_sons:" + NbrToStr<int>(nb_sons)); // LCOV_EXCL_LINE
 
         // nb_sons=-1 is automatic mode
         if (nb_sons == -1) {
@@ -108,7 +108,7 @@ class Cluster : public VirtualCluster {
 
         // Impossible value for nb_sons
         if (nb_sons == 0 || nb_sons == 1)
-            throw std::string("Impossible value for nb_sons:" + NbrToStr<int>(nb_sons));
+            throw std::string("Impossible value for nb_sons:" + NbrToStr<int>(nb_sons)); // LCOV_EXCL_LINE
 
         // nb_sons=-1 is automatic mode
         if (nb_sons == -1) {
@@ -228,7 +228,7 @@ class Cluster : public VirtualCluster {
 
     std::vector<int> get_local_perm() const {
         if (!LocalPermutation) {
-            throw std::logic_error("[Htool error] Permutation is not local, get_local_perm cannot be used");
+            throw std::logic_error("[Htool error] Permutation is not local, get_local_perm cannot be used"); // LCOV_EXCL_LINE
         } else {
             return std::vector<int>(permutation->data() + root->local_cluster->get_offset(), permutation->data() + root->local_cluster->get_offset() + root->local_cluster->get_size());
         }
@@ -271,7 +271,7 @@ class Cluster : public VirtualCluster {
 
     void set_minclustersize(unsigned int minclustersize0) {
         if (minclustersize0 == 0) {
-            throw std::invalid_argument("[Htool error] MinClusterSize parameter cannot be zero");
+            throw std::invalid_argument("[Htool error] MinClusterSize parameter cannot be zero"); // LCOV_EXCL_LINE
         }
         minclustersize = minclustersize0;
     }

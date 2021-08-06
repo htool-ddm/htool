@@ -36,7 +36,6 @@ class VirtualHMatrix {
     virtual double get_epsilon() const                            = 0;
     virtual double get_eta() const                                = 0;
     virtual int get_ndofperelt() const                            = 0;
-    virtual int get_minclustersize() const                        = 0;
     virtual int get_minsourcedepth() const                        = 0;
     virtual int get_mintargetdepth() const                        = 0;
     virtual int get_maxblocksize() const                          = 0;

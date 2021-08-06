@@ -36,8 +36,12 @@ int test_hmat_cluster(int argc, char *argv[], double margin = 0) {
     distance[2] = 30;
     distance[3] = 40;
 
-    double epsilon = 1e-8;
-    double eta     = 0.1;
+    double epsilon     = 1e-8;
+    double eta         = 0.1;
+    int minclustersize = 10;
+    int maxblocksize   = 1000000;
+    int minsourcedepth = 0;
+    int mintargetdepth = 0;
 
     for (int idist = 0; idist < ndistance; idist++) {
         // cout << "Distance between the clusters: " << distance[idist] << endl;
@@ -68,8 +72,27 @@ int test_hmat_cluster(int argc, char *argv[], double margin = 0) {
         s->build(nc, p2.data(), 2);
 
         HMatrix<double, LowRankMatrix, RjasanowSteinbach> HA(t, s, epsilon, eta);
+        HA.set_epsilon(epsilon);
+        HA.set_eta(eta);
+        HA.set_ndofperelt(1);
+        HA.set_minsourcedepth(minsourcedepth);
+        HA.set_mintargetdepth(mintargetdepth);
+        HA.set_mintargetdepth(mintargetdepth);
+        HA.set_maxblocksize(maxblocksize);
+
+        // Getters
+        test = test || !(abs(HA.get_epsilon() - epsilon) < 1e-10);
+        test = test || !(abs(HA.get_eta() - eta) < 1e-10);
+        test = test || !(HA.get_minsourcedepth() == minsourcedepth);
+        test = test || !(HA.get_mintargetdepth() == mintargetdepth);
+        test = test || !(HA.get_maxblocksize() == maxblocksize);
+        test = test || !(HA.get_ndofperelt() == 1);
+        test = test || !(HA.get_MasterOffset_s().size() == size);
+        test = test || !(HA.get_MasterOffset_t().size() == size);
+
         HA.build_auto(A, p1.data(), p2.data());
         HA.print_infos();
+        auto info = HA.get_infos();
 
         // Random vector
         vector<double> f(nc, 1);

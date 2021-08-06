@@ -8,7 +8,7 @@ namespace htool {
 enum class SplittingTypes { GeometricSplitting,
                             RegularSplitting };
 
-std::vector<std::vector<int>> regular_splitting(const double *const x, const int *const tab, std::vector<int> &num, VirtualCluster const *const curr_cluster, int nb_sons, const std::vector<double> &dir) {
+inline std::vector<std::vector<int>> regular_splitting(const double *const x, const int *const tab, std::vector<int> &num, VirtualCluster const *const curr_cluster, int nb_sons, const std::vector<double> &dir) {
 
     std::vector<std::vector<int>> numbering(nb_sons);
     std::vector<double> xc = curr_cluster->get_ctr();
@@ -60,7 +60,7 @@ std::vector<std::vector<int>> regular_splitting(const double *const x, const int
     return numbering;
 }
 
-std::vector<std::vector<int>> geometric_splitting(const double *const x, const int *const tab, std::vector<int> &num, VirtualCluster const *const curr_cluster, int nb_sons, const std::vector<double> &dir) {
+inline std::vector<std::vector<int>> geometric_splitting(const double *const x, const int *const tab, std::vector<int> &num, VirtualCluster const *const curr_cluster, int nb_sons, const std::vector<double> &dir) {
     std::vector<std::vector<int>> numbering(nb_sons);
 
     // Geometry of current cluster

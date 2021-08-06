@@ -14,8 +14,8 @@ int test_solver_ddm(int argc, char *argv[], int mu, char symmetric) {
     // Input file
     if (argc < 2) { // argc should be 5 or more for correct execution
         // We print argv[0] assuming it is the program name
-        cout << "usage: " << argv[0] << " datapath\n";
-        return 1;
+        cout << "usage: " << argv[0] << " datapath\n"; // LCOV_EXCL_LINE
+        return 1;                                      // LCOV_EXCL_LINE
     }
     string datapath = argv[1];
 

@@ -49,10 +49,10 @@ if(CMAKE_PROJECT_NAME STREQUAL PROJECT_NAME)
     check_version_number("include/htool/misc/define.hpp" "\#define HTOOL_VERSION")
 
     # Sanitizers
-    include(cmake/sanitizers.cmake)
+    include(cmake-scripts/sanitizers.cmake)
 
     # Formatting
-    include(cmake/formatting.cmake)
+    include(cmake-scripts/formatting.cmake)
     file(
         GLOB_RECURSE
         ALL_CODE_FILES
@@ -188,7 +188,11 @@ if(HTOOL_WITH_EXAMPLES)
 endif()
 
 # Add tests
-if((CMAKE_PROJECT_NAME STREQUAL PROJECT_NAME OR MODERN_CMAKE_BUILD_TESTING) AND BUILD_TESTING)
+if((CMAKE_PROJECT_NAME STREQUAL PROJECT_NAME) AND BUILD_TESTING)
+    if(CODE_COVERAGE AND (CMAKE_C_COMPILER_ID MATCHES "GNU" OR CMAKE_CXX_COMPILER_ID MATCHES "GNU"))
+        target_compile_options(htool INTERFACE -fprofile-arcs -ftest-coverage)
+        target_link_libraries(htool INTERFACE gcov)
+    endif()
     add_custom_target(build-tests)
     add_subdirectory(tests EXCLUDE_FROM_ALL)
 endif()

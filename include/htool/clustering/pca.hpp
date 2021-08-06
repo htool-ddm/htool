@@ -70,7 +70,7 @@ class PCA {
             } else if (curr->get_space_dim() == 3) {
                 dir = solve_EVP_3(cov);
             } else {
-                throw std::logic_error("[Htool error] clustering not define for spatial dimension !=2 and !=3");
+                throw std::logic_error("[Htool error] clustering not define for spatial dimension !=2 and !=3"); // LCOV_EXCL_LINE
             }
 
             // Creating sons

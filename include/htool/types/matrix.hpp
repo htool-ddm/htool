@@ -443,7 +443,7 @@ class Matrix : public IMatrix<T> {
                 } else if (symmetry == 'H') {
                     Blas<T>::hemv(&UPLO, &nr, &alpha, &(this->mat[0]), &lda, in, &incx, &beta, out, &incy);
                 } else {
-                    throw std::invalid_argument("[Htool error] Invalid arguments for add_mvprod_row_major_sym");
+                    throw std::invalid_argument("[Htool error] Invalid arguments for add_mvprod_row_major_sym"); // LCOV_EXCL_LINE
                 }
 
             } else {
@@ -459,7 +459,7 @@ class Matrix : public IMatrix<T> {
                 } else if (symmetry == 'H') {
                     Blas<T>::hemm(&side, &UPLO, &M, &N, &alpha, &(this->mat[0]), &lda, in, &ldb, &beta, out, &ldc);
                 } else {
-                    throw std::invalid_argument("[Htool error] Invalid arguments for add_mvprod_row_major_sym");
+                    throw std::invalid_argument("[Htool error] Invalid arguments for add_mvprod_row_major_sym"); // LCOV_EXCL_LINE
                 }
             }
         }
@@ -499,8 +499,8 @@ class Matrix : public IMatrix<T> {
         std::ofstream out(file, std::ios::out | std::ios::binary | std::ios::trunc);
 
         if (!out) {
-            std::cout << "Cannot open file." << std::endl;
-            return 1;
+            std::cout << "Cannot open file." << std::endl; // LCOV_EXCL_LINE
+            return 1;                                      // LCOV_EXCL_LINE
         }
         int rows = this->nr;
         int cols = this->nc;
@@ -521,8 +521,8 @@ class Matrix : public IMatrix<T> {
         std::ifstream in(file, std::ios::in | std::ios::binary);
 
         if (!in) {
-            std::cout << "Cannot open file." << std::endl;
-            return 1;
+            std::cout << "Cannot open file." << std::endl; // LCOV_EXCL_LINE
+            return 1;                                      // LCOV_EXCL_LINE
         }
 
         int rows = 0, cols = 0;
