@@ -17,7 +17,7 @@ int test_blocks(int argc, char *argv[], bool symmetric) {
     srand(1);
     bool test = 0;
 
-    int size = 20;
+    int size = 200;
     double z = 1;
     vector<double> p(3 * size);
 
@@ -36,8 +36,8 @@ int test_blocks(int argc, char *argv[], bool symmetric) {
     const Block<AdmissibilityCondition> &diagonal_block = B.get_local_diagonal_block();
 
     if (diagonal_block.get_source_cluster().get_offset() != t.get_local_offset() && diagonal_block.get_source_cluster().get_size() != t.get_local_size() && diagonal_block.get_target_cluster().get_offset() != t.get_local_offset() && diagonal_block.get_target_cluster().get_size() != t.get_local_size()) {
-        test = true;
-        std::cout << "Wrong diagonal block " << test << std::endl;
+        test = true;                                               // LCOV_EXCL_LINE
+        std::cout << "Wrong diagonal block " << test << std::endl; // LCOV_EXCL_LINE
     }
 
     // Check that the whole matrix is here
@@ -45,7 +45,6 @@ int test_blocks(int argc, char *argv[], bool symmetric) {
     const std::vector<Block<AdmissibilityCondition> *> &tasks = B.get_tasks();
 
     for (auto block : tasks) {
-        std::cout << block->get_target_cluster().get_offset() << " " << block->get_target_cluster().get_size() << " " << block->get_source_cluster().get_offset() << " " << block->get_source_cluster().get_size() << " " << std::endl;
         int offset_i = block->get_target_cluster().get_offset();
         int size_i   = block->get_target_cluster().get_size();
         int offset_j = block->get_source_cluster().get_offset();
@@ -57,7 +56,6 @@ int test_blocks(int argc, char *argv[], bool symmetric) {
             }
         }
     }
-    std::cout << represented << std::endl;
     test = test || !(std::all_of(represented.begin(), represented.end(), [](int i) { return (i == 1 ? true : false); }));
     std::cout << "Full representation " << test << std::endl;
 

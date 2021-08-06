@@ -319,7 +319,7 @@ class Block {
     void set_minsourcedepth(int minsourcedepth0) { minsourcedepth = minsourcedepth0; }
     void set_maxblocksize(unsigned int maxblocksize0) {
         if (maxblocksize0 == 0) {
-            throw std::invalid_argument("[Htool error] MaxBlockSize parameter cannot be zero");
+            throw std::invalid_argument("[Htool error] MaxBlockSize parameter cannot be zero"); // LCOV_EXCL_LINE
         }
         maxblocksize = maxblocksize0;
     }

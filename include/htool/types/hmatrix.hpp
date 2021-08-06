@@ -54,7 +54,6 @@ class HMatrix : public VirtualHMatrix<T> {
     int ndofperelt;
     double epsilon;
     double eta;
-    int minclustersize;
     int maxblocksize;
     int minsourcedepth;
     int mintargetdepth;
@@ -102,12 +101,12 @@ class HMatrix : public VirtualHMatrix<T> {
     HMatrix(int space_dim0, int nr0, int nc0, const std::shared_ptr<VirtualCluster> &cluster_tree_t0, const std::shared_ptr<VirtualCluster> &cluster_tree_s0, char symmetry0 = 'N', char UPLO = 'N', const MPI_Comm comm0 = MPI_COMM_WORLD) : nr(nr0), nc(nc0), space_dim(space_dim0), symmetry(symmetry0), UPLO(UPLO), use_permutation(true), cluster_tree_t(cluster_tree_t0), cluster_tree_s(cluster_tree_s0), comm(comm0){};
 
     // Constructor
-    HMatrix(const std::shared_ptr<VirtualCluster> &cluster_tree_t0, const std::shared_ptr<VirtualCluster> &cluster_tree_s0, double epsilon0 = 1e-6, double eta0 = 10, char Symmetry = 'N', char UPLO = 'N', const int &reqrank0 = -1, const MPI_Comm comm0 = MPI_COMM_WORLD) : nr(0), nc(0), space_dim(cluster_tree_t0->get_space_dim()), reqrank(reqrank0), local_size(0), local_offset(0), symmetry(Symmetry), UPLO(UPLO), false_positive(0), use_permutation(true), ndofperelt(1), epsilon(epsilon0), eta(eta0), minclustersize(10), maxblocksize(1e6), minsourcedepth(0), mintargetdepth(0), cluster_tree_t(cluster_tree_t0), cluster_tree_s(cluster_tree_s0), comm(comm0) {
+    HMatrix(const std::shared_ptr<VirtualCluster> &cluster_tree_t0, const std::shared_ptr<VirtualCluster> &cluster_tree_s0, double epsilon0 = 1e-6, double eta0 = 10, char Symmetry = 'N', char UPLO = 'N', const int &reqrank0 = -1, const MPI_Comm comm0 = MPI_COMM_WORLD) : nr(0), nc(0), space_dim(cluster_tree_t0->get_space_dim()), reqrank(reqrank0), local_size(0), local_offset(0), symmetry(Symmetry), UPLO(UPLO), false_positive(0), use_permutation(true), ndofperelt(1), epsilon(epsilon0), eta(eta0), maxblocksize(1e6), minsourcedepth(0), mintargetdepth(0), cluster_tree_t(cluster_tree_t0), cluster_tree_s(cluster_tree_s0), comm(comm0) {
         if (!((symmetry == 'N' || symmetry == 'H' || symmetry == 'S')
               && (UPLO == 'N' || UPLO == 'L' || UPLO == 'U')
               && ((symmetry == 'N' && UPLO == 'N') || (symmetry != 'N' && UPLO != 'N'))
               && ((symmetry == 'H' && is_complex<T>()) || symmetry != 'H'))) {
-            throw std::invalid_argument("[Htool error] Invalid arguments to create HMatrix");
+            throw std::invalid_argument("[Htool error] Invalid arguments to create HMatrix"); // LCOV_EXCL_LINE
         }
     };
 
@@ -116,7 +115,7 @@ class HMatrix : public VirtualHMatrix<T> {
 
     void build(VirtualGenerator<T> &mat, const std::vector<R3> &xt, const std::vector<int> &tabt, const std::vector<R3> &xs, const std::vector<int> &tabs) {
         if (this->space_dim != 3) {
-            throw std::logic_error("[Htool error] Wrong space dimension");
+            throw std::logic_error("[Htool error] Wrong space dimension"); // LCOV_EXCL_LINE
         }
         std::vector<double> x_array_t(xt.size() * this->space_dim), x_array_s(xs.size() * this->space_dim);
         for (int p = 0; p < xt.size(); p++) {
@@ -134,7 +133,7 @@ class HMatrix : public VirtualHMatrix<T> {
 
     void build_sym(VirtualGenerator<T> &mat, const std::vector<R3> &xt, const std::vector<int> &tabt) {
         if (this->space_dim != 3) {
-            throw std::logic_error("[Htool error] Wrong space dimension");
+            throw std::logic_error("[Htool error] Wrong space dimension"); // LCOV_EXCL_LINE
         }
         std::vector<double> x_array_t(xt.size() * this->space_dim);
         for (int p = 0; p < xt.size(); p++) {
@@ -149,7 +148,7 @@ class HMatrix : public VirtualHMatrix<T> {
 
     void build_auto(VirtualGenerator<T> &mat, const std::vector<R3> &xt, const std::vector<R3> &xs) {
         if (this->space_dim != 3) {
-            throw std::logic_error("[Htool error] Wrong space dimension");
+            throw std::logic_error("[Htool error] Wrong space dimension"); // LCOV_EXCL_LINE
         }
         std::vector<double> x_array_t(xt.size() * this->space_dim), x_array_s(xs.size() * this->space_dim);
         for (int p = 0; p < xt.size(); p++) {
@@ -166,7 +165,7 @@ class HMatrix : public VirtualHMatrix<T> {
 
     void build_auto_sym(VirtualGenerator<T> &mat, const std::vector<R3> &xt) {
         if (this->space_dim != 3) {
-            throw std::logic_error("[Htool error] Wrong space dimension");
+            throw std::logic_error("[Htool error] Wrong space dimension"); // LCOV_EXCL_LINE
         }
         std::vector<double> x_array_t(xt.size() * this->space_dim);
         for (int p = 0; p < xt.size(); p++) {
@@ -224,7 +223,6 @@ class HMatrix : public VirtualHMatrix<T> {
     double get_epsilon() const { return this->epsilon; };
     double get_eta() const { return this->eta; };
     int get_ndofperelt() const { return this->ndofperelt; };
-    int get_minclustersize() const { return this->minclustersize; };
     int get_minsourcedepth() const { return this->minsourcedepth; };
     int get_mintargetdepth() const { return this->mintargetdepth; };
     int get_maxblocksize() const { return this->maxblocksize; };
@@ -285,7 +283,7 @@ template <typename T, template <typename> class LowRankMatrix, class AdmissibleC
 void HMatrix<T, LowRankMatrix, AdmissibleCondition>::check_arguments(VirtualGenerator<T> &mat, const std::vector<R3> &xt, const std::vector<int> &tabt, const std::vector<R3> &xs, const std::vector<int> &tabs) const {
     if (!(mat.nb_rows() == tabt.size() && mat.nb_cols() == tabs.size()
           && mat.nb_rows() == ndofperelt * xt.size() && mat.nb_cols() == ndofperelt * xs.size())) {
-        throw std::invalid_argument("[Htool error] Invalid size in arguments for building HMatrix");
+        throw std::invalid_argument("[Htool error] Invalid size in arguments for building HMatrix"); // LCOV_EXCL_LINE
     }
 }
 
@@ -1073,7 +1071,7 @@ void HMatrix<T, LowRankMatrix, AdmissibleCondition>::mvprod_local_to_local(const
     int local_size_source = cluster_tree_s->get_masteroffset(rankWorld).second;
 
     if (!(cluster_tree_s->IsLocal()) || !(cluster_tree_t->IsLocal())) {
-        throw std::logic_error("[Htool error] Permutation is not local, mvprod_local_to_local cannot be used");
+        throw std::logic_error("[Htool error] Permutation is not local, mvprod_local_to_local cannot be used"); // LCOV_EXCL_LINE
     }
     if (mu == 1) {
         std::vector<T> in_perm(local_size_source), out_perm(local_size);
@@ -1270,7 +1268,7 @@ void HMatrix<T, LowRankMatrix, AdmissibleCondition>::cluster_to_target_permutati
 template <typename T, template <typename> class LowRankMatrix, class AdmissibleCondition>
 void HMatrix<T, LowRankMatrix, AdmissibleCondition>::local_source_to_local_cluster(const T *const in, T *const out, MPI_Comm comm) const {
     if (!cluster_tree_s->IsLocal()) {
-        throw std::logic_error("[Htool error] Permutation is not local, local_source_to_local_cluster cannot be used");
+        throw std::logic_error("[Htool error] Permutation is not local, local_source_to_local_cluster cannot be used"); // LCOV_EXCL_LINE
     } else {
         int rankWorld;
         MPI_Comm_rank(comm, &rankWorld);
@@ -1283,7 +1281,7 @@ void HMatrix<T, LowRankMatrix, AdmissibleCondition>::local_source_to_local_clust
 template <typename T, template <typename> class LowRankMatrix, class AdmissibleCondition>
 void HMatrix<T, LowRankMatrix, AdmissibleCondition>::local_cluster_to_local_target(const T *const in, T *const out, MPI_Comm comm) const {
     if (!cluster_tree_t->IsLocal()) {
-        throw std::logic_error("[Htool error] Permutation is not local, local_cluster_to_local_target cannot be used");
+        throw std::logic_error("[Htool error] Permutation is not local, local_cluster_to_local_target cannot be used"); // LCOV_EXCL_LINE
     } else {
         int rankWorld;
         MPI_Comm_rank(comm, &rankWorld);
@@ -1387,7 +1385,7 @@ void HMatrix<T, LowRankMatrix, AdmissibleCondition>::save_infos(const std::strin
             }
             outputfile.close();
         } else {
-            std::cout << "Unable to create " << outputname << std::endl;
+            std::cout << "Unable to create " << outputname << std::endl; // LCOV_EXCL_LINE
         }
     }
 }
@@ -1407,7 +1405,7 @@ void HMatrix<T, LowRankMatrix, AdmissibleCondition>::save_plot(const std::string
         }
         outputfile.close();
     } else {
-        std::cout << "Unable to create " << outputname << std::endl;
+        std::cout << "Unable to create " << outputname << std::endl; // LCOV_EXCL_LINE
     }
 }
 
@@ -1467,7 +1465,7 @@ Matrix<T> HMatrix<T, LowRankMatrix, AdmissibleCondition>::get_local_dense_perm()
 template <typename T, template <typename> class LowRankMatrix, class AdmissibleCondition>
 void HMatrix<T, LowRankMatrix, AdmissibleCondition>::copy_local_dense_perm(T *ptr) const {
     if (!(cluster_tree_t->IsLocal())) {
-        throw std::logic_error("[Htool error] Permutation is not local, get_local_dense_perm cannot be used");
+        throw std::logic_error("[Htool error] Permutation is not local, get_local_dense_perm cannot be used"); // LCOV_EXCL_LINE
     }
 
     int local_size_source = cluster_tree_s->get_masteroffset(rankWorld).second;
@@ -1549,10 +1547,10 @@ std::vector<T> HMatrix<T, LowRankMatrix, AdmissibleCondition>::get_local_diagona
 template <typename T, template <typename> class LowRankMatrix, class AdmissibleCondition>
 void HMatrix<T, LowRankMatrix, AdmissibleCondition>::copy_local_diagonal(T *ptr, bool permutation) const {
     if (!(cluster_tree_t->IsLocal()) && permutation) {
-        throw std::logic_error("[Htool error] Permutation is not local, get_local_diagonal cannot be used");
+        throw std::logic_error("[Htool error] Permutation is not local, get_local_diagonal cannot be used"); // LCOV_EXCL_LINE
     }
     if (cluster_tree_t != cluster_tree_s) {
-        throw std::logic_error("[Htool error] Matrix is not square a priori, get_local_diagonal cannot be used");
+        throw std::logic_error("[Htool error] Matrix is not square a priori, get_local_diagonal cannot be used"); // LCOV_EXCL_LINE
     }
 
     std::vector<T> diagonal(local_size, 0);
@@ -1585,10 +1583,10 @@ Matrix<T> HMatrix<T, LowRankMatrix, AdmissibleCondition>::get_local_diagonal_blo
 template <typename T, template <typename> class LowRankMatrix, class AdmissibleCondition>
 void HMatrix<T, LowRankMatrix, AdmissibleCondition>::copy_local_diagonal_block(T *ptr, bool permutation) const {
     if ((!(cluster_tree_t->IsLocal()) || !(cluster_tree_s->IsLocal())) && permutation) {
-        throw std::logic_error("[Htool error] Permutation is not local, get_local_diagonal_block cannot be used");
+        throw std::logic_error("[Htool error] Permutation is not local, get_local_diagonal_block cannot be used"); // LCOV_EXCL_LINE
     }
     if (cluster_tree_t != cluster_tree_s) {
-        throw std::logic_error("[Htool error] Matrix is not square a priori, get_local_diagonal_block cannot be used");
+        throw std::logic_error("[Htool error] Matrix is not square a priori, get_local_diagonal_block cannot be used"); // LCOV_EXCL_LINE
     }
 
     int local_offset_source = cluster_tree_s->get_masteroffset(rankWorld).first;

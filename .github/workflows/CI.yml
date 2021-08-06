@@ -34,6 +34,7 @@ jobs:
             USE_SANITIZER: ""
             CMAKE_BUILD_TYPE: Release
             DOCKER_OPTIONS: " "
+            CODE_COVERAGE: "OFF"
 
           - name: "Ubuntu OpenMPI clang++"
             CC_COMPILER: clang
@@ -43,6 +44,7 @@ jobs:
             USE_SANITIZER: ""
             CMAKE_BUILD_TYPE: Release
             DOCKER_OPTIONS: " "
+            CODE_COVERAGE: "OFF"
 
           - name: "Ubuntu MPICH g++"
             CC_COMPILER: gcc
@@ -53,6 +55,7 @@ jobs:
             LSAN_OPTIONS: "suppressions=/root/htool/sanitizers/lsan.blacklist:verbosity=1:log_threads=1"
             CMAKE_BUILD_TYPE: Debug
             DOCKER_OPTIONS: " "
+            CODE_COVERAGE: "ON"
 
           - name: "Ubuntu MPICH clang++"
             CC_COMPILER: clang
@@ -63,6 +66,7 @@ jobs:
             LSAN_OPTIONS: "suppressions=/root/htool/sanitizers/lsan.blacklist:verbosity=1:log_threads=1"
             CMAKE_BUILD_TYPE: Debug
             DOCKER_OPTIONS: " "
+            CODE_COVERAGE: "OFF"
 
           # Hangs on github
           # - name: "Debian OpenMPI g++"
@@ -73,7 +77,6 @@ jobs:
           #   USE_SANITIZER: ""
           #   CMAKE_BUILD_TYPE: Debug
           #   DOCKER_OPTIONS: "--cap-add SYS_PTRACE"
-
           # - name: "Debian OpenMPI clang++"
           #   CC_COMPILER: clang
           #   CXX_COMPILER: clang++
@@ -82,7 +85,7 @@ jobs:
           #   USE_SANITIZER: ""
           #   CMAKE_BUILD_TYPE: Debug
           #   DOCKER_OPTIONS: "--cap-add SYS_PTRACE"
-
+          
           - name: "Debian MPICH g++"
             CC_COMPILER: gcc
             CXX_COMPILER: g++
@@ -92,7 +95,7 @@ jobs:
             LSAN_OPTIONS: "suppressions=/root/htool/sanitizers/lsan.blacklist:verbosity=1:log_threads=1"
             CMAKE_BUILD_TYPE: Debug
             DOCKER_OPTIONS: " "
-
+            CODE_COVERAGE: "OFF"
           - name: "Debian MPICH clang++"
             CC_COMPILER: clang
             CXX_COMPILER: clang++
@@ -102,6 +105,7 @@ jobs:
             LSAN_OPTIONS: "suppressions=/root/htool/sanitizers/lsan.blacklist:verbosity=1:log_threads=1"
             CMAKE_BUILD_TYPE: Debug
             DOCKER_OPTIONS: " "
+            CODE_COVERAGE: "OFF"
 
     container:
       image: pierremarchand/htool_testing_environments:${{ matrix.container }}
@@ -127,7 +131,7 @@ jobs:
       - name: Build tests
         run: |
           cd htool && mkdir build && cd build
-          CC=${{ matrix.CC_COMPILER }} CXX=${{ matrix.CXX_COMPILER }} cmake -DHTOOL_WITH_EXAMPLES=1 -DMPIEXEC_PREFLAGS="${{ matrix.MPIEXEC_PREFLAGS }}" -DUSE_SANITIZER=${{ matrix.USE_SANITIZER }} -DCMAKE_BUILD_TYPE=${{ matrix.CMAKE_BUILD_TYPE }} ../
+          CC=${{ matrix.CC_COMPILER }} CXX=${{ matrix.CXX_COMPILER }} cmake -DHTOOL_WITH_EXAMPLES=1 -DMPIEXEC_PREFLAGS="${{ matrix.MPIEXEC_PREFLAGS }}" -DUSE_SANITIZER=${{ matrix.USE_SANITIZER }} -DCMAKE_BUILD_TYPE=${{ matrix.CMAKE_BUILD_TYPE }} -DCODE_COVERAGE=${{ matrix.CODE_COVERAGE }} ../
           make -j2 build-tests
 
       - name: Run tests
@@ -147,3 +151,19 @@ jobs:
           make format
           make cmake-format
           git diff --exit-code
+
+      - name: Generate coverage reports
+        if: matrix.CODE_COVERAGE == 'ON'
+        run: |
+          cd htool/
+          lcov --capture --base-directory ./ --directory build/ --output-file coverage.info
+          lcov --remove  coverage.info '/usr/*' '*/hpddm/*' --output-file  coverage.info
+          ls
+          pwd
+
+      - name: Upload coverage to Codecov
+        if: matrix.CODE_COVERAGE == 'ON'
+        uses: codecov/codecov-action@v2
+        with:
+          file: htool/coverage.info
+        

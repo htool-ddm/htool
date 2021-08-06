@@ -8,7 +8,6 @@
 #include "clustering/pca.hpp"
 
 #include "input_output/geometry.hpp"
-#include "input_output/output.hpp"
 
 #include "lrmat/SVD.hpp"
 #include "lrmat/fullACA.hpp"

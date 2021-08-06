@@ -59,6 +59,17 @@ int test_hmat_local_get(int argc, char *argv[], char symmetry, char UPLO) {
     HA.build_auto_sym(A, p1.data());
     HA.print_infos();
 
+    // Local permutation
+    std::vector<int> local_perm_source = HA.get_local_perm_source();
+    std::vector<int> local_perm_target = HA.get_local_perm_target();
+    std::vector<int> perm_source       = HA.get_perms();
+    std::vector<int> perm_target       = HA.get_permt();
+
+    for (int i = 0; i < MasterOffset[rank * 2 + 1]; i++) {
+        test = test || !(local_perm_source[i] == perm_source[MasterOffset[rank * 2] + i]);
+        test = test || !(local_perm_target[i] == perm_target[MasterOffset[rank * 2] + i]);
+    }
+
     // Local diagonal
     std::vector<double> local_diagonal = HA.get_local_diagonal(true);
 

@@ -13,8 +13,6 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
-# File from https://github.com/StableCoder/cmake-scripts/blob/master/sanitizers.cmake
-
 set(USE_SANITIZER
     ""
     CACHE

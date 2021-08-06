@@ -15,7 +15,7 @@ int main(int argc, char *argv[]) {
 
     bool verbose = 1;
     if (argc >= 2) {
-        verbose = argv[1];
+        verbose = argv[1]; // LCOV_EXCL_LINE
     }
 
     const int ndistance = 4;

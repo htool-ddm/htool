@@ -199,7 +199,6 @@ void MultiHMatrix<T, MultiLowRankMatrix, AdmissibleCondition>::build(MultiIMatri
         HMatrices[l].ndofperelt     = ndofperelt;
         HMatrices[l].epsilon        = epsilon;
         HMatrices[l].eta            = eta;
-        HMatrices[l].minclustersize = minclustersize;
         HMatrices[l].maxblocksize   = maxblocksize;
         HMatrices[l].minsourcedepth = minsourcedepth;
         HMatrices[l].mintargetdepth = mintargetdepth;

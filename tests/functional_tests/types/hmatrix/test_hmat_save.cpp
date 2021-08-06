@@ -27,10 +27,10 @@ int main(int argc, char *argv[]) {
     bool test           = 0;
     const int ndistance = 4;
     double distance[ndistance];
-    distance[0] = 10;
-    distance[1] = 20;
-    distance[2] = 30;
-    distance[3] = 40;
+    distance[0] = 1;
+    distance[1] = 2;
+    distance[2] = 3;
+    distance[3] = 4;
 
     double epsilon = 1e-8;
     double eta     = 0.1;
