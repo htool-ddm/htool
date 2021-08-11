@@ -30,10 +30,16 @@ All notable changes to this project will be documented in this file.
 
 - CMakefile checks consistency of version number across git/c++/CMake
 - Test for warnings coming from `include/htool/*`
+- Coverage added
+- Methods in ddm interface to get local numbering
   
 ### Changed
 
 - Remove unnecessary arguments in HMatrix interface
+
+### Fixed
+
+- Missing inlines added
 
 ## [0.6] - 2021-08-03
 
