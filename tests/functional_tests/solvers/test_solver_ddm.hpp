@@ -117,6 +117,25 @@ int test_solver_ddm(int argc, char *argv[], int mu, char symmetric) {
     DDM<complex<double>> ddm_wo_overlap(&HA);
     DDM<complex<double>> ddm_with_overlap(Generator, &HA, ovr_subdomain_to_global, cluster_to_ovr_subdomain, neighbors, intersections);
 
+    // Test renum_to_global
+    std::vector<int> renum(ovr_subdomain_to_global.size(), -1);
+    std::vector<int> renum_to_global(ovr_subdomain_to_global.size());
+    for (int i = 0; i < cluster_to_ovr_subdomain.size(); i++) {
+        renum[cluster_to_ovr_subdomain[i]] = i;
+        renum_to_global[i]                 = ovr_subdomain_to_global[cluster_to_ovr_subdomain[i]];
+    }
+    int count = cluster_to_ovr_subdomain.size();
+    for (int i = 0; i < ovr_subdomain_to_global.size(); i++) {
+        if (renum[i] == -1) {
+            renum[i]                 = count;
+            renum_to_global[count++] = ovr_subdomain_to_global[i];
+        }
+    }
+
+    std::vector<int> renum_to_global_b = ddm_with_overlap.get_local_to_global_numbering();
+    test                               = test || !(norm2(renum_to_global_b - renum_to_global) < 1e-10);
+    test                               = test || !(ddm_with_overlap.get_local_size() == ovr_subdomain_to_global.size());
+
     // No precond wo overlap
     if (rank == 0)
         std::cout << "No precond without overlap:" << std::endl;
@@ -260,6 +279,27 @@ int test_solver_ddm(int argc, char *argv[], int mu, char symmetric) {
         x_global = 0;
     }
 
+    // DDM solver with threshold
+    if (symmetric == 'S' && size > 1) {
+        if (rank == 0)
+            std::cout << "RAS two level with overlap and threshold:" << std::endl;
+        opt.parse("-hpddm_schwarz_method ras -hpddm_schwarz_coarse_correction additive -hpddm_geneo_threshold 100");
+        DDM<complex<double>> ddm_with_overlap_threshold(Generator, &HA, ovr_subdomain_to_global, cluster_to_ovr_subdomain, neighbors, intersections);
+        Ki.bytes_to_matrix(datapath + "Ki_" + NbrToStr(size) + "_" + NbrToStr(rank) + ".bin");
+        ddm_with_overlap_threshold.build_coarse_space(Ki);
+        ddm_with_overlap_threshold.facto_one_level();
+        ddm_with_overlap_threshold.solve(f_global.data(), x_global.data(), mu);
+        ddm_with_overlap_threshold.print_infos();
+        ddm_with_overlap_threshold.clean();
+        error2 = normFrob(f_global - A * x_global) / normFrob(f_global);
+        if (rank == 0) {
+            cout << "error: " << error2 << endl;
+        }
+
+        test = test || !(error2 < tol);
+
+        x_global = 0;
+    }
     //Finalize the MPI environment.
     MPI_Finalize();
 

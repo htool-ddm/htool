@@ -85,7 +85,7 @@ jobs:
           #   USE_SANITIZER: ""
           #   CMAKE_BUILD_TYPE: Debug
           #   DOCKER_OPTIONS: "--cap-add SYS_PTRACE"
-          
+
           - name: "Debian MPICH g++"
             CC_COMPILER: gcc
             CXX_COMPILER: g++
@@ -125,7 +125,7 @@ jobs:
         uses: actions/checkout@v2
         with:
           repository: hpddm/hpddm
-          ref: 964539730eaef7e78dff8b0a2d9060fb62be3316
+          ref: 9c5092ca711678ebc257ffadc7d29057d4566a87
           path: "hpddm"
 
       - name: Build tests
@@ -158,12 +158,9 @@ jobs:
           cd htool/
           lcov --capture --base-directory ./ --directory build/ --output-file coverage.info
           lcov --remove  coverage.info '/usr/*' '*/hpddm/*' --output-file  coverage.info
-          ls
-          pwd
 
       - name: Upload coverage to Codecov
         if: matrix.CODE_COVERAGE == 'ON'
         uses: codecov/codecov-action@v2
         with:
           file: htool/coverage.info
-        

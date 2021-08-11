@@ -1,0 +1,4 @@
+fixes:
+  # - "before/::after/"  # move path   e.g., "before/path" => "after/path"
+  # - "::after/"         # move root   e.g., "path/" => "after/path/"
+  - "htool/::" # reduce root e.g., "before/path/" => "path/"

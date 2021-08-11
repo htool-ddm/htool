@@ -50,7 +50,7 @@ class DDM {
         if (hmat_0->get_symmetry_type() == 'S' || (hmat_0->get_symmetry_type() == 'H' && is_complex<T>())) {
             sym = true;
             if (hmat_0->get_storage_type() == 'U') {
-                throw std::invalid_argument("[Htool error] HPDDM takes lower symmetric/hermitian matrices or regular matrices");
+                throw std::invalid_argument("[Htool error] HPDDM takes lower symmetric/hermitian matrices or regular matrices"); // LCOV_EXCL_LINE
             }
             if (hmat_0->get_symmetry_type() == 'S' && is_complex<T>()) {
                 std::cout << "[Htool warning] A symmetric matrix with UPLO='L' has been given to DDM solver. It will be considered hermitian by the solver." << std::endl;
@@ -112,7 +112,7 @@ class DDM {
             sym = true;
 
             if (hmat_0->get_storage_type() == 'U') {
-                throw std::invalid_argument("[Htool error] HPDDM takes lower symmetric/hermitian matrices or regular matrices");
+                throw std::invalid_argument("[Htool error] HPDDM takes lower symmetric/hermitian matrices or regular matrices"); // LCOV_EXCL_LINE
             }
             if (hmat_0->get_symmetry_type() == 'S' && is_complex<T>()) {
                 std::cout << "[Htool warning] A symmetric matrix with UPLO='L' has been given to DDM solver. It will be considered hermitian by the solver." << std::endl;
@@ -298,29 +298,29 @@ class DDM {
         // Build local eigenvalue problem
         int ldvl = n, ldvr = n, lwork = -1;
         int lda = n, ldb = n;
-        std::vector<T> alpha(n), beta(n);
+        std::vector<T> alphar(n), alphai((is_complex<T>() ? 0 : n)), beta(n);
         std::vector<T> work(n);
         std::vector<double> rwork(8 * n);
         std::vector<T> vl(n * n), vr(n * n);
         std::vector<int> index(n, 0);
 
-        HPDDM::Lapack<T>::ggev("N", "V", &n, DAiD.data(), &lda, Ki.data(), &ldb, alpha.data(), nullptr, beta.data(), vl.data(), &ldvl, vr.data(), &ldvr, work.data(), &lwork, rwork.data(), &info);
+        HPDDM::Lapack<T>::ggev("N", "V", &n, DAiD.data(), &lda, Ki.data(), &ldb, alphar.data(), alphai.data(), beta.data(), vl.data(), &ldvl, vr.data(), &ldvr, work.data(), &lwork, rwork.data(), &info);
         lwork = (int)std::real(work[0]);
         work.resize(lwork);
-        HPDDM::Lapack<T>::ggev("N", "V", &n, DAiD.data(), &lda, Ki.data(), &ldb, alpha.data(), nullptr, beta.data(), vl.data(), &ldvl, vr.data(), &ldvr, work.data(), &lwork, rwork.data(), &info);
+        HPDDM::Lapack<T>::ggev("N", "V", &n, DAiD.data(), &lda, Ki.data(), &ldb, alphar.data(), alphai.data(), beta.data(), vl.data(), &ldvl, vr.data(), &ldvr, work.data(), &lwork, rwork.data(), &info);
 
         for (int i = 0; i != index.size(); i++) {
             index[i] = i;
         }
         std::sort(index.begin(), index.end(), [&](const int &a, const int &b) {
-            return ((std::abs(beta[a]) < 1e-15 || (std::abs(alpha[a] / beta[a]) > std::abs(alpha[b] / beta[b]))) && !(std::abs(beta[b]) < 1e-15));
+            return ((std::abs(beta[a]) < 1e-15 || (std::abs(alphar[a] / beta[a]) > std::abs(alphar[b] / beta[b]))) && !(std::abs(beta[b]) < 1e-15));
         });
 
         HPDDM::Option &opt = *HPDDM::Option::get();
         nevi               = 0;
         double threshold   = opt.val("geneo_threshold", -1.0);
         if (threshold > 0.0) {
-            while (std::abs(beta[index[nevi]]) < 1e-15 || (std::abs(alpha[index[nevi]] / beta[index[nevi]]) > threshold && nevi < index.size())) {
+            while (std::abs(beta[index[nevi]]) < 1e-15 || (std::abs(alphar[index[nevi]] / beta[index[nevi]]) > threshold && nevi < index.size())) {
                 nevi++;
             }
 
@@ -373,7 +373,7 @@ class DDM {
 
         std::vector<T> E;
         build_coarse_space_outside(hpddm_op.HA, nevi, n, Z, E);
-
+        size_E    = sqrt(E.size());
         mytime[0] = MPI_Wtime() - time;
         MPI_Barrier(hpddm_op.HA->get_comm());
         time = MPI_Wtime();
@@ -393,8 +393,7 @@ class DDM {
     void solve(const T *const rhs, T *const x, const int &mu = 1) {
         // Check facto
         if (!one_level && two_level) {
-            std::cout << "ERROR: FACTO FOR ONE LEVEL MISSING" << std::endl;
-            exit(1);
+            throw std::logic_error("[Htool error] Factorisation for one-level missing"); // LCOV_EXCL_LINE
         }
 
         // Eventually change one-level type
@@ -646,6 +645,13 @@ class DDM {
     };
     int get_nb_rows() const {
         return nb_rows;
+    };
+    int get_local_size() const {
+        return n;
+    };
+    const std::vector<int> &get_local_to_global_numbering() const {
+        return renum_to_global;
+        ;
     };
     MPI_Comm get_comm() const {
         return comm;
