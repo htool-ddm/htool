@@ -54,12 +54,16 @@ int main(int argc, char *argv[]) {
         std::shared_ptr<Cluster<PCARegularClustering>> t = make_shared<Cluster<PCARegularClustering>>();
         t->build(nr, p1.data(), 2);
 
-        HMatrix<double, fullACA, RjasanowSteinbach> HA_L(t, t, epsilon, eta, 'S', 'L');
-        HA_L.build_auto_sym(A, p1.data());
+        std::shared_ptr<fullACA<double>> compressor = std::make_shared<fullACA<double>>();
+
+        HMatrix<double> HA_L(t, t, epsilon, eta, 'S', 'L');
+        HA_L.set_compression(compressor);
+        HA_L.build(A, p1.data());
         HA_L.print_infos();
 
-        HMatrix<double, fullACA, RjasanowSteinbach> HA_U(t, t, epsilon, eta, 'S', 'U');
-        HA_U.build_auto_sym(A, p1.data());
+        HMatrix<double> HA_U(t, t, epsilon, eta, 'S', 'U');
+        HA_U.set_compression(compressor);
+        HA_U.build(A, p1.data());
         HA_U.print_infos();
 
         // Global vectors

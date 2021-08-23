@@ -16,10 +16,10 @@ class Cluster : public VirtualCluster {
     // Data member
     std::vector<std::unique_ptr<Cluster>> sons; // Sons
 
-    int rank;    // Rank for dofs of the current cluster
-    int depth;   // depth of the current cluster
-    int counter; // numbering of the nodes level-wise
-    int space_dim;
+    int rank;      // Rank for dofs of the current cluster
+    int depth;     // depth of the current cluster
+    int counter;   // numbering of the nodes level-wise
+    int space_dim; // dimension for geometric points
     int nb_pt;
 
     double rad;
@@ -54,7 +54,7 @@ class Cluster : public VirtualCluster {
     }
 
     // global build cluster tree
-    void build(int nb_pt0, const double *const x0, const double *const r0, const int *const tab0, const double *const g0, int nb_sons = -1, MPI_Comm comm = MPI_COMM_WORLD) {
+    void build(int nb_pt0, const double *const x0, const double *const r0, const double *const g0, int nb_sons = -1, MPI_Comm comm = MPI_COMM_WORLD) {
         this->nb_pt = nb_pt0;
 
         // MPI parameters
@@ -88,18 +88,16 @@ class Cluster : public VirtualCluster {
         s.push(this);
         n.push(*(this->permutation));
 
-        clustering_type.recursive_build(x0, r0, tab0, g0, nb_sons, comm, s, n);
+        clustering_type.recursive_build(x0, r0, g0, nb_sons, comm, s, n);
     }
 
     void build(int nb_pt0, const double *const x0, int nb_sons = -1, MPI_Comm comm = MPI_COMM_WORLD) {
         this->nb_pt = nb_pt0;
-        std::vector<int> tab(ndofperelt * nb_pt0);
-        std::iota(tab.begin(), tab.end(), int(0));
-        this->build(nb_pt0, x0, std::vector<double>(nb_pt0, 0).data(), tab.data(), std::vector<double>(nb_pt0, 1).data(), nb_sons, comm);
+        this->build(nb_pt0, x0, std::vector<double>(nb_pt0, 0).data(), std::vector<double>(nb_pt0, 1).data(), nb_sons, comm);
     }
 
     // local build cluster tree
-    void build(int nb_pt0, const double *const x0, const double *const r0, const int *const tab0, const double *const g0, const int *const MasterOffset0, int nb_sons = -1, MPI_Comm comm = MPI_COMM_WORLD) {
+    void build(int nb_pt0, const double *const x0, const double *const r0, const double *const g0, const int *const MasterOffset0, int nb_sons = -1, MPI_Comm comm = MPI_COMM_WORLD) {
         this->nb_pt = nb_pt0;
         // MPI parameters
         int rankWorld, sizeWorld;
@@ -150,14 +148,12 @@ class Cluster : public VirtualCluster {
         }
 
         // Recursion
-        clustering_type.recursive_build(x0, r0, tab0, g0, nb_sons, comm, s, n);
+        clustering_type.recursive_build(x0, r0, g0, nb_sons, comm, s, n);
     }
 
     void build(int nb_pt0, const double *const x0, const int *const MasterOffset0, int nb_sons = -1, MPI_Comm comm = MPI_COMM_WORLD) {
         this->nb_pt = nb_pt0;
-        std::vector<int> tab(ndofperelt * nb_pt0);
-        std::iota(tab.begin(), tab.end(), int(0));
-        this->build(nb_pt0, x0, std::vector<double>(nb_pt0, 0).data(), tab.data(), std::vector<double>(nb_pt0, 1).data(), MasterOffset0, nb_sons, comm);
+        this->build(nb_pt0, x0, std::vector<double>(nb_pt0, 0).data(), std::vector<double>(nb_pt0, 1).data(), MasterOffset0, nb_sons, comm);
     }
 
     //// Getters for local data
@@ -309,11 +305,6 @@ class Cluster : public VirtualCluster {
         }
     }
     void save_geometry(const double *const x0, std::string filename, const std::vector<int> &depths, MPI_Comm comm = MPI_COMM_WORLD) const {
-        std::vector<int> tab(ndofperelt * nb_pt);
-        std::iota(tab.begin(), tab.end(), int(0));
-        this->save_geometry(x0, tab.data(), filename, depths, comm);
-    }
-    void save_geometry(const double *const x0, const int *const tab, std::string filename, const std::vector<int> &depths, MPI_Comm comm = MPI_COMM_WORLD) const {
         int rankWorld;
         MPI_Comm_rank(comm, &rankWorld);
         if (rankWorld == 0) {
@@ -332,7 +323,7 @@ class Cluster : public VirtualCluster {
             for (int d = 0; d < this->space_dim; d++) {
                 output << "x_" << d << ",";
                 for (int i = 0; i < permutation->size(); ++i) {
-                    output << x0[this->space_dim * tab[(*permutation)[i]] + d];
+                    output << x0[this->space_dim * (*permutation)[i] + d];
                     if (i != permutation->size() - 1) {
                         output << ",";
                     }

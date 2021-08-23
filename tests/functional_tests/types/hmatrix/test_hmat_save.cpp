@@ -61,8 +61,10 @@ int main(int argc, char *argv[]) {
         std::shared_ptr<Cluster<PCAGeometricClustering>> s = make_shared<Cluster<PCAGeometricClustering>>();
         t->build(nr, p1.data());
         s->build(nc, p2.data());
-        HMatrix<double, fullACA, RjasanowSteinbach> HA(t, s, epsilon, eta);
-        HA.build_auto(A, p1.data(), p2.data());
+        std::shared_ptr<fullACA<double>> compressor = std::make_shared<fullACA<double>>();
+        HMatrix<double> HA(t, s, epsilon, eta);
+        HA.set_compression(compressor);
+        HA.build(A, p1.data(), p2.data());
         HA.print_infos();
 
         HA.save_plot("plot_" + NbrToStr(idist));

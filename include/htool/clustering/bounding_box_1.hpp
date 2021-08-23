@@ -12,7 +12,7 @@ template <SplittingTypes SplittingType>
 class BoundingBox1 {
   public:
     void
-    recursive_build(const double *const x, const double *const r, const int *const tab, const double *const g, int nb_sons, MPI_Comm comm, std::stack<Cluster<BoundingBox1> *> &s, std::stack<std::vector<int>> &n) {
+    recursive_build(const double *const x, const double *const r, const double *const g, int nb_sons, MPI_Comm comm, std::stack<Cluster<BoundingBox1> *> &s, std::stack<std::vector<int>> &n) {
 
         // MPI parameters
         int rankWorld, sizeWorld;
@@ -31,14 +31,14 @@ class BoundingBox1 {
             int nb_pt = curr->get_size();
             double G  = 0;
             for (int j = 0; j < nb_pt; j++) {
-                G += g[tab[num[j]]];
+                G += g[num[j]];
             }
 
             // Center of the cluster
             std::vector<double> xc(curr->get_space_dim(), 0);
             for (int j = 0; j < nb_pt; j++) {
                 for (int p = 0; p < curr->get_space_dim(); p++) {
-                    xc[p] += g[tab[num[j]]] * x[curr->get_space_dim() * tab[num[j]] + p];
+                    xc[p] += g[num[j]] * x[curr->get_space_dim() * num[j] + p];
                 }
             }
             std::transform(xc.begin(), xc.end(), xc.begin(), std::bind(std::multiplies<double>(), std::placeholders::_1, 1. / G));
@@ -53,16 +53,16 @@ class BoundingBox1 {
             for (int j = 0; j < nb_pt; j++) {
                 std::vector<double> u(3, 0);
                 for (int p = 0; p < curr->get_space_dim(); p++) {
-                    if (min_point[p] > x[curr->get_space_dim() * tab[num[j]] + p]) {
-                        min_point[p] = x[curr->get_space_dim() * tab[num[j]] + p];
+                    if (min_point[p] > x[curr->get_space_dim() * num[j] + p]) {
+                        min_point[p] = x[curr->get_space_dim() * num[j] + p];
                     }
-                    if (max_point[p] < x[curr->get_space_dim() * tab[num[j]] + p]) {
-                        max_point[p] = x[curr->get_space_dim() * tab[num[j]] + p];
+                    if (max_point[p] < x[curr->get_space_dim() * num[j] + p]) {
+                        max_point[p] = x[curr->get_space_dim() * num[j] + p];
                     }
-                    u[p] = x[curr->get_space_dim() * tab[num[j]] + p] - xc[p];
+                    u[p] = x[curr->get_space_dim() * num[j] + p] - xc[p];
                 }
 
-                rad = std::max(rad, norm2(u) + r[tab[num[j]]]);
+                rad = std::max(rad, norm2(u) + r[j]);
             }
             curr->set_rad(rad);
 
@@ -84,7 +84,7 @@ class BoundingBox1 {
             }
 
             // Compute numbering
-            std::vector<std::vector<int>> numbering = splitting(x, tab, num, curr, curr_nb_sons, dir);
+            std::vector<std::vector<int>> numbering = splitting(x, num, curr, curr_nb_sons, dir);
 
             // Set offsets, size and rank of sons
             int count = 0;
@@ -132,15 +132,15 @@ class BoundingBox1 {
         }
     }
 
-    std::vector<std::vector<int>> splitting(const double *const x, const int *const tab, std::vector<int> &num, VirtualCluster const *const curr_cluster, int nb_sons, const std::vector<double> &dir);
+    std::vector<std::vector<int>> splitting(const double *const x, std::vector<int> &num, VirtualCluster const *const curr_cluster, int nb_sons, const std::vector<double> &dir);
 };
 
 // Specialization of splitting
 template <>
-inline std::vector<std::vector<int>> BoundingBox1<SplittingTypes::GeometricSplitting>::splitting(const double *const x, const int *const tab, std::vector<int> &num, VirtualCluster const *const curr_cluster, int nb_sons, const std::vector<double> &dir) { return geometric_splitting(x, tab, num, curr_cluster, nb_sons, dir); }
+inline std::vector<std::vector<int>> BoundingBox1<SplittingTypes::GeometricSplitting>::splitting(const double *const x, std::vector<int> &num, VirtualCluster const *const curr_cluster, int nb_sons, const std::vector<double> &dir) { return geometric_splitting(x, num, curr_cluster, nb_sons, dir); }
 
 template <>
-inline std::vector<std::vector<int>> BoundingBox1<SplittingTypes::RegularSplitting>::splitting(const double *const x, const int *const tab, std::vector<int> &num, VirtualCluster const *const curr_cluster, int nb_sons, const std::vector<double> &dir) { return regular_splitting(x, tab, num, curr_cluster, nb_sons, dir); }
+inline std::vector<std::vector<int>> BoundingBox1<SplittingTypes::RegularSplitting>::splitting(const double *const x, std::vector<int> &num, VirtualCluster const *const curr_cluster, int nb_sons, const std::vector<double> &dir) { return regular_splitting(x, num, curr_cluster, nb_sons, dir); }
 
 // Typdef with specific splitting
 typedef BoundingBox1<SplittingTypes::GeometricSplitting> BoundingBox1GeometricClustering;

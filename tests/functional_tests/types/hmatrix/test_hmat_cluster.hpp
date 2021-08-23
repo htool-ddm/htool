@@ -71,10 +71,11 @@ int test_hmat_cluster(int argc, char *argv[], double margin = 0) {
         t->build(nr, p1.data(), 2);
         s->build(nc, p2.data(), 2);
 
-        HMatrix<double, LowRankMatrix, RjasanowSteinbach> HA(t, s, epsilon, eta);
+        std::shared_ptr<LowRankMatrix<double>> compressor = std::make_shared<LowRankMatrix<double>>();
+        HMatrix<double> HA(t, s, epsilon, eta);
         HA.set_epsilon(epsilon);
         HA.set_eta(eta);
-        HA.set_ndofperelt(1);
+        HA.set_compression(compressor);
         HA.set_minsourcedepth(minsourcedepth);
         HA.set_mintargetdepth(mintargetdepth);
         HA.set_mintargetdepth(mintargetdepth);
@@ -86,11 +87,11 @@ int test_hmat_cluster(int argc, char *argv[], double margin = 0) {
         test = test || !(HA.get_minsourcedepth() == minsourcedepth);
         test = test || !(HA.get_mintargetdepth() == mintargetdepth);
         test = test || !(HA.get_maxblocksize() == maxblocksize);
-        test = test || !(HA.get_ndofperelt() == 1);
+        test = test || !(HA.get_dimension() == 1);
         test = test || !(HA.get_MasterOffset_s().size() == size);
         test = test || !(HA.get_MasterOffset_t().size() == size);
 
-        HA.build_auto(A, p1.data(), p2.data());
+        HA.build(A, p1.data(), p2.data());
         HA.print_infos();
         auto info = HA.get_infos();
 

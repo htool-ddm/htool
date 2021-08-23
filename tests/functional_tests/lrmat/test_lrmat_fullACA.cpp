@@ -13,6 +13,11 @@ int main(int argc, char *argv[]) {
     // Initialize the MPI environment
     MPI_Init(&argc, &argv);
 
+    bool verbose = 1;
+    if (argc >= 2) {
+        verbose = argv[1]; // LCOV_EXCL_LINE
+    }
+
     const int ndistance = 4;
     double distance[ndistance];
     distance[0] = 15;
@@ -33,8 +38,8 @@ int main(int argc, char *argv[]) {
         srand(1);
         // we set a constant seed for rand because we want always the same result if we run the check many times
         // (two different initializations with the same seed will generate the same succession of results in the subsequent calls to rand)
-        create_disk(3, 0, nr, xt.data(), tabt.data());
-        create_disk(3, distance[idist], nc, xs.data(), tabs.data());
+        create_disk(3, 0, nr, xt.data());
+        create_disk(3, distance[idist], nc, xs.data());
 
         Cluster<PCAGeometricClustering> t, s;
 
@@ -45,17 +50,18 @@ int main(int argc, char *argv[]) {
 
         // fullACA fixed rank
         int reqrank_max = 10;
-        fullACA<double> A_fullACA_fixed(t.get_perm(), s.get_perm(), reqrank_max, epsilon);
-        A_fullACA_fixed.build(A);
+        fullACA<double> compressor;
+        LowRankMatrix<double> A_fullACA_fixed(A.get_dimension(), t.get_perm(), s.get_perm(), reqrank_max, epsilon);
+        A_fullACA_fixed.build(A, compressor, t, xt.data(), s, xs.data());
 
         // ACA automatic building
-        fullACA<double> A_fullACA(t.get_perm(), s.get_perm());
+        LowRankMatrix<double> A_fullACA(A.get_dimension(), t.get_perm(), s.get_perm());
         A_fullACA.set_epsilon(epsilon);
-        A_fullACA.build(A);
+        A_fullACA.build(A, compressor, t, xt.data(), s, xs.data());
 
         std::pair<double, double> fixed_compression_interval(0.87, 0.89);
         std::pair<double, double> auto_compression_interval(0.95, 0.97);
-        test = test_lrmat(A, A_fullACA_fixed, A_fullACA, t.get_perm(), s.get_perm(), fixed_compression_interval, auto_compression_interval);
+        test = test || (test_lrmat(A, A_fullACA_fixed, A_fullACA, t.get_perm(), s.get_perm(), fixed_compression_interval, auto_compression_interval, verbose));
     }
     cout << "test : " << test << endl;
 

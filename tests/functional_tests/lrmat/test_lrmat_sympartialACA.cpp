@@ -41,8 +41,8 @@ int main(int argc, char *argv[]) {
         // we set a constant seed for rand because we want always the same result if we run the check many times
         // (two different initializations with the same seed will generate the same succession of results in the subsequent calls to rand)
 
-        create_disk(3, 0, nr, xt.data(), tabt.data());
-        create_disk(3, distance[idist], nc, xs.data(), tabs.data());
+        create_disk(3, 0, nr, xt.data());
+        create_disk(3, distance[idist], nc, xs.data());
 
         Cluster<PCAGeometricClustering> t, s;
 
@@ -53,14 +53,15 @@ int main(int argc, char *argv[]) {
 
         // sympartialACA fixed rank
         int reqrank_max = 10;
-        sympartialACA<double> A_sympartialACA_fixed(t.get_perm(), s.get_perm(), reqrank_max, epsilon);
-        A_sympartialACA_fixed.build(A, t, xt.data(), tabt.data(), s, xs.data(), tabs.data());
+        sympartialACA<double> compressor;
+        LowRankMatrix<double> A_sympartialACA_fixed(A.get_dimension(), t.get_perm(), s.get_perm(), reqrank_max, epsilon);
+        A_sympartialACA_fixed.build(A, compressor, t, xt.data(), s, xs.data());
         ;
 
         // ACA automatic building
-        sympartialACA<double> A_sympartialACA(t.get_perm(), s.get_perm());
+        LowRankMatrix<double> A_sympartialACA(A.get_dimension(), t.get_perm(), s.get_perm());
         A_sympartialACA.set_epsilon(epsilon);
-        A_sympartialACA.build(A, t, xt.data(), tabt.data(), s, xs.data(), tabs.data());
+        A_sympartialACA.build(A, compressor, t, xt.data(), s, xs.data());
 
         std::pair<double, double> fixed_compression_interval(0.87, 0.89);
         std::pair<double, double> auto_compression_interval(0.93, 0.96);

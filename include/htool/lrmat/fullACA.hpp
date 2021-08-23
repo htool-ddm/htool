@@ -25,7 +25,7 @@ namespace htool {
 //
 //=================================//
 template <typename T>
-class fullACA final : public LowRankMatrix<T> {
+class fullACA final : public VirtualLowRankGenerator<T> {
 
   public:
     //=========================//
@@ -33,61 +33,55 @@ class fullACA final : public LowRankMatrix<T> {
     //=========================//
     // If reqrank=-1 (default value), we use the precision given by epsilon for the stopping criterion;
     // otherwise, we use the required rank for the stopping criterion (!: at the end the rank could be lower)
-    using LowRankMatrix<T>::LowRankMatrix;
+    using VirtualLowRankGenerator<T>::VirtualLowRankGenerator;
 
-    void build(const VirtualGenerator<T> &A) {
-        if (this->rank == 0) {
-            this->U.resize(this->nr, 1);
-            this->V.resize(1, this->nc);
-        } else {
+    void copy_low_rank_approximation(double epsilon, int M, int N, const int *const rows, const int *const cols, int &rank, T **U, T **V, const VirtualGenerator<T> &A, const VirtualCluster &, const double *const, const VirtualCluster &, const double *const) const {
 
-            // Matrix assembling
-            Matrix<T> M(this->nr, this->nc);
-            A.copy_submatrix(this->nr, this->nc, this->ir.data(), this->ic.data(), M.data());
+        // Matrix assembling
+        Matrix<T> mat(M, N);
+        A.copy_submatrix(M, N, rows, cols, mat.data());
 
-            // Full pivot
-            int q       = 0;
-            int reqrank = this->rank;
-            std::vector<std::vector<T>> uu;
-            std::vector<std::vector<T>> vv;
-            double Norm = normFrob(M);
+        // Full pivot
+        int q       = 0;
+        int reqrank = rank;
+        std::vector<std::vector<T>> uu;
+        std::vector<std::vector<T>> vv;
+        double Norm = normFrob(mat);
 
-            while (((reqrank > 0) && (q < std::min(reqrank, std::min(this->nr, this->nc)))) || ((reqrank < 0) && (normFrob(M) / Norm > this->epsilon || q == 0))) {
+        while (((reqrank > 0) && (q < std::min(reqrank, std::min(M, N)))) || ((reqrank < 0) && (normFrob(mat) / Norm > epsilon || q == 0))) {
 
-                q += 1;
-                if (q * (this->nr + this->nc) > (this->nr * this->nc)) { // the current rank would not be advantageous
-                    q = -1;
+            q += 1;
+            if (q * (M + N) > (M * N)) { // the current rank would not be advantageous
+                q = -1;
+                break;
+            } else {
+                std::pair<int, int> ind = argmax(mat);
+                T pivot                 = mat(ind.first, ind.second);
+                if (std::abs(pivot) < 1e-15) {
+                    q += -1;
                     break;
-                } else {
-                    std::pair<int, int> ind = argmax(M);
-                    T pivot                 = M(ind.first, ind.second);
-                    if (std::abs(pivot) < 1e-15) {
-                        q += -1;
-                        break;
-                    }
-                    uu.push_back(M.get_col(ind.second));
-                    vv.push_back(M.get_row(ind.first) / pivot);
-
-                    for (int i = 0; i < M.nb_rows(); i++) {
-                        for (int j = 0; j < M.nb_cols(); j++) {
-                            M(i, j) -= uu[q - 1][i] * vv[q - 1][j];
-                        }
-                    }
                 }
-            }
-            this->rank = q;
-            if (this->rank > 0) {
-                this->U.resize(this->nr, this->rank);
-                this->V.resize(this->rank, this->nc);
-                for (int k = 0; k < this->rank; k++) {
-                    this->U.set_col(k, uu[k]);
-                    this->V.set_row(k, vv[k]);
+                uu.push_back(mat.get_col(ind.second));
+                vv.push_back(mat.get_row(ind.first) / pivot);
+
+                for (int i = 0; i < mat.nb_rows(); i++) {
+                    for (int j = 0; j < mat.nb_cols(); j++) {
+                        mat(i, j) -= uu[q - 1][i] * vv[q - 1][j];
+                    }
                 }
             }
         }
-    }
-    void build(const VirtualGenerator<T> &A, const VirtualCluster &, const double *const, const int *const, const VirtualCluster &, const double *const, const int *const) {
-        this->build(A);
+        rank = q;
+        if (rank > 0) {
+            *U = new T[M * rank];
+            *V = new T[rank * N];
+            for (int k = 0; k < rank; k++) {
+                std::copy_n(uu[k].begin(), uu[k].size(), *U + k * M);
+                for (int j = 0; j < N; j++) {
+                    (*V)[rank * j + k] = vv[k][j];
+                }
+            }
+        }
     }
 };
 

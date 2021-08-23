@@ -86,8 +86,10 @@ int main(int argc, char *argv[]) {
         t->build(nr, p1.data(), MasterOffset_target.data(), 2);
         s->build(nc, p2.data(), MasterOffset_source.data(), 2);
 
-        HMatrix<double, fullACA, RjasanowSteinbach> HA(t, s, epsilon, eta);
-        HA.build_auto(A, p1.data(), p2.data());
+        std::shared_ptr<fullACA<double>> compressor = std::make_shared<fullACA<double>>();
+        HMatrix<double> HA(t, s, epsilon, eta);
+        HA.set_compression(compressor);
+        HA.build(A, p1.data(), p2.data());
         HA.print_infos();
 
         // Global vectors

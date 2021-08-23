@@ -26,7 +26,7 @@ int test_cluster_local(int argc, char *argv[]) {
     srand(1);
     // we set a constant seed for rand because we want always the same result if we run the check many times
     // (two different initializations with the same seed will generate the same succession of results in the subsequent calls to rand)
-    create_disk(dim, 0, size, pt.data(), tab.data());
+    create_disk(dim, 0, size, pt.data());
 
     int size_numbering = size / sizeWorld;
     int count_size     = 0;
@@ -49,7 +49,7 @@ int test_cluster_local(int argc, char *argv[]) {
 
         Cluster_type t(dim);
         t.set_minclustersize(1);
-        t.build(size, pt.data(), r.data(), tab.data(), g.data(), MasterOffset.data(), nb_sons);
+        t.build(size, pt.data(), r.data(), g.data(), MasterOffset.data(), nb_sons);
         t.print();
         MPI_Barrier(MPI_COMM_WORLD);
 
@@ -59,7 +59,6 @@ int test_cluster_local(int argc, char *argv[]) {
         std::copy_n(permutation.data() + t.get_local_offset(), t.get_local_size(), local_permutation_1.data());
         std::vector<int> local_permutation_2 = t.get_local_perm();
 
-        std::cout << "BOUH" << std::endl;
         std::cout << norm2(local_permutation_1 - local_permutation_2) << std::endl;
         test = test || !(norm2(local_permutation_1 - local_permutation_2) < 1e-16);
 

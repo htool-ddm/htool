@@ -77,8 +77,11 @@ int test_hmat_virtual_cluster(int argc, char *argv[], double margin = 0) {
         t->build(nr, p1.data(), 2);
         s->build(nc, p2.data(), 2);
 
-        hmat_virtual.hmat = dynamic_cast<VirtualHMatrix<double> *>(new HMatrix<double, LowRankMatrix, RjasanowSteinbach>(t, s, epsilon, eta));
-        hmat_virtual.hmat->build_auto(A, p1.data(), p2.data());
+        std::shared_ptr<LowRankMatrix<double>> compressor = std::make_shared<LowRankMatrix<double>>();
+
+        hmat_virtual.hmat = dynamic_cast<VirtualHMatrix<double> *>(new HMatrix<double>(t, s, epsilon, eta));
+        hmat_virtual.hmat->set_compression(compressor);
+        hmat_virtual.hmat->build(A, p1.data(), p2.data());
         hmat_virtual.hmat->print_infos();
 
         // Random vector

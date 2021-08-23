@@ -4,6 +4,7 @@
 #include "../clustering/cluster.hpp"
 #include "../types/matrix.hpp"
 #include "../types/virtual_generator.hpp"
+#include "virtual_lrmat_generator.hpp"
 #include <cassert>
 #include <vector>
 
@@ -22,16 +23,36 @@ class LowRankMatrix : public IMatrix<T> {
     int offset_i;
     int offset_j;
     double epsilon;
-    unsigned int ndofperelt;
+    unsigned int dimension;
 
   public:
     // Constructors
     LowRankMatrix() = delete;
-    LowRankMatrix(const std::vector<int> &ir0, const std::vector<int> &ic0, int rank0 = -1, double epsilon0 = 1e-3) : IMatrix<T>(ir0.size(), ic0.size()), rank(rank0), U(ir0.size(), 1), V(1, ic0.size()), ir(ir0), ic(ic0), offset_i(0), offset_j(0), epsilon(epsilon0), ndofperelt(1) {}
-    LowRankMatrix(const std::vector<int> &ir0, const std::vector<int> &ic0, int offset_i0, int offset_j0, int rank0 = -1, double epsilon0 = 1e-3) : IMatrix<T>(ir0.size(), ic0.size()), rank(rank0), U(ir0.size(), 1), V(1, ic0.size()), ir(ir0), ic(ic0), offset_i(offset_i0), offset_j(offset_j0), epsilon(epsilon0), ndofperelt(1) {}
+    LowRankMatrix(int dimension0, const std::vector<int> &ir0, const std::vector<int> &ic0, int rank0 = -1, double epsilon0 = 1e-3) : IMatrix<T>(dimension0 * ir0.size(), dimension0 * ic0.size()), dimension(dimension0), rank(rank0), U(), V(), ir(ir0), ic(ic0), offset_i(0), offset_j(0), epsilon(epsilon0) {}
+
+    LowRankMatrix(int dimension0, const std::vector<int> &ir0, const std::vector<int> &ic0, int offset_i0, int offset_j0, int rank0 = -1, double epsilon0 = 1e-3) : IMatrix<T>(dimension0 * ir0.size(), dimension0 * ic0.size()), dimension(dimension0), rank(rank0), U(), V(), ir(ir0), ic(ic0), offset_i(offset_i0), offset_j(offset_j0), epsilon(epsilon0) {}
 
     // VIrtual function
-    virtual void build(const VirtualGenerator<T> &A, const VirtualCluster &t, const double *const xt, const int *const tabt, const VirtualCluster &s, const double *const xs, const int *const tabs) = 0;
+    void build(const VirtualGenerator<T> &A, const VirtualLowRankGenerator<T> &LRGenerator, const VirtualCluster &t, const double *const xt, const VirtualCluster &s, const double *const xs) {
+        if (this->rank == 0) {
+            T *uu, *vv;
+            uu = new T[this->nr];
+            vv = new T[this->nc];
+            std::fill_n(uu, this->nr, 0);
+            std::fill_n(vv, this->nc, 0);
+            this->U.assign(this->nr, 1, uu);
+            this->V.assign(1, this->nc, vv);
+        } else {
+            T *uu, *vv;
+            LRGenerator.copy_low_rank_approximation(epsilon, ir.size(), ic.size(), ir.data(), ic.data(), rank, &uu, &vv, A, t, xt, s, xs);
+            if (rank > 0) {
+                this->U.assign(this->nr, rank, uu);
+                this->V.assign(rank, this->nc, vv);
+            } else {
+                // rank=-1 will be deleted
+            }
+        }
+    };
 
     // Getters
     // int nb_rows() const { return this->nr; }
@@ -43,15 +64,14 @@ class LowRankMatrix : public IMatrix<T> {
     int get_offset_j() const { return this->offset_j; }
     T get_U(int i, int j) const { return this->U(i, j); }
     T get_V(int i, int j) const { return this->V(i, j); }
+    void assign_U(int i, int j, T *ptr) { return this->U.assign(i, j, ptr); }
+    void assign_V(int i, int j, T *ptr) { return this->V.assign(i, j, ptr); }
     std::vector<int> get_xr() const { return this->xr; }
     std::vector<int> get_xc() const { return this->xc; }
-    std::vector<int> get_tabr() const { return this->tabr; }
-    std::vector<int> get_tabc() const { return this->tabc; }
     double get_epsilon() const { return this->epsilon; }
-    int get_ndofperelt() const { return this->ndofperelt; }
+    int get_dimension() const { return this->dimension; }
 
     void set_epsilon(double epsilon0) { this->epsilon = epsilon0; }
-    void set_ndofperelt(unsigned int ndofperelt0) { this->ndofperelt = ndofperelt0; }
 
     std::vector<T> operator*(const std::vector<T> &a) const {
         return this->U * (this->V * a);

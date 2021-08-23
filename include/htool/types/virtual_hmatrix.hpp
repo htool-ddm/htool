@@ -33,26 +33,23 @@ class VirtualHMatrix {
     virtual std::vector<int> get_local_perm_source() const              = 0;
 
     // Getters/setters for parameters
-    virtual double get_epsilon() const                            = 0;
-    virtual double get_eta() const                                = 0;
-    virtual int get_ndofperelt() const                            = 0;
-    virtual int get_minsourcedepth() const                        = 0;
-    virtual int get_mintargetdepth() const                        = 0;
-    virtual int get_maxblocksize() const                          = 0;
-    virtual void set_epsilon(double epsilon0)                     = 0;
-    virtual void set_eta(double eta0)                             = 0;
-    virtual void set_ndofperelt(unsigned int ndofperelt0)         = 0;
-    virtual void set_maxblocksize(unsigned int maxblocksize)      = 0;
-    virtual void set_minsourcedepth(unsigned int minsourcedepth0) = 0;
-    virtual void set_mintargetdepth(unsigned int mintargetdepth0) = 0;
-    virtual void set_use_permutation(bool choice)                 = 0;
+    virtual double get_epsilon() const                                                   = 0;
+    virtual double get_eta() const                                                       = 0;
+    virtual int get_dimension() const                                                    = 0;
+    virtual int get_minsourcedepth() const                                               = 0;
+    virtual int get_mintargetdepth() const                                               = 0;
+    virtual int get_maxblocksize() const                                                 = 0;
+    virtual void set_epsilon(double epsilon0)                                            = 0;
+    virtual void set_eta(double eta0)                                                    = 0;
+    virtual void set_maxblocksize(unsigned int maxblocksize)                             = 0;
+    virtual void set_minsourcedepth(unsigned int minsourcedepth0)                        = 0;
+    virtual void set_mintargetdepth(unsigned int mintargetdepth0)                        = 0;
+    virtual void set_use_permutation(bool choice)                                        = 0;
+    virtual void set_compression(std::shared_ptr<VirtualLowRankGenerator<T>> compressor) = 0;
 
     // Build
-    virtual void build(VirtualGenerator<T> &mat, const double *const xt, const int *const tabt, const double *const xs, const int *const tabs) = 0;
-    virtual void build_sym(VirtualGenerator<T> &mat, const double *const xt, const int *const tabt)                                            = 0;
-
-    virtual void build_auto(VirtualGenerator<T> &mat, const double *const xt, const double *const xs) = 0;
-    virtual void build_auto_sym(VirtualGenerator<T> &mat, const double *const xt)                     = 0;
+    virtual void build(VirtualGenerator<T> &mat, const double *const xt, const double *const xs) = 0;
+    virtual void build(VirtualGenerator<T> &mat, const double *const xt)                         = 0;
 
     // Mat vec prod
     virtual void mvprod_global_to_global(const T *const in, T *const out, const int &mu = 1) const                  = 0;

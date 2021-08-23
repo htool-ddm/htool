@@ -84,8 +84,10 @@ int test_solver_ddm(int argc, char *argv[], int mu, char symmetric) {
     // Hmatrix
     if (rank == 0)
         std::cout << "Creating HMatrix" << std::endl;
-    HMatrix<complex<double>, fullACA, RjasanowSteinbach> HA(t, t, epsilon, eta, symmetric, UPLO);
-    HA.build_auto_sym(Generator, p);
+    std::shared_ptr<fullACA<std::complex<double>>> compressor = std::make_shared<fullACA<std::complex<double>>>();
+    HMatrix<complex<double>> HA(t, t, epsilon, eta, symmetric, UPLO);
+    HA.set_compression(compressor);
+    HA.build(Generator, p);
     HA.print_infos();
 
     // Global vectors

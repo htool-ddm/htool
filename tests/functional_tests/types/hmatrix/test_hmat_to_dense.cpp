@@ -55,8 +55,10 @@ int main(int argc, char *argv[]) {
     s->build(nc, p2.data());
     t->set_minclustersize(minclustersize);
     s->set_minclustersize(minclustersize);
-    HMatrix<double, fullACA, RjasanowSteinbach> HA(t, s, epsilon, eta);
-    HA.build_auto(A, p1.data(), p2.data());
+    std::shared_ptr<fullACA<double>> compressor = std::make_shared<fullACA<double>>();
+    HMatrix<double> HA(t, s, epsilon, eta);
+    HA.set_compression(compressor);
+    HA.build(A, p1.data(), p2.data());
     HA.print_infos();
 
     // Dense Matrix

@@ -8,7 +8,7 @@ namespace htool {
 enum class SplittingTypes { GeometricSplitting,
                             RegularSplitting };
 
-inline std::vector<std::vector<int>> regular_splitting(const double *const x, const int *const tab, std::vector<int> &num, VirtualCluster const *const curr_cluster, int nb_sons, const std::vector<double> &dir) {
+inline std::vector<std::vector<int>> regular_splitting(const double *const x, std::vector<int> &num, VirtualCluster const *const curr_cluster, int nb_sons, const std::vector<double> &dir) {
 
     std::vector<std::vector<int>> numbering(nb_sons);
     std::vector<double> xc = curr_cluster->get_ctr();
@@ -16,8 +16,8 @@ inline std::vector<std::vector<int>> regular_splitting(const double *const x, co
 
     // Sort along direction
     std::sort(num.begin(), num.end(), [&](int a, int b) {
-        double c = std::inner_product(x + space_dim * tab[a], x + space_dim * (1 + tab[a]), dir.data(), double(0));
-        double d = std::inner_product(x + space_dim * tab[b], x + space_dim * (1 + tab[b]), dir.data(), double(0));
+        double c = std::inner_product(x + space_dim * a, x + space_dim * (1 + a), dir.data(), double(0));
+        double d = std::inner_product(x + space_dim * b, x + space_dim * (1 + b), dir.data(), double(0));
         return c < d;
     });
 
@@ -60,7 +60,7 @@ inline std::vector<std::vector<int>> regular_splitting(const double *const x, co
     return numbering;
 }
 
-inline std::vector<std::vector<int>> geometric_splitting(const double *const x, const int *const tab, std::vector<int> &num, VirtualCluster const *const curr_cluster, int nb_sons, const std::vector<double> &dir) {
+inline std::vector<std::vector<int>> geometric_splitting(const double *const x, std::vector<int> &num, VirtualCluster const *const curr_cluster, int nb_sons, const std::vector<double> &dir) {
     std::vector<std::vector<int>> numbering(nb_sons);
 
     // Geometry of current cluster
@@ -71,7 +71,7 @@ inline std::vector<std::vector<int>> geometric_splitting(const double *const x, 
     // For 2 sons, we can use the center of the cluster
     if (nb_sons == 2) {
         for (int j = 0; j < nb_pt; j++) {
-            std::vector<double> dx(x + space_dim * tab[num[j]], x + space_dim * (1 + tab[num[j]]));
+            std::vector<double> dx(x + space_dim * num[j], x + space_dim * (1 + num[j]));
             for (int p = 0; p < dx.size(); p++) {
                 dx[p] = dx[p] - xc[p];
             }
@@ -87,16 +87,16 @@ inline std::vector<std::vector<int>> geometric_splitting(const double *const x, 
     // Otherwise we have to something more
     else if (num.size() > 1) {
         const auto minmax = std::minmax_element(num.begin(), num.end(), [&](int a, int b) {
-            double c = std::inner_product(x + space_dim * tab[a], x + space_dim * (1 + tab[a]), dir.data(), double(0));
-            double d = std::inner_product(x + space_dim * tab[b], x + space_dim * (1 + tab[b]), dir.data(), double(0));
+            double c = std::inner_product(x + space_dim * a, x + space_dim * (1 + a), dir.data(), double(0));
+            double d = std::inner_product(x + space_dim * b, x + space_dim * (1 + b), dir.data(), double(0));
             return c < d;
         });
-        std::vector<double> min(x + space_dim * tab[*(minmax.first)], x + space_dim * (1 + tab[*(minmax.first)]));
-        std::vector<double> max(x + space_dim * tab[*(minmax.second)], x + space_dim * (1 + tab[*(minmax.second)]));
+        std::vector<double> min(x + space_dim * *(minmax.first), x + space_dim * (1 + *(minmax.first)));
+        std::vector<double> max(x + space_dim * *(minmax.second), x + space_dim * (1 + *(minmax.second)));
 
         double length = dprod(max - min, dir) / (double)nb_sons;
         for (int j = 0; j < nb_pt; j++) {
-            std::vector<double> dx(x + space_dim * tab[num[j]], x + space_dim * (1 + tab[num[j]]));
+            std::vector<double> dx(x + space_dim * num[j], x + space_dim * (1 + num[j]));
 
             int index = dprod(dx - min, dir) / length;
             index     = (index == nb_sons) ? index - 1 : index; // for max
@@ -112,7 +112,7 @@ inline std::vector<std::vector<int>> geometric_splitting(const double *const x, 
         }
         // In this case, we do a regular splitting
         if (empty) {
-            numbering = regular_splitting(x, tab, num, curr_cluster, nb_sons, dir);
+            numbering = regular_splitting(x, num, curr_cluster, nb_sons, dir);
         }
     }
 
