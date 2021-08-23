@@ -94,7 +94,6 @@ endif()
 
 # Options
 option(HTOOL_WITH_EXAMPLES "Build htool examples ?" ON)
-option(HTOOL_WITH_GUI "Build htool visualization tools ?" OFF)
 
 #=============================================================================#
 #========================== External Libraries ===============================#
@@ -122,11 +121,6 @@ message("-- Found Lapack:" "${LAPACK_LIBRARIES}")
 
 # HPDDM
 find_package(HPDDM)
-
-if(HTOOL_WITH_GUI)
-    # GLM
-    find_package(GLM)
-endif()
 
 #=============================================================================#
 #========================== Libraries ========================================#

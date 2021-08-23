@@ -32,10 +32,12 @@ All notable changes to this project will be documented in this file.
 - Test for warnings coming from `include/htool/*`
 - Coverage added
 - Methods in ddm interface to get local numbering
+- VirtualLowRankGenerator and VirtualAdmissibilityCondition added for better modularity
   
 ### Changed
 
-- Remove unnecessary arguments in HMatrix interface
+- Remove unnecessary arguments in HMatrix and cluster interfaces
+- MutliHMatrix deprecated for the moment (everything related to this in `htool/multi`)
 
 ### Fixed
 

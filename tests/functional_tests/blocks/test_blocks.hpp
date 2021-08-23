@@ -29,11 +29,12 @@ int test_blocks(int argc, char *argv[], bool symmetric) {
     Cluster<PCAGeometricClustering> t;
     t.build(size, p.data());
 
-    Block<AdmissibilityCondition> B(t, t);
+    std::unique_ptr<AdmissibilityCondition> admissibility_condition(new AdmissibilityCondition());
+    Block B(admissibility_condition.get(), t, t);
     B.build(symmetric);
 
     // Test diagonal blocks
-    const Block<AdmissibilityCondition> &diagonal_block = B.get_local_diagonal_block();
+    const Block &diagonal_block = B.get_local_diagonal_block();
 
     if (diagonal_block.get_source_cluster().get_offset() != t.get_local_offset() && diagonal_block.get_source_cluster().get_size() != t.get_local_size() && diagonal_block.get_target_cluster().get_offset() != t.get_local_offset() && diagonal_block.get_target_cluster().get_size() != t.get_local_size()) {
         test = true;                                               // LCOV_EXCL_LINE
@@ -42,7 +43,7 @@ int test_blocks(int argc, char *argv[], bool symmetric) {
 
     // Check that the whole matrix is here
     std::vector<int> represented(size * size, 0);
-    const std::vector<Block<AdmissibilityCondition> *> &tasks = B.get_tasks();
+    const std::vector<Block *> &tasks = B.get_tasks();
 
     for (auto block : tasks) {
         int offset_i = block->get_target_cluster().get_offset();
@@ -60,7 +61,7 @@ int test_blocks(int argc, char *argv[], bool symmetric) {
     std::cout << "Full representation " << test << std::endl;
 
     // Check ordering of local blocks
-    const std::vector<Block<AdmissibilityCondition> *> &local_tasks = B.get_local_tasks();
+    const std::vector<Block *> &local_tasks = B.get_local_tasks();
     for (int i = 0; i < local_tasks.size() - 1; i++) {
         if (local_tasks[i]->get_target_cluster().get_offset() == local_tasks[i + 1]->get_target_cluster().get_offset()) {
             test = test || !(local_tasks[i]->get_source_cluster().get_offset() < local_tasks[i + 1]->get_source_cluster().get_offset());

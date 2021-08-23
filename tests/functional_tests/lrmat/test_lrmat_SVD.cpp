@@ -46,15 +46,16 @@ int main(int argc, char *argv[]) {
 
         // SVD fixed rank
         int reqrank_max = 10;
-        SVD<double> A_SVD_fixed(t.get_perm(), s.get_perm(), reqrank_max, epsilon);
-        A_SVD_fixed.build(A);
+        LowRankMatrix<double> A_SVD_fixed(A.get_dimension(), t.get_perm(), s.get_perm(), reqrank_max, epsilon);
+        SVD<double> compressor_SVD;
+        A_SVD_fixed.build(A, compressor_SVD, t, xt.data(), s, xs.data());
         std::vector<double> SVD_fixed_errors;
         std::vector<double> SVD_errors_check(reqrank_max, 0);
 
         for (int k = 0; k < reqrank_max; k++) {
             SVD_fixed_errors.push_back(Frobenius_absolute_error(A_SVD_fixed, A, k));
             for (int l = k; l < min(nr, nc); l++) {
-                SVD_errors_check[k] += pow(A_SVD_fixed.get_singular_value(l), 2);
+                SVD_errors_check[k] += pow(compressor_SVD.get_singular_value(l), 2);
             }
             SVD_errors_check[k] = sqrt(SVD_errors_check[k]);
         }
@@ -66,9 +67,9 @@ int main(int argc, char *argv[]) {
         cout << "> Errors computed with the remaining eigenvalues : " << SVD_errors_check << endl;
 
         // ACA automatic building
-        SVD<double> A_SVD(t.get_perm(), s.get_perm());
+        LowRankMatrix<double> A_SVD(A.get_dimension(), t.get_perm(), s.get_perm());
         A_SVD.set_epsilon(epsilon);
-        A_SVD.build(A);
+        A_SVD.build(A, compressor_SVD, t, xt.data(), s, xs.data());
 
         std::pair<double, double> fixed_compression_interval(0.87, 0.89);
         std::pair<double, double> auto_compression_interval(0.95, 0.97);

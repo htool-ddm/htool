@@ -5,8 +5,12 @@
 #    include <omp.h>
 #endif
 
+#include "../blocks/admissibility_conditions.hpp"
 #include "../blocks/blocks.hpp"
 #include "../clustering/virtual_cluster.hpp"
+#include "../lrmat/lrmat.hpp"
+#include "../lrmat/sympartialACA.hpp"
+#include "../lrmat/virtual_lrmat_generator.hpp"
 #include "../misc/misc.hpp"
 #include "../types/virtual_generator.hpp"
 #include "../types/virtual_hmatrix.hpp"
@@ -25,16 +29,16 @@ namespace htool {
 //     MATRICE HIERARCHIQUE      //
 //===============================//
 // Friend functions --- forward declaration
-template <typename T, template <typename> class MultiLowRankMatrix, class AdmissibleCondition>
-class MultiHMatrix;
-template <typename T, template <typename> class LowRankMatrix, class AdmissibleCondition>
+// template <typename T>
+// class MultiHMatrix;
+template <typename T>
 class HMatrix;
 
-template <typename T, template <typename> class LowRankMatrix, class AdmissibleCondition>
-underlying_type<T> Frobenius_absolute_error(const HMatrix<T, LowRankMatrix, AdmissibleCondition> &B, const VirtualGenerator<T> &A);
+template <typename T>
+underlying_type<T> Frobenius_absolute_error(const HMatrix<T> &B, const VirtualGenerator<T> &A);
 
 // Class
-template <typename T, template <typename> class LowRankMatrix, class AdmissibleCondition>
+template <typename T>
 class HMatrix : public VirtualHMatrix<T> {
 
   private:
@@ -42,6 +46,7 @@ class HMatrix : public VirtualHMatrix<T> {
     int nr;
     int nc;
     int space_dim;
+    int dimension;
     int reqrank;
     int local_size;
     int local_offset;
@@ -51,17 +56,20 @@ class HMatrix : public VirtualHMatrix<T> {
     bool use_permutation;
 
     // Parameters
-    int ndofperelt;
     double epsilon;
     double eta;
     int maxblocksize;
     int minsourcedepth;
     int mintargetdepth;
 
+    // Strategies
+    std::shared_ptr<VirtualLowRankGenerator<T>> LowRankGenerator;
+    std::shared_ptr<VirtualAdmissibilityCondition> AdmissibilityCondition;
+
     std::shared_ptr<VirtualCluster> cluster_tree_t;
     std::shared_ptr<VirtualCluster> cluster_tree_s;
 
-    std::unique_ptr<Block<AdmissibleCondition>> BlockTree;
+    std::unique_ptr<Block> BlockTree;
 
     std::vector<std::unique_ptr<IMatrix<T>>> MyComputedBlocks;
     std::vector<LowRankMatrix<T> *> MyFarFieldMats;
@@ -79,21 +87,20 @@ class HMatrix : public VirtualHMatrix<T> {
     int rankWorld, sizeWorld;
 
     // Internal methods
-    void ComputeBlocks(VirtualGenerator<T> &mat, const double *const xt, const int *const tabt, const double *const xs, const int *const tabs);
-    void ComputeSymBlocks(VirtualGenerator<T> &mat, const double *const xt, const int *const tabt, const double *const xs, const int *const tabs);
-    bool ComputeAdmissibleBlock(VirtualGenerator<T> &mat, Block<AdmissibleCondition> &task, const double *const xt, const int *const tabt, const double *const xs, const int *const tabs, std::vector<std::unique_ptr<IMatrix<T>>> &MyComputedBlocks_local, std::vector<SubMatrix<T> *> &, std::vector<LowRankMatrix<T> *> &, int &);
-    bool ComputeAdmissibleBlocksSym(VirtualGenerator<T> &mat, Block<AdmissibleCondition> &task, const double *const xt, const int *const tabt, const double *const xs, const int *const tabs, std::vector<std::unique_ptr<IMatrix<T>>> &MyComputedBlocks_local, std::vector<SubMatrix<T> *> &, std::vector<LowRankMatrix<T> *> &, int &);
-    void AddNearFieldMat(VirtualGenerator<T> &mat, Block<AdmissibleCondition> &task, std::vector<std::unique_ptr<IMatrix<T>>> &, std::vector<SubMatrix<T> *> &);
-    void AddFarFieldMat(VirtualGenerator<T> &mat, Block<AdmissibleCondition> &task, const double *const xt, const int *const tabt, const double *const xs, const int *const tabs, std::vector<std::unique_ptr<IMatrix<T>>> &, std::vector<LowRankMatrix<T> *> &, const int &reqrank = -1);
+    void ComputeBlocks(VirtualGenerator<T> &mat, const double *const xt, const double *const xs);
+    void ComputeSymBlocks(VirtualGenerator<T> &mat, const double *const xt, const double *const xs);
+    bool ComputeAdmissibleBlock(VirtualGenerator<T> &mat, Block &task, const double *const xt, const double *const xs, std::vector<std::unique_ptr<IMatrix<T>>> &MyComputedBlocks_local, std::vector<SubMatrix<T> *> &, std::vector<LowRankMatrix<T> *> &, int &);
+    bool ComputeAdmissibleBlocksSym(VirtualGenerator<T> &mat, Block &task, const double *const xt, const double *const xs, std::vector<std::unique_ptr<IMatrix<T>>> &MyComputedBlocks_local, std::vector<SubMatrix<T> *> &, std::vector<LowRankMatrix<T> *> &, int &);
+    void AddNearFieldMat(VirtualGenerator<T> &mat, Block &task, std::vector<std::unique_ptr<IMatrix<T>>> &, std::vector<SubMatrix<T> *> &);
+    void AddFarFieldMat(VirtualGenerator<T> &mat, Block &task, const double *const xt, const double *const xs, std::vector<std::unique_ptr<IMatrix<T>>> &, std::vector<LowRankMatrix<T> *> &, const int &reqrank = -1);
     void ComputeInfos(const std::vector<double> &mytimes);
 
     // Check arguments
-    void check_arguments(VirtualGenerator<T> &mat, const std::vector<R3> &xt, const std::vector<int> &tabt, const std::vector<R3> &xs, const std::vector<int> &tabs) const;
-    void check_arguments_sym(VirtualGenerator<T> &mat, const std::vector<R3> &xt, const std::vector<int> &tabt) const;
+    void check_arguments(VirtualGenerator<T> &mat, const std::vector<R3> &xt, const std::vector<R3> &xs) const;
+    void check_arguments_sym(VirtualGenerator<T> &mat, const std::vector<R3> &xt) const;
 
     // Friends
-    template <typename U, template <typename> class MultiLowRankMatrix, class AdmissibleConditionU>
-    friend class MultiHMatrix;
+    // friend class MultiHMatrix<T>;
 
   public:
     // Special constructor for hand-made build (for MultiHMatrix for example)
@@ -101,7 +108,7 @@ class HMatrix : public VirtualHMatrix<T> {
     HMatrix(int space_dim0, int nr0, int nc0, const std::shared_ptr<VirtualCluster> &cluster_tree_t0, const std::shared_ptr<VirtualCluster> &cluster_tree_s0, char symmetry0 = 'N', char UPLO = 'N', const MPI_Comm comm0 = MPI_COMM_WORLD) : nr(nr0), nc(nc0), space_dim(space_dim0), symmetry(symmetry0), UPLO(UPLO), use_permutation(true), cluster_tree_t(cluster_tree_t0), cluster_tree_s(cluster_tree_s0), comm(comm0){};
 
     // Constructor
-    HMatrix(const std::shared_ptr<VirtualCluster> &cluster_tree_t0, const std::shared_ptr<VirtualCluster> &cluster_tree_s0, double epsilon0 = 1e-6, double eta0 = 10, char Symmetry = 'N', char UPLO = 'N', const int &reqrank0 = -1, const MPI_Comm comm0 = MPI_COMM_WORLD) : nr(0), nc(0), space_dim(cluster_tree_t0->get_space_dim()), reqrank(reqrank0), local_size(0), local_offset(0), symmetry(Symmetry), UPLO(UPLO), false_positive(0), use_permutation(true), ndofperelt(1), epsilon(epsilon0), eta(eta0), maxblocksize(1e6), minsourcedepth(0), mintargetdepth(0), cluster_tree_t(cluster_tree_t0), cluster_tree_s(cluster_tree_s0), comm(comm0) {
+    HMatrix(const std::shared_ptr<VirtualCluster> &cluster_tree_t0, const std::shared_ptr<VirtualCluster> &cluster_tree_s0, double epsilon0 = 1e-6, double eta0 = 10, char Symmetry = 'N', char UPLO = 'N', const int &reqrank0 = -1, const MPI_Comm comm0 = MPI_COMM_WORLD) : nr(0), nc(0), space_dim(cluster_tree_t0->get_space_dim()), reqrank(reqrank0), local_size(0), local_offset(0), symmetry(Symmetry), UPLO(UPLO), false_positive(0), use_permutation(true), dimension(1), epsilon(epsilon0), eta(eta0), maxblocksize(1e6), minsourcedepth(0), mintargetdepth(0), cluster_tree_t(cluster_tree_t0), cluster_tree_s(cluster_tree_s0), comm(comm0) {
         if (!((symmetry == 'N' || symmetry == 'H' || symmetry == 'S')
               && (UPLO == 'N' || UPLO == 'L' || UPLO == 'U')
               && ((symmetry == 'N' && UPLO == 'N') || (symmetry != 'N' && UPLO != 'N'))
@@ -111,9 +118,9 @@ class HMatrix : public VirtualHMatrix<T> {
     };
 
     // Build
-    void build(VirtualGenerator<T> &mat, const double *const xt, const int *const tabt, const double *const xs, const int *const tabs);
+    void build(VirtualGenerator<T> &mat, const double *const xt, const double *const xs);
 
-    void build(VirtualGenerator<T> &mat, const std::vector<R3> &xt, const std::vector<int> &tabt, const std::vector<R3> &xs, const std::vector<int> &tabs) {
+    void build(VirtualGenerator<T> &mat, const std::vector<R3> &xt, const std::vector<R3> &xs) {
         if (this->space_dim != 3) {
             throw std::logic_error("[Htool error] Wrong space dimension"); // LCOV_EXCL_LINE
         }
@@ -124,14 +131,14 @@ class HMatrix : public VirtualHMatrix<T> {
         for (int p = 0; p < xs.size(); p++) {
             std::copy_n(xs[p].data(), space_dim, &(x_array_s[this->space_dim * p]));
         }
-        this->check_arguments(mat, xt, tabt, xs, tabs);
-        this->build(mat, x_array_t.data(), tabt.data(), x_array_s.data(), tabs.data());
+        this->check_arguments(mat, xt, xs);
+        this->build(mat, x_array_t.data(), x_array_s.data());
     }
 
     // Symmetry build
-    void build_sym(VirtualGenerator<T> &mat, const double *const xt, const int *const tabt);
+    void build(VirtualGenerator<T> &mat, const double *const xt);
 
-    void build_sym(VirtualGenerator<T> &mat, const std::vector<R3> &xt, const std::vector<int> &tabt) {
+    void build(VirtualGenerator<T> &mat, const std::vector<R3> &xt) {
         if (this->space_dim != 3) {
             throw std::logic_error("[Htool error] Wrong space dimension"); // LCOV_EXCL_LINE
         }
@@ -139,39 +146,8 @@ class HMatrix : public VirtualHMatrix<T> {
         for (int p = 0; p < xt.size(); p++) {
             std::copy_n(xt[p].data(), space_dim, &(x_array_t[this->space_dim * p]));
         }
-        this->check_arguments_sym(mat, xt, tabt);
-        this->build_sym(mat, x_array_t.data(), tabt.data());
-    }
-
-    // Build auto
-    void build_auto(VirtualGenerator<T> &mat, const double *const xt, const double *const xs);
-
-    void build_auto(VirtualGenerator<T> &mat, const std::vector<R3> &xt, const std::vector<R3> &xs) {
-        if (this->space_dim != 3) {
-            throw std::logic_error("[Htool error] Wrong space dimension"); // LCOV_EXCL_LINE
-        }
-        std::vector<double> x_array_t(xt.size() * this->space_dim), x_array_s(xs.size() * this->space_dim);
-        for (int p = 0; p < xt.size(); p++) {
-            std::copy_n(xt[p].data(), space_dim, &(x_array_t[this->space_dim * p]));
-        }
-        for (int p = 0; p < xs.size(); p++) {
-            std::copy_n(xs[p].data(), space_dim, &(x_array_s[this->space_dim * p]));
-        }
-        this->build_auto(mat, x_array_t.data(), x_array_s.data());
-    }
-
-    // Symmetry auto build
-    void build_auto_sym(VirtualGenerator<T> &mat, const double *const xt);
-
-    void build_auto_sym(VirtualGenerator<T> &mat, const std::vector<R3> &xt) {
-        if (this->space_dim != 3) {
-            throw std::logic_error("[Htool error] Wrong space dimension"); // LCOV_EXCL_LINE
-        }
-        std::vector<double> x_array_t(xt.size() * this->space_dim);
-        for (int p = 0; p < xt.size(); p++) {
-            std::copy_n(xt[p].data(), space_dim, &(x_array_t[this->space_dim * p]));
-        }
-        this->build_auto_sym(mat, x_array_t.data());
+        this->check_arguments_sym(mat, xt);
+        this->build(mat, x_array_t.data());
     }
 
     // Getters
@@ -222,17 +198,17 @@ class HMatrix : public VirtualHMatrix<T> {
 
     double get_epsilon() const { return this->epsilon; };
     double get_eta() const { return this->eta; };
-    int get_ndofperelt() const { return this->ndofperelt; };
+    int get_dimension() const { return this->dimension; };
     int get_minsourcedepth() const { return this->minsourcedepth; };
     int get_mintargetdepth() const { return this->mintargetdepth; };
     int get_maxblocksize() const { return this->maxblocksize; };
     void set_epsilon(double epsilon0) { this->epsilon = epsilon0; };
     void set_eta(double eta0) { this->eta = eta0; };
-    void set_ndofperelt(unsigned int ndofperelt0) { this->ndofperelt = ndofperelt0; };
     void set_minsourcedepth(unsigned int minsourcedepth0) { this->minsourcedepth = minsourcedepth0; };
     void set_mintargetdepth(unsigned int mintargetdepth0) { this->mintargetdepth = mintargetdepth0; };
     void set_maxblocksize(unsigned int maxblocksize0) { this->maxblocksize = maxblocksize0; };
     void set_use_permutation(bool choice) { this->use_permutation = choice; };
+    void set_compression(std::shared_ptr<VirtualLowRankGenerator<T>> ptr) { LowRankGenerator = ptr; };
 
     // Infos
     const std::map<std::string, std::string> &get_infos() const { return infos; }
@@ -243,7 +219,7 @@ class HMatrix : public VirtualHMatrix<T> {
     void save_plot(const std::string &outputname) const;
     double compression_ratio() const;
     double space_saving() const;
-    friend underlying_type<T> Frobenius_absolute_error<T, LowRankMatrix>(const HMatrix<T, LowRankMatrix, AdmissibleCondition> &B, const VirtualGenerator<T> &A);
+    friend underlying_type<T> Frobenius_absolute_error<T>(const HMatrix<T> &B, const VirtualGenerator<T> &A);
 
     // Mat vec prod
     void mvprod_global_to_global(const T *const in, T *const out, const int &mu = 1) const;
@@ -279,29 +255,39 @@ class HMatrix : public VirtualHMatrix<T> {
     void apply_dirichlet(const std::vector<int> &boundary);
 };
 
-template <typename T, template <typename> class LowRankMatrix, class AdmissibleCondition>
-void HMatrix<T, LowRankMatrix, AdmissibleCondition>::check_arguments(VirtualGenerator<T> &mat, const std::vector<R3> &xt, const std::vector<int> &tabt, const std::vector<R3> &xs, const std::vector<int> &tabs) const {
-    if (!(mat.nb_rows() == tabt.size() && mat.nb_cols() == tabs.size()
-          && mat.nb_rows() == ndofperelt * xt.size() && mat.nb_cols() == ndofperelt * xs.size())) {
+template <typename T>
+void HMatrix<T>::check_arguments(VirtualGenerator<T> &mat, const std::vector<R3> &xt, const std::vector<R3> &xs) const {
+    if (!(mat.nb_rows() == mat.get_dimension() * xt.size() && mat.nb_cols() == mat.get_dimension() * xs.size())) {
         throw std::invalid_argument("[Htool error] Invalid size in arguments for building HMatrix"); // LCOV_EXCL_LINE
     }
 }
 
-template <typename T, template <typename> class LowRankMatrix, class AdmissibleCondition>
-void HMatrix<T, LowRankMatrix, AdmissibleCondition>::check_arguments_sym(VirtualGenerator<T> &mat, const std::vector<R3> &xt, const std::vector<int> &tabt) const {
-    this->check_arguments(mat, xt, tabt, xt, tabt);
+template <typename T>
+void HMatrix<T>::check_arguments_sym(VirtualGenerator<T> &mat, const std::vector<R3> &xt) const {
+    this->check_arguments(mat, xt, xt);
 }
 
 // build
-template <typename T, template <typename> class LowRankMatrix, class AdmissibleCondition>
-void HMatrix<T, LowRankMatrix, AdmissibleCondition>::build(VirtualGenerator<T> &mat, const double *const xt, const int *const tabt, const double *const xs, const int *const tabs) {
+template <typename T>
+void HMatrix<T>::build(VirtualGenerator<T> &mat, const double *const xt, const double *const xs) {
 
     MPI_Comm_size(comm, &sizeWorld);
     MPI_Comm_rank(comm, &rankWorld);
     std::vector<double> mytimes(3), maxtime(3), meantime(3);
 
-    this->nc = mat.nb_cols();
-    this->nr = mat.nb_rows();
+    this->nc        = mat.nb_cols();
+    this->nr        = mat.nb_rows();
+    this->dimension = mat.get_dimension();
+
+    // Default compression: sympartialACA
+    if (this->LowRankGenerator == nullptr) {
+        this->LowRankGenerator = std::make_shared<sympartialACA<T>>();
+    }
+
+    // Default admissibility condition
+    if (this->AdmissibilityCondition == nullptr) {
+        this->AdmissibilityCondition = std::make_shared<RjasanowSteinbach>();
+    }
 
     // Use no_permutation if needed
     if (use_permutation == false) {
@@ -317,7 +303,7 @@ void HMatrix<T, LowRankMatrix, AdmissibleCondition>::build(VirtualGenerator<T> &
 
     // Construction arbre des blocs
     double time = MPI_Wtime();
-    this->BlockTree.reset(new Block<AdmissibleCondition>(*cluster_tree_t, *cluster_tree_s));
+    this->BlockTree.reset(new Block(this->AdmissibilityCondition.get(), *cluster_tree_t, *cluster_tree_s));
     this->BlockTree->set_mintargetdepth(this->mintargetdepth);
     this->BlockTree->set_minsourcedepth(this->minsourcedepth);
     this->BlockTree->set_maxblocksize(this->maxblocksize);
@@ -328,7 +314,7 @@ void HMatrix<T, LowRankMatrix, AdmissibleCondition>::build(VirtualGenerator<T> &
 
     // Assemblage des sous-matrices
     time = MPI_Wtime();
-    ComputeBlocks(mat, xt, tabt, xs, tabs);
+    ComputeBlocks(mat, xt, xs);
     mytimes[1] = MPI_Wtime() - time;
 
     // Infos
@@ -336,15 +322,26 @@ void HMatrix<T, LowRankMatrix, AdmissibleCondition>::build(VirtualGenerator<T> &
 }
 
 // Symmetry build
-template <typename T, template <typename> class LowRankMatrix, class AdmissibleCondition>
-void HMatrix<T, LowRankMatrix, AdmissibleCondition>::build_sym(VirtualGenerator<T> &mat, const double *const xt, const int *const tabt) {
+template <typename T>
+void HMatrix<T>::build(VirtualGenerator<T> &mat, const double *const xt) {
 
     MPI_Comm_size(comm, &sizeWorld);
     MPI_Comm_rank(comm, &rankWorld);
     std::vector<double> mytimes(3), maxtime(3), meantime(3);
 
-    this->nc = mat.nb_cols();
-    this->nr = mat.nb_rows();
+    this->nc        = mat.nb_cols();
+    this->nr        = mat.nb_rows();
+    this->dimension = mat.get_dimension();
+
+    // Default compression: sympartialACA
+    if (this->LowRankGenerator == nullptr) {
+        this->LowRankGenerator = std::make_shared<sympartialACA<T>>();
+    }
+
+    // Default admissibility condition
+    if (this->AdmissibilityCondition == nullptr) {
+        this->AdmissibilityCondition = std::make_shared<RjasanowSteinbach>();
+    }
 
     // Use no_permutation if needed
     if (use_permutation == false) {
@@ -361,7 +358,7 @@ void HMatrix<T, LowRankMatrix, AdmissibleCondition>::build_sym(VirtualGenerator<
     // Construction arbre des blocs
     double time = MPI_Wtime();
 
-    this->BlockTree.reset(new Block<AdmissibleCondition>(*cluster_tree_t, *cluster_tree_s));
+    this->BlockTree.reset(new Block(this->AdmissibilityCondition.get(), *cluster_tree_t, *cluster_tree_s));
     this->BlockTree->set_mintargetdepth(this->mintargetdepth);
     this->BlockTree->set_minsourcedepth(this->minsourcedepth);
     this->BlockTree->set_maxblocksize(this->maxblocksize);
@@ -373,34 +370,17 @@ void HMatrix<T, LowRankMatrix, AdmissibleCondition>::build_sym(VirtualGenerator<
 
     // Assemblage des sous-matrices
     time = MPI_Wtime();
-    ComputeBlocks(mat, xt, tabt, xt, tabt);
+    ComputeBlocks(mat, xt, xt);
     mytimes[1] = MPI_Wtime() - time;
 
     // Infos
     ComputeInfos(mytimes);
 }
 
-// Build auto
-template <typename T, template <typename> class LowRankMatrix, class AdmissibleCondition>
-void HMatrix<T, LowRankMatrix, AdmissibleCondition>::build_auto(VirtualGenerator<T> &mat, const double *const xt, const double *const xs) {
-    std::vector<int> tabt(this->ndofperelt * mat.nb_rows()), tabs(this->ndofperelt * mat.nb_cols());
-    std::iota(tabt.begin(), tabt.end(), int(0));
-    std::iota(tabs.begin(), tabs.end(), int(0));
-    this->build(mat, xt, tabt.data(), xs, tabs.data());
-}
-
-// Symmetry auto build
-template <typename T, template <typename> class LowRankMatrix, class AdmissibleCondition>
-void HMatrix<T, LowRankMatrix, AdmissibleCondition>::build_auto_sym(VirtualGenerator<T> &mat, const double *const xt) {
-    std::vector<int> tabt(this->ndofperelt * mat.nb_rows());
-    std::iota(tabt.begin(), tabt.end(), int(0));
-    this->build_sym(mat, xt, tabt.data());
-}
-
 // Compute blocks recursively
 // TODO: recursivity -> stack for compute blocks
-template <typename T, template <typename> class LowRankMatrix, class AdmissibleCondition>
-void HMatrix<T, LowRankMatrix, AdmissibleCondition>::ComputeBlocks(VirtualGenerator<T> &mat, const double *const xt, const int *const tabt, const double *const xs, const int *const tabs) {
+template <typename T>
+void HMatrix<T>::ComputeBlocks(VirtualGenerator<T> &mat, const double *const xt, const double *const xs) {
 #if _OPENMP && !defined(PYTHON_INTERFACE)
 #    pragma omp parallel
 #endif
@@ -408,7 +388,7 @@ void HMatrix<T, LowRankMatrix, AdmissibleCondition>::ComputeBlocks(VirtualGenera
         std::vector<SubMatrix<T> *> MyNearFieldMats_local;
         std::vector<LowRankMatrix<T> *> MyFarFieldMats_local;
         std::vector<std::unique_ptr<IMatrix<T>>> MyComputedBlocks_local;
-        std::vector<Block<AdmissibleCondition> *> local_tasks = BlockTree->get_local_tasks();
+        std::vector<Block *> local_tasks = BlockTree->get_local_tasks();
 
         int false_positive_local = 0;
 #if _OPENMP && !defined(PYTHON_INTERFACE)
@@ -420,9 +400,9 @@ void HMatrix<T, LowRankMatrix, AdmissibleCondition>::ComputeBlocks(VirtualGenera
             } else {
                 bool not_pushed;
                 if (symmetry == 'H' || symmetry == 'S') {
-                    not_pushed = ComputeAdmissibleBlocksSym(mat, *(local_tasks[p]), xt, tabt, xs, tabs, MyComputedBlocks_local, MyNearFieldMats_local, MyFarFieldMats_local, false_positive_local);
+                    not_pushed = ComputeAdmissibleBlocksSym(mat, *(local_tasks[p]), xt, xs, MyComputedBlocks_local, MyNearFieldMats_local, MyFarFieldMats_local, false_positive_local);
                 } else {
-                    not_pushed = ComputeAdmissibleBlock(mat, *(local_tasks[p]), xt, tabt, xs, tabs, MyComputedBlocks_local, MyNearFieldMats_local, MyFarFieldMats_local, false_positive_local);
+                    not_pushed = ComputeAdmissibleBlock(mat, *(local_tasks[p]), xt, xs, MyComputedBlocks_local, MyNearFieldMats_local, MyFarFieldMats_local, false_positive_local);
                 }
 
                 if (not_pushed) {
@@ -477,10 +457,10 @@ void HMatrix<T, LowRankMatrix, AdmissibleCondition>::ComputeBlocks(VirtualGenera
     });
 }
 
-template <typename T, template <typename> class LowRankMatrix, class AdmissibleCondition>
-bool HMatrix<T, LowRankMatrix, AdmissibleCondition>::ComputeAdmissibleBlock(VirtualGenerator<T> &mat, Block<AdmissibleCondition> &task, const double *const xt, const int *const tabt, const double *const xs, const int *const tabs, std::vector<std::unique_ptr<IMatrix<T>>> &MyComputedBlocks_local, std::vector<SubMatrix<T> *> &MyNearFieldMats_local, std::vector<LowRankMatrix<T> *> &MyFarFieldMats_local, int &false_positive_local) {
+template <typename T>
+bool HMatrix<T>::ComputeAdmissibleBlock(VirtualGenerator<T> &mat, Block &task, const double *const xt, const double *const xs, std::vector<std::unique_ptr<IMatrix<T>>> &MyComputedBlocks_local, std::vector<SubMatrix<T> *> &MyNearFieldMats_local, std::vector<LowRankMatrix<T> *> &MyFarFieldMats_local, int &false_positive_local) {
     if (task.IsAdmissible()) { // When called recursively, it may not be admissible
-        AddFarFieldMat(mat, task, xt, tabt, xs, tabs, MyComputedBlocks_local, MyFarFieldMats_local, reqrank);
+        AddFarFieldMat(mat, task, xt, xs, MyComputedBlocks_local, MyFarFieldMats_local, reqrank);
         if (MyFarFieldMats_local.back()->rank_of() != -1) {
             return false;
         } else {
@@ -507,7 +487,7 @@ bool HMatrix<T, LowRankMatrix, AdmissibleCondition>::ComputeAdmissibleBlock(Virt
             for (int p = 0; p < t.get_nb_sons(); p++) {
                 task.build_son(t.get_son(p), s);
 
-                Blocks_not_pushed[p] = ComputeAdmissibleBlock(mat, task.get_son(p), xt, tabt, xs, tabs, MyComputedBlocks_local, MyNearFieldMats_local, MyFarFieldMats_local, false_positive_local);
+                Blocks_not_pushed[p] = ComputeAdmissibleBlock(mat, task.get_son(p), xt, xs, MyComputedBlocks_local, MyNearFieldMats_local, MyFarFieldMats_local, false_positive_local);
             }
 
             if ((bsize <= maxblocksize) && std::all_of(Blocks_not_pushed.begin(), Blocks_not_pushed.end(), [](bool i) { return i; })) {
@@ -527,7 +507,7 @@ bool HMatrix<T, LowRankMatrix, AdmissibleCondition>::ComputeAdmissibleBlock(Virt
             std::vector<bool> Blocks_not_pushed(s.get_nb_sons());
             for (int p = 0; p < s.get_nb_sons(); p++) {
                 task.build_son(t, s.get_son(p));
-                Blocks_not_pushed[p] = ComputeAdmissibleBlock(mat, task.get_son(p), xt, tabt, xs, tabs, MyComputedBlocks_local, MyNearFieldMats_local, MyFarFieldMats_local, false_positive_local);
+                Blocks_not_pushed[p] = ComputeAdmissibleBlock(mat, task.get_son(p), xt, xs, MyComputedBlocks_local, MyNearFieldMats_local, MyFarFieldMats_local, false_positive_local);
             }
 
             if ((bsize <= maxblocksize) && std::all_of(Blocks_not_pushed.begin(), Blocks_not_pushed.end(), [](bool i) { return i; })) {
@@ -546,7 +526,7 @@ bool HMatrix<T, LowRankMatrix, AdmissibleCondition>::ComputeAdmissibleBlock(Virt
                 std::vector<bool> Blocks_not_pushed(t.get_nb_sons());
                 for (int p = 0; p < t.get_nb_sons(); p++) {
                     task.build_son(t.get_son(p), s);
-                    Blocks_not_pushed[p] = ComputeAdmissibleBlock(mat, task.get_son(p), xt, tabt, xs, tabs, MyComputedBlocks_local, MyNearFieldMats_local, MyFarFieldMats_local, false_positive_local);
+                    Blocks_not_pushed[p] = ComputeAdmissibleBlock(mat, task.get_son(p), xt, xs, MyComputedBlocks_local, MyNearFieldMats_local, MyFarFieldMats_local, false_positive_local);
                 }
 
                 if ((bsize <= maxblocksize) && std::all_of(Blocks_not_pushed.begin(), Blocks_not_pushed.end(), [](bool i) { return i; })) {
@@ -564,7 +544,7 @@ bool HMatrix<T, LowRankMatrix, AdmissibleCondition>::ComputeAdmissibleBlock(Virt
                 std::vector<bool> Blocks_not_pushed(s.get_nb_sons());
                 for (int p = 0; p < s.get_nb_sons(); p++) {
                     task.build_son(t, s.get_son(p));
-                    Blocks_not_pushed[p] = ComputeAdmissibleBlock(mat, task.get_son(p), xt, tabt, xs, tabs, MyComputedBlocks_local, MyNearFieldMats_local, MyFarFieldMats_local, false_positive_local);
+                    Blocks_not_pushed[p] = ComputeAdmissibleBlock(mat, task.get_son(p), xt, xs, MyComputedBlocks_local, MyNearFieldMats_local, MyFarFieldMats_local, false_positive_local);
                 }
 
                 if ((bsize <= maxblocksize) && std::all_of(Blocks_not_pushed.begin(), Blocks_not_pushed.end(), [](bool i) { return i; })) {
@@ -583,12 +563,12 @@ bool HMatrix<T, LowRankMatrix, AdmissibleCondition>::ComputeAdmissibleBlock(Virt
     }
 }
 
-template <typename T, template <typename> class LowRankMatrix, class AdmissibleCondition>
-bool HMatrix<T, LowRankMatrix, AdmissibleCondition>::ComputeAdmissibleBlocksSym(VirtualGenerator<T> &mat, Block<AdmissibleCondition> &task, const double *const xt, const int *const tabt, const double *const xs, const int *const tabs, std::vector<std::unique_ptr<IMatrix<T>>> &MyComputedBlocks_local, std::vector<SubMatrix<T> *> &MyNearFieldMats_local, std::vector<LowRankMatrix<T> *> &MyFarFieldMats_local, int &false_positive_local) {
+template <typename T>
+bool HMatrix<T>::ComputeAdmissibleBlocksSym(VirtualGenerator<T> &mat, Block &task, const double *const xt, const double *const xs, std::vector<std::unique_ptr<IMatrix<T>>> &MyComputedBlocks_local, std::vector<SubMatrix<T> *> &MyNearFieldMats_local, std::vector<LowRankMatrix<T> *> &MyFarFieldMats_local, int &false_positive_local) {
 
     if (task.IsAdmissible()) {
 
-        AddFarFieldMat(mat, task, xt, tabt, xs, tabs, MyComputedBlocks_local, MyFarFieldMats_local, reqrank);
+        AddFarFieldMat(mat, task, xt, xs, MyComputedBlocks_local, MyFarFieldMats_local, reqrank);
         if (MyFarFieldMats_local.back()->rank_of() != -1) {
             return false;
         } else {
@@ -616,7 +596,7 @@ bool HMatrix<T, LowRankMatrix, AdmissibleCondition>::ComputeAdmissibleBlocksSym(
             std::vector<bool> Blocks_not_pushed(t.get_nb_sons());
             for (int p = 0; p < t.get_nb_sons(); p++) {
                 task.build_son(t.get_son(p), s);
-                Blocks_not_pushed[p] = ComputeAdmissibleBlocksSym(mat, task.get_son(p), xt, tabt, xs, tabs, MyComputedBlocks_local, MyNearFieldMats_local, MyFarFieldMats_local, false_positive_local);
+                Blocks_not_pushed[p] = ComputeAdmissibleBlocksSym(mat, task.get_son(p), xt, xs, MyComputedBlocks_local, MyNearFieldMats_local, MyFarFieldMats_local, false_positive_local);
             }
 
             if ((bsize <= maxblocksize) && std::all_of(Blocks_not_pushed.begin(), Blocks_not_pushed.end(), [](bool i) { return i; })) {
@@ -636,7 +616,7 @@ bool HMatrix<T, LowRankMatrix, AdmissibleCondition>::ComputeAdmissibleBlocksSym(
             std::vector<bool> Blocks_not_pushed(s.get_nb_sons());
             for (int p = 0; p < s.get_nb_sons(); p++) {
                 task.build_son(t, s.get_son(p));
-                Blocks_not_pushed[p] = ComputeAdmissibleBlocksSym(mat, task.get_son(p), xt, tabt, xs, tabs, MyComputedBlocks_local, MyNearFieldMats_local, MyFarFieldMats_local, false_positive_local);
+                Blocks_not_pushed[p] = ComputeAdmissibleBlocksSym(mat, task.get_son(p), xt, xs, MyComputedBlocks_local, MyNearFieldMats_local, MyFarFieldMats_local, false_positive_local);
             }
 
             if ((bsize <= maxblocksize) && std::all_of(Blocks_not_pushed.begin(), Blocks_not_pushed.end(), [](bool i) { return i; })) {
@@ -655,7 +635,7 @@ bool HMatrix<T, LowRankMatrix, AdmissibleCondition>::ComputeAdmissibleBlocksSym(
             for (int l = 0; l < s.get_nb_sons(); l++) {
                 for (int p = 0; p < t.get_nb_sons(); p++) {
                     task.build_son(t.get_son(p), s.get_son(l));
-                    Blocks_not_pushed[p + l * t.get_nb_sons()] = ComputeAdmissibleBlocksSym(mat, task.get_son(p + l * t.get_nb_sons()), xt, tabt, xs, tabs, MyComputedBlocks_local, MyNearFieldMats_local, MyFarFieldMats_local, false_positive_local);
+                    Blocks_not_pushed[p + l * t.get_nb_sons()] = ComputeAdmissibleBlocksSym(mat, task.get_son(p + l * t.get_nb_sons()), xt, xs, MyComputedBlocks_local, MyNearFieldMats_local, MyFarFieldMats_local, false_positive_local);
                 }
             }
             if ((bsize <= maxblocksize) && std::all_of(Blocks_not_pushed.begin(), Blocks_not_pushed.end(), [](bool i) { return i; })) {
@@ -674,44 +654,43 @@ bool HMatrix<T, LowRankMatrix, AdmissibleCondition>::ComputeAdmissibleBlocksSym(
 }
 
 // Build a dense block
-template <typename T, template <typename> class LowRankMatrix, class AdmissibleCondition>
-void HMatrix<T, LowRankMatrix, AdmissibleCondition>::AddNearFieldMat(VirtualGenerator<T> &mat, Block<AdmissibleCondition> &task, std::vector<std::unique_ptr<IMatrix<T>>> &MyComputedBlocks_local, std::vector<SubMatrix<T> *> &MyNearFieldMats_local) {
+template <typename T>
+void HMatrix<T>::AddNearFieldMat(VirtualGenerator<T> &mat, Block &task, std::vector<std::unique_ptr<IMatrix<T>>> &MyComputedBlocks_local, std::vector<SubMatrix<T> *> &MyNearFieldMats_local) {
 
     const VirtualCluster &t = task.get_target_cluster();
     const VirtualCluster &s = task.get_source_cluster();
 
     if (use_permutation) {
-        MyComputedBlocks_local.emplace_back(new SubMatrix<T>(mat, t.get_size(), s.get_size(), cluster_tree_t->get_perm().data() + t.get_offset(), cluster_tree_s->get_perm().data() + s.get_offset(), t.get_offset(), s.get_offset()));
+        MyComputedBlocks_local.emplace_back(new SubMatrix<T>(mat, mat.get_dimension() * t.get_size(), mat.get_dimension() * s.get_size(), cluster_tree_t->get_perm().data() + t.get_offset(), cluster_tree_s->get_perm().data() + s.get_offset(), t.get_offset(), s.get_offset()));
     } else {
-        MyComputedBlocks_local.emplace_back(new SubMatrix<T>(mat, t.get_size(), s.get_size(), no_permutation_target.data() + t.get_offset(), no_permutation_source.data() + s.get_offset(), t.get_offset(), s.get_offset()));
+        MyComputedBlocks_local.emplace_back(new SubMatrix<T>(mat, mat.get_dimension() * t.get_size(), mat.get_dimension() * s.get_size(), no_permutation_target.data() + t.get_offset(), no_permutation_source.data() + s.get_offset(), t.get_offset(), s.get_offset()));
     }
 
     MyNearFieldMats_local.push_back(dynamic_cast<SubMatrix<T> *>(MyComputedBlocks_local.back().get()));
 }
 
 // Build a low rank block
-template <typename T, template <typename> class LowRankMatrix, class AdmissibleCondition>
-void HMatrix<T, LowRankMatrix, AdmissibleCondition>::AddFarFieldMat(VirtualGenerator<T> &mat, Block<AdmissibleCondition> &task, const double *const xt, const int *const tabt, const double *const xs, const int *const tabs, std::vector<std::unique_ptr<IMatrix<T>>> &MyComputedBlocks_local, std::vector<LowRankMatrix<T> *> &MyFarFieldMats_local, const int &reqrank) {
+template <typename T>
+void HMatrix<T>::AddFarFieldMat(VirtualGenerator<T> &mat, Block &task, const double *const xt, const double *const xs, std::vector<std::unique_ptr<IMatrix<T>>> &MyComputedBlocks_local, std::vector<LowRankMatrix<T> *> &MyFarFieldMats_local, const int &reqrank) {
 
     const VirtualCluster &t = task.get_target_cluster();
     const VirtualCluster &s = task.get_source_cluster();
 
     if (use_permutation) {
-        MyComputedBlocks_local.emplace_back(new LowRankMatrix<T>(std::vector<int>(cluster_tree_t->get_perm_start() + t.get_offset(), cluster_tree_t->get_perm_start() + t.get_offset() + t.get_size()), std::vector<int>(cluster_tree_s->get_perm_start() + s.get_offset(), cluster_tree_s->get_perm_start() + s.get_offset() + s.get_size()), t.get_offset(), s.get_offset(), reqrank, this->epsilon));
+        MyComputedBlocks_local.emplace_back(new LowRankMatrix<T>(mat.get_dimension(), std::vector<int>(cluster_tree_t->get_perm_start() + t.get_offset(), cluster_tree_t->get_perm_start() + t.get_offset() + t.get_size()), std::vector<int>(cluster_tree_s->get_perm_start() + s.get_offset(), cluster_tree_s->get_perm_start() + s.get_offset() + s.get_size()), t.get_offset(), s.get_offset(), reqrank, this->epsilon));
     }
 
     else {
-        MyComputedBlocks_local.emplace_back(new LowRankMatrix<T>(std::vector<int>(no_permutation_target.data() + t.get_offset(), no_permutation_target.data() + t.get_offset() + t.get_size()), std::vector<int>(no_permutation_source.data() + s.get_offset(), no_permutation_source.data() + s.get_offset() + s.get_size()), t.get_offset(), s.get_offset(), reqrank, this->epsilon));
+        MyComputedBlocks_local.emplace_back(new LowRankMatrix<T>(mat.get_dimension(), std::vector<int>(no_permutation_target.data() + t.get_offset(), no_permutation_target.data() + t.get_offset() + t.get_size()), std::vector<int>(no_permutation_source.data() + s.get_offset(), no_permutation_source.data() + s.get_offset() + s.get_size()), t.get_offset(), s.get_offset(), reqrank, this->epsilon));
     }
 
     MyFarFieldMats_local.push_back(dynamic_cast<LowRankMatrix<T> *>(MyComputedBlocks_local.back().get()));
-    MyFarFieldMats_local.back()->set_ndofperelt(this->ndofperelt);
-    MyFarFieldMats_local.back()->build(mat, t, xt, tabt, s, xs, tabs);
+    MyFarFieldMats_local.back()->build(mat, *LowRankGenerator, t, xt, s, xs);
 }
 
 // Compute infos
-template <typename T, template <typename> class LowRankMatrix, class AdmissibleCondition>
-void HMatrix<T, LowRankMatrix, AdmissibleCondition>::ComputeInfos(const std::vector<double> &mytime) {
+template <typename T>
+void HMatrix<T>::ComputeInfos(const std::vector<double> &mytime) {
     // 0 : block tree ; 1 : compute blocks ;
     std::vector<double> maxtime(2), meantime(2);
     // 0 : dense mat ; 1 : lr mat ; 2 : rank ; 3 : local_size
@@ -774,6 +753,7 @@ void HMatrix<T, LowRankMatrix, AdmissibleCondition>::ComputeInfos(const std::vec
     // Size
     infos["Source_size"]              = NbrToStr(this->nc);
     infos["Target_size"]              = NbrToStr(this->nr);
+    infos["Dimension"]                = NbrToStr(this->dimension);
     infos["Dense_block_size_max"]     = NbrToStr(maxinfos[0]);
     infos["Dense_block_size_mean"]    = NbrToStr(meaninfos[0]);
     infos["Dense_block_size_min"]     = NbrToStr(mininfos[0]);
@@ -814,8 +794,8 @@ void HMatrix<T, LowRankMatrix, AdmissibleCondition>::ComputeInfos(const std::vec
     infos["MaxBlockSize"]          = NbrToStr(maxblocksize);
 }
 
-template <typename T, template <typename> class LowRankMatrix, class AdmissibleCondition>
-void HMatrix<T, LowRankMatrix, AdmissibleCondition>::mymvprod_global_to_local(const T *const in, T *const out, const int &mu) const {
+template <typename T>
+void HMatrix<T>::mymvprod_global_to_local(const T *const in, T *const out, const int &mu) const {
 
     std::fill(out, out + local_size * mu, 0);
     int incx(1), incy(1), local_size_rhs(local_size * mu);
@@ -883,8 +863,8 @@ void HMatrix<T, LowRankMatrix, AdmissibleCondition>::mymvprod_global_to_local(co
     }
 }
 
-template <typename T, template <typename> class LowRankMatrix, class AdmissibleCondition>
-void HMatrix<T, LowRankMatrix, AdmissibleCondition>::local_to_global_target(const T *const in, T *const out, const int &mu) const {
+template <typename T>
+void HMatrix<T>::local_to_global_target(const T *const in, T *const out, const int &mu) const {
     // Allgather
     std::vector<int> recvcounts(sizeWorld);
     std::vector<int> displs(sizeWorld);
@@ -900,8 +880,8 @@ void HMatrix<T, LowRankMatrix, AdmissibleCondition>::local_to_global_target(cons
     MPI_Allgatherv(in, recvcounts[rankWorld], wrapper_mpi<T>::mpi_type(), out, &(recvcounts[0]), &(displs[0]), wrapper_mpi<T>::mpi_type(), comm);
 }
 
-template <typename T, template <typename> class LowRankMatrix, class AdmissibleCondition>
-void HMatrix<T, LowRankMatrix, AdmissibleCondition>::local_to_global_source(const T *const in, T *const out, const int &mu) const {
+template <typename T>
+void HMatrix<T>::local_to_global_source(const T *const in, T *const out, const int &mu) const {
     // Allgather
     std::vector<int> recvcounts(sizeWorld);
     std::vector<int> displs(sizeWorld);
@@ -916,8 +896,8 @@ void HMatrix<T, LowRankMatrix, AdmissibleCondition>::local_to_global_source(cons
     MPI_Allgatherv(in, recvcounts[rankWorld], wrapper_mpi<T>::mpi_type(), out, &(recvcounts[0]), &(displs[0]), wrapper_mpi<T>::mpi_type(), comm);
 }
 
-template <typename T, template <typename> class LowRankMatrix, class AdmissibleCondition>
-void HMatrix<T, LowRankMatrix, AdmissibleCondition>::mymvprod_local_to_local(const T *const in, T *const out, const int &mu, T *work) const {
+template <typename T>
+void HMatrix<T>::mymvprod_local_to_local(const T *const in, T *const out, const int &mu, T *work) const {
     double time      = MPI_Wtime();
     bool need_delete = false;
     if (work == nullptr) {
@@ -935,8 +915,8 @@ void HMatrix<T, LowRankMatrix, AdmissibleCondition>::mymvprod_local_to_local(con
     infos["total_time_mat_vec_prod"] = NbrToStr(MPI_Wtime() - time + StrToNbr<double>(infos["total_time_mat_vec_prod"]));
 }
 
-template <typename T, template <typename> class LowRankMatrix, class AdmissibleCondition>
-void HMatrix<T, LowRankMatrix, AdmissibleCondition>::mvprod_global_to_global(const T *const in, T *const out, const int &mu) const {
+template <typename T>
+void HMatrix<T>::mvprod_global_to_global(const T *const in, T *const out, const int &mu) const {
     double time = MPI_Wtime();
 
     if (mu == 1) {
@@ -1059,8 +1039,8 @@ void HMatrix<T, LowRankMatrix, AdmissibleCondition>::mvprod_global_to_global(con
     infos["total_time_mat_vec_prod"] = NbrToStr(MPI_Wtime() - time + StrToNbr<double>(infos["total_time_mat_vec_prod"]));
 }
 
-template <typename T, template <typename> class LowRankMatrix, class AdmissibleCondition>
-void HMatrix<T, LowRankMatrix, AdmissibleCondition>::mvprod_local_to_local(const T *const in, T *const out, const int &mu, T *work) const {
+template <typename T>
+void HMatrix<T>::mvprod_local_to_local(const T *const in, T *const out, const int &mu, T *work) const {
     double time      = MPI_Wtime();
     bool need_delete = false;
     if (work == nullptr) {
@@ -1151,8 +1131,8 @@ void HMatrix<T, LowRankMatrix, AdmissibleCondition>::mvprod_local_to_local(const
     infos["total_time_mat_vec_prod"] = NbrToStr(MPI_Wtime() - time + StrToNbr<double>(infos["total_time_mat_vec_prod"]));
 }
 
-template <typename T, template <typename> class LowRankMatrix, class AdmissibleCondition>
-void HMatrix<T, LowRankMatrix, AdmissibleCondition>::mvprod_subrhs(const T *const in, T *const out, const int &mu, const int &offset, const int &size, const int &margin) const {
+template <typename T>
+void HMatrix<T>::mvprod_subrhs(const T *const in, T *const out, const int &mu, const int &offset, const int &size, const int &margin) const {
     std::fill(out, out + local_size * mu, 0);
 
     // To localize the rhs with multiple rhs, it is transpose. So instead of A*B, we do transpose(B)*transpose(A)
@@ -1251,22 +1231,22 @@ void HMatrix<T, LowRankMatrix, AdmissibleCondition>::mvprod_subrhs(const T *cons
     }
 }
 
-template <typename T, template <typename> class LowRankMatrix, class AdmissibleCondition>
-void HMatrix<T, LowRankMatrix, AdmissibleCondition>::source_to_cluster_permutation(const T *const in, T *const out) const {
+template <typename T>
+void HMatrix<T>::source_to_cluster_permutation(const T *const in, T *const out) const {
     for (int i = 0; i < nc; i++) {
         out[i] = in[cluster_tree_s->get_perm(i)];
     }
 }
 
-template <typename T, template <typename> class LowRankMatrix, class AdmissibleCondition>
-void HMatrix<T, LowRankMatrix, AdmissibleCondition>::cluster_to_target_permutation(const T *const in, T *const out) const {
+template <typename T>
+void HMatrix<T>::cluster_to_target_permutation(const T *const in, T *const out) const {
     for (int i = 0; i < nr; i++) {
         out[cluster_tree_t->get_perm(i)] = in[i];
     }
 }
 
-template <typename T, template <typename> class LowRankMatrix, class AdmissibleCondition>
-void HMatrix<T, LowRankMatrix, AdmissibleCondition>::local_source_to_local_cluster(const T *const in, T *const out, MPI_Comm comm) const {
+template <typename T>
+void HMatrix<T>::local_source_to_local_cluster(const T *const in, T *const out, MPI_Comm comm) const {
     if (!cluster_tree_s->IsLocal()) {
         throw std::logic_error("[Htool error] Permutation is not local, local_source_to_local_cluster cannot be used"); // LCOV_EXCL_LINE
     } else {
@@ -1278,8 +1258,8 @@ void HMatrix<T, LowRankMatrix, AdmissibleCondition>::local_source_to_local_clust
     }
 }
 
-template <typename T, template <typename> class LowRankMatrix, class AdmissibleCondition>
-void HMatrix<T, LowRankMatrix, AdmissibleCondition>::local_cluster_to_local_target(const T *const in, T *const out, MPI_Comm comm) const {
+template <typename T>
+void HMatrix<T>::local_cluster_to_local_target(const T *const in, T *const out, MPI_Comm comm) const {
     if (!cluster_tree_t->IsLocal()) {
         throw std::logic_error("[Htool error] Permutation is not local, local_cluster_to_local_target cannot be used"); // LCOV_EXCL_LINE
     } else {
@@ -1291,16 +1271,16 @@ void HMatrix<T, LowRankMatrix, AdmissibleCondition>::local_cluster_to_local_targ
     }
 }
 
-template <typename T, template <typename> class LowRankMatrix, class AdmissibleCondition>
-std::vector<T> HMatrix<T, LowRankMatrix, AdmissibleCondition>::operator*(const std::vector<T> &x) const {
+template <typename T>
+std::vector<T> HMatrix<T>::operator*(const std::vector<T> &x) const {
     assert(x.size() == nc);
     std::vector<T> result(nr, 0);
     mvprod_global_to_global(x.data(), result.data(), 1);
     return result;
 }
 
-template <typename T, template <typename> class LowRankMatrix, class AdmissibleCondition>
-double HMatrix<T, LowRankMatrix, AdmissibleCondition>::compression_ratio() const {
+template <typename T>
+double HMatrix<T>::compression_ratio() const {
 
     double my_compressed_size = 0.;
     double uncompressed_size  = ((long int)this->nr) * this->nc;
@@ -1329,8 +1309,8 @@ double HMatrix<T, LowRankMatrix, AdmissibleCondition>::compression_ratio() const
     return uncompressed_size / compressed_size;
 }
 
-template <typename T, template <typename> class LowRankMatrix, class AdmissibleCondition>
-double HMatrix<T, LowRankMatrix, AdmissibleCondition>::space_saving() const {
+template <typename T>
+double HMatrix<T>::space_saving() const {
 
     double my_compressed_size = 0.;
     double uncompressed_size  = ((long int)this->nr) * this->nc;
@@ -1359,8 +1339,8 @@ double HMatrix<T, LowRankMatrix, AdmissibleCondition>::space_saving() const {
     return 1 - compressed_size / uncompressed_size;
 }
 
-template <typename T, template <typename> class LowRankMatrix, class AdmissibleCondition>
-void HMatrix<T, LowRankMatrix, AdmissibleCondition>::print_infos() const {
+template <typename T>
+void HMatrix<T>::print_infos() const {
     int rankWorld;
     MPI_Comm_rank(comm, &rankWorld);
 
@@ -1372,8 +1352,8 @@ void HMatrix<T, LowRankMatrix, AdmissibleCondition>::print_infos() const {
     }
 }
 
-template <typename T, template <typename> class LowRankMatrix, class AdmissibleCondition>
-void HMatrix<T, LowRankMatrix, AdmissibleCondition>::save_infos(const std::string &outputname, std::ios_base::openmode mode, const std::string &sep) const {
+template <typename T>
+void HMatrix<T>::save_infos(const std::string &outputname, std::ios_base::openmode mode, const std::string &sep) const {
     int rankWorld;
     MPI_Comm_rank(comm, &rankWorld);
 
@@ -1390,8 +1370,8 @@ void HMatrix<T, LowRankMatrix, AdmissibleCondition>::save_infos(const std::strin
     }
 }
 
-template <typename T, template <typename> class LowRankMatrix, class AdmissibleCondition>
-void HMatrix<T, LowRankMatrix, AdmissibleCondition>::save_plot(const std::string &outputname) const {
+template <typename T>
+void HMatrix<T>::save_plot(const std::string &outputname) const {
 
     std::ofstream outputfile((outputname + "_" + NbrToStr(rankWorld) + ".csv").c_str());
 
@@ -1409,8 +1389,8 @@ void HMatrix<T, LowRankMatrix, AdmissibleCondition>::save_plot(const std::string
     }
 }
 
-template <typename T, template <typename> class LowRankMatrix, class AdmissibleCondition>
-underlying_type<T> Frobenius_absolute_error(const HMatrix<T, LowRankMatrix, AdmissibleCondition> &B, const VirtualGenerator<T> &A) {
+template <typename T>
+underlying_type<T> Frobenius_absolute_error(const HMatrix<T> &B, const VirtualGenerator<T> &A) {
     underlying_type<T> myerr = 0;
     for (int j = 0; j < B.MyFarFieldMats.size(); j++) {
         underlying_type<T> test = Frobenius_absolute_error(*(B.MyFarFieldMats[j]), A);
@@ -1423,8 +1403,8 @@ underlying_type<T> Frobenius_absolute_error(const HMatrix<T, LowRankMatrix, Admi
     return std::sqrt(err);
 }
 
-template <typename T, template <typename> class LowRankMatrix, class AdmissibleCondition>
-Matrix<T> HMatrix<T, LowRankMatrix, AdmissibleCondition>::get_local_dense() const {
+template <typename T>
+Matrix<T> HMatrix<T>::get_local_dense() const {
     Matrix<T> Dense(local_size, nc);
     // Internal dense blocks
     for (int l = 0; l < MyNearFieldMats.size(); l++) {
@@ -1439,14 +1419,13 @@ Matrix<T> HMatrix<T, LowRankMatrix, AdmissibleCondition>::get_local_dense() cons
     }
 
     // Internal compressed block
-    Matrix<T> FarFielBlock(local_size, local_size);
     for (int l = 0; l < MyFarFieldMats.size(); l++) {
         const LowRankMatrix<T> &lmat = *(MyFarFieldMats[l]);
         int local_nr                 = lmat.nb_rows();
         int local_nc                 = lmat.nb_cols();
         int offset_i                 = lmat.get_offset_i();
         int offset_j                 = lmat.get_offset_j();
-        FarFielBlock.resize(local_nr, local_nc);
+        Matrix<T> FarFielBlock(local_nr, local_nc);
         lmat.get_whole_matrix(&(FarFielBlock(0, 0)));
         for (int k = 0; k < local_nc; k++) {
             std::copy_n(&(FarFielBlock(0, k)), local_nr, Dense.data() + (offset_i - local_offset) + (offset_j + k) * local_size);
@@ -1455,15 +1434,15 @@ Matrix<T> HMatrix<T, LowRankMatrix, AdmissibleCondition>::get_local_dense() cons
     return Dense;
 }
 
-template <typename T, template <typename> class LowRankMatrix, class AdmissibleCondition>
-Matrix<T> HMatrix<T, LowRankMatrix, AdmissibleCondition>::get_local_dense_perm() const {
+template <typename T>
+Matrix<T> HMatrix<T>::get_local_dense_perm() const {
     Matrix<T> Dense(local_size, nc);
     copy_local_dense_perm(Dense.data());
     return Dense;
 }
 
-template <typename T, template <typename> class LowRankMatrix, class AdmissibleCondition>
-void HMatrix<T, LowRankMatrix, AdmissibleCondition>::copy_local_dense_perm(T *ptr) const {
+template <typename T>
+void HMatrix<T>::copy_local_dense_perm(T *ptr) const {
     if (!(cluster_tree_t->IsLocal())) {
         throw std::logic_error("[Htool error] Permutation is not local, get_local_dense_perm cannot be used"); // LCOV_EXCL_LINE
     }
@@ -1485,14 +1464,14 @@ void HMatrix<T, LowRankMatrix, AdmissibleCondition>::copy_local_dense_perm(T *pt
     }
 
     // Internal compressed block
-    Matrix<T> FarFielBlock(local_size, local_size);
+
     for (int l = 0; l < MyFarFieldMats.size(); l++) {
         const LowRankMatrix<T> &lmat = *(MyFarFieldMats[l]);
         int local_nr                 = lmat.nb_rows();
         int local_nc                 = lmat.nb_cols();
         int offset_i                 = lmat.get_offset_i();
         int offset_j                 = lmat.get_offset_j();
-        FarFielBlock.resize(local_nr, local_nc);
+        Matrix<T> FarFielBlock(local_nr, local_nc);
         lmat.get_whole_matrix(&(FarFielBlock(0, 0)));
         for (int k = 0; k < local_nc; k++) {
             for (int j = 0; j < local_nr; j++) {
@@ -1537,15 +1516,15 @@ void HMatrix<T, LowRankMatrix, AdmissibleCondition>::copy_local_dense_perm(T *pt
     }
 }
 
-template <typename T, template <typename> class LowRankMatrix, class AdmissibleCondition>
-std::vector<T> HMatrix<T, LowRankMatrix, AdmissibleCondition>::get_local_diagonal(bool permutation) const {
+template <typename T>
+std::vector<T> HMatrix<T>::get_local_diagonal(bool permutation) const {
     std::vector<T> diagonal(local_size, 0);
     copy_local_diagonal(diagonal.data(), permutation);
     return diagonal;
 }
 
-template <typename T, template <typename> class LowRankMatrix, class AdmissibleCondition>
-void HMatrix<T, LowRankMatrix, AdmissibleCondition>::copy_local_diagonal(T *ptr, bool permutation) const {
+template <typename T>
+void HMatrix<T>::copy_local_diagonal(T *ptr, bool permutation) const {
     if (!(cluster_tree_t->IsLocal()) && permutation) {
         throw std::logic_error("[Htool error] Permutation is not local, get_local_diagonal cannot be used"); // LCOV_EXCL_LINE
     }
@@ -1572,16 +1551,16 @@ void HMatrix<T, LowRankMatrix, AdmissibleCondition>::copy_local_diagonal(T *ptr,
     }
 }
 
-template <typename T, template <typename> class LowRankMatrix, class AdmissibleCondition>
-Matrix<T> HMatrix<T, LowRankMatrix, AdmissibleCondition>::get_local_diagonal_block(bool permutation) const {
+template <typename T>
+Matrix<T> HMatrix<T>::get_local_diagonal_block(bool permutation) const {
     int local_size_source = cluster_tree_s->get_masteroffset(rankWorld).second;
     Matrix<T> diagonal_block(local_size, local_size_source);
     copy_local_diagonal_block(diagonal_block.data(), permutation);
     return diagonal_block;
 }
 
-template <typename T, template <typename> class LowRankMatrix, class AdmissibleCondition>
-void HMatrix<T, LowRankMatrix, AdmissibleCondition>::copy_local_diagonal_block(T *ptr, bool permutation) const {
+template <typename T>
+void HMatrix<T>::copy_local_diagonal_block(T *ptr, bool permutation) const {
     if ((!(cluster_tree_t->IsLocal()) || !(cluster_tree_s->IsLocal())) && permutation) {
         throw std::logic_error("[Htool error] Permutation is not local, get_local_diagonal_block cannot be used"); // LCOV_EXCL_LINE
     }
@@ -1604,7 +1583,6 @@ void HMatrix<T, LowRankMatrix, AdmissibleCondition>::copy_local_diagonal_block(T
     }
 
     // Internal compressed block
-    Matrix<T> FarFielBlock(local_size, local_size_source);
     for (int i = 0; i < MyDiagFarFieldMats.size(); i++) {
         const LowRankMatrix<T> &lmat = *(MyDiagFarFieldMats[i]);
         int local_nr                 = lmat.nb_rows();
@@ -1612,7 +1590,7 @@ void HMatrix<T, LowRankMatrix, AdmissibleCondition>::copy_local_diagonal_block(T
         int offset_i                 = lmat.get_offset_i() - local_offset;
         int offset_j                 = lmat.get_offset_j() - local_offset;
         ;
-        FarFielBlock.resize(local_nr, local_nc);
+        Matrix<T> FarFielBlock(local_nr, local_nc);
         lmat.get_whole_matrix(&(FarFielBlock(0, 0)));
         for (int i = 0; i < local_nc; i++) {
             std::copy_n(&(FarFielBlock(0, i)), local_nr, ptr + offset_i + (offset_j + i) * local_size);
@@ -1668,8 +1646,8 @@ void HMatrix<T, LowRankMatrix, AdmissibleCondition>::copy_local_diagonal_block(T
     }
 }
 
-template <typename T, template <typename> class LowRankMatrix, class AdmissibleCondition>
-std::pair<int, int> HMatrix<T, LowRankMatrix, AdmissibleCondition>::get_max_size_blocks() const {
+template <typename T>
+std::pair<int, int> HMatrix<T>::get_max_size_blocks() const {
     int local_max_size_j = 0;
     int local_max_size_i = 0;
 
@@ -1689,8 +1667,8 @@ std::pair<int, int> HMatrix<T, LowRankMatrix, AdmissibleCondition>::get_max_size
     return std::pair<int, int>(local_max_size_i, local_max_size_j);
 }
 
-template <typename T, template <typename> class LowRankMatrix, class AdmissibleCondition>
-void HMatrix<T, LowRankMatrix, AdmissibleCondition>::apply_dirichlet(const std::vector<int> &boundary) {
+template <typename T>
+void HMatrix<T>::apply_dirichlet(const std::vector<int> &boundary) {
     // Renum
     std::vector<int> boundary_renum(boundary.size());
     this->source_to_cluster_permutation(boundary.data(), boundary_renum.data());

@@ -2,7 +2,8 @@
 #define HTOOL_MULTI_LRMAT_HPP
 
 #include "../clustering/cluster.hpp"
-#include "../lrmat/barelrmat.hpp"
+#include "../lrmat/lrmat.hpp"
+#include "../multilrmat/virtual_multi_lrmat_generator.hpp"
 #include "../types/multimatrix.hpp"
 #include <vector>
 namespace htool {
@@ -14,31 +15,52 @@ class MultiLowRankMatrix {
     // Data member
     int rank, nr, nc, nm;
     // Matrix<T>  U,V;
-    std::vector<bareLowRankMatrix<T>> LowRankMatrices;
+    std::vector<LowRankMatrix<T>> LowRankMatrices;
     std::vector<int> ir;
     std::vector<int> ic;
     int offset_i;
     int offset_j;
 
     double epsilon;
-    unsigned int ndofperelt;
+    unsigned int dimension;
 
   public:
     // Constructors
     MultiLowRankMatrix() = delete;
-    MultiLowRankMatrix(const std::vector<int> &ir0, const std::vector<int> &ic0, int nm0, int rank0 = -1, double epsilon0 = 1e-3) : rank(rank0), nr(ir0.size()), nc(ic0.size()), nm(nm0), ir(ir0), ic(ic0), offset_i(0), offset_j(0), epsilon(epsilon0), ndofperelt(1) {
+    MultiLowRankMatrix(int dimension0, const std::vector<int> &ir0, const std::vector<int> &ic0, int nm0, int rank0 = -1, double epsilon0 = 1e-3) : rank(rank0), nr(ir0.size()), nc(ic0.size()), nm(nm0), ir(ir0), ic(ic0), offset_i(0), offset_j(0), epsilon(epsilon0), dimension(dimension0) {
         for (int l = 0; l < nm; l++) {
-            LowRankMatrices.emplace_back(ir, ic, offset_i, offset_j, rank0, epsilon);
+            LowRankMatrices.emplace_back(dimension, ir, ic, offset_i, offset_j, rank0, epsilon);
         }
     }
-    MultiLowRankMatrix(const std::vector<int> &ir0, const std::vector<int> &ic0, int nm0, int offset_i0, int offset_j0, int rank0 = -1, double epsilon0 = 1e-3) : rank(rank0), nr(ir0.size()), nc(ic0.size()), nm(nm0), ir(ir0), ic(ic0), offset_i(offset_i0), offset_j(offset_j0), epsilon(epsilon0), ndofperelt(1) {
+    MultiLowRankMatrix(int dimension0, const std::vector<int> &ir0, const std::vector<int> &ic0, int nm0, int offset_i0, int offset_j0, int rank0 = -1, double epsilon0 = 1e-3) : rank(rank0), nr(ir0.size()), nc(ic0.size()), nm(nm0), ir(ir0), ic(ic0), offset_i(offset_i0), offset_j(offset_j0), epsilon(epsilon0), dimension(dimension0) {
         for (int l = 0; l < nm; l++) {
-            LowRankMatrices.emplace_back(ir, ic, offset_i, offset_j, rank0, epsilon);
+            LowRankMatrices.emplace_back(dimension, ir, ic, offset_i, offset_j, rank0, epsilon);
         }
     }
 
     // VIrtual function
-    virtual void build(const MultiIMatrix<T> &A, const VirtualCluster &t, const double *const xt, const int *const tabt, const VirtualCluster &s, const double *const xs, const int *const tabs) = 0;
+    void build(const MultiIMatrix<T> &A, const VirtualMultiLowRankGenerator<T> &MLRGenerator, const VirtualCluster &t, const double *const xt, const VirtualCluster &s, const double *const xs) {
+        if (this->rank == 0) {
+            for (int l = 0; l < this->nm; l++) {
+                T *uu, *vv;
+                uu = new T[this->nr];
+                vv = new T[this->nc];
+                std::fill_n(uu, this->nr, 0);
+                std::fill_n(vv, this->nc, 0);
+                this->LowRankMatrices[l].assign_U(this->nr, 1, uu);
+                this->LowRankMatrices[l].assign_V(1, this->nc, vv);
+            }
+        } else {
+            T **uu, **vv;
+            MLRGenerator.copy_multi_low_rank_approximation(epsilon, ir.size(), ic.size(), ir.data(), ic.data(), rank, &uu, &vv, A, t, xt, s, xs);
+            // for (int l = 0; l < this->nm; l++) {
+            //     this->LowRankMatrices[l].assign_U(this->nr, rank, uu[l]);
+            //     this->LowRankMatrices[l].assign_V(rank, this->nc, vv[l]);
+            // }
+            // delete[] uu;
+            // delete[] vv;
+        }
+    };
 
     // Getters
     int nb_rows() const { return this->nr; }
@@ -55,8 +77,8 @@ class MultiLowRankMatrix {
     void set_epsilon(double epsilon0) { this->epsilon = epsilon0; }
     void set_ndofperelt(unsigned int ndofperelt0) { this->ndofperelt = ndofperelt0; }
 
-    bareLowRankMatrix<T> &operator[](int j) { return LowRankMatrices[j]; };
-    const bareLowRankMatrix<T> &operator[](int j) const { return LowRankMatrices[j]; };
+    LowRankMatrix<T> &operator[](int j) { return LowRankMatrices[j]; };
+    const LowRankMatrix<T> &operator[](int j) const { return LowRankMatrices[j]; };
 };
 
 template <typename T>

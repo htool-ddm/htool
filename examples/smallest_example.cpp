@@ -90,8 +90,8 @@ int main(int argc, char *argv[]) {
     std::vector<double> x(size, 1), result(size, 0);
     std::shared_ptr<Cluster<PCA<SplittingTypes::RegularSplitting>>> t = make_shared<Cluster<PCA<SplittingTypes::RegularSplitting>>>(3);
     t->build(size, p.data(), 2);
-    HMatrix<double, partialACA, RjasanowSteinbach> HA(t, t, epsilon, eta, 'S', 'U');
-    HA.build_auto_sym(A, p.data());
+    HMatrix<double> HA(t, t, epsilon, eta, 'S', 'U');
+    HA.build(A, p.data());
     result = HA * x;
 
     // Output

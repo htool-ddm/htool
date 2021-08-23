@@ -7,7 +7,7 @@
 
 namespace htool {
 
-void create_disk(int space_dim, double z, int nr, double *const xt, int *const tabt = nullptr) {
+void create_disk(int space_dim, double z, int nr, double *const xt) {
 
     double z1 = z;
     for (int j = 0; j < nr; j++) {
@@ -18,8 +18,6 @@ void create_disk(int space_dim, double z, int nr, double *const xt, int *const t
         if (space_dim == 3)
             xt[space_dim * j + 2] = z1;
         // sqrt(rho) otherwise the points would be concentrated in the center of the disk
-        if (tabt != nullptr)
-            tabt[j] = j;
     }
 }
 } // namespace htool

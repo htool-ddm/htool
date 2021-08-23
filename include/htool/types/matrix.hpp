@@ -24,17 +24,8 @@ class IMatrix {
   public:
     IMatrix(int nr0, int nc0) : nr(nr0), nc(nc0) {}
 
-    //! ### Access to number of rows
-    /*!
-    Returns the number of rows of the input argument _A_.
-    */
-    const int &nb_rows() const { return nr; }
-
-    //! ### Access to number of columns
-    /*!
-    Returns the number of columns of the input argument _A_.
-    */
-    const int &nb_cols() const { return nc; }
+    int nb_rows() const { return nr; }
+    int nb_cols() const { return nc; }
 
     virtual int get_offset_i() const = 0;
     virtual int get_offset_j() const = 0;
@@ -48,81 +39,60 @@ template <typename T>
 class Matrix : public IMatrix<T> {
 
   protected:
-    std::vector<T> mat;
+    T *mat;
 
   public:
-    //! ### Default constructor
-    /*!
-    Initializes the matrix to the size 0*0.
-    */
-    Matrix() : IMatrix<T>(0, 0) {}
-
-    //! ### Another constructor
-    /*!
-    Initializes the matrix with _nbr_ rows and _nbc_ columns,
-    and fills the matrix with zeros.
-    */
+    Matrix() : IMatrix<T>(0, 0), mat(nullptr) {}
     Matrix(const int &nbr, const int &nbc) : IMatrix<T>(nbr, nbc) {
-        this->mat.resize(nbr * nbc, 0);
+        this->mat = new T[nbr * nbc];
+        std::fill_n(this->mat, nbr * nbc, 0);
+    }
+    Matrix(const Matrix &rhs) : IMatrix<T>(rhs.nb_rows(), rhs.nb_cols()) {
+        mat = new T[rhs.nb_rows() * rhs.nb_cols()]();
+
+        std::copy_n(rhs.mat, rhs.nb_rows() * rhs.nb_cols(), mat);
+    }
+    Matrix &operator=(const Matrix &rhs) {
+        if (&rhs == this) {
+            return *this;
+        }
+        if (this->nr * this->nc == rhs.nb_cols() * rhs.nb_rows()) {
+            std::copy_n(rhs.mat, this->nr * this->nc, mat);
+            this->nr = rhs.nr;
+            this->nc = rhs.nc;
+        } else {
+            this->nr = rhs.nr;
+            this->nc = rhs.nc;
+            delete[] mat;
+            mat = new T[this->nr * this->nc]();
+            std::copy_n(rhs.mat, this->nr * this->nc, mat);
+        }
+        return *this;
+    }
+    Matrix(Matrix &&rhs) : IMatrix<T>(rhs.nb_rows(), rhs.nb_cols()), mat(rhs.mat) {
+        rhs.mat = nullptr;
     }
 
-    //! ### Copy constructor
-    /*!
-    */
-    Matrix(const Matrix &A) = default;
-
-    //! ### Copy assignement operator with matrix input argument
-    /*!
-    Copies the value of the entries of the input _A_
-    (which is a matrix) argument into the entries of
-    calling instance.
-    */
-    void operator=(const Matrix &A) {
-        assert(this->nr == A.nr && this->nc == A.nc);
-        this->mat = A.mat;
-    }
-
-    //! ### Copy assignement operator with scalar input argument
-    /*!
-    Sets the values of the entries of the calling instance
-    to the input value _z_.
-    */
-    void operator=(const T &z) {
-        std::fill(this->mat.begin(), this->mat.end(), z);
-    }
-
-    //! ### Move constructor
-    /*!
-    Initializes the matrix to the size 0*0.
-    */
-    Matrix(Matrix &&) = default;
-
-    //! ### Copy assignement operator with matrix input argument
-    /*!
-    Copies the value of the entries of the input _A_
-    (which is a matrix) argument into the entries of
-    calling instance.
-    */
-    Matrix &operator=(Matrix &&A) {
-        assert(this->nr == A.nr && this->nc == A.nc);
-        this->mat = std::move(A.mat);
-        this->nr  = std::move(A.nr);
-        this->nc  = std::move(A.nc);
-
+    Matrix &operator=(Matrix &&rhs) {
+        if (this != &rhs) {
+            delete[] this->mat;
+            this->nr  = rhs.nr;
+            this->nc  = rhs.nc;
+            this->mat = rhs.mat;
+            rhs.mat   = nullptr;
+        }
         return *this;
     }
 
-    //! ### Access operator
-    /*!
-    If _A_ is the instance calling the operator
-    _A.get_coef(j,k)_ returns the entry of _A_ located
-    jth row and kth column.
-    */
+    ~Matrix() {
+        if (mat != nullptr)
+            delete[] mat;
+    }
 
-    // Matrix<T> get_submatrix(const std::vector<int>& J, const std::vector<int>& K) const{
-    //       return SubMatrix<T>(*this,J,K) ;
-    // }
-
+    void operator=(const T &z) {
+        if (this->nr * this->nc > 0)
+            std::fill_n(this->mat, this->nr * this->nc, z);
+    }
     //! ### Access operator
     /*!
     If _A_ is the instance calling the operator
@@ -149,13 +119,18 @@ class Matrix : public IMatrix<T> {
     /*!
     */
 
-    const std::vector<T> &get_mat() const { return this->mat; }
+    T *data() { return this->mat; }
+    T *data() const { return this->mat; }
 
-    //! ### Access operator
-    /*!
-    */
+    void assign(int nr, int nc, T *ptr) {
+        if (this->nr * this->nc > 0)
+            delete[] this->mat;
 
-    T *data() { return this->mat.data(); }
+        this->nr = nr;
+        this->nc = nc;
+
+        this->mat = ptr;
+    }
 
     //! ### Access operator
     /*!
@@ -227,23 +202,29 @@ class Matrix : public IMatrix<T> {
         set_stridedslice(col * this->nr, this->nr, 1, a);
     }
 
-    //! ### Modifies the size of the matrix
-    /*!
-    Changes the size of the matrix so that
-    the number of rows is set to _nbr_ and
-    the number of columns is set to _nbc_.
-    */
-    void resize(const int nbr, const int nbc, T value = 0) {
-        this->mat.resize(nbr * nbc, value);
-        this->nr = nbr;
-        this->nc = nbc;
+    void set_size(int nr0, int nc0) {
+        this->nr = nr0;
+        this->nc = nc0;
     }
+
+    // //! ### Modifies the size of the matrix
+    // /*!
+    // Changes the size of the matrix so that
+    // the number of rows is set to _nbr_ and
+    // the number of columns is set to _nbc_.
+    // */
+    // void resize(const int nbr, const int nbc, T value = 0) {
+    //     this->mat.resize(nbr * nbc, value);
+    //     this->nr = nbr;
+    //     this->nc = nbc;
+    // }
 
     //! ### Matrix-scalar product
     /*!
     */
 
-    friend Matrix operator*(const Matrix &A, const T &a) {
+    friend Matrix
+    operator*(const Matrix &A, const T &a) {
         Matrix R(A.nr, A.nc);
         for (int i = 0; i < A.nr; i++) {
             for (int j = 0; j < A.nc; j++) {
@@ -320,7 +301,7 @@ class Matrix : public IMatrix<T> {
             char n   = 'N';
             int incx = 1;
             int incy = 1;
-            Blas<T>::gemv(&n, &nr, &nc, &alpha, &(this->mat[0]), &lda, in, &incx, &beta, out, &incy);
+            Blas<T>::gemv(&n, &nr, &nc, &alpha, mat, &lda, in, &incx, &beta, out, &incy);
         } else {
             char transa = 'N';
             char transb = 'N';
@@ -329,7 +310,7 @@ class Matrix : public IMatrix<T> {
             int K       = nc;
             int ldb     = nc;
             int ldc     = nr;
-            Blas<T>::gemm(&transa, &transb, &M, &N, &K, &alpha, &(this->mat[0]), &lda, in, &ldb, &beta, out, &ldc);
+            Blas<T>::gemm(&transa, &transb, &M, &N, &K, &alpha, mat, &lda, in, &ldb, &beta, out, &ldc);
         }
     }
 
@@ -346,7 +327,7 @@ class Matrix : public IMatrix<T> {
         if (mu == 1) {
             int incx = 1;
             int incy = 1;
-            Blas<T>::gemv(&op, &nr, &nc, &alpha, &(this->mat[0]), &lda, in, &incx, &beta, out, &incy);
+            Blas<T>::gemv(&op, &nr, &nc, &alpha, mat, &lda, in, &incx, &beta, out, &incy);
         } else {
             int lda     = mu;
             char transa = 'N';
@@ -362,7 +343,7 @@ class Matrix : public IMatrix<T> {
                 K      = nr;
             }
 
-            Blas<T>::gemm(&transa, &transb, &M, &N, &K, &alpha, in, &lda, &(this->mat[0]), &ldb, &beta, out, &ldc);
+            Blas<T>::gemm(&transa, &transb, &M, &N, &K, &alpha, in, &lda, mat, &ldb, &beta, out, &ldc);
         }
     }
 
@@ -380,7 +361,7 @@ class Matrix : public IMatrix<T> {
                 int lda  = nr;
                 int incx = 1;
                 int incy = 1;
-                Blas<T>::gemv(&op, &nr, &nc, &alpha, &(this->mat[0]), &lda, in, &incx, &beta, out, &incy);
+                Blas<T>::gemv(&op, &nr, &nc, &alpha, mat, &lda, in, &incx, &beta, out, &incy);
             } else {
                 int lda     = mu;
                 char transa = 'N';
@@ -396,7 +377,7 @@ class Matrix : public IMatrix<T> {
                     K      = nr;
                 }
 
-                Blas<T>::gemm(&transa, &transb, &M, &N, &K, &alpha, in, &lda, &(this->mat[0]), &ldb, &beta, out, &ldc);
+                Blas<T>::gemm(&transa, &transb, &M, &N, &K, &alpha, in, &lda, mat, &ldb, &beta, out, &ldc);
             }
         }
     }
@@ -413,7 +394,7 @@ class Matrix : public IMatrix<T> {
                 int lda  = nr;
                 int incx = 1;
                 int incy = 1;
-                Blas<T>::symv(&UPLO, &nr, &alpha, &(this->mat[0]), &lda, in, &incx, &beta, out, &incy);
+                Blas<T>::symv(&UPLO, &nr, &alpha, mat, &lda, in, &incx, &beta, out, &incy);
             } else {
                 int lda   = nr;
                 char side = 'R';
@@ -422,7 +403,7 @@ class Matrix : public IMatrix<T> {
                 int ldb   = mu;
                 int ldc   = mu;
 
-                Blas<T>::symm(&side, &UPLO, &M, &N, &alpha, &(this->mat[0]), &lda, in, &ldb, &beta, out, &ldc);
+                Blas<T>::symm(&side, &UPLO, &M, &N, &alpha, mat, &lda, in, &ldb, &beta, out, &ldc);
             }
         }
     }
@@ -439,9 +420,9 @@ class Matrix : public IMatrix<T> {
                 int incx = 1;
                 int incy = 1;
                 if (symmetry == 'S') {
-                    Blas<T>::symv(&UPLO, &nr, &alpha, &(this->mat[0]), &lda, in, &incx, &beta, out, &incy);
+                    Blas<T>::symv(&UPLO, &nr, &alpha, mat, &lda, in, &incx, &beta, out, &incy);
                 } else if (symmetry == 'H') {
-                    Blas<T>::hemv(&UPLO, &nr, &alpha, &(this->mat[0]), &lda, in, &incx, &beta, out, &incy);
+                    Blas<T>::hemv(&UPLO, &nr, &alpha, mat, &lda, in, &incx, &beta, out, &incy);
                 } else {
                     throw std::invalid_argument("[Htool error] Invalid arguments for add_mvprod_row_major_sym"); // LCOV_EXCL_LINE
                 }
@@ -455,9 +436,9 @@ class Matrix : public IMatrix<T> {
                 int ldc   = mu;
 
                 if (symmetry == 'S') {
-                    Blas<T>::symm(&side, &UPLO, &M, &N, &alpha, &(this->mat[0]), &lda, in, &ldb, &beta, out, &ldc);
+                    Blas<T>::symm(&side, &UPLO, &M, &N, &alpha, mat, &lda, in, &ldb, &beta, out, &ldc);
                 } else if (symmetry == 'H') {
-                    Blas<T>::hemm(&side, &UPLO, &M, &N, &alpha, &(this->mat[0]), &lda, in, &ldb, &beta, out, &ldc);
+                    Blas<T>::hemm(&side, &UPLO, &M, &N, &alpha, mat, &lda, in, &ldb, &beta, out, &ldc);
                 } else {
                     throw std::invalid_argument("[Htool error] Invalid arguments for add_mvprod_row_major_sym"); // LCOV_EXCL_LINE
                 }
@@ -468,25 +449,13 @@ class Matrix : public IMatrix<T> {
     int get_offset_i() const { return 0; }
     int get_offset_j() const { return 0; }
 
-    friend std::ostream &operator<<(std::ostream &out, const Matrix &m) {
-        if (!(m.mat.empty())) {
-            std::cout << m.nr << " " << m.nc << std::endl;
-            for (int i = 0; i < m.nr; i++) {
-                std::vector<T> row = m.get_row(i);
-                std::copy(row.begin(), row.end(), std::ostream_iterator<T>(out, "\t"));
-                out << std::endl;
-            }
-        }
-        return out;
-    }
-
     //! ### Looking for the entry of maximal modulus
     /*!
     Returns the number of row and column of the entry
     of maximal modulus in the matrix _A_.
     */
     friend std::pair<int, int> argmax(const Matrix<T> &M) {
-        int p = argmax(M.mat);
+        int p = std::max_element(M.data(), M.data() + M.nb_cols() * M.nb_rows(), [](T a, T b) { return std::abs(a) < std::abs(b); }) - M.data();
         return std::pair<int, int>(p % M.nr, (int)p / M.nr);
     }
 
@@ -506,7 +475,7 @@ class Matrix : public IMatrix<T> {
         int cols = this->nc;
         out.write((char *)(&rows), sizeof(int));
         out.write((char *)(&cols), sizeof(int));
-        out.write((char *)&(mat[0]), rows * cols * sizeof(T));
+        out.write((char *)mat, rows * cols * sizeof(T));
 
         out.close();
         return 0;
@@ -528,7 +497,9 @@ class Matrix : public IMatrix<T> {
         int rows = 0, cols = 0;
         in.read((char *)(&rows), sizeof(int));
         in.read((char *)(&cols), sizeof(int));
-        mat.resize(rows * cols);
+        if (this->nr != 0 && this->nc != 0)
+            delete[] mat;
+        mat      = new T[rows * cols];
         this->nr = rows;
         this->nc = cols;
         in.read((char *)&(mat[0]), rows * cols * sizeof(T));
@@ -599,7 +570,7 @@ class SubMatrix : public Matrix<T> {
     }
 
     SubMatrix(const VirtualGenerator<T> &mat0, int M, int N, const int *const rows, const int *const cols, int offset_i0 = 0, int offset_j0 = 0) : SubMatrix(M, N, rows, cols, offset_i0, offset_j0) {
-        mat0.copy_submatrix(M, N, rows, cols, this->mat.data());
+        mat0.copy_submatrix(M, N, rows, cols, this->mat);
     }
 
     // C++ style
@@ -608,18 +579,6 @@ class SubMatrix : public Matrix<T> {
     SubMatrix(const std::vector<int> &ir0, const std::vector<int> &ic0) : SubMatrix(ir0.begin(), ir0.end(), ic0.begin(), ic0.end(), 0, 0) {}
 
     SubMatrix(const std::vector<int> &ir0, const std::vector<int> &ic0, const int &offset_i0, const int &offset_j0) : SubMatrix(ir0.begin(), ir0.end(), ic0.begin(), ic0.end(), offset_i0, offset_j0) {}
-
-    SubMatrix(const VirtualGenerator<T> &mat0, const std::vector<int> &ir0, const std::vector<int> &ic0) : SubMatrix(ir0.begin(), ir0.end(), ic0.begin(), ic0.end(), 0, 0) {
-
-        *this = mat0.get_submatrix(ir0, ic0);
-    }
-
-    SubMatrix(const VirtualGenerator<T> &mat0, const std::vector<int> &ir0, const std::vector<int> &ic0, const int &offset_i0, const int &offset_j0) : SubMatrix(ir0.begin(), ir0.end(), ic0.begin(), ic0.end(), offset_i0, offset_j0) {
-
-        *this    = mat0.get_submatrix(ir0, ic0);
-        offset_i = offset_i0;
-        offset_j = offset_j0;
-    }
 
     SubMatrix(const SubMatrix &m) {
         this->mat      = m.mat;

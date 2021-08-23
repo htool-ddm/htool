@@ -72,9 +72,12 @@ int main(int argc, char *argv[]) {
         std::shared_ptr<Cluster<PCARegularClustering>> t = make_shared<Cluster<PCARegularClustering>>();
         t->build(nr, p1.data(), MasterOffset_target.data(), 2);
 
+        std::shared_ptr<partialACA<double>> compressor = std::make_shared<partialACA<double>>();
+
         // with permutation
-        HMatrix<double, partialACA, RjasanowSteinbach> HA(t, t, epsilon, eta);
-        HA.build_auto_sym(A, p1.data());
+        HMatrix<double> HA(t, t, epsilon, eta);
+        HA.set_compression(compressor);
+        HA.build(A, p1.data());
         HA.print_infos();
 
         // without permutation
@@ -86,9 +89,10 @@ int main(int argc, char *argv[]) {
         }
 
         GeneratorTestDouble A_perm(3, nr, nr, p1_perm, p1_perm, 0.1);
-        HMatrix<double, partialACA, RjasanowSteinbach> HA_not_using_perm(t, t, epsilon, eta);
+        HMatrix<double> HA_not_using_perm(t, t, epsilon, eta);
+        HA_not_using_perm.set_compression(compressor);
         HA_not_using_perm.set_use_permutation(false);
-        HA_not_using_perm.build_auto_sym(A_perm, p1_perm.data());
+        HA_not_using_perm.build(A_perm, p1_perm.data());
 
         // Random vector
         int mu = 10;

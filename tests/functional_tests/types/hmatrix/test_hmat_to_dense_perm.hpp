@@ -72,8 +72,10 @@ int test_hmat_to_dense_perm(int argc, char *argv[]) {
     s->set_minclustersize(minclustersize);
     t->build(nr, p1.data(), MasterOffset_target.data());
     s->build(nc, p2.data(), MasterOffset_source.data());
-    HMatrix<double, fullACA, RjasanowSteinbach> HA(t, s, epsilon, eta);
-    HA.build_auto(A, p1.data(), p2.data());
+    std::shared_ptr<fullACA<double>> compressor = std::make_shared<fullACA<double>>();
+    HMatrix<double> HA(t, s, epsilon, eta);
+    HA.set_compression(compressor);
+    HA.build(A, p1.data(), p2.data());
     HA.print_infos();
 
     // Dense Matrix
@@ -148,8 +150,10 @@ int test_hmat_to_dense_perm_sym(int argc, char *argv[], char UPLO) {
     std::shared_ptr<Cluster<PCAGeometricClustering>> t = make_shared<Cluster<PCAGeometricClustering>>();
     t->set_minclustersize(minclustersize);
     t->build(nr, p1.data(), MasterOffset_target.data());
-    HMatrix<double, fullACA, RjasanowSteinbach> HA(t, t, epsilon, eta, 'S', UPLO);
-    HA.build_auto_sym(A, p1.data());
+    std::shared_ptr<fullACA<double>> compressor = std::make_shared<fullACA<double>>();
+    HMatrix<double> HA(t, t, epsilon, eta, 'S', UPLO);
+    HA.set_compression(compressor);
+    HA.build(A, p1.data());
     HA.print_infos();
 
     // Dense Matrix
@@ -225,8 +229,10 @@ int test_hmat_to_dense_perm_sym_complex(int argc, char *argv[], char UPLO) {
     std::shared_ptr<Cluster<PCAGeometricClustering>> t = make_shared<Cluster<PCAGeometricClustering>>();
     t->set_minclustersize(minclustersize);
     t->build(nr, p1.data(), MasterOffset_target.data());
-    HMatrix<std::complex<double>, fullACA, RjasanowSteinbach> HA(t, t, epsilon, eta, 'S', UPLO);
-    HA.build_auto_sym(A, p1.data());
+    std::shared_ptr<fullACA<std::complex<double>>> compressor = std::make_shared<fullACA<std::complex<double>>>();
+    HMatrix<std::complex<double>> HA(t, t, epsilon, eta, 'S', UPLO);
+    HA.set_compression(compressor);
+    HA.build(A, p1.data());
     HA.print_infos();
 
     // Dense Matrix
@@ -302,8 +308,10 @@ int test_hmat_to_dense_perm_hermitian_complex(int argc, char *argv[], char UPLO)
     std::shared_ptr<Cluster<PCAGeometricClustering>> t = make_shared<Cluster<PCAGeometricClustering>>();
     t->set_minclustersize(minclustersize);
     t->build(nr, p1.data(), MasterOffset_target.data());
-    HMatrix<std::complex<double>, fullACA, RjasanowSteinbach> HA(t, t, epsilon, eta, 'H', UPLO);
-    HA.build_auto_sym(A, p1.data());
+    std::shared_ptr<fullACA<std::complex<double>>> compressor = std::make_shared<fullACA<std::complex<double>>>();
+    HMatrix<std::complex<double>> HA(t, t, epsilon, eta, 'H', UPLO);
+    HA.set_compression(compressor);
+    HA.build(A, p1.data());
     HA.print_infos();
 
     // Dense Matrix

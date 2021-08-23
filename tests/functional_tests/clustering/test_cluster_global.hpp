@@ -20,12 +20,11 @@ int test_cluster_global(int argc, char *argv[]) {
     vector<double> p(size * dim);
     vector<double> r(size, 0);
     vector<double> g(size, 1);
-    vector<int> tab(size);
 
     srand(1);
     // we set a constant seed for rand because we want always the same result if we run the check many times
     // (two different initializations with the same seed will generate the same succession of results in the subsequent calls to rand)
-    create_disk(dim, 0, size, p.data(), tab.data());
+    create_disk(dim, 0, size, p.data());
 
     std::vector<int> nb_sons_test{2, 4, -1};
     for (auto &nb_sons : nb_sons_test) {
@@ -35,7 +34,7 @@ int test_cluster_global(int argc, char *argv[]) {
 
         Cluster_type t(dim);
         t.set_minclustersize(1);
-        t.build(size, p.data(), r.data(), tab.data(), g.data(), nb_sons);
+        t.build(size, p.data(), r.data(), g.data(), nb_sons);
         t.print();
         MPI_Barrier(MPI_COMM_WORLD);
 

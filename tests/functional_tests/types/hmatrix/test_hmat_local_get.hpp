@@ -55,8 +55,8 @@ int test_hmat_local_get(int argc, char *argv[], char symmetry, char UPLO) {
     std::shared_ptr<Cluster<PCARegularClustering>> t = make_shared<Cluster<PCARegularClustering>>();
     t->build(nr, p1.data(), MasterOffset.data(), 2);
 
-    HMatrix<double, SVD, RjasanowSteinbach> HA(t, t, epsilon, eta, symmetry, UPLO);
-    HA.build_auto_sym(A, p1.data());
+    HMatrix<double> HA(t, t, epsilon, eta, symmetry, UPLO);
+    HA.build(A, p1.data());
     HA.print_infos();
 
     // Local permutation
@@ -157,8 +157,8 @@ int test_hmat_local_get_complex(int argc, char *argv[], char symmetry, char UPLO
     std::shared_ptr<Cluster<PCAGeometricClustering>> t = make_shared<Cluster<PCAGeometricClustering>>();
     t->build(nr, p1.data(), MasterOffset.data(), 2);
 
-    HMatrix<std::complex<double>, SVD, RjasanowSteinbach> HA(t, t, epsilon, eta, symmetry, UPLO);
-    HA.build_auto_sym(A, p1.data());
+    HMatrix<std::complex<double>> HA(t, t, epsilon, eta, symmetry, UPLO);
+    HA.build(A, p1.data());
     HA.print_infos();
 
     // Local diagonal
@@ -248,8 +248,8 @@ int test_hmat_local_get_complex_hermitian(int argc, char *argv[], char symmetry,
     std::shared_ptr<Cluster<PCAGeometricClustering>> t = make_shared<Cluster<PCAGeometricClustering>>();
     t->build(nr, p1.data(), MasterOffset.data(), 2);
 
-    HMatrix<std::complex<double>, SVD, RjasanowSteinbach> HA(t, t, epsilon, eta, symmetry, UPLO);
-    HA.build_auto_sym(A, p1.data());
+    HMatrix<std::complex<double>> HA(t, t, epsilon, eta, symmetry, UPLO);
+    HA.build(A, p1.data());
     HA.print_infos();
 
     // Local diagonal

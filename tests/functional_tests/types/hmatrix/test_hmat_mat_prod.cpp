@@ -88,10 +88,13 @@ int main(int argc, char *argv[]) {
         s->build(nc, p2.data(), MasterOffset_source.data(), 2);
         std::cout << MPI_Wtime() - time << std::endl;
         time = MPI_Wtime() - time;
-        HMatrix<double, fullACA, RjasanowSteinbach> HA(t, s, epsilon, eta);
+
+        std::shared_ptr<fullACA<double>> compressor = std::make_shared<fullACA<double>>();
+        HMatrix<double> HA(t, s, epsilon, eta);
+        HA.set_compression(compressor);
         std::cout << MPI_Wtime() - time << std::endl;
         time = MPI_Wtime() - time;
-        HA.build_auto(A, p1.data(), p2.data());
+        HA.build(A, p1.data(), p2.data());
         std::cout << MPI_Wtime() - time << std::endl;
         time = MPI_Wtime() - time;
         HA.print_infos();

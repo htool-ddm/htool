@@ -112,8 +112,8 @@ int main(int argc, char *argv[]) {
     double norm_A = A.normFrob();
 
     // SVD with fixed rank
-    SVD<double> A_SVD(t.get_perm(), s.get_perm(), reqrank_max, epsilon);
-    A_SVD.build(A, t, p1.data(), tab1.data(), s, p2.data(), tab2.data());
+    LowRankMatrix<double> A_SVD(A.get_dimension(), t.get_perm(), s.get_perm(), reqrank_max, epsilon);
+    A_SVD.build(A, SVD<double>(), t, p1.data(), s, p2.data());
     std::vector<double> SVD_fixed_errors;
     for (int k = 0; k < A_SVD.rank_of() + 1; k++) {
         SVD_fixed_errors.push_back(Frobenius_absolute_error(A_SVD, A, k) / norm_A);
@@ -121,8 +121,8 @@ int main(int argc, char *argv[]) {
     std::cout << SVD_fixed_errors << std::endl;
 
     // fullACA with fixed rank
-    fullACA<double> A_fullACA_fixed(t.get_perm(), s.get_perm(), reqrank_max, epsilon);
-    A_fullACA_fixed.build(A, t, p1.data(), tab1.data(), s, p2.data(), tab2.data());
+    LowRankMatrix<double> A_fullACA_fixed(A.get_dimension(), t.get_perm(), s.get_perm(), reqrank_max, epsilon);
+    A_fullACA_fixed.build(A, fullACA<double>(), t, p1.data(), s, p2.data());
     std::vector<double> fullACA_fixed_errors;
     for (int k = 0; k < A_fullACA_fixed.rank_of() + 1; k++) {
         fullACA_fixed_errors.push_back(Frobenius_absolute_error(A_fullACA_fixed, A, k) / norm_A);
@@ -130,8 +130,8 @@ int main(int argc, char *argv[]) {
     std::cout << fullACA_fixed_errors << std::endl;
 
     // partialACA with fixed rank
-    partialACA<double> A_partialACA_fixed(t.get_perm(), s.get_perm(), reqrank_max, epsilon);
-    A_partialACA_fixed.build(A, t, p1.data(), tab1.data(), s, p2.data(), tab2.data());
+    LowRankMatrix<double> A_partialACA_fixed(A.get_dimension(), t.get_perm(), s.get_perm(), reqrank_max, epsilon);
+    A_partialACA_fixed.build(A, partialACA<double>(), t, p1.data(), s, p2.data());
     std::vector<double> partialACA_fixed_errors;
     std::cout << A_partialACA_fixed.rank_of() << " " << reqrank_max << std::endl;
     for (int k = 0; k < A_partialACA_fixed.rank_of() + 1; k++) {
@@ -140,8 +140,8 @@ int main(int argc, char *argv[]) {
 
     std::cout << partialACA_fixed_errors << std::endl;
     // sympartialACA with fixed rank
-    sympartialACA<double> A_sympartialACA_fixed(t.get_perm(), s.get_perm(), reqrank_max, epsilon);
-    A_sympartialACA_fixed.build(A, t, p1.data(), tab1.data(), s, p2.data(), tab2.data());
+    LowRankMatrix<double> A_sympartialACA_fixed(A.get_dimension(), t.get_perm(), s.get_perm(), reqrank_max, epsilon);
+    A_sympartialACA_fixed.build(A, sympartialACA<double>(), t, p1.data(), s, p2.data());
     std::vector<double> sympartialACA_fixed_errors;
     for (int k = 0; k < A_sympartialACA_fixed.rank_of() + 1; k++) {
         sympartialACA_fixed_errors.push_back(Frobenius_absolute_error(A_sympartialACA_fixed, A, k) / norm_A);

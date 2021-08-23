@@ -17,17 +17,17 @@
 namespace htool {
 
 // Friend functions --- forward declaration
-template <typename T, template <typename> class LowRankMatrix, class AdmissibleCondition>
+template <typename T, class AdmissibleCondition>
 class HMatrix;
 
-template <typename T, template <typename> class MultiLowRankMatrix, class AdmissibleCondition>
+template <typename T, class AdmissibleCondition>
 class MultiHMatrix;
 
-template <typename T, template <typename> class MultiLowRankMatrix, class AdmissibleCondition>
-double Frobenius_absolute_error(const MultiHMatrix<T, MultiLowRankMatrix, AdmissibleCondition> &B, const MultiIMatrix<T> &A, int l);
+template <typename T, class AdmissibleCondition>
+double Frobenius_absolute_error(const MultiHMatrix<T, AdmissibleCondition> &B, const MultiIMatrix<T> &A, int l);
 
 // Class
-template <typename T, template <typename> class MultiLowRankMatrix, class AdmissibleCondition>
+template <typename T, class AdmissibleCondition>
 class MultiHMatrix {
 
   private:

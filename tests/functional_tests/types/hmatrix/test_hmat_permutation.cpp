@@ -92,8 +92,10 @@ int main(int argc, char *argv[]) {
         s->build(nc, p2.data(), MasterOffset_source.data(), 2);
 
         // with permutation
-        HMatrix<double, partialACA, RjasanowSteinbach> HA(t, s, epsilon, eta);
-        HA.build_auto(A, p1.data(), p2.data());
+        std::shared_ptr<partialACA<double>> compressor = std::make_shared<partialACA<double>>();
+        HMatrix<double> HA(t, s, epsilon, eta);
+        HA.set_compression(compressor);
+        HA.build(A, p1.data(), p2.data());
         HA.print_infos();
 
         // without permutation
@@ -111,9 +113,10 @@ int main(int argc, char *argv[]) {
         }
 
         GeneratorTestDouble A_perm(3, nr, nc, p1_perm, p2_perm);
-        HMatrix<double, partialACA, RjasanowSteinbach> HA_not_using_perm(t, s, epsilon, eta);
+        HMatrix<double> HA_not_using_perm(t, s, epsilon, eta);
+        HA_not_using_perm.set_compression(compressor);
         HA_not_using_perm.set_use_permutation(false);
-        HA_not_using_perm.build_auto(A_perm, p1_perm.data(), p2_perm.data());
+        HA_not_using_perm.build(A_perm, p1_perm.data(), p2_perm.data());
 
         // Random vector
         int mu = 10;

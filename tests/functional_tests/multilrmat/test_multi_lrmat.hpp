@@ -10,13 +10,14 @@
 
 using namespace std;
 using namespace htool;
-class MyMultiMatrix : public MultiIMatrix<double> {
+class MyMultiMatrix : public VirtualMultiGenerator<double> {
     const vector<double> &p1;
     const vector<double> &p2;
     int space_dim;
 
   public:
-    MyMultiMatrix(int space_dim0, int nr, int nc, const vector<double> &p10, const vector<double> &p20) : MultiIMatrix(nr, nc, 5), p1(p10), p2(p20), space_dim(space_dim0) {}
+    MyMultiMatrix(int space_dim0, int nr, int nc, int nm, const vector<double> &p10, const vector<double> &p20) : VirtualMultiGenerator(nr, nc, nm), p1(p10), p2(p20), space_dim(space_dim0) {}
+
     std::vector<double> get_coefs(const int &i, const int &j) const {
         return std::vector<double>{
             (1.) / (4 * M_PI * std::sqrt(std::inner_product(p1.begin() + space_dim * i, p1.begin() + space_dim * i + space_dim, p2.begin() + space_dim * j, double(0), std::plus<double>(), [](double u, double v) { return (u - v) * (u - v); }))),
@@ -24,6 +25,14 @@ class MyMultiMatrix : public MultiIMatrix<double> {
             (3.) / (4 * M_PI * std::sqrt(std::inner_product(p1.begin() + space_dim * i, p1.begin() + space_dim * i + space_dim, p2.begin() + space_dim * j, double(0), std::plus<double>(), [](double u, double v) { return (u - v) * (u - v); }))),
             (4.) / (4 * M_PI * std::sqrt(std::inner_product(p1.begin() + space_dim * i, p1.begin() + space_dim * i + space_dim, p2.begin() + space_dim * j, double(0), std::plus<double>(), [](double u, double v) { return (u - v) * (u - v); }))),
             (5.) / (4 * M_PI * std::sqrt(std::inner_product(p1.begin() + space_dim * i, p1.begin() + space_dim * i + space_dim, p2.begin() + space_dim * j, double(0), std::plus<double>(), [](double u, double v) { return (u - v) * (u - v); })))};
+    }
+
+    void copy_submatrices(int M, int N, const int *const rows, const int *const cols, int NM, double *ptr) const override {
+        for (int i = 0; i < M; i++) {
+            for (int j = 0; j < N; j++) {
+                ptr[i + M * j] = this->get_coef(rows[i], cols[j]);
+            }
+        }
     }
     std::vector<double> mult(std::vector<double> &a, int l) const {
         std::vector<double> result(this->nr, 0);
