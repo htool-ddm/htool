@@ -24,7 +24,7 @@
 
 All notable changes to this project will be documented in this file.
 
-## [Unreleased]
+## [0.7] - 2021-09-21
 
 ### Added
 
@@ -42,6 +42,7 @@ All notable changes to this project will be documented in this file.
 ### Fixed
 
 - Missing inlines added
+- Fix bug when using htool via petsc with mkl
 
 ## [0.6] - 2021-08-03
 
