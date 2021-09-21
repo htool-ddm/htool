@@ -11,7 +11,7 @@ class VirtualAdmissibilityCondition {
 };
 
 // Rjasanow - Steinbach (3.15) p111 Chap Approximation of Boundary Element Matrices
-class RjasanowSteinbach : public VirtualAdmissibilityCondition {
+class RjasanowSteinbach final : public VirtualAdmissibilityCondition {
   public:
     bool ComputeAdmissibility(const VirtualCluster &target, const VirtualCluster &source, double eta) const override {
         bool admissible = 2 * std::min(target.get_rad(), source.get_rad()) < eta * std::max((norm2(target.get_ctr() - source.get_ctr()) - target.get_rad() - source.get_rad()), 0.);

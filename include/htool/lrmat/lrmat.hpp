@@ -28,9 +28,9 @@ class LowRankMatrix : public IMatrix<T> {
   public:
     // Constructors
     LowRankMatrix() = delete;
-    LowRankMatrix(int dimension0, const std::vector<int> &ir0, const std::vector<int> &ic0, int rank0 = -1, double epsilon0 = 1e-3) : IMatrix<T>(dimension0 * ir0.size(), dimension0 * ic0.size()), dimension(dimension0), rank(rank0), U(), V(), ir(ir0), ic(ic0), offset_i(0), offset_j(0), epsilon(epsilon0) {}
+    LowRankMatrix(int dimension0, const std::vector<int> &ir0, const std::vector<int> &ic0, int rank0 = -1, double epsilon0 = 1e-3) : IMatrix<T>(dimension0 * ir0.size(), dimension0 * ic0.size()), rank(rank0), U(), V(), ir(ir0), ic(ic0), offset_i(0), offset_j(0), epsilon(epsilon0), dimension(dimension0) {}
 
-    LowRankMatrix(int dimension0, const std::vector<int> &ir0, const std::vector<int> &ic0, int offset_i0, int offset_j0, int rank0 = -1, double epsilon0 = 1e-3) : IMatrix<T>(dimension0 * ir0.size(), dimension0 * ic0.size()), dimension(dimension0), rank(rank0), U(), V(), ir(ir0), ic(ic0), offset_i(offset_i0), offset_j(offset_j0), epsilon(epsilon0) {}
+    LowRankMatrix(int dimension0, const std::vector<int> &ir0, const std::vector<int> &ic0, int offset_i0, int offset_j0, int rank0 = -1, double epsilon0 = 1e-3) : IMatrix<T>(dimension0 * ir0.size(), dimension0 * ic0.size()), rank(rank0), U(), V(), ir(ir0), ic(ic0), offset_i(offset_i0), offset_j(offset_j0), epsilon(epsilon0), dimension(dimension0) {}
 
     // VIrtual function
     void build(const VirtualGenerator<T> &A, const VirtualLowRankGenerator<T> &LRGenerator, const VirtualCluster &t, const double *const xt, const VirtualCluster &s, const double *const xs) {
