@@ -173,8 +173,11 @@ class sympartialACA final : public VirtualLowRankGenerator<T> {
                     vv.push_back(u1);
 
                 } else {
-                    // std::cout << "There is a zero row in the starting submatrix and ACA didn't work" << std::endl;
                     q -= 1;
+                    if (q == 0) { // corner case where first row is zero, ACA fails, we build a dense block instead
+                        q = -1;
+                    }
+                    std::cout << "[Htool warning] ACA found a zero row in a " + std::to_string(M) + "x" + std::to_string(N) + " block. Final rank is " + std::to_string(q) << std::endl;
                     break;
                 }
             }
