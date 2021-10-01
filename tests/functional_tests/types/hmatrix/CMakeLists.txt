@@ -9,6 +9,13 @@ add_test(NAME Test_hmat_cluster_1 COMMAND ${MPIEXEC} ${MPIEXEC_NUMPROC_FLAG} 1 $
 add_test(NAME Test_hmat_cluster_2 COMMAND ${MPIEXEC} ${MPIEXEC_NUMPROC_FLAG} 2 ${MPIEXEC_PREFLAGS} ${CMAKE_CURRENT_BINARY_DIR}/Test_hmat_cluster)
 add_test(NAME Test_hmat_cluster_4 COMMAND ${MPIEXEC} ${MPIEXEC_NUMPROC_FLAG} 4 ${MPIEXEC_PREFLAGS} ${CMAKE_CURRENT_BINARY_DIR}/Test_hmat_cluster)
 
+add_executable(Test_hmat_zero test_hmat_zero.cpp)
+target_link_libraries(Test_hmat_zero htool)
+add_dependencies(build-tests Test_hmat_zero)
+add_test(NAME Test_hmat_zero_1 COMMAND ${MPIEXEC} ${MPIEXEC_NUMPROC_FLAG} 1 ${MPIEXEC_PREFLAGS} ${CMAKE_CURRENT_BINARY_DIR}/Test_hmat_zero)
+add_test(NAME Test_hmat_zero_2 COMMAND ${MPIEXEC} ${MPIEXEC_NUMPROC_FLAG} 2 ${MPIEXEC_PREFLAGS} ${CMAKE_CURRENT_BINARY_DIR}/Test_hmat_zero)
+add_test(NAME Test_hmat_zero_4 COMMAND ${MPIEXEC} ${MPIEXEC_NUMPROC_FLAG} 4 ${MPIEXEC_PREFLAGS} ${CMAKE_CURRENT_BINARY_DIR}/Test_hmat_zero)
+
 #=== hmat_vec_prod
 add_executable(Test_hmat_vec_prod test_hmat_vec_prod.cpp)
 target_link_libraries(Test_hmat_vec_prod htool)
