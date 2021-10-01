@@ -10,6 +10,7 @@
 #endif
 
 #include "define.hpp"
+#include "misc.hpp"
 
 #include "../clustering/bounding_box_1.hpp"
 #include "../clustering/pca.hpp"

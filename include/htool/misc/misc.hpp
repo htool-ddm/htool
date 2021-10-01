@@ -3,6 +3,17 @@
 
 #include <algorithm>
 #include <complex>
+namespace htool {
+template <class T>
+struct underlying_type_spec {
+    typedef T type;
+};
+template <class T>
+struct underlying_type_spec<std::complex<T>> {
+    typedef T type;
+};
+template <class T>
+using underlying_type = typename underlying_type_spec<T>::type;
 
 // Check if complex type
 // https://stackoverflow.com/a/41438903/5913047
@@ -30,5 +41,5 @@ template <typename T, typename std::enable_if<is_complex_t<T>::value, int>::type
 T conj_if_complex(T in) {
     return std::conj(in);
 }
-
+} // namespace htool
 #endif
