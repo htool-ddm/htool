@@ -16,21 +16,13 @@
     void HTOOL_BLAS_F77(C##symv)(const char *, const int *, const T *, const T *, const int *, const T *, const int *, const T *, T *, const int *);                                         \
     void HTOOL_BLAS_F77(C##symm)(const char *, const char *, const int *, const int *, const T *, const T *, const int *, const T *, const int *, const T *, T *, const int *);
 
-#if !defined(__APPLE__) && !HTOOL_MKL
-#    define HTOOL_GENERATE_EXTERN_DOTC(C, T, U) U _Complex HTOOL_BLAS_F77(C##dotc)(const int *, const T *, const int *, const T *, const int *);
-#else
-#    define HTOOL_GENERATE_EXTERN_DOTC(C, T, U) void C##dotc(T *, const int *, const T *, const int *, const T *, const int *);
-#endif
-
-#define HTOOL_GENERATE_EXTERN_BLAS_COMPLEX(C, T, B, U)                                                                                                                          \
-    HTOOL_GENERATE_EXTERN_BLAS(B, U)                                                                                                                                            \
-    HTOOL_GENERATE_EXTERN_BLAS(C, T)                                                                                                                                            \
-    U HTOOL_BLAS_F77(B##nrm2)(const int *, const U *, const int *);                                                                                                             \
-    U HTOOL_BLAS_F77(B##C##nrm2)(const int *, const T *, const int *);                                                                                                          \
-    U HTOOL_BLAS_F77(B##dot)(const int *, const U *, const int *, const U *, const int *);                                                                                      \
-    void HTOOL_BLAS_F77(C##hemv)(const char *, const int *, const T *, const T *, const int *, const T *, const int *, const T *, T *, const int *);                            \
-    void HTOOL_BLAS_F77(C##hemm)(const char *, const char *, const int *, const int *, const T *, const T *, const int *, const T *, const int *, const T *, T *, const int *); \
-    HTOOL_GENERATE_EXTERN_DOTC(C, T, U)
+#define HTOOL_GENERATE_EXTERN_BLAS_COMPLEX(C, T, B, U)                                                                                               \
+    HTOOL_GENERATE_EXTERN_BLAS(B, U)                                                                                                                 \
+    HTOOL_GENERATE_EXTERN_BLAS(C, T)                                                                                                                 \
+    U HTOOL_BLAS_F77(B##nrm2)(const int *, const U *, const int *);                                                                                  \
+    U HTOOL_BLAS_F77(B##C##nrm2)(const int *, const T *, const int *);                                                                               \
+    void HTOOL_BLAS_F77(C##hemv)(const char *, const int *, const T *, const T *, const int *, const T *, const int *, const T *, T *, const int *); \
+    void HTOOL_BLAS_F77(C##hemm)(const char *, const char *, const int *, const int *, const T *, const T *, const int *, const T *, const int *, const T *, T *, const int *);
 
 #if HTOOL_MKL
 #    define HTOOL_GENERATE_EXTERN_GEMM3M(C, T) \
@@ -117,6 +109,13 @@ struct Blas {
             (n, a, x, incx, y, incy);                                                                                                                                                                                                                                                    \
         }                                                                                                                                                                                                                                                                                \
         template <>                                                                                                                                                                                                                                                                      \
+        inline T Blas<T>::dot(const int *const n, const T *const x, const int *const incx, const T *const y, const int *const incy) {                                                                                                                                                    \
+            T sum = T();                                                                                                                                                                                                                                                                 \
+            for (int i = 0, j = 0, k = 0; i < *n; ++i, j += *incx, k += *incy)                                                                                                                                                                                                           \
+                sum += conj_if_complex(x[j]) * y[k];                                                                                                                                                                                                                                     \
+            return sum;                                                                                                                                                                                                                                                                  \
+        }                                                                                                                                                                                                                                                                                \
+        template <>                                                                                                                                                                                                                                                                      \
         inline void Blas<T>::gemv(const char *const trans, const int *const m, const int *const n, const T *const alpha, const T *const a, const int *const lda, const T *const b, const int *const ldb, const T *const beta, T *const c, const int *const ldc) {                        \
             HTOOL_BLAS_F77(C##gemv)                                                                                                                                                                                                                                                      \
             (trans, m, n, alpha, a, lda, b, ldb, beta, c, ldc);                                                                                                                                                                                                                          \
@@ -131,21 +130,6 @@ struct Blas {
             HTOOL_BLAS_F77(C##symm)                                                                                                                                                                                                                                                      \
             (side, uplo, m, n, alpha, a, lda, b, ldb, beta, c, ldc);                                                                                                                                                                                                                     \
         }
-#    if HTOOL_MKL || defined(__APPLE__)
-#        define HTOOL_GENERATE_DOTC(C, T)                                                                                                 \
-            template <>                                                                                                                   \
-            inline T Blas<T>::dot(const int *const n, const T *const x, const int *const incx, const T *const y, const int *const incy) { \
-                T res;                                                                                                                    \
-                C##dotc(&res, n, x, incx, y, incy);                                                                                       \
-                return res;                                                                                                               \
-            }
-#    else
-#        define HTOOL_GENERATE_DOTC(C, T)                                                                                                 \
-            template <>                                                                                                                   \
-            inline T Blas<T>::dot(const int *const n, const T *const x, const int *const incx, const T *const y, const int *const incy) { \
-                return HTOOL_BLAS_F77(C##dotc)(n, x, incx, y, incy);                                                                      \
-            }
-#    endif
 #    define HTOOL_GENERATE_BLAS_COMPLEX(C, T, B, U)                                                                                                                                                                                                                                      \
         HTOOL_GENERATE_BLAS(C, T)                                                                                                                                                                                                                                                        \
         HTOOL_GENERATE_GEMM(B, U)                                                                                                                                                                                                                                                        \
@@ -159,11 +143,6 @@ struct Blas {
         inline U Blas<T>::nrm2(const int *const n, const T *const x, const int *const incx) {                                                                                                                                                                                            \
             return HTOOL_BLAS_F77(B##C##nrm2)(n, x, incx);                                                                                                                                                                                                                               \
         }                                                                                                                                                                                                                                                                                \
-        template <>                                                                                                                                                                                                                                                                      \
-        inline U Blas<U>::dot(const int *const n, const U *const x, const int *const incx, const U *const y, const int *const incy) {                                                                                                                                                    \
-            return HTOOL_BLAS_F77(B##dot)(n, x, incx, y, incy);                                                                                                                                                                                                                          \
-        }                                                                                                                                                                                                                                                                                \
-        HTOOL_GENERATE_DOTC(C, T)                                                                                                                                                                                                                                                        \
         template <>                                                                                                                                                                                                                                                                      \
         inline void Blas<T>::hemv(const char *const uplo, const int *const n, const T *const alpha, const T *const a, const int *const lda, const T *const x, const int *const incx, const T *const beta, T *const y, const int *const incy) {                                           \
             HTOOL_BLAS_F77(C##hemv)                                                                                                                                                                                                                                                      \
