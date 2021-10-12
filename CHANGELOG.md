@@ -24,6 +24,17 @@
 
 All notable changes to this project will be documented in this file.
 
+## Unreleased
+
+### Added
+
+### Changed
+
+### Fixed
+
+- Corner case with ACA resolved (first row/column only contains zeroes)
+- Warnings from fujitsu compilers because of last line
+
 ## [0.7] - 2021-09-21
 
 ### Added
