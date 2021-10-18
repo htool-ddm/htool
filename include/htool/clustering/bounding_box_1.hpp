@@ -4,6 +4,7 @@
 #include "../misc/evp.hpp"
 #include "cluster.hpp"
 #include "splitting.hpp"
+#include <limits>
 #include <stack>
 
 namespace htool {
