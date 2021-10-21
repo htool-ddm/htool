@@ -37,7 +37,7 @@ int test_hmat_local_get(int argc, char *argv[], char symmetry, char UPLO) {
     // (two different initializations with the same seed will generate the same succession of results in the subsequent calls to rand)
     create_disk(3, z1, nr, p1.data());
 
-    GeneratorTestDouble A(3, nr, nr, p1, p1, 1);
+    GeneratorTestDoubleSymmetric A(3, nr, nr, p1, p1);
 
     int size_numbering = nr / size;
     int count_size     = 0;
@@ -139,7 +139,7 @@ int test_hmat_local_get_complex(int argc, char *argv[], char symmetry, char UPLO
     // (two different initializations with the same seed will generate the same succession of results in the subsequent calls to rand)
     create_disk(3, z1, nr, p1.data());
 
-    GeneratorTestComplex A(3, nr, nr, p1, p1, 1);
+    GeneratorTestComplexSymmetric A(3, nr, nr, p1, p1);
 
     int size_numbering = nr / size;
     int count_size     = 0;
@@ -230,7 +230,7 @@ int test_hmat_local_get_complex_hermitian(int argc, char *argv[], char symmetry,
     // (two different initializations with the same seed will generate the same succession of results in the subsequent calls to rand)
     create_disk(3, z1, nr, p1.data());
 
-    GeneratorTestComplexHermitian A(3, nr, nr, p1, p1, 1);
+    GeneratorTestComplexHermitian A(3, nr, nr, p1, p1);
 
     int size_numbering = nr / size;
     int count_size     = 0;

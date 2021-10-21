@@ -31,8 +31,12 @@ function(check_version_number CODE_VERSION_FILE CODE_VARIABLE_VERSION)
     string(REGEX MATCH "${CODE_VARIABLE_VERSION} \"([0-9]+.[0-9]+.[0-9]+)\"" _ ${ver})
     set(code_version_number ${CMAKE_MATCH_1})
 
-    # Check version number
-    if(NOT "${git_version_number}" STREQUAL "v${CMAKE_PROJECT_VERSION}" OR NOT "${code_version_number}" STREQUAL "${CMAKE_PROJECT_VERSION}")
-        message(FATAL_ERROR "Inconsistent version number:\n* GIT last tag: ${git_version_number}\n* Source code version number: ${code_version_number}\n* CMake version number: ${CMAKE_PROJECT_VERSION}\n")
+    # Check version number: error if code unconsistent
+    if(NOT "${code_version_number}" STREQUAL "${CMAKE_PROJECT_VERSION}")
+        message(FATAL_ERROR "Inconsistent version number:\n* Source code version number: ${code_version_number}\n* CMake version number: ${CMAKE_PROJECT_VERSION}\n")
+    endif()
+    # Check version number: warning if git tags inconsistent
+    if(NOT "${git_version_number}" STREQUAL "v${CMAKE_PROJECT_VERSION}")
+        message(WARNING "Inconsistent version number:\n* GIT last tag: ${git_version_number}\n* Source code version number: ${code_version_number}\n* CMake version number: ${CMAKE_PROJECT_VERSION}\n")
     endif()
 endfunction()

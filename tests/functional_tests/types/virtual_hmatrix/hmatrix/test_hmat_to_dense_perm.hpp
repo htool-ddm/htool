@@ -38,6 +38,7 @@ int test_hmat_to_dense_perm(int argc, char *argv[]) {
     // we set a constant seed for rand because we want always the same result if we run the check many times
     // (two different initializations with the same seed will generate the same succession of results in the subsequent calls to rand)
     create_disk(3, z1, nr, p1.data());
+    create_disk(3, z1 + 1, nc, p2.data());
 
     GeneratorTestDouble A(3, nr, nc, p1, p2);
 
@@ -132,7 +133,7 @@ int test_hmat_to_dense_perm_sym(int argc, char *argv[], char UPLO) {
     // (two different initializations with the same seed will generate the same succession of results in the subsequent calls to rand)
     create_disk(3, z1, nr, p1.data());
 
-    GeneratorTestDouble A(3, nr, nr, p1, p1, 1);
+    GeneratorTestDoubleSymmetric A(3, nr, nr, p1, p1);
 
     int size_numbering = nr / size;
     int count_size     = 0;
@@ -211,7 +212,7 @@ int test_hmat_to_dense_perm_sym_complex(int argc, char *argv[], char UPLO) {
     // (two different initializations with the same seed will generate the same succession of results in the subsequent calls to rand)
     create_disk(3, z1, nr, p1.data());
 
-    GeneratorTestComplex A(3, nr, nr, p1, p1, 1);
+    GeneratorTestComplexSymmetric A(3, nr, nr, p1, p1);
 
     int size_numbering = nr / size;
     int count_size     = 0;
@@ -290,7 +291,7 @@ int test_hmat_to_dense_perm_hermitian_complex(int argc, char *argv[], char UPLO)
     // (two different initializations with the same seed will generate the same succession of results in the subsequent calls to rand)
     create_disk(3, z1, nr, p1.data());
 
-    GeneratorTestComplexHermitian A(3, nr, nr, p1, p1, 1);
+    GeneratorTestComplexHermitian A(3, nr, nr, p1, p1);
 
     int size_numbering = nr / size;
     int count_size     = 0;

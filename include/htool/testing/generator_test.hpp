@@ -13,12 +13,11 @@ class GeneratorTest : public VirtualGenerator<T> {
     const std::vector<double> &p1;
     const std::vector<double> &p2;
     int space_dim;
-    T coef;
 
   public:
-    explicit GeneratorTest(int space_dim0, int nr, int nc, const std::vector<double> &p10, const std::vector<double> &p20, T coef0 = 0) : VirtualGenerator<T>(nr, nc), p1(p10), p2(p20), space_dim(space_dim0), coef(coef0) {}
+    explicit GeneratorTest(int space_dim0, int nr, int nc, const std::vector<double> &p10, const std::vector<double> &p20) : VirtualGenerator<T>(nr, nc), p1(p10), p2(p20), space_dim(space_dim0) {}
 
-    explicit GeneratorTest(int space_dim0, int nr, const std::vector<double> &p10, T coef0 = 0) : VirtualGenerator<T>(nr, nr), p1(p10), p2(p10), space_dim(space_dim0), coef(coef0) {}
+    explicit GeneratorTest(int space_dim0, int nr, const std::vector<double> &p10) : VirtualGenerator<T>(nr, nr), p1(p10), p2(p10), space_dim(space_dim0) {}
 
     virtual T get_coef(const int &i, const int &j) const = 0;
 
@@ -56,13 +55,43 @@ class GeneratorTest : public VirtualGenerator<T> {
             }
         }
     }
+
+    void mvprod_transp(const T *const in, T *const out, const int &mu) const {
+        int nc = this->nr;
+        int nr = this->nc;
+        for (int i = 0; i < nr * mu; i++) {
+            out[i] = 0;
+        }
+        for (int m = 0; m < mu; m++) {
+            for (int i = 0; i < nr; i++) {
+                for (int j = 0; j < nc; j++) {
+                    out[nr * m + i] += this->get_coef(j, i) * in[j + m * nc];
+                }
+            }
+        }
+    }
+
+    void mvprod_conj(const T *const in, T *const out, const int &mu) const {
+        int nc = this->nr;
+        int nr = this->nc;
+        for (int i = 0; i < nr * mu; i++) {
+            out[i] = 0;
+        }
+        for (int m = 0; m < mu; m++) {
+            for (int i = 0; i < nr; i++) {
+                for (int j = 0; j < nc; j++) {
+                    out[nr * m + i] += std::conj(this->get_coef(j, i) * in[j + m * nc]);
+                }
+            }
+        }
+    }
 };
 
 class GeneratorTestDouble : public GeneratorTest<double> {
   public:
     using GeneratorTest::GeneratorTest;
     double get_coef(const int &i, const int &j) const override {
-        return 1. / (4 * M_PI * std::sqrt(this->coef + std::inner_product(p1.begin() + this->space_dim * i, this->p1.begin() + this->space_dim * i + this->space_dim, p2.begin() + this->space_dim * j, double(0), std::plus<double>(), [](double u, double v) { return (u - v) * (u - v); })));
+        return 1. / (4 * M_PI * std::sqrt(std::inner_product(p1.begin() + this->space_dim * i, this->p1.begin() + this->space_dim * i + this->space_dim, p2.begin() + this->space_dim * j, double(0), std::plus<double>(), [](double u, double v) { return (u - v) * (u - v); })));
     }
 
     void copy_submatrix(int M, int N, const int *const rows, const int *const cols, double *ptr) const override {
@@ -79,7 +108,7 @@ class GeneratorTestComplex : public GeneratorTest<std::complex<double>> {
     using GeneratorTest::GeneratorTest;
 
     std::complex<double> get_coef(const int &i, const int &j) const override {
-        return (1. + std::complex<double>(0, 1)) / (4 * M_PI * std::sqrt(coef + std::inner_product(p1.begin() + space_dim * i, p1.begin() + space_dim * i + space_dim, p2.begin() + space_dim * j, double(0), std::plus<double>(), [](double u, double v) { return (u - v) * (u - v); })));
+        return (1. + std::complex<double>(0, 1)) / (4 * M_PI * std::sqrt(std::inner_product(p1.begin() + this->space_dim * i, this->p1.begin() + this->space_dim * i + this->space_dim, p2.begin() + this->space_dim * j, double(0), std::plus<double>(), [](double u, double v) { return (u - v) * (u - v); })));
     }
 
     void copy_submatrix(int M, int N, const int *const rows, const int *const cols, std::complex<double> *ptr) const override {
@@ -91,19 +120,54 @@ class GeneratorTestComplex : public GeneratorTest<std::complex<double>> {
     }
 };
 
-double sign(int x) {
+double sign(double x) {
     if (x > 0)
         return 1;
     if (x < 0)
         return -1;
     return 0;
 }
+
+class GeneratorTestDoubleSymmetric : public GeneratorTest<double> {
+  public:
+    using GeneratorTest::GeneratorTest;
+
+    double get_coef(const int &i, const int &j) const override {
+        return 1. / (1e-5 + 4 * M_PI * std::sqrt(std::inner_product(p1.begin() + this->space_dim * i, this->p1.begin() + this->space_dim * i + this->space_dim, p2.begin() + this->space_dim * j, double(0), std::plus<double>(), [](double u, double v) { return (u - v) * (u - v); })));
+    }
+
+    void copy_submatrix(int M, int N, const int *const rows, const int *const cols, double *ptr) const override {
+        for (int i = 0; i < M; i++) {
+            for (int j = 0; j < N; j++) {
+                ptr[i + M * j] = this->get_coef(rows[i], cols[j]);
+            }
+        }
+    }
+};
+
+class GeneratorTestComplexSymmetric : public GeneratorTest<std::complex<double>> {
+  public:
+    using GeneratorTest::GeneratorTest;
+
+    std::complex<double> get_coef(const int &i, const int &j) const override {
+        return (1. + std::complex<double>(0, 1)) / (1e-5 + 4 * M_PI * std::sqrt(std::inner_product(p1.begin() + this->space_dim * i, this->p1.begin() + this->space_dim * i + this->space_dim, p2.begin() + this->space_dim * j, double(0), std::plus<double>(), [](double u, double v) { return (u - v) * (u - v); })));
+    }
+
+    void copy_submatrix(int M, int N, const int *const rows, const int *const cols, std::complex<double> *ptr) const override {
+        for (int i = 0; i < M; i++) {
+            for (int j = 0; j < N; j++) {
+                ptr[i + M * j] = this->get_coef(rows[i], cols[j]);
+            }
+        }
+    }
+};
+
 class GeneratorTestComplexHermitian : public GeneratorTest<std::complex<double>> {
   public:
     using GeneratorTest::GeneratorTest;
 
     std::complex<double> get_coef(const int &i, const int &j) const override {
-        return (1. + sign(i - j) * std::complex<double>(0, 1)) / (4 * M_PI * std::sqrt(coef + std::inner_product(p1.begin() + space_dim * i, p1.begin() + space_dim * i + space_dim, p2.begin() + space_dim * j, double(0), std::plus<double>(), [](double u, double v) { return (u - v) * (u - v); })));
+        return (1. + sign(p1[this->space_dim * i] - p2[this->space_dim * j]) * std::complex<double>(0, 1)) / (1e-5 + 4 * M_PI * std::sqrt(std::inner_product(p1.begin() + this->space_dim * i, this->p1.begin() + this->space_dim * i + this->space_dim, p2.begin() + this->space_dim * j, double(0), std::plus<double>(), [](double u, double v) { return (u - v) * (u - v); })));
     }
 
     void copy_submatrix(int M, int N, const int *const rows, const int *const cols, std::complex<double> *ptr) const override {

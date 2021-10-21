@@ -48,7 +48,7 @@ void build_coarse_space_outside(const VirtualHMatrix<T> *const HA, int nevi, int
     for (int i = 0; i < sizeWorld; i++) {
         if (recvcounts[i] == 0)
             continue;
-        std::vector<T> buffer((HA->get_MasterOffset_t(i).second + 2 * margin) * recvcounts[i], 0);
+        std::vector<T> buffer((HA->get_target_cluster()->get_masteroffset(i).second + 2 * margin) * recvcounts[i], 0);
         std::fill_n(AZ.data(), recvcounts[i] * n_inside, 0);
 
         if (rankWorld == i) {
@@ -59,11 +59,11 @@ void build_coarse_space_outside(const VirtualHMatrix<T> *const HA, int nevi, int
                 }
             }
         }
-        MPI_Bcast(buffer.data() + margin * recvcounts[i], HA->get_MasterOffset_t(i).second * recvcounts[i], wrapper_mpi<T>::mpi_type(), i, HA->get_comm());
+        MPI_Bcast(buffer.data() + margin * recvcounts[i], HA->get_target_cluster()->get_masteroffset(i).second * recvcounts[i], wrapper_mpi<T>::mpi_type(), i, HA->get_comm());
         if (HA->get_symmetry_type() == 'H') {
             conj_if_complex(buffer.data(), buffer.size());
         }
-        HA->mvprod_subrhs(buffer.data(), AZ.data(), recvcounts[i], HA->get_MasterOffset_t(i).first, HA->get_MasterOffset_t(i).second, margin);
+        HA->mvprod_subrhs(buffer.data(), AZ.data(), recvcounts[i], HA->get_target_cluster()->get_masteroffset(i).first, HA->get_target_cluster()->get_masteroffset(i).second, margin);
 
         // Removed because complex scalar product afterward
         // if (HA->get_symmetry_type() == 'H') {

@@ -52,10 +52,30 @@ int main(int argc, char *argv[]) {
         std::vector<double> SVD_fixed_errors;
         std::vector<double> SVD_errors_check(reqrank_max, 0);
 
+        // compute singular values
+        std::vector<double> mat(nr * nc);
+        A.copy_submatrix(nr, nc, t.get_perm().data(), s.get_perm().data(), mat.data());
+        int lda   = nr;
+        int ldu   = nr;
+        int ldvt  = nc;
+        int lwork = -1;
+        int info;
+        std::vector<double> singular_values(std::min(nr, nc));
+        Matrix<double> u(nr, nr);
+        // std::vector<T> vt (n*n);
+        Matrix<double> vt(nc, nc);
+        std::vector<double> work(std::min(nc, nr));
+        std::vector<double> rwork(5 * std::min(nr, nc));
+
+        Lapack<double>::gesvd("A", "A", &nr, &nc, mat.data(), &lda, singular_values.data(), u.data(), &ldu, vt.data(), &ldvt, work.data(), &lwork, rwork.data(), &info);
+        lwork = (int)std::real(work[0]);
+        work.resize(lwork);
+        Lapack<double>::gesvd("A", "A", &nr, &nc, mat.data(), &lda, singular_values.data(), u.data(), &ldu, vt.data(), &ldvt, work.data(), &lwork, rwork.data(), &info);
+
         for (int k = 0; k < reqrank_max; k++) {
             SVD_fixed_errors.push_back(Frobenius_absolute_error(A_SVD_fixed, A, k));
             for (int l = k; l < min(nr, nc); l++) {
-                SVD_errors_check[k] += pow(compressor_SVD.get_singular_value(l), 2);
+                SVD_errors_check[k] += singular_values[l] * singular_values[l];
             }
             SVD_errors_check[k] = sqrt(SVD_errors_check[k]);
         }

@@ -11,26 +11,23 @@ template <class T>
 class VirtualHMatrix {
   public:
     // Getters
-    virtual int nb_rows() const                                         = 0;
-    virtual int nb_cols() const                                         = 0;
-    virtual MPI_Comm get_comm() const                                   = 0;
-    virtual int get_rankworld() const                                   = 0;
-    virtual int get_sizeworld() const                                   = 0;
-    virtual int get_local_size() const                                  = 0;
-    virtual int get_local_offset() const                                = 0;
-    virtual char get_symmetry_type() const                              = 0;
-    virtual char get_storage_type() const                               = 0;
-    virtual std::vector<T> get_local_diagonal(bool = true) const        = 0;
-    virtual void copy_local_diagonal(T *, bool = true) const            = 0;
-    virtual Matrix<T> get_local_diagonal_block(bool = true) const       = 0;
-    virtual void copy_local_diagonal_block(T *, bool = true) const      = 0;
-    virtual std::pair<int, int> get_max_size_blocks() const             = 0;
-    virtual std::vector<std::pair<int, int>> get_MasterOffset_t() const = 0;
-    virtual std::vector<std::pair<int, int>> get_MasterOffset_s() const = 0;
-    virtual std::pair<int, int> get_MasterOffset_t(int i) const         = 0;
-    virtual std::pair<int, int> get_MasterOffset_s(int i) const         = 0;
-    virtual std::vector<int> get_local_perm_target() const              = 0;
-    virtual std::vector<int> get_local_perm_source() const              = 0;
+    virtual int nb_rows() const                                    = 0;
+    virtual int nb_cols() const                                    = 0;
+    virtual MPI_Comm get_comm() const                              = 0;
+    virtual int get_rankworld() const                              = 0;
+    virtual int get_sizeworld() const                              = 0;
+    virtual int get_local_size() const                             = 0;
+    virtual int get_local_offset() const                           = 0;
+    virtual char get_symmetry_type() const                         = 0;
+    virtual char get_storage_type() const                          = 0;
+    virtual std::vector<T> get_local_diagonal(bool = true) const   = 0;
+    virtual void copy_local_diagonal(T *, bool = true) const       = 0;
+    virtual Matrix<T> get_local_diagonal_block(bool = true) const  = 0;
+    virtual void copy_local_diagonal_block(T *, bool = true) const = 0;
+    virtual std::pair<int, int> get_max_size_blocks() const        = 0;
+
+    virtual const VirtualCluster *get_target_cluster() const = 0;
+    virtual const VirtualCluster *get_source_cluster() const = 0;
 
     // Getters/setters for parameters
     virtual double get_epsilon() const                                                   = 0;
@@ -55,14 +52,16 @@ class VirtualHMatrix {
     virtual void mvprod_global_to_global(const T *const in, T *const out, const int &mu = 1) const                  = 0;
     virtual void mvprod_local_to_local(const T *const in, T *const out, const int &mu = 1, T *work = nullptr) const = 0;
 
+    virtual void mvprod_transp_global_to_global(const T *const in, T *const out, const int &mu = 1) const                  = 0;
+    virtual void mvprod_transp_local_to_local(const T *const in, T *const out, const int &mu = 1, T *work = nullptr) const = 0;
+
     virtual void mymvprod_local_to_local(const T *const in, T *const out, const int &mu = 1, T *work = nullptr) const = 0;
     virtual void mymvprod_global_to_local(const T *const in, T *const out, const int &mu = 1) const                   = 0;
 
-    virtual void mvprod_subrhs(const T *const in, T *const out, const int &mu, const int &offset, const int &size, const int &margin) const = 0;
+    virtual void mymvprod_transp_local_to_local(const T *const in, T *const out, const int &mu = 1, T *work = nullptr) const = 0;
+    virtual void mymvprod_transp_local_to_global(const T *const in, T *const out, const int &mu = 1) const                   = 0;
 
-    // Permutations
-    virtual void cluster_to_target_permutation(const T *const in, T *const out) const = 0;
-    virtual void source_to_cluster_permutation(const T *const in, T *const out) const = 0;
+    virtual void mvprod_subrhs(const T *const in, T *const out, const int &mu, const int &offset, const int &size, const int &margin) const = 0;
 
     // Infos
     virtual const std::map<std::string, std::string> &get_infos() const = 0;

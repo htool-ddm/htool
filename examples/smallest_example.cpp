@@ -97,7 +97,7 @@ int main(int argc, char *argv[]) {
     // Output
     HA.print_infos();
     HA.save_plot(outputpath + "/smallest_example_plot");
-    HA.get_cluster_tree_t().save_geometry(p.data(), outputpath + "/smallest_example_cluster", {1, 2, 3});
+    HA.get_target_cluster()->save_geometry(p.data(), outputpath + "/smallest_example_cluster", {1, 2, 3});
     std::cout << outputpath + "/smallest_example_plot" << std::endl;
     std::cout << Frobenius_absolute_error(HA, A) / A.norm() << std::endl;
     std::cout << norm2(A * x - result) / norm2(A * x) << std::endl;
