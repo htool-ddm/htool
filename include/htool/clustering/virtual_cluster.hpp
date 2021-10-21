@@ -85,5 +85,45 @@ class VirtualCluster {
     virtual ~VirtualCluster(){};
 };
 
+// Permutations
+template <typename T>
+void cluster_to_global(const VirtualCluster *const cluster_tree, const T *const in, T *const out) {
+    for (int i = 0; i < cluster_tree->get_size(); i++) {
+        out[cluster_tree->get_perm(i)] = in[i];
+    }
+}
+template <typename T>
+void global_to_cluster(const VirtualCluster *const cluster_tree, const T *const in, T *const out) {
+    for (int i = 0; i < cluster_tree->get_size(); i++) {
+        out[i] = in[cluster_tree->get_perm(i)];
+    }
+}
+
+// Local permutations
+template <typename T>
+void local_cluster_to_local(const VirtualCluster *const cluster_tree, const T *const in, T *const out, MPI_Comm comm = MPI_COMM_WORLD) {
+    if (!cluster_tree->IsLocal()) {
+        throw std::logic_error("[Htool error] Permutation is not local, local_cluster_to_local cannot be used"); // LCOV_EXCL_LINE
+    } else {
+        int rankWorld;
+        MPI_Comm_rank(comm, &rankWorld);
+        for (int i = 0; i < cluster_tree->get_masteroffset(rankWorld).second; i++) {
+            out[cluster_tree->get_perm(cluster_tree->get_masteroffset(rankWorld).first + i) - cluster_tree->get_masteroffset(rankWorld).first] = in[i];
+        }
+    }
+}
+template <typename T>
+void local_to_local_cluster(const VirtualCluster *const cluster_tree, const T *const in, T *const out, MPI_Comm comm = MPI_COMM_WORLD) {
+    if (!cluster_tree->IsLocal()) {
+        throw std::logic_error("[Htool error] Permutation is not local, local_to_local_cluster cannot be used"); // LCOV_EXCL_LINE
+    } else {
+        int rankWorld;
+        MPI_Comm_rank(comm, &rankWorld);
+        for (int i = 0; i < cluster_tree->get_masteroffset(rankWorld).second; i++) {
+            out[i] = in[cluster_tree->get_perm(cluster_tree->get_masteroffset(rankWorld).first + i) - cluster_tree->get_masteroffset(rankWorld).first];
+        }
+    }
+}
+
 } // namespace htool
 #endif

@@ -29,6 +29,8 @@ All notable changes to this project will be documented in this file.
 ### Added
 
 - doxygen documentation
+- mvprod_transp_global_to_global and mvprod_transp_local_to_local added to VirtualHMatrix
+- getters for clusters in VirtualHMatrix
 
 ### Changed
 
@@ -36,6 +38,7 @@ All notable changes to this project will be documented in this file.
 
 - Corner case with ACA resolved (first row/column only contains zeroes)
 - Warnings from fujitsu compilers because of last line
+- bug when using threading in mvprod
 
 ## [0.7] - 2021-09-21
 

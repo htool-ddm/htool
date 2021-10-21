@@ -157,6 +157,7 @@ int main(int argc, char *argv[]) {
         // Error between local and global with permutation
         double global_local_diff     = 0;
         double global_vec_local_diff = 0;
+        double norm2_global          = norm2(result_vec_global_to_global);
         for (int i = 0; i < MasterOffset_target[2 * rank + 1]; i++) {
             global_vec_local_diff += std::pow(result_vec_global_to_global[i + MasterOffset_target[2 * rank]] - result_vec_local_to_local[i], 2);
             for (int j = 0; j < mu; j++) {
@@ -164,8 +165,14 @@ int main(int argc, char *argv[]) {
             }
         }
 
-        test = test || !(std::sqrt(global_local_diff) < 1e-10);
-        test = test || !(std::sqrt(global_local_diff) < 1e-10);
+        test = test || !(std::sqrt(global_vec_local_diff) / norm2_global < 1e-10);
+        test = test || !(std::sqrt(global_local_diff) / norm2_global < 1e-10);
+
+        if (rank == 0) {
+            cout << "difference on mat vec prod computed globally and locally: " << std::sqrt(global_vec_local_diff) / norm2_global << endl;
+            cout << "difference on mat mat prod computed globally and locally: " << std::sqrt(global_local_diff) / norm2_global << endl;
+            cout << "test: " << test << endl;
+        }
 
         // Global without permutation
         std::vector<double> f_vec_perm(nc, 0), f_perm(nc * mu, 0);

@@ -20,7 +20,7 @@ class DDM;
 
 template <typename T>
 class HPDDMDense : public HpDense<T, 'G'> {
-  private:
+  protected:
     const VirtualHMatrix<T> *const HA;
     std::vector<T> *in_global, *buffer;
 

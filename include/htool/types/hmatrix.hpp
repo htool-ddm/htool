@@ -172,8 +172,8 @@ class HMatrix : public VirtualHMatrix<T> {
     char get_symmetry_type() const { return symmetry; }
     char get_storage_type() const { return UPLO; }
 
-    const VirtualCluster &get_cluster_tree_t() const { return *(cluster_tree_t.get()); }
-    const VirtualCluster &get_cluster_tree_s() const { return *(cluster_tree_s.get()); }
+    const VirtualCluster *get_target_cluster() const { return cluster_tree_t.get(); }
+    const VirtualCluster *get_source_cluster() const { return cluster_tree_s.get(); }
     std::vector<std::pair<int, int>> get_MasterOffset_t() const { return cluster_tree_t->get_masteroffset(); }
     std::vector<std::pair<int, int>> get_MasterOffset_s() const { return cluster_tree_s->get_masteroffset(); }
     std::pair<int, int> get_MasterOffset_t(int i) const { return cluster_tree_t->get_masteroffset(i); }
@@ -192,7 +192,9 @@ class HMatrix : public VirtualHMatrix<T> {
     const std::vector<LowRankMatrix<T> *> &get_MyStrictlyDiagFarFieldMats() const { return MyStrictlyDiagFarFieldMats; }
     std::vector<T> get_local_diagonal(bool = true) const;
     void copy_local_diagonal(T *, bool = true) const;
+    Matrix<T> get_local_interaction(bool = true) const;
     Matrix<T> get_local_diagonal_block(bool = true) const;
+    void copy_local_interaction(T *, bool = true) const;
     void copy_local_diagonal_block(T *, bool = true) const;
     std::pair<int, int> get_max_size_blocks() const;
 
@@ -225,22 +227,27 @@ class HMatrix : public VirtualHMatrix<T> {
     void mvprod_global_to_global(const T *const in, T *const out, const int &mu = 1) const;
     void mvprod_local_to_local(const T *const in, T *const out, const int &mu = 1, T *work = nullptr) const;
 
+    void mvprod_transp_global_to_global(const T *const in, T *const out, const int &mu = 1) const;
+    void mvprod_transp_local_to_local(const T *const in, T *const out, const int &mu = 1, T *work = nullptr) const;
+
     void mymvprod_local_to_local(const T *const in, T *const out, const int &mu = 1, T *work = nullptr) const;
     void mymvprod_global_to_local(const T *const in, T *const out, const int &mu = 1) const;
+    void mymvprod_transp_local_to_local(const T *const in, T *const out, const int &mu = 1, T *work = nullptr) const;
+    void mymvprod_transp_local_to_global(const T *const in, T *const out, const int &mu = 1) const;
 
     void mvprod_subrhs(const T *const in, T *const out, const int &mu, const int &offset, const int &size, const int &margin) const;
     std::vector<T> operator*(const std::vector<T> &x) const;
     Matrix<T> operator*(const Matrix<T> &x) const;
 
     // Permutations
-    // template <typename U>
-    // void source_to_cluster_permutation(const U *const in, U *const out) const;
-    // template <typename U>
-    // void cluster_to_target_permutation(const U *const in, U *const out) const;
     void source_to_cluster_permutation(const T *const in, T *const out) const;
+    void target_to_cluster_permutation(const T *const in, T *const out) const;
     void cluster_to_target_permutation(const T *const in, T *const out) const;
+    void cluster_to_source_permutation(const T *const in, T *const out) const;
+    void local_target_to_local_cluster(const T *const in, T *const out, MPI_Comm comm = MPI_COMM_WORLD) const;
     void local_source_to_local_cluster(const T *const in, T *const out, MPI_Comm comm = MPI_COMM_WORLD) const;
     void local_cluster_to_local_target(const T *const in, T *const out, MPI_Comm comm = MPI_COMM_WORLD) const;
+    void local_cluster_to_local_source(const T *const in, T *const out, MPI_Comm comm = MPI_COMM_WORLD) const;
 
     // local to global
     void local_to_global_source(const T *const in, T *const out, const int &mu) const;
@@ -424,9 +431,12 @@ void HMatrix<T>::ComputeBlocks(VirtualGenerator<T> &mat, const double *const xt,
         }
     }
 
+    int local_offset_s = cluster_tree_s->get_local_offset();
+    int local_size_s   = cluster_tree_s->get_local_size();
+
     // Build vectors of pointers for diagonal blocks
     for (int i = 0; i < MyComputedBlocks.size(); i++) {
-        if (local_offset <= MyComputedBlocks[i]->get_offset_j() && MyComputedBlocks[i]->get_offset_j() < local_offset + local_size) {
+        if (local_offset_s <= MyComputedBlocks[i]->get_offset_j() && MyComputedBlocks[i]->get_offset_j() < local_offset_s + local_size_s) {
             MyDiagComputedBlocks.push_back(MyComputedBlocks[i].get());
             // if (MyComputedBlocks[i]->get_offset_j() == MyComputedBlocks[i]->get_offset_i())
             //     MyStrictlyDiagFarFieldMats.push_back(MyComputedBlocks[i]);
@@ -434,14 +444,14 @@ void HMatrix<T>::ComputeBlocks(VirtualGenerator<T> &mat, const double *const xt,
     }
 
     for (int i = 0; i < MyFarFieldMats.size(); i++) {
-        if (local_offset <= MyFarFieldMats[i]->get_offset_j() && MyFarFieldMats[i]->get_offset_j() < local_offset + local_size) {
+        if (local_offset_s <= MyFarFieldMats[i]->get_offset_j() && MyFarFieldMats[i]->get_offset_j() < local_offset_s + local_size_s) {
             MyDiagFarFieldMats.push_back(MyFarFieldMats[i]);
             if (MyFarFieldMats[i]->get_offset_j() == MyFarFieldMats[i]->get_offset_i())
                 MyStrictlyDiagFarFieldMats.push_back(MyFarFieldMats[i]);
         }
     }
     for (int i = 0; i < MyNearFieldMats.size(); i++) {
-        if (local_offset <= MyNearFieldMats[i]->get_offset_j() && MyNearFieldMats[i]->get_offset_j() < local_offset + local_size) {
+        if (local_offset_s <= MyNearFieldMats[i]->get_offset_j() && MyNearFieldMats[i]->get_offset_j() < local_offset_s + local_size_s) {
             MyDiagNearFieldMats.push_back(MyNearFieldMats[i]);
             if (MyNearFieldMats[i]->get_offset_j() == MyNearFieldMats[i]->get_offset_i())
                 MyStrictlyDiagNearFieldMats.push_back(MyNearFieldMats[i]);
@@ -801,19 +811,20 @@ void HMatrix<T>::mymvprod_global_to_local(const T *const in, T *const out, const
     int incx(1), incy(1), local_size_rhs(local_size * mu);
     T da(1);
 
-    // To localize the rhs with multiple rhs, it is transpose. So instead of A*B, we do transpose(B)*transpose(A)
-    char transb = 'T';
-    // In case of a hermitian matrix, the rhs is conjugate transpose
-    if (symmetry == 'H') {
-        transb = 'C';
-    }
-
     // Contribution champ lointain
 #if _OPENMP
 #    pragma omp parallel
 #endif
     {
         std::vector<T> temp(local_size * mu, 0);
+        // To localize the rhs with multiple rhs, it is transpose. So instead of A*B, we do transpose(B)*transpose(A)
+        char transb = 'T';
+        // In case of a hermitian matrix, the rhs is conjugate transpose
+        if (symmetry == 'H') {
+            transb = 'C';
+        }
+
+        // Contribution champ lointain
 #if _OPENMP
 #    pragma omp for schedule(guided) nowait
 #endif
@@ -861,6 +872,39 @@ void HMatrix<T>::mymvprod_global_to_local(const T *const in, T *const out, const
 #endif
         Blas<T>::axpy(&local_size_rhs, &da, temp.data(), &incx, out, &incy);
     }
+}
+
+template <typename T>
+void HMatrix<T>::mymvprod_transp_local_to_global(const T *const in, T *const out, const int &mu) const {
+    std::fill(out, out + this->nc * mu, 0);
+    int incx(1), incy(1);
+    int global_size_rhs = this->nc * mu;
+    T da(1);
+
+    // Contribution champ lointain
+#if _OPENMP
+#    pragma omp parallel
+#endif
+    {
+        std::vector<T> temp(this->nc * mu, 0);
+#if _OPENMP
+#    pragma omp for schedule(guided) nowait
+#endif
+        for (int b = 0; b < MyComputedBlocks.size(); b++) {
+            int offset_i = MyComputedBlocks[b]->get_offset_i();
+            int offset_j = MyComputedBlocks[b]->get_offset_j();
+            if (!(symmetry != 'N') || offset_i != offset_j) { // remove strictly diagonal blocks
+                MyComputedBlocks[b]->add_mvprod_row_major(in + (offset_i - local_offset) * mu, temp.data() + offset_j * mu, mu, 'T', 'T');
+            }
+        }
+
+#if _OPENMP
+#    pragma omp critical
+#endif
+        Blas<T>::axpy(&(global_size_rhs), &da, temp.data(), &incx, out, &incy);
+    }
+
+    MPI_Allreduce(MPI_IN_PLACE, out, this->nc * mu, wrapper_mpi<T>::mpi_type(), MPI_SUM, comm);
 }
 
 template <typename T>
@@ -916,6 +960,81 @@ void HMatrix<T>::mymvprod_local_to_local(const T *const in, T *const out, const 
 }
 
 template <typename T>
+void HMatrix<T>::mymvprod_transp_local_to_local(const T *const in, T *const out, const int &mu, T *work) const {
+    int local_size_source = cluster_tree_s->get_masteroffset(rankWorld).second;
+
+    if (this->symmetry == 'S' || this->symmetry == 'H') {
+        this->mymvprod_local_to_local(in, out, mu, work);
+        return;
+    }
+
+    double time      = MPI_Wtime();
+    bool need_delete = false;
+    if (work == nullptr) {
+        work        = new T[(this->nc + local_size_source * sizeWorld) * mu];
+        need_delete = true;
+    }
+
+    std::fill(out, out + local_size_source * mu, 0);
+    int incx(1), incy(1);
+    int global_size_rhs = this->nc * mu;
+    T da(1);
+
+    std::fill(work, work + this->nc * mu, 0);
+    T *rbuf = work + this->nc * mu;
+
+    // Contribution champ lointain
+#if _OPENMP
+#    pragma omp parallel
+#endif
+    {
+        std::vector<T> temp(this->nc * mu, 0);
+#if _OPENMP
+#    pragma omp for schedule(guided) nowait
+#endif
+        for (int b = 0; b < MyComputedBlocks.size(); b++) {
+            int offset_i = MyComputedBlocks[b]->get_offset_i();
+            int offset_j = MyComputedBlocks[b]->get_offset_j();
+            if (!(symmetry != 'N') || offset_i != offset_j) { // remove strictly diagonal blocks
+                MyComputedBlocks[b]->add_mvprod_row_major(in + (offset_i - local_offset) * mu, temp.data() + offset_j * mu, mu, 'T', 'T');
+            }
+        }
+
+#if _OPENMP
+#    pragma omp critical
+#endif
+        Blas<T>::axpy(&(global_size_rhs), &da, temp.data(), &incx, work, &incy);
+    }
+
+    std::vector<int> scounts(sizeWorld), rcounts(sizeWorld);
+    std::vector<int> sdispls(sizeWorld), rdispls(sizeWorld);
+
+    sdispls[0] = 0;
+    rdispls[0] = 0;
+
+    for (int i = 0; i < sizeWorld; i++) {
+        scounts[i] = (cluster_tree_s->get_masteroffset(i).second) * mu;
+        rcounts[i] = (local_size_source)*mu;
+        if (i > 0) {
+            sdispls[i] = sdispls[i - 1] + scounts[i - 1];
+            rdispls[i] = rdispls[i - 1] + rcounts[i - 1];
+        }
+    }
+
+    MPI_Alltoallv(work, &(scounts[0]), &(sdispls[0]), wrapper_mpi<T>::mpi_type(), rbuf, &(rcounts[0]), &(rdispls[0]), wrapper_mpi<T>::mpi_type(), comm);
+
+    for (int i = 0; i < sizeWorld; i++)
+        std::transform(out, out + local_size_source * mu, rbuf + rdispls[i], out, std::plus<T>());
+
+    if (need_delete) {
+        delete[] work;
+        work = nullptr;
+    }
+    infos["nb_mat_vec_prod"]         = NbrToStr(1 + StrToNbr<int>(infos["nb_mat_vec_prod"]));
+    infos["total_time_mat_vec_prod"] = NbrToStr(MPI_Wtime() - time + StrToNbr<double>(infos["total_time_mat_vec_prod"]));
+}
+
+template <typename T>
 void HMatrix<T>::mvprod_global_to_global(const T *const in, T *const out, const int &mu) const {
     double time = MPI_Wtime();
 
@@ -930,19 +1049,6 @@ void HMatrix<T>::mvprod_global_to_global(const T *const in, T *const out, const 
 
         } else {
             mymvprod_global_to_local(in, out_perm.data(), 1);
-            // Allgather
-            std::vector<int> recvcounts(sizeWorld);
-            std::vector<int> displs(sizeWorld);
-
-            displs[0] = 0;
-
-            for (int i = 0; i < sizeWorld; i++) {
-                recvcounts[i] = cluster_tree_t->get_masteroffset(i).second * mu;
-                if (i > 0)
-                    displs[i] = displs[i - 1] + recvcounts[i - 1];
-            }
-
-            MPI_Allgatherv(out, recvcounts[rankWorld], wrapper_mpi<T>::mpi_type(), buffer.data(), &(recvcounts[0]), &(displs[0]), wrapper_mpi<T>::mpi_type(), comm);
         }
 
         // Allgather
@@ -1058,15 +1164,15 @@ void HMatrix<T>::mvprod_local_to_local(const T *const in, T *const out, const in
 
         // local permutation
         if (use_permutation) {
+            // permutation
             this->local_source_to_local_cluster(in, in_perm.data());
 
             // prod
             mymvprod_local_to_local(in_perm.data(), out_perm.data(), 1, work);
 
             // permutation
-            if (use_permutation) {
-                this->local_cluster_to_local_target(out_perm.data(), out, comm);
-            }
+            this->local_cluster_to_local_target(out_perm.data(), out, comm);
+
         } else {
             mymvprod_local_to_local(in, out, 1, work);
         }
@@ -1132,15 +1238,189 @@ void HMatrix<T>::mvprod_local_to_local(const T *const in, T *const out, const in
 }
 
 template <typename T>
+void HMatrix<T>::mvprod_transp_global_to_global(const T *const in, T *const out, const int &mu) const {
+    double time = MPI_Wtime();
+    if (this->symmetry == 'S') {
+        this->mvprod_global_to_global(in, out, mu);
+        return;
+    } else if (this->symmetry == 'H') {
+        std::vector<T> in_conj(in, in + nr * mu);
+        conj_if_complex(in_conj.data(), nr * mu);
+        this->mvprod_global_to_global(in_conj.data(), out, mu);
+        conj_if_complex(out, mu * nc);
+        return;
+    }
+    if (mu == 1) {
+
+        if (use_permutation) {
+            std::vector<T> in_perm(nr), out_perm(nc);
+
+            // permutation
+            this->target_to_cluster_permutation(in, in_perm.data());
+
+            mymvprod_transp_local_to_global(in_perm.data() + local_offset, out_perm.data(), 1);
+
+            // permutation
+            this->cluster_to_source_permutation(out_perm.data(), out);
+        } else {
+            mymvprod_transp_local_to_global(in + local_offset, out, 1);
+        }
+
+    } else {
+
+        std::vector<T> out_perm(mu * nc);
+        std::vector<T> in_perm(local_size * mu + mu * nc);
+        std::vector<T> buffer(nr);
+
+        for (int i = 0; i < mu; i++) {
+            // Permutation
+            if (use_permutation) {
+                this->target_to_cluster_permutation(in + i * nr, buffer.data());
+                // Transpose
+                for (int j = local_offset; j < local_offset + local_size; j++) {
+                    in_perm[i + (j - local_offset) * mu] = buffer[j];
+                }
+            } else {
+                // Transpose
+                for (int j = local_offset; j < local_offset + local_size; j++) {
+                    in_perm[i + (j - local_offset) * mu] = in[j + i * nr];
+                }
+            }
+        }
+
+        if (symmetry == 'H') {
+            conj_if_complex(in_perm.data(), local_size * mu);
+        }
+
+        mymvprod_transp_local_to_global(in_perm.data(), in_perm.data() + local_size * mu, mu);
+
+        for (int i = 0; i < mu; i++) {
+            if (use_permutation) {
+                // Transpose
+                for (int j = 0; j < nc; j++) {
+                    out_perm[i * nc + j] = in_perm[i + j * mu + local_size * mu];
+                }
+                cluster_to_source_permutation(out_perm.data() + i * nc, out + i * nc);
+            } else {
+                for (int j = 0; j < nc; j++) {
+                    out[i * nc + j] = in_perm[i + j * mu + local_size * mu];
+                }
+            }
+        }
+
+        if (symmetry == 'H') {
+            conj_if_complex(out, nc * mu);
+        }
+    }
+    // Timing
+    infos["nb_mat_vec_prod"]         = NbrToStr(1 + StrToNbr<int>(infos["nb_mat_vec_prod"]));
+    infos["total_time_mat_vec_prod"] = NbrToStr(MPI_Wtime() - time + StrToNbr<double>(infos["total_time_mat_vec_prod"]));
+}
+
+template <typename T>
+void HMatrix<T>::mvprod_transp_local_to_local(const T *const in, T *const out, const int &mu, T *work) const {
+    double time           = MPI_Wtime();
+    int local_size_source = cluster_tree_s->get_masteroffset(rankWorld).second;
+    if (this->symmetry == 'S') {
+        this->mvprod_local_to_local(in, out, mu);
+        return;
+    } else if (this->symmetry == 'H') {
+        std::vector<T> in_conj(in, in + local_size * mu);
+        conj_if_complex(in_conj.data(), local_size * mu);
+        this->mvprod_local_to_local(in_conj.data(), out, mu);
+        conj_if_complex(out, mu * local_size_source);
+        return;
+    }
+    bool need_delete = false;
+    if (work == nullptr) {
+        work        = new T[(this->nc + sizeWorld * this->get_source_cluster()->get_local_size()) * mu];
+        need_delete = true;
+    }
+
+    if (!(cluster_tree_s->IsLocal()) || !(cluster_tree_t->IsLocal())) {
+        throw std::logic_error("[Htool error] Permutation is not local, mvprod_local_to_local cannot be used"); // LCOV_EXCL_LINE
+    }
+
+    if (mu == 1) {
+        std::vector<T> in_perm(local_size), out_perm(local_size_source);
+
+        // local permutation
+        if (use_permutation) {
+            this->local_target_to_local_cluster(in, in_perm.data());
+
+            // prod
+            mymvprod_transp_local_to_local(in_perm.data(), out_perm.data(), 1, work);
+
+            // permutation
+            this->local_cluster_to_local_source(out_perm.data(), out, comm);
+
+        } else {
+            mymvprod_transp_local_to_local(in, out, 1, work);
+        }
+
+    } else {
+
+        std::vector<T> in_perm(local_size * mu);
+        std::vector<T> out_perm(local_size_source * mu);
+        std::vector<T> buffer(std::max(local_size_source, local_size));
+
+        for (int i = 0; i < mu; i++) {
+            // local permutation
+            if (use_permutation) {
+                this->local_target_to_local_cluster(in + i * local_size, buffer.data());
+
+                // Transpose
+                for (int j = 0; j < local_size; j++) {
+                    in_perm[i + j * mu] = buffer[j];
+                }
+            } else {
+                // Transpose
+                for (int j = 0; j < local_size; j++) {
+                    in_perm[i + j * mu] = in[j + i * local_size];
+                }
+            }
+        }
+
+        if (symmetry == 'H') {
+            conj_if_complex(in_perm.data(), local_size_source * mu);
+        }
+
+        mymvprod_transp_local_to_local(in_perm.data(), out_perm.data(), mu, work);
+
+        for (int i = 0; i < mu; i++) {
+            if (use_permutation) {
+                // Tranpose
+                for (int j = 0; j < local_size_source; j++) {
+                    buffer[j] = out_perm[i + j * mu];
+                }
+
+                // local permutation
+                this->local_cluster_to_local_source(buffer.data(), out + i * local_size_source);
+            } else {
+                // Tranpose
+                for (int j = 0; j < local_size_source; j++) {
+                    out[j + i * local_size_source] = out_perm[i + j * mu];
+                }
+            }
+        }
+
+        if (symmetry == 'H') {
+            conj_if_complex(out, out_perm.size());
+        }
+    }
+
+    if (need_delete) {
+        delete[] work;
+        work = nullptr;
+    }
+    // Timing
+    infos["nb_mat_vec_prod"]         = NbrToStr(1 + StrToNbr<int>(infos["nb_mat_vec_prod"]));
+    infos["total_time_mat_vec_prod"] = NbrToStr(MPI_Wtime() - time + StrToNbr<double>(infos["total_time_mat_vec_prod"]));
+}
+
+template <typename T>
 void HMatrix<T>::mvprod_subrhs(const T *const in, T *const out, const int &mu, const int &offset, const int &size, const int &margin) const {
     std::fill(out, out + local_size * mu, 0);
-
-    // To localize the rhs with multiple rhs, it is transpose. So instead of A*B, we do transpose(B)*transpose(A)
-    char transb = 'T';
-    // In case of a hermitian matrix, the rhs is conjugate transpose
-    if (symmetry == 'H') {
-        transb = 'C';
-    }
 
     // Contribution champ lointain
 #if _OPENMP
@@ -1148,6 +1428,12 @@ void HMatrix<T>::mvprod_subrhs(const T *const in, T *const out, const int &mu, c
 #endif
     {
         std::vector<T> temp(local_size * mu, 0);
+        // To localize the rhs with multiple rhs, it is transpose. So instead of A*B, we do transpose(B)*transpose(A)
+        char transb = 'T';
+        // In case of a hermitian matrix, the rhs is conjugate transpose
+        if (symmetry == 'H') {
+            transb = 'C';
+        }
 #if _OPENMP
 #    pragma omp for schedule(guided)
 #endif
@@ -1233,42 +1519,42 @@ void HMatrix<T>::mvprod_subrhs(const T *const in, T *const out, const int &mu, c
 
 template <typename T>
 void HMatrix<T>::source_to_cluster_permutation(const T *const in, T *const out) const {
-    for (int i = 0; i < nc; i++) {
-        out[i] = in[cluster_tree_s->get_perm(i)];
-    }
+    global_to_cluster(cluster_tree_s.get(), in, out);
+}
+
+template <typename T>
+void HMatrix<T>::target_to_cluster_permutation(const T *const in, T *const out) const {
+    global_to_cluster(cluster_tree_t.get(), in, out);
 }
 
 template <typename T>
 void HMatrix<T>::cluster_to_target_permutation(const T *const in, T *const out) const {
-    for (int i = 0; i < nr; i++) {
-        out[cluster_tree_t->get_perm(i)] = in[i];
-    }
+    cluster_to_global(cluster_tree_t.get(), in, out);
+}
+
+template <typename T>
+void HMatrix<T>::cluster_to_source_permutation(const T *const in, T *const out) const {
+    cluster_to_global(cluster_tree_s.get(), in, out);
+}
+
+template <typename T>
+void HMatrix<T>::local_target_to_local_cluster(const T *const in, T *const out, MPI_Comm comm) const {
+    local_to_local_cluster(cluster_tree_t.get(), in, out, comm);
 }
 
 template <typename T>
 void HMatrix<T>::local_source_to_local_cluster(const T *const in, T *const out, MPI_Comm comm) const {
-    if (!cluster_tree_s->IsLocal()) {
-        throw std::logic_error("[Htool error] Permutation is not local, local_source_to_local_cluster cannot be used"); // LCOV_EXCL_LINE
-    } else {
-        int rankWorld;
-        MPI_Comm_rank(comm, &rankWorld);
-        for (int i = 0; i < cluster_tree_s->get_masteroffset(rankWorld).second; i++) {
-            out[i] = in[cluster_tree_s->get_perm(cluster_tree_s->get_masteroffset(rankWorld).first + i) - cluster_tree_s->get_masteroffset(rankWorld).first];
-        }
-    }
+    local_to_local_cluster(cluster_tree_s.get(), in, out, comm);
 }
 
 template <typename T>
 void HMatrix<T>::local_cluster_to_local_target(const T *const in, T *const out, MPI_Comm comm) const {
-    if (!cluster_tree_t->IsLocal()) {
-        throw std::logic_error("[Htool error] Permutation is not local, local_cluster_to_local_target cannot be used"); // LCOV_EXCL_LINE
-    } else {
-        int rankWorld;
-        MPI_Comm_rank(comm, &rankWorld);
-        for (int i = 0; i < cluster_tree_t->get_masteroffset(rankWorld).second; i++) {
-            out[cluster_tree_t->get_perm(cluster_tree_t->get_masteroffset(rankWorld).first + i) - cluster_tree_t->get_masteroffset(rankWorld).first] = in[i];
-        }
-    }
+    local_cluster_to_local(cluster_tree_t.get(), in, out, comm);
+}
+
+template <typename T>
+void HMatrix<T>::local_cluster_to_local_source(const T *const in, T *const out, MPI_Comm comm) const {
+    local_cluster_to_local(cluster_tree_s.get(), in, out, comm);
 }
 
 template <typename T>
@@ -1552,6 +1838,14 @@ void HMatrix<T>::copy_local_diagonal(T *ptr, bool permutation) const {
 }
 
 template <typename T>
+Matrix<T> HMatrix<T>::get_local_interaction(bool permutation) const {
+    int local_size_source = cluster_tree_s->get_masteroffset(rankWorld).second;
+    Matrix<T> local_interaction(local_size, local_size_source);
+    copy_local_interaction(local_interaction.data(), permutation);
+    return local_interaction;
+}
+
+template <typename T>
 Matrix<T> HMatrix<T>::get_local_diagonal_block(bool permutation) const {
     int local_size_source = cluster_tree_s->get_masteroffset(rankWorld).second;
     Matrix<T> diagonal_block(local_size, local_size_source);
@@ -1560,12 +1854,9 @@ Matrix<T> HMatrix<T>::get_local_diagonal_block(bool permutation) const {
 }
 
 template <typename T>
-void HMatrix<T>::copy_local_diagonal_block(T *ptr, bool permutation) const {
+void HMatrix<T>::copy_local_interaction(T *ptr, bool permutation) const {
     if ((!(cluster_tree_t->IsLocal()) || !(cluster_tree_s->IsLocal())) && permutation) {
-        throw std::logic_error("[Htool error] Permutation is not local, get_local_diagonal_block cannot be used"); // LCOV_EXCL_LINE
-    }
-    if (cluster_tree_t != cluster_tree_s) {
-        throw std::logic_error("[Htool error] Matrix is not square a priori, get_local_diagonal_block cannot be used"); // LCOV_EXCL_LINE
+        throw std::logic_error("[Htool error] Permutation is not local, get_local_interaction cannot be used"); // LCOV_EXCL_LINE
     }
 
     int local_offset_source = cluster_tree_s->get_masteroffset(rankWorld).first;
@@ -1576,7 +1867,7 @@ void HMatrix<T>::copy_local_diagonal_block(T *ptr, bool permutation) const {
         int local_nr               = submat.nb_rows();
         int local_nc               = submat.nb_cols();
         int offset_i               = submat.get_offset_i() - local_offset;
-        int offset_j               = submat.get_offset_j() - local_offset;
+        int offset_j               = submat.get_offset_j() - local_offset_source;
         for (int i = 0; i < local_nc; i++) {
             std::copy_n(&(submat(0, i)), local_nr, ptr + offset_i + (offset_j + i) * local_size);
         }
@@ -1588,7 +1879,7 @@ void HMatrix<T>::copy_local_diagonal_block(T *ptr, bool permutation) const {
         int local_nr                 = lmat.nb_rows();
         int local_nc                 = lmat.nb_cols();
         int offset_i                 = lmat.get_offset_i() - local_offset;
-        int offset_j                 = lmat.get_offset_j() - local_offset;
+        int offset_j                 = lmat.get_offset_j() - local_offset_source;
         ;
         Matrix<T> FarFielBlock(local_nr, local_nc);
         lmat.get_whole_matrix(&(FarFielBlock(0, 0)));
@@ -1644,6 +1935,14 @@ void HMatrix<T>::copy_local_diagonal_block(T *ptr, bool permutation) const {
             this->local_cluster_to_local_target(diagonal_block_perm.data() + i * local_size, ptr + i * local_size, comm);
         }
     }
+}
+
+template <typename T>
+void HMatrix<T>::copy_local_diagonal_block(T *ptr, bool permutation) const {
+    if (cluster_tree_t != cluster_tree_s) {
+        throw std::logic_error("[Htool error] Matrix is not square a priori, get_local_diagonal_block cannot be used"); // LCOV_EXCL_LINE
+    }
+    copy_local_interaction(ptr, permutation);
 }
 
 template <typename T>

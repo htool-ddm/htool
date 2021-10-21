@@ -9,10 +9,6 @@ namespace htool {
 template <typename T>
 class SVD final : public VirtualLowRankGenerator<T> {
 
-  private:
-    // Data member
-    mutable std::vector<underlying_type<T>> singular_values;
-
   public:
     using VirtualLowRankGenerator<T>::VirtualLowRankGenerator;
 
@@ -35,7 +31,7 @@ class SVD final : public VirtualLowRankGenerator<T> {
         int ldvt  = n;
         int lwork = -1;
         int info;
-        singular_values.resize(std::min(m, n));
+        std::vector<underlying_type<T>> singular_values(std::min(m, n));
         Matrix<T> u(m, m);
         // std::vector<T> vt (n*n);
         Matrix<T> vt(n, n);
@@ -85,7 +81,7 @@ class SVD final : public VirtualLowRankGenerator<T> {
         }
     }
 
-    T get_singular_value(int i) { return singular_values[i]; }
+    // T get_singular_value(int i) { return singular_values[i]; }
 };
 
 } // namespace htool
