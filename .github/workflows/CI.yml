@@ -145,6 +145,11 @@ jobs:
           cd htool/build
           make -j2 build-examples
 
+      - name: Build documentation
+        run: |
+          cd htool/build
+          make doc
+
       - name: Check format
         run: |
           cd htool/build
