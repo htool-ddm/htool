@@ -94,6 +94,7 @@ endif()
 
 # Options
 option(HTOOL_WITH_EXAMPLES "Build htool examples ?" ON)
+option(HTOOL_WITH_DOC "Build documentation" ON)
 
 #=============================================================================#
 #========================== External Libraries ===============================#
@@ -189,4 +190,9 @@ if((CMAKE_PROJECT_NAME STREQUAL PROJECT_NAME) AND BUILD_TESTING)
     endif()
     add_custom_target(build-tests)
     add_subdirectory(tests EXCLUDE_FROM_ALL)
+endif()
+
+# Add documentation
+if(HTOOL_WITH_DOC)
+    add_subdirectory(doc EXCLUDE_FROM_ALL)
 endif()
