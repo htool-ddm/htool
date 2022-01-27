@@ -28,9 +28,18 @@ All notable changes to this project will be documented in this file.
 
 ### Added
 
+### Changed
+
+### Fixed
+
+## [0.8] - 2022-01-27
+
+### Added
+
 - doxygen documentation
 - mvprod_transp_global_to_global and mvprod_transp_local_to_local added to VirtualHMatrix
 - getters for clusters in VirtualHMatrix
+- custom gmv in ddm
 
 ### Changed
 

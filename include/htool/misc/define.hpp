@@ -6,7 +6,7 @@
  *    HTOOL_VERSION       - Version of the framework.
  *    HTOOL_MKL           - If not set to zero, Intel MKL is chosen as the linear algebra backend. */
 
-#define HTOOL_VERSION "0.7.0"
+#define HTOOL_VERSION "0.8.0"
 #if defined(PETSC_HAVE_MKL_LIBS) && !defined(HTOOL_MKL)
 #    define HTOOL_MKL 1
 #endif

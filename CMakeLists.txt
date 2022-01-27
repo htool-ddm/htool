@@ -5,12 +5,12 @@ cmake_minimum_required(VERSION 3.10)
 if(${CMAKE_VERSION} VERSION_LESS 3.12)
     project(
         Htool
-        VERSION 0.7.0
+        VERSION 0.8.0
         LANGUAGES CXX)
 else()
     project(
         Htool
-        VERSION 0.7.0
+        VERSION 0.8.0
         DESCRIPTION "A header only c++ library that provides Hierarchical matrices."
         HOMEPAGE_URL "https://github.com/htool-ddm/htool"
         LANGUAGES CXX)
