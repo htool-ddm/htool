@@ -458,7 +458,7 @@ void HMatrix<T>::ComputeBlocks(VirtualGenerator<T> &mat, const double *const xt,
         }
     }
 
-    std::sort(MyComputedBlocks.begin(), MyComputedBlocks.end(), [](std::unique_ptr<IMatrix<T>> &a, std::unique_ptr<IMatrix<T>> &b) {
+    std::sort(MyComputedBlocks.begin(), MyComputedBlocks.end(), [](const std::unique_ptr<IMatrix<T>> &a, const std::unique_ptr<IMatrix<T>> &b) {
         if (a->get_offset_i() == b->get_offset_i()) {
             return a->get_offset_j() < b->get_offset_j();
         } else {
