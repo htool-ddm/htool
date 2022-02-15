@@ -12,11 +12,13 @@
 #include "../lrmat/sympartialACA.hpp"
 #include "../lrmat/virtual_lrmat_generator.hpp"
 #include "../misc/misc.hpp"
+#include "../types/virtual_dense_generator.hpp"
 #include "../types/virtual_generator.hpp"
 #include "../types/virtual_hmatrix.hpp"
 #include "../wrappers/wrapper_mpi.hpp"
 #include "matrix.hpp"
 #include "point.hpp"
+#include "zero_generator.hpp"
 #include <cassert>
 #include <fstream>
 #include <map>
@@ -54,6 +56,7 @@ class HMatrix : public VirtualHMatrix<T> {
     char UPLO;
     int false_positive;
     bool use_permutation;
+    bool delay_dense_computation;
 
     // Parameters
     double epsilon;
@@ -82,6 +85,7 @@ class HMatrix : public VirtualHMatrix<T> {
 
     std::vector<int> no_permutation_target, no_permutation_source;
     mutable std::map<std::string, std::string> infos;
+    std::unique_ptr<ZeroGenerator<T>> zerogenerator;
 
     const MPI_Comm comm;
     int rankWorld, sizeWorld;
@@ -105,10 +109,10 @@ class HMatrix : public VirtualHMatrix<T> {
   public:
     // Special constructor for hand-made build (for MultiHMatrix for example)
 
-    HMatrix(int space_dim0, int nr0, int nc0, const std::shared_ptr<VirtualCluster> &cluster_tree_t0, const std::shared_ptr<VirtualCluster> &cluster_tree_s0, char symmetry0 = 'N', char UPLO = 'N', const MPI_Comm comm0 = MPI_COMM_WORLD) : nr(nr0), nc(nc0), space_dim(space_dim0), symmetry(symmetry0), UPLO(UPLO), use_permutation(true), cluster_tree_t(cluster_tree_t0), cluster_tree_s(cluster_tree_s0), comm(comm0){};
+    HMatrix(int space_dim0, int nr0, int nc0, const std::shared_ptr<VirtualCluster> &cluster_tree_t0, const std::shared_ptr<VirtualCluster> &cluster_tree_s0, char symmetry0 = 'N', char UPLO = 'N', const MPI_Comm comm0 = MPI_COMM_WORLD) : nr(nr0), nc(nc0), space_dim(space_dim0), symmetry(symmetry0), UPLO(UPLO), use_permutation(true), delay_dense_computation(false), cluster_tree_t(cluster_tree_t0), cluster_tree_s(cluster_tree_s0), comm(comm0){};
 
     // Constructor
-    HMatrix(const std::shared_ptr<VirtualCluster> &cluster_tree_t0, const std::shared_ptr<VirtualCluster> &cluster_tree_s0, double epsilon0 = 1e-6, double eta0 = 10, char Symmetry = 'N', char UPLO = 'N', const int &reqrank0 = -1, const MPI_Comm comm0 = MPI_COMM_WORLD) : nr(0), nc(0), space_dim(cluster_tree_t0->get_space_dim()), dimension(1), reqrank(reqrank0), local_size(0), local_offset(0), symmetry(Symmetry), UPLO(UPLO), false_positive(0), use_permutation(true), epsilon(epsilon0), eta(eta0), maxblocksize(1e6), minsourcedepth(0), mintargetdepth(0), cluster_tree_t(cluster_tree_t0), cluster_tree_s(cluster_tree_s0), comm(comm0) {
+    HMatrix(const std::shared_ptr<VirtualCluster> &cluster_tree_t0, const std::shared_ptr<VirtualCluster> &cluster_tree_s0, double epsilon0 = 1e-6, double eta0 = 10, char Symmetry = 'N', char UPLO = 'N', const int &reqrank0 = -1, const MPI_Comm comm0 = MPI_COMM_WORLD) : nr(0), nc(0), space_dim(cluster_tree_t0->get_space_dim()), dimension(1), reqrank(reqrank0), local_size(0), local_offset(0), symmetry(Symmetry), UPLO(UPLO), false_positive(0), use_permutation(true), delay_dense_computation(false), epsilon(epsilon0), eta(eta0), maxblocksize(1e6), minsourcedepth(0), mintargetdepth(0), cluster_tree_t(cluster_tree_t0), cluster_tree_s(cluster_tree_s0), comm(comm0) {
         if (!((symmetry == 'N' || symmetry == 'H' || symmetry == 'S')
               && (UPLO == 'N' || UPLO == 'L' || UPLO == 'U')
               && ((symmetry == 'N' && UPLO == 'N') || (symmetry != 'N' && UPLO != 'N'))
@@ -149,6 +153,8 @@ class HMatrix : public VirtualHMatrix<T> {
         this->check_arguments_sym(mat, xt);
         this->build(mat, x_array_t.data());
     }
+
+    void build_dense_blocks(VirtualDenseGenerator<T> &dense_block_generator);
 
     // Getters
     int nb_rows() const { return nr; }
@@ -210,6 +216,7 @@ class HMatrix : public VirtualHMatrix<T> {
     void set_mintargetdepth(unsigned int mintargetdepth0) { this->mintargetdepth = mintargetdepth0; };
     void set_maxblocksize(unsigned int maxblocksize0) { this->maxblocksize = maxblocksize0; };
     void set_use_permutation(bool choice) { this->use_permutation = choice; };
+    void set_delay_dense_computation(bool choice) { this->delay_dense_computation = choice; };
     void set_compression(std::shared_ptr<VirtualLowRankGenerator<T>> ptr) { LowRankGenerator = ptr; };
 
     // Infos
@@ -304,6 +311,11 @@ void HMatrix<T>::build(VirtualGenerator<T> &mat, const double *const xt, const d
         std::iota(no_permutation_source.begin(), no_permutation_source.end(), int(0));
     }
 
+    // Zero generator when we delay the dense computation
+    if (delay_dense_computation) {
+        zerogenerator = std::unique_ptr<ZeroGenerator<T>>(new ZeroGenerator<T>(mat.nb_rows(), mat.nb_cols(), mat.get_dimension()));
+    }
+
     // Construction arbre des paquets
     local_size   = cluster_tree_t->get_local_size();
     local_offset = cluster_tree_t->get_local_offset();
@@ -358,6 +370,11 @@ void HMatrix<T>::build(VirtualGenerator<T> &mat, const double *const xt) {
         std::iota(no_permutation_source.begin(), no_permutation_source.end(), int(0));
     }
 
+    // Zero generator when we delay the dense computation
+    if (delay_dense_computation) {
+        zerogenerator = std::unique_ptr<ZeroGenerator<T>>(new ZeroGenerator<T>(mat.nb_rows(), mat.nb_cols(), mat.get_dimension()));
+    }
+
     // Construction arbre des paquets
     local_size   = cluster_tree_t->get_local_size();
     local_offset = cluster_tree_t->get_local_offset();
@@ -382,6 +399,22 @@ void HMatrix<T>::build(VirtualGenerator<T> &mat, const double *const xt) {
 
     // Infos
     ComputeInfos(mytimes);
+}
+
+template <typename T>
+void HMatrix<T>::build_dense_blocks(VirtualDenseGenerator<T> &dense_block_generator) {
+
+    std::vector<int> row_sizes(this->MyNearFieldMats.size()), col_sizes(this->MyNearFieldMats.size());
+    std::vector<const int *> rows(this->MyNearFieldMats.size()), cols(this->MyNearFieldMats.size());
+    std::vector<T *> ptr(this->MyNearFieldMats.size());
+    for (int i = 0; i < this->MyNearFieldMats.size(); i++) {
+        row_sizes[i] = this->MyNearFieldMats[i]->nb_rows();
+        col_sizes[i] = this->MyNearFieldMats[i]->nb_cols();
+        rows[i]      = (this->MyNearFieldMats[i]->data_ir());
+        cols[i]      = (this->MyNearFieldMats[i]->data_ic());
+        ptr[i]       = (this->MyNearFieldMats[i]->data());
+    }
+    dense_block_generator.copy_dense_blocks(row_sizes, col_sizes, rows, cols, ptr);
 }
 
 // Compute blocks recursively
@@ -670,10 +703,13 @@ void HMatrix<T>::AddNearFieldMat(VirtualGenerator<T> &mat, Block &task, std::vec
     const VirtualCluster &t = task.get_target_cluster();
     const VirtualCluster &s = task.get_source_cluster();
 
-    if (use_permutation) {
+    if (use_permutation && !delay_dense_computation) {
         MyComputedBlocks_local.emplace_back(new SubMatrix<T>(mat, mat.get_dimension() * t.get_size(), mat.get_dimension() * s.get_size(), cluster_tree_t->get_perm().data() + t.get_offset(), cluster_tree_s->get_perm().data() + s.get_offset(), t.get_offset(), s.get_offset()));
-    } else {
+    } else if (!delay_dense_computation) {
         MyComputedBlocks_local.emplace_back(new SubMatrix<T>(mat, mat.get_dimension() * t.get_size(), mat.get_dimension() * s.get_size(), no_permutation_target.data() + t.get_offset(), no_permutation_source.data() + s.get_offset(), t.get_offset(), s.get_offset()));
+    } else {
+        std::cout << mat.get_dimension() * t.get_size() << " " << mat.get_dimension() * s.get_size() << std::endl;
+        MyComputedBlocks_local.emplace_back(new SubMatrix<T>(*zerogenerator, mat.get_dimension() * t.get_size(), mat.get_dimension() * s.get_size(), cluster_tree_t->get_perm().data() + t.get_offset(), cluster_tree_s->get_perm().data() + s.get_offset(), t.get_offset(), s.get_offset()));
     }
 
     MyNearFieldMats_local.push_back(dynamic_cast<SubMatrix<T> *>(MyComputedBlocks_local.back().get()));
