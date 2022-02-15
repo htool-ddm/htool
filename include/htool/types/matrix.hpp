@@ -617,6 +617,8 @@ class SubMatrix : public Matrix<T> {
     // Getters
     std::vector<int> get_ir() const { return this->ir; }
     std::vector<int> get_ic() const { return this->ic; }
+    const int *data_ir() const { return this->ir.data(); }
+    const int *data_ic() const { return this->ic.data(); }
     int get_offset_i() const { return this->offset_i; }
     int get_offset_j() const { return this->offset_j; }
     void set_offset_i(int offset) { this->offset_i = offset; }
