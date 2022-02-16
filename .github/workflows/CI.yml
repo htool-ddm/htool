@@ -31,7 +31,8 @@ jobs:
             CXX_COMPILER: g++
             container: "ubuntu_openmpi"
             MPIEXEC_PREFLAGS: "--allow-run-as-root --oversubscribe"
-            USE_SANITIZER: ""
+            USE_SANITIZER: Address""
+            ASAN_OPTIONS: "ASAN_OPTIONS=detect_leaks=0" # issue probably with openmpi
             CMAKE_BUILD_TYPE: Release
             DOCKER_OPTIONS: " "
             CODE_COVERAGE: "OFF"
@@ -52,7 +53,7 @@ jobs:
             container: "ubuntu_mpich"
             MPIEXEC_PREFLAGS: ""
             USE_SANITIZER: "Address"
-            LSAN_OPTIONS: "suppressions=/root/htool/sanitizers/lsan.blacklist:verbosity=1:log_threads=1"
+            ASAN_OPTIONS: ""
             CMAKE_BUILD_TYPE: Debug
             DOCKER_OPTIONS: " "
             CODE_COVERAGE: "ON"
@@ -63,28 +64,33 @@ jobs:
             container: "ubuntu_mpich"
             MPIEXEC_PREFLAGS: ""
             USE_SANITIZER: "Address"
-            LSAN_OPTIONS: "suppressions=/root/htool/sanitizers/lsan.blacklist:verbosity=1:log_threads=1"
+            ASAN_OPTIONS: ""
             CMAKE_BUILD_TYPE: Debug
             DOCKER_OPTIONS: " "
             CODE_COVERAGE: "OFF"
 
-          # Hangs on github
+          # Hangs up on github
           # - name: "Debian OpenMPI g++"
           #   CC_COMPILER: gcc
           #   CXX_COMPILER: g++
           #   container: "debian_openmpi"
-          #   MPIEXEC_PREFLAGS: "--allow-run-as-root --oversubscribe --mca btl_vader_single_copy_mechanism none"
-          #   USE_SANITIZER: ""
+          #   MPIEXEC_PREFLAGS: "--allow-run-as-root --oversubscribe"
+          #   USE_SANITIZER: "Address"
+          #   ASAN_OPTIONS: "ASAN_OPTIONS=detect_leaks=0" # issue probably with openmpi
           #   CMAKE_BUILD_TYPE: Debug
-          #   DOCKER_OPTIONS: "--cap-add SYS_PTRACE"
+          #   DOCKER_OPTIONS: " "
+          #   CODE_COVERAGE: "OFF"
+          #   # DOCKER_OPTIONS: "--cap-add SYS_PTRACE"
           # - name: "Debian OpenMPI clang++"
           #   CC_COMPILER: clang
           #   CXX_COMPILER: clang++
           #   container: "debian_openmpi"
-          #   MPIEXEC_PREFLAGS: "--allow-run-as-root --oversubscribe --mca btl_vader_single_copy_mechanism none"
+          #   MPIEXEC_PREFLAGS: "--allow-run-as-root --oversubscribe"
           #   USE_SANITIZER: ""
           #   CMAKE_BUILD_TYPE: Debug
-          #   DOCKER_OPTIONS: "--cap-add SYS_PTRACE"
+          #   DOCKER_OPTIONS: " "
+          #   CODE_COVERAGE: "OFF"
+          # DOCKER_OPTIONS: "--cap-add SYS_PTRACE"
 
           - name: "Debian MPICH g++"
             CC_COMPILER: gcc
@@ -92,17 +98,18 @@ jobs:
             container: "debian_mpich"
             MPIEXEC_PREFLAGS: ""
             USE_SANITIZER: "Address"
-            LSAN_OPTIONS: "suppressions=/root/htool/sanitizers/lsan.blacklist:verbosity=1:log_threads=1"
+            ASAN_OPTIONS: ""
             CMAKE_BUILD_TYPE: Debug
             DOCKER_OPTIONS: " "
             CODE_COVERAGE: "OFF"
+
           - name: "Debian MPICH clang++"
             CC_COMPILER: clang
             CXX_COMPILER: clang++
             container: "debian_mpich"
             MPIEXEC_PREFLAGS: ""
             USE_SANITIZER: "Address"
-            LSAN_OPTIONS: "suppressions=/root/htool/sanitizers/lsan.blacklist:verbosity=1:log_threads=1"
+            ASAN_OPTIONS: ""
             CMAKE_BUILD_TYPE: Debug
             DOCKER_OPTIONS: " "
             CODE_COVERAGE: "OFF"
@@ -110,6 +117,11 @@ jobs:
     container:
       image: pierremarchand/htool_testing_environments:${{ matrix.container }}
       options: ${{ matrix.DOCKER_OPTIONS }}
+      env:
+        OMPI_CC: ${{ matrix.CC_COMPILER }}
+        OMPI_CXX: ${{ matrix.CXX_COMPILER }}
+        CC: ${{ matrix.CC_COMPILER }}
+        CXX: ${{ matrix.CXX_COMPILER }}
 
     name: CI (${{ matrix.name }})
 
@@ -131,14 +143,14 @@ jobs:
       - name: Build tests
         run: |
           cd htool && mkdir build && cd build
-          CC=${{ matrix.CC_COMPILER }} CXX=${{ matrix.CXX_COMPILER }} cmake -DHTOOL_WITH_EXAMPLES=1 -DMPIEXEC_PREFLAGS="${{ matrix.MPIEXEC_PREFLAGS }}" -DUSE_SANITIZER=${{ matrix.USE_SANITIZER }} -DCMAKE_BUILD_TYPE=${{ matrix.CMAKE_BUILD_TYPE }} -DCODE_COVERAGE=${{ matrix.CODE_COVERAGE }} ../
+          cmake -DHTOOL_WITH_EXAMPLES=1 -DMPIEXEC_PREFLAGS="${{ matrix.MPIEXEC_PREFLAGS }}" -DUSE_SANITIZER=${{ matrix.USE_SANITIZER }} -DCMAKE_BUILD_TYPE=${{ matrix.CMAKE_BUILD_TYPE }} -DCODE_COVERAGE=${{ matrix.CODE_COVERAGE }} ../
           make -j2 build-tests
 
       - name: Run tests
         run: |
           cd htool/build
           export OMP_NUM_THREADS=2
-          ctest --output-on-failure
+          ${{ matrix.ASAN_OPTIONS }} ctest --output-on-failure
 
       - name: Build examples
         run: |
