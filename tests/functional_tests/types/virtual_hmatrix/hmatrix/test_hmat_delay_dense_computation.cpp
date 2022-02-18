@@ -9,12 +9,12 @@
 #include <htool/testing/generator_test.hpp>
 #include <htool/testing/geometry.hpp>
 #include <htool/types/hmatrix.hpp>
-#include <htool/types/virtual_dense_generator.hpp>
+#include <htool/types/virtual_dense_blocks_generator.hpp>
 
 using namespace std;
 using namespace htool;
 
-class BlockGenerator : public VirtualDenseGenerator<double> {
+class BlockGenerator : public VirtualDenseBlocksGenerator<double> {
   private:
     const VirtualGenerator<double> &mat;
 

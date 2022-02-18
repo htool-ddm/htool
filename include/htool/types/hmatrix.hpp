@@ -12,7 +12,7 @@
 #include "../lrmat/sympartialACA.hpp"
 #include "../lrmat/virtual_lrmat_generator.hpp"
 #include "../misc/misc.hpp"
-#include "../types/virtual_dense_generator.hpp"
+#include "../types/virtual_dense_blocks_generator.hpp"
 #include "../types/virtual_generator.hpp"
 #include "../types/virtual_hmatrix.hpp"
 #include "../wrappers/wrapper_mpi.hpp"
@@ -154,7 +154,7 @@ class HMatrix : public VirtualHMatrix<T> {
         this->build(mat, x_array_t.data());
     }
 
-    void build_dense_blocks(VirtualDenseGenerator<T> &dense_block_generator);
+    void build_dense_blocks(VirtualDenseBlocksGenerator<T> &dense_block_generator);
 
     // Getters
     int nb_rows() const { return nr; }
@@ -402,7 +402,7 @@ void HMatrix<T>::build(VirtualGenerator<T> &mat, const double *const xt) {
 }
 
 template <typename T>
-void HMatrix<T>::build_dense_blocks(VirtualDenseGenerator<T> &dense_block_generator) {
+void HMatrix<T>::build_dense_blocks(VirtualDenseBlocksGenerator<T> &dense_block_generator) {
 
     std::vector<int> row_sizes(this->MyNearFieldMats.size()), col_sizes(this->MyNearFieldMats.size());
     std::vector<const int *> rows(this->MyNearFieldMats.size()), cols(this->MyNearFieldMats.size());
