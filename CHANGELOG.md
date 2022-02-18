@@ -28,9 +28,13 @@ All notable changes to this project will be documented in this file.
 
 ### Added
 
+- `set_delay_dense_computation` to `HMatrix`
+
 ### Changed
 
 ### Fixed
+
+- Fix const-correctness for g++ 4.8.5
 
 ## [0.8] - 2022-01-27
 
