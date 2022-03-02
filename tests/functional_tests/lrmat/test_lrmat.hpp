@@ -11,7 +11,7 @@ using namespace std;
 using namespace htool;
 
 template <class LowRankMatrix>
-int test_lrmat(const GeneratorTestDouble &A, const LowRankMatrix &Fixed_approximation, const LowRankMatrix &Auto_approximation, const std::vector<int> &permt, const std::vector<int> &perms, std::pair<double, double> fixed_compression_interval, std::pair<double, double> auto_compression_interval, bool verbose = 0, double margin = 0) {
+int test_lrmat(const Block<double> &block, const GeneratorTestDouble &A, const LowRankMatrix &Fixed_approximation, const LowRankMatrix &Auto_approximation, const std::vector<int> &permt, const std::vector<int> &perms, std::pair<double, double> fixed_compression_interval, std::pair<double, double> auto_compression_interval, bool verbose = 0, double margin = 0) {
 
     bool test = 0;
     int nr    = permt.size();
@@ -21,7 +21,7 @@ int test_lrmat(const GeneratorTestDouble &A, const LowRankMatrix &Fixed_approxim
     int reqrank_max = 10;
     std::vector<double> fixed_errors;
     for (int k = 0; k < Fixed_approximation.rank_of() + 1; k++) {
-        fixed_errors.push_back(Frobenius_absolute_error(Fixed_approximation, A, k));
+        fixed_errors.push_back(Frobenius_absolute_error(block, Fixed_approximation, A, k));
     }
 
     // Test rank
@@ -74,7 +74,7 @@ int test_lrmat(const GeneratorTestDouble &A, const LowRankMatrix &Fixed_approxim
     // ACA automatic building
     std::vector<double> auto_errors;
     for (int k = 0; k < Auto_approximation.rank_of() + 1; k++) {
-        auto_errors.push_back(Frobenius_absolute_error(Auto_approximation, A, k));
+        auto_errors.push_back(Frobenius_absolute_error(block, Auto_approximation, A, k));
     }
 
     if (verbose)

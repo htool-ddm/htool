@@ -69,8 +69,8 @@ int main(int argc, char *argv[]) {
     double norm  = 0;
     for (int i = 0; i < t->get_local_size(); i++) {
         for (int j = 0; j < nc; j++) {
-            error += std::abs((A.get_coef(t->get_perm(i + t->get_local_offset()), s->get_perm(j)) - DA_local(i, j)) * (A.get_coef(t->get_perm(i + t->get_local_offset()), s->get_perm(j)) - DA_local(i, j)));
-            norm += std::abs(A.get_coef(t->get_perm(i + t->get_local_offset()), s->get_perm(j)) * A.get_coef(t->get_perm(i + t->get_local_offset()), s->get_perm(j)));
+            error += std::abs((A.get_coef(t->get_global_perm(i + t->get_local_offset()), s->get_global_perm(j)) - DA_local(i, j)) * (A.get_coef(t->get_global_perm(i + t->get_local_offset()), s->get_global_perm(j)) - DA_local(i, j)));
+            norm += std::abs(A.get_coef(t->get_global_perm(i + t->get_local_offset()), s->get_global_perm(j)) * A.get_coef(t->get_global_perm(i + t->get_local_offset()), s->get_global_perm(j)));
         }
     }
     std::cout << error << std::endl;

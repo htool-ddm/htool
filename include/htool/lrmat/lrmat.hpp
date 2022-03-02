@@ -1,6 +1,7 @@
 #ifndef HTOOL_LRMAT_HPP
 #define HTOOL_LRMAT_HPP
 
+#include "../blocks/blocks.hpp"
 #include "../clustering/cluster.hpp"
 #include "../types/matrix.hpp"
 #include "../types/virtual_generator.hpp"
@@ -11,29 +12,25 @@
 namespace htool {
 
 template <typename T>
-class LowRankMatrix : public IMatrix<T> {
+class Block;
+
+template <typename T>
+class VirtualBlockData;
+
+template <typename T>
+class LowRankMatrix : public VirtualBlockData<T> {
 
   protected:
     // Data member
     int rank;
-    // nr, nc;
+    int nr, nc;
     Matrix<T> U, V;
-    std::vector<int> ir;
-    std::vector<int> ic;
-    int offset_i;
-    int offset_j;
     double epsilon;
-    unsigned int dimension;
 
   public:
     // Constructors
-    LowRankMatrix() = delete;
-    LowRankMatrix(int dimension0, const std::vector<int> &ir0, const std::vector<int> &ic0, int rank0 = -1, double epsilon0 = 1e-3) : IMatrix<T>(dimension0 * ir0.size(), dimension0 * ic0.size()), rank(rank0), U(), V(), ir(ir0), ic(ic0), offset_i(0), offset_j(0), epsilon(epsilon0), dimension(dimension0) {}
+    LowRankMatrix(const Block<T> &block, const VirtualGenerator<T> &A, const VirtualLowRankGenerator<T> &LRGenerator, const double *const xt, const double *const xs, int rank0 = -1, double epsilon0 = 1e-3, bool use_permutation = true) : rank(rank0), nr(block.get_target_cluster().get_size()), nc(block.get_source_cluster().get_size()), U(), V(), epsilon(epsilon0) {
 
-    LowRankMatrix(int dimension0, const std::vector<int> &ir0, const std::vector<int> &ic0, int offset_i0, int offset_j0, int rank0 = -1, double epsilon0 = 1e-3) : IMatrix<T>(dimension0 * ir0.size(), dimension0 * ic0.size()), rank(rank0), U(), V(), ir(ir0), ic(ic0), offset_i(offset_i0), offset_j(offset_j0), epsilon(epsilon0), dimension(dimension0) {}
-
-    // VIrtual function
-    void build(const VirtualGenerator<T> &A, const VirtualLowRankGenerator<T> &LRGenerator, const VirtualCluster &t, const double *const xt, const VirtualCluster &s, const double *const xs) {
         if (this->rank == 0) {
             T *uu, *vv;
             uu = new T[this->nr];
@@ -44,7 +41,15 @@ class LowRankMatrix : public IMatrix<T> {
             this->V.assign(1, this->nc, vv);
         } else {
             T *uu, *vv;
-            LRGenerator.copy_low_rank_approximation(epsilon, ir.size(), ic.size(), ir.data(), ic.data(), rank, &uu, &vv, A, t, xt, s, xs);
+            if (use_permutation)
+                LRGenerator.copy_low_rank_approximation(epsilon, this->nr, this->nc, block.get_target_cluster().get_perm_data(), block.get_source_cluster().get_perm_data(), rank, &uu, &vv, A, block.get_target_cluster(), xt, block.get_source_cluster(), xs);
+            else {
+                std::vector<int> no_perm_target(block.get_target_cluster().get_size()), no_perm_source(block.get_source_cluster().get_size());
+                std::iota(no_perm_target.begin(), no_perm_target.end(), block.get_target_cluster().get_offset());
+                std::iota(no_perm_source.begin(), no_perm_source.end(), block.get_source_cluster().get_offset());
+                LRGenerator.copy_low_rank_approximation(epsilon, this->nr, this->nc, no_perm_target.data(), no_perm_source.data(), rank, &uu, &vv, A, block.get_target_cluster(), xt, block.get_source_cluster(), xs);
+            }
+
             if (rank > 0) {
                 this->U.assign(this->nr, rank, uu);
                 this->V.assign(rank, this->nc, vv);
@@ -55,13 +60,10 @@ class LowRankMatrix : public IMatrix<T> {
     };
 
     // Getters
-    // int nb_rows() const { return this->nr; }
-    // int nb_cols() const { return this->nc; }
+    int nb_rows() const { return this->nr; }
+    int nb_cols() const { return this->nc; }
     int rank_of() const { return this->rank; }
-    std::vector<int> get_ir() const { return this->ir; }
-    std::vector<int> get_ic() const { return this->ic; }
-    int get_offset_i() const { return this->offset_i; }
-    int get_offset_j() const { return this->offset_j; }
+
     T get_U(int i, int j) const { return this->U(i, j); }
     T get_V(int i, int j) const { return this->V(i, j); }
     void assign_U(int i, int j, T *ptr) { return this->U.assign(i, j, ptr); }
@@ -69,16 +71,13 @@ class LowRankMatrix : public IMatrix<T> {
     std::vector<int> get_xr() const { return this->xr; }
     std::vector<int> get_xc() const { return this->xc; }
     double get_epsilon() const { return this->epsilon; }
-    int get_dimension() const { return this->dimension; }
-
-    void set_epsilon(double epsilon0) { this->epsilon = epsilon0; }
 
     std::vector<T> operator*(const std::vector<T> &a) const {
         return this->U * (this->V * a);
     }
     void mvprod(const T *const in, T *const out) const {
         if (rank == 0) {
-            std::fill(out, out + this->nr, 0);
+            std::fill(out, out + U.nb_cols(), 0);
         } else {
             std::vector<T> a(this->rank);
             V.mvprod(in, a.data());
@@ -86,7 +85,7 @@ class LowRankMatrix : public IMatrix<T> {
         }
     }
 
-    void add_mvprod_row_major(const T *const in, T *const out, const int &mu, char transb = 'T', char op = 'N') const {
+    void add_mvprod_row_major(const T *const in, T *const out, const int &mu, char transb = 'T', char op = 'N') const override {
         if (rank != 0) {
             std::vector<T> a(this->rank * mu);
             if (op == 'N') {
@@ -115,11 +114,11 @@ class LowRankMatrix : public IMatrix<T> {
     }
 
     double compression_ratio() const {
-        return (this->nr * this->nc) / (double)(this->rank * (this->nr + this->nc));
+        return (nr * nc) / (double)(this->rank * (nr + nc));
     }
 
     double space_saving() const {
-        return (1 - (this->rank * (1. / double(this->nr) + 1. / double(this->nc))));
+        return (1 - (this->rank * (1. / double(nr) + 1. / double(nc))));
     }
 
     friend std::ostream &operator<<(std::ostream &os, const LowRankMatrix &m) {
@@ -135,25 +134,22 @@ class LowRankMatrix : public IMatrix<T> {
 };
 
 template <typename T>
-underlying_type<T> Frobenius_relative_error(const LowRankMatrix<T> &lrmat, const VirtualGenerator<T> &ref, int reqrank = -1) {
+underlying_type<T> Frobenius_relative_error(const Block<T> &block, const LowRankMatrix<T> &lrmat, const VirtualGenerator<T> &ref, int reqrank = -1) {
     assert(reqrank <= lrmat.rank_of());
     if (reqrank == -1) {
         reqrank = lrmat.rank_of();
     }
     underlying_type<T> norm = 0;
     underlying_type<T> err  = 0;
-    std::vector<int> ir     = lrmat.get_ir();
-    std::vector<int> ic     = lrmat.get_ic();
-
+    std::vector<T> aux(lrmat.nb_rows() * lrmat.nb_cols());
+    ref.copy_submatrix(lrmat.nb_rows(), lrmat.nb_cols(), block.get_target_cluster().get_perm_data(), block.get_source_cluster().get_perm_data(), aux.data());
     for (int j = 0; j < lrmat.nb_rows(); j++) {
         for (int k = 0; k < lrmat.nb_cols(); k++) {
-            T aux;
-            ref.copy_submatrix(1, 1, &(ir[j]), &(ic[k]), &aux);
-            norm += std::pow(std::abs(aux), 2);
+            norm += std::pow(std::abs(aux[j + k * lrmat.nb_rows()]), 2);
             for (int l = 0; l < reqrank; l++) {
-                aux = aux - lrmat.get_U(j, l) * lrmat.get_V(l, k);
+                aux[j + k * lrmat.nb_rows()] = aux[j + k * lrmat.nb_rows()] - lrmat.get_U(j, l) * lrmat.get_V(l, k);
             }
-            err += std::pow(std::abs(aux), 2);
+            err += std::pow(std::abs(aux[j + k * lrmat.nb_rows()]), 2);
         }
     }
     err = err / norm;
@@ -161,23 +157,22 @@ underlying_type<T> Frobenius_relative_error(const LowRankMatrix<T> &lrmat, const
 }
 
 template <typename T>
-underlying_type<T> Frobenius_absolute_error(const LowRankMatrix<T> &lrmat, const VirtualGenerator<T> &ref, int reqrank = -1) {
+underlying_type<T> Frobenius_absolute_error(const Block<T> &block, const LowRankMatrix<T> &lrmat, const VirtualGenerator<T> &ref, int reqrank = -1) {
     assert(reqrank <= lrmat.rank_of());
     if (reqrank == -1) {
         reqrank = lrmat.rank_of();
     }
     underlying_type<T> err = 0;
-    std::vector<int> ir    = lrmat.get_ir();
-    std::vector<int> ic    = lrmat.get_ic();
+    std::vector<T> aux(lrmat.nb_rows() * lrmat.nb_cols());
+    ref.copy_submatrix(lrmat.nb_rows(), lrmat.nb_cols(), block.get_target_cluster().get_perm_data(), block.get_source_cluster().get_perm_data(), aux.data());
 
     for (int j = 0; j < lrmat.nb_rows(); j++) {
         for (int k = 0; k < lrmat.nb_cols(); k++) {
-            T aux;
-            ref.copy_submatrix(1, 1, &(ir[j]), &(ic[k]), &aux);
+
             for (int l = 0; l < reqrank; l++) {
-                aux = aux - lrmat.get_U(j, l) * lrmat.get_V(l, k);
+                aux[j + k * lrmat.nb_rows()] = aux[j + k * lrmat.nb_rows()] - lrmat.get_U(j, l) * lrmat.get_V(l, k);
             }
-            err += std::pow(std::abs(aux), 2);
+            err += std::pow(std::abs(aux[j + k * lrmat.nb_rows()]), 2);
         }
     }
     return std::sqrt(err);

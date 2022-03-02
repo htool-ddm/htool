@@ -3,6 +3,7 @@
 #include <random>
 #include <vector>
 
+#include <htool/blocks/virtual_block_data.hpp>
 #include <htool/clustering/cluster.hpp>
 #include <htool/clustering/pca.hpp>
 #include <htool/lrmat/SVD.hpp>

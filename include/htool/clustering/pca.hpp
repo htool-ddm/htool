@@ -122,7 +122,7 @@ class PCA {
                 }
 
                 curr->clear_sons();
-                std::copy_n(num.begin(), num.size(), curr->get_perm_start() + curr->get_offset());
+                std::copy_n(num.begin(), num.size(), curr->get_global_perm_data() + curr->get_offset());
             }
         }
     }

@@ -2,10 +2,18 @@
 #define HTOOL_BLOCKS_BLOCKS_HPP
 
 #include "../clustering/cluster.hpp"
+#include "../lrmat/lrmat.hpp"
+#include "../lrmat/virtual_lrmat_generator.hpp"
 #include "admissibility_conditions.hpp"
+#include "dense_block_data.hpp"
+#include "virtual_block_data.hpp"
 
 namespace htool {
 
+template <typename T>
+class LowRankMatrix;
+
+template <typename T>
 class Block {
 
   protected:
@@ -28,8 +36,10 @@ class Block {
     std::shared_ptr<std::vector<Block *>> tasks;
     std::shared_ptr<std::vector<Block *>> local_tasks;
 
-    // Actual leaves after computation
-    std::shared_ptr<std::vector<Block *>> local_leaves;
+    // Data associated to the block when computed, nullptr otherwise
+    std::unique_ptr<VirtualBlockData<T>> block_data;
+    DenseBlockData<T> *dense_block_data;
+    LowRankMatrix<T> *low_rank_block_data;
 
     // Build block tree
     // False <=> current block or its sons pushed to tasks
@@ -224,11 +234,11 @@ class Block {
 
   public:
     // Root constructor
-    Block(VirtualAdmissibilityCondition *admissibility_condition0, const VirtualCluster &t0, const VirtualCluster &s0) : admissibility_condition(admissibility_condition0), t(t0), s(s0), admissible(false), eta(10), mintargetdepth(0), minsourcedepth(0), maxblocksize(1000000), diagonal_block(nullptr), root(this), tasks(std::make_shared<std::vector<Block *>>()), local_tasks(std::make_shared<std::vector<Block *>>()) {
+    Block(VirtualAdmissibilityCondition *admissibility_condition0, const VirtualCluster &t0, const VirtualCluster &s0) : admissibility_condition(admissibility_condition0), t(t0), s(s0), admissible(false), eta(10), mintargetdepth(0), minsourcedepth(0), maxblocksize(1000000), diagonal_block(nullptr), root(this), tasks(std::make_shared<std::vector<Block *>>()), local_tasks(std::make_shared<std::vector<Block *>>()), dense_block_data(nullptr), low_rank_block_data(nullptr) {
     }
 
     // Node constructor
-    Block(VirtualAdmissibilityCondition *admissibility_condition0, const VirtualCluster &t0, const VirtualCluster &s0, Block *root0, std::shared_ptr<std::vector<Block *>> tasks0, std::shared_ptr<std::vector<Block *>> local_tasks0) : admissibility_condition(admissibility_condition0), t(t0), s(s0), admissible(false), eta(root0->eta), mintargetdepth(root0->mintargetdepth), minsourcedepth(root0->minsourcedepth), maxblocksize(root0->maxblocksize), diagonal_block(nullptr), root(root0), tasks(tasks0), local_tasks(local_tasks0) {
+    Block(VirtualAdmissibilityCondition *admissibility_condition0, const VirtualCluster &t0, const VirtualCluster &s0, Block *root0, std::shared_ptr<std::vector<Block *>> tasks0, std::shared_ptr<std::vector<Block *>> local_tasks0) : admissibility_condition(admissibility_condition0), t(t0), s(s0), admissible(false), eta(root0->eta), mintargetdepth(root0->mintargetdepth), minsourcedepth(root0->minsourcedepth), maxblocksize(root0->maxblocksize), diagonal_block(nullptr), root(root0), tasks(tasks0), local_tasks(local_tasks0), dense_block_data(nullptr), low_rank_block_data(nullptr) {
 
         admissible = admissibility_condition->ComputeAdmissibility(t, s, eta);
     }
@@ -304,6 +314,20 @@ class Block {
     int get_mintargetdepth() const { return mintargetdepth; }
     int get_minsourcedepth() const { return minsourcedepth; }
     int get_maxblocksize() const { return maxblocksize; }
+    int get_rank_of() const {
+        if (dense_block_data != nullptr && low_rank_block_data == nullptr) {
+            return -1;
+        } else if (dense_block_data == nullptr && low_rank_block_data != nullptr) {
+            return low_rank_block_data->rank_of();
+        } else {
+            return std::numeric_limits<int>::quiet_NaN();
+        }
+    }
+    const VirtualBlockData<T> *get_block_data() const {
+        return block_data.get();
+    }
+    const DenseBlockData<T> *get_dense_block_data() const { return dense_block_data; }
+    const LowRankMatrix<T> *get_low_rank_block_data() const { return low_rank_block_data; }
 
     bool IsAdmissible() const {
         return admissible;
@@ -318,6 +342,22 @@ class Block {
             throw std::invalid_argument("[Htool error] MaxBlockSize parameter cannot be zero"); // LCOV_EXCL_LINE
         }
         maxblocksize = maxblocksize0;
+    }
+
+    void compute_dense_block(VirtualGenerator<T> &mat, bool use_permutation) {
+        dense_block_data = new DenseBlockData<T>(*this, mat, use_permutation);
+        block_data       = std::unique_ptr<VirtualBlockData<T>>(dense_block_data);
+    }
+
+    void compute_low_rank_block(int rank, double epsilon, const VirtualGenerator<T> &A, const VirtualLowRankGenerator<T> &LRGenerator, const double *const xt, const double *const xs, bool use_permutation) {
+        low_rank_block_data = new LowRankMatrix<T>(*this, A, LRGenerator, xt, xs, rank, epsilon, use_permutation);
+        block_data          = std::unique_ptr<VirtualBlockData<T>>(low_rank_block_data);
+    }
+
+    void clear_data() {
+        dense_block_data    = nullptr;
+        low_rank_block_data = nullptr;
+        block_data.reset();
     }
 
     // Ordering

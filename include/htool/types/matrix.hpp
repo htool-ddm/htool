@@ -10,53 +10,29 @@
 
 namespace htool {
 
-//=================================================================//
-//                         CLASS MATRIX
-//*****************************************************************//
-
 template <typename T>
-class IMatrix {
-  protected:
-    // Data members
-    int nr;
-    int nc;
-
-  public:
-    IMatrix(int nr0, int nc0) : nr(nr0), nc(nc0) {}
-
-    int nb_rows() const { return nr; }
-    int nb_cols() const { return nc; }
-
-    virtual int get_offset_i() const = 0;
-    virtual int get_offset_j() const = 0;
-
-    virtual void add_mvprod_row_major(const T *const in, T *const out, const int &mu, char transb = 'T', char op = 'N') const = 0;
-
-    virtual ~IMatrix(){};
-};
-
-template <typename T>
-class Matrix : public IMatrix<T> {
+class Matrix {
 
   protected:
+    int nr, nc;
     T *mat;
 
   public:
-    Matrix() : IMatrix<T>(0, 0), mat(nullptr) {}
-    Matrix(const int &nbr, const int &nbc) : IMatrix<T>(nbr, nbc) {
+    Matrix() : nr(0), nc(0), mat(nullptr) {}
+    Matrix(int nbr, int nbc) : nr(nbr), nc(nbc) {
         this->mat = new T[nbr * nbc];
         std::fill_n(this->mat, nbr * nbc, 0);
     }
-    Matrix(const Matrix &rhs) : IMatrix<T>(rhs.nb_rows(), rhs.nb_cols()) {
-        mat = new T[rhs.nb_rows() * rhs.nb_cols()]();
+    Matrix(const Matrix &rhs) : nr(rhs.nr), nc(rhs.nc) {
+        mat = new T[rhs.nr * rhs.nc]();
 
-        std::copy_n(rhs.mat, rhs.nb_rows() * rhs.nb_cols(), mat);
+        std::copy_n(rhs.mat, rhs.nr * rhs.nc, mat);
     }
     Matrix &operator=(const Matrix &rhs) {
         if (&rhs == this) {
             return *this;
         }
-        if (this->nr * this->nc == rhs.nb_cols() * rhs.nb_rows()) {
+        if (this->nr * this->nc == rhs.nc * rhs.nr) {
             std::copy_n(rhs.mat, this->nr * this->nc, mat);
             this->nr = rhs.nr;
             this->nc = rhs.nc;
@@ -69,7 +45,7 @@ class Matrix : public IMatrix<T> {
         }
         return *this;
     }
-    Matrix(Matrix &&rhs) : IMatrix<T>(rhs.nb_rows(), rhs.nb_cols()), mat(rhs.mat) {
+    Matrix(Matrix &&rhs) : nr(rhs.nr), nc(rhs.nc), mat(rhs.mat) {
         rhs.mat = nullptr;
     }
 
@@ -117,10 +93,14 @@ class Matrix : public IMatrix<T> {
 
     //! ### Access operator
     /*!
-    */
+     */
 
-    T *data() { return this->mat; }
-    T *data() const { return this->mat; }
+    T *data() {
+        return this->mat;
+    }
+    T *data() const {
+        return this->mat;
+    }
 
     void assign(int nr, int nc, T *ptr) {
         if (this->nr * this->nc > 0)
@@ -132,6 +112,8 @@ class Matrix : public IMatrix<T> {
         this->mat = ptr;
     }
 
+    int nb_cols() const { return nc; }
+    int nb_rows() const { return nr; }
     //! ### Access operator
     /*!
     If _A_ is the instance calling the operator
@@ -221,7 +203,7 @@ class Matrix : public IMatrix<T> {
 
     //! ### Matrix-scalar product
     /*!
-    */
+     */
 
     friend Matrix
     operator*(const Matrix &A, const T &a) {
@@ -239,7 +221,7 @@ class Matrix : public IMatrix<T> {
 
     //! ### Matrix sum
     /*!
-    */
+     */
 
     Matrix operator+(const Matrix &A) const {
         assert(this->nr == A.nr && this->nc == A.nc);
@@ -254,7 +236,7 @@ class Matrix : public IMatrix<T> {
 
     //! ### Matrix -
     /*!
-    */
+     */
 
     Matrix operator-(const Matrix &A) const {
         assert(this->nr == A.nr && this->nc == A.nc);
@@ -269,7 +251,7 @@ class Matrix : public IMatrix<T> {
 
     //! ### Matrix-std::vector product
     /*!
-    */
+     */
 
     std::vector<T> operator*(const std::vector<T> &rhs) const {
         std::vector<T> lhs(this->nr);
@@ -279,7 +261,7 @@ class Matrix : public IMatrix<T> {
 
     //! ### Matrix-Matrix product
     /*!
-    */
+     */
     Matrix operator*(const Matrix &B) const {
         assert(this->nc == B.nr);
         Matrix R(this->nr, B.nc);
@@ -289,7 +271,7 @@ class Matrix : public IMatrix<T> {
 
     //! ### Interface with blas gemm
     /*!
-    */
+     */
     void mvprod(const T *const in, T *const out, const int &mu = 1) const {
         int nr  = this->nr;
         int nc  = this->nc;
@@ -316,7 +298,7 @@ class Matrix : public IMatrix<T> {
 
     //! ### Special mvprod
     /*!
-    */
+     */
     void mvprod_row_major(const T *const in, T *const out, const int &mu, char transb, char op = 'N') const {
         int nr  = this->nr;
         int nc  = this->nc;
@@ -349,7 +331,7 @@ class Matrix : public IMatrix<T> {
 
     //! ### Special add_mvprod
     /*!
-    */
+     */
     void add_mvprod_row_major(const T *const in, T *const out, const int &mu, char transb, char op = 'N') const {
         int nr  = this->nr;
         int nc  = this->nc;
@@ -446,9 +428,6 @@ class Matrix : public IMatrix<T> {
         }
     }
 
-    int get_offset_i() const { return 0; }
-    int get_offset_j() const { return 0; }
-
     //! ### Looking for the entry of maximal modulus
     /*!
     Returns the number of row and column of the entry
@@ -464,7 +443,6 @@ class Matrix : public IMatrix<T> {
     Save a Matrix in a file (bytes)
     */
     int matrix_to_bytes(const std::string &file) {
-
         std::ofstream out(file, std::ios::out | std::ios::binary | std::ios::trunc);
 
         if (!out) {
@@ -486,7 +464,6 @@ class Matrix : public IMatrix<T> {
     Load a matrix from a file (bytes)
     */
     int bytes_to_matrix(const std::string &file) {
-
         std::ifstream in(file, std::ios::in | std::ios::binary);
 
         if (!in) {
@@ -509,7 +486,6 @@ class Matrix : public IMatrix<T> {
     }
 
     int print(std::ostream &os, const std::string &delimiter) {
-
         int rows = this->nr;
         for (int i = 0; i < rows; i++) {
             std::vector<T> row = this->get_row(i);
@@ -553,77 +529,6 @@ double normFrob(const Matrix<T> &A) {
     return sqrt(norm);
 }
 
-//================================//
-//      CLASSE SOUS-MATRICE       //
-//================================//
-template <typename T>
-class SubMatrix : public Matrix<T> {
-    // TODO: remove ir and ic
-    std::vector<int> ir;
-    std::vector<int> ic;
-    int offset_i;
-    int offset_j;
-
-  public:
-    // C style
-    SubMatrix(int M, int N, const int *const rows, const int *const cols, int offset_i0 = 0, int offset_j0 = 0) : Matrix<T>(M, N), ir(rows, rows + M), ic(cols, cols + N), offset_i(offset_i0), offset_j(offset_j0) {
-    }
-
-    SubMatrix(const VirtualGenerator<T> &mat0, int M, int N, const int *const rows, const int *const cols, int offset_i0 = 0, int offset_j0 = 0) : SubMatrix(M, N, rows, cols, offset_i0, offset_j0) {
-        mat0.copy_submatrix(M, N, rows, cols, this->mat);
-    }
-
-    // C++ style
-    SubMatrix(std::vector<int>::const_iterator first_ir, std::vector<int>::const_iterator last_ir, std::vector<int>::const_iterator first_ic, std::vector<int>::const_iterator last_ic, int offset_i0 = 0, int offset_j0 = 0) : Matrix<T>(std::distance(first_ir, last_ir), std::distance(first_ic, last_ic)), ir(first_ir, last_ir), ic(first_ic, last_ic), offset_i(offset_i0), offset_j(offset_j0) {}
-
-    SubMatrix(const std::vector<int> &ir0, const std::vector<int> &ic0) : SubMatrix(ir0.begin(), ir0.end(), ic0.begin(), ic0.end(), 0, 0) {}
-
-    SubMatrix(const std::vector<int> &ir0, const std::vector<int> &ic0, const int &offset_i0, const int &offset_j0) : SubMatrix(ir0.begin(), ir0.end(), ic0.begin(), ic0.end(), offset_i0, offset_j0) {}
-
-    SubMatrix(const SubMatrix &m) {
-        this->mat      = m.mat;
-        this->ir       = m.ir;
-        this->ic       = m.ic;
-        this->offset_i = m.offset_i;
-        this->offset_j = m.offset_j;
-        this->nr       = m.nr;
-        this->nc       = m.nc;
-    }
-
-    // Mostly same operators as in Matrix, need CRTP to factorize
-    // Operators
-    SubMatrix operator+(const SubMatrix &A) {
-        assert(this->nr == A.nr && this->nc == A.nc);
-        SubMatrix R(*this);
-        for (int i = 0; i < A.nr; i++) {
-            for (int j = 0; j < A.nc; j++) {
-                R(i, j) += A(i, j);
-            }
-        }
-        return R;
-    }
-    friend SubMatrix operator*(const SubMatrix &A, const T &a) {
-        SubMatrix R(A);
-        for (int i = 0; i < A.nr; i++) {
-            for (int j = 0; j < A.nc; j++) {
-                R(i, j) = A(i, j) * a;
-            }
-        }
-        return R;
-    }
-    friend SubMatrix operator*(const T &a, const SubMatrix &A) {
-        return A * a;
-    }
-    // Getters
-    std::vector<int> get_ir() const { return this->ir; }
-    std::vector<int> get_ic() const { return this->ic; }
-    const int *data_ir() const { return this->ir.data(); }
-    const int *data_ic() const { return this->ic.data(); }
-    int get_offset_i() const { return this->offset_i; }
-    int get_offset_j() const { return this->offset_j; }
-    void set_offset_i(int offset) { this->offset_i = offset; }
-    void set_offset_j(int offset) { this->offset_j = offset; }
-};
 } // namespace htool
 
 #endif

@@ -101,15 +101,15 @@ int main(int argc, char *argv[]) {
         // without permutation
         vector<double> p1_perm(3 * nr);
         vector<double> p2_perm(3 * nc);
-        for (int i = 0; i < t->get_perm().size(); i++) {
-            p1_perm[i * 3 + 0] = p1[t->get_perm(i) * 3 + 0];
-            p1_perm[i * 3 + 1] = p1[t->get_perm(i) * 3 + 1];
-            p1_perm[i * 3 + 2] = p1[t->get_perm(i) * 3 + 2];
+        for (int i = 0; i < t->get_global_perm().size(); i++) {
+            p1_perm[i * 3 + 0] = p1[t->get_global_perm(i) * 3 + 0];
+            p1_perm[i * 3 + 1] = p1[t->get_global_perm(i) * 3 + 1];
+            p1_perm[i * 3 + 2] = p1[t->get_global_perm(i) * 3 + 2];
         }
-        for (int i = 0; i < s->get_perm().size(); i++) {
-            p2_perm[i * 3 + 0] = p2[s->get_perm(i) * 3 + 0];
-            p2_perm[i * 3 + 1] = p2[s->get_perm(i) * 3 + 1];
-            p2_perm[i * 3 + 2] = p2[s->get_perm(i) * 3 + 2];
+        for (int i = 0; i < s->get_global_perm().size(); i++) {
+            p2_perm[i * 3 + 0] = p2[s->get_global_perm(i) * 3 + 0];
+            p2_perm[i * 3 + 1] = p2[s->get_global_perm(i) * 3 + 1];
+            p2_perm[i * 3 + 2] = p2[s->get_global_perm(i) * 3 + 2];
         }
 
         GeneratorTestDouble A_perm(3, nr, nc, p1_perm, p2_perm);

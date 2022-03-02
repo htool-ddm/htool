@@ -178,21 +178,6 @@ int main(int argc, char const *argv[]) {
     cout << "Mcd's argmax : " << argmax(Mcd).first << " " << argmax(Mcd).second << endl;
     cout << "Expected Argmax : (9,3)" << endl;
 
-    // Submatrix - double
-    std::vector<int> ir = {0, 1};
-    std::vector<int> ic = {0, 1};
-    GeneratorFromMatrix<double> Generator(Md);
-    SubMatrix<double> SMd(Generator, ir.size(), ic.size(), ir.data(), ic.data());
-    double diffs = 0;
-    for (int i = 0; i < ir.size(); i++) {
-        for (int j = 0; j < ic.size(); j++) {
-            diffs += abs(Md(ir[i], ic[j]) - SMd(i, j));
-        }
-    }
-    error = diffs;
-    test  = test || !(error < 1e-16);
-    cout << "Error on submatrix : " << error << endl;
-
     cout << test << endl;
     return test;
 }

@@ -166,6 +166,8 @@ class Cluster : public VirtualCluster {
     int get_rank() const { return rank; }
     int get_offset() const { return offset; }
     int get_size() const { return size; }
+    const int *get_perm_data() const { return permutation->data() + offset; };
+    int *get_perm_data() { return permutation->data() + offset; };
     int get_space_dim() const { return space_dim; }
     int get_minclustersize() const { return minclustersize; }
     int get_ndofperelt() const { return ndofperelt; }
@@ -233,11 +235,11 @@ class Cluster : public VirtualCluster {
     //// Getters for global data
     int get_max_depth() const { return root->max_depth; }
     int get_min_depth() const { return root->min_depth; }
-    const std::vector<int> &get_perm() const { return *permutation; };
+    const std::vector<int> &get_global_perm() const { return *permutation; };
     std::shared_ptr<std::vector<int>> get_perm_ptr() const { return permutation; };
-    int get_perm(int i) const { return (*permutation)[i]; };
-    std::vector<int>::const_iterator get_perm_start() const { return permutation->begin(); }
-    std::vector<int>::iterator get_perm_start() { return permutation->begin(); }
+    const int *get_global_perm_data() const { return permutation->data(); };
+    int *get_global_perm_data() { return permutation->data(); };
+    int get_global_perm(int i) const { return (*permutation)[i]; };
     const VirtualCluster *get_root() const {
         return root;
     }

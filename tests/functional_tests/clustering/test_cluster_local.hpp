@@ -54,7 +54,7 @@ int test_cluster_local(int argc, char *argv[]) {
         MPI_Barrier(MPI_COMM_WORLD);
 
         // Testing get permutations
-        std::vector<int> permutation = t.get_perm();
+        std::vector<int> permutation = t.get_global_perm();
         std::vector<int> local_permutation_1(t.get_local_size());
         std::copy_n(permutation.data() + t.get_local_offset(), t.get_local_size(), local_permutation_1.data());
         std::vector<int> local_permutation_2 = t.get_local_perm();

@@ -72,18 +72,17 @@ class HMatrix : public VirtualHMatrix<T> {
     std::shared_ptr<VirtualCluster> cluster_tree_t;
     std::shared_ptr<VirtualCluster> cluster_tree_s;
 
-    std::unique_ptr<Block> BlockTree;
+    std::unique_ptr<Block<T>> BlockTree;
 
-    std::vector<std::unique_ptr<IMatrix<T>>> MyComputedBlocks;
-    std::vector<LowRankMatrix<T> *> MyFarFieldMats;
-    std::vector<SubMatrix<T> *> MyNearFieldMats;
-    std::vector<LowRankMatrix<T> *> MyDiagFarFieldMats;
-    std::vector<SubMatrix<T> *> MyDiagNearFieldMats;
-    std::vector<IMatrix<T> *> MyDiagComputedBlocks;
-    std::vector<LowRankMatrix<T> *> MyStrictlyDiagFarFieldMats;
-    std::vector<SubMatrix<T> *> MyStrictlyDiagNearFieldMats;
+    std::vector<Block<T> *> MyComputedBlocks;
+    std::vector<Block<T> *> MyFarFieldMats;
+    std::vector<Block<T> *> MyNearFieldMats;
+    std::vector<Block<T> *> MyDiagFarFieldMats;
+    std::vector<Block<T> *> MyDiagNearFieldMats;
+    std::vector<Block<T> *> MyDiagComputedBlocks;
+    std::vector<Block<T> *> MyStrictlyDiagFarFieldMats;
+    std::vector<Block<T> *> MyStrictlyDiagNearFieldMats;
 
-    std::vector<int> no_permutation_target, no_permutation_source;
     mutable std::map<std::string, std::string> infos;
     std::unique_ptr<ZeroGenerator<T>> zerogenerator;
 
@@ -93,10 +92,10 @@ class HMatrix : public VirtualHMatrix<T> {
     // Internal methods
     void ComputeBlocks(VirtualGenerator<T> &mat, const double *const xt, const double *const xs);
     void ComputeSymBlocks(VirtualGenerator<T> &mat, const double *const xt, const double *const xs);
-    bool ComputeAdmissibleBlock(VirtualGenerator<T> &mat, Block &task, const double *const xt, const double *const xs, std::vector<std::unique_ptr<IMatrix<T>>> &MyComputedBlocks_local, std::vector<SubMatrix<T> *> &, std::vector<LowRankMatrix<T> *> &, int &);
-    bool ComputeAdmissibleBlocksSym(VirtualGenerator<T> &mat, Block &task, const double *const xt, const double *const xs, std::vector<std::unique_ptr<IMatrix<T>>> &MyComputedBlocks_local, std::vector<SubMatrix<T> *> &, std::vector<LowRankMatrix<T> *> &, int &);
-    void AddNearFieldMat(VirtualGenerator<T> &mat, Block &task, std::vector<std::unique_ptr<IMatrix<T>>> &, std::vector<SubMatrix<T> *> &);
-    void AddFarFieldMat(VirtualGenerator<T> &mat, Block &task, const double *const xt, const double *const xs, std::vector<std::unique_ptr<IMatrix<T>>> &, std::vector<LowRankMatrix<T> *> &, const int &reqrank = -1);
+    bool ComputeAdmissibleBlock(VirtualGenerator<T> &mat, Block<T> &task, const double *const xt, const double *const xs, std::vector<Block<T> *> &MyComputedBlocks_local, std::vector<Block<T> *> &, std::vector<Block<T> *> &, int &);
+    bool ComputeAdmissibleBlocksSym(VirtualGenerator<T> &mat, Block<T> &task, const double *const xt, const double *const xs, std::vector<Block<T> *> &MyComputedBlocks_local, std::vector<Block<T> *> &, std::vector<Block<T> *> &, int &);
+    void AddNearFieldMat(VirtualGenerator<T> &mat, Block<T> &task, std::vector<Block<T> *> &, std::vector<Block<T> *> &);
+    void AddFarFieldMat(VirtualGenerator<T> &mat, Block<T> &task, const double *const xt, const double *const xs, std::vector<Block<T> *> &, std::vector<Block<T> *> &, const int &reqrank = -1);
     void ComputeInfos(const std::vector<double> &mytimes);
 
     // Check arguments
@@ -184,18 +183,18 @@ class HMatrix : public VirtualHMatrix<T> {
     std::vector<std::pair<int, int>> get_MasterOffset_s() const { return cluster_tree_s->get_masteroffset(); }
     std::pair<int, int> get_MasterOffset_t(int i) const { return cluster_tree_t->get_masteroffset(i); }
     std::pair<int, int> get_MasterOffset_s(int i) const { return cluster_tree_s->get_masteroffset(i); }
-    const std::vector<int> &get_permt() const { return cluster_tree_t->get_perm(); }
-    const std::vector<int> &get_perms() const { return cluster_tree_s->get_perm(); }
+    const std::vector<int> &get_permt() const { return cluster_tree_t->get_global_perm(); }
+    const std::vector<int> &get_perms() const { return cluster_tree_s->get_global_perm(); }
     std::vector<int> get_local_perm_target() const { return cluster_tree_t->get_local_perm(); }
     std::vector<int> get_local_perm_source() const { return cluster_tree_s->get_local_perm(); }
-    int get_permt(int i) const { return cluster_tree_t->get_perm(i); }
-    int get_perms(int i) const { return cluster_tree_s->get_perm(i); }
-    const std::vector<SubMatrix<T> *> &get_MyNearFieldMats() const { return MyNearFieldMats; }
-    const std::vector<LowRankMatrix<T> *> &get_MyFarFieldMats() const { return MyFarFieldMats; }
-    const std::vector<SubMatrix<T> *> &get_MyDiagNearFieldMats() const { return MyDiagNearFieldMats; }
-    const std::vector<LowRankMatrix<T> *> &get_MyDiagFarFieldMats() const { return MyDiagFarFieldMats; }
-    const std::vector<SubMatrix<T> *> &get_MyStrictlyDiagNearFieldMats() const { return MyStrictlyDiagNearFieldMats; }
-    const std::vector<LowRankMatrix<T> *> &get_MyStrictlyDiagFarFieldMats() const { return MyStrictlyDiagFarFieldMats; }
+    int get_permt(int i) const { return cluster_tree_t->get_global_perm(i); }
+    int get_perms(int i) const { return cluster_tree_s->get_global_perm(i); }
+    // const std::vector<SubMatrix<T> *> &get_MyNearFieldMats() const { return MyNearFieldMats; }
+    // const std::vector<LowRankMatrix<T> *> &get_MyFarFieldMats() const { return MyFarFieldMats; }
+    // const std::vector<SubMatrix<T> *> &get_MyDiagNearFieldMats() const { return MyDiagNearFieldMats; }
+    // const std::vector<LowRankMatrix<T> *> &get_MyDiagFarFieldMats() const { return MyDiagFarFieldMats; }
+    // const std::vector<SubMatrix<T> *> &get_MyStrictlyDiagNearFieldMats() const { return MyStrictlyDiagNearFieldMats; }
+    // const std::vector<LowRankMatrix<T> *> &get_MyStrictlyDiagFarFieldMats() const { return MyStrictlyDiagFarFieldMats; }
     std::vector<T> get_local_diagonal(bool = true) const;
     void copy_local_diagonal(T *, bool = true) const;
     Matrix<T> get_local_interaction(bool = true) const;
@@ -303,14 +302,6 @@ void HMatrix<T>::build(VirtualGenerator<T> &mat, const double *const xt, const d
         this->AdmissibilityCondition = std::make_shared<RjasanowSteinbach>();
     }
 
-    // Use no_permutation if needed
-    if (use_permutation == false) {
-        no_permutation_target.resize(nr);
-        no_permutation_source.resize(nc);
-        std::iota(no_permutation_target.begin(), no_permutation_target.end(), int(0));
-        std::iota(no_permutation_source.begin(), no_permutation_source.end(), int(0));
-    }
-
     // Zero generator when we delay the dense computation
     if (delay_dense_computation) {
         zerogenerator = std::unique_ptr<ZeroGenerator<T>>(new ZeroGenerator<T>(mat.nb_rows(), mat.nb_cols(), mat.get_dimension()));
@@ -322,7 +313,7 @@ void HMatrix<T>::build(VirtualGenerator<T> &mat, const double *const xt, const d
 
     // Construction arbre des blocs
     double time = MPI_Wtime();
-    this->BlockTree.reset(new Block(this->AdmissibilityCondition.get(), *cluster_tree_t, *cluster_tree_s));
+    this->BlockTree.reset(new Block<T>(this->AdmissibilityCondition.get(), *cluster_tree_t, *cluster_tree_s));
     this->BlockTree->set_mintargetdepth(this->mintargetdepth);
     this->BlockTree->set_minsourcedepth(this->minsourcedepth);
     this->BlockTree->set_maxblocksize(this->maxblocksize);
@@ -362,14 +353,6 @@ void HMatrix<T>::build(VirtualGenerator<T> &mat, const double *const xt) {
         this->AdmissibilityCondition = std::make_shared<RjasanowSteinbach>();
     }
 
-    // Use no_permutation if needed
-    if (use_permutation == false) {
-        no_permutation_target.resize(nr);
-        no_permutation_source.resize(nc);
-        std::iota(no_permutation_target.begin(), no_permutation_target.end(), int(0));
-        std::iota(no_permutation_source.begin(), no_permutation_source.end(), int(0));
-    }
-
     // Zero generator when we delay the dense computation
     if (delay_dense_computation) {
         zerogenerator = std::unique_ptr<ZeroGenerator<T>>(new ZeroGenerator<T>(mat.nb_rows(), mat.nb_cols(), mat.get_dimension()));
@@ -382,7 +365,7 @@ void HMatrix<T>::build(VirtualGenerator<T> &mat, const double *const xt) {
     // Construction arbre des blocs
     double time = MPI_Wtime();
 
-    this->BlockTree.reset(new Block(this->AdmissibilityCondition.get(), *cluster_tree_t, *cluster_tree_s));
+    this->BlockTree.reset(new Block<T>(this->AdmissibilityCondition.get(), *cluster_tree_t, *cluster_tree_s));
     this->BlockTree->set_mintargetdepth(this->mintargetdepth);
     this->BlockTree->set_minsourcedepth(this->minsourcedepth);
     this->BlockTree->set_maxblocksize(this->maxblocksize);
@@ -408,11 +391,11 @@ void HMatrix<T>::build_dense_blocks(VirtualDenseBlocksGenerator<T> &dense_block_
     std::vector<const int *> rows(this->MyNearFieldMats.size()), cols(this->MyNearFieldMats.size());
     std::vector<T *> ptr(this->MyNearFieldMats.size());
     for (int i = 0; i < this->MyNearFieldMats.size(); i++) {
-        row_sizes[i] = this->MyNearFieldMats[i]->nb_rows();
-        col_sizes[i] = this->MyNearFieldMats[i]->nb_cols();
-        rows[i]      = (this->MyNearFieldMats[i]->data_ir());
-        cols[i]      = (this->MyNearFieldMats[i]->data_ic());
-        ptr[i]       = (this->MyNearFieldMats[i]->data());
+        row_sizes[i] = this->MyNearFieldMats[i]->get_target_cluster().get_size();
+        col_sizes[i] = this->MyNearFieldMats[i]->get_source_cluster().get_size();
+        rows[i]      = (this->MyNearFieldMats[i]->get_target_cluster().get_perm_data());
+        cols[i]      = (this->MyNearFieldMats[i]->get_source_cluster().get_perm_data());
+        ptr[i]       = (this->MyNearFieldMats[i]->get_dense_block_data()->data());
     }
     dense_block_generator.copy_dense_blocks(row_sizes, col_sizes, rows, cols, ptr);
 }
@@ -425,10 +408,10 @@ void HMatrix<T>::ComputeBlocks(VirtualGenerator<T> &mat, const double *const xt,
 #    pragma omp parallel
 #endif
     {
-        std::vector<SubMatrix<T> *> MyNearFieldMats_local;
-        std::vector<LowRankMatrix<T> *> MyFarFieldMats_local;
-        std::vector<std::unique_ptr<IMatrix<T>>> MyComputedBlocks_local;
-        std::vector<Block *> local_tasks = BlockTree->get_local_tasks();
+        std::vector<Block<T> *> MyNearFieldMats_local;
+        std::vector<Block<T> *> MyFarFieldMats_local;
+        std::vector<Block<T> *> MyComputedBlocks_local;
+        std::vector<Block<T> *> local_tasks = BlockTree->get_local_tasks();
 
         int false_positive_local = 0;
 #if _OPENMP && !defined(PYTHON_INTERFACE)
@@ -469,44 +452,38 @@ void HMatrix<T>::ComputeBlocks(VirtualGenerator<T> &mat, const double *const xt,
 
     // Build vectors of pointers for diagonal blocks
     for (int i = 0; i < MyComputedBlocks.size(); i++) {
-        if (local_offset_s <= MyComputedBlocks[i]->get_offset_j() && MyComputedBlocks[i]->get_offset_j() < local_offset_s + local_size_s) {
-            MyDiagComputedBlocks.push_back(MyComputedBlocks[i].get());
+        if (local_offset_s <= MyComputedBlocks[i]->get_source_cluster().get_offset() && MyComputedBlocks[i]->get_source_cluster().get_offset() < local_offset_s + local_size_s) {
+            MyDiagComputedBlocks.push_back(MyComputedBlocks[i]);
             // if (MyComputedBlocks[i]->get_offset_j() == MyComputedBlocks[i]->get_offset_i())
             //     MyStrictlyDiagFarFieldMats.push_back(MyComputedBlocks[i]);
         }
     }
 
     for (int i = 0; i < MyFarFieldMats.size(); i++) {
-        if (local_offset_s <= MyFarFieldMats[i]->get_offset_j() && MyFarFieldMats[i]->get_offset_j() < local_offset_s + local_size_s) {
+        if (local_offset_s <= MyFarFieldMats[i]->get_source_cluster().get_offset() && MyFarFieldMats[i]->get_source_cluster().get_offset() < local_offset_s + local_size_s) {
             MyDiagFarFieldMats.push_back(MyFarFieldMats[i]);
-            if (MyFarFieldMats[i]->get_offset_j() == MyFarFieldMats[i]->get_offset_i())
+            if (MyFarFieldMats[i]->get_source_cluster().get_offset() == MyFarFieldMats[i]->get_target_cluster().get_offset())
                 MyStrictlyDiagFarFieldMats.push_back(MyFarFieldMats[i]);
         }
     }
     for (int i = 0; i < MyNearFieldMats.size(); i++) {
-        if (local_offset_s <= MyNearFieldMats[i]->get_offset_j() && MyNearFieldMats[i]->get_offset_j() < local_offset_s + local_size_s) {
+        if (local_offset_s <= MyNearFieldMats[i]->get_source_cluster().get_offset() && MyNearFieldMats[i]->get_source_cluster().get_offset() < local_offset_s + local_size_s) {
             MyDiagNearFieldMats.push_back(MyNearFieldMats[i]);
-            if (MyNearFieldMats[i]->get_offset_j() == MyNearFieldMats[i]->get_offset_i())
+            if (MyNearFieldMats[i]->get_source_cluster().get_offset() == MyNearFieldMats[i]->get_target_cluster().get_offset())
                 MyStrictlyDiagNearFieldMats.push_back(MyNearFieldMats[i]);
         }
     }
-
-    std::sort(MyComputedBlocks.begin(), MyComputedBlocks.end(), [](const std::unique_ptr<IMatrix<T>> &a, const std::unique_ptr<IMatrix<T>> &b) {
-        if (a->get_offset_i() == b->get_offset_i()) {
-            return a->get_offset_j() < b->get_offset_j();
-        } else {
-            return a->get_offset_i() < b->get_offset_i();
-        }
-    });
+    std::sort(MyComputedBlocks.begin(), MyComputedBlocks.end(), [](Block<T> *a, Block<T> *b) { return *a < *b; });
 }
 
 template <typename T>
-bool HMatrix<T>::ComputeAdmissibleBlock(VirtualGenerator<T> &mat, Block &task, const double *const xt, const double *const xs, std::vector<std::unique_ptr<IMatrix<T>>> &MyComputedBlocks_local, std::vector<SubMatrix<T> *> &MyNearFieldMats_local, std::vector<LowRankMatrix<T> *> &MyFarFieldMats_local, int &false_positive_local) {
+bool HMatrix<T>::ComputeAdmissibleBlock(VirtualGenerator<T> &mat, Block<T> &task, const double *const xt, const double *const xs, std::vector<Block<T> *> &MyComputedBlocks_local, std::vector<Block<T> *> &MyNearFieldMats_local, std::vector<Block<T> *> &MyFarFieldMats_local, int &false_positive_local) {
     if (task.IsAdmissible()) { // When called recursively, it may not be admissible
         AddFarFieldMat(mat, task, xt, xs, MyComputedBlocks_local, MyFarFieldMats_local, reqrank);
-        if (MyFarFieldMats_local.back()->rank_of() != -1) {
+        if (MyFarFieldMats_local.back()->get_rank_of() != -1) {
             return false;
         } else {
+            MyComputedBlocks_local.back()->clear_data();
             MyFarFieldMats_local.pop_back();
             MyComputedBlocks_local.pop_back();
             false_positive_local += 1;
@@ -607,14 +584,15 @@ bool HMatrix<T>::ComputeAdmissibleBlock(VirtualGenerator<T> &mat, Block &task, c
 }
 
 template <typename T>
-bool HMatrix<T>::ComputeAdmissibleBlocksSym(VirtualGenerator<T> &mat, Block &task, const double *const xt, const double *const xs, std::vector<std::unique_ptr<IMatrix<T>>> &MyComputedBlocks_local, std::vector<SubMatrix<T> *> &MyNearFieldMats_local, std::vector<LowRankMatrix<T> *> &MyFarFieldMats_local, int &false_positive_local) {
+bool HMatrix<T>::ComputeAdmissibleBlocksSym(VirtualGenerator<T> &mat, Block<T> &task, const double *const xt, const double *const xs, std::vector<Block<T> *> &MyComputedBlocks_local, std::vector<Block<T> *> &MyNearFieldMats_local, std::vector<Block<T> *> &MyFarFieldMats_local, int &false_positive_local) {
 
     if (task.IsAdmissible()) {
 
         AddFarFieldMat(mat, task, xt, xs, MyComputedBlocks_local, MyFarFieldMats_local, reqrank);
-        if (MyFarFieldMats_local.back()->rank_of() != -1) {
+        if (MyFarFieldMats_local.back()->get_rank_of() != -1) {
             return false;
         } else {
+            MyComputedBlocks_local.back()->clear_data();
             MyFarFieldMats_local.pop_back();
             MyComputedBlocks_local.pop_back();
             false_positive_local += 1;
@@ -698,40 +676,24 @@ bool HMatrix<T>::ComputeAdmissibleBlocksSym(VirtualGenerator<T> &mat, Block &tas
 
 // Build a dense block
 template <typename T>
-void HMatrix<T>::AddNearFieldMat(VirtualGenerator<T> &mat, Block &task, std::vector<std::unique_ptr<IMatrix<T>>> &MyComputedBlocks_local, std::vector<SubMatrix<T> *> &MyNearFieldMats_local) {
+void HMatrix<T>::AddNearFieldMat(VirtualGenerator<T> &mat, Block<T> &task, std::vector<Block<T> *> &MyComputedBlocks_local, std::vector<Block<T> *> &MyNearFieldMats_local) {
 
-    const VirtualCluster &t = task.get_target_cluster();
-    const VirtualCluster &s = task.get_source_cluster();
-
-    if (use_permutation && !delay_dense_computation) {
-        MyComputedBlocks_local.emplace_back(new SubMatrix<T>(mat, mat.get_dimension() * t.get_size(), mat.get_dimension() * s.get_size(), cluster_tree_t->get_perm().data() + t.get_offset(), cluster_tree_s->get_perm().data() + s.get_offset(), t.get_offset(), s.get_offset()));
-    } else if (!delay_dense_computation) {
-        MyComputedBlocks_local.emplace_back(new SubMatrix<T>(mat, mat.get_dimension() * t.get_size(), mat.get_dimension() * s.get_size(), no_permutation_target.data() + t.get_offset(), no_permutation_source.data() + s.get_offset(), t.get_offset(), s.get_offset()));
+    if (!delay_dense_computation) {
+        task.compute_dense_block(mat, use_permutation);
     } else {
-        std::cout << mat.get_dimension() * t.get_size() << " " << mat.get_dimension() * s.get_size() << std::endl;
-        MyComputedBlocks_local.emplace_back(new SubMatrix<T>(*zerogenerator, mat.get_dimension() * t.get_size(), mat.get_dimension() * s.get_size(), cluster_tree_t->get_perm().data() + t.get_offset(), cluster_tree_s->get_perm().data() + s.get_offset(), t.get_offset(), s.get_offset()));
+        task.compute_dense_block(*zerogenerator, true);
     }
-
-    MyNearFieldMats_local.push_back(dynamic_cast<SubMatrix<T> *>(MyComputedBlocks_local.back().get()));
+    MyComputedBlocks_local.push_back(&task);
+    MyNearFieldMats_local.push_back(&task);
 }
 
 // Build a low rank block
 template <typename T>
-void HMatrix<T>::AddFarFieldMat(VirtualGenerator<T> &mat, Block &task, const double *const xt, const double *const xs, std::vector<std::unique_ptr<IMatrix<T>>> &MyComputedBlocks_local, std::vector<LowRankMatrix<T> *> &MyFarFieldMats_local, const int &reqrank) {
+void HMatrix<T>::AddFarFieldMat(VirtualGenerator<T> &mat, Block<T> &task, const double *const xt, const double *const xs, std::vector<Block<T> *> &MyComputedBlocks_local, std::vector<Block<T> *> &MyFarFieldMats_local, const int &reqrank) {
 
-    const VirtualCluster &t = task.get_target_cluster();
-    const VirtualCluster &s = task.get_source_cluster();
-
-    if (use_permutation) {
-        MyComputedBlocks_local.emplace_back(new LowRankMatrix<T>(mat.get_dimension(), std::vector<int>(cluster_tree_t->get_perm_start() + t.get_offset(), cluster_tree_t->get_perm_start() + t.get_offset() + t.get_size()), std::vector<int>(cluster_tree_s->get_perm_start() + s.get_offset(), cluster_tree_s->get_perm_start() + s.get_offset() + s.get_size()), t.get_offset(), s.get_offset(), reqrank, this->epsilon));
-    }
-
-    else {
-        MyComputedBlocks_local.emplace_back(new LowRankMatrix<T>(mat.get_dimension(), std::vector<int>(no_permutation_target.data() + t.get_offset(), no_permutation_target.data() + t.get_offset() + t.get_size()), std::vector<int>(no_permutation_source.data() + s.get_offset(), no_permutation_source.data() + s.get_offset() + s.get_size()), t.get_offset(), s.get_offset(), reqrank, this->epsilon));
-    }
-
-    MyFarFieldMats_local.push_back(dynamic_cast<LowRankMatrix<T> *>(MyComputedBlocks_local.back().get()));
-    MyFarFieldMats_local.back()->build(mat, *LowRankGenerator, t, xt, s, xs);
+    task.compute_low_rank_block(reqrank, this->epsilon, mat, *LowRankGenerator, xt, xs, use_permutation);
+    MyComputedBlocks_local.push_back(&task);
+    MyFarFieldMats_local.push_back(&task);
 }
 
 // Compute infos
@@ -744,14 +706,14 @@ void HMatrix<T>::ComputeInfos(const std::vector<double> &mytime) {
     std::vector<double> meaninfos(4, 0);
     // Infos
     for (int i = 0; i < MyNearFieldMats.size(); i++) {
-        std::size_t size = MyNearFieldMats[i]->nb_rows() * MyNearFieldMats[i]->nb_cols();
+        std::size_t size = MyNearFieldMats[i]->get_target_cluster().get_size() * MyNearFieldMats[i]->get_source_cluster().get_size();
         maxinfos[0]      = std::max(maxinfos[0], size);
         mininfos[0]      = std::min(mininfos[0], size);
         meaninfos[0] += size;
     }
     for (int i = 0; i < MyFarFieldMats.size(); i++) {
-        std::size_t size = MyFarFieldMats[i]->nb_rows() * MyFarFieldMats[i]->nb_cols();
-        std::size_t rank = MyFarFieldMats[i]->rank_of();
+        std::size_t size = MyFarFieldMats[i]->get_target_cluster().get_size() * MyFarFieldMats[i]->get_source_cluster().get_size();
+        std::size_t rank = MyFarFieldMats[i]->get_rank_of();
         maxinfos[1]      = std::max(maxinfos[1], size);
         mininfos[1]      = std::min(mininfos[1], size);
         meaninfos[1] += size;
@@ -865,10 +827,10 @@ void HMatrix<T>::mymvprod_global_to_local(const T *const in, T *const out, const
 #    pragma omp for schedule(guided) nowait
 #endif
         for (int b = 0; b < MyComputedBlocks.size(); b++) {
-            int offset_i = MyComputedBlocks[b]->get_offset_i();
-            int offset_j = MyComputedBlocks[b]->get_offset_j();
+            int offset_i = MyComputedBlocks[b]->get_target_cluster().get_offset();
+            int offset_j = MyComputedBlocks[b]->get_source_cluster().get_offset();
             if (!(symmetry != 'N') || offset_i != offset_j) { // remove strictly diagonal blocks
-                MyComputedBlocks[b]->add_mvprod_row_major(in + offset_j * mu, temp.data() + (offset_i - local_offset) * mu, mu, transb);
+                MyComputedBlocks[b]->get_block_data()->add_mvprod_row_major(in + offset_j * mu, temp.data() + (offset_i - local_offset) * mu, mu, transb);
             }
         }
 
@@ -884,11 +846,11 @@ void HMatrix<T>::mymvprod_global_to_local(const T *const in, T *const out, const
 #    pragma omp for schedule(guided) nowait
 #endif
             for (int b = 0; b < MyDiagComputedBlocks.size(); b++) {
-                int offset_i = MyDiagComputedBlocks[b]->get_offset_j();
-                int offset_j = MyDiagComputedBlocks[b]->get_offset_i();
+                int offset_i = MyDiagComputedBlocks[b]->get_source_cluster().get_offset();
+                int offset_j = MyDiagComputedBlocks[b]->get_target_cluster().get_offset();
 
                 if (offset_i != offset_j) { // remove strictly diagonal blocks
-                    MyDiagComputedBlocks[b]->add_mvprod_row_major(in + offset_j * mu, temp.data() + (offset_i - local_offset) * mu, mu, transb, op_sym);
+                    MyDiagComputedBlocks[b]->get_block_data()->add_mvprod_row_major(in + offset_j * mu, temp.data() + (offset_i - local_offset) * mu, mu, transb, op_sym);
                 }
             }
 
@@ -896,10 +858,11 @@ void HMatrix<T>::mymvprod_global_to_local(const T *const in, T *const out, const
 #    pragma omp for schedule(guided) nowait
 #endif
             for (int b = 0; b < MyStrictlyDiagNearFieldMats.size(); b++) {
-                const SubMatrix<T> &M = *(MyStrictlyDiagNearFieldMats[b]);
-                int offset_i          = M.get_offset_j();
-                int offset_j          = M.get_offset_i();
-                M.add_mvprod_row_major_sym(in + offset_j * mu, temp.data() + (offset_i - local_offset) * mu, mu, this->UPLO, this->symmetry);
+                const Block<T> *M = MyStrictlyDiagNearFieldMats[b];
+                int offset_i      = M->get_target_cluster().get_offset();
+                int offset_j      = M->get_source_cluster().get_offset();
+                ;
+                M->get_dense_block_data()->add_mvprod_row_major_sym(in + offset_j * mu, temp.data() + (offset_i - local_offset) * mu, mu, this->UPLO, this->symmetry);
             }
         }
 
@@ -927,10 +890,10 @@ void HMatrix<T>::mymvprod_transp_local_to_global(const T *const in, T *const out
 #    pragma omp for schedule(guided) nowait
 #endif
         for (int b = 0; b < MyComputedBlocks.size(); b++) {
-            int offset_i = MyComputedBlocks[b]->get_offset_i();
-            int offset_j = MyComputedBlocks[b]->get_offset_j();
+            int offset_i = MyComputedBlocks[b]->get_target_cluster().get_offset();
+            int offset_j = MyComputedBlocks[b]->get_source_cluster().get_offset();
             if (!(symmetry != 'N') || offset_i != offset_j) { // remove strictly diagonal blocks
-                MyComputedBlocks[b]->add_mvprod_row_major(in + (offset_i - local_offset) * mu, temp.data() + offset_j * mu, mu, 'T', 'T');
+                MyComputedBlocks[b]->get_block_data()->add_mvprod_row_major(in + (offset_i - local_offset) * mu, temp.data() + offset_j * mu, mu, 'T', 'T');
             }
         }
 
@@ -1029,10 +992,10 @@ void HMatrix<T>::mymvprod_transp_local_to_local(const T *const in, T *const out,
 #    pragma omp for schedule(guided) nowait
 #endif
         for (int b = 0; b < MyComputedBlocks.size(); b++) {
-            int offset_i = MyComputedBlocks[b]->get_offset_i();
-            int offset_j = MyComputedBlocks[b]->get_offset_j();
+            int offset_i = MyComputedBlocks[b]->get_target_cluster().get_offset();
+            int offset_j = MyComputedBlocks[b]->get_source_cluster().get_offset();
             if (!(symmetry != 'N') || offset_i != offset_j) { // remove strictly diagonal blocks
-                MyComputedBlocks[b]->add_mvprod_row_major(in + (offset_i - local_offset) * mu, temp.data() + offset_j * mu, mu, 'T', 'T');
+                MyComputedBlocks[b]->get_block_data()->add_mvprod_row_major(in + (offset_i - local_offset) * mu, temp.data() + offset_j * mu, mu, 'T', 'T');
             }
         }
 
@@ -1474,13 +1437,13 @@ void HMatrix<T>::mvprod_subrhs(const T *const in, T *const out, const int &mu, c
 #    pragma omp for schedule(guided)
 #endif
         for (int b = 0; b < MyFarFieldMats.size(); b++) {
-            const LowRankMatrix<T> &M = *(MyFarFieldMats[b]);
-            int offset_i              = M.get_offset_i();
-            int offset_j              = M.get_offset_j();
-            int size_j                = M.nb_cols();
+            const Block<T> *M = MyFarFieldMats[b];
+            int offset_i      = M->get_target_cluster().get_offset();
+            int offset_j      = M->get_source_cluster().get_offset();
+            int size_j        = M->get_source_cluster().get_size();
 
             if ((offset_j <= offset + size && offset <= offset_j + size_j) && (symmetry == 'N' || offset_i != offset_j)) {
-                M.add_mvprod_row_major(in + (offset_j - offset + margin) * mu, temp.data() + (offset_i - local_offset) * mu, mu, transb);
+                M->get_block_data()->add_mvprod_row_major(in + (offset_j - offset + margin) * mu, temp.data() + (offset_i - local_offset) * mu, mu, transb);
             }
         }
 // Contribution champ proche
@@ -1488,13 +1451,13 @@ void HMatrix<T>::mvprod_subrhs(const T *const in, T *const out, const int &mu, c
 #    pragma omp for schedule(guided)
 #endif
         for (int b = 0; b < MyNearFieldMats.size(); b++) {
-            const SubMatrix<T> &M = *(MyNearFieldMats[b]);
-            int offset_i          = M.get_offset_i();
-            int offset_j          = M.get_offset_j();
-            int size_j            = M.nb_cols();
+            const Block<T> *M = MyNearFieldMats[b];
+            int offset_i      = M->get_target_cluster().get_offset();
+            int offset_j      = M->get_source_cluster().get_offset();
+            int size_j        = M->get_source_cluster().get_size();
 
             if ((offset_j <= offset + size && offset <= offset_j + size_j) && (symmetry == 'N' || offset_i != offset_j)) {
-                M.add_mvprod_row_major(in + (offset_j - offset + margin) * mu, temp.data() + (offset_i - local_offset) * mu, mu, transb);
+                M->get_block_data()->add_mvprod_row_major(in + (offset_j - offset + margin) * mu, temp.data() + (offset_i - local_offset) * mu, mu, transb);
             }
         }
 
@@ -1509,13 +1472,13 @@ void HMatrix<T>::mvprod_subrhs(const T *const in, T *const out, const int &mu, c
 #    pragma omp for schedule(guided)
 #endif
             for (int b = 0; b < MyDiagFarFieldMats.size(); b++) {
-                const LowRankMatrix<T> &M = *(MyDiagFarFieldMats[b]);
-                int offset_i              = M.get_offset_j();
-                int offset_j              = M.get_offset_i();
-                int size_j                = M.nb_rows();
+                const Block<T> *M = MyDiagFarFieldMats[b];
+                int offset_i      = M->get_source_cluster().get_offset();
+                int offset_j      = M->get_target_cluster().get_offset();
+                int size_j        = M->get_target_cluster().get_size();
 
                 if ((offset_j <= offset + size && offset <= offset_j + size_j) && offset_i != offset_j) { // remove strictly diagonal blocks
-                    M.add_mvprod_row_major(in + (offset_j - offset + margin) * mu, temp.data() + (offset_i - local_offset) * mu, mu, transb, op_sym);
+                    M->get_block_data()->add_mvprod_row_major(in + (offset_j - offset + margin) * mu, temp.data() + (offset_i - local_offset) * mu, mu, transb, op_sym);
                 }
             }
 
@@ -1524,25 +1487,25 @@ void HMatrix<T>::mvprod_subrhs(const T *const in, T *const out, const int &mu, c
 #    pragma omp for schedule(guided)
 #endif
             for (int b = 0; b < MyDiagNearFieldMats.size(); b++) {
-                const SubMatrix<T> &M = *(MyDiagNearFieldMats[b]);
-                int offset_i          = M.get_offset_j();
-                int offset_j          = M.get_offset_i();
-                int size_j            = M.nb_rows();
+                const Block<T> *M = MyDiagNearFieldMats[b];
+                int offset_i      = M->get_source_cluster().get_offset();
+                int offset_j      = M->get_target_cluster().get_offset();
+                int size_j        = M->get_target_cluster().get_size();
 
                 if ((offset_j <= offset + size && offset <= offset_j + size_j) && offset_i != offset_j) { // remove strictly diagonal blocks
-                    M.add_mvprod_row_major(in + (offset_j - offset + margin) * mu, temp.data() + (offset_i - local_offset) * mu, mu, transb, op_sym);
+                    M->get_block_data()->add_mvprod_row_major(in + (offset_j - offset + margin) * mu, temp.data() + (offset_i - local_offset) * mu, mu, transb, op_sym);
                 }
             }
 #if _OPENMP
 #    pragma omp for schedule(guided)
 #endif
             for (int b = 0; b < MyStrictlyDiagNearFieldMats.size(); b++) {
-                const SubMatrix<T> &M = *(MyStrictlyDiagNearFieldMats[b]);
-                int offset_i          = M.get_offset_j();
-                int offset_j          = M.get_offset_i();
-                int size_j            = M.nb_cols();
+                const Block<T> *M = MyStrictlyDiagNearFieldMats[b];
+                int offset_i      = M->get_source_cluster().get_offset();
+                int offset_j      = M->get_target_cluster().get_offset();
+                int size_j        = M->get_source_cluster().get_size();
                 if (offset_j <= offset + size && offset <= offset_j + size_j) {
-                    M.add_mvprod_row_major_sym(in + (offset_j - offset + margin) * mu, temp.data() + (offset_i - local_offset) * mu, mu, this->UPLO, this->symmetry);
+                    M->get_dense_block_data()->add_mvprod_row_major_sym(in + (offset_j - offset + margin) * mu, temp.data() + (offset_i - local_offset) * mu, mu, this->UPLO, this->symmetry);
                 }
             }
         }
@@ -1609,16 +1572,16 @@ double HMatrix<T>::compression_ratio() const {
     double nr_b, nc_b, rank;
 
     for (int j = 0; j < MyFarFieldMats.size(); j++) {
-        nr_b = MyFarFieldMats[j]->nb_rows();
-        nc_b = MyFarFieldMats[j]->nb_cols();
-        rank = MyFarFieldMats[j]->rank_of();
+        nr_b = MyFarFieldMats[j]->get_target_cluster().get_size();
+        nc_b = MyFarFieldMats[j]->get_source_cluster().get_size();
+        rank = MyFarFieldMats[j]->get_rank_of();
         my_compressed_size += rank * (nr_b + nc_b);
     }
 
     for (int j = 0; j < MyNearFieldMats.size(); j++) {
-        nr_b = MyNearFieldMats[j]->nb_rows();
-        nc_b = MyNearFieldMats[j]->nb_cols();
-        if (MyNearFieldMats[j]->get_offset_i() == MyNearFieldMats[j]->get_offset_j() && this->get_symmetry_type() != 'N' && nr_b == nc_b) {
+        nr_b = MyNearFieldMats[j]->get_target_cluster().get_size();
+        nc_b = MyNearFieldMats[j]->get_source_cluster().get_size();
+        if (MyNearFieldMats[j]->get_target_cluster().get_offset() == MyNearFieldMats[j]->get_source_cluster().get_offset() && this->get_symmetry_type() != 'N' && nr_b == nc_b) {
             my_compressed_size += (nr_b * (nc_b + 1)) / 2;
         } else {
             my_compressed_size += nr_b * nc_b;
@@ -1639,16 +1602,16 @@ double HMatrix<T>::space_saving() const {
     double nr_b, nc_b, rank;
 
     for (int j = 0; j < MyFarFieldMats.size(); j++) {
-        nr_b = MyFarFieldMats[j]->nb_rows();
-        nc_b = MyFarFieldMats[j]->nb_cols();
-        rank = MyFarFieldMats[j]->rank_of();
+        nr_b = MyFarFieldMats[j]->get_target_cluster().get_size();
+        nc_b = MyFarFieldMats[j]->get_source_cluster().get_size();
+        rank = MyFarFieldMats[j]->get_rank_of();
         my_compressed_size += rank * (nr_b + nc_b);
     }
 
     for (int j = 0; j < MyNearFieldMats.size(); j++) {
-        nr_b = MyNearFieldMats[j]->nb_rows();
-        nc_b = MyNearFieldMats[j]->nb_cols();
-        if (MyNearFieldMats[j]->get_offset_i() == MyNearFieldMats[j]->get_offset_j() && this->get_symmetry_type() != 'N' && nr_b == nc_b) {
+        nr_b = MyNearFieldMats[j]->get_target_cluster().get_size();
+        nc_b = MyNearFieldMats[j]->get_source_cluster().get_size();
+        if (MyNearFieldMats[j]->get_target_cluster().get_offset() == MyNearFieldMats[j]->get_source_cluster().get_offset() && this->get_symmetry_type() != 'N' && nr_b == nc_b) {
             my_compressed_size += (nr_b * (nc_b + 1)) / 2;
         } else {
             my_compressed_size += nr_b * nc_b;
@@ -1699,11 +1662,8 @@ void HMatrix<T>::save_plot(const std::string &outputname) const {
 
     if (outputfile) {
         outputfile << nr << "," << nc << std::endl;
-        for (typename std::vector<SubMatrix<T> *>::const_iterator it = MyNearFieldMats.begin(); it != MyNearFieldMats.end(); ++it) {
-            outputfile << (*it)->get_offset_i() << "," << (*it)->get_ir().size() << "," << (*it)->get_offset_j() << "," << (*it)->get_ic().size() << "," << -1 << std::endl;
-        }
-        for (typename std::vector<LowRankMatrix<T> *>::const_iterator it = MyFarFieldMats.begin(); it != MyFarFieldMats.end(); ++it) {
-            outputfile << (*it)->get_offset_i() << "," << (*it)->get_ir().size() << "," << (*it)->get_offset_j() << "," << (*it)->get_ic().size() << "," << (*it)->rank_of() << std::endl;
+        for (typename std::vector<Block<T> *>::const_iterator it = MyComputedBlocks.begin(); it != MyComputedBlocks.end(); ++it) {
+            outputfile << (*it)->get_target_cluster().get_offset() << "," << (*it)->get_target_cluster().get_size() << "," << (*it)->get_source_cluster().get_offset() << "," << (*it)->get_source_cluster().get_size() << "," << -1 << std::endl;
         }
         outputfile.close();
     } else {
@@ -1730,25 +1690,25 @@ Matrix<T> HMatrix<T>::get_local_dense() const {
     Matrix<T> Dense(local_size, nc);
     // Internal dense blocks
     for (int l = 0; l < MyNearFieldMats.size(); l++) {
-        const SubMatrix<T> &submat = *(MyNearFieldMats[l]);
-        int local_nr               = submat.nb_rows();
-        int local_nc               = submat.nb_cols();
-        int offset_i               = submat.get_offset_i();
-        int offset_j               = submat.get_offset_j();
+        const Block<T> *submat = MyNearFieldMats[l];
+        int local_nr           = submat->get_target_cluster().get_size();
+        int local_nc           = submat->get_source_cluster().get_size();
+        int offset_i           = submat->get_target_cluster().get_offset();
+        int offset_j           = submat->get_source_cluster().get_offset();
         for (int k = 0; k < local_nc; k++) {
-            std::copy_n(&(submat(0, k)), local_nr, Dense.data() + (offset_i - local_offset) + (offset_j + k) * local_size);
+            std::copy_n(&(submat->get_dense_block_data()->operator()(0, k)), local_nr, Dense.data() + (offset_i - local_offset) + (offset_j + k) * local_size);
         }
     }
 
     // Internal compressed block
     for (int l = 0; l < MyFarFieldMats.size(); l++) {
-        const LowRankMatrix<T> &lmat = *(MyFarFieldMats[l]);
-        int local_nr                 = lmat.nb_rows();
-        int local_nc                 = lmat.nb_cols();
-        int offset_i                 = lmat.get_offset_i();
-        int offset_j                 = lmat.get_offset_j();
+        const Block<T> *lmat = MyFarFieldMats[l];
+        int local_nr         = lmat->get_target_cluster().get_size();
+        int local_nc         = lmat->get_source_cluster().get_size();
+        int offset_i         = lmat->get_target_cluster().get_offset();
+        int offset_j         = lmat->get_source_cluster().get_offset();
         Matrix<T> FarFielBlock(local_nr, local_nc);
-        lmat.get_whole_matrix(&(FarFielBlock(0, 0)));
+        lmat->get_low_rank_block_data()->get_whole_matrix(&(FarFielBlock(0, 0)));
         for (int k = 0; k < local_nc; k++) {
             std::copy_n(&(FarFielBlock(0, k)), local_nr, Dense.data() + (offset_i - local_offset) + (offset_j + k) * local_size);
         }
@@ -1773,14 +1733,14 @@ void HMatrix<T>::copy_local_dense_perm(T *ptr) const {
 
     // Internal dense blocks
     for (int l = 0; l < MyNearFieldMats.size(); l++) {
-        const SubMatrix<T> &submat = *(MyNearFieldMats[l]);
-        int local_nr               = submat.nb_rows();
-        int local_nc               = submat.nb_cols();
-        int offset_i               = submat.get_offset_i();
-        int offset_j               = submat.get_offset_j();
+        const Block<T> *submat = MyNearFieldMats[l];
+        int local_nr           = submat->get_target_cluster().get_size();
+        int local_nc           = submat->get_source_cluster().get_size();
+        int offset_i           = submat->get_target_cluster().get_offset();
+        int offset_j           = submat->get_source_cluster().get_offset();
         for (int k = 0; k < local_nc; k++) {
             for (int j = 0; j < local_nr; j++) {
-                ptr[get_permt(j + offset_i) - local_offset + get_perms(k + offset_j) * local_size] = submat(j, k);
+                ptr[get_permt(j + offset_i) - local_offset + get_perms(k + offset_j) * local_size] = submat->get_dense_block_data()->operator()(j, k);
             }
         }
     }
@@ -1788,13 +1748,13 @@ void HMatrix<T>::copy_local_dense_perm(T *ptr) const {
     // Internal compressed block
 
     for (int l = 0; l < MyFarFieldMats.size(); l++) {
-        const LowRankMatrix<T> &lmat = *(MyFarFieldMats[l]);
-        int local_nr                 = lmat.nb_rows();
-        int local_nc                 = lmat.nb_cols();
-        int offset_i                 = lmat.get_offset_i();
-        int offset_j                 = lmat.get_offset_j();
+        const Block<T> *lmat = MyFarFieldMats[l];
+        int local_nr         = lmat->get_target_cluster().get_size();
+        int local_nc         = lmat->get_source_cluster().get_size();
+        int offset_i         = lmat->get_target_cluster().get_offset();
+        int offset_j         = lmat->get_source_cluster().get_offset();
         Matrix<T> FarFielBlock(local_nr, local_nc);
-        lmat.get_whole_matrix(&(FarFielBlock(0, 0)));
+        lmat->get_low_rank_block_data()->get_whole_matrix(&(FarFielBlock(0, 0)));
         for (int k = 0; k < local_nc; k++) {
             for (int j = 0; j < local_nr; j++) {
                 ptr[get_permt(j + offset_i) - local_offset + get_perms(k + offset_j) * local_size] = FarFielBlock(j, k);
@@ -1858,13 +1818,13 @@ void HMatrix<T>::copy_local_diagonal(T *ptr, bool permutation) const {
     T *d = permutation ? diagonal.data() : ptr;
 
     for (int j = 0; j < MyStrictlyDiagNearFieldMats.size(); j++) {
-        SubMatrix<T> &submat = *(MyStrictlyDiagNearFieldMats[j]);
-        int local_nr         = submat.nb_rows();
-        int local_nc         = submat.nb_cols();
-        int offset_i         = submat.get_offset_i();
+        Block<T> *submat = MyStrictlyDiagNearFieldMats[j];
+        int local_nr     = submat->get_target_cluster().get_size();
+        int local_nc     = submat->get_source_cluster().get_size();
+        int offset_i     = submat->get_target_cluster().get_offset();
         // int offset_j         = submat.get_offset_j();
         for (int i = 0; i < std::min(local_nr, local_nc); i++) {
-            d[i + offset_i - local_offset] = submat(i, i);
+            d[i + offset_i - local_offset] = submat->get_dense_block_data()->operator()(i, i);
         }
     }
 
@@ -1899,26 +1859,26 @@ void HMatrix<T>::copy_local_interaction(T *ptr, bool permutation) const {
     int local_size_source   = cluster_tree_s->get_masteroffset(rankWorld).second;
     // Internal dense blocks
     for (int i = 0; i < MyDiagNearFieldMats.size(); i++) {
-        const SubMatrix<T> &submat = *(MyDiagNearFieldMats[i]);
-        int local_nr               = submat.nb_rows();
-        int local_nc               = submat.nb_cols();
-        int offset_i               = submat.get_offset_i() - local_offset;
-        int offset_j               = submat.get_offset_j() - local_offset_source;
+        const Block<T> *submat = MyDiagNearFieldMats[i];
+        int local_nr           = submat->get_target_cluster().get_size();
+        int local_nc           = submat->get_source_cluster().get_size();
+        int offset_i           = submat->get_target_cluster().get_offset() - local_offset;
+        int offset_j           = submat->get_source_cluster().get_offset() - local_offset_source;
         for (int i = 0; i < local_nc; i++) {
-            std::copy_n(&(submat(0, i)), local_nr, ptr + offset_i + (offset_j + i) * local_size);
+            std::copy_n(&(submat->get_dense_block_data()->operator()(0, i)), local_nr, ptr + offset_i + (offset_j + i) * local_size);
         }
     }
 
     // Internal compressed block
     for (int i = 0; i < MyDiagFarFieldMats.size(); i++) {
-        const LowRankMatrix<T> &lmat = *(MyDiagFarFieldMats[i]);
-        int local_nr                 = lmat.nb_rows();
-        int local_nc                 = lmat.nb_cols();
-        int offset_i                 = lmat.get_offset_i() - local_offset;
-        int offset_j                 = lmat.get_offset_j() - local_offset_source;
+        const Block<T> *lmat = MyDiagFarFieldMats[i];
+        int local_nr         = lmat->get_target_cluster().get_size();
+        int local_nc         = lmat->get_source_cluster().get_size();
+        int offset_i         = lmat->get_target_cluster().get_offset() - local_offset;
+        int offset_j         = lmat->get_source_cluster().get_offset() - local_offset_source;
         ;
         Matrix<T> FarFielBlock(local_nr, local_nc);
-        lmat.get_whole_matrix(&(FarFielBlock(0, 0)));
+        lmat->get_low_rank_block_data()->get_whole_matrix(&(FarFielBlock(0, 0)));
         for (int i = 0; i < local_nc; i++) {
             std::copy_n(&(FarFielBlock(0, i)), local_nr, ptr + offset_i + (offset_j + i) * local_size);
         }
@@ -1963,7 +1923,7 @@ void HMatrix<T>::copy_local_interaction(T *ptr, bool permutation) const {
         Matrix<T> diagonal_block_perm(local_size, local_size_source);
         for (int i = 0; i < local_size; i++) {
             for (int j = 0; j < local_size_source; j++) {
-                diagonal_block_perm(i, cluster_tree_s->get_perm(j + local_offset_source) - local_offset_source) = ptr[i + j * local_size];
+                diagonal_block_perm(i, cluster_tree_s->get_global_perm(j + local_offset_source) - local_offset_source) = ptr[i + j * local_size];
             }
         }
 
@@ -1987,39 +1947,39 @@ std::pair<int, int> HMatrix<T>::get_max_size_blocks() const {
     int local_max_size_i = 0;
 
     for (int i = 0; i < MyFarFieldMats.size(); i++) {
-        if (local_max_size_j < (*MyFarFieldMats[i]).nb_cols())
-            local_max_size_j = (*MyFarFieldMats[i]).nb_cols();
-        if (local_max_size_i < (*MyFarFieldMats[i]).nb_rows())
-            local_max_size_i = (*MyFarFieldMats[i]).nb_rows();
+        if (local_max_size_j < MyFarFieldMats[i]->get_source_cluster().get_size())
+            local_max_size_j = MyFarFieldMats[i]->get_source_cluster().get_size();
+        if (local_max_size_i < MyFarFieldMats[i]->get_target_cluster().get_size())
+            local_max_size_i = MyFarFieldMats[i]->get_target_cluster().get_size();
     }
     for (int i = 0; i < MyNearFieldMats.size(); i++) {
-        if (local_max_size_j < (*MyNearFieldMats[i]).nb_cols())
-            local_max_size_j = (*MyNearFieldMats[i]).nb_cols();
-        if (local_max_size_i < (*MyNearFieldMats[i]).nb_rows())
-            local_max_size_i = (*MyNearFieldMats[i]).nb_rows();
+        if (local_max_size_j < MyNearFieldMats[i]->get_source_cluster().get_size())
+            local_max_size_j = MyNearFieldMats[i]->get_source_cluster().get_size();
+        if (local_max_size_i < MyNearFieldMats[i]->get_target_cluster().get_size())
+            local_max_size_i = MyNearFieldMats[i]->get_target_cluster().get_size();
     }
 
     return std::pair<int, int>(local_max_size_i, local_max_size_j);
 }
 
-template <typename T>
-void HMatrix<T>::apply_dirichlet(const std::vector<int> &boundary) {
-    // Renum
-    std::vector<int> boundary_renum(boundary.size());
-    this->source_to_cluster_permutation(boundary.data(), boundary_renum.data());
+// template <typename T>
+// void HMatrix<T>::apply_dirichlet(const std::vector<int> &boundary) {
+//     // Renum
+//     std::vector<int> boundary_renum(boundary.size());
+//     this->source_to_cluster_permutation(boundary.data(), boundary_renum.data());
 
-    //
-    for (int j = 0; j < MyStrictlyDiagNearFieldMats.size(); j++) {
-        SubMatrix<T> &submat = *(MyStrictlyDiagNearFieldMats[j]);
-        int local_nr         = submat.nb_rows();
-        int local_nc         = submat.nb_cols();
-        int offset_i         = submat.get_offset_i();
-        for (int i = offset_i; i < offset_i + std::min(local_nr, local_nc); i++) {
-            if (boundary_renum[i])
-                submat(i - offset_i, i - offset_i) = 1e30;
-        }
-    }
-}
+//     //
+//     for (int j = 0; j < MyStrictlyDiagNearFieldMats.size(); j++) {
+//         SubMatrix<T> &submat = *(MyStrictlyDiagNearFieldMats[j]);
+//         int local_nr         = submat.nb_rows();
+//         int local_nc         = submat.nb_cols();
+//         int offset_i         = submat.get_offset_i();
+//         for (int i = offset_i; i < offset_i + std::min(local_nr, local_nc); i++) {
+//             if (boundary_renum[i])
+//                 submat(i - offset_i, i - offset_i) = 1e30;
+//         }
+//     }
+// }
 
 } // namespace htool
 #endif

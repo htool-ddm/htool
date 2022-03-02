@@ -50,23 +50,22 @@ int main(int argc, char *argv[]) {
         t.build(nr, xt.data());
         s.build(nc, xs.data());
 
+        std::shared_ptr<VirtualAdmissibilityCondition> AdmissibilityCondition = std::make_shared<RjasanowSteinbach>();
+        Block<double> block(AdmissibilityCondition.get(), t, s);
+
         GeneratorTestDouble A(3, nr, nc, xt, xs);
 
         // partialACA fixed rank
         int reqrank_max = 10;
-        LowRankMatrix<double> A_partialACA_fixed(A.get_dimension(), t.get_perm(), s.get_perm(), reqrank_max, epsilon);
         partialACA<double> compressor;
-        A_partialACA_fixed.build(A, compressor, t, xt.data(), s, xs.data());
-        ;
+        LowRankMatrix<double> A_partialACA_fixed(block, A, compressor, xt.data(), xs.data(), reqrank_max, epsilon);
 
         // ACA automatic building
-        LowRankMatrix<double> A_partialACA(A.get_dimension(), t.get_perm(), s.get_perm());
-        A_partialACA.set_epsilon(epsilon);
-        A_partialACA.build(A, compressor, t, xt.data(), s, xs.data());
+        LowRankMatrix<double> A_partialACA(block, A, compressor, xt.data(), xs.data(), -1, epsilon);
 
         std::pair<double, double> fixed_compression_interval(0.87, 0.89);
         std::pair<double, double> auto_compression_interval(0.93, 0.96);
-        test = test || (test_lrmat(A, A_partialACA_fixed, A_partialACA, t.get_perm(), s.get_perm(), fixed_compression_interval, auto_compression_interval, verbose, 3));
+        test = test || (test_lrmat(block, A, A_partialACA_fixed, A_partialACA, t.get_global_perm(), s.get_global_perm(), fixed_compression_interval, auto_compression_interval, verbose, 3));
     }
 
     cout << "test : " << test << endl;

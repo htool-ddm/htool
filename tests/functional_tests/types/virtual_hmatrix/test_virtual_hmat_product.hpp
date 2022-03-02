@@ -96,17 +96,17 @@ bool test_virtual_hmat_product(int nr, int nc, int mu, bool use_permutation, cha
         // Permutation on geometry
         if (!use_permutation) {
             p1_perm.resize(3 * nr);
-            for (int i = 0; i < t->get_perm().size(); i++) {
-                p1_perm[i * 3 + 0] = p1[t->get_perm(i) * 3 + 0];
-                p1_perm[i * 3 + 1] = p1[t->get_perm(i) * 3 + 1];
-                p1_perm[i * 3 + 2] = p1[t->get_perm(i) * 3 + 2];
+            for (int i = 0; i < t->get_global_perm().size(); i++) {
+                p1_perm[i * 3 + 0] = p1[t->get_global_perm(i) * 3 + 0];
+                p1_perm[i * 3 + 1] = p1[t->get_global_perm(i) * 3 + 1];
+                p1_perm[i * 3 + 2] = p1[t->get_global_perm(i) * 3 + 2];
             }
             p2_perm.resize(3 * nc);
             if (Symmetry == 'N') {
-                for (int i = 0; i < s->get_perm().size(); i++) {
-                    p2_perm[i * 3 + 0] = p2[s->get_perm(i) * 3 + 0];
-                    p2_perm[i * 3 + 1] = p2[s->get_perm(i) * 3 + 1];
-                    p2_perm[i * 3 + 2] = p2[s->get_perm(i) * 3 + 2];
+                for (int i = 0; i < s->get_global_perm().size(); i++) {
+                    p2_perm[i * 3 + 0] = p2[s->get_global_perm(i) * 3 + 0];
+                    p2_perm[i * 3 + 1] = p2[s->get_global_perm(i) * 3 + 1];
+                    p2_perm[i * 3 + 2] = p2[s->get_global_perm(i) * 3 + 2];
                 }
             } else {
                 p2_perm = p1_perm;
