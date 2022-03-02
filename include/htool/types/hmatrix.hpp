@@ -1663,7 +1663,7 @@ void HMatrix<T>::save_plot(const std::string &outputname) const {
     if (outputfile) {
         outputfile << nr << "," << nc << std::endl;
         for (typename std::vector<Block<T> *>::const_iterator it = MyComputedBlocks.begin(); it != MyComputedBlocks.end(); ++it) {
-            outputfile << (*it)->get_target_cluster().get_offset() << "," << (*it)->get_target_cluster().get_size() << "," << (*it)->get_source_cluster().get_offset() << "," << (*it)->get_source_cluster().get_size() << "," << -1 << std::endl;
+            outputfile << (*it)->get_target_cluster().get_offset() << "," << (*it)->get_target_cluster().get_size() << "," << (*it)->get_source_cluster().get_offset() << "," << (*it)->get_source_cluster().get_size() << "," << (*it)->get_rank_of() << std::endl;
         }
         outputfile.close();
     } else {
@@ -1675,7 +1675,7 @@ template <typename T>
 underlying_type<T> Frobenius_absolute_error(const HMatrix<T> &B, const VirtualGenerator<T> &A) {
     underlying_type<T> myerr = 0;
     for (int j = 0; j < B.MyFarFieldMats.size(); j++) {
-        underlying_type<T> test = Frobenius_absolute_error(*(B.MyFarFieldMats[j]), A);
+        underlying_type<T> test = Frobenius_absolute_error<T>(*(B.MyFarFieldMats[j]), *(B.MyFarFieldMats[j]->get_low_rank_block_data()), A);
         myerr += std::pow(test, 2);
     }
 

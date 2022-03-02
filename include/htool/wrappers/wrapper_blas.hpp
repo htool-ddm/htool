@@ -68,7 +68,7 @@ struct Blas {
      *  Computes a matrix-vector product. */
     static void gemv(const char *const, const int *const, const int *const, const K *const, const K *const, const int *const, const K *const, const int *const, const K *const, K *const, const int *const);
     /* Function: gemm
-    *  Computes a scalar-matrix-matrix product. */
+     *  Computes a scalar-matrix-matrix product. */
     static void gemm(const char *const, const char *const, const int *const, const int *const, const int *const, const K *const, const K *const, const int *const, const K *const, const int *const, const K *const, K *const, const int *const);
     /* Function: symv
      *  Computes a symmetric matrix-vector product. */

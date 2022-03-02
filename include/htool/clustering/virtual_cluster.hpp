@@ -71,6 +71,12 @@ class VirtualCluster {
     virtual void set_minclustersize(unsigned int minclustersize0) = 0;
     virtual void set_ndofperelt(unsigned int ndofperelt0)         = 0;
 
+    // Output
+    virtual void print(MPI_Comm comm = MPI_COMM_WORLD) const                                                                                       = 0;
+    virtual void save_geometry(const double *const x0, std::string filename, const std::vector<int> &depths, MPI_Comm comm = MPI_COMM_WORLD) const = 0;
+    virtual void save_cluster(std::string filename, MPI_Comm comm = MPI_COMM_WORLD) const                                                          = 0;
+    virtual void read_cluster(std::string file_permutation, std::string file_tree, MPI_Comm comm = MPI_COMM_WORLD)                                 = 0;
+
     virtual ~VirtualCluster(){};
 };
 

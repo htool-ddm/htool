@@ -11,8 +11,8 @@ int main(int argc, char *argv[]) {
         // Tell the user how to run the program
         cerr << "Usage: " << argv[0] << "  outputname" << endl;
         /* "Usage messages" are a conventional way of telling the user
-		 * how to run a program if they enter the command incorrectly.
-		 */
+         * how to run a program if they enter the command incorrectly.
+         */
         return 1;
     }
     std::string outputname = argv[1];

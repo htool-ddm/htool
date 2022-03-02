@@ -58,8 +58,8 @@ int main(int argc, char *argv[]) {
         // Tell the user how to run the program
         cerr << "Usage: " << argv[0] << " distance \b outputfile \b outputpath" << endl;
         /* "Usage messages" are a conventional way of telling the user
-		 * how to run a program if they enter the command incorrectly.
-		 */
+         * how to run a program if they enter the command incorrectly.
+         */
         return 1;
     }
 
@@ -108,43 +108,46 @@ int main(int argc, char *argv[]) {
     t.build(nr, p1.data());
     s.build(nc, p2.data());
 
+    std::shared_ptr<VirtualAdmissibilityCondition> AdmissibilityCondition = std::make_shared<RjasanowSteinbach>();
+    Block<double> block(AdmissibilityCondition.get(), t, s);
+
     MyMatrix A(3, nr, nc, p1, p2);
     double norm_A = A.normFrob();
 
     // SVD with fixed rank
-    LowRankMatrix<double> A_SVD(A.get_dimension(), t.get_perm(), s.get_perm(), reqrank_max, epsilon);
-    A_SVD.build(A, SVD<double>(), t, p1.data(), s, p2.data());
+    SVD<double> compressor_SVD;
+    LowRankMatrix<double> A_SVD(block, A, compressor_SVD, p1.data(), p2.data(), reqrank_max, epsilon);
     std::vector<double> SVD_fixed_errors;
     for (int k = 0; k < A_SVD.rank_of() + 1; k++) {
-        SVD_fixed_errors.push_back(Frobenius_absolute_error(A_SVD, A, k) / norm_A);
+        SVD_fixed_errors.push_back(Frobenius_absolute_error(block, A_SVD, A, k) / norm_A);
     }
     std::cout << SVD_fixed_errors << std::endl;
 
     // fullACA with fixed rank
-    LowRankMatrix<double> A_fullACA_fixed(A.get_dimension(), t.get_perm(), s.get_perm(), reqrank_max, epsilon);
-    A_fullACA_fixed.build(A, fullACA<double>(), t, p1.data(), s, p2.data());
+    fullACA<double> compressor_fullACA;
+    LowRankMatrix<double> A_fullACA_fixed(block, A, compressor_fullACA, p1.data(), p2.data(), reqrank_max, epsilon);
     std::vector<double> fullACA_fixed_errors;
     for (int k = 0; k < A_fullACA_fixed.rank_of() + 1; k++) {
-        fullACA_fixed_errors.push_back(Frobenius_absolute_error(A_fullACA_fixed, A, k) / norm_A);
+        fullACA_fixed_errors.push_back(Frobenius_absolute_error(block, A_fullACA_fixed, A, k) / norm_A);
     }
     std::cout << fullACA_fixed_errors << std::endl;
 
     // partialACA with fixed rank
-    LowRankMatrix<double> A_partialACA_fixed(A.get_dimension(), t.get_perm(), s.get_perm(), reqrank_max, epsilon);
-    A_partialACA_fixed.build(A, partialACA<double>(), t, p1.data(), s, p2.data());
+    partialACA<double> compressor_partialACA;
+    LowRankMatrix<double> A_partialACA_fixed(block, A, compressor_partialACA, p1.data(), p2.data(), reqrank_max, epsilon);
     std::vector<double> partialACA_fixed_errors;
     std::cout << A_partialACA_fixed.rank_of() << " " << reqrank_max << std::endl;
     for (int k = 0; k < A_partialACA_fixed.rank_of() + 1; k++) {
-        partialACA_fixed_errors.push_back(Frobenius_absolute_error(A_partialACA_fixed, A, k) / norm_A);
+        partialACA_fixed_errors.push_back(Frobenius_absolute_error(block, A_partialACA_fixed, A, k) / norm_A);
     }
 
     std::cout << partialACA_fixed_errors << std::endl;
     // sympartialACA with fixed rank
-    LowRankMatrix<double> A_sympartialACA_fixed(A.get_dimension(), t.get_perm(), s.get_perm(), reqrank_max, epsilon);
-    A_sympartialACA_fixed.build(A, sympartialACA<double>(), t, p1.data(), s, p2.data());
+    sympartialACA<double> compressor_sympartialACA;
+    LowRankMatrix<double> A_sympartialACA_fixed(block, A, compressor_sympartialACA, p1.data(), p2.data(), reqrank_max, epsilon);
     std::vector<double> sympartialACA_fixed_errors;
     for (int k = 0; k < A_sympartialACA_fixed.rank_of() + 1; k++) {
-        sympartialACA_fixed_errors.push_back(Frobenius_absolute_error(A_sympartialACA_fixed, A, k) / norm_A);
+        sympartialACA_fixed_errors.push_back(Frobenius_absolute_error(block, A_sympartialACA_fixed, A, k) / norm_A);
     }
 
     // Output
