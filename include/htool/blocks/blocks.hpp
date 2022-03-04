@@ -234,11 +234,11 @@ class Block {
 
   public:
     // Root constructor
-    Block(VirtualAdmissibilityCondition *admissibility_condition0, const VirtualCluster &t0, const VirtualCluster &s0) : admissibility_condition(admissibility_condition0), t(t0), s(s0), admissible(false), eta(10), mintargetdepth(0), minsourcedepth(0), maxblocksize(1000000), diagonal_block(nullptr), root(this), tasks(std::make_shared<std::vector<Block *>>()), local_tasks(std::make_shared<std::vector<Block *>>()), dense_block_data(nullptr), low_rank_block_data(nullptr) {
+    Block(VirtualAdmissibilityCondition *admissibility_condition0, const VirtualCluster &t0, const VirtualCluster &s0) : admissibility_condition(admissibility_condition0), t(t0), s(s0), admissible(false), eta(10), mintargetdepth(0), minsourcedepth(0), maxblocksize(1000000), diagonal_block(nullptr), root(this), tasks(std::make_shared<std::vector<Block *>>()), local_tasks(std::make_shared<std::vector<Block *>>()) {
     }
 
     // Node constructor
-    Block(VirtualAdmissibilityCondition *admissibility_condition0, const VirtualCluster &t0, const VirtualCluster &s0, Block *root0, std::shared_ptr<std::vector<Block *>> tasks0, std::shared_ptr<std::vector<Block *>> local_tasks0) : admissibility_condition(admissibility_condition0), t(t0), s(s0), admissible(false), eta(root0->eta), mintargetdepth(root0->mintargetdepth), minsourcedepth(root0->minsourcedepth), maxblocksize(root0->maxblocksize), diagonal_block(nullptr), root(root0), tasks(tasks0), local_tasks(local_tasks0), dense_block_data(nullptr), low_rank_block_data(nullptr) {
+    Block(VirtualAdmissibilityCondition *admissibility_condition0, const VirtualCluster &t0, const VirtualCluster &s0, Block *root0, std::shared_ptr<std::vector<Block *>> tasks0, std::shared_ptr<std::vector<Block *>> local_tasks0) : admissibility_condition(admissibility_condition0), t(t0), s(s0), admissible(false), eta(root0->eta), mintargetdepth(root0->mintargetdepth), minsourcedepth(root0->minsourcedepth), maxblocksize(root0->maxblocksize), diagonal_block(nullptr), root(root0), tasks(tasks0), local_tasks(local_tasks0) {
 
         admissible = admissibility_condition->ComputeAdmissibility(t, s, eta);
     }
@@ -315,10 +315,10 @@ class Block {
     int get_minsourcedepth() const { return minsourcedepth; }
     int get_maxblocksize() const { return maxblocksize; }
     int get_rank_of() const {
-        if (dense_block_data != nullptr && low_rank_block_data == nullptr) {
+        if (dynamic_cast<DenseBlockData<T> *>(block_data.get()) != nullptr && dynamic_cast<LowRankMatrix<T> *>(block_data.get()) == nullptr) {
             return -1;
-        } else if (dense_block_data == nullptr && low_rank_block_data != nullptr) {
-            return low_rank_block_data->rank_of();
+        } else if (dynamic_cast<DenseBlockData<T> *>(block_data.get()) == nullptr && dynamic_cast<LowRankMatrix<T> *>(block_data.get()) != nullptr) {
+            return dynamic_cast<LowRankMatrix<T> *>(block_data.get())->rank_of();
         } else {
             return std::numeric_limits<int>::quiet_NaN();
         }
@@ -326,8 +326,11 @@ class Block {
     const VirtualBlockData<T> *get_block_data() const {
         return block_data.get();
     }
-    const DenseBlockData<T> *get_dense_block_data() const { return dense_block_data; }
-    const LowRankMatrix<T> *get_low_rank_block_data() const { return low_rank_block_data; }
+    const DenseBlockData<T> *get_dense_block_data() const { return dynamic_cast<DenseBlockData<T> *>(block_data.get()); }
+    const LowRankMatrix<T> *get_low_rank_block_data() const {
+        return dynamic_cast<LowRankMatrix<T> *>(block_data.get());
+        ;
+    }
 
     bool IsAdmissible() const {
         return admissible;
