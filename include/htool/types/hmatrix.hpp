@@ -708,7 +708,6 @@ void HMatrix<T>::AddNearFieldMat(VirtualGenerator<T> &mat, Block &task, std::vec
     } else if (!delay_dense_computation) {
         MyComputedBlocks_local.emplace_back(new SubMatrix<T>(mat, mat.get_dimension() * t.get_size(), mat.get_dimension() * s.get_size(), no_permutation_target.data() + t.get_offset(), no_permutation_source.data() + s.get_offset(), t.get_offset(), s.get_offset()));
     } else {
-        std::cout << mat.get_dimension() * t.get_size() << " " << mat.get_dimension() * s.get_size() << std::endl;
         MyComputedBlocks_local.emplace_back(new SubMatrix<T>(*zerogenerator, mat.get_dimension() * t.get_size(), mat.get_dimension() * s.get_size(), cluster_tree_t->get_perm().data() + t.get_offset(), cluster_tree_s->get_perm().data() + s.get_offset(), t.get_offset(), s.get_offset()));
     }
 
