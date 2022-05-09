@@ -173,7 +173,7 @@ class Cluster : public VirtualCluster {
     int get_ndofperelt() const { return ndofperelt; }
     int get_nb_sons() const { return sons.size(); }
     int get_counter() const { return counter; }
-    const VirtualCluster &get_local_cluster(MPI_Comm comm = MPI_COMM_WORLD) const {
+    const VirtualCluster &get_local_cluster() const {
         return *(root->local_cluster);
     }
 

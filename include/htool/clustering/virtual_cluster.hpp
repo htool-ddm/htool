@@ -39,7 +39,7 @@ class VirtualCluster {
     virtual int get_nb_sons() const                           = 0;
     virtual int get_counter() const                           = 0;
 
-    virtual const VirtualCluster &get_local_cluster(MPI_Comm comm = MPI_COMM_WORLD) const          = 0;
+    virtual const VirtualCluster &get_local_cluster() const                                        = 0;
     virtual std::shared_ptr<VirtualCluster> get_local_cluster_tree(MPI_Comm comm = MPI_COMM_WORLD) = 0;
     virtual std::vector<int> get_local_perm() const                                                = 0;
 

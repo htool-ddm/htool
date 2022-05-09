@@ -1754,7 +1754,6 @@ void HMatrix<T>::get_off_diagonal_geometries(double *target_points, double *sour
 
     int nc_left         = cluster_tree_s->get_local_offset();
     int nc_right        = cluster_tree_s->get_size() - cluster_tree_s->get_local_offset() - cluster_tree_s->get_local_size();
-    int nc_off_diagonal = nc_left + nc_right;
     int nr_off_diagonal = cluster_tree_t->get_local_size();
 
     int nc_global = cluster_tree_s->get_size();
