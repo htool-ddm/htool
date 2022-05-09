@@ -174,10 +174,6 @@ class Cluster : public VirtualCluster {
     int get_nb_sons() const { return sons.size(); }
     int get_counter() const { return counter; }
     const VirtualCluster &get_local_cluster(MPI_Comm comm = MPI_COMM_WORLD) const {
-        int rankWorld, sizeWorld;
-        MPI_Comm_size(comm, &sizeWorld);
-        MPI_Comm_rank(comm, &rankWorld);
-
         return *(root->local_cluster);
     }
 

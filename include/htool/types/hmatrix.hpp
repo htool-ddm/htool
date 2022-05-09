@@ -18,6 +18,7 @@
 #include "../wrappers/wrapper_mpi.hpp"
 #include "matrix.hpp"
 #include "point.hpp"
+#include "virtual_off_diagonal_approximation.hpp"
 #include "zero_generator.hpp"
 #include <cassert>
 #include <fstream>
@@ -68,6 +69,7 @@ class HMatrix : public VirtualHMatrix<T> {
     // Strategies
     std::shared_ptr<VirtualLowRankGenerator<T>> LowRankGenerator;
     std::shared_ptr<VirtualAdmissibilityCondition> AdmissibilityCondition;
+    std::shared_ptr<VirtualOffDiagonalApproximation<T>> OffDiagonalApproximation;
 
     std::shared_ptr<VirtualCluster> cluster_tree_t;
     std::shared_ptr<VirtualCluster> cluster_tree_s;
@@ -189,12 +191,15 @@ class HMatrix : public VirtualHMatrix<T> {
     std::vector<int> get_local_perm_source() const { return cluster_tree_s->get_local_perm(); }
     int get_permt(int i) const { return cluster_tree_t->get_global_perm(i); }
     int get_perms(int i) const { return cluster_tree_s->get_global_perm(i); }
-    // const std::vector<SubMatrix<T> *> &get_MyNearFieldMats() const { return MyNearFieldMats; }
-    // const std::vector<LowRankMatrix<T> *> &get_MyFarFieldMats() const { return MyFarFieldMats; }
-    // const std::vector<SubMatrix<T> *> &get_MyDiagNearFieldMats() const { return MyDiagNearFieldMats; }
-    // const std::vector<LowRankMatrix<T> *> &get_MyDiagFarFieldMats() const { return MyDiagFarFieldMats; }
-    // const std::vector<SubMatrix<T> *> &get_MyStrictlyDiagNearFieldMats() const { return MyStrictlyDiagNearFieldMats; }
-    // const std::vector<LowRankMatrix<T> *> &get_MyStrictlyDiagFarFieldMats() const { return MyStrictlyDiagFarFieldMats; }
+
+    void get_off_diagonal_size(int &nr_off_diagonal, int &nc_off_diagonal) const {
+        int nc_left     = cluster_tree_s->get_local_offset();
+        int nc_right    = cluster_tree_s->get_size() - cluster_tree_s->get_local_offset() - cluster_tree_s->get_local_size();
+        nc_off_diagonal = nc_left + nc_right;
+        nr_off_diagonal = cluster_tree_t->get_local_size();
+    };
+    void get_off_diagonal_geometries(double *target_points, double *source_points, double *new_target_points, double *new_source_points) const;
+
     std::vector<T> get_local_diagonal(bool = true) const;
     void copy_local_diagonal(T *, bool = true) const;
     Matrix<T> get_local_interaction(bool = true) const;
@@ -217,6 +222,9 @@ class HMatrix : public VirtualHMatrix<T> {
     void set_use_permutation(bool choice) { this->use_permutation = choice; };
     void set_delay_dense_computation(bool choice) { this->delay_dense_computation = choice; };
     void set_compression(std::shared_ptr<VirtualLowRankGenerator<T>> ptr) { LowRankGenerator = ptr; };
+    void set_off_diagonal_approximation(std::shared_ptr<VirtualOffDiagonalApproximation<T>> ptr) {
+        OffDiagonalApproximation = ptr;
+    };
 
     // Infos
     const std::map<std::string, std::string> &get_infos() const { return infos; }
@@ -313,7 +321,12 @@ void HMatrix<T>::build(VirtualGenerator<T> &mat, const double *const xt, const d
 
     // Construction arbre des blocs
     double time = MPI_Wtime();
-    this->BlockTree.reset(new Block<T>(this->AdmissibilityCondition.get(), *cluster_tree_t, *cluster_tree_s));
+    if (this->OffDiagonalApproximation != nullptr) {
+        this->BlockTree.reset(new Block<T>(this->AdmissibilityCondition.get(), cluster_tree_t->get_local_cluster(), cluster_tree_s->get_local_cluster()));
+    } else {
+        this->BlockTree.reset(new Block<T>(this->AdmissibilityCondition.get(), *cluster_tree_t, *cluster_tree_s));
+    }
+
     this->BlockTree->set_mintargetdepth(this->mintargetdepth);
     this->BlockTree->set_minsourcedepth(this->minsourcedepth);
     this->BlockTree->set_maxblocksize(this->maxblocksize);
@@ -365,7 +378,11 @@ void HMatrix<T>::build(VirtualGenerator<T> &mat, const double *const xt) {
     // Construction arbre des blocs
     double time = MPI_Wtime();
 
-    this->BlockTree.reset(new Block<T>(this->AdmissibilityCondition.get(), *cluster_tree_t, *cluster_tree_s));
+    if (this->OffDiagonalApproximation != nullptr) {
+        this->BlockTree.reset(new Block<T>(this->AdmissibilityCondition.get(), cluster_tree_t->get_local_cluster(), cluster_tree_s->get_local_cluster()));
+    } else {
+        this->BlockTree.reset(new Block<T>(this->AdmissibilityCondition.get(), *cluster_tree_t, *cluster_tree_s));
+    }
     this->BlockTree->set_mintargetdepth(this->mintargetdepth);
     this->BlockTree->set_minsourcedepth(this->minsourcedepth);
     this->BlockTree->set_maxblocksize(this->maxblocksize);
@@ -870,6 +887,51 @@ void HMatrix<T>::mymvprod_global_to_local(const T *const in, T *const out, const
 #    pragma omp critical
 #endif
         Blas<T>::axpy(&local_size_rhs, &da, temp.data(), &incx, out, &incy);
+    }
+
+    if (this->OffDiagonalApproximation != nullptr) {
+
+        // Sizes
+        int nc_local = cluster_tree_s->get_local_size();
+        int nc_left  = cluster_tree_s->get_local_offset();
+        int nc_right = cluster_tree_s->get_size() - cluster_tree_s->get_local_offset() - cluster_tree_s->get_local_size();
+
+        // Build input vector (row major)
+        std::vector<T> off_diagonal_input((nc_right + nc_left) * mu, 0), off_diagonal_input_column_major((nc_right + nc_left) * mu, 0);
+        std::vector<T> off_diagonal_out(cluster_tree_t->get_local_size() * mu, 0);
+
+        for (int i = 0; i < mu; i++) {
+            std::copy_n(in, nc_left * mu, off_diagonal_input.data());
+            std::copy_n(in + (nc_left + nc_local) * mu, nc_right * mu, off_diagonal_input.data() + nc_left * mu);
+        }
+
+        if (mu > 1 && !this->OffDiagonalApproximation->IsUsingRowMajorStorage()) { // Need to transpose input and output for OffDiagonalApproximation
+
+            for (int i = 0; i < mu; i++) {
+                for (int j = 0; j < (nc_right + nc_left); j++) {
+                    off_diagonal_input_column_major[j + i * (nc_right + nc_left)] = off_diagonal_input[i + j * mu];
+                }
+            }
+            if (symmetry == 'H') {
+                conj_if_complex(off_diagonal_input_column_major.data(), (nc_right + nc_left) * mu);
+            }
+            this->OffDiagonalApproximation->mvprod_global_to_local(off_diagonal_input_column_major.data(), off_diagonal_out.data(), mu);
+
+            if (symmetry == 'H') {
+                conj_if_complex(off_diagonal_out.data(), off_diagonal_out.size());
+            }
+            for (int i = 0; i < mu; i++) {
+                for (int j = 0; j < local_size; j++) {
+                    out[i + j * mu] += off_diagonal_out[i * local_size + j];
+                }
+            }
+
+        } else {
+
+            this->OffDiagonalApproximation->mvprod_global_to_local(off_diagonal_input.data(), off_diagonal_out.data(), mu);
+
+            Blas<T>::axpy(&local_size_rhs, &da, off_diagonal_out.data(), &incx, out, &incy);
+        }
     }
 }
 
@@ -1685,6 +1747,47 @@ underlying_type<T> Frobenius_absolute_error(const HMatrix<T> &B, const VirtualGe
     return std::sqrt(err);
 }
 
+template <typename T>
+void HMatrix<T>::get_off_diagonal_geometries(double *target_points, double *source_points, double *new_target_points, double *new_source_points) const {
+    int target_spatial_dim = cluster_tree_t->get_space_dim();
+    int source_spatial_dim = cluster_tree_s->get_space_dim();
+
+    int nc_left         = cluster_tree_s->get_local_offset();
+    int nc_right        = cluster_tree_s->get_size() - cluster_tree_s->get_local_offset() - cluster_tree_s->get_local_size();
+    int nc_off_diagonal = nc_left + nc_right;
+    int nr_off_diagonal = cluster_tree_t->get_local_size();
+
+    int nc_global = cluster_tree_s->get_size();
+    int nr_global = cluster_tree_t->get_size();
+
+    // Update geometry
+    if (use_permutation) {
+        // Target
+        std::vector<double> temp(nr_global * target_spatial_dim);
+        for (int i = 0; i < nr_global; i++) {
+            for (int p = 0; p < target_spatial_dim; p++) {
+                temp[i * target_spatial_dim + p] = target_points[cluster_tree_t->get_global_perm(i) * target_spatial_dim + p];
+            }
+        }
+        std::copy_n(temp.data() + target_spatial_dim * cluster_tree_t->get_local_offset(), target_spatial_dim * cluster_tree_t->get_local_size(), new_target_points);
+
+        // Source
+        temp.resize(nc_global * source_spatial_dim);
+        for (int i = 0; i < nc_global; i++) {
+            for (int p = 0; p < source_spatial_dim; p++)
+                temp[i * source_spatial_dim + p] = source_points[cluster_tree_s->get_global_perm(i) * source_spatial_dim + p];
+        }
+        std::copy_n(temp.data(), nc_left * source_spatial_dim, new_source_points);
+        std::copy_n(temp.data() + cluster_tree_s->get_local_offset() * source_spatial_dim + cluster_tree_s->get_local_size() * source_spatial_dim, nc_right * source_spatial_dim, new_source_points + nc_left * source_spatial_dim);
+    } else {
+        // Target
+        std::copy_n(target_points + cluster_tree_t->get_local_offset() * target_spatial_dim, nr_off_diagonal * target_spatial_dim, new_target_points);
+
+        // Source
+        std::copy_n(source_points, nc_left * source_spatial_dim, new_source_points);
+        std::copy_n(source_points + (cluster_tree_s->get_local_offset() + cluster_tree_s->get_local_size()) * source_spatial_dim, nc_right * source_spatial_dim, new_source_points + nc_left * source_spatial_dim);
+    }
+}
 template <typename T>
 Matrix<T> HMatrix<T>::get_local_dense() const {
     Matrix<T> Dense(local_size, nc);

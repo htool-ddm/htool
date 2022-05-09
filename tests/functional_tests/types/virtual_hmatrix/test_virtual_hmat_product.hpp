@@ -4,12 +4,13 @@
 #include <htool/testing/generator_test.hpp>
 #include <htool/testing/geometry.hpp>
 #include <htool/types/hmatrix.hpp>
+#include <htool/types/off_diagonal_approximation_with_hmatrix.hpp>
 
 using namespace std;
 using namespace htool;
 
 template <typename T, typename GeneratorTestType, typename ClusterImpl, template <typename> class CompressionImpl, template <typename> class HMatrixImpl>
-bool test_virtual_hmat_product(int nr, int nc, int mu, bool use_permutation, char Symmetry, char UPLO, char op, T coef = 0) {
+bool test_virtual_hmat_product(int nr, int nc, int mu, bool use_permutation, char Symmetry, char UPLO, char op, bool off_diagonal_approximation) {
 
     // // Initialize the MPI environment
     // MPI_Init(&argc, &argv);
@@ -49,8 +50,8 @@ bool test_virtual_hmat_product(int nr, int nc, int mu, bool use_permutation, cha
         // (two different initializations with the same seed will generate the same succession of results in the subsequent calls to rand)
 
         double z1 = 1;
-        vector<double> p1(3 * nr), p1_perm;
-        vector<double> p2(Symmetry == 'N' ? 3 * nc : 1), p2_perm;
+        vector<double> p1(3 * nr), p1_perm, off_diagonal_p1;
+        vector<double> p2(Symmetry == 'N' ? 3 * nc : 1), p2_perm, off_diagonal_p2;
         create_disk(3, z1, nr, p1.data());
         int size_numbering = nr / (size);
         int count_size     = 0;
@@ -123,6 +124,38 @@ bool test_virtual_hmat_product(int nr, int nc, int mu, bool use_permutation, cha
         std::shared_ptr<VirtualHMatrix<T>> HA = std::make_shared<HMatrixImpl<T>>(t, s, epsilon, eta, Symmetry, UPLO);
         HA->set_compression(compressor);
         HA->set_use_permutation(use_permutation);
+
+        if (off_diagonal_approximation) {
+
+            // Setup data for off diagonal geometry
+            int off_diagonal_nr, off_diagonal_nc, nc_left, nc_local, nc_right;
+            HA->get_off_diagonal_size(off_diagonal_nr, off_diagonal_nc);
+
+            off_diagonal_p1.resize(off_diagonal_nr * t->get_space_dim());
+            off_diagonal_p2.resize(off_diagonal_nc * s->get_space_dim());
+            if (use_permutation) {
+                HA->get_off_diagonal_geometries(p1.data(), p2.data(), off_diagonal_p1.data(), off_diagonal_p2.data());
+            } else {
+                HA->get_off_diagonal_geometries(p1_perm.data(), p2_perm.data(), off_diagonal_p1.data(), off_diagonal_p2.data());
+            }
+
+            // Clustering
+            std::shared_ptr<VirtualCluster> new_cluster_target = std::make_shared<ClusterImpl>();
+            std::shared_ptr<VirtualCluster> new_cluster_source = std::make_shared<ClusterImpl>();
+            new_cluster_target->build(off_diagonal_nr, off_diagonal_p1.data(), 2, MPI_COMM_SELF);
+            new_cluster_source->build(off_diagonal_nc, off_diagonal_p2.data(), 2, MPI_COMM_SELF);
+
+            // Generator
+            GeneratorTestType off_diagonal_generator(3, off_diagonal_nr, off_diagonal_nc, off_diagonal_p1, off_diagonal_p2);
+
+            // OffDiagonalHmatrix
+            auto OffDiagonalHA = std::make_shared<OffDiagonalApproximationWithHMatrix<T>>(HA.get(), new_cluster_target, new_cluster_source);
+            OffDiagonalHA->set_compression(compressor);
+            OffDiagonalHA->build(off_diagonal_generator, off_diagonal_p1.data(), off_diagonal_p2.data());
+
+            HA->set_off_diagonal_approximation(std::shared_ptr<VirtualOffDiagonalApproximation<T>>(OffDiagonalHA));
+        }
+
         double time = MPI_Wtime();
         if (use_permutation) {
             if (Symmetry == 'N')
