@@ -131,8 +131,8 @@ bool test_virtual_hmat_product(int nr, int nc, int mu, bool use_permutation, cha
             int off_diagonal_nr, off_diagonal_nc, nc_left, nc_local, nc_right;
             HA->get_off_diagonal_size(off_diagonal_nr, off_diagonal_nc);
 
-            off_diagonal_p1.resize(off_diagonal_nr * t->get_space_dim());
-            off_diagonal_p2.resize(off_diagonal_nc * s->get_space_dim());
+            vector<double> off_diagonal_p1(off_diagonal_nr * t->get_space_dim());
+            vector<double> off_diagonal_p2(off_diagonal_nc * s->get_space_dim());
             if (use_permutation) {
                 HA->get_off_diagonal_geometries(p1.data(), p2.data(), off_diagonal_p1.data(), off_diagonal_p2.data());
             } else {

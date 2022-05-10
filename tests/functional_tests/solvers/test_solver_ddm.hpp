@@ -4,12 +4,13 @@
 #include <htool/solvers/ddm.hpp>
 #include <htool/testing/generator_test.hpp>
 #include <htool/types/hmatrix.hpp>
+#include <htool/types/off_diagonal_approximation_with_hmatrix.hpp>
 #include <htool/types/point.hpp>
 
 using namespace std;
 using namespace htool;
 
-int test_solver_ddm(int argc, char *argv[], int mu, char symmetric) {
+int test_solver_ddm(int argc, char *argv[], int mu, char symmetric, bool off_diagonal_approximation) {
 
     // Input file
     if (argc < 2) { // argc should be 5 or more for correct execution
@@ -18,9 +19,6 @@ int test_solver_ddm(int argc, char *argv[], int mu, char symmetric) {
         return 1;                                      // LCOV_EXCL_LINE
     }
     string datapath = argv[1];
-
-    // Initialize the MPI environment
-    MPI_Init(&argc, &argv);
 
     // Get the number of processes
     int size;
@@ -87,6 +85,48 @@ int test_solver_ddm(int argc, char *argv[], int mu, char symmetric) {
     std::shared_ptr<fullACA<std::complex<double>>> compressor = std::make_shared<fullACA<std::complex<double>>>();
     HMatrix<complex<double>> HA(t, t, epsilon, eta, symmetric, UPLO);
     HA.set_compression(compressor);
+
+    if (off_diagonal_approximation) {
+        // Setup data for off diagonal geometry
+        int off_diagonal_nr, off_diagonal_nc, nc_left, nc_local, nc_right;
+        HA.get_off_diagonal_size(off_diagonal_nr, off_diagonal_nc);
+
+        vector<double> off_diagonal_p1(off_diagonal_nr * t->get_space_dim());
+        vector<double> off_diagonal_p2(off_diagonal_nc * t->get_space_dim());
+
+        HA.get_off_diagonal_geometries(p.data()->data(), p.data()->data(), off_diagonal_p1.data(), off_diagonal_p2.data());
+
+        // Clustering
+        std::shared_ptr<VirtualCluster> new_cluster_target = std::make_shared<Cluster<PCAGeometricClustering>>();
+        std::shared_ptr<VirtualCluster> new_cluster_source = std::make_shared<Cluster<PCAGeometricClustering>>();
+        new_cluster_target->build(off_diagonal_nr, off_diagonal_p1.data(), 2, MPI_COMM_SELF);
+        new_cluster_source->build(off_diagonal_nc, off_diagonal_p2.data(), 2, MPI_COMM_SELF);
+
+        // Generator
+        Matrix<complex<double>> off_diagonal_A(off_diagonal_nr, off_diagonal_nc);
+        for (int i = t->get_local_offset(); i < t->get_local_offset() + t->get_local_size(); i++) {
+            for (int j = 0; j < t->get_local_offset(); j++) {
+                off_diagonal_A(i - t->get_local_offset(), j) = A(t->get_global_perm(i), t->get_global_perm(j));
+            }
+        }
+        for (int i = t->get_local_offset(); i < t->get_local_offset() + t->get_local_size(); i++) {
+            for (int j = t->get_local_offset() + t->get_local_size(); j < t->get_size(); j++) {
+                off_diagonal_A(i - t->get_local_offset(), j - t->get_local_size()) = A(t->get_global_perm(i), t->get_global_perm(j));
+            }
+        }
+
+        GeneratorFromMatrix<complex<double>>
+            off_diagonal_generator(off_diagonal_A);
+
+        // OffDiagonalHmatrix
+        VirtualHMatrix<complex<double>> *HA_ptr = &HA;
+        auto OffDiagonalHA                      = std::make_shared<OffDiagonalApproximationWithHMatrix<complex<double>>>(HA_ptr, new_cluster_target, new_cluster_source);
+        OffDiagonalHA->set_compression(compressor);
+        OffDiagonalHA->build(off_diagonal_generator, off_diagonal_p1.data(), off_diagonal_p2.data());
+
+        HA.set_off_diagonal_approximation(std::shared_ptr<VirtualOffDiagonalApproximation<complex<double>>>(OffDiagonalHA));
+    }
+
     HA.build(Generator, p);
     HA.print_infos();
 
@@ -302,8 +342,6 @@ int test_solver_ddm(int argc, char *argv[], int mu, char symmetric) {
 
         x_global = 0;
     }
-    // Finalize the MPI environment.
-    MPI_Finalize();
 
     return test;
 }

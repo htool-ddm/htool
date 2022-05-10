@@ -16,6 +16,9 @@ class VirtualOffDiagonalApproximation {
     // In other words, out and in are row-major
     // This is to localize block of rhs
     virtual void mvprod_global_to_local(const T *const in, T *const out, const int &mu) = 0;
+
+    virtual void mvprod_subrhs_to_local(const T *const in, T *const out, const int &mu, const int &offset, const int &size) = 0;
+
     virtual bool IsUsingRowMajorStorage() { return true; };
     virtual ~VirtualOffDiagonalApproximation(){};
 };

@@ -897,7 +897,7 @@ void HMatrix<T>::mymvprod_global_to_local(const T *const in, T *const out, const
         int nc_right = cluster_tree_s->get_size() - cluster_tree_s->get_local_offset() - cluster_tree_s->get_local_size();
 
         // Build input vector (row major)
-        std::vector<T> off_diagonal_input((nc_right + nc_left) * mu, 0), off_diagonal_input_column_major((nc_right + nc_left) * mu, 0);
+        std::vector<T> off_diagonal_input((nc_right + nc_left) * mu, 0);
         std::vector<T> off_diagonal_out(cluster_tree_t->get_local_size() * mu, 0);
 
         for (int i = 0; i < mu; i++) {
@@ -906,6 +906,7 @@ void HMatrix<T>::mymvprod_global_to_local(const T *const in, T *const out, const
         }
 
         if (mu > 1 && !this->OffDiagonalApproximation->IsUsingRowMajorStorage()) { // Need to transpose input and output for OffDiagonalApproximation
+            std::vector<T> off_diagonal_input_column_major((nc_right + nc_left) * mu, 0);
 
             for (int i = 0; i < mu; i++) {
                 for (int j = 0; j < (nc_right + nc_left); j++) {
@@ -1498,28 +1499,13 @@ void HMatrix<T>::mvprod_subrhs(const T *const in, T *const out, const int &mu, c
 #if _OPENMP
 #    pragma omp for schedule(guided)
 #endif
-        for (int b = 0; b < MyFarFieldMats.size(); b++) {
-            const Block<T> *M = MyFarFieldMats[b];
-            int offset_i      = M->get_target_cluster().get_offset();
-            int offset_j      = M->get_source_cluster().get_offset();
-            int size_j        = M->get_source_cluster().get_size();
+        for (int b = 0; b < MyComputedBlocks.size(); b++) {
+            int offset_i = MyComputedBlocks[b]->get_target_cluster().get_offset();
+            int offset_j = MyComputedBlocks[b]->get_source_cluster().get_offset();
+            int size_j   = MyComputedBlocks[b]->get_source_cluster().get_size();
 
             if ((offset_j <= offset + size && offset <= offset_j + size_j) && (symmetry == 'N' || offset_i != offset_j)) {
-                M->get_block_data()->add_mvprod_row_major(in + (offset_j - offset + margin) * mu, temp.data() + (offset_i - local_offset) * mu, mu, transb);
-            }
-        }
-// Contribution champ proche
-#if _OPENMP
-#    pragma omp for schedule(guided)
-#endif
-        for (int b = 0; b < MyNearFieldMats.size(); b++) {
-            const Block<T> *M = MyNearFieldMats[b];
-            int offset_i      = M->get_target_cluster().get_offset();
-            int offset_j      = M->get_source_cluster().get_offset();
-            int size_j        = M->get_source_cluster().get_size();
-
-            if ((offset_j <= offset + size && offset <= offset_j + size_j) && (symmetry == 'N' || offset_i != offset_j)) {
-                M->get_block_data()->add_mvprod_row_major(in + (offset_j - offset + margin) * mu, temp.data() + (offset_i - local_offset) * mu, mu, transb);
+                MyComputedBlocks[b]->get_block_data()->add_mvprod_row_major(in + offset_j * mu, temp.data() + (offset_i - local_offset) * mu, mu, transb);
             }
         }
 
@@ -1533,31 +1519,16 @@ void HMatrix<T>::mvprod_subrhs(const T *const in, T *const out, const int &mu, c
 #if _OPENMP
 #    pragma omp for schedule(guided)
 #endif
-            for (int b = 0; b < MyDiagFarFieldMats.size(); b++) {
-                const Block<T> *M = MyDiagFarFieldMats[b];
-                int offset_i      = M->get_source_cluster().get_offset();
-                int offset_j      = M->get_target_cluster().get_offset();
-                int size_j        = M->get_target_cluster().get_size();
+            for (int b = 0; b < MyDiagComputedBlocks.size(); b++) {
+                int offset_i = MyDiagComputedBlocks[b]->get_source_cluster().get_offset();
+                int offset_j = MyDiagComputedBlocks[b]->get_target_cluster().get_offset();
+                int size_j   = MyDiagComputedBlocks[b]->get_target_cluster().get_size();
 
                 if ((offset_j <= offset + size && offset <= offset_j + size_j) && offset_i != offset_j) { // remove strictly diagonal blocks
-                    M->get_block_data()->add_mvprod_row_major(in + (offset_j - offset + margin) * mu, temp.data() + (offset_i - local_offset) * mu, mu, transb, op_sym);
+                    MyDiagComputedBlocks[b]->get_block_data()->add_mvprod_row_major(in + (offset_j - offset + margin) * mu, temp.data() + (offset_i - local_offset) * mu, mu, transb, op_sym);
                 }
             }
 
-// Contribution champ proche
-#if _OPENMP
-#    pragma omp for schedule(guided)
-#endif
-            for (int b = 0; b < MyDiagNearFieldMats.size(); b++) {
-                const Block<T> *M = MyDiagNearFieldMats[b];
-                int offset_i      = M->get_source_cluster().get_offset();
-                int offset_j      = M->get_target_cluster().get_offset();
-                int size_j        = M->get_target_cluster().get_size();
-
-                if ((offset_j <= offset + size && offset <= offset_j + size_j) && offset_i != offset_j) { // remove strictly diagonal blocks
-                    M->get_block_data()->add_mvprod_row_major(in + (offset_j - offset + margin) * mu, temp.data() + (offset_i - local_offset) * mu, mu, transb, op_sym);
-                }
-            }
 #if _OPENMP
 #    pragma omp for schedule(guided)
 #endif
@@ -1575,6 +1546,44 @@ void HMatrix<T>::mvprod_subrhs(const T *const in, T *const out, const int &mu, c
 #    pragma omp critical
 #endif
         std::transform(temp.begin(), temp.end(), out, out, std::plus<T>());
+    }
+
+    if (!(this->cluster_tree_s->get_local_offset() <= offset + size && offset <= this->cluster_tree_s->get_local_offset() + this->cluster_tree_s->get_local_size()) && this->OffDiagonalApproximation != nullptr) {
+
+        std::vector<T> off_diagonal_out(cluster_tree_t->get_local_size() * mu, 0);
+
+        if (mu > 1 && !this->OffDiagonalApproximation->IsUsingRowMajorStorage()) { // Need to transpose input and output for OffDiagonalApproximation
+            std::vector<T> off_diagonal_input_column_major(size * mu, 0);
+
+            for (int i = 0; i < mu; i++) {
+                for (int j = 0; j < size; j++) {
+                    off_diagonal_input_column_major[j + i * size] = in[i + j * mu];
+                }
+            }
+
+            if (symmetry == 'H') {
+                conj_if_complex(off_diagonal_input_column_major.data(), size * mu);
+            }
+
+            this->OffDiagonalApproximation->mvprod_subrhs_to_local(off_diagonal_input_column_major.data(), off_diagonal_out.data(), mu, offset, size);
+
+            if (symmetry == 'H') {
+                conj_if_complex(off_diagonal_out.data(), off_diagonal_out.size());
+            }
+            for (int i = 0; i < mu; i++) {
+                for (int j = 0; j < local_size; j++) {
+                    out[i + j * mu] += off_diagonal_out[i * local_size + j];
+                }
+            }
+
+        } else {
+            this->OffDiagonalApproximation->mvprod_subrhs_to_local(in, off_diagonal_out.data(), mu, offset, size);
+
+            int incx(1), incy(1), local_size_rhs(local_size * mu);
+            T da(1);
+
+            Blas<T>::axpy(&local_size_rhs, &da, off_diagonal_out.data(), &incx, out, &incy);
+        }
     }
 }
 

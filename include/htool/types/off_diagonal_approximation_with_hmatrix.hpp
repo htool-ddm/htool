@@ -27,9 +27,16 @@ class OffDiagonalApproximationWithHMatrix : public VirtualOffDiagonalApproximati
         off_diagonal_hmatrix->build(generator, xt, xs);
     }
 
-    void
-    mvprod_global_to_local(const T *const in, T *const out, const int &mu) override {
+    void mvprod_global_to_local(const T *const in, T *const out, const int &mu) override {
         off_diagonal_hmatrix->mvprod_global_to_global(in, out, mu);
+    }
+
+    void mvprod_subrhs_to_local(const T *const in, T *const out, const int &mu, const int &offset, const int &size) override {
+        std::vector<T> in_global(off_diagonal_hmatrix->nb_cols() * mu, 0);
+        for (int i = 0; i < mu; i++) {
+            std::copy_n(in + size * i, size, in_global.data() + offset + off_diagonal_hmatrix->nb_cols() * i);
+        }
+        off_diagonal_hmatrix->mvprod_global_to_global(in_global.data(), out, mu);
     }
 
     // Setters
