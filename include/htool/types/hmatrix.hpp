@@ -1549,9 +1549,8 @@ void HMatrix<T>::mvprod_subrhs(const T *const in, T *const out, const int &mu, c
     }
 
     if (!(this->cluster_tree_s->get_local_offset() <= offset + size && offset <= this->cluster_tree_s->get_local_offset() + this->cluster_tree_s->get_local_size()) && this->OffDiagonalApproximation != nullptr) {
-
         std::vector<T> off_diagonal_out(cluster_tree_t->get_local_size() * mu, 0);
-
+        int off_diagonal_offset = (offset < this->cluster_tree_s->get_local_offset()) ? offset : offset - this->cluster_tree_s->get_local_offset() - this->cluster_tree_s->get_local_size();
         if (mu > 1 && !this->OffDiagonalApproximation->IsUsingRowMajorStorage()) { // Need to transpose input and output for OffDiagonalApproximation
             std::vector<T> off_diagonal_input_column_major(size * mu, 0);
 
@@ -1565,7 +1564,7 @@ void HMatrix<T>::mvprod_subrhs(const T *const in, T *const out, const int &mu, c
                 conj_if_complex(off_diagonal_input_column_major.data(), size * mu);
             }
 
-            this->OffDiagonalApproximation->mvprod_subrhs_to_local(off_diagonal_input_column_major.data(), off_diagonal_out.data(), mu, offset, size);
+            this->OffDiagonalApproximation->mvprod_subrhs_to_local(off_diagonal_input_column_major.data(), off_diagonal_out.data(), mu, off_diagonal_offset, size);
 
             if (symmetry == 'H') {
                 conj_if_complex(off_diagonal_out.data(), off_diagonal_out.size());
@@ -1575,9 +1574,8 @@ void HMatrix<T>::mvprod_subrhs(const T *const in, T *const out, const int &mu, c
                     out[i + j * mu] += off_diagonal_out[i * local_size + j];
                 }
             }
-
         } else {
-            this->OffDiagonalApproximation->mvprod_subrhs_to_local(in, off_diagonal_out.data(), mu, offset, size);
+            this->OffDiagonalApproximation->mvprod_subrhs_to_local(in, off_diagonal_out.data(), mu, off_diagonal_offset, size);
 
             int incx(1), incy(1), local_size_rhs(local_size * mu);
             T da(1);

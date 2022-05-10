@@ -149,7 +149,6 @@ int test_solver_ddm(int argc, char *argv[], int mu, char symmetric, bool off_dia
     intersections.resize(neighbors.size());
     for (int p = 0; p < neighbors.size(); p++) {
         bytes_to_vector(intersections[p], datapath + "intersections_" + NbrToStr(size) + "_" + NbrToStr(rank) + "_" + NbrToStr(p) + ".bin");
-        std::cout << intersections[p] << std::endl;
     }
 
     // Errors
