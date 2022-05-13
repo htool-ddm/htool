@@ -116,7 +116,7 @@ jobs:
 
     container:
       image: pierremarchand/htool_testing_environments:${{ matrix.container }}
-      options: ${{ matrix.DOCKER_OPTIONS }}
+      options: --user root ${{ matrix.DOCKER_OPTIONS }}
       env:
         OMPI_CC: ${{ matrix.CC_COMPILER }}
         OMPI_CXX: ${{ matrix.CXX_COMPILER }}
