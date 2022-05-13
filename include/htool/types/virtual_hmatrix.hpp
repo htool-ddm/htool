@@ -48,9 +48,9 @@ class VirtualHMatrix {
 
     // functions for user-defined off diagonal
 
-    virtual void get_off_diagonal_size(int &nr_off_diagonal, int &nc_off_diagonal) const                                                               = 0;
-    virtual void get_off_diagonal_geometries(double *target_points, double *source_points, double *new_target_points, double *new_source_points) const = 0;
-    virtual void set_off_diagonal_approximation(std::shared_ptr<VirtualOffDiagonalApproximation<T>> OffDiagonalApproximation)                          = 0;
+    // virtual void get_off_diagonal_size(int &nr_off_diagonal, int &nc_off_diagonal) const                                                               = 0;
+    // virtual void get_off_diagonal_geometries(double *target_points, double *source_points, double *new_target_points, double *new_source_points) const = 0;
+    // virtual void set_off_diagonal_approximation(std::shared_ptr<VirtualOffDiagonalApproximation<T>> OffDiagonalApproximation)                          = 0;
 
     // Build
     virtual void build(VirtualGenerator<T> &mat, const double *const xt, const double *const xs) = 0;
