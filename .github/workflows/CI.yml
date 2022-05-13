@@ -26,92 +26,92 @@ jobs:
     strategy:
       matrix:
         include:
-          - name: "Ubuntu OpenMPI g++"
-            CC_COMPILER: gcc
-            CXX_COMPILER: g++
-            container: "ubuntu_gcc_openmpi"
-            MPIEXEC_PREFLAGS: "--allow-run-as-root --oversubscribe"
-            USE_SANITIZER: "Address"
-            # ASAN_OPTIONS: "ASAN_OPTIONS=detect_leaks=0" # issue probably with openmpi
-            CMAKE_BUILD_TYPE: Release
-            CODE_COVERAGE: "OFF"
-            DOCKER_OPTIONS: "--cap-add SYS_PTRACE"
+          # - name: "Ubuntu OpenMPI g++"
+          #   CC_COMPILER: gcc
+          #   CXX_COMPILER: g++
+          #   container: "ubuntu_gcc_openmpi"
+          #   MPIEXEC_PREFLAGS: "--allow-run-as-root --oversubscribe"
+          #   USE_SANITIZER: "Address"
+          #   # ASAN_OPTIONS: "ASAN_OPTIONS=detect_leaks=0" # issue probably with openmpi
+          #   CMAKE_BUILD_TYPE: Release
+          #   CODE_COVERAGE: "OFF"
+          #   DOCKER_OPTIONS: "--cap-add SYS_PTRACE"
 
           - name: "Ubuntu OpenMPI clang++"
             CC_COMPILER: clang
             CXX_COMPILER: clang++
-            container: "ubuntu_clang_openmpi"
+            container: "ubuntu_openmpi"
             MPIEXEC_PREFLAGS: "--allow-run-as-root --oversubscribe"
             USE_SANITIZER: ""
             CMAKE_BUILD_TYPE: Release
             CODE_COVERAGE: "OFF"
             DOCKER_OPTIONS: "--cap-add SYS_PTRACE"
 
-          - name: "Ubuntu MPICH g++"
-            CC_COMPILER: gcc
-            CXX_COMPILER: g++
-            container: "ubuntu_gcc_mpich"
-            MPIEXEC_PREFLAGS: ""
-            USE_SANITIZER: "Address"
-            ASAN_OPTIONS: ""
-            CMAKE_BUILD_TYPE: Debug
-            DOCKER_OPTIONS: " "
-            CODE_COVERAGE: "ON"
+          # - name: "Ubuntu MPICH g++"
+          #   CC_COMPILER: gcc
+          #   CXX_COMPILER: g++
+          #   container: "ubuntu_gcc_mpich"
+          #   MPIEXEC_PREFLAGS: ""
+          #   USE_SANITIZER: "Address"
+          #   ASAN_OPTIONS: ""
+          #   CMAKE_BUILD_TYPE: Debug
+          #   DOCKER_OPTIONS: " "
+          #   CODE_COVERAGE: "ON"
 
-          - name: "Ubuntu MPICH clang++"
-            CC_COMPILER: clang
-            CXX_COMPILER: clang++
-            container: "ubuntu_clang_mpich"
-            MPIEXEC_PREFLAGS: ""
-            USE_SANITIZER: "Address"
-            ASAN_OPTIONS: ""
-            CMAKE_BUILD_TYPE: Debug
-            DOCKER_OPTIONS: " "
-            CODE_COVERAGE: "OFF"
+          # - name: "Ubuntu MPICH clang++"
+          #   CC_COMPILER: clang
+          #   CXX_COMPILER: clang++
+          #   container: "ubuntu_clang_mpich"
+          #   MPIEXEC_PREFLAGS: ""
+          #   USE_SANITIZER: "Address"
+          #   ASAN_OPTIONS: ""
+          #   CMAKE_BUILD_TYPE: Debug
+          #   DOCKER_OPTIONS: " "
+          #   CODE_COVERAGE: "OFF"
 
-          # Hangs up on github
-          - name: "Debian OpenMPI g++"
-            CC_COMPILER: gcc
-            CXX_COMPILER: g++
-            container: "debian_gcc_openmpi"
-            MPIEXEC_PREFLAGS: "--allow-run-as-root --oversubscribe"
-            USE_SANITIZER: "Address"
-            # ASAN_OPTIONS: "ASAN_OPTIONS=detect_leaks=0" # issue probably with openmpi
-            CMAKE_BUILD_TYPE: Debug
-            CODE_COVERAGE: "OFF"
-            DOCKER_OPTIONS: "--cap-add SYS_PTRACE"
+          # # Hangs up on github
+          # - name: "Debian OpenMPI g++"
+          #   CC_COMPILER: gcc
+          #   CXX_COMPILER: g++
+          #   container: "debian_gcc_openmpi"
+          #   MPIEXEC_PREFLAGS: "--allow-run-as-root --oversubscribe"
+          #   USE_SANITIZER: "Address"
+          #   # ASAN_OPTIONS: "ASAN_OPTIONS=detect_leaks=0" # issue probably with openmpi
+          #   CMAKE_BUILD_TYPE: Debug
+          #   CODE_COVERAGE: "OFF"
+          #   DOCKER_OPTIONS: "--cap-add SYS_PTRACE"
 
-          - name: "Debian OpenMPI clang++"
-            CC_COMPILER: clang
-            CXX_COMPILER: clang++
-            container: "debian_clang_openmpi"
-            MPIEXEC_PREFLAGS: "--allow-run-as-root --oversubscribe"
-            USE_SANITIZER: ""
-            CMAKE_BUILD_TYPE: Debug
-            CODE_COVERAGE: "OFF"
-            DOCKER_OPTIONS: "--cap-add SYS_PTRACE"
+          # - name: "Debian OpenMPI clang++"
+          #   CC_COMPILER: clang
+          #   CXX_COMPILER: clang++
+          #   container: "debian_clang_openmpi"
+          #   MPIEXEC_PREFLAGS: "--allow-run-as-root --oversubscribe"
+          #   USE_SANITIZER: ""
+          #   CMAKE_BUILD_TYPE: Debug
+          #   CODE_COVERAGE: "OFF"
+          #   DOCKER_OPTIONS: "--cap-add SYS_PTRACE"
 
-          - name: "Debian MPICH g++"
-            CC_COMPILER: gcc
-            CXX_COMPILER: g++
-            container: "debian_gcc_mpich"
-            MPIEXEC_PREFLAGS: ""
-            USE_SANITIZER: "Address"
-            ASAN_OPTIONS: ""
-            CMAKE_BUILD_TYPE: Debug
-            DOCKER_OPTIONS: " "
-            CODE_COVERAGE: "OFF"
+          # - name: "Debian MPICH g++"
+          #   CC_COMPILER: gcc
+          #   CXX_COMPILER: g++
+          #   container: "debian_gcc_mpich"
+          #   MPIEXEC_PREFLAGS: ""
+          #   USE_SANITIZER: "Address"
+          #   ASAN_OPTIONS: ""
+          #   CMAKE_BUILD_TYPE: Debug
+          #   DOCKER_OPTIONS: " "
+          #   CODE_COVERAGE: "OFF"
 
-          - name: "Debian MPICH clang++"
-            CC_COMPILER: clang
-            CXX_COMPILER: clang++
-            container: "debian_clang_mpich"
-            MPIEXEC_PREFLAGS: ""
-            USE_SANITIZER: "Address"
-            ASAN_OPTIONS: ""
-            CMAKE_BUILD_TYPE: Debug
-            DOCKER_OPTIONS: " "
-            CODE_COVERAGE: "OFF"
+          # - name: "Debian MPICH clang++"
+          #   CC_COMPILER: clang
+          #   CXX_COMPILER: clang++
+          #   container: "debian_clang_mpich"
+          #   MPIEXEC_PREFLAGS: ""
+          #   USE_SANITIZER: "Address"
+          #   ASAN_OPTIONS: ""
+          #   CMAKE_BUILD_TYPE: Debug
+          #   DOCKER_OPTIONS: " "
+          #   CODE_COVERAGE: "OFF"
 
     container:
       image: pierremarchand/htool_testing_environments:${{ matrix.container }}
@@ -136,7 +136,7 @@ jobs:
         uses: actions/checkout@v2
         with:
           repository: hpddm/hpddm
-          ref: b9e8e2ee2ba082ef86ebdbef05a70441835cc74e
+          ref: 9c5092ca711678ebc257ffadc7d29057d4566a87
           path: "hpddm"
 
       - name: Build tests
