@@ -7,6 +7,7 @@
 #include "admissibility_conditions.hpp"
 #include "dense_block_data.hpp"
 #include "virtual_block_data.hpp"
+#include <limits>
 
 namespace htool {
 
