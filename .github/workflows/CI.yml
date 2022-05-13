@@ -42,7 +42,7 @@ jobs:
             CXX_COMPILER: clang++
             container: "ubuntu_clang_openmpi"
             MPIEXEC_PREFLAGS: "--allow-run-as-root --oversubscribe"
-            USE_SANITIZER: "Address"
+            USE_SANITIZER: ""
             CMAKE_BUILD_TYPE: Debug
             CODE_COVERAGE: "OFF"
             DOCKER_OPTIONS: "--cap-add SYS_PTRACE"
