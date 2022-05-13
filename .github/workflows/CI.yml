@@ -40,10 +40,10 @@ jobs:
           - name: "Ubuntu OpenMPI clang++"
             CC_COMPILER: clang
             CXX_COMPILER: clang++
-            container: "ubuntu_openmpi"
+            container: "ubuntu_clang_openmpi"
             MPIEXEC_PREFLAGS: "--allow-run-as-root --oversubscribe"
-            USE_SANITIZER: ""
-            CMAKE_BUILD_TYPE: Release
+            USE_SANITIZER: "Address"
+            CMAKE_BUILD_TYPE: Debug
             CODE_COVERAGE: "OFF"
             DOCKER_OPTIONS: "--cap-add SYS_PTRACE"
 
@@ -136,7 +136,7 @@ jobs:
         uses: actions/checkout@v2
         with:
           repository: hpddm/hpddm
-          ref: 9c5092ca711678ebc257ffadc7d29057d4566a87
+          ref: b9e8e2ee2ba082ef86ebdbef05a70441835cc74e
           path: "hpddm"
 
       - name: Build tests
