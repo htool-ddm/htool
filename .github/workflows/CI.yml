@@ -29,10 +29,10 @@ jobs:
           - name: "Ubuntu OpenMPI g++"
             CC_COMPILER: gcc
             CXX_COMPILER: g++
-            container: "ubuntu_openmpi"
-            MPIEXEC_PREFLAGS: "--allow-run-as-root --oversubscribe"
-            USE_SANITIZER: Address""
-            ASAN_OPTIONS: "ASAN_OPTIONS=detect_leaks=0" # issue probably with openmpi
+            container: "ubuntu_gcc_openmpi"
+            MPIEXEC_PREFLAGS: "--oversubscribe"
+            USE_SANITIZER: "Address"
+            # ASAN_OPTIONS: "ASAN_OPTIONS=detect_leaks=0" # issue probably with openmpi
             CMAKE_BUILD_TYPE: Release
             DOCKER_OPTIONS: " "
             CODE_COVERAGE: "OFF"
@@ -40,8 +40,8 @@ jobs:
           - name: "Ubuntu OpenMPI clang++"
             CC_COMPILER: clang
             CXX_COMPILER: clang++
-            container: "ubuntu_openmpi"
-            MPIEXEC_PREFLAGS: "--allow-run-as-root --oversubscribe"
+            container: "ubuntu_clang_openmpi"
+            MPIEXEC_PREFLAGS: "--oversubscribe"
             USE_SANITIZER: ""
             CMAKE_BUILD_TYPE: Release
             DOCKER_OPTIONS: " "
@@ -50,7 +50,7 @@ jobs:
           - name: "Ubuntu MPICH g++"
             CC_COMPILER: gcc
             CXX_COMPILER: g++
-            container: "ubuntu_mpich"
+            container: "ubuntu_gcc_mpich"
             MPIEXEC_PREFLAGS: ""
             USE_SANITIZER: "Address"
             ASAN_OPTIONS: ""
@@ -61,7 +61,7 @@ jobs:
           - name: "Ubuntu MPICH clang++"
             CC_COMPILER: clang
             CXX_COMPILER: clang++
-            container: "ubuntu_mpich"
+            container: "ubuntu_clang_mpich"
             MPIEXEC_PREFLAGS: ""
             USE_SANITIZER: "Address"
             ASAN_OPTIONS: ""
@@ -70,32 +70,32 @@ jobs:
             CODE_COVERAGE: "OFF"
 
           # Hangs up on github
-          # - name: "Debian OpenMPI g++"
-          #   CC_COMPILER: gcc
-          #   CXX_COMPILER: g++
-          #   container: "debian_openmpi"
-          #   MPIEXEC_PREFLAGS: "--allow-run-as-root --oversubscribe"
-          #   USE_SANITIZER: "Address"
-          #   ASAN_OPTIONS: "ASAN_OPTIONS=detect_leaks=0" # issue probably with openmpi
-          #   CMAKE_BUILD_TYPE: Debug
-          #   DOCKER_OPTIONS: " "
-          #   CODE_COVERAGE: "OFF"
-          #   # DOCKER_OPTIONS: "--cap-add SYS_PTRACE"
-          # - name: "Debian OpenMPI clang++"
-          #   CC_COMPILER: clang
-          #   CXX_COMPILER: clang++
-          #   container: "debian_openmpi"
-          #   MPIEXEC_PREFLAGS: "--allow-run-as-root --oversubscribe"
-          #   USE_SANITIZER: ""
-          #   CMAKE_BUILD_TYPE: Debug
-          #   DOCKER_OPTIONS: " "
-          #   CODE_COVERAGE: "OFF"
-          # DOCKER_OPTIONS: "--cap-add SYS_PTRACE"
+          - name: "Debian OpenMPI g++"
+            CC_COMPILER: gcc
+            CXX_COMPILER: g++
+            container: "debian_gcc_openmpi"
+            MPIEXEC_PREFLAGS: "--oversubscribe"
+            USE_SANITIZER: "Address"
+            # ASAN_OPTIONS: "ASAN_OPTIONS=detect_leaks=0" # issue probably with openmpi
+            CMAKE_BUILD_TYPE: Debug
+            DOCKER_OPTIONS: " "
+            CODE_COVERAGE: "OFF"
+            # DOCKER_OPTIONS: "--cap-add SYS_PTRACE"
+          - name: "Debian OpenMPI clang++"
+            CC_COMPILER: clang
+            CXX_COMPILER: clang++
+            container: "debian_clang_openmpi"
+            MPIEXEC_PREFLAGS: "--oversubscribe"
+            USE_SANITIZER: ""
+            CMAKE_BUILD_TYPE: Debug
+            DOCKER_OPTIONS: " "
+            CODE_COVERAGE: "OFF"
+            # DOCKER_OPTIONS: "--cap-add SYS_PTRACE"
 
           - name: "Debian MPICH g++"
             CC_COMPILER: gcc
             CXX_COMPILER: g++
-            container: "debian_mpich"
+            container: "debian_gcc_mpich"
             MPIEXEC_PREFLAGS: ""
             USE_SANITIZER: "Address"
             ASAN_OPTIONS: ""
@@ -106,7 +106,7 @@ jobs:
           - name: "Debian MPICH clang++"
             CC_COMPILER: clang
             CXX_COMPILER: clang++
-            container: "debian_mpich"
+            container: "debian_clang_mpich"
             MPIEXEC_PREFLAGS: ""
             USE_SANITIZER: "Address"
             ASAN_OPTIONS: ""
