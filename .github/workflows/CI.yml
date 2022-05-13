@@ -131,7 +131,7 @@ jobs:
         uses: actions/checkout@v2
         with:
           path: "htool"
-          ref: 14d013835eceb940b9b51dd90462fe67834db777
+          ref: b6e91690f8d7c20d67dfb3b8db2e7ea674405a37
           fetch-depth: 0 # to get tags
       - name: Checkout hpddm
         uses: actions/checkout@v2
