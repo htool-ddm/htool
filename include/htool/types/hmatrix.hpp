@@ -1505,7 +1505,7 @@ void HMatrix<T>::mvprod_subrhs(const T *const in, T *const out, const int &mu, c
             int size_j   = MyComputedBlocks[b]->get_source_cluster().get_size();
 
             if ((offset_j <= offset + size && offset <= offset_j + size_j) && (symmetry == 'N' || offset_i != offset_j)) {
-                MyComputedBlocks[b]->get_block_data()->add_mvprod_row_major(in + offset_j * mu, temp.data() + (offset_i - local_offset) * mu, mu, transb);
+                MyComputedBlocks[b]->get_block_data()->add_mvprod_row_major(in + (offset_j - offset + margin) * mu, temp.data() + (offset_i - local_offset) * mu, mu, transb);
             }
         }
 
