@@ -31,7 +31,7 @@ jobs:
             CXX_COMPILER: g++
             container: "ubuntu_gcc_openmpi"
             MPIEXEC_PREFLAGS: "--allow-run-as-root --oversubscribe"
-            USE_SANITIZER: "Address"
+            USE_SANITIZER: ""
             # ASAN_OPTIONS: "ASAN_OPTIONS=detect_leaks=0" # issue probably with openmpi
             CMAKE_BUILD_TYPE: Debug
             CODE_COVERAGE: "OFF"
@@ -75,7 +75,7 @@ jobs:
             CXX_COMPILER: g++
             container: "debian_gcc_openmpi"
             MPIEXEC_PREFLAGS: "--allow-run-as-root --oversubscribe"
-            USE_SANITIZER: "Address"
+            USE_SANITIZER: ""
             # ASAN_OPTIONS: "ASAN_OPTIONS=detect_leaks=0" # issue probably with openmpi
             CMAKE_BUILD_TYPE: Debug
             CODE_COVERAGE: "OFF"
