@@ -125,36 +125,36 @@ bool test_virtual_hmat_product(int nr, int nc, int mu, bool use_permutation, cha
         HA->set_compression(compressor);
         HA->set_use_permutation(use_permutation);
 
-        // if (off_diagonal_approximation) {
+        if (off_diagonal_approximation) {
 
-        //     // Setup data for off diagonal geometry
-        //     int off_diagonal_nr, off_diagonal_nc, nc_left, nc_local, nc_right;
-        //     HA->get_off_diagonal_size(off_diagonal_nr, off_diagonal_nc);
+            // Setup data for off diagonal geometry
+            int off_diagonal_nr, off_diagonal_nc, nc_left, nc_local, nc_right;
+            HA->get_off_diagonal_size(off_diagonal_nr, off_diagonal_nc);
 
-        //     vector<double> off_diagonal_p1(off_diagonal_nr * t->get_space_dim());
-        //     vector<double> off_diagonal_p2(off_diagonal_nc * s->get_space_dim());
-        //     if (use_permutation) {
-        //         HA->get_off_diagonal_geometries(p1.data(), p2.data(), off_diagonal_p1.data(), off_diagonal_p2.data());
-        //     } else {
-        //         HA->get_off_diagonal_geometries(p1_perm.data(), p2_perm.data(), off_diagonal_p1.data(), off_diagonal_p2.data());
-        //     }
+            vector<double> off_diagonal_p1(off_diagonal_nr * t->get_space_dim());
+            vector<double> off_diagonal_p2(off_diagonal_nc * s->get_space_dim());
+            if (use_permutation) {
+                HA->get_off_diagonal_geometries(p1.data(), p2.data(), off_diagonal_p1.data(), off_diagonal_p2.data());
+            } else {
+                HA->get_off_diagonal_geometries(p1_perm.data(), p2_perm.data(), off_diagonal_p1.data(), off_diagonal_p2.data());
+            }
 
-        //     // Clustering
-        //     std::shared_ptr<VirtualCluster> new_cluster_target = std::make_shared<ClusterImpl>();
-        //     std::shared_ptr<VirtualCluster> new_cluster_source = std::make_shared<ClusterImpl>();
-        //     new_cluster_target->build(off_diagonal_nr, off_diagonal_p1.data(), 2, MPI_COMM_SELF);
-        //     new_cluster_source->build(off_diagonal_nc, off_diagonal_p2.data(), 2, MPI_COMM_SELF);
+            // Clustering
+            std::shared_ptr<VirtualCluster> new_cluster_target = std::make_shared<ClusterImpl>();
+            std::shared_ptr<VirtualCluster> new_cluster_source = std::make_shared<ClusterImpl>();
+            new_cluster_target->build(off_diagonal_nr, off_diagonal_p1.data(), 2, MPI_COMM_SELF);
+            new_cluster_source->build(off_diagonal_nc, off_diagonal_p2.data(), 2, MPI_COMM_SELF);
 
-        //     // Generator
-        //     GeneratorTestType off_diagonal_generator(3, off_diagonal_nr, off_diagonal_nc, off_diagonal_p1, off_diagonal_p2);
+            // Generator
+            GeneratorTestType off_diagonal_generator(3, off_diagonal_nr, off_diagonal_nc, off_diagonal_p1, off_diagonal_p2);
 
-        //     // OffDiagonalHmatrix
-        //     auto OffDiagonalHA = std::make_shared<OffDiagonalApproximationWithHMatrix<T>>(HA.get(), new_cluster_target, new_cluster_source);
-        //     OffDiagonalHA->set_compression(compressor);
-        //     OffDiagonalHA->build(off_diagonal_generator, off_diagonal_p1.data(), off_diagonal_p2.data());
+            // OffDiagonalHmatrix
+            auto OffDiagonalHA = std::make_shared<OffDiagonalApproximationWithHMatrix<T>>(HA.get(), new_cluster_target, new_cluster_source);
+            OffDiagonalHA->set_compression(compressor);
+            OffDiagonalHA->build(off_diagonal_generator, off_diagonal_p1.data(), off_diagonal_p2.data());
 
-        //     HA->set_off_diagonal_approximation(std::shared_ptr<VirtualOffDiagonalApproximation<T>>(OffDiagonalHA));
-        // }
+            HA->set_off_diagonal_approximation(std::shared_ptr<VirtualOffDiagonalApproximation<T>>(OffDiagonalHA));
+        }
 
         double time = MPI_Wtime();
         if (use_permutation) {

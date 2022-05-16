@@ -66,7 +66,7 @@ int main(int argc, char *argv[]) {
         HA.set_compression(compressor);
         HA.build(A, p1.data(), p2.data());
         HA.print_infos();
-
+        auto test = HA.get_output();
         HA.save_plot("plot_" + NbrToStr(idist));
     }
 

@@ -232,10 +232,13 @@ class HMatrix : public VirtualHMatrix<T> {
     void add_info(const std::string &keyname, const std::string &value) const { infos[keyname] = value; }
     void print_infos() const;
     void save_infos(const std::string &outputname, std::ios_base::openmode mode = std::ios_base::app, const std::string &sep = " = ") const;
-    void save_plot(const std::string &outputname) const;
     double compression_ratio() const;
     double space_saving() const;
     friend underlying_type<T> Frobenius_absolute_error<T>(const HMatrix<T> &B, const VirtualGenerator<T> &A);
+
+    // Output structure
+    void save_plot(const std::string &outputname) const;
+    std::vector<int> get_output() const;
 
     // Mat vec prod
     void mvprod_global_to_global(const T *const in, T *const out, const int &mu = 1) const;
@@ -1745,6 +1748,41 @@ void HMatrix<T>::save_plot(const std::string &outputname) const {
     } else {
         std::cout << "Unable to create " << outputname << std::endl; // LCOV_EXCL_LINE
     }
+}
+
+template <typename T>
+std::vector<int> HMatrix<T>::get_output() const {
+    int nb = MyComputedBlocks.size();
+
+    int nbworld[sizeWorld];
+    MPI_Allgather(&nb, 1, MPI_INT, nbworld, 1, MPI_INT, comm);
+    int nbg = 0;
+    for (int i = 0; i < sizeWorld; i++) {
+        nbg += nbworld[i];
+    }
+
+    std::vector<int> output(5 * nbg, 0);
+
+    for (int i = 0; i < MyComputedBlocks.size(); i++) {
+        output[5 * i]     = MyComputedBlocks[i]->get_target_cluster().get_offset();
+        output[5 * i + 1] = MyComputedBlocks[i]->get_target_cluster().get_size();
+        output[5 * i + 2] = MyComputedBlocks[i]->get_source_cluster().get_offset();
+        output[5 * i + 3] = MyComputedBlocks[i]->get_source_cluster().get_size();
+        output[5 * i + 4] = MyComputedBlocks[i]->get_rank_of();
+    }
+
+    int displs[sizeWorld];
+    int recvcounts[sizeWorld];
+    displs[0] = 0;
+
+    for (int i = 0; i < sizeWorld; i++) {
+        recvcounts[i] = 5 * nbworld[i];
+        if (i > 0)
+            displs[i] = displs[i - 1] + recvcounts[i - 1];
+    }
+    MPI_Gatherv(rankWorld == 0 ? MPI_IN_PLACE : output.data(), recvcounts[rankWorld], MPI_INT, output.data(), recvcounts, displs, MPI_INT, 0, comm);
+
+    return output;
 }
 
 template <typename T>
