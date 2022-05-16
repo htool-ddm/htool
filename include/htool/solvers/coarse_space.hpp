@@ -34,14 +34,17 @@ void build_coarse_space_outside(const VirtualHMatrix<T> *const HA, int nevi, int
         std::copy_n(Z[i], n_inside, evi.data() + i * n);
     }
 
-    std::pair<int, int> max_local_size = HA->get_max_size_blocks();
-    int local_max_size_i               = max_local_size.first;
-    int local_max_size_j               = max_local_size.second;
-    int local_max_size                 = std::max(local_max_size_i, local_max_size_j);
-    int margin                         = local_max_size_j;
-    if (HA->get_symmetry_type() != 'N') {
-        margin = local_max_size;
-    }
+    // There should not be any bloc larger than the size of the subdmain, so margin should be useless
+    // std::pair<int, int> max_local_size = HA->get_max_size_blocks();
+    // int local_max_size_i               = max_local_size.first;
+    // int local_max_size_j               = max_local_size.second;
+    // int local_max_size                 = std::max(local_max_size_i, local_max_size_j);
+    // int margin                         = local_max_size_j;
+    // if (HA->get_symmetry_type() != 'N') {
+    //     margin = local_max_size;
+    // }
+    int margin = 0;
+
     std::vector<T> AZ(nevi_max * n_inside, 0);
     std::vector<T> vec_ovr(n);
 

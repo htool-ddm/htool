@@ -192,13 +192,13 @@ class HMatrix : public VirtualHMatrix<T> {
     int get_permt(int i) const { return cluster_tree_t->get_global_perm(i); }
     int get_perms(int i) const { return cluster_tree_s->get_global_perm(i); }
 
-    // void get_off_diagonal_size(int &nr_off_diagonal, int &nc_off_diagonal) const {
-    //     int nc_left     = cluster_tree_s->get_local_offset();
-    //     int nc_right    = cluster_tree_s->get_size() - cluster_tree_s->get_local_offset() - cluster_tree_s->get_local_size();
-    //     nc_off_diagonal = nc_left + nc_right;
-    //     nr_off_diagonal = cluster_tree_t->get_local_size();
-    // };
-    // void get_off_diagonal_geometries(double *target_points, double *source_points, double *new_target_points, double *new_source_points) const;
+    void get_off_diagonal_size(int &nr_off_diagonal, int &nc_off_diagonal) const {
+        int nc_left     = cluster_tree_s->get_local_offset();
+        int nc_right    = cluster_tree_s->get_size() - cluster_tree_s->get_local_offset() - cluster_tree_s->get_local_size();
+        nc_off_diagonal = nc_left + nc_right;
+        nr_off_diagonal = cluster_tree_t->get_local_size();
+    };
+    void get_off_diagonal_geometries(double *target_points, double *source_points, double *new_target_points, double *new_source_points) const;
 
     std::vector<T> get_local_diagonal(bool = true) const;
     void copy_local_diagonal(T *, bool = true) const;
@@ -222,9 +222,9 @@ class HMatrix : public VirtualHMatrix<T> {
     void set_use_permutation(bool choice) { this->use_permutation = choice; };
     void set_delay_dense_computation(bool choice) { this->delay_dense_computation = choice; };
     void set_compression(std::shared_ptr<VirtualLowRankGenerator<T>> ptr) { LowRankGenerator = ptr; };
-    // void set_off_diagonal_approximation(std::shared_ptr<VirtualOffDiagonalApproximation<T>> ptr) {
-    //     OffDiagonalApproximation = ptr;
-    // };
+    void set_off_diagonal_approximation(std::shared_ptr<VirtualOffDiagonalApproximation<T>> ptr) {
+        OffDiagonalApproximation = ptr;
+    };
 
     // Infos
     const std::map<std::string, std::string> &get_infos() const { return infos; }
@@ -889,51 +889,51 @@ void HMatrix<T>::mymvprod_global_to_local(const T *const in, T *const out, const
         Blas<T>::axpy(&local_size_rhs, &da, temp.data(), &incx, out, &incy);
     }
 
-    // if (this->OffDiagonalApproximation != nullptr) {
+    if (this->OffDiagonalApproximation != nullptr) {
 
-    //     // Sizes
-    //     int nc_local = cluster_tree_s->get_local_size();
-    //     int nc_left  = cluster_tree_s->get_local_offset();
-    //     int nc_right = cluster_tree_s->get_size() - cluster_tree_s->get_local_offset() - cluster_tree_s->get_local_size();
+        // Sizes
+        int nc_local = cluster_tree_s->get_local_size();
+        int nc_left  = cluster_tree_s->get_local_offset();
+        int nc_right = cluster_tree_s->get_size() - cluster_tree_s->get_local_offset() - cluster_tree_s->get_local_size();
 
-    //     // Build input vector (row major)
-    //     std::vector<T> off_diagonal_input((nc_right + nc_left) * mu, 0);
-    //     std::vector<T> off_diagonal_out(cluster_tree_t->get_local_size() * mu, 0);
+        // Build input vector (row major)
+        std::vector<T> off_diagonal_input((nc_right + nc_left) * mu, 0);
+        std::vector<T> off_diagonal_out(cluster_tree_t->get_local_size() * mu, 0);
 
-    //     for (int i = 0; i < mu; i++) {
-    //         std::copy_n(in, nc_left * mu, off_diagonal_input.data());
-    //         std::copy_n(in + (nc_left + nc_local) * mu, nc_right * mu, off_diagonal_input.data() + nc_left * mu);
-    //     }
+        for (int i = 0; i < mu; i++) {
+            std::copy_n(in, nc_left * mu, off_diagonal_input.data());
+            std::copy_n(in + (nc_left + nc_local) * mu, nc_right * mu, off_diagonal_input.data() + nc_left * mu);
+        }
 
-    //     if (mu > 1 && !this->OffDiagonalApproximation->IsUsingRowMajorStorage()) { // Need to transpose input and output for OffDiagonalApproximation
-    //         std::vector<T> off_diagonal_input_column_major((nc_right + nc_left) * mu, 0);
+        if (mu > 1 && !this->OffDiagonalApproximation->IsUsingRowMajorStorage()) { // Need to transpose input and output for OffDiagonalApproximation
+            std::vector<T> off_diagonal_input_column_major((nc_right + nc_left) * mu, 0);
 
-    //         for (int i = 0; i < mu; i++) {
-    //             for (int j = 0; j < (nc_right + nc_left); j++) {
-    //                 off_diagonal_input_column_major[j + i * (nc_right + nc_left)] = off_diagonal_input[i + j * mu];
-    //             }
-    //         }
-    //         if (symmetry == 'H') {
-    //             conj_if_complex(off_diagonal_input_column_major.data(), (nc_right + nc_left) * mu);
-    //         }
-    //         this->OffDiagonalApproximation->mvprod_global_to_local(off_diagonal_input_column_major.data(), off_diagonal_out.data(), mu);
+            for (int i = 0; i < mu; i++) {
+                for (int j = 0; j < (nc_right + nc_left); j++) {
+                    off_diagonal_input_column_major[j + i * (nc_right + nc_left)] = off_diagonal_input[i + j * mu];
+                }
+            }
+            if (symmetry == 'H') {
+                conj_if_complex(off_diagonal_input_column_major.data(), (nc_right + nc_left) * mu);
+            }
+            this->OffDiagonalApproximation->mvprod_global_to_local(off_diagonal_input_column_major.data(), off_diagonal_out.data(), mu);
 
-    //         if (symmetry == 'H') {
-    //             conj_if_complex(off_diagonal_out.data(), off_diagonal_out.size());
-    //         }
-    //         for (int i = 0; i < mu; i++) {
-    //             for (int j = 0; j < local_size; j++) {
-    //                 out[i + j * mu] += off_diagonal_out[i * local_size + j];
-    //             }
-    //         }
+            if (symmetry == 'H') {
+                conj_if_complex(off_diagonal_out.data(), off_diagonal_out.size());
+            }
+            for (int i = 0; i < mu; i++) {
+                for (int j = 0; j < local_size; j++) {
+                    out[i + j * mu] += off_diagonal_out[i * local_size + j];
+                }
+            }
 
-    //     } else {
+        } else {
 
-    //         this->OffDiagonalApproximation->mvprod_global_to_local(off_diagonal_input.data(), off_diagonal_out.data(), mu);
+            this->OffDiagonalApproximation->mvprod_global_to_local(off_diagonal_input.data(), off_diagonal_out.data(), mu);
 
-    //         Blas<T>::axpy(&local_size_rhs, &da, off_diagonal_out.data(), &incx, out, &incy);
-    //     }
-    // }
+            Blas<T>::axpy(&local_size_rhs, &da, off_diagonal_out.data(), &incx, out, &incy);
+        }
+    }
 }
 
 template <typename T>
@@ -1504,7 +1504,14 @@ void HMatrix<T>::mvprod_subrhs(const T *const in, T *const out, const int &mu, c
             int offset_j = MyComputedBlocks[b]->get_source_cluster().get_offset();
             int size_j   = MyComputedBlocks[b]->get_source_cluster().get_size();
 
-            if ((offset_j <= offset + size && offset <= offset_j + size_j) && (symmetry == 'N' || offset_i != offset_j)) {
+            if ((offset_j < offset + size && offset < offset_j + size_j) && (symmetry == 'N' || offset_i != offset_j)) {
+                if (offset_j - offset < 0) {
+                    std::cout << "TEST "
+                              << " " << offset_j << " " << size_j << " "
+                              << " " << offset << " " << size << " "
+                              << " " << rankWorld << " "
+                              << offset_j - offset << std::endl;
+                }
                 MyComputedBlocks[b]->get_block_data()->add_mvprod_row_major(in + (offset_j - offset + margin) * mu, temp.data() + (offset_i - local_offset) * mu, mu, transb);
             }
         }
@@ -1524,7 +1531,7 @@ void HMatrix<T>::mvprod_subrhs(const T *const in, T *const out, const int &mu, c
                 int offset_j = MyDiagComputedBlocks[b]->get_target_cluster().get_offset();
                 int size_j   = MyDiagComputedBlocks[b]->get_target_cluster().get_size();
 
-                if ((offset_j <= offset + size && offset <= offset_j + size_j) && offset_i != offset_j) { // remove strictly diagonal blocks
+                if ((offset_j < offset + size && offset < offset_j + size_j) && offset_i != offset_j) { // remove strictly diagonal blocks
                     MyDiagComputedBlocks[b]->get_block_data()->add_mvprod_row_major(in + (offset_j - offset + margin) * mu, temp.data() + (offset_i - local_offset) * mu, mu, transb, op_sym);
                 }
             }
@@ -1537,7 +1544,7 @@ void HMatrix<T>::mvprod_subrhs(const T *const in, T *const out, const int &mu, c
                 int offset_i      = M->get_source_cluster().get_offset();
                 int offset_j      = M->get_target_cluster().get_offset();
                 int size_j        = M->get_source_cluster().get_size();
-                if (offset_j <= offset + size && offset <= offset_j + size_j) {
+                if (offset_j < offset + size && offset < offset_j + size_j) {
                     M->get_dense_block_data()->add_mvprod_row_major_sym(in + (offset_j - offset + margin) * mu, temp.data() + (offset_i - local_offset) * mu, mu, this->UPLO, this->symmetry);
                 }
             }
@@ -1548,41 +1555,41 @@ void HMatrix<T>::mvprod_subrhs(const T *const in, T *const out, const int &mu, c
         std::transform(temp.begin(), temp.end(), out, out, std::plus<T>());
     }
 
-    // if (!(this->cluster_tree_s->get_local_offset() <= offset + size && offset <= this->cluster_tree_s->get_local_offset() + this->cluster_tree_s->get_local_size()) && this->OffDiagonalApproximation != nullptr) {
-    //     std::vector<T> off_diagonal_out(cluster_tree_t->get_local_size() * mu, 0);
-    //     int off_diagonal_offset = (offset < this->cluster_tree_s->get_local_offset()) ? offset : offset - this->cluster_tree_s->get_local_offset() - this->cluster_tree_s->get_local_size();
-    //     if (mu > 1 && !this->OffDiagonalApproximation->IsUsingRowMajorStorage()) { // Need to transpose input and output for OffDiagonalApproximation
-    //         std::vector<T> off_diagonal_input_column_major(size * mu, 0);
+    if (!(this->cluster_tree_s->get_local_offset() <= offset + size && offset <= this->cluster_tree_s->get_local_offset() + this->cluster_tree_s->get_local_size()) && this->OffDiagonalApproximation != nullptr) {
+        std::vector<T> off_diagonal_out(cluster_tree_t->get_local_size() * mu, 0);
+        int off_diagonal_offset = (offset < this->cluster_tree_s->get_local_offset()) ? offset : offset - this->cluster_tree_s->get_local_offset() - this->cluster_tree_s->get_local_size();
+        if (mu > 1 && !this->OffDiagonalApproximation->IsUsingRowMajorStorage()) { // Need to transpose input and output for OffDiagonalApproximation
+            std::vector<T> off_diagonal_input_column_major(size * mu, 0);
 
-    //         for (int i = 0; i < mu; i++) {
-    //             for (int j = 0; j < size; j++) {
-    //                 off_diagonal_input_column_major[j + i * size] = in[i + j * mu];
-    //             }
-    //         }
+            for (int i = 0; i < mu; i++) {
+                for (int j = 0; j < size; j++) {
+                    off_diagonal_input_column_major[j + i * size] = in[i + j * mu];
+                }
+            }
 
-    //         if (symmetry == 'H') {
-    //             conj_if_complex(off_diagonal_input_column_major.data(), size * mu);
-    //         }
+            if (symmetry == 'H') {
+                conj_if_complex(off_diagonal_input_column_major.data(), size * mu);
+            }
 
-    //         this->OffDiagonalApproximation->mvprod_subrhs_to_local(off_diagonal_input_column_major.data(), off_diagonal_out.data(), mu, off_diagonal_offset, size);
+            this->OffDiagonalApproximation->mvprod_subrhs_to_local(off_diagonal_input_column_major.data(), off_diagonal_out.data(), mu, off_diagonal_offset, size);
 
-    //         if (symmetry == 'H') {
-    //             conj_if_complex(off_diagonal_out.data(), off_diagonal_out.size());
-    //         }
-    //         for (int i = 0; i < mu; i++) {
-    //             for (int j = 0; j < local_size; j++) {
-    //                 out[i + j * mu] += off_diagonal_out[i * local_size + j];
-    //             }
-    //         }
-    //     } else {
-    //         this->OffDiagonalApproximation->mvprod_subrhs_to_local(in, off_diagonal_out.data(), mu, off_diagonal_offset, size);
+            if (symmetry == 'H') {
+                conj_if_complex(off_diagonal_out.data(), off_diagonal_out.size());
+            }
+            for (int i = 0; i < mu; i++) {
+                for (int j = 0; j < local_size; j++) {
+                    out[i + j * mu] += off_diagonal_out[i * local_size + j];
+                }
+            }
+        } else {
+            this->OffDiagonalApproximation->mvprod_subrhs_to_local(in, off_diagonal_out.data(), mu, off_diagonal_offset, size);
 
-    //         int incx(1), incy(1), local_size_rhs(local_size * mu);
-    //         T da(1);
+            int incx(1), incy(1), local_size_rhs(local_size * mu);
+            T da(1);
 
-    //         Blas<T>::axpy(&local_size_rhs, &da, off_diagonal_out.data(), &incx, out, &incy);
-    //     }
-    // }
+            Blas<T>::axpy(&local_size_rhs, &da, off_diagonal_out.data(), &incx, out, &incy);
+        }
+    }
 }
 
 template <typename T>
@@ -1754,46 +1761,46 @@ underlying_type<T> Frobenius_absolute_error(const HMatrix<T> &B, const VirtualGe
     return std::sqrt(err);
 }
 
-// template <typename T>
-// void HMatrix<T>::get_off_diagonal_geometries(double *target_points, double *source_points, double *new_target_points, double *new_source_points) const {
-//     int target_spatial_dim = cluster_tree_t->get_space_dim();
-//     int source_spatial_dim = cluster_tree_s->get_space_dim();
+template <typename T>
+void HMatrix<T>::get_off_diagonal_geometries(double *target_points, double *source_points, double *new_target_points, double *new_source_points) const {
+    int target_spatial_dim = cluster_tree_t->get_space_dim();
+    int source_spatial_dim = cluster_tree_s->get_space_dim();
 
-//     int nc_left         = cluster_tree_s->get_local_offset();
-//     int nc_right        = cluster_tree_s->get_size() - cluster_tree_s->get_local_offset() - cluster_tree_s->get_local_size();
-//     int nr_off_diagonal = cluster_tree_t->get_local_size();
+    int nc_left         = cluster_tree_s->get_local_offset();
+    int nc_right        = cluster_tree_s->get_size() - cluster_tree_s->get_local_offset() - cluster_tree_s->get_local_size();
+    int nr_off_diagonal = cluster_tree_t->get_local_size();
 
-//     int nc_global = cluster_tree_s->get_size();
-//     int nr_global = cluster_tree_t->get_size();
+    int nc_global = cluster_tree_s->get_size();
+    int nr_global = cluster_tree_t->get_size();
 
-//     // Update geometry
-//     if (use_permutation) {
-//         // Target
-//         std::vector<double> temp(nr_global * target_spatial_dim);
-//         for (int i = 0; i < nr_global; i++) {
-//             for (int p = 0; p < target_spatial_dim; p++) {
-//                 temp[i * target_spatial_dim + p] = target_points[cluster_tree_t->get_global_perm(i) * target_spatial_dim + p];
-//             }
-//         }
-//         std::copy_n(temp.data() + target_spatial_dim * cluster_tree_t->get_local_offset(), target_spatial_dim * cluster_tree_t->get_local_size(), new_target_points);
+    // Update geometry
+    if (use_permutation) {
+        // Target
+        std::vector<double> temp(nr_global * target_spatial_dim);
+        for (int i = 0; i < nr_global; i++) {
+            for (int p = 0; p < target_spatial_dim; p++) {
+                temp[i * target_spatial_dim + p] = target_points[cluster_tree_t->get_global_perm(i) * target_spatial_dim + p];
+            }
+        }
+        std::copy_n(temp.data() + target_spatial_dim * cluster_tree_t->get_local_offset(), target_spatial_dim * cluster_tree_t->get_local_size(), new_target_points);
 
-//         // Source
-//         temp.resize(nc_global * source_spatial_dim);
-//         for (int i = 0; i < nc_global; i++) {
-//             for (int p = 0; p < source_spatial_dim; p++)
-//                 temp[i * source_spatial_dim + p] = source_points[cluster_tree_s->get_global_perm(i) * source_spatial_dim + p];
-//         }
-//         std::copy_n(temp.data(), nc_left * source_spatial_dim, new_source_points);
-//         std::copy_n(temp.data() + cluster_tree_s->get_local_offset() * source_spatial_dim + cluster_tree_s->get_local_size() * source_spatial_dim, nc_right * source_spatial_dim, new_source_points + nc_left * source_spatial_dim);
-//     } else {
-//         // Target
-//         std::copy_n(target_points + cluster_tree_t->get_local_offset() * target_spatial_dim, nr_off_diagonal * target_spatial_dim, new_target_points);
+        // Source
+        temp.resize(nc_global * source_spatial_dim);
+        for (int i = 0; i < nc_global; i++) {
+            for (int p = 0; p < source_spatial_dim; p++)
+                temp[i * source_spatial_dim + p] = source_points[cluster_tree_s->get_global_perm(i) * source_spatial_dim + p];
+        }
+        std::copy_n(temp.data(), nc_left * source_spatial_dim, new_source_points);
+        std::copy_n(temp.data() + cluster_tree_s->get_local_offset() * source_spatial_dim + cluster_tree_s->get_local_size() * source_spatial_dim, nc_right * source_spatial_dim, new_source_points + nc_left * source_spatial_dim);
+    } else {
+        // Target
+        std::copy_n(target_points + cluster_tree_t->get_local_offset() * target_spatial_dim, nr_off_diagonal * target_spatial_dim, new_target_points);
 
-//         // Source
-//         std::copy_n(source_points, nc_left * source_spatial_dim, new_source_points);
-//         std::copy_n(source_points + (cluster_tree_s->get_local_offset() + cluster_tree_s->get_local_size()) * source_spatial_dim, nc_right * source_spatial_dim, new_source_points + nc_left * source_spatial_dim);
-//     }
-// }
+        // Source
+        std::copy_n(source_points, nc_left * source_spatial_dim, new_source_points);
+        std::copy_n(source_points + (cluster_tree_s->get_local_offset() + cluster_tree_s->get_local_size()) * source_spatial_dim, nc_right * source_spatial_dim, new_source_points + nc_left * source_spatial_dim);
+    }
+}
 template <typename T>
 Matrix<T> HMatrix<T>::get_local_dense() const {
     Matrix<T> Dense(local_size, nc);
