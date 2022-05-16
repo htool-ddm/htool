@@ -33,7 +33,7 @@ jobs:
             MPIEXEC_PREFLAGS: "--allow-run-as-root --oversubscribe"
             USE_SANITIZER: "Address"
             # ASAN_OPTIONS: "ASAN_OPTIONS=detect_leaks=0" # issue probably with openmpi
-            CMAKE_BUILD_TYPE: Release
+            CMAKE_BUILD_TYPE: Debug
             CODE_COVERAGE: "OFF"
             DOCKER_OPTIONS: "--cap-add SYS_PTRACE"
 
