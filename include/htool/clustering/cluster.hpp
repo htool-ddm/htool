@@ -78,7 +78,6 @@ class Cluster : public VirtualCluster {
         this->MasterOffset.resize(sizeWorld);
         this->LocalPermutation = false;
         this->depth            = 0; // ce constructeur est appele' juste pour la racine
-
         this->permutation->resize(nb_pt0);
         std::iota(this->permutation->begin(), this->permutation->end(), 0); // perm[i]=i
 

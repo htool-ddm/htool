@@ -10,17 +10,16 @@ namespace htool {
 
 template <typename T>
 class OffDiagonalApproximationWithHMatrix : public VirtualOffDiagonalApproximation<T> {
-    VirtualHMatrix<T> *HA;
     std::unique_ptr<HMatrix<T>> off_diagonal_hmatrix;
 
   public:
-    OffDiagonalApproximationWithHMatrix(VirtualHMatrix<T> *HA0, std::shared_ptr<VirtualCluster> target_cluster, std::shared_ptr<VirtualCluster> source_cluster) : HA(HA0) {
+    OffDiagonalApproximationWithHMatrix(VirtualHMatrix<T> *HA0, std::shared_ptr<VirtualCluster> target_cluster, std::shared_ptr<VirtualCluster> source_cluster) {
         // HMatrix
-        off_diagonal_hmatrix = std::unique_ptr<HMatrix<T>>(new HMatrix<T>(target_cluster, source_cluster, HA->get_epsilon(), HA->get_eta(), 'N', 'N', -1, MPI_COMM_SELF));
-        off_diagonal_hmatrix->set_maxblocksize(HA->get_maxblocksize());
-        off_diagonal_hmatrix->set_minsourcedepth(HA->get_minsourcedepth());
-        off_diagonal_hmatrix->set_mintargetdepth(HA->get_mintargetdepth());
-        off_diagonal_hmatrix->set_maxblocksize(HA->get_maxblocksize());
+        off_diagonal_hmatrix = std::unique_ptr<HMatrix<T>>(new HMatrix<T>(target_cluster, source_cluster, HA0->get_epsilon(), HA0->get_eta(), 'N', 'N', -1, MPI_COMM_SELF));
+        off_diagonal_hmatrix->set_maxblocksize(HA0->get_maxblocksize());
+        off_diagonal_hmatrix->set_minsourcedepth(HA0->get_minsourcedepth());
+        off_diagonal_hmatrix->set_mintargetdepth(HA0->get_mintargetdepth());
+        off_diagonal_hmatrix->set_maxblocksize(HA0->get_maxblocksize());
     }
 
     void build(VirtualGenerator<T> &generator, const double *const xt, const double *const xs) {
@@ -45,12 +44,17 @@ class OffDiagonalApproximationWithHMatrix : public VirtualOffDiagonalApproximati
     }
 
     bool IsUsingRowMajorStorage() override { return false; }
+    int nb_cols() const { return off_diagonal_hmatrix->nb_cols(); }
+    int nb_rows() const { return off_diagonal_hmatrix->nb_rows(); }
 
     // Output
-    void save_plot(std::string filename) {
+    void save_plot(std::string filename, MPI_Comm comm = MPI_COMM_WORLD) const {
         int rank;
-        MPI_Comm_rank(HA->get_comm(), &rank);
+        MPI_Comm_rank(comm, &rank);
         off_diagonal_hmatrix->save_plot(filename + NbrToStr(rank));
+    }
+    std::vector<int> get_output() const {
+        return off_diagonal_hmatrix->get_output();
     }
 };
 

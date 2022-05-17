@@ -198,7 +198,7 @@ class HMatrix : public VirtualHMatrix<T> {
         nc_off_diagonal = nc_left + nc_right;
         nr_off_diagonal = cluster_tree_t->get_local_size();
     };
-    void get_off_diagonal_geometries(double *target_points, double *source_points, double *new_target_points, double *new_source_points) const;
+    void get_off_diagonal_geometries(const double *target_points, const double *source_points, double *new_target_points, double *new_source_points) const;
 
     std::vector<T> get_local_diagonal(bool = true) const;
     void copy_local_diagonal(T *, bool = true) const;
@@ -1800,7 +1800,7 @@ underlying_type<T> Frobenius_absolute_error(const HMatrix<T> &B, const VirtualGe
 }
 
 template <typename T>
-void HMatrix<T>::get_off_diagonal_geometries(double *target_points, double *source_points, double *new_target_points, double *new_source_points) const {
+void HMatrix<T>::get_off_diagonal_geometries(const double *target_points, const double *source_points, double *new_target_points, double *new_source_points) const {
     int target_spatial_dim = cluster_tree_t->get_space_dim();
     int source_spatial_dim = cluster_tree_s->get_space_dim();
 
