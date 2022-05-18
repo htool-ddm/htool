@@ -25,7 +25,6 @@ class VirtualHMatrix {
     virtual void copy_local_diagonal(T *, bool = true) const       = 0;
     virtual Matrix<T> get_local_diagonal_block(bool = true) const  = 0;
     virtual void copy_local_diagonal_block(T *, bool = true) const = 0;
-    virtual std::pair<int, int> get_max_size_blocks() const        = 0;
 
     virtual const VirtualCluster *get_target_cluster() const = 0;
     virtual const VirtualCluster *get_source_cluster() const = 0;

@@ -1353,9 +1353,10 @@ void HMatrix<T>::mvprod_transp_global_to_global(const T *const in, T *const out,
             }
         }
 
-        if (symmetry == 'H') {
-            conj_if_complex(in_perm.data(), local_size * mu);
-        }
+        // It should never happen since we use mvprod_global_to_global in this case
+        // if (symmetry == 'H') {
+        //     conj_if_complex(in_perm.data(), local_size * mu);
+        // }
 
         mymvprod_transp_local_to_global(in_perm.data(), in_perm.data() + local_size * mu, mu);
 
@@ -1373,9 +1374,10 @@ void HMatrix<T>::mvprod_transp_global_to_global(const T *const in, T *const out,
             }
         }
 
-        if (symmetry == 'H') {
-            conj_if_complex(out, nc * mu);
-        }
+        // It should never happen since we use mvprod_global_to_global in this case
+        // if (symmetry == 'H') {
+        //     conj_if_complex(out, nc * mu);
+        // }
     }
     // Timing
     infos["nb_mat_vec_prod"]         = NbrToStr(1 + StrToNbr<int>(infos["nb_mat_vec_prod"]));
@@ -1445,10 +1447,10 @@ void HMatrix<T>::mvprod_transp_local_to_local(const T *const in, T *const out, c
                 }
             }
         }
-
-        if (symmetry == 'H') {
-            conj_if_complex(in_perm.data(), local_size_source * mu);
-        }
+        // It should never happen since we use mvprod_global_to_global in this case
+        // if (symmetry == 'H') {
+        //     conj_if_complex(in_perm.data(), local_size_source * mu);
+        // }
 
         mymvprod_transp_local_to_local(in_perm.data(), out_perm.data(), mu, work);
 
@@ -1468,10 +1470,10 @@ void HMatrix<T>::mvprod_transp_local_to_local(const T *const in, T *const out, c
                 }
             }
         }
-
-        if (symmetry == 'H') {
-            conj_if_complex(out, out_perm.size());
-        }
+        // It should never happen since we use mvprod_global_to_global in this case
+        // if (symmetry == 'H') {
+        //     conj_if_complex(out, out_perm.size());
+        // }
     }
 
     if (need_delete) {
@@ -2095,26 +2097,26 @@ void HMatrix<T>::copy_local_diagonal_block(T *ptr, bool permutation) const {
     copy_local_interaction(ptr, permutation);
 }
 
-template <typename T>
-std::pair<int, int> HMatrix<T>::get_max_size_blocks() const {
-    int local_max_size_j = 0;
-    int local_max_size_i = 0;
+// template <typename T>
+// std::pair<int, int> HMatrix<T>::get_max_size_blocks() const {
+//     int local_max_size_j = 0;
+//     int local_max_size_i = 0;
 
-    for (int i = 0; i < MyFarFieldMats.size(); i++) {
-        if (local_max_size_j < MyFarFieldMats[i]->get_source_cluster().get_size())
-            local_max_size_j = MyFarFieldMats[i]->get_source_cluster().get_size();
-        if (local_max_size_i < MyFarFieldMats[i]->get_target_cluster().get_size())
-            local_max_size_i = MyFarFieldMats[i]->get_target_cluster().get_size();
-    }
-    for (int i = 0; i < MyNearFieldMats.size(); i++) {
-        if (local_max_size_j < MyNearFieldMats[i]->get_source_cluster().get_size())
-            local_max_size_j = MyNearFieldMats[i]->get_source_cluster().get_size();
-        if (local_max_size_i < MyNearFieldMats[i]->get_target_cluster().get_size())
-            local_max_size_i = MyNearFieldMats[i]->get_target_cluster().get_size();
-    }
+//     for (int i = 0; i < MyFarFieldMats.size(); i++) {
+//         if (local_max_size_j < MyFarFieldMats[i]->get_source_cluster().get_size())
+//             local_max_size_j = MyFarFieldMats[i]->get_source_cluster().get_size();
+//         if (local_max_size_i < MyFarFieldMats[i]->get_target_cluster().get_size())
+//             local_max_size_i = MyFarFieldMats[i]->get_target_cluster().get_size();
+//     }
+//     for (int i = 0; i < MyNearFieldMats.size(); i++) {
+//         if (local_max_size_j < MyNearFieldMats[i]->get_source_cluster().get_size())
+//             local_max_size_j = MyNearFieldMats[i]->get_source_cluster().get_size();
+//         if (local_max_size_i < MyNearFieldMats[i]->get_target_cluster().get_size())
+//             local_max_size_i = MyNearFieldMats[i]->get_target_cluster().get_size();
+//     }
 
-    return std::pair<int, int>(local_max_size_i, local_max_size_j);
-}
+//     return std::pair<int, int>(local_max_size_i, local_max_size_j);
+// }
 
 // template <typename T>
 // void HMatrix<T>::apply_dirichlet(const std::vector<int> &boundary) {

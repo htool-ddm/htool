@@ -30,6 +30,14 @@ int main(int argc, char *argv[]) {
 
     test = test || test_virtual_hmat_product<double, GeneratorTestDouble, Cluster<PCA<SplittingTypes::GeometricSplitting>>, fullACA, HMatrix>(2000, 1000, 1, false, 'N', 'N', 'N', true);
 
+    test = test || test_virtual_hmat_product<double, GeneratorTestDoubleSymmetric, Cluster<PCA<SplittingTypes::GeometricSplitting>>, fullACA, HMatrix>(2000, 2000, 1, true, 'S', 'L', 'N', true);
+
+    test = test || test_virtual_hmat_product<double, GeneratorTestDoubleSymmetric, Cluster<PCA<SplittingTypes::GeometricSplitting>>, fullACA, HMatrix>(2000, 2000, 1, false, 'S', 'L', 'N', true);
+
+    test = test || test_virtual_hmat_product<double, GeneratorTestDoubleSymmetric, Cluster<PCA<SplittingTypes::GeometricSplitting>>, fullACA, HMatrix>(2000, 2000, 1, true, 'S', 'U', 'N', true);
+
+    test = test || test_virtual_hmat_product<double, GeneratorTestDoubleSymmetric, Cluster<PCA<SplittingTypes::GeometricSplitting>>, partialACA, HMatrix>(2000, 2000, 1, false, 'S', 'U', 'N', true);
+
     // Finalize the MPI environment.
     MPI_Finalize();
 

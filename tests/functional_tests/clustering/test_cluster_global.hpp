@@ -138,6 +138,9 @@ int test_cluster_global(int argc, char *argv[]) {
             cout << "min depth : " << t.get_min_depth() << endl;
         }
         test = test || !(t.get_max_depth() >= t.get_min_depth() && t.get_min_depth() >= 0);
+
+        // Test saving geometry
+        t.save_geometry(p.data(), "test_cluster_geometry", {1, 2, 3});
     }
 
     if (rankWorld == 0) {
