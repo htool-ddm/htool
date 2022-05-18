@@ -48,6 +48,7 @@ class OffDiagonalApproximationWithHMatrix : public VirtualOffDiagonalApproximati
     int nb_rows() const { return off_diagonal_hmatrix->nb_rows(); }
 
     // Output
+    const HMatrix<T> *get_HMatrix() const { return off_diagonal_hmatrix.get(); }
     void save_plot(std::string filename, MPI_Comm comm = MPI_COMM_WORLD) const {
         int rank;
         MPI_Comm_rank(comm, &rank);

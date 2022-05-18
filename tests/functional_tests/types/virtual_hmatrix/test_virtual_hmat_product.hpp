@@ -152,7 +152,8 @@ bool test_virtual_hmat_product(int nr, int nc, int mu, bool use_permutation, cha
             auto OffDiagonalHA = std::make_shared<OffDiagonalApproximationWithHMatrix<T>>(HA.get(), new_cluster_target, new_cluster_source);
             OffDiagonalHA->set_compression(compressor);
             OffDiagonalHA->build(off_diagonal_generator, off_diagonal_p1.data(), off_diagonal_p2.data());
-
+            if (rank == 0)
+                OffDiagonalHA->get_HMatrix()->print_infos();
             HA->set_off_diagonal_approximation(std::shared_ptr<VirtualOffDiagonalApproximation<T>>(OffDiagonalHA));
         }
 
