@@ -16,14 +16,15 @@ class Matrix {
   protected:
     int nr, nc;
     T *mat;
+    bool owning_data;
 
   public:
     Matrix() : nr(0), nc(0), mat(nullptr) {}
-    Matrix(int nbr, int nbc) : nr(nbr), nc(nbc) {
+    Matrix(int nbr, int nbc) : nr(nbr), nc(nbc), owning_data(true) {
         this->mat = new T[nbr * nbc];
         std::fill_n(this->mat, nbr * nbc, 0);
     }
-    Matrix(const Matrix &rhs) : nr(rhs.nr), nc(rhs.nc) {
+    Matrix(const Matrix &rhs) : nr(rhs.nr), nc(rhs.nc), owning_data(true) {
         mat = new T[rhs.nr * rhs.nc]();
 
         std::copy_n(rhs.mat, rhs.nr * rhs.nc, mat);
@@ -34,34 +35,39 @@ class Matrix {
         }
         if (this->nr * this->nc == rhs.nc * rhs.nr) {
             std::copy_n(rhs.mat, this->nr * this->nc, mat);
-            this->nr = rhs.nr;
-            this->nc = rhs.nc;
+            this->nr          = rhs.nr;
+            this->nc          = rhs.nc;
+            this->owning_data = true;
         } else {
             this->nr = rhs.nr;
             this->nc = rhs.nc;
-            delete[] mat;
+            if (owning_data)
+                delete[] mat;
             mat = new T[this->nr * this->nc]();
             std::copy_n(rhs.mat, this->nr * this->nc, mat);
+            this->owning_data = true;
         }
         return *this;
     }
-    Matrix(Matrix &&rhs) : nr(rhs.nr), nc(rhs.nc), mat(rhs.mat) {
+    Matrix(Matrix &&rhs) : nr(rhs.nr), nc(rhs.nc), mat(rhs.mat), owning_data(rhs.owning_data) {
         rhs.mat = nullptr;
     }
 
     Matrix &operator=(Matrix &&rhs) {
         if (this != &rhs) {
-            delete[] this->mat;
-            this->nr  = rhs.nr;
-            this->nc  = rhs.nc;
-            this->mat = rhs.mat;
-            rhs.mat   = nullptr;
+            if (owning_data)
+                delete[] this->mat;
+            this->nr          = rhs.nr;
+            this->nc          = rhs.nc;
+            this->mat         = rhs.mat;
+            this->owning_data = rhs.owning_data;
+            rhs.mat           = nullptr;
         }
         return *this;
     }
 
     ~Matrix() {
-        if (mat != nullptr)
+        if (mat != nullptr && owning_data)
             delete[] mat;
     }
 
@@ -102,14 +108,14 @@ class Matrix {
         return this->mat;
     }
 
-    void assign(int nr, int nc, T *ptr) {
-        if (this->nr * this->nc > 0)
+    void assign(int nr, int nc, T *ptr, bool owning_data) {
+        if (this->nr * this->nc > 0 && this->owning_data)
             delete[] this->mat;
 
-        this->nr = nr;
-        this->nc = nc;
-
-        this->mat = ptr;
+        this->nr          = nr;
+        this->nc          = nc;
+        this->mat         = ptr;
+        this->owning_data = owning_data;
     }
 
     int nb_cols() const { return nc; }
@@ -474,11 +480,12 @@ class Matrix {
         int rows = 0, cols = 0;
         in.read((char *)(&rows), sizeof(int));
         in.read((char *)(&cols), sizeof(int));
-        if (this->nr != 0 && this->nc != 0)
+        if (this->nr != 0 && this->nc != 0 && owning_data)
             delete[] mat;
-        mat      = new T[rows * cols];
-        this->nr = rows;
-        this->nc = cols;
+        mat               = new T[rows * cols];
+        this->nr          = rows;
+        this->nc          = cols;
+        this->owning_data = true;
         in.read((char *)&(mat[0]), rows * cols * sizeof(T));
 
         in.close();

@@ -37,8 +37,8 @@ class LowRankMatrix : public VirtualBlockData<T> {
             vv = new T[this->nc];
             std::fill_n(uu, this->nr, 0);
             std::fill_n(vv, this->nc, 0);
-            this->U.assign(this->nr, 1, uu);
-            this->V.assign(1, this->nc, vv);
+            this->U.assign(this->nr, 1, uu, LRGenerator.is_htool_owning_data());
+            this->V.assign(1, this->nc, vv, LRGenerator.is_htool_owning_data());
         } else {
             T *uu, *vv;
             if (use_permutation)
@@ -51,8 +51,8 @@ class LowRankMatrix : public VirtualBlockData<T> {
             }
 
             if (rank > 0) {
-                this->U.assign(this->nr, rank, uu);
-                this->V.assign(rank, this->nc, vv);
+                this->U.assign(this->nr, rank, uu, LRGenerator.is_htool_owning_data());
+                this->V.assign(rank, this->nc, vv, LRGenerator.is_htool_owning_data());
             } else {
                 // rank=-1 will be deleted
             }
