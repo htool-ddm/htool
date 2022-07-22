@@ -39,8 +39,6 @@ class Block {
 
     // Data associated to the block when computed, nullptr otherwise
     std::unique_ptr<VirtualBlockData<T>> block_data;
-    DenseBlockData<T> *dense_block_data;
-    LowRankMatrix<T> *low_rank_block_data;
 
     // Build block tree
     // False <=> current block or its sons pushed to tasks
@@ -303,6 +301,7 @@ class Block {
     std::size_t get_size() const { return std::size_t(this->t.get_size()) * std::size_t(this->s.get_size()); }
     const Block &get_son(int j) const { return *(sons[j]); }
     Block &get_son(int j) { return *(sons[j]); }
+    int get_nb_sons() { return sons.size(); }
 
     const std::vector<Block *> &get_tasks() const {
         return *tasks;
@@ -349,18 +348,14 @@ class Block {
     }
 
     void compute_dense_block(VirtualGenerator<T> &mat, bool use_permutation) {
-        dense_block_data = new DenseBlockData<T>(*this, mat, use_permutation);
-        block_data       = std::unique_ptr<VirtualBlockData<T>>(dense_block_data);
+        block_data = std::unique_ptr<VirtualBlockData<T>>(new DenseBlockData<T>(*this, mat, use_permutation));
     }
 
     void compute_low_rank_block(int rank, double epsilon, const VirtualGenerator<T> &A, const VirtualLowRankGenerator<T> &LRGenerator, const double *const xt, const double *const xs, bool use_permutation) {
-        low_rank_block_data = new LowRankMatrix<T>(*this, A, LRGenerator, xt, xs, rank, epsilon, use_permutation);
-        block_data          = std::unique_ptr<VirtualBlockData<T>>(low_rank_block_data);
+        block_data = std::unique_ptr<VirtualBlockData<T>>(new LowRankMatrix<T>(*this, A, LRGenerator, xt, xs, rank, epsilon, use_permutation));
     }
 
     void clear_data() {
-        dense_block_data    = nullptr;
-        low_rank_block_data = nullptr;
         block_data.reset();
     }
 

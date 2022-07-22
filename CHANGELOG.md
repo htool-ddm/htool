@@ -29,6 +29,8 @@ All notable changes to this project will be documented in this file.
 ### Added
 
 - `set_delay_dense_computation` to `HMatrix`
+- interface for user's compression for local extra-diagonal part via `VirtualOffDiagonalApproximation`
+- separate `HMatrix` for local extra-diagonal part via `OffDiagonalApproximationWithHMatrix`
 
 ### Changed
 
@@ -41,8 +43,8 @@ All notable changes to this project will be documented in this file.
 ### Added
 
 - doxygen documentation
-- mvprod_transp_global_to_global and mvprod_transp_local_to_local added to VirtualHMatrix
-- getters for clusters in VirtualHMatrix
+- mvprod_transp_global_to_global and mvprod_transp_local_to_local added to `VirtualHMatrix`
+- getters for clusters in `VirtualHMatrix`
 - custom gmv in ddm
 
 ### Changed
@@ -61,12 +63,12 @@ All notable changes to this project will be documented in this file.
 - Test for warnings coming from `include/htool/*`
 - Coverage added
 - Methods in ddm interface to get local numbering
-- VirtualLowRankGenerator and VirtualAdmissibilityCondition added for better modularity
+- `VirtualLowRankGenerator` and `VirtualAdmissibilityCondition` added for better modularity
   
 ### Changed
 
 - Remove unnecessary arguments in HMatrix and cluster interfaces
-- MutliHMatrix deprecated for the moment (everything related to this in `htool/multi`)
+- `MultiHMatrix` deprecated for the moment (everything related to this in `htool/multi`)
 
 ### Fixed
 
