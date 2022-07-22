@@ -31,6 +31,7 @@ All notable changes to this project will be documented in this file.
 - `set_delay_dense_computation` to `HMatrix`
 - interface for user's compression for local extra-diagonal part via `VirtualOffDiagonalApproximation`
 - separate `HMatrix` for local extra-diagonal part via `OffDiagonalApproximationWithHMatrix`
+- new parameters for vectorial problems (`row_dimension` and `column_dimension`)
 
 ### Changed
 

@@ -33,10 +33,10 @@ class LowRankMatrix : public VirtualBlockData<T> {
 
         if (this->rank == 0) {
             T *uu, *vv;
-            uu = new T[this->nr];
-            vv = new T[this->nc];
-            std::fill_n(uu, this->nr, 0);
-            std::fill_n(vv, this->nc, 0);
+            uu = new T[this->nr * A.get_row_dimension()];
+            vv = new T[this->nc * A.get_column_dimension()];
+            std::fill_n(uu, this->nr * A.get_row_dimension(), 0);
+            std::fill_n(vv, this->nc * A.get_column_dimension(), 0);
             this->U.assign(this->nr, 1, uu, LRGenerator.is_htool_owning_data());
             this->V.assign(1, this->nc, vv, LRGenerator.is_htool_owning_data());
         } else {
@@ -51,8 +51,8 @@ class LowRankMatrix : public VirtualBlockData<T> {
             }
 
             if (rank > 0) {
-                this->U.assign(this->nr, rank, uu, LRGenerator.is_htool_owning_data());
-                this->V.assign(rank, this->nc, vv, LRGenerator.is_htool_owning_data());
+                this->U.assign(this->nr * A.get_row_dimension(), rank, uu, LRGenerator.is_htool_owning_data());
+                this->V.assign(rank, this->nc * A.get_column_dimension(), vv, LRGenerator.is_htool_owning_data());
             } else {
                 // rank=-1 will be deleted
             }
@@ -72,6 +72,7 @@ class LowRankMatrix : public VirtualBlockData<T> {
     std::vector<int> get_xc() const { return this->xc; }
     double get_epsilon() const { return this->epsilon; }
 
+    // Operations
     std::vector<T> operator*(const std::vector<T> &a) const {
         return this->U * (this->V * a);
     }
@@ -113,6 +114,11 @@ class LowRankMatrix : public VirtualBlockData<T> {
         Blas<T>::gemm(&transa, &transb, &M, &N, &K, &alpha, &(U(0, 0)), &lda, &(V(0, 0)), &ldb, &beta, out, &ldc);
     }
 
+    void scale(T alpha) {
+        U.scale(alpha);
+    }
+
+    // Utility functions
     double compression_ratio() const {
         return (nr * nc) / (double)(this->rank * (nr + nc));
     }

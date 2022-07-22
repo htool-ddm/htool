@@ -13,7 +13,7 @@ class ZeroGenerator : public VirtualGenerator<T> {
     // Data members
 
   public:
-    ZeroGenerator(int nr0, int nc0, int dimension0 = 1) : VirtualGenerator<T>(nr0, nc0, dimension0) {}
+    ZeroGenerator(int nr0, int nc0, int row_dimension0 = 1, int column_dimension0 = 1) : VirtualGenerator<T>(nr0, nc0, row_dimension0, column_dimension0) {}
 
     // C style
     void copy_submatrix(int M, int N, const int *const, const int *const, T *ptr) const override {

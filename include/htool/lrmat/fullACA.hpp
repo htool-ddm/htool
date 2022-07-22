@@ -37,8 +37,11 @@ class fullACA final : public VirtualLowRankGenerator<T> {
 
     void copy_low_rank_approximation(double epsilon, int M, int N, const int *const rows, const int *const cols, int &rank, T **U, T **V, const VirtualGenerator<T> &A, const VirtualCluster &, const double *const, const VirtualCluster &, const double *const) const {
 
+        int nr = M * A.get_row_dimension();
+        int nc = N * A.get_column_dimension();
+
         // Matrix assembling
-        Matrix<T> mat(M, N);
+        Matrix<T> mat(nr, nc);
         A.copy_submatrix(M, N, rows, cols, mat.data());
 
         // Full pivot
@@ -48,10 +51,10 @@ class fullACA final : public VirtualLowRankGenerator<T> {
         std::vector<std::vector<T>> vv;
         double Norm = normFrob(mat);
 
-        while (((reqrank > 0) && (q < std::min(reqrank, std::min(M, N)))) || ((reqrank < 0) && (normFrob(mat) / Norm > epsilon || q == 0))) {
+        while (((reqrank > 0) && (q < std::min(reqrank, std::min(nr, nc)))) || ((reqrank < 0) && (normFrob(mat) / Norm > epsilon || q == 0))) {
 
             q += 1;
-            if (q * (M + N) > (M * N)) { // the current rank would not be advantageous
+            if (q * (nr + nc) > (nr * nc)) { // the current rank would not be advantageous
                 q = -1;
                 break;
             } else {
@@ -73,11 +76,11 @@ class fullACA final : public VirtualLowRankGenerator<T> {
         }
         rank = q;
         if (rank > 0) {
-            *U = new T[M * rank];
-            *V = new T[rank * N];
+            *U = new T[nr * rank];
+            *V = new T[rank * nc];
             for (int k = 0; k < rank; k++) {
-                std::copy_n(uu[k].begin(), uu[k].size(), *U + k * M);
-                for (int j = 0; j < N; j++) {
+                std::copy_n(uu[k].begin(), uu[k].size(), *U + k * nr);
+                for (int j = 0; j < nc; j++) {
                     (*V)[rank * j + k] = vv[k][j];
                 }
             }

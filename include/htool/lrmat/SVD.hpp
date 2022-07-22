@@ -16,7 +16,9 @@ class SVD final : public VirtualLowRankGenerator<T> {
         int reqrank = 0;
         //// Matrix assembling
         double Norm = 0;
-        std::vector<T> mat(M * N);
+        int nr      = M * A.get_row_dimension();
+        int nc      = N * A.get_column_dimension();
+        std::vector<T> mat(nr * nc);
         A.copy_submatrix(M, N, rows, cols, mat.data());
         for (int i = 0; i < mat.size(); i++) {
             Norm += std::abs(mat[i] * mat[i]);
@@ -24,8 +26,8 @@ class SVD final : public VirtualLowRankGenerator<T> {
         Norm = sqrt(Norm);
 
         //// SVD
-        int m     = M;
-        int n     = N;
+        int m     = nr;
+        int n     = nc;
         int lda   = m;
         int ldu   = m;
         int ldvt  = n;
@@ -56,25 +58,25 @@ class SVD final : public VirtualLowRankGenerator<T> {
 
             reqrank = std::min(j + 1, std::min(m, n));
 
-            if (reqrank * (M + N) > (M * N)) {
+            if (reqrank * (nr + nc) > (nr * nc)) {
                 reqrank = -1;
             }
             rank = reqrank;
 
         } else {
-            reqrank = std::min(rank, std::min(M, N));
+            reqrank = std::min(rank, std::min(nr, nc));
         }
 
         if (rank > 0) {
-            *U = new T[M * rank];
-            *V = new T[rank * N];
-            for (int i = 0; i < M; i++) {
+            *U = new T[nr * rank];
+            *V = new T[rank * nc];
+            for (int i = 0; i < nr; i++) {
                 for (int j = 0; j < reqrank; j++) {
-                    (*U)[i + M * j] = u(i, j) * singular_values[j];
+                    (*U)[i + nr * j] = u(i, j) * singular_values[j];
                 }
             }
             for (int i = 0; i < reqrank; i++) {
-                for (int j = 0; j < N; j++) {
+                for (int j = 0; j < nc; j++) {
                     (*V)[i + rank * j] = vt(i, j);
                 }
             }

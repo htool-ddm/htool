@@ -37,23 +37,26 @@ class sympartialACA final : public VirtualLowRankGenerator<T> {
 
     void copy_low_rank_approximation(double epsilon, int M, int N, const int *const rows, const int *const cols, int &rank, T **U, T **V, const VirtualGenerator<T> &A, const VirtualCluster &t, const double *const xt, const VirtualCluster &s, const double *const xs) const {
 
-        int n1, n2;
+        int n1, n2, n_geo_1, n_geo_2, dim_1;
         const int *i1;
         const int *i2;
         const double *x1;
         VirtualCluster const *cluster_1;
 
         if (t.get_offset() >= s.get_offset()) {
-
-            n1        = M;
-            n2        = N;
+            dim_1     = A.get_row_dimension();
+            n_geo_1   = M;
+            n1        = M * A.get_row_dimension();
+            n2        = N * A.get_column_dimension();
             i1        = rows;
             i2        = cols;
             x1        = xt;
             cluster_1 = &t;
         } else {
-            n1        = N;
-            n2        = M;
+            dim_1     = A.get_column_dimension();
+            n_geo_1   = N;
+            n1        = N * A.get_column_dimension();
+            n2        = M * A.get_row_dimension();
             i1        = cols;
             i2        = rows;
             x1        = xs;
@@ -63,12 +66,12 @@ class sympartialACA final : public VirtualLowRankGenerator<T> {
         //// Choice of the first row (see paragraph 3.4.3 page 151 Bebendorf)
         double dist = 1e30;
         int I1      = 0;
-        for (int i = 0; i < n1; i++) {
+        for (int i = 0; i < n_geo_1; i++) {
             double aux_dist = std::sqrt(std::inner_product(x1 + (cluster_1->get_space_dim() * i1[i]), x1 + (cluster_1->get_space_dim() * i1[i]) + cluster_1->get_space_dim(), cluster_1->get_ctr().begin(), double(0), std::plus<double>(), [](double u, double v) { return (u - v) * (u - v); }));
 
             if (dist > aux_dist) {
                 dist = aux_dist;
-                I1   = i;
+                I1   = i * dim_1;
             }
         }
         // Partial pivot
@@ -101,9 +104,9 @@ class sympartialACA final : public VirtualLowRankGenerator<T> {
             } else {
 
                 if (t.get_offset() >= s.get_offset()) {
-                    A.copy_submatrix(1, n2, &(i1[I1]), i2, u1.data());
+                    A.copy_submatrix(1, n_geo_2, &(i1[I1]), i2, u1.data());
                 } else {
-                    A.copy_submatrix(n2, 1, i2, &(i1[I1]), u1.data());
+                    A.copy_submatrix(n_geo_2, 1, i2, &(i1[I1]), u1.data());
                 }
 
                 for (int j = 0; j < uu.size(); j++) {
@@ -129,9 +132,9 @@ class sympartialACA final : public VirtualLowRankGenerator<T> {
                 // Look for a line
                 if (std::abs(u1[I2]) > 1e-15) {
                     if (t.get_offset() >= s.get_offset()) {
-                        A.copy_submatrix(n1, 1, i1, &(i2[I2]), u2.data());
+                        A.copy_submatrix(n_geo_1, 1, i1, &(i2[I2]), u2.data());
                     } else {
-                        A.copy_submatrix(1, n1, &(i2[I2]), i1, u2.data());
+                        A.copy_submatrix(1, n_geo_1, &(i2[I2]), i1, u2.data());
                     }
                     for (int k = 0; k < uu.size(); k++) {
                         coef = -vv[k][I2];

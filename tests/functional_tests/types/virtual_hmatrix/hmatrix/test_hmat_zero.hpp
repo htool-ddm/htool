@@ -135,7 +135,8 @@ int test_hmat_zero(int argc, char *argv[], double margin = 0) {
         test = test || !(HA.get_minsourcedepth() == minsourcedepth);
         test = test || !(HA.get_mintargetdepth() == mintargetdepth);
         test = test || !(HA.get_maxblocksize() == maxblocksize);
-        test = test || !(HA.get_dimension() == 1);
+        test = test || !(HA.get_row_dimension() == 1);
+        test = test || !(HA.get_column_dimension() == 1);
         test = test || !(HA.get_MasterOffset_s().size() == size);
         test = test || !(HA.get_MasterOffset_t().size() == size);
 

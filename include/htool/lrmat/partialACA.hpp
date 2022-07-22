@@ -38,6 +38,9 @@ class partialACA final : public VirtualLowRankGenerator<T> {
 
     void copy_low_rank_approximation(double epsilon, int M, int N, const int *const rows, const int *const cols, int &rank, T **U, T **V, const VirtualGenerator<T> &A, const VirtualCluster &t, const double *const xt, const VirtualCluster &, const double *const) const {
 
+        int nr = M * A.get_row_dimension();
+        int nc = N * A.get_column_dimension();
+
         //// Choice of the first row (see paragraph 3.4.3 page 151 Bebendorf)
         double dist = 1e30;
         int I       = 0;
@@ -45,33 +48,34 @@ class partialACA final : public VirtualLowRankGenerator<T> {
             double aux_dist = std::sqrt(std::inner_product(xt + (t.get_space_dim() * rows[i]), xt + (t.get_space_dim() * rows[i]) + t.get_space_dim(), t.get_ctr().begin(), double(0), std::plus<double>(), [](double u, double v) { return (u - v) * (u - v); }));
             if (dist > aux_dist) {
                 dist = aux_dist;
-                I    = i;
+                I    = i * A.get_row_dimension();
             }
         }
+
         // Partial pivot
         int J       = 0;
         int q       = 0;
         int reqrank = rank;
         std::vector<std::vector<T>> uu, vv;
-        std::vector<bool> visited_row(M, false);
-        std::vector<bool> visited_col(N, false);
+        std::vector<bool> visited_row(nr, false);
+        std::vector<bool> visited_col(nc, false);
 
         underlying_type<T> frob = 0;
         underlying_type<T> aux  = 0;
         underlying_type<T> pivot, tmp;
         T coef;
         int incx(1), incy(1);
-        std::vector<T> r(N), c(M);
+        std::vector<T> r(nc), c(nr);
         // Either we have a required rank
         // Or it is negative and we have to check the relative error between two iterations.
         // But to do that we need a least two iterations.
-        while (((reqrank > 0) && (q < std::min(reqrank, std::min(M, N)))) || ((reqrank < 0) && (q == 0 || sqrt(aux / frob) > epsilon))) {
+        while (((reqrank > 0) && (q < std::min(reqrank, std::min(nr, nc)))) || ((reqrank < 0) && (q == 0 || sqrt(aux / frob) > epsilon))) {
             // if (q != 0)
             // std::cout << sqrt(aux / frob) << " " << this->epsilon << " " << (sqrt(aux / frob) > this->epsilon) << std::endl;
             // Next current rank
             q += 1;
 
-            if (q * (M + N) > (M * N)) { // the next current rank would not be advantageous
+            if (q * (nr + nc) > (nr * nc)) { // the next current rank would not be advantageous
                 q = -1;
                 break;
             } else {
@@ -83,12 +87,12 @@ class partialACA final : public VirtualLowRankGenerator<T> {
                 A.copy_submatrix(1, N, &(rows[I]), cols, r.data());
                 for (int j = 0; j < uu.size(); j++) {
                     coef = -uu[j][I];
-                    Blas<T>::axpy(&(N), &(coef), vv[j].data(), &incx, r.data(), &incy);
+                    Blas<T>::axpy(&(nc), &(coef), vv[j].data(), &incx, r.data(), &incy);
                 }
 
                 pivot = 0.;
                 tmp   = 0;
-                for (int k = 0; k < N; k++) {
+                for (int k = 0; k < nc; k++) {
                     if (visited_col[k])
                         continue;
                     tmp = std::abs(r[k]);
@@ -108,12 +112,12 @@ class partialACA final : public VirtualLowRankGenerator<T> {
                     A.copy_submatrix(M, 1, rows, &(cols[J]), c.data());
                     for (int k = 0; k < uu.size(); k++) {
                         coef = -vv[k][J];
-                        Blas<T>::axpy(&(M), &(coef), uu[k].data(), &incx, c.data(), &incy);
+                        Blas<T>::axpy(&(nr), &(coef), uu[k].data(), &incx, c.data(), &incy);
                     }
                     c *= gamma;
                     pivot = 0.;
                     tmp   = 0;
-                    for (int k = 0; k < M; k++) {
+                    for (int k = 0; k < nr; k++) {
                         if (visited_row[k])
                             continue;
                         tmp = std::abs(c[k]);
@@ -128,11 +132,11 @@ class partialACA final : public VirtualLowRankGenerator<T> {
                         // Error estimator
                         T frob_aux = 0.;
                         // aux        = std::abs(dprod(c, c) * dprod(r, r));
-                        aux = std::abs(Blas<T>::dot(&(M), c.data(), &incx, c.data(), &incx)) * std::abs(Blas<T>::dot(&(N), r.data(), &incx, r.data(), &incx));
+                        aux = std::abs(Blas<T>::dot(&(nr), c.data(), &incx, c.data(), &incx)) * std::abs(Blas<T>::dot(&(nc), r.data(), &incx, r.data(), &incx));
 
                         // aux: terme quadratiques du developpement du carre' de la norme de Frobenius de la matrice low rank
                         for (int j = 0; j < uu.size(); j++) {
-                            frob_aux += Blas<T>::dot(&(N), vv[j].data(), &incx, r.data(), &incy) * Blas<T>::dot(&(M), uu[j].data(), &(incx), c.data(), &(incy));
+                            frob_aux += Blas<T>::dot(&(nr), vv[j].data(), &incx, r.data(), &incy) * Blas<T>::dot(&(nc), uu[j].data(), &(incx), c.data(), &(incy));
                         }
                         // frob_aux: termes croises du developpement du carre' de la norme de Frobenius de la matrice low rank
                         frob += aux + 2 * std::real(frob_aux); // frob: Frobenius norm of the low rank matrix
@@ -151,7 +155,7 @@ class partialACA final : public VirtualLowRankGenerator<T> {
                     if (q == 0) { // corner case where first row is zero, ACA fails, we build a dense block instead
                         q = -1;
                     }
-                    std::cout << "[Htool warning] ACA found a zero row in a " + std::to_string(M) + "x" + std::to_string(N) + " block. Final rank is " + std::to_string(q) << std::endl;
+                    std::cout << "[Htool warning] ACA found a zero row in a " + std::to_string(nr) + "x" + std::to_string(nc) + " block. Final rank is " + std::to_string(q) << std::endl;
                     break;
                 }
             }
@@ -159,11 +163,11 @@ class partialACA final : public VirtualLowRankGenerator<T> {
         // Final rank
         rank = q;
         if (rank > 0) {
-            *U = new T[M * rank];
-            *V = new T[rank * N];
+            *U = new T[nr * rank];
+            *V = new T[rank * nc];
             for (int k = 0; k < rank; k++) {
-                std::copy_n(uu[k].begin(), uu[k].size(), *U + k * M);
-                for (int j = 0; j < N; j++) {
+                std::copy_n(uu[k].begin(), uu[k].size(), *U + k * nr);
+                for (int j = 0; j < nc; j++) {
                     (*V)[rank * j + k] = vv[k][j];
                 }
             }

@@ -30,12 +30,13 @@ class VirtualHMatrix {
     virtual const VirtualCluster *get_source_cluster() const = 0;
 
     // Getters/setters for parameters
-    virtual double get_epsilon() const     = 0;
-    virtual double get_eta() const         = 0;
-    virtual int get_dimension() const      = 0;
-    virtual int get_minsourcedepth() const = 0;
-    virtual int get_mintargetdepth() const = 0;
-    virtual int get_maxblocksize() const   = 0;
+    virtual double get_epsilon() const       = 0;
+    virtual double get_eta() const           = 0;
+    virtual int get_row_dimension() const    = 0;
+    virtual int get_column_dimension() const = 0;
+    virtual int get_minsourcedepth() const   = 0;
+    virtual int get_mintargetdepth() const   = 0;
+    virtual int get_maxblocksize() const     = 0;
 
     virtual void set_epsilon(double epsilon0)                                            = 0;
     virtual void set_eta(double eta0)                                                    = 0;

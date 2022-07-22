@@ -48,8 +48,8 @@ class HMatrix : public VirtualHMatrix<T> {
     // Data members
     int nr;
     int nc;
-    int space_dim;
-    int dimension;
+    int row_dimension;
+    int column_dimension;
     int reqrank;
     int local_size;
     int local_offset;
@@ -110,10 +110,10 @@ class HMatrix : public VirtualHMatrix<T> {
   public:
     // Special constructor for hand-made build (for MultiHMatrix for example)
 
-    HMatrix(int space_dim0, int nr0, int nc0, const std::shared_ptr<VirtualCluster> &cluster_tree_t0, const std::shared_ptr<VirtualCluster> &cluster_tree_s0, char symmetry0 = 'N', char UPLO = 'N', const MPI_Comm comm0 = MPI_COMM_WORLD) : nr(nr0), nc(nc0), space_dim(space_dim0), symmetry(symmetry0), UPLO(UPLO), use_permutation(true), delay_dense_computation(false), cluster_tree_t(cluster_tree_t0), cluster_tree_s(cluster_tree_s0), comm(comm0){};
+    HMatrix(int nr0, int nc0, const std::shared_ptr<VirtualCluster> &cluster_tree_t0, const std::shared_ptr<VirtualCluster> &cluster_tree_s0, char symmetry0 = 'N', char UPLO = 'N', const MPI_Comm comm0 = MPI_COMM_WORLD) : nr(nr0), nc(nc0), symmetry(symmetry0), UPLO(UPLO), use_permutation(true), delay_dense_computation(false), cluster_tree_t(cluster_tree_t0), cluster_tree_s(cluster_tree_s0), comm(comm0){};
 
     // Constructor
-    HMatrix(const std::shared_ptr<VirtualCluster> &cluster_tree_t0, const std::shared_ptr<VirtualCluster> &cluster_tree_s0, double epsilon0 = 1e-6, double eta0 = 10, char Symmetry = 'N', char UPLO = 'N', const int &reqrank0 = -1, const MPI_Comm comm0 = MPI_COMM_WORLD) : nr(0), nc(0), space_dim(cluster_tree_t0->get_space_dim()), dimension(1), reqrank(reqrank0), local_size(0), local_offset(0), symmetry(Symmetry), UPLO(UPLO), false_positive(0), use_permutation(true), delay_dense_computation(false), epsilon(epsilon0), eta(eta0), maxblocksize(1e6), minsourcedepth(0), mintargetdepth(0), cluster_tree_t(cluster_tree_t0), cluster_tree_s(cluster_tree_s0), comm(comm0) {
+    HMatrix(const std::shared_ptr<VirtualCluster> &cluster_tree_t0, const std::shared_ptr<VirtualCluster> &cluster_tree_s0, double epsilon0 = 1e-6, double eta0 = 10, char Symmetry = 'N', char UPLO = 'N', const int &reqrank0 = -1, const MPI_Comm comm0 = MPI_COMM_WORLD) : nr(0), nc(0), row_dimension(1), column_dimension(1), reqrank(reqrank0), local_size(0), local_offset(0), symmetry(Symmetry), UPLO(UPLO), false_positive(0), use_permutation(true), delay_dense_computation(false), epsilon(epsilon0), eta(eta0), maxblocksize(1e6), minsourcedepth(0), mintargetdepth(0), cluster_tree_t(cluster_tree_t0), cluster_tree_s(cluster_tree_s0), comm(comm0) {
         if (!((symmetry == 'N' || symmetry == 'H' || symmetry == 'S')
               && (UPLO == 'N' || UPLO == 'L' || UPLO == 'U')
               && ((symmetry == 'N' && UPLO == 'N') || (symmetry != 'N' && UPLO != 'N'))
@@ -126,15 +126,17 @@ class HMatrix : public VirtualHMatrix<T> {
     void build(VirtualGenerator<T> &mat, const double *const xt, const double *const xs);
 
     void build(VirtualGenerator<T> &mat, const std::vector<R3> &xt, const std::vector<R3> &xs) {
-        if (this->space_dim != 3) {
+        int target_space_dimension = this->get_target_cluster()->get_space_dim();
+        int source_space_dimension = this->get_source_cluster()->get_space_dim();
+        if (target_space_dimension != 3 || source_space_dimension != 3) {
             throw std::logic_error("[Htool error] Wrong space dimension"); // LCOV_EXCL_LINE
         }
-        std::vector<double> x_array_t(xt.size() * this->space_dim), x_array_s(xs.size() * this->space_dim);
+        std::vector<double> x_array_t(xt.size() * target_space_dimension), x_array_s(xs.size() * source_space_dimension);
         for (int p = 0; p < xt.size(); p++) {
-            std::copy_n(xt[p].data(), space_dim, &(x_array_t[this->space_dim * p]));
+            std::copy_n(xt[p].data(), target_space_dimension, &(x_array_t[target_space_dimension * p]));
         }
         for (int p = 0; p < xs.size(); p++) {
-            std::copy_n(xs[p].data(), space_dim, &(x_array_s[this->space_dim * p]));
+            std::copy_n(xs[p].data(), source_space_dimension, &(x_array_s[source_space_dimension * p]));
         }
         this->check_arguments(mat, xt, xs);
         this->build(mat, x_array_t.data(), x_array_s.data());
@@ -144,12 +146,13 @@ class HMatrix : public VirtualHMatrix<T> {
     void build(VirtualGenerator<T> &mat, const double *const xt);
 
     void build(VirtualGenerator<T> &mat, const std::vector<R3> &xt) {
-        if (this->space_dim != 3) {
+        int target_space_dimension = this->get_target_cluster()->get_space_dim();
+        if (target_space_dimension != 3) {
             throw std::logic_error("[Htool error] Wrong space dimension"); // LCOV_EXCL_LINE
         }
-        std::vector<double> x_array_t(xt.size() * this->space_dim);
+        std::vector<double> x_array_t(xt.size() * target_space_dimension);
         for (int p = 0; p < xt.size(); p++) {
-            std::copy_n(xt[p].data(), space_dim, &(x_array_t[this->space_dim * p]));
+            std::copy_n(xt[p].data(), target_space_dimension, &(x_array_t[target_space_dimension * p]));
         }
         this->check_arguments_sym(mat, xt);
         this->build(mat, x_array_t.data());
@@ -210,7 +213,8 @@ class HMatrix : public VirtualHMatrix<T> {
 
     double get_epsilon() const { return this->epsilon; };
     double get_eta() const { return this->eta; };
-    int get_dimension() const { return this->dimension; };
+    int get_row_dimension() const { return this->row_dimension; };
+    int get_column_dimension() const { return this->column_dimension; };
     int get_minsourcedepth() const { return this->minsourcedepth; };
     int get_mintargetdepth() const { return this->mintargetdepth; };
     int get_maxblocksize() const { return this->maxblocksize; };
@@ -281,7 +285,7 @@ class HMatrix : public VirtualHMatrix<T> {
 
 template <typename T>
 void HMatrix<T>::check_arguments(VirtualGenerator<T> &mat, const std::vector<R3> &xt, const std::vector<R3> &xs) const {
-    if (!(mat.nb_rows() == mat.get_dimension() * xt.size() && mat.nb_cols() == mat.get_dimension() * xs.size())) {
+    if (!(mat.nb_rows() == mat.get_row_dimension() * xt.size() && mat.nb_cols() == mat.get_column_dimension() * xs.size())) {
         throw std::invalid_argument("[Htool error] Invalid size in arguments for building HMatrix"); // LCOV_EXCL_LINE
     }
 }
@@ -299,9 +303,10 @@ void HMatrix<T>::build(VirtualGenerator<T> &mat, const double *const xt, const d
     MPI_Comm_rank(comm, &rankWorld);
     std::vector<double> mytimes(3), maxtime(3), meantime(3);
 
-    this->nc        = mat.nb_cols();
-    this->nr        = mat.nb_rows();
-    this->dimension = mat.get_dimension();
+    this->nc               = mat.nb_cols();
+    this->nr               = mat.nb_rows();
+    this->row_dimension    = mat.get_row_dimension();
+    this->column_dimension = mat.get_column_dimension();
 
     // Default compression: sympartialACA
     if (this->LowRankGenerator == nullptr) {
@@ -315,7 +320,7 @@ void HMatrix<T>::build(VirtualGenerator<T> &mat, const double *const xt, const d
 
     // Zero generator when we delay the dense computation
     if (delay_dense_computation) {
-        zerogenerator = std::unique_ptr<ZeroGenerator<T>>(new ZeroGenerator<T>(mat.nb_rows(), mat.nb_cols(), mat.get_dimension()));
+        zerogenerator = std::unique_ptr<ZeroGenerator<T>>(new ZeroGenerator<T>(mat.nb_rows(), mat.nb_cols(), mat.get_row_dimension(), mat.get_column_dimension()));
     }
 
     // Construction arbre des paquets
@@ -355,9 +360,10 @@ void HMatrix<T>::build(VirtualGenerator<T> &mat, const double *const xt) {
     MPI_Comm_rank(comm, &rankWorld);
     std::vector<double> mytimes(3), maxtime(3), meantime(3);
 
-    this->nc        = mat.nb_cols();
-    this->nr        = mat.nb_rows();
-    this->dimension = mat.get_dimension();
+    this->nc               = mat.nb_cols();
+    this->nr               = mat.nb_rows();
+    this->row_dimension    = mat.get_row_dimension();
+    this->column_dimension = mat.get_column_dimension();
 
     // Default compression: sympartialACA
     if (this->LowRankGenerator == nullptr) {
@@ -371,7 +377,7 @@ void HMatrix<T>::build(VirtualGenerator<T> &mat, const double *const xt) {
 
     // Zero generator when we delay the dense computation
     if (delay_dense_computation) {
-        zerogenerator = std::unique_ptr<ZeroGenerator<T>>(new ZeroGenerator<T>(mat.nb_rows(), mat.nb_cols(), mat.get_dimension()));
+        zerogenerator = std::unique_ptr<ZeroGenerator<T>>(new ZeroGenerator<T>(mat.nb_rows(), mat.nb_cols(), mat.get_row_dimension(), mat.get_column_dimension()));
     }
 
     // Construction arbre des paquets
@@ -781,7 +787,8 @@ void HMatrix<T>::ComputeInfos(const std::vector<double> &mytime) {
     // Size
     infos["Source_size"]              = NbrToStr(this->nc);
     infos["Target_size"]              = NbrToStr(this->nr);
-    infos["Dimension"]                = NbrToStr(this->dimension);
+    infos["Row dimension"]            = NbrToStr(this->row_dimension);
+    infos["Column dimension"]         = NbrToStr(this->column_dimension);
     infos["Dense_block_size_max"]     = NbrToStr(maxinfos[0]);
     infos["Dense_block_size_mean"]    = NbrToStr(meaninfos[0]);
     infos["Dense_block_size_min"]     = NbrToStr(mininfos[0]);
