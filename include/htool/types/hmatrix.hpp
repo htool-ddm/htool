@@ -232,6 +232,7 @@ class HMatrix : public VirtualHMatrix<T> {
     void add_info(const std::string &keyname, const std::string &value) const { infos[keyname] = value; }
     void print_infos() const;
     void save_infos(const std::string &outputname, std::ios_base::openmode mode = std::ios_base::app, const std::string &sep = " = ") const;
+    double local_compressed_size() const;
     double compression_ratio() const;
     double space_saving() const;
     friend underlying_type<T> Frobenius_absolute_error<T>(const HMatrix<T> &B, const VirtualGenerator<T> &A);
@@ -795,6 +796,7 @@ void HMatrix<T>::ComputeInfos(const std::vector<double> &mytime) {
     infos["Number_of_lrmat"]          = NbrToStr(nlrmat);
     infos["Number_of_dmat"]           = NbrToStr(ndmat);
     infos["Number_of_false_positive"] = NbrToStr(false_positive);
+    infos["Local_compressed_size"]    = NbrToStr(this->local_compressed_size());
     infos["Compression_ratio"]        = NbrToStr(this->compression_ratio());
     infos["Space_saving"]             = NbrToStr(this->space_saving());
     infos["Local_size_max"]           = NbrToStr(maxinfos[3]);
@@ -1646,10 +1648,9 @@ std::vector<T> HMatrix<T>::operator*(const std::vector<T> &x) const {
 }
 
 template <typename T>
-double HMatrix<T>::compression_ratio() const {
+double HMatrix<T>::local_compressed_size() const {
 
     double my_compressed_size = 0.;
-    double uncompressed_size  = ((long int)this->nr) * this->nc;
     double nr_b, nc_b, rank;
 
     for (int j = 0; j < MyFarFieldMats.size(); j++) {
@@ -1669,7 +1670,15 @@ double HMatrix<T>::compression_ratio() const {
         }
     }
 
-    double compressed_size = 0;
+    return my_compressed_size;
+}
+
+template <typename T>
+double HMatrix<T>::compression_ratio() const {
+
+    double uncompressed_size  = ((long int)this->nr) * this->nc;
+    double my_compressed_size = this->local_compressed_size();
+    double compressed_size    = 0;
     MPI_Allreduce(&my_compressed_size, &compressed_size, 1, MPI_DOUBLE, MPI_SUM, comm);
 
     return uncompressed_size / compressed_size;
@@ -1678,28 +1687,9 @@ double HMatrix<T>::compression_ratio() const {
 template <typename T>
 double HMatrix<T>::space_saving() const {
 
-    double my_compressed_size = 0.;
     double uncompressed_size  = ((long int)this->nr) * this->nc;
-    double nr_b, nc_b, rank;
-
-    for (int j = 0; j < MyFarFieldMats.size(); j++) {
-        nr_b = MyFarFieldMats[j]->get_target_cluster().get_size();
-        nc_b = MyFarFieldMats[j]->get_source_cluster().get_size();
-        rank = MyFarFieldMats[j]->get_rank_of();
-        my_compressed_size += rank * (nr_b + nc_b);
-    }
-
-    for (int j = 0; j < MyNearFieldMats.size(); j++) {
-        nr_b = MyNearFieldMats[j]->get_target_cluster().get_size();
-        nc_b = MyNearFieldMats[j]->get_source_cluster().get_size();
-        if (MyNearFieldMats[j]->get_target_cluster().get_offset() == MyNearFieldMats[j]->get_source_cluster().get_offset() && this->get_symmetry_type() != 'N' && nr_b == nc_b) {
-            my_compressed_size += (nr_b * (nc_b + 1)) / 2;
-        } else {
-            my_compressed_size += nr_b * nc_b;
-        }
-    }
-
-    double compressed_size = 0;
+    double my_compressed_size = this->local_compressed_size();
+    double compressed_size    = 0;
     MPI_Allreduce(&my_compressed_size, &compressed_size, 1, MPI_DOUBLE, MPI_SUM, comm);
 
     return 1 - compressed_size / uncompressed_size;
