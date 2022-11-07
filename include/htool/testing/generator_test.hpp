@@ -2,7 +2,8 @@
 #ifndef HTOOL_TESTING_GENERATOR_TEST_HPP
 #define HTOOL_TESTING_GENERATOR_TEST_HPP
 
-#include "../types/matrix.hpp"
+#include "../basic_types/matrix.hpp"
+#include "../interfaces/hmatrix/virtual_generator.hpp"
 #include <vector>
 
 namespace htool {

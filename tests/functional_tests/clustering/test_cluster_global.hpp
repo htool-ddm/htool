@@ -45,7 +45,7 @@ int test_cluster_global(int argc, char *argv[]) {
         while (!s.empty()) {
             VirtualCluster *curr = s.top();
             s.pop();
-            if (!curr->IsLeaf()) {
+            if (!curr->is_leaf()) {
                 // test num inclusion
 
                 int count = 0;
@@ -88,7 +88,7 @@ int test_cluster_global(int argc, char *argv[]) {
             test = test || !(curr_1->get_offset() == curr_2->get_offset());
             test = test || !(curr_1->get_size() == curr_2->get_size());
 
-            if (!curr_2->IsLeaf()) {
+            if (!curr_2->is_leaf()) {
                 // test num inclusion
 
                 for (int l = 0; l < curr_2->get_nb_sons(); l++) {
@@ -117,7 +117,7 @@ int test_cluster_global(int argc, char *argv[]) {
             test = test || !(curr_1->get_offset() == curr_2->get_offset());
             test = test || !(curr_1->get_size() == curr_2->get_size());
 
-            if (!curr_2->IsLeaf()) {
+            if (!curr_2->is_leaf()) {
                 // test num inclusion
 
                 for (int l = 0; l < curr_2->get_nb_sons(); l++) {

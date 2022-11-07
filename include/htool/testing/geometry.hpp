@@ -2,7 +2,7 @@
 #ifndef HTOOL_TESTING_GEOMETRY_HPP
 #define HTOOL_TESTING_GEOMETRY_HPP
 
-#include "../types/matrix.hpp"
+#include "../basic_types/matrix.hpp"
 #include <vector>
 
 namespace htool {

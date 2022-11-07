@@ -1,6 +1,9 @@
 #include <htool/blocks/admissibility_conditions.hpp>
 #include <htool/blocks/blocks.hpp>
+// #include <htool/blocks/blocks_operations.hpp>
 #include <htool/clustering/pca.hpp>
+#include <htool/lrmat/fullACA.hpp>
+#include <htool/testing/generator_test.hpp>
 #include <htool/testing/geometry.hpp>
 #include <random>
 
@@ -15,10 +18,11 @@ int test_blocks(int argc, char *argv[], bool symmetric) {
     MPI_Comm_rank(MPI_COMM_WORLD, &rankWorld);
 
     srand(1);
-    bool test = 0;
-
-    int size = 200;
-    double z = 1;
+    bool test      = 0;
+    double epsilon = 1e-3;
+    double eta     = 10;
+    int size       = 200;
+    double z       = 1;
     vector<double> p(3 * size);
 
     srand(1);
@@ -31,6 +35,7 @@ int test_blocks(int argc, char *argv[], bool symmetric) {
 
     std::unique_ptr<AdmissibilityCondition> admissibility_condition(new AdmissibilityCondition());
     Block<double> B(admissibility_condition.get(), t, t);
+    B.set_eta(eta);
     B.build(symmetric);
 
     // Test diagonal blocks

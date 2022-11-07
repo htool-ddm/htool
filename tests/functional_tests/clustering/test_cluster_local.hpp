@@ -69,7 +69,7 @@ int test_cluster_local(int argc, char *argv[]) {
         while (!s.empty()) {
             VirtualCluster *curr = s.top();
             s.pop();
-            if (!curr->IsLeaf()) {
+            if (!curr->is_leaf()) {
                 // test num inclusion
 
                 int count = 0;
@@ -94,7 +94,7 @@ int test_cluster_local(int argc, char *argv[]) {
         test            = test || !(root_size == size);
         test            = test || !(root_offset == 0);
 
-        // Testing to get local cluster
+        // Testing to get local cluster tree
         std::shared_ptr<VirtualCluster> local_cluster = t.get_local_cluster_tree();
         test                                          = test || !(local_size == local_cluster->get_size());
         test                                          = test || !(local_offset == local_cluster->get_offset());
@@ -112,12 +112,40 @@ int test_cluster_local(int argc, char *argv[]) {
             test = test || !(curr_1->get_offset() == curr_2->get_offset());
             test = test || !(curr_1->get_size() == curr_2->get_size());
 
-            if (!curr_2->IsLeaf()) {
+            if (!curr_2->is_leaf()) {
                 // test num inclusion
 
                 for (int l = 0; l < curr_2->get_nb_sons(); l++) {
                     s_local_1.push(&(curr_1->get_son(l)));
                     s_local_2.push(&(curr_2->get_son(l)));
+                }
+            }
+        }
+
+        // Testing to get cluster tree
+        std::shared_ptr<VirtualCluster> selected_cluster = t.get_local_cluster().get_cluster_tree();
+        test                                             = test || !(local_size == selected_cluster->get_size());
+        test                                             = test || !(local_offset == selected_cluster->get_offset());
+        std::stack<VirtualCluster const *> s_selected_1;
+        std::stack<VirtualCluster const *> s_selected_2;
+        s_selected_1.push(selected_cluster.get());
+        s_selected_2.push(&(t.get_local_cluster()));
+        depth = 0;
+        while (!s_selected_1.empty()) {
+            VirtualCluster const *curr_1 = s_selected_1.top();
+            VirtualCluster const *curr_2 = s_selected_2.top();
+            s_selected_1.pop();
+            s_selected_2.pop();
+
+            test = test || !(curr_1->get_offset() == curr_2->get_offset());
+            test = test || !(curr_1->get_size() == curr_2->get_size());
+
+            if (!curr_2->is_leaf()) {
+                // test num inclusion
+
+                for (int l = 0; l < curr_2->get_nb_sons(); l++) {
+                    s_selected_1.push(&(curr_1->get_son(l)));
+                    s_selected_2.push(&(curr_2->get_son(l)));
                 }
             }
         }

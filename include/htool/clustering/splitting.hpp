@@ -1,7 +1,7 @@
 #ifndef HTOOL_CLUSTERING_SPLITTING_HPP
 #define HTOOL_CLUSTERING_SPLITTING_HPP
 
-#include "virtual_cluster.hpp"
+#include "../interfaces/virtual_cluster.hpp"
 
 namespace htool {
 

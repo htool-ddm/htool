@@ -13,7 +13,7 @@ foreach(cluster_type ${cluster_types})
 
         add_executable(Test_cluster_${cluster_type}_${splitting_type} test_cluster_${cluster_type}_${splitting_type}.cpp)
         target_link_libraries(Test_cluster_${cluster_type}_${splitting_type} htool)
-        add_dependencies(build-tests Test_cluster_${cluster_type}_${splitting_type})
+        add_dependencies(build-tests-clustering Test_cluster_${cluster_type}_${splitting_type})
 
         add_test(NAME Test_cluster_${cluster_type}_${splitting_type}_1 COMMAND ${MPIEXEC} ${MPIEXEC_NUMPROC_FLAG} 1 ${MPIEXEC_PREFLAGS} ${CMAKE_CURRENT_BINARY_DIR}/Test_cluster_${cluster_type}_${splitting_type})
 
