@@ -36,7 +36,7 @@ class DistributedOperator : public VirtualDistributedOperator<T> {
         m_local_operators.push_back(local_operator);
     }
 
-    // Operations using user numbering
+    // Operations using user numbering and column major input/output
     void vector_product_global_to_global(const T *const in, T *const out) const;
     void matrix_product_global_to_global(const T *const in, T *const out, int mu) const;
     void vector_product_transp_global_to_global(const T *const in, T *const out) const;
@@ -47,11 +47,11 @@ class DistributedOperator : public VirtualDistributedOperator<T> {
     void vector_product_transp_local_to_local(const T *const in, T *const out, T *work = nullptr) const;
     void matrix_product_transp_local_to_local(const T *const in, T *const out, int mu, T *work = nullptr) const;
 
-    // Operations using internal numbering
+    // Operations using internal numbering and row major input/output
     void internal_vector_product_global_to_local(const T *const in, T *const out) const;
-    void internal_matrix_product_global_to_local(const T *const in, T *const out, int mu) const; // in and out are row major
+    void internal_matrix_product_global_to_local(const T *const in, T *const out, int mu) const;
     void internal_vector_product_transp_local_to_global(const T *const in, T *const out) const;
-    void internal_matrix_product_transp_local_to_global(const T *const in, T *const out, int mu) const; // in and out are row major
+    void internal_matrix_product_transp_local_to_global(const T *const in, T *const out, int mu) const;
 
     void internal_vector_product_local_to_local(const T *const in, T *const out, T *work = nullptr) const;
     void internal_matrix_product_local_to_local(const T *const in, T *const out, int mu, T *work = nullptr) const;
@@ -135,61 +135,68 @@ void DistributedOperator<T>::matrix_product_global_to_global(const T *const in, 
     int nr         = m_global_cluster_tree_target->get_size();
     int nc         = m_global_cluster_tree_source->get_size();
     int local_size = m_global_cluster_tree_target->get_local_size();
-    std::vector<T> in_row_major(std::max(nr, nc) * mu * 2);
-    std::vector<T> out_row_major(local_size * mu);
-    std::vector<T> buffer(m_use_permutation ? nc : 0);
+    std::vector<T> out_perm(2 * local_size * mu);
+    std::vector<T> input_buffer_transpose(m_use_permutation ? nc : 0);
+    std::vector<T> input_buffer(nc * mu);
+    std::vector<T> output_buffer(m_use_permutation ? 2 * nr * mu : nr * mu);
 
-    // Permutation + row major input
+    // Permutation and column major to row major
     for (int i = 0; i < mu; i++) {
-        // Permutation
         if (m_use_permutation) {
-            this->source_to_cluster_permutation(in + i * nc, buffer.data());
-            // Transpose
+            this->source_to_cluster_permutation(in + i * nc, input_buffer_transpose.data());
             for (int j = 0; j < nc; j++) {
-                in_row_major[i + j * mu] = buffer[j];
+                input_buffer[i + j * mu] = input_buffer_transpose[j];
             }
+
         } else {
             // Transpose
             for (int j = 0; j < nc; j++) {
-                in_row_major[i + j * mu] = in[j + i * nc];
+                input_buffer[i + j * mu] = in[j + i * nc];
             }
         }
     }
 
     // Product
-    this->internal_matrix_product_global_to_local(in_row_major.data(), out_row_major.data(), mu);
+    this->internal_matrix_product_global_to_local(input_buffer.data(), out_perm.data() + local_size * mu, mu);
+
+    // Transpose
+    for (int i = 0; i < mu; i++) {
+        for (int j = 0; j < local_size; j++) {
+            out_perm[i * local_size + j] = out_perm[local_size * mu + i + j * mu];
+        }
+    }
 
     // Allgather
     std::vector<int> recvcounts(sizeWorld);
     std::vector<int> displs(sizeWorld);
 
-    // displs[0] = 0;
+    displs[0] = 0;
 
-    // for (int i = 0; i < sizeWorld; i++) {
-    //     recvcounts[i] = m_global_cluster_tree_target->get_masteroffset(i).second * mu;
-    //     if (i > 0)
-    //         displs[i] = displs[i - 1] + recvcounts[i - 1];
-    // }
+    for (int i = 0; i < sizeWorld; i++) {
+        recvcounts[i] = m_global_cluster_tree_target->get_masteroffset_on_rank(i).second * mu;
+        if (i > 0)
+            displs[i] = displs[i - 1] + recvcounts[i - 1];
+    }
 
-    // MPI_Allgatherv(out_perm.data(), recvcounts[rankWorld], wrapper_mpi<T>::mpi_type(), in_perm.data() + mu * nr, &(recvcounts[0]), &(displs[0]), wrapper_mpi<T>::mpi_type(), comm);
+    MPI_Allgatherv(out_perm.data(), recvcounts[rankWorld], wrapper_mpi<T>::mpi_type(), output_buffer.data(), &(recvcounts[0]), &(displs[0]), wrapper_mpi<T>::mpi_type(), comm);
 
-    // for (int i = 0; i < mu; i++) {
-    //     if (m_use_permutation) {
-    //         for (int j = 0; j < sizeWorld; j++) {
-    //             std::copy_n(in_perm.data() + mu * nr + displs[j] + i * recvcounts[j] / mu, recvcounts[j] / mu, in_perm.data() + i * nr + displs[j] / mu);
-    //         }
+    for (int i = 0; i < mu; i++) {
+        if (m_use_permutation) {
+            for (int j = 0; j < sizeWorld; j++) {
+                std::copy_n(output_buffer.data() + displs[j] + i * recvcounts[j] / mu, recvcounts[j] / mu, output_buffer.data() + nr * mu + i * nr + displs[j] / mu);
+            }
 
-    //         // Permutation
-    //         this->cluster_to_target_permutation(in_perm.data() + i * nr, out + i * nr);
-    //     } else {
-    //         for (int j = 0; j < sizeWorld; j++) {
-    //             std::copy_n(in_perm.data() + mu * nr + displs[j] + i * recvcounts[j] / mu, recvcounts[j] / mu, out + i * nr + displs[j] / mu);
-    //         }
-    //     }
-    // }
-    // // Timing
-    // infos["nb_mat_mat_prod"]         = NbrToStr(1 + StrToNbr<int>(infos["nb_mat_mat_prod"]));
-    // infos["total_time_mat_mat_prod"] = NbrToStr(MPI_Wtime() - time + StrToNbr<double>(infos["total_time_mat_mat_prod"]));
+            // Permutation
+            this->cluster_to_target_permutation(output_buffer.data() + nr * mu + i * nr, out + i * nr);
+        } else {
+            for (int j = 0; j < sizeWorld; j++) {
+                std::copy_n(output_buffer.data() + displs[j] + i * recvcounts[j] / mu, recvcounts[j] / mu, out + i * nr + displs[j] / mu);
+            }
+        }
+    }
+    // Timing
+    infos["nb_mat_vec_prod"]         = NbrToStr(1 + StrToNbr<int>(infos["nb_mat_vec_prod"]));
+    infos["total_time_mat_vec_prod"] = NbrToStr(MPI_Wtime() - time + StrToNbr<double>(infos["total_time_mat_vec_prod"]));
 }
 
 template <typename T>
@@ -203,9 +210,9 @@ void DistributedOperator<T>::vector_product_transp_global_to_global(const T *con
         return;
     } else if (m_symmetry == 'H') {
         std::vector<T> in_conj(in, in + nr);
-        conj_if_complex(in_conj.data(), nr);
+        conj_if_complex<T>(in_conj.data(), nr);
         this->vector_product_global_to_global(in_conj.data(), out);
-        conj_if_complex(out, nc);
+        conj_if_complex<T>(out, nc);
         return;
     }
 
@@ -232,7 +239,59 @@ void DistributedOperator<T>::vector_product_transp_global_to_global(const T *con
 }
 
 template <typename T>
-void DistributedOperator<T>::matrix_product_transp_global_to_global(const T *const in, T *const out, int mu) const {}
+void DistributedOperator<T>::matrix_product_transp_global_to_global(const T *const in, T *const out, int mu) const {
+    int nr           = m_global_cluster_tree_target->get_size();
+    int local_size   = m_global_cluster_tree_target->get_local_size();
+    int local_offset = m_global_cluster_tree_target->get_local_offset();
+    int nc           = m_global_cluster_tree_source->get_size();
+
+    if (m_symmetry == 'S') {
+        this->matrix_product_global_to_global(in, out, mu);
+        return;
+    } else if (m_symmetry == 'H') {
+        std::vector<T> in_conj(in, in + nr * mu);
+        conj_if_complex(in_conj.data(), nr * mu);
+        this->matrix_product_global_to_global(in_conj.data(), out, mu);
+        conj_if_complex(out, mu * nc);
+        return;
+    }
+
+    std::vector<T> out_perm(mu * nc);
+    std::vector<T> in_perm(local_size * mu + mu * nc);
+    std::vector<T> buffer(nr);
+
+    for (int i = 0; i < mu; i++) {
+        // Permutation
+        if (m_use_permutation) {
+            this->target_to_cluster_permutation(in + i * nr, buffer.data());
+            // Transpose
+            for (int j = local_offset; j < local_offset + local_size; j++) {
+                in_perm[i + (j - local_offset) * mu] = buffer[j];
+            }
+        } else {
+            // Transpose
+            for (int j = local_offset; j < local_offset + local_size; j++) {
+                in_perm[i + (j - local_offset) * mu] = in[j + i * nr];
+            }
+        }
+    }
+
+    internal_matrix_product_transp_local_to_global(in_perm.data(), in_perm.data() + local_size * mu, mu);
+
+    for (int i = 0; i < mu; i++) {
+        if (m_use_permutation) {
+            // Transpose
+            for (int j = 0; j < nc; j++) {
+                out_perm[i * nc + j] = in_perm[i + j * mu + local_size * mu];
+            }
+            cluster_to_source_permutation(out_perm.data() + i * nc, out + i * nc);
+        } else {
+            for (int j = 0; j < nc; j++) {
+                out[i * nc + j] = in_perm[i + j * mu + local_size * mu];
+            }
+        }
+    }
+}
 
 template <typename T>
 void DistributedOperator<T>::vector_product_local_to_local(const T *const in, T *const out, T *work) const {
@@ -270,35 +329,58 @@ void DistributedOperator<T>::vector_product_local_to_local(const T *const in, T 
 
 template <typename T>
 void DistributedOperator<T>::matrix_product_local_to_local(const T *const in, T *const out, int mu, T *work) const {
-    // bool need_delete = false;
-    // if (work == nullptr) {
-    //     work        = new T[nc * mu];
-    //     need_delete = true;
-    // }
-    // int sizeWorld, rankWorld;
-    // MPI_Comm_rank(comm, &rankWorld);
-    // MPI_Comm_size(comm, &sizeWorld);
-    // int local_size_source = m_global_cluster_tree_source->get_local_size();
-    // int local_size        = m_global_cluster_tree_target->get_local_size();
+    bool need_delete = false;
+    if (work == nullptr) {
+        work        = new T[this->m_global_cluster_tree_source->get_size() * mu];
+        need_delete = true;
+    }
 
-    // if (!(m_global_cluster_tree_source->IsLocal()) || !(m_global_cluster_tree_target->IsLocal())) {
-    //     throw std::logic_error("[Htool error] Permutation is not local, mvprod_local_to_local cannot be used"); // LCOV_EXCL_LINE
-    // }
+    int sizeWorld, rankWorld;
+    MPI_Comm_rank(comm, &rankWorld);
+    MPI_Comm_size(comm, &sizeWorld);
+    int local_size_source = m_global_cluster_tree_source->get_local_size();
+    int local_size        = m_global_cluster_tree_target->get_local_size();
 
-    // std::vector<T> in_perm(m_use_permutation ? local_size_source : 0);
-    // std::vector<T> out_perm(m_use_permutation ? local_size : 0);
-    // const T *input = m_use_permutation ? in_perm.data() : in;
-    // T *output      = m_use_permutation ? out_perm.data() : out;
+    if (!(m_global_cluster_tree_source->is_local()) || !(m_global_cluster_tree_target->is_local())) {
+        throw std::logic_error("[Htool error] Permutation is not local, mvprod_local_to_local cannot be used"); // LCOV_EXCL_LINE
+    }
 
-    // if (m_use_permutation) {
-    //     this->local_source_to_local_cluster(in, in_perm.data());
-    // }
+    std::vector<T> input_buffer(local_size_source * mu);
+    std::vector<T> input_buffer_transpose(m_use_permutation ? local_size_source : 0);
+    std::vector<T> output_buffer_transpose(m_use_permutation ? local_size : 0);
+    std::vector<T> output_perm(local_size * mu);
 
-    // this->internal_vector_product_local_to_local(input, output, 1, work);
+    // Permutation
+    for (int i = 0; i < mu; i++) {
+        if (m_use_permutation) {
+            this->local_source_to_local_cluster(in + i * local_size_source, input_buffer_transpose.data());
+            for (int j = 0; j < local_size_source; j++) {
+                input_buffer[i + j * mu] = input_buffer_transpose[j];
+            }
+        } else {
+            // Transpose
+            for (int j = 0; j < local_size_source; j++) {
+                input_buffer[i + j * mu] = in[j + i * local_size_source];
+            }
+        }
+    }
 
-    // if (m_use_permutation) {
-    //     this->local_cluster_to_local_target(output, out, comm);
-    // }
+    this->internal_matrix_product_local_to_local(input_buffer.data(), output_perm.data(), mu, work);
+
+    for (int i = 0; i < mu; i++) {
+        if (m_use_permutation) {
+            // Transpose
+            for (int j = 0; j < local_size; j++) {
+                output_buffer_transpose[j] = output_perm[i + j * mu];
+            }
+            this->local_cluster_to_local_target(output_buffer_transpose.data(), out + i * local_size);
+        } else {
+            // Transpose
+            for (int j = 0; j < local_size; j++) {
+                out[j + i * local_size] = output_perm[i + j * mu];
+            }
+        }
+    }
 }
 
 template <typename T>
@@ -315,9 +397,9 @@ void DistributedOperator<T>::vector_product_transp_local_to_local(const T *const
         return;
     } else if (m_symmetry == 'H') {
         std::vector<T> in_conj(in, in + local_size);
-        conj_if_complex(in_conj.data(), local_size);
+        conj_if_complex<T>(in_conj.data(), local_size);
         this->vector_product_local_to_local(in_conj.data(), out, work);
-        conj_if_complex(out, local_size_source);
+        conj_if_complex<T>(out, local_size_source);
         return;
     }
 
@@ -349,7 +431,79 @@ void DistributedOperator<T>::vector_product_transp_local_to_local(const T *const
     }
 }
 template <typename T>
-void DistributedOperator<T>::matrix_product_transp_local_to_local(const T *const in, T *const out, int mu, T *work) const {}
+void DistributedOperator<T>::matrix_product_transp_local_to_local(const T *const in, T *const out, int mu, T *work) const {
+    int local_size_source = m_global_cluster_tree_source->get_local_size();
+    int local_size        = m_global_cluster_tree_target->get_local_size();
+    int nc                = m_global_cluster_tree_source->get_size();
+    int sizeWorld, rankWorld;
+    MPI_Comm_rank(comm, &rankWorld);
+    MPI_Comm_size(comm, &sizeWorld);
+
+    if (m_symmetry == 'S') {
+        this->matrix_product_local_to_local(in, out, mu, work);
+        return;
+    } else if (m_symmetry == 'H') {
+        std::vector<T> in_conj(in, in + local_size * mu);
+        conj_if_complex<T>(in_conj.data(), local_size * mu);
+        this->matrix_product_local_to_local(in_conj.data(), out, mu, work);
+        conj_if_complex<T>(out, local_size_source * mu);
+        return;
+    }
+
+    bool need_delete = false;
+    if (work == nullptr) {
+        work        = new T[(nc + sizeWorld * m_global_cluster_tree_source->get_local_size()) * mu];
+        need_delete = true;
+    }
+
+    if (!(m_global_cluster_tree_source->is_local()) || !(m_global_cluster_tree_target->is_local())) {
+        throw std::logic_error("[Htool error] Permutation is not local, mvprod_local_to_local cannot be used"); // LCOV_EXCL_LINE
+    }
+    std::vector<T> in_perm(local_size * mu);
+    std::vector<T> out_perm(local_size_source * mu);
+    std::vector<T> buffer_in(m_use_permutation ? local_size : 0);
+    std::vector<T> buffer_out(m_use_permutation ? local_size_source : 0);
+
+    for (int i = 0; i < mu; i++) {
+        // local permutation
+        if (m_use_permutation) {
+            this->local_target_to_local_cluster(in + i * local_size, buffer_in.data());
+
+            // Transpose
+            for (int j = 0; j < local_size; j++) {
+                in_perm[i + j * mu] = buffer_in[j];
+            }
+        } else {
+            // Transpose
+            for (int j = 0; j < local_size; j++) {
+                in_perm[i + j * mu] = in[j + i * local_size];
+            }
+        }
+    }
+    // It should never happen since we use mvprod_global_to_global in this case
+    // if (symmetry == 'H') {
+    //     conj_if_complex(in_perm.data(), local_size_source * mu);
+    // }
+
+    internal_matrix_product_transp_local_to_local(in_perm.data(), out_perm.data(), mu, work);
+
+    for (int i = 0; i < mu; i++) {
+        if (m_use_permutation) {
+            // Tranpose
+            for (int j = 0; j < local_size_source; j++) {
+                buffer_out[j] = out_perm[i + j * mu];
+            }
+
+            // local permutation
+            this->local_cluster_to_local_source(buffer_out.data(), out + i * local_size_source);
+        } else {
+            // Tranpose
+            for (int j = 0; j < local_size_source; j++) {
+                out[j + i * local_size_source] = out_perm[i + j * mu];
+            }
+        }
+    }
+}
 
 // Operations using internal numbering
 template <typename T>
@@ -387,7 +541,7 @@ void DistributedOperator<T>::internal_matrix_product_transp_local_to_global(cons
     int local_size = m_global_cluster_tree_target->get_local_size();
     std::fill(out, out + nc * mu, 0);
     for (auto &local_operator : m_local_operators) {
-        local_operator->add_matrix_product_transp_local_to_global(1, local_size, in, 1, nc, out);
+        local_operator->add_matrix_product_transp_local_to_global(1, local_size, in, 1, nc, out, mu);
     }
     MPI_Allreduce(MPI_IN_PLACE, out, nc * mu, wrapper_mpi<T>::mpi_type(), MPI_SUM, comm);
 }
@@ -481,7 +635,7 @@ void DistributedOperator<T>::internal_vector_product_transp_local_to_local(const
 
 template <typename T>
 void DistributedOperator<T>::internal_matrix_product_transp_local_to_local(const T *const in, T *const out, int mu, T *work) const {
-    if (this->symmetry == 'S' || this->symmetry == 'H') {
+    if (m_symmetry == 'S' || m_symmetry == 'H') {
         this->internal_matrix_product_local_to_local(in, out, mu, work);
         return;
     }
@@ -490,7 +644,7 @@ void DistributedOperator<T>::internal_matrix_product_transp_local_to_local(const
     MPI_Comm_rank(comm, &rankWorld);
     MPI_Comm_size(comm, &sizeWorld);
     bool need_delete      = false;
-    int local_size_source = m_global_cluster_tree_source->get_masteroffset(rankWorld).second;
+    int local_size_source = m_global_cluster_tree_source->get_masteroffset_on_rank(rankWorld).second;
     int nc                = m_global_cluster_tree_source->get_size();
     int local_size        = m_global_cluster_tree_target->get_local_size();
 
@@ -512,7 +666,7 @@ void DistributedOperator<T>::internal_matrix_product_transp_local_to_local(const
     rdispls[0] = 0;
 
     for (int i = 0; i < sizeWorld; i++) {
-        scounts[i] = (m_global_cluster_tree_source->get_masteroffset(i).second) * mu;
+        scounts[i] = (m_global_cluster_tree_source->get_masteroffset_on_rank(i).second) * mu;
         rcounts[i] = (local_size_source)*mu;
         if (i > 0) {
             sdispls[i] = sdispls[i - 1] + scounts[i - 1];
@@ -584,7 +738,7 @@ void DistributedOperator<T>::local_to_global_target(const T *const in, T *const 
     displs[0] = 0;
 
     for (int i = 0; i < sizeWorld; i++) {
-        recvcounts[i] = (m_global_cluster_tree_target->get_masteroffset(i).second) * mu;
+        recvcounts[i] = (m_global_cluster_tree_target->get_masteroffset_on_rank(i).second) * mu;
         if (i > 0)
             displs[i] = displs[i - 1] + recvcounts[i - 1];
     }

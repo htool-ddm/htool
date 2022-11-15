@@ -8,7 +8,7 @@ list(APPEND types "complex_double")
 set(operations "vec_prod")
 list(APPEND operations "mat_prod")
 list(APPEND operations "vec_prod_transp")
-# list(APPEND operations "hmat_mat_transp_prod")
+list(APPEND operations "mat_prod_transp")
 
 foreach(type ${types})
     foreach(operation ${operations})

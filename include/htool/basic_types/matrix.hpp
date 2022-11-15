@@ -404,7 +404,7 @@ class Matrix {
         }
     }
 
-    //! ### Special mvprod
+    //! ### Special mvprod with row major input and output
     /*!
      */
     void mvprod_row_major(const T *const in, T *const out, const int &mu, char transb, char op = 'N') const {
@@ -437,14 +437,9 @@ class Matrix {
         }
     }
 
-    //! ### Special add_mvprod
-    /*!
-     */
-    void add_mvprod_row_major(const T *const in, T *const out, const int &mu, char transb, char op = 'N') const {
-        int nr  = this->nr;
-        int nc  = this->nc;
-        T alpha = 1;
-        T beta  = 1;
+    void add_matrix_product_row_major(T alpha, const T *const in, T beta, T *const out, const int &mu, char transb, char op = 'N') const {
+        int nr = this->nr;
+        int nc = this->nc;
 
         if (nr && nc) {
             if (mu == 1) {
@@ -474,10 +469,8 @@ class Matrix {
 
     // see https://stackoverflow.com/questions/6972368/stdenable-if-to-conditionally-compile-a-member-function for why  Q template parameter
     template <typename Q = T, typename std::enable_if<!is_complex_t<Q>::value, int>::type = 0>
-    void add_mvprod_row_major_sym(const T *const in, T *const out, const int &mu, char UPLO, char) const {
-        int nr  = this->nr;
-        T alpha = 1;
-        T beta  = 1;
+    void add_matrix_product_symmetric_row_major(T alpha, const T *const in, T beta, T *const out, const int &mu, char UPLO, char) const {
+        int nr = this->nr;
 
         if (nr) {
             if (mu == 1) {
@@ -499,10 +492,8 @@ class Matrix {
     }
 
     template <typename Q = T, typename std::enable_if<is_complex_t<Q>::value, int>::type = 0>
-    void add_mvprod_row_major_sym(const T *const in, T *const out, const int &mu, char UPLO, char symmetry) const {
-        int nr  = this->nr;
-        T alpha = 1;
-        T beta  = 1;
+    void add_matrix_product_symmetric_row_major(T alpha, const T *const in, T beta, T *const out, const int &mu, char UPLO, char symmetry) const {
+        int nr = this->nr;
 
         if (nr) {
             if (mu == 1) {
@@ -600,11 +591,14 @@ class Matrix {
 
     int print(std::ostream &os, const std::string &delimiter) const {
         int rows = this->nr;
-        for (int i = 0; i < rows; i++) {
-            std::vector<T> row = this->get_row(i);
-            std::copy(row.begin(), row.end() - 1, std::ostream_iterator<T>(os, delimiter.c_str()));
-            os << row.back();
-            os << '\n';
+
+        if (this->nc > 0) {
+            for (int i = 0; i < rows; i++) {
+                std::vector<T> row = this->get_row(i);
+                std::copy(row.begin(), row.end() - 1, std::ostream_iterator<T>(os, delimiter.c_str()));
+                os << row.back();
+                os << '\n';
+            }
         }
         return 0;
     }
