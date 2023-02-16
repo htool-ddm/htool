@@ -7,7 +7,8 @@
 
 namespace htool {
 
-void create_disk(int space_dim, double z, int nr, double *const xt) {
+template <typename T>
+void create_disk(int space_dim, T z, int nr, T *const xt) {
 
     double z1 = z;
     for (int j = 0; j < nr; j++) {

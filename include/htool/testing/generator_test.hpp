@@ -3,28 +3,72 @@
 #define HTOOL_TESTING_GENERATOR_TEST_HPP
 
 #include "../basic_types/matrix.hpp"
-#include "../interfaces/hmatrix/virtual_generator.hpp"
+#include "../clustering/cluster_node.hpp"
+#include "../hmatrix/interfaces/virtual_generator.hpp"
 #include <vector>
 
 namespace htool {
 
-template <typename T>
-class GeneratorTest : public VirtualGenerator<T> {
+template <typename CoefficientPrecision, typename CoordinatePrecision = underlying_type<CoefficientPrecision>>
+class GeneratorTest : public VirtualGenerator<CoefficientPrecision> {
   protected:
-    const std::vector<double> &p1;
-    const std::vector<double> &p2;
+    int nr, nc;
+    const std::vector<CoordinatePrecision> &p1;
+    const std::vector<CoordinatePrecision> &p2;
+    std::shared_ptr<Cluster<CoordinatePrecision>> m_target_cluster;
+    std::shared_ptr<Cluster<CoordinatePrecision>> m_source_cluster;
+    bool m_use_target_permutation{true};
+    bool m_use_source_permutation{true};
     int space_dim;
 
   public:
-    explicit GeneratorTest(int space_dim0, int nr, int nc, const std::vector<double> &p10, const std::vector<double> &p20) : VirtualGenerator<T>(nr, nc), p1(p10), p2(p20), space_dim(space_dim0) {}
+    explicit GeneratorTest(int space_dim0, int nr0, int nc0, const std::vector<underlying_type<CoefficientPrecision>> &p10, const std::vector<underlying_type<CoefficientPrecision>> &p20, std::shared_ptr<Cluster<CoordinatePrecision>> target_cluster, std::shared_ptr<Cluster<CoordinatePrecision>> source_cluster) : nr(nr0), nc(nc0), p1(p10), p2(p20), m_target_cluster(target_cluster), m_source_cluster(source_cluster), space_dim(space_dim0), m_use_target_permutation(true), m_use_source_permutation(true) {}
 
-    explicit GeneratorTest(int space_dim0, int nr, const std::vector<double> &p10) : VirtualGenerator<T>(nr, nr), p1(p10), p2(p10), space_dim(space_dim0) {}
+    explicit GeneratorTest(int space_dim0, int nr0, int nc0, const std::vector<underlying_type<CoefficientPrecision>> &p10, const std::vector<underlying_type<CoefficientPrecision>> &p20) : nr(nr0), nc(nc0), p1(p10), p2(p20), space_dim(space_dim0), m_use_target_permutation(false), m_use_source_permutation(false) {}
 
-    virtual T get_coef(const int &i, const int &j) const = 0;
+    explicit GeneratorTest(int space_dim0, int nr, const std::vector<underlying_type<CoefficientPrecision>> &p10) : VirtualGenerator<CoefficientPrecision>(), p1(p10), p2(p10), space_dim(space_dim0) {}
 
-    std::vector<T>
-    operator*(std::vector<T> &a) const {
-        std::vector<T> result(this->nr, 0);
+    virtual CoefficientPrecision get_coef(const int &i, const int &j) const = 0;
+
+    void copy_submatrix(int M, int N, int row_offset, int col_offset, CoefficientPrecision *ptr) const override {
+        if (m_use_target_permutation && m_use_source_permutation) {
+            const auto &target_permutation = m_target_cluster->get_permutation();
+            const auto &source_permutation = m_source_cluster->get_permutation();
+            for (int i = 0; i < M; i++) {
+                for (int j = 0; j < N; j++) {
+                    ptr[i + M * j] = this->get_coef(target_permutation[i + row_offset], source_permutation[j + col_offset]);
+                }
+            }
+        } else if (m_use_target_permutation) {
+            const auto &target_permutation = m_target_cluster->get_permutation();
+            for (int i = 0; i < M; i++) {
+                for (int j = 0; j < N; j++) {
+                    ptr[i + M * j] = this->get_coef(target_permutation[i + row_offset], j + col_offset);
+                }
+            }
+        } else if (m_use_source_permutation) {
+            const auto &source_permutation = m_source_cluster->get_permutation();
+            for (int i = 0; i < M; i++) {
+                for (int j = 0; j < N; j++) {
+                    ptr[i + M * j] = this->get_coef(i + row_offset, source_permutation[j + col_offset]);
+                }
+            }
+        } else {
+            for (int i = 0; i < M; i++) {
+                for (int j = 0; j < N; j++) {
+                    ptr[i + M * j] = this->get_coef(i + row_offset, j + col_offset);
+                }
+            }
+        }
+    }
+
+    void set_use_target_permutation(bool use_target_permutation) { m_use_target_permutation = use_target_permutation; }
+    void set_use_source_permutation(bool use_source_permutation) { m_use_source_permutation = use_source_permutation; }
+
+    CoefficientPrecision operator()(int i, int j) { return get_coef(i, j); }
+
+    std::vector<CoefficientPrecision> operator*(std::vector<CoefficientPrecision> &a) const {
+        std::vector<CoefficientPrecision> result(this->nr, 0);
         for (int i = 0; i < this->nr; i++) {
             for (int k = 0; k < this->nc; k++) {
                 result[i] += this->get_coef(i, k) * a[k];
@@ -42,7 +86,7 @@ class GeneratorTest : public VirtualGenerator<T> {
         return sqrt(norm);
     }
 
-    void mvprod(const T *const in, T *const out, const int &mu) const {
+    void mvprod(const CoefficientPrecision *const in, CoefficientPrecision *const out, const int &mu) const {
         int nr = this->nr;
         int nc = this->nc;
         for (int i = 0; i < nr * mu; i++) {
@@ -57,7 +101,7 @@ class GeneratorTest : public VirtualGenerator<T> {
         }
     }
 
-    void mvprod_transp(const T *const in, T *const out, const int &mu) const {
+    void mvprod_transp(const CoefficientPrecision *const in, CoefficientPrecision *const out, const int &mu) const {
         int nc = this->nr;
         int nr = this->nc;
         for (int i = 0; i < nr * mu; i++) {
@@ -72,7 +116,7 @@ class GeneratorTest : public VirtualGenerator<T> {
         }
     }
 
-    void mvprod_conj(const T *const in, T *const out, const int &mu) const {
+    void mvprod_conj(const CoefficientPrecision *const in, CoefficientPrecision *const out, const int &mu) const {
         int nc = this->nr;
         int nr = this->nc;
         for (int i = 0; i < nr * mu; i++) {
@@ -94,14 +138,6 @@ class GeneratorTestDouble : public GeneratorTest<double> {
     double get_coef(const int &i, const int &j) const override {
         return 1. / (4 * M_PI * std::sqrt(std::inner_product(p1.begin() + this->space_dim * i, this->p1.begin() + this->space_dim * i + this->space_dim, p2.begin() + this->space_dim * j, double(0), std::plus<double>(), [](double u, double v) { return (u - v) * (u - v); })));
     }
-
-    void copy_submatrix(int M, int N, const int *const rows, const int *const cols, double *ptr) const override {
-        for (int i = 0; i < M; i++) {
-            for (int j = 0; j < N; j++) {
-                ptr[i + M * j] = this->get_coef(rows[i], cols[j]);
-            }
-        }
-    }
 };
 
 class GeneratorTestComplex : public GeneratorTest<std::complex<double>> {
@@ -110,14 +146,6 @@ class GeneratorTestComplex : public GeneratorTest<std::complex<double>> {
 
     std::complex<double> get_coef(const int &i, const int &j) const override {
         return (1. + std::complex<double>(0, 1)) / (4 * M_PI * std::sqrt(std::inner_product(p1.begin() + this->space_dim * i, this->p1.begin() + this->space_dim * i + this->space_dim, p2.begin() + this->space_dim * j, double(0), std::plus<double>(), [](double u, double v) { return (u - v) * (u - v); })));
-    }
-
-    void copy_submatrix(int M, int N, const int *const rows, const int *const cols, std::complex<double> *ptr) const override {
-        for (int i = 0; i < M; i++) {
-            for (int j = 0; j < N; j++) {
-                ptr[i + M * j] = this->get_coef(rows[i], cols[j]);
-            }
-        }
     }
 };
 
@@ -136,14 +164,6 @@ class GeneratorTestDoubleSymmetric : public GeneratorTest<double> {
     double get_coef(const int &i, const int &j) const override {
         return 1. / (1e-5 + 4 * M_PI * std::sqrt(std::inner_product(p1.begin() + this->space_dim * i, this->p1.begin() + this->space_dim * i + this->space_dim, p2.begin() + this->space_dim * j, double(0), std::plus<double>(), [](double u, double v) { return (u - v) * (u - v); })));
     }
-
-    void copy_submatrix(int M, int N, const int *const rows, const int *const cols, double *ptr) const override {
-        for (int i = 0; i < M; i++) {
-            for (int j = 0; j < N; j++) {
-                ptr[i + M * j] = this->get_coef(rows[i], cols[j]);
-            }
-        }
-    }
 };
 
 class GeneratorTestComplexSymmetric : public GeneratorTest<std::complex<double>> {
@@ -152,14 +172,6 @@ class GeneratorTestComplexSymmetric : public GeneratorTest<std::complex<double>>
 
     std::complex<double> get_coef(const int &i, const int &j) const override {
         return (1. + std::complex<double>(0, 1)) / (1e-5 + 4 * M_PI * std::sqrt(std::inner_product(p1.begin() + this->space_dim * i, this->p1.begin() + this->space_dim * i + this->space_dim, p2.begin() + this->space_dim * j, double(0), std::plus<double>(), [](double u, double v) { return (u - v) * (u - v); })));
-    }
-
-    void copy_submatrix(int M, int N, const int *const rows, const int *const cols, std::complex<double> *ptr) const override {
-        for (int i = 0; i < M; i++) {
-            for (int j = 0; j < N; j++) {
-                ptr[i + M * j] = this->get_coef(rows[i], cols[j]);
-            }
-        }
     }
 };
 
@@ -170,31 +182,23 @@ class GeneratorTestComplexHermitian : public GeneratorTest<std::complex<double>>
     std::complex<double> get_coef(const int &i, const int &j) const override {
         return (1. + sign(p1[this->space_dim * i] - p2[this->space_dim * j]) * std::complex<double>(0, 1)) / (1e-5 + 4 * M_PI * std::sqrt(std::inner_product(p1.begin() + this->space_dim * i, this->p1.begin() + this->space_dim * i + this->space_dim, p2.begin() + this->space_dim * j, double(0), std::plus<double>(), [](double u, double v) { return (u - v) * (u - v); })));
     }
-
-    void copy_submatrix(int M, int N, const int *const rows, const int *const cols, std::complex<double> *ptr) const override {
-        for (int i = 0; i < M; i++) {
-            for (int j = 0; j < N; j++) {
-                ptr[i + M * j] = this->get_coef(rows[i], cols[j]);
-            }
-        }
-    }
 };
 
-template <typename T>
-class GeneratorFromMatrix : public VirtualGenerator<T> {
-    const Matrix<T> &A;
+// template <typename T>
+// class GeneratorFromMatrix : public VirtualGenerator<T> {
+//     const Matrix<T> &A;
 
-  public:
-    explicit GeneratorFromMatrix(const Matrix<T> &A0) : VirtualGenerator<T>(A0.nb_rows(), A0.nb_cols()), A(A0) {}
+//   public:
+//     explicit GeneratorFromMatrix(const Matrix<T> &A0) : VirtualGenerator<T>(A0.nb_rows(), A0.nb_cols()), A(A0) {}
 
-    void copy_submatrix(int M, int N, const int *const rows, const int *const cols, T *ptr) const override {
-        for (int i = 0; i < M; i++) {
-            for (int j = 0; j < N; j++) {
-                ptr[i + M * j] = A(rows[i], cols[j]);
-            }
-        }
-    }
-};
+//     void copy_submatrix(int M, int N, const int *const rows, const int *const cols, T *ptr) const override {
+//         for (int i = 0; i < M; i++) {
+//             for (int j = 0; j < N; j++) {
+//                 ptr[i + M * j] = A(rows[i], cols[j]);
+//             }
+//         }
+//     }
+// };
 
 } // namespace htool
 

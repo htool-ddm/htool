@@ -5,6 +5,7 @@
 #include "../wrappers/wrapper_blas.hpp"
 #include "vector.hpp"
 #include <cassert>
+#include <functional>
 #include <iterator>
 
 namespace htool {
@@ -194,17 +195,21 @@ class Matrix {
         this->nc = nc0;
     }
 
-    // //! ### Modifies the size of the matrix
-    // /*!
-    // Changes the size of the matrix so that
-    // the number of rows is set to _nbr_ and
-    // the number of columns is set to _nbc_.
-    // */
-    // void resize(const int nbr, const int nbc, T value = 0) {
-    //     this->mat.resize(nbr * nbc, value);
-    //     this->nr = nbr;
-    //     this->nc = nbc;
-    // }
+    //! ### Modifies the size of the matrix
+    /*!
+    Changes the size of the matrix so that
+    the number of rows is set to _nbr_ and
+    the number of columns is set to _nbc_.
+    */
+    void resize(const int nbr, const int nbc, T value = 0) {
+        if (mat != nullptr && owning_data) {
+            delete[] mat;
+        }
+        mat = new T[nbr * nbc];
+        nr  = nbr;
+        nc  = nbc;
+        std::fill_n(mat, nbr * nbc, value);
+    }
 
     //! ### Matrix-scalar product
     /*!
@@ -277,7 +282,7 @@ class Matrix {
     //! ### Interface with blas gemm
     /*!
      */
-    void mvprod(const T *const in, T *const out, const int &mu = 1) const {
+    void mvprod(const T *in, T *out, const int &mu = 1) const {
         int nr  = this->nr;
         int nc  = this->nc;
         T alpha = 1;
@@ -301,7 +306,7 @@ class Matrix {
         }
     }
 
-    void add_vector_product(char trans, T alpha, const T *const in, T beta, T *const out) const {
+    void add_vector_product(char trans, T alpha, const T *in, T beta, T *out) const {
         int nr   = this->nr;
         int nc   = this->nc;
         int lda  = nr;
@@ -310,22 +315,50 @@ class Matrix {
         Blas<T>::gemv(&trans, &nr, &nc, &alpha, mat, &lda, in, &incx, &beta, out, &incy);
     }
 
-    void add_matrix_product(T alpha, const T *const in, T beta, T *const out, const int &mu = 1) const {
+    void add_matrix_product(char trans, T alpha, const T *in, T beta, T *out, int mu) const {
         int nr      = this->nr;
         int nc      = this->nc;
-        int lda     = nr;
-        char transa = 'N';
+        char transa = trans;
         char transb = 'N';
+        int lda     = nr;
         int M       = nr;
         int N       = mu;
         int K       = nc;
         int ldb     = nc;
         int ldc     = nr;
+        if (transa != 'N') {
+            M   = nc;
+            N   = mu;
+            K   = nr;
+            ldb = nr;
+            ldc = nc;
+        }
+
         Blas<T>::gemm(&transa, &transb, &M, &N, &K, &alpha, mat, &lda, in, &ldb, &beta, out, &ldc);
     }
 
+    void add_matrix_product_row_major(char trans, T alpha, const T *in, T beta, T *out, int mu) const {
+        int nr      = this->nr;
+        int nc      = this->nc;
+        char transa = 'N';
+        char transb = 'T';
+        int M       = mu;
+        int N       = nr;
+        int K       = nc;
+        int lda     = mu;
+        int ldb     = nr;
+        int ldc     = mu;
+        if (trans != 'N') {
+            transb = 'N';
+            N      = nc;
+            K      = nr;
+        }
+
+        Blas<T>::gemm(&transa, &transb, &M, &N, &K, &alpha, in, &lda, mat, &ldb, &beta, out, &ldc);
+    }
+
     template <typename Q = T, typename std::enable_if<!is_complex_t<Q>::value, int>::type = 0>
-    void add_vector_product_symmetric(T alpha, const T *const in, T beta, T *const out, char UPLO, char) const {
+    void add_vector_product_symmetric(char trans, T alpha, const T *in, T beta, T *out, char UPLO, char) const {
         int nr  = this->nr;
         int lda = nr;
 
@@ -337,69 +370,89 @@ class Matrix {
     }
 
     template <typename Q = T, typename std::enable_if<is_complex_t<Q>::value, int>::type = 0>
-    void add_vector_product_symmetric(T alpha, const T *const in, T beta, T *const out, char UPLO, char symmetry) const {
+    void add_vector_product_symmetric(char trans, T alpha, const T *in, T beta, T *out, char UPLO, char symmetry) const {
         int nr = this->nr;
         if (nr) {
             int lda  = nr;
             int incx = 1;
             int incy = 1;
-            if (symmetry == 'S') {
+            if (symmetry == 'S' && (trans == 'N' || trans == 'T')) {
                 Blas<T>::symv(&UPLO, &nr, &alpha, mat, &lda, in, &incx, &beta, out, &incy);
-            } else if (symmetry == 'H') {
+            } else if (symmetry == 'H' && (trans == 'N' || trans == 'C')) {
                 Blas<T>::hemv(&UPLO, &nr, &alpha, mat, &lda, in, &incx, &beta, out, &incy);
+            } else if (symmetry == 'S' && trans == 'C') {
+                std::vector<T> conjugate_in(nr);
+                T conjugate_alpha = std::conj(alpha);
+                T conjugate_beta  = std::conj(beta);
+                std::transform(in, in + nr, conjugate_in.data(), [](const T &c) { return std::conj(c); });
+                std::transform(out, out + nr, out, [](const T &c) { return std::conj(c); });
+                Blas<T>::symv(&UPLO, &nr, &conjugate_alpha, mat, &lda, conjugate_in.data(), &incx, &conjugate_beta, out, &incy);
+                std::transform(out, out + nr, out, [](const T &c) { return std::conj(c); });
+            } else if (symmetry == 'H' && trans == 'T') {
+                std::vector<T> conjugate_in(nr);
+                T conjugate_alpha = std::conj(alpha);
+                T conjugate_beta  = std::conj(beta);
+                std::transform(in, in + nr, conjugate_in.data(), [](const T &c) { return std::conj(c); });
+                std::transform(out, out + nr, out, [](const T &c) { return std::conj(c); });
+                Blas<T>::hemv(&UPLO, &nr, &conjugate_alpha, mat, &lda, conjugate_in.data(), &incx, &conjugate_beta, out, &incy);
+                std::transform(out, out + nr, out, [](const T &c) { return std::conj(c); });
+
             } else {
-                throw std::invalid_argument("[Htool error] Invalid arguments for add_mvprod_row_major_sym"); // LCOV_EXCL_LINE
+                throw std::invalid_argument("[Htool error] Invalid arguments for add_vector_product_symmetric"); // LCOV_EXCL_LINE
             }
         }
     }
 
     template <typename Q = T, typename std::enable_if<!is_complex_t<Q>::value, int>::type = 0>
-    void add_matrix_product_symmetric(T alpha, const T *const in, T beta, T *const out, const int &mu, char UPLO, char, char side) const {
+    void add_matrix_product_symmetric(char trans, T alpha, const T *in, T beta, T *out, const int &mu, char UPLO, char symmetry) const {
         int nr  = this->nr;
         int lda = nr;
 
         if (nr) {
-            char side = 'R';
-            int M     = mu;
-            int N     = nr;
-            int ldb   = mu;
-            int ldc   = mu;
+            char side = 'L';
+            int M     = nr;
+            int N     = mu;
+            int ldb   = nc;
+            int ldc   = nr;
             Blas<T>::symm(&side, &UPLO, &M, &N, &alpha, mat, &lda, in, &ldb, &beta, out, &ldc);
         }
     }
 
     template <typename Q = T, typename std::enable_if<is_complex_t<Q>::value, int>::type = 0>
-    void add_matrix_product_symmetric(T alpha, const T *const in, T beta, T *const out, const int &mu, char UPLO, char symmetry) const {
+    void add_matrix_product_symmetric(char trans, T alpha, const T *in, T beta, T *out, const int &mu, char UPLO, char symmetry) const {
         int nr = this->nr;
 
         if (nr) {
-            if (mu == 1) {
-                int lda  = nr;
-                int incx = 1;
-                int incy = 1;
-                if (symmetry == 'S') {
-                    Blas<T>::symv(&UPLO, &nr, &alpha, mat, &lda, in, &incx, &beta, out, &incy);
-                } else if (symmetry == 'H') {
-                    Blas<T>::hemv(&UPLO, &nr, &alpha, mat, &lda, in, &incx, &beta, out, &incy);
-                } else {
-                    throw std::invalid_argument("[Htool error] Invalid arguments for add_mvprod_row_major_sym"); // LCOV_EXCL_LINE
-                }
+            int lda   = nr;
+            char side = 'L';
+            int M     = nr;
+            int N     = mu;
+            int ldb   = nc;
+            int ldc   = nr;
+
+            if (symmetry == 'S' && (trans == 'N' || trans == 'T')) {
+                Blas<T>::symm(&side, &UPLO, &M, &N, &alpha, mat, &lda, in, &ldb, &beta, out, &ldc);
+            } else if (symmetry == 'H' && (trans == 'N' || trans == 'C')) {
+                Blas<T>::hemm(&side, &UPLO, &M, &N, &alpha, mat, &lda, in, &ldb, &beta, out, &ldc);
+            } else if (symmetry == 'S' && trans == 'C') {
+                std::vector<T> conjugate_in(nr);
+                T conjugate_alpha = std::conj(alpha);
+                T conjugate_beta  = std::conj(beta);
+                std::transform(in, in + nr * mu, conjugate_in.data(), [](const T &c) { return std::conj(c); });
+                std::transform(out, out + nr * mu, out, [](const T &c) { return std::conj(c); });
+                Blas<T>::symm(&side, &UPLO, &M, &N, &conjugate_alpha, mat, &lda, conjugate_in.data(), &ldb, &conjugate_beta, out, &ldc);
+                std::transform(out, out + nr * mu, out, [](const T &c) { return std::conj(c); });
+            } else if (symmetry == 'H' && trans == 'T') {
+                std::vector<T> conjugate_in(nr * mu);
+                T conjugate_alpha = std::conj(alpha);
+                T conjugate_beta  = std::conj(beta);
+                std::transform(in, in + nr * mu, conjugate_in.data(), [](const T &c) { return std::conj(c); });
+                std::transform(out, out + nr * mu, out, [](const T &c) { return std::conj(c); });
+                Blas<T>::hemm(&side, &UPLO, &M, &N, &conjugate_alpha, mat, &lda, conjugate_in.data(), &ldb, &conjugate_beta, out, &ldc);
+                std::transform(out, out + nr * mu, out, [](const T &c) { return std::conj(c); });
 
             } else {
-                int lda   = nr;
-                char side = 'R';
-                int M     = mu;
-                int N     = nr;
-                int ldb   = mu;
-                int ldc   = mu;
-
-                if (symmetry == 'S') {
-                    Blas<T>::symm(&side, &UPLO, &M, &N, &alpha, mat, &lda, in, &ldb, &beta, out, &ldc);
-                } else if (symmetry == 'H') {
-                    Blas<T>::hemm(&side, &UPLO, &M, &N, &alpha, mat, &lda, in, &ldb, &beta, out, &ldc);
-                } else {
-                    throw std::invalid_argument("[Htool error] Invalid arguments for add_mvprod_row_major_sym"); // LCOV_EXCL_LINE
-                }
+                throw std::invalid_argument("[Htool error] Invalid arguments for add_matrix_product_symmetric"); // LCOV_EXCL_LINE
             }
         }
     }
@@ -407,7 +460,7 @@ class Matrix {
     //! ### Special mvprod with row major input and output
     /*!
      */
-    void mvprod_row_major(const T *const in, T *const out, const int &mu, char transb, char op = 'N') const {
+    void mvprod_row_major(const T *in, T *out, const int &mu, char transb, char op = 'N') const {
         int nr  = this->nr;
         int nc  = this->nc;
         T alpha = 1;
@@ -437,92 +490,88 @@ class Matrix {
         }
     }
 
-    void add_matrix_product_row_major(T alpha, const T *const in, T beta, T *const out, const int &mu, char transb, char op = 'N') const {
-        int nr = this->nr;
-        int nc = this->nc;
+    // void add_matrix_product_row_major(T alpha, const T *in, T beta, T *out, const int &mu, char transb, char op = 'N') const {
+    //     int nr = this->nr;
+    //     int nc = this->nc;
 
-        if (nr && nc) {
-            if (mu == 1) {
-                int lda  = nr;
-                int incx = 1;
-                int incy = 1;
-                Blas<T>::gemv(&op, &nr, &nc, &alpha, mat, &lda, in, &incx, &beta, out, &incy);
-            } else {
-                int lda     = mu;
-                char transa = 'N';
-                int M       = mu;
-                int N       = nr;
-                int K       = nc;
-                int ldb     = nr;
-                int ldc     = mu;
+    //     if (nr && nc) {
+    //         if (mu == 1) {
+    //             int lda  = nr;
+    //             int incx = 1;
+    //             int incy = 1;
+    //             Blas<T>::gemv(&op, &nr, &nc, &alpha, mat, &lda, in, &incx, &beta, out, &incy);
+    //         } else {
+    //             int lda     = mu;
+    //             char transa = 'N';
+    //             int M       = mu;
+    //             int N       = nr;
+    //             int K       = nc;
+    //             int ldb     = nr;
+    //             int ldc     = mu;
 
-                if (op == 'T' || op == 'C') {
-                    transb = 'N';
-                    N      = nc;
-                    K      = nr;
-                }
+    //             if (op == 'T' || op == 'C') {
+    //                 transb = 'N';
+    //                 N      = nc;
+    //                 K      = nr;
+    //             }
 
-                Blas<T>::gemm(&transa, &transb, &M, &N, &K, &alpha, in, &lda, mat, &ldb, &beta, out, &ldc);
-            }
-        }
-    }
+    //             Blas<T>::gemm(&transa, &transb, &M, &N, &K, &alpha, in, &lda, mat, &ldb, &beta, out, &ldc);
+    //         }
+    //     }
+    // }
 
     // see https://stackoverflow.com/questions/6972368/stdenable-if-to-conditionally-compile-a-member-function for why  Q template parameter
     template <typename Q = T, typename std::enable_if<!is_complex_t<Q>::value, int>::type = 0>
-    void add_matrix_product_symmetric_row_major(T alpha, const T *const in, T beta, T *const out, const int &mu, char UPLO, char) const {
+    void add_matrix_product_symmetric_row_major(char, T alpha, const T *in, T beta, T *out, const int &mu, char UPLO, char) const {
         int nr = this->nr;
 
         if (nr) {
-            if (mu == 1) {
-                int lda  = nr;
-                int incx = 1;
-                int incy = 1;
-                Blas<T>::symv(&UPLO, &nr, &alpha, mat, &lda, in, &incx, &beta, out, &incy);
-            } else {
-                int lda   = nr;
-                char side = 'R';
-                int M     = mu;
-                int N     = nr;
-                int ldb   = mu;
-                int ldc   = mu;
+            int lda   = nr;
+            char side = 'R';
+            int M     = mu;
+            int N     = nr;
+            int ldb   = mu;
+            int ldc   = mu;
 
-                Blas<T>::symm(&side, &UPLO, &M, &N, &alpha, mat, &lda, in, &ldb, &beta, out, &ldc);
-            }
+            Blas<T>::symm(&side, &UPLO, &M, &N, &alpha, mat, &lda, in, &ldb, &beta, out, &ldc);
         }
     }
 
     template <typename Q = T, typename std::enable_if<is_complex_t<Q>::value, int>::type = 0>
-    void add_matrix_product_symmetric_row_major(T alpha, const T *const in, T beta, T *const out, const int &mu, char UPLO, char symmetry) const {
+    void add_matrix_product_symmetric_row_major(char trans, T alpha, const T *in, T beta, T *out, const int &mu, char UPLO, char symmetry) const {
         int nr = this->nr;
 
         if (nr) {
-            if (mu == 1) {
-                int lda  = nr;
-                int incx = 1;
-                int incy = 1;
-                if (symmetry == 'S') {
-                    Blas<T>::symv(&UPLO, &nr, &alpha, mat, &lda, in, &incx, &beta, out, &incy);
-                } else if (symmetry == 'H') {
-                    Blas<T>::hemv(&UPLO, &nr, &alpha, mat, &lda, in, &incx, &beta, out, &incy);
-                } else {
-                    throw std::invalid_argument("[Htool error] Invalid arguments for add_mvprod_row_major_sym"); // LCOV_EXCL_LINE
-                }
+            int lda   = nr;
+            char side = 'R';
+            int M     = mu;
+            int N     = nr;
+            int ldb   = mu;
+            int ldc   = mu;
+
+            if (symmetry == 'S' && (trans == 'N' || trans == 'T')) {
+                Blas<T>::symm(&side, &UPLO, &M, &N, &alpha, mat, &lda, in, &ldb, &beta, out, &ldc);
+            } else if (symmetry == 'H' && trans == 'T') {
+                Blas<T>::hemm(&side, &UPLO, &M, &N, &alpha, mat, &lda, in, &ldb, &beta, out, &ldc);
+            } else if (symmetry == 'S' && trans == 'C') {
+                std::vector<T> conjugate_in(nr * mu);
+                T conjugate_alpha = std::conj(alpha);
+                T conjugate_beta  = std::conj(beta);
+                std::transform(in, in + nr, conjugate_in.data(), [](const T &c) { return std::conj(c); });
+                std::transform(out, out + nr, out, [](const T &c) { return std::conj(c); });
+                Blas<T>::symm(&side, &UPLO, &M, &N, &conjugate_alpha, mat, &lda, conjugate_in.data(), &ldb, &conjugate_beta, out, &ldc);
+                std::transform(out, out + nr, out, [](const T &c) { return std::conj(c); });
+            } else if (symmetry == 'H' && trans == 'N') {
+                std::vector<T> conjugate_in(nr * mu);
+                T conjugate_alpha = std::conj(alpha);
+                T conjugate_beta  = std::conj(beta);
+                std::transform(in, in + nr * mu, conjugate_in.data(), [](const T &c) { return std::conj(c); });
+                std::transform(out, out + nr * mu, out, [](const T &c) { return std::conj(c); });
+                Blas<T>::hemm(&side, &UPLO, &M, &N, &conjugate_alpha, mat, &lda, conjugate_in.data(), &ldb, &conjugate_beta, out, &ldc);
+                std::transform(out, out + nr * mu, out, [](const T &c) { return std::conj(c); });
 
             } else {
-                int lda   = nr;
-                char side = 'R';
-                int M     = mu;
-                int N     = nr;
-                int ldb   = mu;
-                int ldc   = mu;
-
-                if (symmetry == 'S') {
-                    Blas<T>::symm(&side, &UPLO, &M, &N, &alpha, mat, &lda, in, &ldb, &beta, out, &ldc);
-                } else if (symmetry == 'H') {
-                    Blas<T>::hemm(&side, &UPLO, &M, &N, &alpha, mat, &lda, in, &ldb, &beta, out, &ldc);
-                } else {
-                    throw std::invalid_argument("[Htool error] Invalid arguments for add_mvprod_row_major_sym"); // LCOV_EXCL_LINE
-                }
+                throw std::invalid_argument("[Htool error] Invalid arguments for add_mvprod_row_major_sym"); // LCOV_EXCL_LINE
             }
         }
     }

@@ -20,7 +20,7 @@ template <typename T>
 T StrToNbr(const std::string &Text) {
     std::istringstream ss(Text);
     T result;
-    return ss >> result ? result : 0;
+    return (ss >> result) ? result : 0;
 }
 
 //  String operations

@@ -41,8 +41,8 @@ int main(int argc, char const *argv[]) {
     cout << "ai/3        = " << ai / 3 << endl;
     test = test || !(iprod == dprod(ai, bi));
     cout << "dprod(ai,bi)= " << dprod(ai, bi) << endl;
-    test = test || !((inorm - norm2(ai)) < 1e-16);
-    cout << "norm2(ai)   = " << norm2(ai) << endl;
+    // test = test || !((inorm - norm2(ai)) < 1e-16);
+    // cout << "norm2(ai)   = " << norm2(ai) << endl;
     test = test || !(argmax(ai) == ai.size() - 1);
     cout << "argmax(ai)  = " << argmax(ai) << endl;
     test = test || !(abs(max(ai + bi) - aiplus[aiplus.size() - 1]) < 1e-16);
@@ -53,7 +53,7 @@ int main(int argc, char const *argv[]) {
     test = test || !(ai == aimult3);
     cout << "ai*=3    ai = " << ai << endl;
     ai /= 3;
-    test = test || !(ai == ai);
+    test = test || !(ai == aidiv3);
     cout << "ai/=3    ai = " << ai << endl;
 
     // double

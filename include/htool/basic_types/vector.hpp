@@ -1,6 +1,7 @@
 #ifndef HTOOL_BASIC_TYPES_VECTOR_HPP
 #define HTOOL_BASIC_TYPES_VECTOR_HPP
 
+#include "../misc/misc.hpp"
 #include <algorithm>
 #include <cassert>
 #include <complex>
@@ -60,20 +61,18 @@ std::vector<T> minus(const std::vector<T> &a, const std::vector<T> &b) {
     return a - b;
 }
 
-// template<typename T>
-// std::vector<T> mult(V value,const std::vector<T>& a)
-// {
-// 	std::vector<T> result(a.size(),0);
-// 	std::transform (a.begin(), a.end(), result.begin(), std::bind1st(std::multiplies<T>(),value));
-//
-// 	return result;
-// }
-//
-// template<typename T, typename V>
-// std::vector<T> mult(const std::vector<T>& b,V value)
-// {
-// 	return value*b;
-// }
+template <typename T>
+std::vector<T> mult(T value, const std::vector<T> &a) {
+    std::vector<T> result(a.size(), 0);
+    std::transform(a.begin(), a.end(), result.begin(), [value](T a) { return a * value; });
+
+    return result;
+}
+
+template <typename T>
+std::vector<T> mult(const std::vector<T> &b, T value) {
+    return value * b;
+}
 
 template <typename T, typename V>
 std::vector<T> operator/(const std::vector<T> &a, V value) {
@@ -93,7 +92,7 @@ std::complex<T> dprod(const std::vector<std::complex<T>> &a, const std::vector<s
 }
 
 template <typename T>
-double norm2(const std::vector<T> &u) { return std::sqrt(std::abs(dprod(u, u))); }
+underlying_type<T> norm2(const std::vector<T> &u) { return std::sqrt(std::abs(dprod(u, u))); }
 
 template <typename T>
 T max(const std::vector<T> &u) {

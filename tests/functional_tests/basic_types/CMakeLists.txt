@@ -2,6 +2,10 @@
 #=========================== Executables =====================================#
 #=============================================================================#
 
+add_custom_target(build-tests-basic-types-matrix-product)
+add_dependencies(build-tests-basic-types build-tests-basic-types-matrix-product)
+add_subdirectory(matrix_product)
+
 add_executable(Test_basic_types_matrix test_basic_types_matrix.cpp)
 target_link_libraries(Test_basic_types_matrix htool)
 add_dependencies(build-tests-basic-types Test_basic_types_matrix)
