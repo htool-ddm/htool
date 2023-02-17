@@ -1,27 +1,29 @@
 #ifndef HTOOL_SVD_HPP
 #define HTOOL_SVD_HPP
 
-#include "../wrappers/wrapper_lapack.hpp"
+#include "../../wrappers/wrapper_lapack.hpp"
 #include "lrmat.hpp"
 
 namespace htool {
 
-template <typename T>
-class SVD final : public VirtualLowRankGenerator<T> {
+template <typename CoefficientPrecision, typename CoordinatesPrecision = underlying_type<CoefficientPrecision>>
+class SVD final : public VirtualLowRankGenerator<CoefficientPrecision, CoordinatesPrecision> {
 
   public:
-    using VirtualLowRankGenerator<T>::VirtualLowRankGenerator;
+    using VirtualLowRankGenerator<CoefficientPrecision, CoordinatesPrecision>::VirtualLowRankGenerator;
 
-    void copy_low_rank_approximation(double epsilon, int M, int N, const int *const rows, const int *const cols, int &rank, T **U, T **V, const VirtualGenerator<T> &A, const VirtualCluster &, const double *const, const VirtualCluster &, const double *const) const {
+    void copy_low_rank_approximation(const VirtualGenerator<CoefficientPrecision> &A, const Cluster<CoordinatesPrecision> &target_cluster, const Cluster<CoordinatesPrecision> &source_cluster, underlying_type<CoefficientPrecision> epsilon, int &rank, Matrix<CoefficientPrecision> &U, Matrix<CoefficientPrecision> &V) const override {
+
         int reqrank = 0;
+        int M       = target_cluster.get_size();
+        int N       = source_cluster.get_size();
+
         //// Matrix assembling
         double Norm = 0;
-        std::vector<T> mat(M * N);
-        A.copy_submatrix(M, N, rows, cols, mat.data());
-        for (int i = 0; i < mat.size(); i++) {
-            Norm += std::abs(mat[i] * mat[i]);
-        }
-        Norm = sqrt(Norm);
+        Matrix<CoefficientPrecision> mat(M, N);
+        A.copy_submatrix(target_cluster.get_size(), source_cluster.get_size(), target_cluster.get_offset(), source_cluster.get_offset(), mat.data());
+
+        Norm = normFrob(mat);
 
         //// SVD
         int m     = M;
@@ -31,17 +33,17 @@ class SVD final : public VirtualLowRankGenerator<T> {
         int ldvt  = n;
         int lwork = -1;
         int info;
-        std::vector<underlying_type<T>> singular_values(std::min(m, n));
-        Matrix<T> u(m, m);
-        // std::vector<T> vt (n*n);
-        Matrix<T> vt(n, n);
-        std::vector<T> work(std::min(m, n));
-        std::vector<underlying_type<T>> rwork(5 * std::min(m, n));
+        std::vector<underlying_type<CoefficientPrecision>> singular_values(std::min(m, n));
+        Matrix<CoefficientPrecision> u(m, m);
+        // std::vector<CoefficientPrecision> vt (n*n);
+        Matrix<CoefficientPrecision> vt(n, n);
+        std::vector<CoefficientPrecision> work(std::min(m, n));
+        std::vector<underlying_type<CoefficientPrecision>> rwork(5 * std::min(m, n));
 
-        Lapack<T>::gesvd("A", "A", &m, &n, mat.data(), &lda, singular_values.data(), u.data(), &ldu, vt.data(), &ldvt, work.data(), &lwork, rwork.data(), &info);
+        Lapack<CoefficientPrecision>::gesvd("A", "A", &m, &n, mat.data(), &lda, singular_values.data(), u.data(), &ldu, vt.data(), &ldvt, work.data(), &lwork, rwork.data(), &info);
         lwork = (int)std::real(work[0]);
         work.resize(lwork);
-        Lapack<T>::gesvd("A", "A", &m, &n, mat.data(), &lda, singular_values.data(), u.data(), &ldu, vt.data(), &ldvt, work.data(), &lwork, rwork.data(), &info);
+        Lapack<CoefficientPrecision>::gesvd("A", "A", &m, &n, mat.data(), &lda, singular_values.data(), u.data(), &ldu, vt.data(), &ldvt, work.data(), &lwork, rwork.data(), &info);
 
         if (rank == -1) {
 
@@ -66,16 +68,16 @@ class SVD final : public VirtualLowRankGenerator<T> {
         }
 
         if (rank > 0) {
-            *U = new T[M * rank];
-            *V = new T[rank * N];
+            U.resize(M, rank);
+            V.resize(rank, N);
             for (int i = 0; i < M; i++) {
                 for (int j = 0; j < reqrank; j++) {
-                    (*U)[i + M * j] = u(i, j) * singular_values[j];
+                    U(i, j) = u(i, j) * singular_values[j];
                 }
             }
             for (int i = 0; i < reqrank; i++) {
                 for (int j = 0; j < N; j++) {
-                    (*V)[i + rank * j] = vt(i, j);
+                    V(i, j) = vt(i, j);
                 }
             }
         }

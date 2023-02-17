@@ -24,8 +24,8 @@ namespace htool {
 //           et en particulier le paragraphe 3.2
 //
 //=================================//
-template <typename T>
-class fullACA final : public VirtualLowRankGenerator<T> {
+template <typename CoefficientPrecision, typename CoordinatesPrecision = underlying_type<CoefficientPrecision>>
+class fullACA final : public VirtualLowRankGenerator<CoefficientPrecision, CoordinatesPrecision> {
 
   public:
     //=========================//
@@ -33,19 +33,22 @@ class fullACA final : public VirtualLowRankGenerator<T> {
     //=========================//
     // If reqrank=-1 (default value), we use the precision given by epsilon for the stopping criterion;
     // otherwise, we use the required rank for the stopping criterion (!: at the end the rank could be lower)
-    using VirtualLowRankGenerator<T>::VirtualLowRankGenerator;
+    using VirtualLowRankGenerator<CoefficientPrecision, CoordinatesPrecision>::VirtualLowRankGenerator;
 
-    void copy_low_rank_approximation(double epsilon, int M, int N, const int *const rows, const int *const cols, int &rank, T **U, T **V, const VirtualGenerator<T> &A, const VirtualCluster &, const double *const, const VirtualCluster &, const double *const) const {
+    void copy_low_rank_approximation(const VirtualGenerator<CoefficientPrecision> &A, const Cluster<CoordinatesPrecision> &target_cluster, const Cluster<CoordinatesPrecision> &source_cluster, underlying_type<CoefficientPrecision> epsilon, int &rank, Matrix<CoefficientPrecision> &U, Matrix<CoefficientPrecision> &V) const override {
+
+        int M = target_cluster.get_size();
+        int N = source_cluster.get_size();
 
         // Matrix assembling
-        Matrix<T> mat(M, N);
-        A.copy_submatrix(M, N, rows, cols, mat.data());
+        Matrix<CoefficientPrecision> mat(M, N);
+        A.copy_submatrix(M, N, target_cluster.get_offset(), source_cluster.get_offset(), mat.data());
 
         // Full pivot
         int q       = 0;
         int reqrank = rank;
-        std::vector<std::vector<T>> uu;
-        std::vector<std::vector<T>> vv;
+        std::vector<std::vector<CoefficientPrecision>> uu;
+        std::vector<std::vector<CoefficientPrecision>> vv;
         double Norm = normFrob(mat);
 
         while (((reqrank > 0) && (q < std::min(reqrank, std::min(M, N)))) || ((reqrank < 0) && (normFrob(mat) / Norm > epsilon || q == 0))) {
@@ -55,8 +58,8 @@ class fullACA final : public VirtualLowRankGenerator<T> {
                 q = -1;
                 break;
             } else {
-                std::pair<int, int> ind = argmax(mat);
-                T pivot                 = mat(ind.first, ind.second);
+                std::pair<int, int> ind    = argmax(mat);
+                CoefficientPrecision pivot = mat(ind.first, ind.second);
                 if (std::abs(pivot) < 1e-15) {
                     q += -1;
                     break;
@@ -73,12 +76,12 @@ class fullACA final : public VirtualLowRankGenerator<T> {
         }
         rank = q;
         if (rank > 0) {
-            *U = new T[M * rank];
-            *V = new T[rank * N];
+            U.resize(M, rank);
+            V.resize(rank, N);
             for (int k = 0; k < rank; k++) {
-                std::copy_n(uu[k].begin(), uu[k].size(), *U + k * M);
+                std::move(uu[k].begin(), uu[k].end(), U.data() + k * M);
                 for (int j = 0; j < N; j++) {
-                    (*V)[rank * j + k] = vv[k][j];
+                    V(k, j) = vv[k][j];
                 }
             }
         }

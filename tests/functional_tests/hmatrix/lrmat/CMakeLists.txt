@@ -2,14 +2,10 @@
 #=========================== Executables =====================================#
 #=============================================================================#
 
-#=== lrmat_SVD
-set(compressions "fullACA")
-list(APPEND compressions "partialACA")
-list(APPEND compressions "sympartialACA")
-list(APPEND compressions "SVD")
-foreach(compression ${compressions})
-    add_executable(Test_lrmat_${compression} test_lrmat_${compression}.cpp)
-    target_link_libraries(Test_lrmat_${compression} htool)
-    add_dependencies(build-tests Test_lrmat_${compression})
-    add_test(Test_lrmat_${compression} Test_lrmat_${compression})
-endforeach()
+add_custom_target(build-tests-lrmat-build)
+add_dependencies(build-tests-lrmat build-tests-lrmat-build)
+add_subdirectory(lrmat_build)
+
+add_custom_target(build-tests-lrmat-product)
+add_dependencies(build-tests-lrmat build-tests-lrmat-product)
+add_subdirectory(lrmat_product)

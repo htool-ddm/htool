@@ -1,7 +1,6 @@
 #ifndef HTOOL_DENSE_GENERATOR_HPP
 #define HTOOL_DENSE_GENERATOR_HPP
 
-#include "vector.hpp"
 #include <cassert>
 #include <iterator>
 

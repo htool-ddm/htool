@@ -1,148 +1,166 @@
 #ifndef HTOOL_LRMAT_HPP
 #define HTOOL_LRMAT_HPP
 
-#include "../blocks/blocks.hpp"
-#include "../clustering/cluster.hpp"
-#include "../types/matrix.hpp"
-#include "../types/virtual_generator.hpp"
-#include "virtual_lrmat_generator.hpp"
+#include "../../basic_types/matrix.hpp"
+#include "../../clustering/cluster_node.hpp"
+#include "../interfaces/virtual_generator.hpp"
+#include "../interfaces/virtual_lrmat_generator.hpp"
 #include <cassert>
 #include <vector>
 
 namespace htool {
 
-template <typename T>
-class Block;
-
-template <typename T>
-class VirtualBlockData;
-
-template <typename T>
-class LowRankMatrix : public VirtualBlockData<T> {
+template <typename CoefficientPrecision, typename CoordinatesPrecision = underlying_type<CoefficientPrecision>>
+class LowRankMatrix {
 
   protected:
     // Data member
-    int rank;
-    int nr, nc;
-    Matrix<T> U, V;
-    double epsilon;
+    int m_rank;
+    int m_number_of_rows, m_number_of_columns;
+    Matrix<CoefficientPrecision> m_U, m_V;
+    underlying_type<CoefficientPrecision> m_epsilon;
 
   public:
     // Constructors
-    LowRankMatrix(const Block<T> &block, const VirtualGenerator<T> &A, const VirtualLowRankGenerator<T> &LRGenerator, const double *const xt, const double *const xs, int rank0 = -1, double epsilon0 = 1e-3, bool use_permutation = true) : rank(rank0), nr(block.get_target_cluster().get_size()), nc(block.get_source_cluster().get_size()), U(), V(), epsilon(epsilon0) {
+    LowRankMatrix(const VirtualGenerator<CoefficientPrecision> &A, const VirtualLowRankGenerator<CoefficientPrecision, CoordinatesPrecision> &LRGenerator, const Cluster<CoordinatesPrecision> &target_cluster, const Cluster<CoordinatesPrecision> &source_cluster, int rank = -1, underlying_type<CoefficientPrecision> epsilon = 1e-3) : m_rank(rank), m_number_of_rows(target_cluster.get_size()), m_number_of_columns(source_cluster.get_size()), m_U(), m_V(), m_epsilon(epsilon) {
 
-        if (this->rank == 0) {
-            T *uu, *vv;
-            uu = new T[this->nr];
-            vv = new T[this->nc];
-            std::fill_n(uu, this->nr, 0);
-            std::fill_n(vv, this->nc, 0);
-            this->U.assign(this->nr, 1, uu, LRGenerator.is_htool_owning_data());
-            this->V.assign(1, this->nc, vv, LRGenerator.is_htool_owning_data());
+        if (m_rank == 0) {
+
+            m_U.resize(m_number_of_rows, 1);
+            m_V.resize(1, m_number_of_columns);
+            std::fill_n(m_U.data(), m_number_of_rows, 0);
+            std::fill_n(m_V.data(), m_number_of_columns, 0);
         } else {
-            T *uu, *vv;
-            if (use_permutation)
-                LRGenerator.copy_low_rank_approximation(epsilon, this->nr, this->nc, block.get_target_cluster().get_perm_data(), block.get_source_cluster().get_perm_data(), rank, &uu, &vv, A, block.get_target_cluster(), xt, block.get_source_cluster(), xs);
-            else {
-                std::vector<int> no_perm_target(block.get_target_cluster().get_size()), no_perm_source(block.get_source_cluster().get_size());
-                std::iota(no_perm_target.begin(), no_perm_target.end(), block.get_target_cluster().get_offset());
-                std::iota(no_perm_source.begin(), no_perm_source.end(), block.get_source_cluster().get_offset());
-                LRGenerator.copy_low_rank_approximation(epsilon, this->nr, this->nc, no_perm_target.data(), no_perm_source.data(), rank, &uu, &vv, A, block.get_target_cluster(), xt, block.get_source_cluster(), xs);
-            }
-
-            if (rank > 0) {
-                this->U.assign(this->nr, rank, uu, LRGenerator.is_htool_owning_data());
-                this->V.assign(rank, this->nc, vv, LRGenerator.is_htool_owning_data());
-            } else {
-                // rank=-1 will be deleted
-            }
+            LRGenerator.copy_low_rank_approximation(A, target_cluster, source_cluster, epsilon, m_rank, m_U, m_V);
         }
     };
 
     // Getters
-    int nb_rows() const { return this->nr; }
-    int nb_cols() const { return this->nc; }
-    int rank_of() const override { return this->rank; }
+    int nb_rows() const { return m_number_of_rows; }
+    int nb_cols() const { return m_number_of_columns; }
+    int rank_of() const { return m_rank; }
 
-    T get_U(int i, int j) const { return this->U(i, j); }
-    T get_V(int i, int j) const { return this->V(i, j); }
-    void assign_U(int i, int j, T *ptr) { return this->U.assign(i, j, ptr); }
-    void assign_V(int i, int j, T *ptr) { return this->V.assign(i, j, ptr); }
-    std::vector<int> get_xr() const { return this->xr; }
-    std::vector<int> get_xc() const { return this->xc; }
-    double get_epsilon() const { return this->epsilon; }
+    CoefficientPrecision get_U(int i, int j) const { return m_U(i, j); }
+    CoefficientPrecision get_V(int i, int j) const { return m_V(i, j); }
+    void assign_U(int i, int j, CoefficientPrecision *ptr) { return m_U.assign(i, j, ptr); }
+    void assign_V(int i, int j, CoefficientPrecision *ptr) { return m_V.assign(i, j, ptr); }
+    underlying_type<CoefficientPrecision> get_epsilon() const { return m_epsilon; }
 
-    std::vector<T> operator*(const std::vector<T> &a) const {
-        return this->U * (this->V * a);
+    std::vector<CoefficientPrecision> operator*(const std::vector<CoefficientPrecision> &a) const {
+        return m_U * (m_V * a);
     }
-    void mvprod(const T *const in, T *const out) const {
-        if (rank == 0) {
-            std::fill(out, out + U.nb_cols(), 0);
+
+    void add_vector_product(char trans, CoefficientPrecision alpha, const CoefficientPrecision *in, CoefficientPrecision beta, CoefficientPrecision *out) const {
+        if (m_rank == 0) {
+            std::fill(out, out + m_U.nb_cols(), 0);
+        } else if (trans == 'N') {
+            std::vector<CoefficientPrecision> a(m_rank);
+            m_V.add_vector_product(trans, 1, in, 0, a.data());
+            m_U.add_vector_product(trans, alpha, a.data(), beta, out);
         } else {
-            std::vector<T> a(this->rank);
-            V.mvprod(in, a.data());
-            U.mvprod(a.data(), out);
+            std::vector<CoefficientPrecision> a(m_rank);
+            m_U.add_vector_product(trans, 1, in, 0, a.data());
+            m_V.add_vector_product(trans, alpha, a.data(), beta, out);
         }
     }
 
-    void add_mvprod_row_major(const T *const in, T *const out, const int &mu, char transb = 'T', char op = 'N') const override {
-        if (rank != 0) {
-            std::vector<T> a(this->rank * mu);
+    void add_matrix_product(char transa, CoefficientPrecision alpha, const CoefficientPrecision *in, CoefficientPrecision beta, CoefficientPrecision *out, int mu) const {
+        if (m_rank == 0) {
+            std::fill(out, out + m_V.nb_cols() * mu, 0);
+        } else if (transa == 'N') {
+            std::vector<CoefficientPrecision> a(m_rank * mu);
+            m_V.add_matrix_product(transa, 1, in, 0, a.data(), mu);
+            m_U.add_matrix_product(transa, alpha, a.data(), beta, out, mu);
+        } else {
+            std::vector<CoefficientPrecision> a(m_rank * mu);
+            m_U.add_matrix_product(transa, 1, in, 0, a.data(), mu);
+            m_V.add_matrix_product(transa, alpha, a.data(), beta, out, mu);
+        }
+    }
+
+    void add_matrix_product_row_major(char transa, CoefficientPrecision alpha, const CoefficientPrecision *in, CoefficientPrecision beta, CoefficientPrecision *out, int mu) const {
+        if (m_rank == 0) {
+            std::fill(out, out + m_V.nb_cols() * mu, 0);
+        } else if (transa == 'N') {
+            std::vector<CoefficientPrecision> a(m_rank * mu);
+            m_V.add_matrix_product_row_major(transa, 1, in, 0, a.data(), mu);
+            m_U.add_matrix_product_row_major(transa, alpha, a.data(), beta, out, mu);
+        } else {
+            std::vector<CoefficientPrecision> a(m_rank * mu);
+            m_U.add_matrix_product_row_major(transa, 1, in, 0, a.data(), mu);
+            m_V.add_matrix_product_row_major(transa, alpha, a.data(), beta, out, mu);
+        }
+    }
+
+    void
+    mvprod(const CoefficientPrecision *const in, CoefficientPrecision *const out) const {
+        if (m_rank == 0) {
+            std::fill(out, out + m_U.nb_cols(), 0);
+        } else {
+            std::vector<CoefficientPrecision> a(m_rank);
+            m_V.mvprod(in, a.data());
+            m_U.mvprod(a.data(), out);
+        }
+    }
+
+    void add_mvprod_row_major(const CoefficientPrecision *const in, CoefficientPrecision *const out, const int &mu, char transb = 'T', char op = 'N') const {
+        if (m_rank != 0) {
+            std::vector<CoefficientPrecision> a(m_rank * mu);
             if (op == 'N') {
-                V.mvprod_row_major(in, a.data(), mu, transb, op);
-                U.add_mvprod_row_major(a.data(), out, mu, transb, op);
+                m_V.mvprod_row_major(in, a.data(), mu, transb, op);
+                m_U.add_mvprod_row_major(a.data(), out, mu, transb, op);
             } else if (op == 'C' || op == 'T') {
-                U.mvprod_row_major(in, a.data(), mu, transb, op);
-                V.add_mvprod_row_major(a.data(), out, mu, transb, op);
+                m_U.mvprod_row_major(in, a.data(), mu, transb, op);
+                m_V.add_mvprod_row_major(a.data(), out, mu, transb, op);
             }
         }
     }
 
-    void get_whole_matrix(T *const out) const {
-        char transa = 'N';
-        char transb = 'N';
-        int M       = U.nb_rows();
-        int N       = V.nb_cols();
-        int K       = U.nb_cols();
-        T alpha     = 1;
-        int lda     = U.nb_rows();
-        int ldb     = V.nb_rows();
-        T beta      = 0;
-        int ldc     = U.nb_rows();
+    void copy_to_dense(CoefficientPrecision *const out) const {
+        char transa                = 'N';
+        char transb                = 'N';
+        int M                      = m_U.nb_rows();
+        int N                      = m_V.nb_cols();
+        int K                      = m_U.nb_cols();
+        CoefficientPrecision alpha = 1;
+        int lda                    = m_U.nb_rows();
+        int ldb                    = m_V.nb_rows();
+        CoefficientPrecision beta  = 0;
+        int ldc                    = m_U.nb_rows();
 
-        Blas<T>::gemm(&transa, &transb, &M, &N, &K, &alpha, &(U(0, 0)), &lda, &(V(0, 0)), &ldb, &beta, out, &ldc);
+        Blas<CoefficientPrecision>::gemm(&transa, &transb, &M, &N, &K, &alpha, m_U.data(), &lda, m_V.data(), &ldb, &beta, out, &ldc);
     }
 
     double compression_ratio() const {
-        return (nr * nc) / (double)(this->rank * (nr + nc));
+        return (m_number_of_rows * m_number_of_columns) / (double)(m_rank * (m_number_of_rows + m_number_of_columns));
     }
 
     double space_saving() const {
-        return (1 - (this->rank * (1. / double(nr) + 1. / double(nc))));
+        return (1 - (m_rank * (1. / double(m_number_of_rows) + 1. / double(m_number_of_columns))));
     }
 
     friend std::ostream &operator<<(std::ostream &os, const LowRankMatrix &m) {
         os << "rank:\t" << m.rank << std::endl;
-        os << "nr:\t" << m.nr << std::endl;
-        os << "nc:\t" << m.nc << std::endl;
+        os << "number_of_rows:\t" << m.m_number_of_rows << std::endl;
+        os << "m_number_of_columns:\t" << m.m_number_of_columns << std::endl;
         os << "U:\n";
-        os << m.U << std::endl;
-        os << m.V << std::endl;
+        os << m.m_U << std::endl;
+        os << m.m_V << std::endl;
 
         return os;
     }
 };
 
-template <typename T>
-underlying_type<T> Frobenius_relative_error(const Block<T> &block, const LowRankMatrix<T> &lrmat, const VirtualGenerator<T> &ref, int reqrank = -1) {
+template <typename CoefficientPrecision, typename CoordinatePrecision>
+underlying_type<CoefficientPrecision> Frobenius_relative_error(const Cluster<CoordinatePrecision> &target_cluster, const Cluster<CoordinatePrecision> &source_cluster, const LowRankMatrix<CoefficientPrecision, CoordinatePrecision> &lrmat, const VirtualGenerator<CoefficientPrecision> &ref, int reqrank = -1) {
     assert(reqrank <= lrmat.rank_of());
     if (reqrank == -1) {
         reqrank = lrmat.rank_of();
     }
-    underlying_type<T> norm = 0;
-    underlying_type<T> err  = 0;
-    std::vector<T> aux(lrmat.nb_rows() * lrmat.nb_cols());
-    ref.copy_submatrix(lrmat.nb_rows(), lrmat.nb_cols(), block.get_target_cluster().get_perm_data(), block.get_source_cluster().get_perm_data(), aux.data());
+    underlying_type<CoefficientPrecision> norm = 0;
+    underlying_type<CoefficientPrecision> err  = 0;
+    std::vector<CoefficientPrecision> aux(lrmat.nb_rows() * lrmat.nb_cols());
+    ref.copy_submatrix(target_cluster, source_cluster, aux.data());
     for (int j = 0; j < lrmat.nb_rows(); j++) {
         for (int k = 0; k < lrmat.nb_cols(); k++) {
             norm += std::pow(std::abs(aux[j + k * lrmat.nb_rows()]), 2);
@@ -156,23 +174,23 @@ underlying_type<T> Frobenius_relative_error(const Block<T> &block, const LowRank
     return std::sqrt(err);
 }
 
-template <typename T>
-underlying_type<T> Frobenius_absolute_error(const Block<T> &block, const LowRankMatrix<T> &lrmat, const VirtualGenerator<T> &ref, int reqrank = -1) {
+template <typename CoefficientPrecision, typename CoordinatePrecision>
+underlying_type<CoefficientPrecision> Frobenius_absolute_error(const Cluster<CoordinatePrecision> &target_cluster, const Cluster<CoordinatePrecision> &source_cluster, const LowRankMatrix<CoefficientPrecision, CoordinatePrecision> &lrmat, const VirtualGenerator<CoefficientPrecision> &ref, int reqrank = -1) {
     assert(reqrank <= lrmat.rank_of());
     if (reqrank == -1) {
         reqrank = lrmat.rank_of();
     }
-    underlying_type<T> err = 0;
-    std::vector<T> aux(lrmat.nb_rows() * lrmat.nb_cols());
-    ref.copy_submatrix(lrmat.nb_rows(), lrmat.nb_cols(), block.get_target_cluster().get_perm_data(), block.get_source_cluster().get_perm_data(), aux.data());
+    underlying_type<CoefficientPrecision> err = 0;
+    Matrix<CoefficientPrecision> aux(lrmat.nb_rows(), lrmat.nb_cols());
+    ref.copy_submatrix(target_cluster.get_size(), source_cluster.get_size(), target_cluster.get_offset(), source_cluster.get_offset(), aux.data());
 
     for (int j = 0; j < lrmat.nb_rows(); j++) {
         for (int k = 0; k < lrmat.nb_cols(); k++) {
 
             for (int l = 0; l < reqrank; l++) {
-                aux[j + k * lrmat.nb_rows()] = aux[j + k * lrmat.nb_rows()] - lrmat.get_U(j, l) * lrmat.get_V(l, k);
+                aux(j, k) = aux(j, k) - lrmat.get_U(j, l) * lrmat.get_V(l, k);
             }
-            err += std::pow(std::abs(aux[j + k * lrmat.nb_rows()]), 2);
+            err += std::pow(std::abs(aux(j, k)), 2);
         }
     }
     return std::sqrt(err);

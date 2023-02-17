@@ -2,9 +2,11 @@
 #include <iostream>
 #include <vector>
 
-#include "test_lrmat.hpp"
-#include <htool/clustering/pca.hpp>
-#include <htool/lrmat/fullACA.hpp>
+#include "../test_lrmat_build.hpp"
+#include <htool/clustering/clustering.hpp>
+#include <htool/hmatrix/lrmat/fullACA.hpp>
+#include <htool/testing/geometry.hpp>
+#include <mpi.h>
 
 using namespace std;
 using namespace htool;
@@ -12,11 +14,6 @@ using namespace htool;
 int main(int argc, char *argv[]) {
     // Initialize the MPI environment
     MPI_Init(&argc, &argv);
-
-    bool verbose = 1;
-    if (argc >= 2) {
-        verbose = argv[1]; // LCOV_EXCL_LINE
-    }
 
     const int ndistance = 4;
     double distance[ndistance];
@@ -38,29 +35,27 @@ int main(int argc, char *argv[]) {
         srand(1);
         // we set a constant seed for rand because we want always the same result if we run the check many times
         // (two different initializations with the same seed will generate the same succession of results in the subsequent calls to rand)
-        create_disk(3, 0, nr, xt.data());
+        create_disk(3, 0., nr, xt.data());
         create_disk(3, distance[idist], nc, xs.data());
 
-        Cluster<PCAGeometricClustering> t, s;
+        ClusterTreeBuilder<double, ComputeLargestExtent<double>, RegularSplitting<double>> target_recursive_build_strategy(nr, 3, xt.data(), 2, 2);
+        ClusterTreeBuilder<double, ComputeLargestExtent<double>, RegularSplitting<double>> source_recursive_build_strategy(nc, 3, xs.data(), 2, 2);
 
-        t.build(nr, xt.data());
-        s.build(nc, xs.data());
+        std::shared_ptr<Cluster<double>> target_cluster = std::make_shared<Cluster<double>>(target_recursive_build_strategy.create_cluster_tree());
+        std::shared_ptr<Cluster<double>> source_cluster = std::make_shared<Cluster<double>>(source_recursive_build_strategy.create_cluster_tree());
 
-        std::shared_ptr<VirtualAdmissibilityCondition> AdmissibilityCondition = std::make_shared<RjasanowSteinbach>();
-        Block<double> block(AdmissibilityCondition.get(), t, s);
-
-        GeneratorTestDouble A(3, nr, nc, xt, xs);
+        GeneratorTestDouble A(3, nr, nc, xt, xs, target_cluster, source_cluster);
 
         // fullACA fixed rank
         int reqrank_max = 10;
         fullACA<double> compressor;
-        LowRankMatrix<double> A_fullACA_fixed(block, A, compressor, xt.data(), xs.data(), reqrank_max, epsilon);
+        LowRankMatrix<double> A_fullACA_fixed(A, compressor, *target_cluster, *source_cluster, reqrank_max, epsilon);
 
         // ACA automatic building
-        LowRankMatrix<double> A_fullACA(block, A, compressor, xt.data(), xs.data(), -1, epsilon);
+        LowRankMatrix<double> A_fullACA(A, compressor, *target_cluster, *source_cluster, -1, epsilon);
         std::pair<double, double> fixed_compression_interval(0.87, 0.89);
         std::pair<double, double> auto_compression_interval(0.95, 0.97);
-        test = test || (test_lrmat(block, A, A_fullACA_fixed, A_fullACA, t.get_global_perm(), s.get_global_perm(), fixed_compression_interval, auto_compression_interval, verbose));
+        test = test || (test_lrmat(*target_cluster, *source_cluster, A, A_fullACA_fixed, A_fullACA, fixed_compression_interval, auto_compression_interval));
     }
     cout << "test : " << test << endl;
 

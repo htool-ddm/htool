@@ -2,9 +2,11 @@
 #include <iostream>
 #include <vector>
 
-#include "test_lrmat.hpp"
-#include <htool/clustering/pca.hpp>
-#include <htool/lrmat/sympartialACA.hpp>
+#include "../test_lrmat_build.hpp"
+#include <htool/clustering/clustering.hpp>
+#include <htool/hmatrix/lrmat/sympartialACA.hpp>
+#include <htool/testing/geometry.hpp>
+#include <mpi.h>
 
 using namespace std;
 using namespace htool;
@@ -13,11 +15,6 @@ int main(int argc, char *argv[]) {
 
     // Initialize the MPI environment
     MPI_Init(&argc, &argv);
-
-    bool verbose = 1;
-    if (argc >= 2) {
-        verbose = argv[1]; // LCOV_EXCL_LINE
-    }
 
     const int ndistance = 4;
     double distance[ndistance];
@@ -41,30 +38,28 @@ int main(int argc, char *argv[]) {
         // we set a constant seed for rand because we want always the same result if we run the check many times
         // (two different initializations with the same seed will generate the same succession of results in the subsequent calls to rand)
 
-        create_disk(3, 0, nr, xt.data());
+        create_disk(3, 0., nr, xt.data());
         create_disk(3, distance[idist], nc, xs.data());
 
-        Cluster<PCAGeometricClustering> t, s;
+        ClusterTreeBuilder<double, ComputeLargestExtent<double>, RegularSplitting<double>> target_recursive_build_strategy(nr, 3, xt.data(), 2, 2);
+        ClusterTreeBuilder<double, ComputeLargestExtent<double>, RegularSplitting<double>> source_recursive_build_strategy(nc, 3, xs.data(), 2, 2);
 
-        t.build(nr, xt.data());
-        s.build(nc, xs.data());
+        std::shared_ptr<Cluster<double>> t = std::make_shared<Cluster<double>>(target_recursive_build_strategy.create_cluster_tree());
+        std::shared_ptr<Cluster<double>> s = std::make_shared<Cluster<double>>(source_recursive_build_strategy.create_cluster_tree());
 
-        std::shared_ptr<VirtualAdmissibilityCondition> AdmissibilityCondition = std::make_shared<RjasanowSteinbach>();
-        Block<double> block(AdmissibilityCondition.get(), t, s);
-
-        GeneratorTestDouble A(3, nr, nc, xt, xs);
+        GeneratorTestDouble A(3, nr, nc, xt, xs, t, s);
 
         // sympartialACA fixed rank
         int reqrank_max = 10;
         sympartialACA<double> compressor;
-        LowRankMatrix<double> A_sympartialACA_fixed(block, A, compressor, xt.data(), xs.data(), reqrank_max, epsilon);
+        LowRankMatrix<double> A_sympartialACA_fixed(A, compressor, *t, *s, reqrank_max, epsilon);
 
         // ACA automatic building
-        LowRankMatrix<double> A_sympartialACA(block, A, compressor, xt.data(), xs.data(), -1, epsilon);
+        LowRankMatrix<double> A_sympartialACA(A, compressor, *t, *s, -1, epsilon);
 
         std::pair<double, double> fixed_compression_interval(0.87, 0.89);
         std::pair<double, double> auto_compression_interval(0.93, 0.96);
-        test = test || (test_lrmat(block, A, A_sympartialACA_fixed, A_sympartialACA, t.get_global_perm(), s.get_global_perm(), fixed_compression_interval, auto_compression_interval, verbose, 3));
+        test = test || (test_lrmat(*t, *s, A, A_sympartialACA_fixed, A_sympartialACA, fixed_compression_interval, auto_compression_interval));
     }
     cout << "test : " << test << endl;
 

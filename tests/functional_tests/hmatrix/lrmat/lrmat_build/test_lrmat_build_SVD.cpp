@@ -2,9 +2,11 @@
 #include <iostream>
 #include <vector>
 
-#include "test_lrmat.hpp"
-#include <htool/clustering/pca.hpp>
-#include <htool/lrmat/SVD.hpp>
+#include "../test_lrmat_build.hpp"
+#include <htool/clustering/clustering.hpp>
+#include <htool/hmatrix/lrmat/SVD.hpp>
+#include <htool/testing/geometry.hpp>
+#include <mpi.h>
 
 using namespace std;
 using namespace htool;
@@ -35,28 +37,27 @@ int main(int argc, char *argv[]) {
         // we set a constant seed for rand because we want always the same result if we run the check many times
         // (two different initializations with the same seed will generate the same succession of results in the subsequent calls to rand)
 
-        create_disk(3, 0, nr, xt.data());
+        create_disk(3, 0., nr, xt.data());
         create_disk(3, distance[idist], nc, xs.data());
 
-        Cluster<PCAGeometricClustering> t, s;
-        t.build(nr, xt.data());
-        s.build(nc, xs.data());
+        ClusterTreeBuilder<double, ComputeLargestExtent<double>, RegularSplitting<double>> target_recursive_build_strategy(nr, 3, xt.data(), 2, 2);
+        ClusterTreeBuilder<double, ComputeLargestExtent<double>, RegularSplitting<double>> source_recursive_build_strategy(nc, 3, xs.data(), 2, 2);
 
-        std::shared_ptr<VirtualAdmissibilityCondition> AdmissibilityCondition = std::make_shared<RjasanowSteinbach>();
-        Block<double> block(AdmissibilityCondition.get(), t, s);
+        std::shared_ptr<Cluster<double>> t = std::make_shared<Cluster<double>>(target_recursive_build_strategy.create_cluster_tree());
+        std::shared_ptr<Cluster<double>> s = std::make_shared<Cluster<double>>(source_recursive_build_strategy.create_cluster_tree());
 
-        GeneratorTestDouble A(3, nr, nc, xt, xs);
+        GeneratorTestDouble A(3, nr, nc, xt, xs, t, s);
 
         // SVD fixed rank
         int reqrank_max = 10;
         SVD<double> compressor_SVD;
-        LowRankMatrix<double> A_SVD_fixed(block, A, compressor_SVD, xt.data(), xs.data(), reqrank_max, epsilon);
+        LowRankMatrix<double> A_SVD_fixed(A, compressor_SVD, *t, *s, reqrank_max, epsilon);
         std::vector<double> SVD_fixed_errors;
         std::vector<double> SVD_errors_check(reqrank_max, 0);
 
         // compute singular values
-        std::vector<double> mat(nr * nc);
-        A.copy_submatrix(nr, nc, t.get_global_perm().data(), s.get_global_perm().data(), mat.data());
+        Matrix<double> matrix(nr, nc);
+        A.copy_submatrix(t->get_size(), s->get_size(), t->get_offset(), s->get_offset(), matrix.data());
         int lda   = nr;
         int ldu   = nr;
         int ldvt  = nc;
@@ -69,13 +70,13 @@ int main(int argc, char *argv[]) {
         std::vector<double> work(std::min(nc, nr));
         std::vector<double> rwork(5 * std::min(nr, nc));
 
-        Lapack<double>::gesvd("A", "A", &nr, &nc, mat.data(), &lda, singular_values.data(), u.data(), &ldu, vt.data(), &ldvt, work.data(), &lwork, rwork.data(), &info);
+        Lapack<double>::gesvd("A", "A", &nr, &nc, matrix.data(), &lda, singular_values.data(), u.data(), &ldu, vt.data(), &ldvt, work.data(), &lwork, rwork.data(), &info);
         lwork = (int)std::real(work[0]);
         work.resize(lwork);
-        Lapack<double>::gesvd("A", "A", &nr, &nc, mat.data(), &lda, singular_values.data(), u.data(), &ldu, vt.data(), &ldvt, work.data(), &lwork, rwork.data(), &info);
+        Lapack<double>::gesvd("A", "A", &nr, &nc, matrix.data(), &lda, singular_values.data(), u.data(), &ldu, vt.data(), &ldvt, work.data(), &lwork, rwork.data(), &info);
 
         for (int k = 0; k < reqrank_max; k++) {
-            SVD_fixed_errors.push_back(Frobenius_absolute_error(block, A_SVD_fixed, A, k));
+            SVD_fixed_errors.push_back(Frobenius_absolute_error(*t, *s, A_SVD_fixed, A, k));
             for (int l = k; l < min(nr, nc); l++) {
                 SVD_errors_check[k] += singular_values[l] * singular_values[l];
             }
@@ -89,11 +90,11 @@ int main(int argc, char *argv[]) {
         cout << "> Errors computed with the remaining eigenvalues : " << SVD_errors_check << endl;
 
         // ACA automatic building
-        LowRankMatrix<double> A_SVD(block, A, compressor_SVD, xt.data(), xs.data(), -1, epsilon);
+        LowRankMatrix<double> A_SVD(A, compressor_SVD, *t, *s, -1, epsilon);
 
         std::pair<double, double> fixed_compression_interval(0.87, 0.89);
         std::pair<double, double> auto_compression_interval(0.95, 0.97);
-        test = test || test_lrmat(block, A, A_SVD_fixed, A_SVD, t.get_global_perm(), s.get_global_perm(), fixed_compression_interval, auto_compression_interval, 1);
+        test = test || test_lrmat(*t, *s, A, A_SVD_fixed, A_SVD, fixed_compression_interval, auto_compression_interval);
     }
     cout << "test : " << test << endl;
 
