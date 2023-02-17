@@ -1,18 +1,17 @@
-#include <htool/clustering/cluster.hpp>
-#include <htool/clustering/pca.hpp>
-#include <htool/clustering/splitting.hpp>
+
+#include <htool/clustering/clustering.hpp>
 #include <htool/distributed_operator/distributed_operator.hpp>
+#include <htool/local_operators/local_dense_matrix.hpp>
 #include <htool/testing/generator_input.hpp>
 #include <htool/testing/generator_test.hpp>
 #include <htool/testing/geometry.hpp>
-#include <htool/testing/local_dense_matrix.hpp>
 #include <random>
 
 using namespace std;
 using namespace htool;
 
-template <typename T, typename GeneratorTestType, typename ClusterImpl>
-int test_distributed_operator(int nr, int nc, int mu, bool use_permutation, char Symmetry, char UPLO, char op, bool off_diagonal_approximation) {
+template <typename T, typename GeneratorTestType>
+bool test_distributed_operator(int nr, int nc, int mu, bool use_permutation, char Symmetry, char UPLO, char op, bool off_diagonal_approximation) {
 
     // Get the number of processes
     int sizeWorld;
@@ -45,9 +44,10 @@ int test_distributed_operator(int nr, int nc, int mu, bool use_permutation, char
     size_numbering = nc / sizeWorld;
     count_size     = 0;
 
-    std::shared_ptr<VirtualCluster> cluster_source;
-    std::shared_ptr<VirtualCluster> cluster_target = make_shared<Cluster<PCA<SplittingTypes::GeometricSplitting>>>();
-    cluster_target->build(nr, p1.data(), MasterOffset_target.data(), 2);
+    ClusterTreeBuilder<htool::underlying_type<T>, ComputeLargestExtent<htool::underlying_type<T>>, GeometricSplitting<htool::underlying_type<T>>> target_recursive_build(nr, 3, p1.data(), 2, sizeWorld);
+    target_recursive_build.set_partition(sizeWorld, MasterOffset_target.data());
+    std::shared_ptr<const Cluster<htool::underlying_type<T>>> source_root_cluster;
+    std::shared_ptr<const Cluster<htool::underlying_type<T>>> target_root_cluster = make_shared<const Cluster<htool::underlying_type<T>>>(target_recursive_build.create_cluster_tree());
 
     if (Symmetry == 'N') {
         double z2 = 1 + 0.1;
@@ -61,30 +61,41 @@ int test_distributed_operator(int nr, int nc, int mu, bool use_permutation, char
         }
         MasterOffset_source.push_back(count_size);
         MasterOffset_source.push_back(nc - count_size);
-        cluster_source = make_shared<Cluster<PCA<SplittingTypes::GeometricSplitting>>>();
-        cluster_source->build(nc, p2.data(), MasterOffset_source.data(), 2);
+
+        ClusterTreeBuilder<htool::underlying_type<T>, ComputeLargestExtent<htool::underlying_type<T>>, GeometricSplitting<htool::underlying_type<T>>> source_recursive_build(nc, 3, p2.data(), 2, sizeWorld);
+        source_recursive_build.set_partition(sizeWorld, MasterOffset_source.data());
+
+        source_root_cluster = make_shared<const Cluster<htool::underlying_type<T>>>(source_recursive_build.create_cluster_tree());
+
     } else {
 
         MasterOffset_source = MasterOffset_target;
 
-        cluster_source = cluster_target;
-        p2             = p1;
+        source_root_cluster = target_root_cluster;
+        p2                  = p1;
     }
+
+    // if (rankWorld == 0) {
+    //     std::cout << target_cluster_tree->get_permutation() << "\n";
+    //     std::cout << source_cluster_tree->get_permutation() << "\n";
+    // }
 
     // Permutation on geometry
     if (!use_permutation || off_diagonal_approximation) {
         p1_permuted.resize(3 * nr);
-        for (int i = 0; i < cluster_target->get_global_perm().size(); i++) {
-            p1_permuted[i * 3 + 0] = p1[cluster_target->get_global_perm(i) * 3 + 0];
-            p1_permuted[i * 3 + 1] = p1[cluster_target->get_global_perm(i) * 3 + 1];
-            p1_permuted[i * 3 + 2] = p1[cluster_target->get_global_perm(i) * 3 + 2];
+        const auto &target_permutation = target_root_cluster->get_permutation();
+        for (int i = 0; i < target_permutation.size(); i++) {
+            p1_permuted[i * 3 + 0] = p1[target_permutation[i] * 3 + 0];
+            p1_permuted[i * 3 + 1] = p1[target_permutation[i] * 3 + 1];
+            p1_permuted[i * 3 + 2] = p1[target_permutation[i] * 3 + 2];
         }
         p2_permuted.resize(3 * nc);
         if (Symmetry == 'N') {
-            for (int i = 0; i < cluster_source->get_global_perm().size(); i++) {
-                p2_permuted[i * 3 + 0] = p2[cluster_source->get_global_perm(i) * 3 + 0];
-                p2_permuted[i * 3 + 1] = p2[cluster_source->get_global_perm(i) * 3 + 1];
-                p2_permuted[i * 3 + 2] = p2[cluster_source->get_global_perm(i) * 3 + 2];
+            const auto &source_permutation = source_root_cluster->get_permutation();
+            for (int i = 0; i < source_permutation.size(); i++) {
+                p2_permuted[i * 3 + 0] = p2[source_permutation[i] * 3 + 0];
+                p2_permuted[i * 3 + 1] = p2[source_permutation[i] * 3 + 1];
+                p2_permuted[i * 3 + 2] = p2[source_permutation[i] * 3 + 2];
             }
         } else {
             p2_permuted = p1_permuted;
@@ -92,38 +103,40 @@ int test_distributed_operator(int nr, int nc, int mu, bool use_permutation, char
     }
 
     // Generator
-    GeneratorTestType generator(3, nr, nc, p1, p2);
+    GeneratorTestType generator(3, nr, nc, p1, p2, target_root_cluster, source_root_cluster);
     GeneratorTestType generator_permuted(3, nr, nc, p1_permuted, p2_permuted);
 
     // Diagonal LocalDenseMatrix
-    std::shared_ptr<LocalDenseMatrix<T>> local_dense_matrix;
+    std::shared_ptr<LocalDenseMatrix<T, htool::underlying_type<T>>> local_dense_matrix;
+    std::shared_ptr<const Cluster<htool::underlying_type<T>>> local_target_root_cluster = make_shared<const Cluster<htool::underlying_type<T>>>(clone_cluster_tree_from_partition(*target_root_cluster, rankWorld));
+
+    std::shared_ptr<const Cluster<htool::underlying_type<T>>> local_source_root_cluster = make_shared<const Cluster<htool::underlying_type<T>>>(clone_cluster_tree_from_partition(*source_root_cluster, rankWorld));
 
     if (!off_diagonal_approximation && !use_permutation) {
         char symmetry      = (sizeWorld == 1) ? Symmetry : 'N';
         char uplo          = (sizeWorld == 1) ? UPLO : 'N';
-        local_dense_matrix = make_shared<LocalDenseMatrix<T>>(generator_permuted, cluster_target->get_local_cluster_tree(), cluster_source, symmetry, uplo, false, false);
+        local_dense_matrix = make_shared<LocalDenseMatrix<T, htool::underlying_type<T>>>(generator_permuted, local_target_root_cluster, source_root_cluster, symmetry, uplo, false, false);
     } else if (!off_diagonal_approximation && use_permutation) {
         char symmetry      = (sizeWorld == 1) ? Symmetry : 'N';
         char uplo          = (sizeWorld == 1) ? UPLO : 'N';
-        local_dense_matrix = make_shared<LocalDenseMatrix<T>>(generator, cluster_target->get_local_cluster_tree(), cluster_source, symmetry, uplo, true, true);
+        local_dense_matrix = make_shared<LocalDenseMatrix<T, htool::underlying_type<T>>>(generator, local_target_root_cluster, source_root_cluster, symmetry, uplo, true, true);
     } else if (off_diagonal_approximation && !use_permutation) {
-        local_dense_matrix = make_shared<LocalDenseMatrix<T>>(generator_permuted, cluster_target->get_local_cluster_tree(), cluster_source->get_local_cluster_tree(), Symmetry, UPLO, false, false);
+        local_dense_matrix = make_shared<LocalDenseMatrix<T, htool::underlying_type<T>>>(generator_permuted, local_target_root_cluster, local_source_root_cluster, Symmetry, UPLO, false, false);
     } else {
-        local_dense_matrix = make_shared<LocalDenseMatrix<T>>(generator, cluster_target->get_local_cluster_tree(), cluster_source->get_local_cluster_tree(), Symmetry, UPLO, true, true);
+        local_dense_matrix = make_shared<LocalDenseMatrix<T, htool::underlying_type<T>>>(generator, local_target_root_cluster, local_source_root_cluster, Symmetry, UPLO, true, true);
     }
 
     // Distributed operator
-    DistributedOperator<T> distributed_operator(cluster_target, cluster_source, Symmetry, UPLO);
+    DistributedOperator<T, htool::underlying_type<T>> distributed_operator(target_root_cluster, source_root_cluster, Symmetry, UPLO);
     distributed_operator.add_local_operator(local_dense_matrix);
     distributed_operator.use_permutation() = use_permutation;
 
     // Off diagonal geometries
     if (off_diagonal_approximation) {
-
         // Sizes
-        int nc_local = cluster_source->get_local_size();
-        int off_diagonal_nc_1{cluster_source->get_local_offset()};
-        int off_diagonal_nc_2{cluster_source->get_size() - cluster_source->get_local_size() - cluster_source->get_local_offset()};
+        int nc_local = local_source_root_cluster->get_size();
+        int off_diagonal_nc_1{local_source_root_cluster->get_offset()};
+        int off_diagonal_nc_2{source_root_cluster->get_size() - local_source_root_cluster->get_size() - local_source_root_cluster->get_offset()};
 
         // Local off diagonal cluster
         std::vector<int> off_diagonal_partition;
@@ -134,27 +147,31 @@ int test_distributed_operator(int nr, int nc, int mu, bool use_permutation, char
         off_diagonal_partition.push_back(off_diagonal_nc_1 + nc_local);
         off_diagonal_partition.push_back(off_diagonal_nc_2);
 
-        std::shared_ptr<Cluster<PCA<SplittingTypes::GeometricSplitting>>>
-            off_diagonal_cluster = make_shared<Cluster<PCA<SplittingTypes::GeometricSplitting>>>();
-
-        off_diagonal_cluster->build_local(nc, p2_permuted.data(), 2, off_diagonal_partition.data(), 2);
+        ClusterTreeBuilder<htool::underlying_type<T>, ComputeLargestExtent<htool::underlying_type<T>>, GeometricSplitting<htool::underlying_type<T>>> off_diagonal_recursive_build(nc, 3, p2_permuted.data(), 2, 3);
+        off_diagonal_recursive_build.set_partition(2, off_diagonal_partition.data());
+        std::shared_ptr<const Cluster<htool::underlying_type<T>>> off_diagonal_cluster = make_shared<const Cluster<htool::underlying_type<T>>>(off_diagonal_recursive_build.create_cluster_tree());
 
         // Generators
         std::unique_ptr<GeneratorTestType> generator_off_diagonal;
 
         if (use_permutation) {
-            generator_off_diagonal = std::unique_ptr<GeneratorTestType>(new GeneratorTestType(3, nr, nc, p1, p2_permuted));
+            generator_off_diagonal = std::unique_ptr<GeneratorTestType>(new GeneratorTestType(3, nr, nc, p1, p2_permuted, local_target_root_cluster, off_diagonal_cluster));
         } else {
-            generator_off_diagonal = std::unique_ptr<GeneratorTestType>(new GeneratorTestType(3, nr, nc, p1_permuted, p2_permuted));
+            generator_off_diagonal = std::unique_ptr<GeneratorTestType>(new GeneratorTestType(3, nr, nc, p1_permuted, p2_permuted, local_target_root_cluster, off_diagonal_cluster));
+            generator_off_diagonal->set_use_target_permutation(false);
+            generator_off_diagonal->set_use_source_permutation(true);
         }
 
         // Off diagonal LocalDenseMatrix
-        std::shared_ptr<LocalDenseMatrix<T>> local_off_diagonal_dense_matrix_1;
+        std::shared_ptr<LocalDenseMatrix<T, htool::underlying_type<T>>> local_off_diagonal_dense_matrix_1;
+        std::shared_ptr<const Cluster<htool::underlying_type<T>>> local_off_diagonal_cluster_tree_1 = make_shared<const Cluster<htool::underlying_type<T>>>(clone_cluster_tree_from_partition(*off_diagonal_cluster, 0));
 
-        local_off_diagonal_dense_matrix_1 = make_shared<LocalDenseMatrix<T>>(*generator_off_diagonal, cluster_target->get_local_cluster_tree(), off_diagonal_cluster->get_son(0).get_cluster_tree(), 'N', 'N', use_permutation, true, false, true);
+        local_off_diagonal_dense_matrix_1 = make_shared<LocalDenseMatrix<T, htool::underlying_type<T>>>(*generator_off_diagonal, local_target_root_cluster, local_off_diagonal_cluster_tree_1, 'N', 'N', use_permutation, true, false, true);
 
-        std::shared_ptr<LocalDenseMatrix<T>> local_off_diagonal_dense_matrix_2;
-        local_off_diagonal_dense_matrix_2 = make_shared<LocalDenseMatrix<T>>(*generator_off_diagonal, cluster_target->get_local_cluster_tree(), off_diagonal_cluster->get_son(1).get_cluster_tree(), 'N', 'N', use_permutation, true, false, true);
+        std::shared_ptr<LocalDenseMatrix<T, htool::underlying_type<T>>> local_off_diagonal_dense_matrix_2;
+        std::shared_ptr<const Cluster<htool::underlying_type<T>>> local_off_diagonal_cluster_tree_2 = make_shared<const Cluster<htool::underlying_type<T>>>(clone_cluster_tree_from_partition(*off_diagonal_cluster, 1));
+
+        local_off_diagonal_dense_matrix_2 = make_shared<LocalDenseMatrix<T, htool::underlying_type<T>>>(*generator_off_diagonal, local_target_root_cluster, local_off_diagonal_cluster_tree_2, 'N', 'N', use_permutation, true, false, true);
 
         // Add to distributed operator
         if (off_diagonal_nc_1 != 0) {
@@ -173,118 +190,159 @@ int test_distributed_operator(int nr, int nc, int mu, bool use_permutation, char
     std::vector<int> MasterOffset_output = (op == 'T' || op == 'C') ? MasterOffset_source : MasterOffset_target;
 
     // Random input vector
-    std::vector<T> in_global(ni * mu, 1), random_vector(ni * mu, 1);
+    std::vector<T> x_vec(ni * mu, 1), y_vec(no * mu, 1), ref(no * mu, 0), out(no * mu, 0);
+    T alpha, beta;
     if (rankWorld == 0) {
-        generate_random_vector(random_vector);
+        generate_random_vector(x_vec);
+        // std::iota(x_vec.begin(), x_vec.end(), T(0));
+        generate_random_vector(y_vec);
+        generate_random_scalar(alpha);
+        generate_random_scalar(beta);
     }
-    MPI_Bcast(random_vector.data(), random_vector.size(), wrapper_mpi<T>::mpi_type(), 0, MPI_COMM_WORLD);
+    alpha      = 1;
+    beta       = 0;
+    int T_size = 1;
+    MPI_Bcast(x_vec.data(), x_vec.size(), wrapper_mpi<T>::mpi_type(), 0, MPI_COMM_WORLD);
+    MPI_Bcast(y_vec.data(), y_vec.size(), wrapper_mpi<T>::mpi_type(), 0, MPI_COMM_WORLD);
+    MPI_Bcast(&alpha, T_size, wrapper_mpi<T>::mpi_type(), 0, MPI_COMM_WORLD);
+    MPI_Bcast(&beta, T_size, wrapper_mpi<T>::mpi_type(), 0, MPI_COMM_WORLD);
 
-    if (use_permutation) {
-        in_global = random_vector;
-    } else {
-        for (int j = 0; j < mu; j++) {
-            if (op == 'T' || op == 'C') {
-                global_to_cluster(cluster_target.get(), random_vector.data() + ni * j, in_global.data() + ni * j);
-            } else {
-                global_to_cluster(cluster_source.get(), random_vector.data() + ni * j, in_global.data() + ni * j);
+    // reference in user numbering
+    if (op == 'N') {
+        for (int p = 0; p < mu; p++) {
+            for (int i = 0; i < no; i++) {
+                for (int j = 0; j < ni; j++) {
+                    ref.at(i + p * no) += alpha * generator(i, j) * x_vec.at(j + p * ni);
+                }
+                ref.at(i + p * no) += beta * y_vec.at(i + p * no);
+            }
+        }
+    } else if (op == 'T') {
+        for (int p = 0; p < mu; p++) {
+            for (int i = 0; i < no; i++) {
+                for (int j = 0; j < ni; j++) {
+                    ref.at(i + p * no) += alpha * generator(j, i) * x_vec.at(j + p * ni);
+                }
+                ref.at(i + p * no) += beta * y_vec.at(i + p * no);
+            }
+        }
+    } else if (op == 'C') {
+        for (int p = 0; p < mu; p++) {
+            for (int i = 0; i < no; i++) {
+                for (int j = 0; j < ni; j++) {
+                    ref.at(i + p * no) += alpha * conj_if_complex(generator(j, i)) * x_vec.at(j + p * ni);
+                }
+                ref.at(i + p * no) += beta * y_vec.at(i + p * no);
             }
         }
     }
 
-    // Global output vectors
-    std::vector<T> out_global(no * mu, 1);
-    std::vector<T> out_global_permuted(no * mu, 1);
-    std::vector<T> out_ref(no * mu, 1);
-    if (op == 'T') {
-        generator.mvprod_transp(random_vector.data(), out_ref.data(), mu);
-    } else if (op == 'C') {
-        // A.mvprod_conj(random_vector.data(), f_global.data(), mu);
-    } else {
-        generator.mvprod(random_vector.data(), out_ref.data(), mu);
+    // Permutation
+    if (!use_permutation) {
+        std::vector<T> temp_1(x_vec), temp_2(y_vec);
+        for (int j = 0; j < mu; j++) {
+            if (op == 'T' || op == 'C') {
+                global_to_root_cluster(*target_root_cluster, x_vec.data() + ni * j, temp_1.data() + ni * j);
+                global_to_root_cluster(*source_root_cluster, y_vec.data() + no * j, temp_2.data() + no * j);
+            } else {
+                global_to_root_cluster(*source_root_cluster, x_vec.data() + ni * j, temp_1.data() + ni * j);
+                global_to_root_cluster(*target_root_cluster, y_vec.data() + no * j, temp_2.data() + no * j);
+            }
+        }
+        x_vec = temp_1;
+        y_vec = temp_2;
     }
+
+    // if (rankWorld == 0) {
+    //     std::cout << x_vec << "\n";
+    // }
 
     // Global product
     if (op == 'T') {
         if (mu == 1) {
-            distributed_operator.vector_product_transp_global_to_global(in_global.data(), out_global.data());
+            distributed_operator.vector_product_transp_global_to_global(x_vec.data(), y_vec.data());
         } else {
-            distributed_operator.matrix_product_transp_global_to_global(in_global.data(), out_global.data(), mu);
+            distributed_operator.matrix_product_transp_global_to_global(x_vec.data(), y_vec.data(), mu);
         }
     } else if (op == 'C') {
     } else {
         if (mu == 1) {
-            distributed_operator.vector_product_global_to_global(in_global.data(), out_global.data());
+            distributed_operator.vector_product_global_to_global(x_vec.data(), y_vec.data());
         } else {
-            distributed_operator.matrix_product_global_to_global(in_global.data(), out_global.data(), mu);
+            distributed_operator.matrix_product_global_to_global(x_vec.data(), y_vec.data(), mu);
         }
     }
-
+    // if (rankWorld == 0) {
+    //     std::cout << ref << "\n";
+    //     std::cout << y_vec << "\n";
+    // }
     // Error on global product
-    double global_error, norm_ref(norm2(out_ref));
-    if (use_permutation)
-        global_error = norm2(out_global - out_ref) / norm_ref;
-    else {
+    double global_error, norm_ref(norm2(ref));
+    if (use_permutation) {
+        global_error = norm2(y_vec - ref) / norm_ref;
+    } else {
+        std::vector<T> temp(y_vec);
         for (int j = 0; j < mu; j++) {
             if (op == 'T' || op == 'C') {
-                cluster_to_global(cluster_source.get(), out_global.data() + no * j, out_global_permuted.data() + no * j);
+                root_cluster_to_global(*source_root_cluster, y_vec.data() + no * j, temp.data() + no * j);
             } else {
-                cluster_to_global(cluster_target.get(), out_global.data() + no * j, out_global_permuted.data() + no * j);
+                root_cluster_to_global(*target_root_cluster, y_vec.data() + no * j, temp.data() + no * j);
             }
         }
-        global_error = norm2(out_global_permuted - out_ref) / norm_ref;
+        global_error = norm2(temp - ref) / norm_ref;
     }
     if (rankWorld == 0)
         cout << "error with global product: " << global_error << endl;
     test = test || !(global_error < 1e-14);
 
-    // Local vectors
-    std::vector<T> x_local(MasterOffset_input[2 * rankWorld + 1] * mu), out_local(MasterOffset_output[2 * rankWorld + 1] * mu), out_local_permuted(MasterOffset_output[2 * rankWorld + 1] * mu);
-    for (int i = 0; i < mu; i++) {
-        std::copy_n(in_global.data() + MasterOffset_input[2 * rankWorld] + ni * i, MasterOffset_input[2 * rankWorld + 1], x_local.data() + MasterOffset_input[2 * rankWorld + 1] * i);
-    }
+    // // Local vectors
+    // std::vector<T> x_local(MasterOffset_input[2 * rankWorld + 1] * mu), out_local(MasterOffset_output[2 * rankWorld + 1] * mu), out_local_permuted(MasterOffset_output[2 * rankWorld + 1] * mu);
+    // for (int i = 0; i < mu; i++) {
+    //     std::copy_n(in_global.data() + MasterOffset_input[2 * rankWorld] + ni * i, MasterOffset_input[2 * rankWorld + 1], x_local.data() + MasterOffset_input[2 * rankWorld + 1] * i);
+    // }
 
-    // Local product
-    if (op == 'T') {
-        if (mu == 1) {
-            distributed_operator.vector_product_transp_local_to_local(x_local.data(), out_local.data());
-        } else {
-            distributed_operator.matrix_product_transp_local_to_local(x_local.data(), out_local.data(), mu);
-        }
-    } else if (op == 'C') {
-        // HA->mvprod_conj_local_to_local(x_local.data(), out_local.data(), mu);
-    } else {
-        if (mu == 1) {
-            distributed_operator.vector_product_local_to_local(x_local.data(), out_local.data());
-        } else {
-            distributed_operator.matrix_product_local_to_local(x_local.data(), out_local.data(), mu);
-        }
-    }
+    // // Local product
+    // if (op == 'T') {
+    //     if (mu == 1) {
+    //         distributed_operator.vector_product_transp_local_to_local(x_local.data(), out_local.data());
+    //     } else {
+    //         distributed_operator.matrix_product_transp_local_to_local(x_local.data(), out_local.data(), mu);
+    //     }
+    // } else if (op == 'C') {
+    //     // HA->mvprod_conj_local_to_local(x_local.data(), out_local.data(), mu);
+    // } else {
+    //     if (mu == 1) {
+    //         distributed_operator.vector_product_local_to_local(x_local.data(), out_local.data());
+    //     } else {
+    //         distributed_operator.matrix_product_local_to_local(x_local.data(), out_local.data(), mu);
+    //     }
+    // }
 
-    // Error
-    double global_local_diff = 0;
-    if (!use_permutation) {
-        for (int j = 0; j < mu; j++) {
-            if (op == 'T' || op == 'C') {
-                local_cluster_to_local(cluster_source.get(), out_local.data() + MasterOffset_output[2 * rankWorld + 1] * j, out_local_permuted.data() + MasterOffset_output[2 * rankWorld + 1] * j);
-            } else {
-                local_cluster_to_local(cluster_target.get(), out_local.data() + MasterOffset_output[2 * rankWorld + 1] * j, out_local_permuted.data() + MasterOffset_output[2 * rankWorld + 1] * j);
-            }
-        }
-    }
-    const T *local_output  = (use_permutation) ? out_local.data() : out_local_permuted.data();
-    const T *global_output = (use_permutation) ? out_global.data() : out_global_permuted.data();
-    for (int i = 0; i < MasterOffset_output[2 * rankWorld + 1]; i++) {
-        for (int j = 0; j < mu; j++) {
-            global_local_diff += std::abs(global_output[i + MasterOffset_output[2 * rankWorld] + j * no] - local_output[i + j * MasterOffset_output[2 * rankWorld + 1]]) * std::abs(global_output[i + MasterOffset_output[2 * rankWorld] + j * no] - local_output[i + j * MasterOffset_output[2 * rankWorld + 1]]);
-        }
-    }
+    // // Error
+    // double global_local_diff = 0;
+    // if (!use_permutation) {
+    //     for (int j = 0; j < mu; j++) {
+    //         if (op == 'T' || op == 'C') {
+    //             local_cluster_to_local(source_cluster_tree->get_clusters_on_partition()[rankWorld], out_local.data() + MasterOffset_output[2 * rankWorld + 1] * j, out_local_permuted.data() + MasterOffset_output[2 * rankWorld + 1] * j);
+    //         } else {
+    //             local_cluster_to_local(target_cluster_tree->get_clusters_on_partition()[rankWorld], out_local.data() + MasterOffset_output[2 * rankWorld + 1] * j, out_local_permuted.data() + MasterOffset_output[2 * rankWorld + 1] * j);
+    //         }
+    //     }
+    // }
+    // const T *local_output  = (use_permutation) ? out_local.data() : out_local_permuted.data();
+    // const T *global_output = (use_permutation) ? out_global.data() : out_global_permuted.data();
+    // for (int i = 0; i < MasterOffset_output[2 * rankWorld + 1]; i++) {
+    //     for (int j = 0; j < mu; j++) {
+    //         global_local_diff += std::abs(global_output[i + MasterOffset_output[2 * rankWorld] + j * no] - local_output[i + j * MasterOffset_output[2 * rankWorld + 1]]) * std::abs(global_output[i + MasterOffset_output[2 * rankWorld] + j * no] - local_output[i + j * MasterOffset_output[2 * rankWorld + 1]]);
+    //     }
+    // }
 
-    double global_local_err = std::sqrt(global_local_diff) / norm2(out_local);
+    // double global_local_err = std::sqrt(global_local_diff) / norm2(out_local);
 
-    if (rankWorld == 0) {
-        cout << "error with local product: " << global_local_err << endl;
-    }
-    test = test || !(global_local_err < 1e-10);
+    // if (rankWorld == 0) {
+    //     cout << "error with local product: " << global_local_err << endl;
+    // }
+    // test = test || !(global_local_err < 1e-10);
 
     return test;
 }

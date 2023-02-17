@@ -6,33 +6,42 @@ using namespace htool;
 int main(int argc, char *argv[]) {
     MPI_Init(&argc, &argv);
 
-    bool test = 0;
+    bool is_error                         = false;
+    const int number_of_rows              = 200;
+    const int number_of_rows_increased    = 400;
+    const int number_of_columns           = 200;
+    const int number_of_columns_increased = 400;
+    const int number_of_right_hand_side   = 5;
 
     // Square matrix
-    test = test || test_distributed_operator<double, GeneratorTestDouble, Cluster<PCA<SplittingTypes::GeometricSplitting>>>(200, 200, 5, true, 'N', 'N', 'T', false);
-    test = test || test_distributed_operator<double, GeneratorTestDouble, Cluster<PCA<SplittingTypes::GeometricSplitting>>>(200, 200, 5, false, 'N', 'N', 'T', false);
-    test = test || test_distributed_operator<double, GeneratorTestDoubleSymmetric, Cluster<PCA<SplittingTypes::GeometricSplitting>>>(200, 200, 5, true, 'S', 'L', 'T', false);
-    test = test || test_distributed_operator<double, GeneratorTestDoubleSymmetric, Cluster<PCA<SplittingTypes::GeometricSplitting>>>(200, 200, 5, false, 'S', 'L', 'T', false);
-    test = test || test_distributed_operator<double, GeneratorTestDoubleSymmetric, Cluster<PCA<SplittingTypes::GeometricSplitting>>>(200, 200, 5, true, 'S', 'U', 'T', false);
-    test = test || test_distributed_operator<double, GeneratorTestDoubleSymmetric, Cluster<PCA<SplittingTypes::GeometricSplitting>>>(200, 200, 5, false, 'S', 'U', 'T', false);
+    is_error = is_error || test_distributed_operator<double, GeneratorTestDouble>(number_of_rows, number_of_columns, number_of_right_hand_side, true, 'N', 'N', 'T', false);
+    is_error = is_error || test_distributed_operator<double, GeneratorTestDouble>(number_of_rows, number_of_columns, number_of_right_hand_side, false, 'N', 'N', 'T', false);
+    is_error = is_error || test_distributed_operator<double, GeneratorTestDoubleSymmetric>(number_of_rows, number_of_columns, number_of_right_hand_side, true, 'S', 'L', 'T', false);
+    is_error = is_error || test_distributed_operator<double, GeneratorTestDoubleSymmetric>(number_of_rows, number_of_columns, number_of_right_hand_side, false, 'S', 'L', 'T', false);
+    is_error = is_error || test_distributed_operator<double, GeneratorTestDoubleSymmetric>(number_of_rows, number_of_columns, number_of_right_hand_side, true, 'S', 'U', 'T', false);
+    is_error = is_error || test_distributed_operator<double, GeneratorTestDoubleSymmetric>(number_of_rows, number_of_columns, number_of_right_hand_side, false, 'S', 'U', 'T', false);
 
-    test = test || test_distributed_operator<double, GeneratorTestDouble, Cluster<PCA<SplittingTypes::GeometricSplitting>>>(200, 200, 5, true, 'N', 'N', 'T', true);
-    test = test || test_distributed_operator<double, GeneratorTestDouble, Cluster<PCA<SplittingTypes::GeometricSplitting>>>(200, 200, 5, false, 'N', 'N', 'T', true);
-    test = test || test_distributed_operator<double, GeneratorTestDoubleSymmetric, Cluster<PCA<SplittingTypes::GeometricSplitting>>>(200, 200, 5, true, 'S', 'L', 'T', true);
-    test = test || test_distributed_operator<double, GeneratorTestDoubleSymmetric, Cluster<PCA<SplittingTypes::GeometricSplitting>>>(200, 200, 5, false, 'S', 'L', 'T', true);
-    test = test || test_distributed_operator<double, GeneratorTestDoubleSymmetric, Cluster<PCA<SplittingTypes::GeometricSplitting>>>(200, 200, 5, true, 'S', 'U', 'T', true);
-    test = test || test_distributed_operator<double, GeneratorTestDoubleSymmetric, Cluster<PCA<SplittingTypes::GeometricSplitting>>>(200, 200, 5, false, 'S', 'U', 'T', true);
+    is_error = is_error || test_distributed_operator<double, GeneratorTestDouble>(number_of_rows, number_of_columns, number_of_right_hand_side, true, 'N', 'N', 'T', true);
+    is_error = is_error || test_distributed_operator<double, GeneratorTestDouble>(number_of_rows, number_of_columns, number_of_right_hand_side, false, 'N', 'N', 'T', true);
+    is_error = is_error || test_distributed_operator<double, GeneratorTestDoubleSymmetric>(number_of_rows, number_of_columns, number_of_right_hand_side, true, 'S', 'L', 'T', true);
+    is_error = is_error || test_distributed_operator<double, GeneratorTestDoubleSymmetric>(number_of_rows, number_of_columns, number_of_right_hand_side, false, 'S', 'L', 'T', true);
+    is_error = is_error || test_distributed_operator<double, GeneratorTestDoubleSymmetric>(number_of_rows, number_of_columns, number_of_right_hand_side, true, 'S', 'U', 'T', true);
+    is_error = is_error || test_distributed_operator<double, GeneratorTestDoubleSymmetric>(number_of_rows, number_of_columns, number_of_right_hand_side, false, 'S', 'U', 'T', true);
 
     // Rectangular matrix
-    test = test || test_distributed_operator<double, GeneratorTestDouble, Cluster<PCA<SplittingTypes::GeometricSplitting>>>(400, 200, 5, true, 'N', 'N', 'T', false);
-    test = test || test_distributed_operator<double, GeneratorTestDouble, Cluster<PCA<SplittingTypes::GeometricSplitting>>>(400, 200, 5, false, 'N', 'N', 'T', false);
-    test = test || test_distributed_operator<double, GeneratorTestDouble, Cluster<PCA<SplittingTypes::GeometricSplitting>>>(400, 200, 5, true, 'N', 'N', 'T', true);
-    test = test || test_distributed_operator<double, GeneratorTestDouble, Cluster<PCA<SplittingTypes::GeometricSplitting>>>(400, 200, 5, false, 'N', 'N', 'T', true);
+    is_error = is_error || test_distributed_operator<double, GeneratorTestDouble>(number_of_rows_increased, number_of_columns, number_of_right_hand_side, true, 'N', 'N', 'T', false);
+    is_error = is_error || test_distributed_operator<double, GeneratorTestDouble>(number_of_rows_increased, number_of_columns, number_of_right_hand_side, false, 'N', 'N', 'T', false);
+    is_error = is_error || test_distributed_operator<double, GeneratorTestDouble>(number_of_rows_increased, number_of_columns, number_of_right_hand_side, true, 'N', 'N', 'T', true);
+    is_error = is_error || test_distributed_operator<double, GeneratorTestDouble>(number_of_rows_increased, number_of_columns, number_of_right_hand_side, false, 'N', 'N', 'T', true);
 
-    test = test || test_distributed_operator<double, GeneratorTestDouble, Cluster<PCA<SplittingTypes::GeometricSplitting>>>(200, 400, 5, true, 'N', 'N', 'T', false);
-    test = test || test_distributed_operator<double, GeneratorTestDouble, Cluster<PCA<SplittingTypes::GeometricSplitting>>>(200, 400, 5, false, 'N', 'N', 'T', false);
-    test = test || test_distributed_operator<double, GeneratorTestDouble, Cluster<PCA<SplittingTypes::GeometricSplitting>>>(200, 400, 5, true, 'N', 'N', 'T', true);
-    test = test || test_distributed_operator<double, GeneratorTestDouble, Cluster<PCA<SplittingTypes::GeometricSplitting>>>(200, 400, 5, false, 'N', 'N', 'T', true);
+    is_error = is_error || test_distributed_operator<double, GeneratorTestDouble>(number_of_rows, number_of_columns_increased, number_of_right_hand_side, true, 'N', 'N', 'T', false);
+    is_error = is_error || test_distributed_operator<double, GeneratorTestDouble>(number_of_rows, number_of_columns_increased, number_of_right_hand_side, false, 'N', 'N', 'T', false);
+    is_error = is_error || test_distributed_operator<double, GeneratorTestDouble>(number_of_rows, number_of_columns_increased, number_of_right_hand_side, true, 'N', 'N', 'T', true);
+    is_error = is_error || test_distributed_operator<double, GeneratorTestDouble>(number_of_rows, number_of_columns_increased, number_of_right_hand_side, false, 'N', 'N', 'T', true);
     MPI_Finalize();
-    return test;
+
+    if (is_error) {
+        return 1;
+    }
+    return 0;
 }
