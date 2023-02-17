@@ -3,9 +3,7 @@
 
 #include "misc/define.hpp"
 
-#include "clustering/bounding_box_1.hpp"
-#include "clustering/cluster.hpp"
-#include "clustering/pca.hpp"
+#include "clustering/clustering.hpp"
 
 #include "input_output/geometry.hpp"
 

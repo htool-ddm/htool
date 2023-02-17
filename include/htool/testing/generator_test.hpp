@@ -15,14 +15,14 @@ class GeneratorTest : public VirtualGenerator<CoefficientPrecision> {
     int nr, nc;
     const std::vector<CoordinatePrecision> &p1;
     const std::vector<CoordinatePrecision> &p2;
-    std::shared_ptr<Cluster<CoordinatePrecision>> m_target_cluster;
-    std::shared_ptr<Cluster<CoordinatePrecision>> m_source_cluster;
+    std::shared_ptr<const Cluster<CoordinatePrecision>> m_target_cluster;
+    std::shared_ptr<const Cluster<CoordinatePrecision>> m_source_cluster;
     bool m_use_target_permutation{true};
     bool m_use_source_permutation{true};
     int space_dim;
 
   public:
-    explicit GeneratorTest(int space_dim0, int nr0, int nc0, const std::vector<underlying_type<CoefficientPrecision>> &p10, const std::vector<underlying_type<CoefficientPrecision>> &p20, std::shared_ptr<Cluster<CoordinatePrecision>> target_cluster, std::shared_ptr<Cluster<CoordinatePrecision>> source_cluster) : nr(nr0), nc(nc0), p1(p10), p2(p20), m_target_cluster(target_cluster), m_source_cluster(source_cluster), space_dim(space_dim0), m_use_target_permutation(true), m_use_source_permutation(true) {}
+    explicit GeneratorTest(int space_dim0, int nr0, int nc0, const std::vector<underlying_type<CoefficientPrecision>> &p10, const std::vector<underlying_type<CoefficientPrecision>> &p20, std::shared_ptr<const Cluster<CoordinatePrecision>> target_cluster, std::shared_ptr<const Cluster<CoordinatePrecision>> source_cluster) : nr(nr0), nc(nc0), p1(p10), p2(p20), m_target_cluster(target_cluster), m_source_cluster(source_cluster), space_dim(space_dim0), m_use_target_permutation(true), m_use_source_permutation(true) {}
 
     explicit GeneratorTest(int space_dim0, int nr0, int nc0, const std::vector<underlying_type<CoefficientPrecision>> &p10, const std::vector<underlying_type<CoefficientPrecision>> &p20) : nr(nr0), nc(nc0), p1(p10), p2(p20), space_dim(space_dim0), m_use_target_permutation(false), m_use_source_permutation(false) {}
 
