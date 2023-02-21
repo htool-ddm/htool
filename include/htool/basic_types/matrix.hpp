@@ -353,7 +353,16 @@ class Matrix {
             N      = nc;
             K      = nr;
         }
-
+        if (trans == 'C' && is_complex<T>()) {
+            std::vector<T> conjugate_in(nr * mu);
+            T conjugate_alpha = conj_if_complex<T>(alpha);
+            T conjugate_beta  = conj_if_complex<T>(beta);
+            std::transform(in, in + nr * mu, conjugate_in.data(), [](const T &c) { return conj_if_complex<T>(c); });
+            conj_if_complex<T>(out, nc * mu);
+            Blas<T>::gemm(&transa, &transb, &M, &N, &K, &conjugate_alpha, conjugate_in.data(), &lda, mat, &ldb, &conjugate_beta, out, &ldc);
+            conj_if_complex<T>(out, nc * mu);
+            return;
+        }
         Blas<T>::gemm(&transa, &transb, &M, &N, &K, &alpha, in, &lda, mat, &ldb, &beta, out, &ldc);
     }
 
@@ -435,13 +444,13 @@ class Matrix {
             } else if (symmetry == 'H' && (trans == 'N' || trans == 'C')) {
                 Blas<T>::hemm(&side, &UPLO, &M, &N, &alpha, mat, &lda, in, &ldb, &beta, out, &ldc);
             } else if (symmetry == 'S' && trans == 'C') {
-                std::vector<T> conjugate_in(nr);
+                std::vector<T> conjugate_in(nr * mu);
                 T conjugate_alpha = std::conj(alpha);
                 T conjugate_beta  = std::conj(beta);
                 std::transform(in, in + nr * mu, conjugate_in.data(), [](const T &c) { return std::conj(c); });
-                std::transform(out, out + nr * mu, out, [](const T &c) { return std::conj(c); });
+                conj_if_complex<T>(out, nc * mu);
                 Blas<T>::symm(&side, &UPLO, &M, &N, &conjugate_alpha, mat, &lda, conjugate_in.data(), &ldb, &conjugate_beta, out, &ldc);
-                std::transform(out, out + nr * mu, out, [](const T &c) { return std::conj(c); });
+                conj_if_complex<T>(out, nc * mu);
             } else if (symmetry == 'H' && trans == 'T') {
                 std::vector<T> conjugate_in(nr * mu);
                 T conjugate_alpha = std::conj(alpha);
@@ -450,9 +459,8 @@ class Matrix {
                 std::transform(out, out + nr * mu, out, [](const T &c) { return std::conj(c); });
                 Blas<T>::hemm(&side, &UPLO, &M, &N, &conjugate_alpha, mat, &lda, conjugate_in.data(), &ldb, &conjugate_beta, out, &ldc);
                 std::transform(out, out + nr * mu, out, [](const T &c) { return std::conj(c); });
-
             } else {
-                throw std::invalid_argument("[Htool error] Invalid arguments for add_matrix_product_symmetric"); // LCOV_EXCL_LINE
+                throw std::invalid_argument("[Htool error] Operation is not supported (" + std::string(1, trans) + " with " + symmetry + ")"); // LCOV_EXCL_LINE
             }
         }
     }
@@ -557,21 +565,20 @@ class Matrix {
                 std::vector<T> conjugate_in(nr * mu);
                 T conjugate_alpha = std::conj(alpha);
                 T conjugate_beta  = std::conj(beta);
-                std::transform(in, in + nr, conjugate_in.data(), [](const T &c) { return std::conj(c); });
-                std::transform(out, out + nr, out, [](const T &c) { return std::conj(c); });
+                std::transform(in, in + nr * mu, conjugate_in.data(), [](const T &c) { return std::conj(c); });
+                conj_if_complex<T>(out, nc * mu);
                 Blas<T>::symm(&side, &UPLO, &M, &N, &conjugate_alpha, mat, &lda, conjugate_in.data(), &ldb, &conjugate_beta, out, &ldc);
-                std::transform(out, out + nr, out, [](const T &c) { return std::conj(c); });
-            } else if (symmetry == 'H' && trans == 'N') {
+                conj_if_complex<T>(out, nc * mu);
+            } else if (symmetry == 'H' && (trans == 'N' || trans == 'C')) {
                 std::vector<T> conjugate_in(nr * mu);
                 T conjugate_alpha = std::conj(alpha);
                 T conjugate_beta  = std::conj(beta);
                 std::transform(in, in + nr * mu, conjugate_in.data(), [](const T &c) { return std::conj(c); });
-                std::transform(out, out + nr * mu, out, [](const T &c) { return std::conj(c); });
+                conj_if_complex<T>(out, nc * mu);
                 Blas<T>::hemm(&side, &UPLO, &M, &N, &conjugate_alpha, mat, &lda, conjugate_in.data(), &ldb, &conjugate_beta, out, &ldc);
-                std::transform(out, out + nr * mu, out, [](const T &c) { return std::conj(c); });
-
+                conj_if_complex<T>(out, nc * mu);
             } else {
-                throw std::invalid_argument("[Htool error] Invalid arguments for add_mvprod_row_major_sym"); // LCOV_EXCL_LINE
+                throw std::invalid_argument("[Htool error] Operation is not supported (" + std::string(1, trans) + " with " + symmetry + ")"); // LCOV_EXCL_LINE
             }
         }
     }
