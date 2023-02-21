@@ -42,7 +42,7 @@ bool test_hmatrix_product(int nr, int nc, int mu, bool use_local_cluster, char o
     std::shared_ptr<Cluster<htool::underlying_type<T>>> source_root_cluster;
     std::shared_ptr<Cluster<htool::underlying_type<T>>> target_root_cluster = make_shared<Cluster<htool::underlying_type<T>>>(target_recursive_build_strategy.create_cluster_tree());
 
-    if (Symmetry == 'N') {
+    if (Symmetry == 'N' && nr != nc) {
         // Geometry
         double z2 = 1 + 0.1;
         create_disk(3, z2, nc, p2.data());
@@ -70,7 +70,7 @@ bool test_hmatrix_product(int nr, int nc, int mu, bool use_local_cluster, char o
         p1_permuted[i * 3 + 2] = p1[target_permutation[i] * 3 + 2];
     }
     p2_permuted.resize(3 * nc);
-    if (Symmetry == 'N') {
+    if (Symmetry == 'N' && nr != nc) {
         const auto &source_permutation = source_root_cluster->get_permutation();
         for (int i = 0; i < source_permutation.size(); i++) {
             p2_permuted[i * 3 + 0] = p2[source_permutation[i] * 3 + 0];
@@ -103,7 +103,7 @@ bool test_hmatrix_product(int nr, int nc, int mu, bool use_local_cluster, char o
     }
 
     // build
-    auto root_hmatrix = hmatrix_tree_builder->build(generator);
+    HMatrix<T, htool::underlying_type<T>> root_hmatrix = hmatrix_tree_builder->build(generator);
     save_leaves_with_rank(root_hmatrix, "leaves_" + htool::NbrToStr(rankWorld));
     // Dense matrix
     const auto &hmatrix_target_cluster = root_hmatrix.get_target_cluster();
@@ -115,8 +115,8 @@ bool test_hmatrix_product(int nr, int nc, int mu, bool use_local_cluster, char o
     generator.copy_submatrix(hmatrix_target_cluster.get_size(), hmatrix_source_cluster.get_size(), hmatrix_target_cluster.get_offset(), hmatrix_source_cluster.get_offset(), dense_data.data());
 
     // Input
-    int ni = (op == 'T' || op == 'C') ? nr : nc;
-    int no = (op == 'T' || op == 'C') ? nc : nr;
+    int ni = (op == 'T' || op == 'C') ? hmatrix_target_cluster.get_size() : hmatrix_source_cluster.get_size();
+    int no = (op == 'T' || op == 'C') ? hmatrix_source_cluster.get_size() : hmatrix_target_cluster.get_size();
     vector<T> x(ni * mu, 1), y(no * mu, 1), ref(no * mu, 0), out(ref);
     T alpha(1), beta(1);
     htool::underlying_type<T> error;
@@ -152,11 +152,11 @@ bool test_hmatrix_product(int nr, int nc, int mu, bool use_local_cluster, char o
         cout << "> Errors on a hmatrix vector product: " << error << endl;
     }
 
-    // out = y;
-    // root_matrix.add_matrix_product(op, alpha, x.data(), beta, out.data(), mu);
-    // error    = norm2(ref - out) / norm2(ref);
-    // is_error = is_error || !(error < 1e-14);
-    // cout << "> Errors on a matrix matrix product: " << error << endl;
+    out = y_row_major;
+    root_hmatrix.add_matrix_product_row_major(op, alpha, x_row_major.data(), beta, out.data(), mu);
+    error    = norm2(ref_row_major - out) / norm2(ref_row_major);
+    is_error = is_error || !(error < epsilon);
+    cout << "> Errors on a hmatrix matrix product: " << error << endl;
 
     // vector<T> hmatrix_to_dense(nr * nc);
     // hmatrix->copy_to_dense(hmatrix_to_dense.data());

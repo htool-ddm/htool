@@ -62,9 +62,9 @@ class HMatrixTreeBuilder {
                        && source_cluster.get_offset() >= (target_cluster.get_offset() + target_cluster.get_size())
                        && ((m_target_partition_number == -1)
                            || source_cluster.get_offset() < m_source_root_cluster->get_clusters_on_partition()[m_target_partition_number]->get_offset() + m_source_root_cluster->get_clusters_on_partition()[m_target_partition_number]->get_size())
-                       && ((m_target_partition_number != -1)
-                           //    || source_cluster.get_offset() < target_cluster.get_offset() + target_cluster.get_size()
-                           )));
+                       //    && ((m_target_partition_number != -1)
+                       //    || source_cluster.get_offset() < target_cluster.get_offset() + target_cluster.get_size())
+                       ));
     }
     bool is_block_diagonal(const HMatrixType &hmatrix) {
         bool is_there_a_target_partition = (m_target_partition_number != -1);

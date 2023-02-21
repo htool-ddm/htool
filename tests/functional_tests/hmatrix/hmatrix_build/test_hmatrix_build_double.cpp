@@ -7,9 +7,9 @@ int main(int argc, char *argv[]) {
     MPI_Init(&argc, &argv);
 
     bool is_error                         = false;
-    const int number_of_rows              = 50;
+    const int number_of_rows              = 200;
     const int number_of_rows_increased    = 400;
-    const int number_of_columns           = 50;
+    const int number_of_columns           = 200;
     const int number_of_columns_increased = 400;
 
     for (auto use_local_cluster : {true, false}) {

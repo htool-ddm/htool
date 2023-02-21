@@ -81,7 +81,7 @@ class HMatrix : public TreeNode<HMatrix<CoefficientPrecision, CoordinatePrecisio
 
     void
     threaded_hierarchical_add_vector_product(char trans, CoefficientPrecision alpha, const CoefficientPrecision *in, CoefficientPrecision beta, CoefficientPrecision *out) const;
-    void hierarchical_add_matrix_product(char trans, CoefficientPrecision alpha, const CoefficientPrecision *in, CoefficientPrecision beta, CoefficientPrecision *out, int mu) const;
+    void threaded_hierarchical_add_matrix_product_row_major(char trans, CoefficientPrecision alpha, const CoefficientPrecision *in, CoefficientPrecision beta, CoefficientPrecision *out, int mu) const;
 
   public:
     // Root constructor
@@ -170,6 +170,7 @@ class HMatrix : public TreeNode<HMatrix<CoefficientPrecision, CoordinatePrecisio
 
     // Linear algebra
     void add_vector_product(char trans, CoefficientPrecision alpha, const CoefficientPrecision *in, CoefficientPrecision beta, CoefficientPrecision *out) const;
+    void add_matrix_product_row_major(char trans, CoefficientPrecision alpha, const CoefficientPrecision *in, CoefficientPrecision beta, CoefficientPrecision *out, int mu) const;
 
     // void add_vector_product(char trans, CoefficientPrecision alpha, const CoefficientPrecision *in, CoefficientPrecision beta, CoefficientPrecision *out) const;
     // void add_matrix_product(CoefficientPrecision alpha, const CoefficientPrecision *in, CoefficientPrecision beta, CoefficientPrecision *out, int mu) const;
@@ -224,6 +225,25 @@ void HMatrix<CoefficientPrecision, CoordinatePrecision>::add_vector_product(char
         break;
     default:
         threaded_hierarchical_add_vector_product(trans, alpha, in, beta, out);
+        break;
+    }
+}
+
+template <typename CoefficientPrecision, typename CoordinatePrecision>
+void HMatrix<CoefficientPrecision, CoordinatePrecision>::add_matrix_product_row_major(char trans, CoefficientPrecision alpha, const CoefficientPrecision *in, CoefficientPrecision beta, CoefficientPrecision *out, int mu) const {
+    switch (m_storage_type) {
+    case StorageType::Dense:
+        if (m_symmetry == 'N') {
+            m_dense_data->add_matrix_product_row_major(trans, alpha, in, beta, out, mu);
+        } else {
+            m_dense_data->add_matrix_product_symmetric_row_major(trans, alpha, in, beta, out, mu, m_UPLO, m_symmetry);
+        }
+        break;
+    case StorageType::LowRank:
+        m_low_rank_data->add_matrix_product_row_major(trans, alpha, in, beta, out, mu);
+        break;
+    default:
+        threaded_hierarchical_add_matrix_product_row_major(trans, alpha, in, beta, out, mu);
         break;
     }
 }
@@ -844,14 +864,17 @@ void HMatrix<CoefficientPrecision, CoordinatePrecision>::threaded_hierarchical_a
 
     set_leaves_in_cache();
 
+    int rankWorld;
+    MPI_Comm_rank(MPI_COMM_WORLD, &rankWorld);
+
     int out_size(m_target_cluster->get_size());
     int in_size(m_source_cluster->get_size());
     int out_offset(m_target_cluster->get_offset());
     int in_offset(m_source_cluster->get_offset());
     auto get_output_cluster{&HMatrix::get_target_cluster};
     auto get_input_cluster{&HMatrix::get_source_cluster};
-    int local_input_offset  = m_target_cluster->get_offset();
-    int local_output_offset = m_source_cluster->get_offset();
+    int local_input_offset  = m_source_cluster->get_offset();
+    int local_output_offset = m_target_cluster->get_offset();
     char trans_sym          = (m_symmetry_type_for_leaves == 'S') ? 'T' : 'C';
 
     if (trans != 'N') {
@@ -861,14 +884,14 @@ void HMatrix<CoefficientPrecision, CoordinatePrecision>::threaded_hierarchical_a
         out_offset          = m_source_cluster->get_offset();
         get_input_cluster   = &HMatrix::get_target_cluster;
         get_output_cluster  = &HMatrix::get_source_cluster;
-        local_input_offset  = m_source_cluster->get_offset();
-        local_output_offset = m_target_cluster->get_offset();
+        local_input_offset  = m_target_cluster->get_offset();
+        local_output_offset = m_source_cluster->get_offset();
         trans_sym           = 'N';
     }
 
     int incx(1), incy(1);
     CoefficientPrecision da(1);
-    if (CoefficientPrecision(beta) != 1) {
+    if (CoefficientPrecision(beta) != CoefficientPrecision(1)) {
         // TODO: use blas
         std::transform(out, out + out_size, out, [&beta](CoefficientPrecision &c) { return c * beta; });
     }
@@ -896,8 +919,80 @@ void HMatrix<CoefficientPrecision, CoordinatePrecision>::threaded_hierarchical_a
             for (int b = 0; b < m_leaves_for_symmetry.size(); b++) {
                 int input_offset  = (m_leaves_for_symmetry[b]->*get_input_cluster)().get_offset();
                 int output_offset = (m_leaves_for_symmetry[b]->*get_output_cluster)().get_offset();
-                // std::cout << input_offset << " " << output_offset << "\n";
-                m_leaves_for_symmetry[b]->add_vector_product(trans_sym, 1, in + output_offset - local_output_offset, 1, temp.data() + (input_offset - local_input_offset));
+                m_leaves_for_symmetry[b]->add_vector_product(trans_sym, 1, in + output_offset - local_input_offset, 1, temp.data() + (input_offset - local_output_offset));
+            }
+        }
+
+#if _OPENMP
+#    pragma omp critical
+#endif
+        Blas<CoefficientPrecision>::axpy(&out_size, &alpha, temp.data(), &incx, out, &incy);
+    }
+}
+
+template <typename CoefficientPrecision, typename CoordinatePrecision>
+void HMatrix<CoefficientPrecision, CoordinatePrecision>::threaded_hierarchical_add_matrix_product_row_major(char trans, CoefficientPrecision alpha, const CoefficientPrecision *in, CoefficientPrecision beta, CoefficientPrecision *out, int mu) const {
+
+    set_leaves_in_cache();
+
+    if ((trans == 'T' && m_symmetry_type_for_leaves == 'H')
+        || (trans == 'C' && m_symmetry_type_for_leaves == 'S')) {
+        throw std::invalid_argument("[Htool error] Operation is not supported (" + std::string(1, trans) + " with " + m_symmetry_type_for_leaves + ")"); // LCOV_EXCL_LINE
+    }
+
+    int out_size(m_target_cluster->get_size() * mu);
+    int in_size(m_source_cluster->get_size() * mu);
+    int out_offset(m_target_cluster->get_offset());
+    int in_offset(m_source_cluster->get_offset());
+    auto get_output_cluster{&HMatrix::get_target_cluster};
+    auto get_input_cluster{&HMatrix::get_source_cluster};
+    int local_output_offset = m_target_cluster->get_offset();
+    int local_input_offset  = m_source_cluster->get_offset();
+    char trans_sym          = (m_symmetry_type_for_leaves == 'S') ? 'T' : 'C';
+
+    if (trans != 'N') {
+        in_size             = m_target_cluster->get_size() * mu;
+        out_size            = m_source_cluster->get_size() * mu;
+        in_offset           = m_target_cluster->get_offset();
+        out_offset          = m_source_cluster->get_offset();
+        get_input_cluster   = &HMatrix::get_target_cluster;
+        get_output_cluster  = &HMatrix::get_source_cluster;
+        local_input_offset  = m_target_cluster->get_offset();
+        local_output_offset = m_source_cluster->get_offset();
+        trans_sym           = 'N';
+    }
+
+    int incx(1), incy(1);
+    CoefficientPrecision da(1);
+    if (CoefficientPrecision(beta) != CoefficientPrecision(1)) {
+        // TODO: use blas
+        std::transform(out, out + out_size, out, [&beta](CoefficientPrecision &c) { return c * beta; });
+    }
+
+// Contribution champ lointain
+#if _OPENMP
+#    pragma omp parallel
+#endif
+    {
+        std::vector<CoefficientPrecision> temp(out_size, 0);
+#if _OPENMP
+#    pragma omp for schedule(guided) nowait
+#endif
+        for (int b = 0; b < m_leaves.size(); b++) {
+            int input_offset  = (m_leaves[b]->*get_input_cluster)().get_offset();
+            int output_offset = (m_leaves[b]->*get_output_cluster)().get_offset();
+            m_leaves[b]->add_matrix_product_row_major(trans, 1, in + (input_offset - local_input_offset) * mu, 1, temp.data() + (output_offset - local_output_offset) * mu, mu);
+        }
+
+        // Symmetry part of the diagonal part
+        if (m_symmetry_type_for_leaves != 'N') {
+#if _OPENMP
+#    pragma omp for schedule(guided) nowait
+#endif
+            for (int b = 0; b < m_leaves_for_symmetry.size(); b++) {
+                int input_offset  = (m_leaves_for_symmetry[b]->*get_input_cluster)().get_offset();
+                int output_offset = (m_leaves_for_symmetry[b]->*get_output_cluster)().get_offset();
+                m_leaves_for_symmetry[b]->add_matrix_product_row_major(trans_sym, 1, in + (output_offset - local_input_offset) * mu, 1, temp.data() + (input_offset - local_output_offset) * mu, mu);
             }
         }
 
@@ -1795,7 +1890,6 @@ void copy_to_dense(const HMatrix<CoefficientPrecision, CoordinatePrecision> &hma
     }
 
     char symmetry_type = hmatrix.get_symmetry_for_leaves();
-    std::cout << symmetry_type << " " << hmatrix.get_leaves_for_symmetry().size() << "\n";
     for (auto leaf : hmatrix.get_leaves_for_symmetry()) {
         int local_nr = leaf->get_target_cluster().get_size();
         int local_nc = leaf->get_source_cluster().get_size();
