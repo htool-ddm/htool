@@ -616,7 +616,7 @@ void DistributedOperator<CoefficientPrecision, CoordinatePrecision>::internal_ve
     CoefficientPrecision *rbuf = work + nc;
 
     for (auto &local_operator : m_local_operators) {
-        local_operator->add_vector_product_transp_local_to_global(1, local_size, in, 1, nc, work);
+        local_operator->add_vector_product_transp_local_to_global(1, in, 1, work);
     }
 
     std::vector<int> scounts(sizeWorld), rcounts(sizeWorld);
@@ -668,7 +668,7 @@ void DistributedOperator<CoefficientPrecision, CoordinatePrecision>::internal_ma
     CoefficientPrecision *rbuf = work + nc * mu;
 
     for (auto &local_operator : m_local_operators) {
-        local_operator->add_matrix_product_transp_local_to_global(1, local_size, in, 1, nc, work, mu);
+        local_operator->add_matrix_product_transp_local_to_global(1, in, 1, work, mu);
     }
 
     std::vector<int> scounts(sizeWorld), rcounts(sizeWorld);
@@ -719,22 +719,30 @@ void DistributedOperator<CoefficientPrecision, CoordinatePrecision>::cluster_to_
 
 template <typename CoefficientPrecision, typename CoordinatePrecision>
 void DistributedOperator<CoefficientPrecision, CoordinatePrecision>::local_target_to_local_cluster(const CoefficientPrecision *const in, CoefficientPrecision *const out) const {
-    local_to_local_cluster(m_local_cluster_target, in, out);
+    int rankWorld;
+    MPI_Comm_rank(comm, &rankWorld);
+    local_to_local_cluster(*m_global_target_root_cluster, rankWorld, in, out);
 }
 
 template <typename CoefficientPrecision, typename CoordinatePrecision>
 void DistributedOperator<CoefficientPrecision, CoordinatePrecision>::local_source_to_local_cluster(const CoefficientPrecision *const in, CoefficientPrecision *const out) const {
-    local_to_local_cluster(m_local_cluster_source, in, out);
+    int rankWorld;
+    MPI_Comm_rank(comm, &rankWorld);
+    local_to_local_cluster(*m_global_source_root_cluster, rankWorld, in, out);
 }
 
 template <typename CoefficientPrecision, typename CoordinatePrecision>
 void DistributedOperator<CoefficientPrecision, CoordinatePrecision>::local_cluster_to_local_target(const CoefficientPrecision *const in, CoefficientPrecision *const out) const {
-    local_cluster_to_local(m_local_cluster_target, in, out);
+    int rankWorld;
+    MPI_Comm_rank(comm, &rankWorld);
+    local_cluster_to_local(*m_global_target_root_cluster, rankWorld, in, out);
 }
 
 template <typename CoefficientPrecision, typename CoordinatePrecision>
 void DistributedOperator<CoefficientPrecision, CoordinatePrecision>::local_cluster_to_local_source(const CoefficientPrecision *const in, CoefficientPrecision *const out) const {
-    local_cluster_to_local(m_local_cluster_source, in, out);
+    int rankWorld;
+    MPI_Comm_rank(comm, &rankWorld);
+    local_cluster_to_local(*m_global_source_root_cluster, rankWorld, in, out);
 }
 
 // Local to global

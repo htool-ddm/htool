@@ -52,6 +52,7 @@ class TreeNode : public CRTPHelper<Derived> {
         }
     }
     unsigned int get_depth() const { return m_depth; }
+    // TODO: C++ 23, use std::range https://stackoverflow.com/a/70942702/5913047
     const std::vector<std::unique_ptr<Derived>> &get_children() const { return m_children; }
     std::vector<std::unique_ptr<Derived>> &get_children_with_ownership() { return m_children; }
 

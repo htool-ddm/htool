@@ -5,29 +5,17 @@ namespace htool {
 template <class T>
 class VirtualLocalOperator {
   public:
-    // // -- Getters --
-    // virtual const VirtualCluster *cluster_tree_target() const = 0;
-    // virtual const VirtualCluster *cluster_tree_source() const = 0;
-
-    // -- Operations --
-    virtual void add_vector_product_global_to_local(T alpha, const T *const in, T beta, T *const out) const = 0;
-
-    virtual void add_matrix_product_global_to_local(T alpha, const T *const in, T beta, T *const out, int mu) const = 0;
-
-    virtual void add_vector_product_transp_local_to_global(T alpha, const T *const in, T beta, T *const out) const = 0;
-
+    virtual void add_vector_product_global_to_local(T alpha, const T *const in, T beta, T *const out) const                = 0;
+    virtual void add_matrix_product_global_to_local(T alpha, const T *const in, T beta, T *const out, int mu) const        = 0;
+    virtual void add_vector_product_transp_local_to_global(T alpha, const T *const in, T beta, T *const out) const         = 0;
     virtual void add_matrix_product_transp_local_to_global(T alpha, const T *const in, T beta, T *const out, int mu) const = 0;
 
-    //  -- Destructors --
     virtual ~VirtualLocalOperator(){};
 
   protected:
-    //  -- Constructors --
-    VirtualLocalOperator()                             = default;
-    VirtualLocalOperator(const VirtualLocalOperator &) = default;
-    VirtualLocalOperator(VirtualLocalOperator &&)      = default;
-
-    //  -- Assignment --
+    VirtualLocalOperator()                                        = default;
+    VirtualLocalOperator(const VirtualLocalOperator &)            = default;
+    VirtualLocalOperator(VirtualLocalOperator &&)                 = default;
     VirtualLocalOperator &operator=(const VirtualLocalOperator &) = default;
     VirtualLocalOperator &operator=(VirtualLocalOperator &&)      = default;
 };

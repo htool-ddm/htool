@@ -94,7 +94,11 @@ class HMatrixTreeBuilder {
               && (m_UPLO_type == 'N' || m_UPLO_type == 'L' || m_UPLO_type == 'U')
               && ((m_symmetry_type == 'N' && m_UPLO_type == 'N') || (m_symmetry_type != 'N' && m_UPLO_type != 'N'))
               && ((m_symmetry_type == 'H' && is_complex<CoefficientPrecision>()) || m_symmetry_type != 'H'))) {
-            throw std::invalid_argument("[Htool error] Invalid arguments to create HMatrix"); // LCOV_EXCL_LINE
+            std::string error_message = "[Htool error] Invalid arguments to create HMatrix: m_symmetry_type=";
+            error_message.push_back(m_symmetry_type);
+            error_message += " and m_UPLO_type=";
+            error_message.push_back(m_UPLO_type);
+            throw std::invalid_argument(error_message); // LCOV_EXCL_LINE
         }
     };
 
