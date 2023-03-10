@@ -40,7 +40,7 @@ inline std::vector<std::string> split(const std::string &s, const std::string &d
 }
 
 inline std::string join(std::string delimiter, std::vector<std::string> x) {
-    return std::accumulate(std::begin(x), std::end(x), std::string(), [&](std::string &ss, std::string &s) { return ss.empty() ? s : ss + delimiter + s; });
+    return std::accumulate(std::begin(x), std::end(x), std::string(), [&](std::string ss, const std::string &s) { return ss.empty() ? s : ss + delimiter + s; });
 }
 } // namespace htool
 
