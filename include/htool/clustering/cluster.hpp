@@ -451,10 +451,8 @@ class Cluster : public VirtualCluster {
             exit(1);
         }
         std::vector<std::vector<std::string>> outputs;
-        int count = 0;
         while (std::getline(input_tree, line)) {
             outputs.push_back(split(line, delimiter));
-            count++;
         }
 
         // Initialisation root
