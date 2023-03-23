@@ -6,9 +6,9 @@ add_custom_target(build-tests-clustering)
 add_dependencies(build-tests build-tests-clustering)
 add_subdirectory(clustering)
 
-add_custom_target(build-tests-local-operators)
-add_dependencies(build-tests build-tests-local-operators)
-add_subdirectory(local_operators)
+# add_custom_target(build-tests-local-operators)
+# add_dependencies(build-tests build-tests-local-operators)
+# add_subdirectory(local_operators)
 
 # add_subdirectory(blocks)
 

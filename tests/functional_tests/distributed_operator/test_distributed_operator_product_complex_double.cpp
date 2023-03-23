@@ -23,7 +23,7 @@ int main(int argc, char *argv[]) {
                             tolerances.push_back(1e-6);
                         }
                         for (auto epsilon : tolerances) {
-                            std::cout << use_permutation << " " << epsilon << " " << number_of_right_hand_side << " " << operation << " " << epsilon << "\n";
+                            std::cout << use_permutation << " " << epsilon << " " << number_of_right_hand_side << " " << operation << "\n";
 
                             // Square matrix
                             is_error = is_error || test_distributed_operator<std::complex<double>, GeneratorTestComplex>(number_of_rows, number_of_columns, number_of_right_hand_side, use_permutation, 'N', 'N', operation, offdiagonal_approximation, data_type, epsilon);
@@ -34,21 +34,27 @@ int main(int argc, char *argv[]) {
                             is_error = is_error || test_distributed_operator<std::complex<double>, GeneratorTestComplex>(number_of_rows_increased, number_of_columns, number_of_right_hand_side, use_permutation, 'N', 'N', operation, offdiagonal_approximation, data_type, epsilon);
                             is_error = is_error || test_distributed_operator<std::complex<double>, GeneratorTestComplex>(number_of_rows, number_of_columns_increased, number_of_right_hand_side, use_permutation, 'N', 'N', operation, offdiagonal_approximation, data_type, epsilon);
                         }
-
-                        // for (auto operation : {'N', 'C'}) {
-                        //     std::cout << use_permutation << " " << epsilon << " " << number_of_right_hand_side << " " << operation << "\n";
-
-                        //     // Square matrix
-                        //     is_error = is_error || test_distributed_operator<std::complex<double>, GeneratorTestComplex>(number_of_rows, number_of_columns, number_of_right_hand_side, use_permutation, 'N', 'N', operation, offdiagonal_approximation,data_type,epsilon);
-                        //     is_error = is_error || test_distributed_operator<std::complex<double>, GeneratorTestComplexHermitian>(number_of_rows, number_of_columns, number_of_right_hand_side, use_permutation, 'H', 'L', operation, offdiagonal_approximation,data_type,epsilon);
-                        //     is_error = is_error || test_distributed_operator<std::complex<double>, GeneratorTestComplexHermitian>(number_of_rows, number_of_columns, number_of_right_hand_side, use_permutation, 'H', 'U', operation, offdiagonal_approximation,data_type,epsilon);
-
-                        //     // Rectangular matrix
-                        //     is_error = is_error || test_distributed_operator<std::complex<double>, GeneratorTestComplex>(number_of_rows_increased, number_of_columns, number_of_right_hand_side, use_permutation, 'N', 'N', operation, offdiagonal_approximation,data_type,epsilon);
-                        //     is_error = is_error || test_distributed_operator<std::complex<double>, GeneratorTestComplex>(number_of_rows, number_of_columns_increased, number_of_right_hand_side, use_permutation, 'N', 'N', operation, offdiagonal_approximation,data_type,epsilon);
-                        // }
                     }
                 }
+                // for (auto operation : {'N', 'C'}) {
+                //     for (auto data_type : {DataType::Matrix, DataType::HMatrix}) {
+                //         std::vector<double> tolerances{1e-14};
+                //         if (data_type == DataType::HMatrix) {
+                //             tolerances.push_back(1e-6);
+                //         }
+                //         for (auto epsilon : tolerances) {
+                //             std::cout << use_permutation << " " << epsilon << " " << number_of_right_hand_side << " " << operation << "\n";
+                //             // Square matrix
+                //             is_error = is_error || test_distributed_operator<std::complex<double>, GeneratorTestComplex>(number_of_rows, number_of_columns, number_of_right_hand_side, use_permutation, 'N', 'N', operation, offdiagonal_approximation, data_type, epsilon);
+                //             is_error = is_error || test_distributed_operator<std::complex<double>, GeneratorTestComplexHermitian>(number_of_rows, number_of_columns, number_of_right_hand_side, use_permutation, 'H', 'L', operation, offdiagonal_approximation, data_type, epsilon);
+                //             is_error = is_error || test_distributed_operator<std::complex<double>, GeneratorTestComplexHermitian>(number_of_rows, number_of_columns, number_of_right_hand_side, use_permutation, 'H', 'U', operation, offdiagonal_approximation, data_type, epsilon);
+
+                //             // Rectangular matrix
+                //             is_error = is_error || test_distributed_operator<std::complex<double>, GeneratorTestComplex>(number_of_rows_increased, number_of_columns, number_of_right_hand_side, use_permutation, 'N', 'N', operation, offdiagonal_approximation, data_type, epsilon);
+                //             is_error = is_error || test_distributed_operator<std::complex<double>, GeneratorTestComplex>(number_of_rows, number_of_columns_increased, number_of_right_hand_side, use_permutation, 'N', 'N', operation, offdiagonal_approximation, data_type, epsilon);
+                //         }
+                //     }
+                // }
             }
         }
     }

@@ -9,7 +9,7 @@ namespace htool {
 template <typename T>
 class ComputeLargestExtent {
   public:
-    static std::vector<T> compute_direction(const Cluster<T> *cluster, const std::vector<int> &permutation, int spatial_dimension, const T *const coordinates, const T *const radii, const T *const weights) {
+    std::vector<T> compute_direction(const Cluster<T> *cluster, const std::vector<int> &permutation, int spatial_dimension, const T *const coordinates, const T *const radii, const T *const weights) {
         if (spatial_dimension != 2 && spatial_dimension != 3) {
             throw std::logic_error("[Htool error] clustering not define for spatial dimension !=2 and !=3"); // LCOV_EXCL_LINE
         }
@@ -43,7 +43,7 @@ class ComputeLargestExtent {
 template <typename T>
 class ComputeBoundingBox {
   public:
-    static std::vector<T> compute_direction(const Cluster<T> *cluster, const std::vector<int> &permutation, int spatial_dimension, const T *const coordinates, const T *const radii, const T *const weights) {
+    std::vector<T> compute_direction(const Cluster<T> *cluster, const std::vector<int> &permutation, int spatial_dimension, const T *const coordinates, const T *const radii, const T *const weights) {
 
         // min max for each axis
         std::vector<T> min_point(spatial_dimension, std::numeric_limits<T>::max());

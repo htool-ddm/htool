@@ -8,7 +8,7 @@
 
 namespace htool {
 
-template <typename T, class DirectionComputetationStrategy, class SplittingStrategy>
+template <typename T, class DirectionComputationStrategy, class SplittingStrategy>
 class ClusterTreeBuilder {
 
     int m_number_of_points;
@@ -29,10 +29,13 @@ class ClusterTreeBuilder {
     std::vector<T> compute_center(int offset, int size, const int *permutation = nullptr) const;
     T compute_radius(std::vector<T> center, int offset, int size, const int *permutation = nullptr) const;
 
-  public:
-    ClusterTreeBuilder(int number_of_points, int spatial_dimension, const T *coordinates, const T *radii, const T *weights, int number_of_children, int size_partition) : m_number_of_points(number_of_points), m_spatial_dimension(spatial_dimension), m_coordinates(coordinates), m_radii(radii), m_weights(weights), m_number_of_children(number_of_children), m_size_partition(size_partition) {}
+    DirectionComputationStrategy m_direction_computation_strategy;
+    SplittingStrategy m_splitting_strategy;
 
-    ClusterTreeBuilder(int number_of_points, int spatial_dimension, const T *coordinates, int number_of_children, int size_partition) : ClusterTreeBuilder(number_of_points, spatial_dimension, coordinates, nullptr, nullptr, number_of_children, size_partition) {}
+  public:
+    ClusterTreeBuilder(int number_of_points, int spatial_dimension, const T *coordinates, const T *radii, const T *weights, int number_of_children, int size_partition, const DirectionComputationStrategy &direction_computation_strategy = DirectionComputationStrategy(), const SplittingStrategy &splitting_strategy = SplittingStrategy()) : m_number_of_points(number_of_points), m_spatial_dimension(spatial_dimension), m_coordinates(coordinates), m_radii(radii), m_weights(weights), m_number_of_children(number_of_children), m_size_partition(size_partition), m_direction_computation_strategy(direction_computation_strategy), m_splitting_strategy(splitting_strategy) {}
+
+    ClusterTreeBuilder(int number_of_points, int spatial_dimension, const T *coordinates, int number_of_children, int size_partition, const DirectionComputationStrategy &direction_computation_strategy = DirectionComputationStrategy(), const SplittingStrategy &splitting_strategy = SplittingStrategy()) : ClusterTreeBuilder(number_of_points, spatial_dimension, coordinates, nullptr, nullptr, number_of_children, size_partition, direction_computation_strategy, splitting_strategy) {}
 
     void set_partition(const std::vector<std::pair<int, int>> &partition) {
         m_partition_type = Given;
@@ -48,12 +51,17 @@ class ClusterTreeBuilder {
             m_partition[p].second = partition[2 * p + 1];
         }
     }
+
+    void set_direction_computation_strategy(const DirectionComputationStrategy &direction_computation_strategy) { m_direction_computation_strategy = direction_computation_strategy; }
+
+    void set_splitting_strategy(const SplittingStrategy &splitting_strategy) { m_splitting_strategy = splitting_strategy; }
+
     void set_minclustersize(int minclustersize) { m_minclustersize = minclustersize; };
     Cluster<T> create_cluster_tree();
 };
 
-template <typename T, class DirectionComputetationStrategy, class SplittingStrategy>
-Cluster<T> ClusterTreeBuilder<T, DirectionComputetationStrategy, SplittingStrategy>::create_cluster_tree() {
+template <typename T, class DirectionComputationStrategy, class SplittingStrategy>
+Cluster<T> ClusterTreeBuilder<T, DirectionComputationStrategy, SplittingStrategy>::create_cluster_tree() {
 
     // default values
     std::vector<T> default_radii{};
@@ -125,7 +133,7 @@ Cluster<T> ClusterTreeBuilder<T, DirectionComputetationStrategy, SplittingStrate
 
         // Direction of largest extent
         std::vector<T> direction(m_spatial_dimension, 0);
-        direction = DirectionComputetationStrategy::compute_direction(current_cluster, permutation, m_spatial_dimension, m_coordinates, m_radii, m_weights);
+        direction = m_direction_computation_strategy.compute_direction(current_cluster, permutation, m_spatial_dimension, m_coordinates, m_radii, m_weights);
 
         // Sort along direction
         std::sort(permutation.begin() + current_offset, permutation.begin() + current_offset + current_size, [&](int a, int b) {
@@ -135,7 +143,7 @@ Cluster<T> ClusterTreeBuilder<T, DirectionComputetationStrategy, SplittingStrate
         });
 
         // Compute numbering
-        SplittingStrategy::splitting(current_cluster, permutation, m_spatial_dimension, m_coordinates, current_number_of_children, m_minclustersize, direction, current_splitting);
+        m_splitting_strategy.splitting(current_cluster, permutation, m_spatial_dimension, m_coordinates, current_number_of_children, m_minclustersize, direction, current_splitting);
         std::vector<Cluster<T> *> children;
 
         if (current_splitting.size() > 0) {
@@ -170,8 +178,8 @@ Cluster<T> ClusterTreeBuilder<T, DirectionComputetationStrategy, SplittingStrate
     return root_cluster;
 };
 
-template <typename T, class DirectionComputetationStrategy, class SplittingStrategy>
-std::vector<T> ClusterTreeBuilder<T, DirectionComputetationStrategy, SplittingStrategy>::compute_center(int offset, int size, const int *current_permutation) const {
+template <typename T, class DirectionComputationStrategy, class SplittingStrategy>
+std::vector<T> ClusterTreeBuilder<T, DirectionComputationStrategy, SplittingStrategy>::compute_center(int offset, int size, const int *current_permutation) const {
     std::vector<T> center(m_spatial_dimension, 0);
 
     bool is_first_permutation = (current_permutation == nullptr);
@@ -196,8 +204,8 @@ std::vector<T> ClusterTreeBuilder<T, DirectionComputetationStrategy, SplittingSt
     return center;
 }
 
-template <typename T, class DirectionComputetationStrategy, class SplittingStrategy>
-T ClusterTreeBuilder<T, DirectionComputetationStrategy, SplittingStrategy>::compute_radius(std::vector<T> center, int offset, int size, const int *current_permutation) const {
+template <typename T, class DirectionComputationStrategy, class SplittingStrategy>
+T ClusterTreeBuilder<T, DirectionComputationStrategy, SplittingStrategy>::compute_radius(std::vector<T> center, int offset, int size, const int *current_permutation) const {
     T radius = 0;
 
     bool is_first_permutation = (current_permutation == nullptr);
