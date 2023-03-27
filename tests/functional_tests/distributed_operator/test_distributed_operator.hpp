@@ -12,7 +12,8 @@ using namespace std;
 using namespace htool;
 
 enum class DataType { Matrix,
-                      HMatrix };
+                      HMatrix,
+                      DefaultHMatrix };
 template <typename T, typename GeneratorTestType>
 bool test_distributed_operator(int nr, int nc, int mu, bool use_permutation, char Symmetry, char UPLO, char op, bool off_diagonal_approximation, DataType data_type, htool::underlying_type<T> epsilon = 1e-14) {
 
@@ -134,7 +135,15 @@ bool test_distributed_operator(int nr, int nc, int mu, bool use_permutation, cha
 
     // Distributed operator
     DistributedOperator<T, htool::underlying_type<T>> distributed_operator(target_root_cluster, source_root_cluster, Symmetry, UPLO);
-    distributed_operator.add_local_operator(local_operator);
+    if (data_type == DataType::DefaultHMatrix) {
+        if (!off_diagonal_approximation) {
+            distributed_operator.build_default_hierarchical_approximation(generator_permuted, epsilon, eta);
+        } else {
+            distributed_operator.build_default_local_hierarchical_approximation(generator_permuted, epsilon, eta);
+        }
+    } else {
+        distributed_operator.add_local_operator(local_operator);
+    }
     distributed_operator.use_permutation() = use_permutation;
 
     // Off diagonal geometries
@@ -172,9 +181,9 @@ bool test_distributed_operator(int nr, int nc, int mu, bool use_permutation, cha
         std::shared_ptr<LocalOperator<T, htool::underlying_type<T>>> local_off_diagonal_dense_matrix_1;
         std::shared_ptr<const Cluster<htool::underlying_type<T>>> local_off_diagonal_cluster_tree_1 = make_shared<const Cluster<htool::underlying_type<T>>>(clone_cluster_tree_from_partition(*off_diagonal_cluster, 0));
 
-        if (data_type == DataType::Matrix) {
+        if (data_type == DataType::Matrix || data_type == DataType::DefaultHMatrix) {
             local_off_diagonal_dense_matrix_1 = make_shared<LocalDenseMatrix<T, htool::underlying_type<T>>>(*generator_off_diagonal, local_target_root_cluster, local_off_diagonal_cluster_tree_1, 'N', 'N', false, true);
-        } else if (data_type == DataType::HMatrix) {
+        } else if (data_type == DataType::HMatrix || data_type == DataType::DefaultHMatrix) {
             local_off_diagonal_dense_matrix_1 = make_shared<LocalHMatrix<T, htool::underlying_type<T>>>(*generator_off_diagonal, local_target_root_cluster, local_off_diagonal_cluster_tree_1, epsilon, eta, 'N', 'N', false, true);
         }
 

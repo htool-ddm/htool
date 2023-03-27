@@ -17,9 +17,9 @@ int main(int argc, char *argv[]) {
         for (auto offdiagonal_approximation : {true, false}) {
             for (auto use_permutation : {true, false}) {
                 for (auto operation : {'N', 'T'}) {
-                    for (auto data_type : {DataType::Matrix, DataType::HMatrix}) {
+                    for (auto data_type : {DataType::Matrix, DataType::HMatrix, DataType::DefaultHMatrix}) {
                         std::vector<double> tolerances{1e-14};
-                        if (data_type == DataType::HMatrix) {
+                        if (data_type == DataType::HMatrix || data_type == DataType::DefaultHMatrix) {
                             tolerances.push_back(1e-6);
                         }
                         for (auto epsilon : tolerances) {

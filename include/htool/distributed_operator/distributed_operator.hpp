@@ -2,12 +2,12 @@
 #define HTOOL_DISTRIBUTED_OPERATOR_HPP
 
 #include "../clustering/cluster_node.hpp"
+#include "../local_operators/local_hmatrix.hpp"
 #include "../local_operators/virtual_local_operator.hpp"
 #include "../wrappers/wrapper_mpi.hpp"
 #include "virtual_distributed_operator.hpp"
-
 namespace htool {
-template <typename CoefficientPrecision, typename CoordinatePrecision = CoefficientPrecision>
+template <typename CoefficientPrecision, typename CoordinatePrecision = htool::underlying_type<CoefficientPrecision>>
 class DistributedOperator {
 
   private:
@@ -19,12 +19,13 @@ class DistributedOperator {
 
     // Local operators
     std::vector<std::shared_ptr<VirtualLocalOperator<CoefficientPrecision>>> m_local_operators = {};
+    std::vector<LocalHMatrix<CoefficientPrecision, CoordinatePrecision> *> m_local_hmatrices   = {};
 
     // Properties
     bool m_use_permutation = true;
     char m_symmetry        = 'N';
     char m_UPLO            = 'N';
-    MPI_Comm comm          = MPI_COMM_WORLD;
+    MPI_Comm m_comm        = MPI_COMM_WORLD;
 
     //
     mutable std::map<std::string, std::string> infos;
@@ -33,12 +34,14 @@ class DistributedOperator {
     // Constructor
     DistributedOperator(std::shared_ptr<const Cluster<CoordinatePrecision>> global_cluster_tree_target, std::shared_ptr<const Cluster<CoordinatePrecision>> global_cluster_tree_source, char symmetry = 'N', char UPLO = 'N') : m_global_target_root_cluster(global_cluster_tree_target), m_global_source_root_cluster(global_cluster_tree_source), m_symmetry(symmetry), m_UPLO(UPLO) {
         int rankWorld;
-        MPI_Comm_rank(comm, &rankWorld);
+        MPI_Comm_rank(m_comm, &rankWorld);
         m_local_cluster_target = m_global_target_root_cluster->get_clusters_on_partition()[rankWorld];
         m_local_cluster_source = m_global_source_root_cluster->get_clusters_on_partition()[rankWorld];
     };
 
-    //
+    // Build
+    void build_default_hierarchical_approximation(const VirtualGenerator<CoefficientPrecision> &generator, double epsilon, double eta);
+    void build_default_local_hierarchical_approximation(const VirtualGenerator<CoefficientPrecision> &generator, double epsilon, double eta);
     void add_local_operator(std::shared_ptr<VirtualLocalOperator<CoefficientPrecision>> local_operator) {
         m_local_operators.push_back(local_operator);
     }
@@ -88,11 +91,33 @@ class DistributedOperator {
 };
 
 template <typename CoefficientPrecision, typename CoordinatePrecision>
+void DistributedOperator<CoefficientPrecision, CoordinatePrecision>::build_default_hierarchical_approximation(const VirtualGenerator<CoefficientPrecision> &generator, double epsilon, double eta) {
+
+    int rankWorld;
+    MPI_Comm_rank(m_comm, &rankWorld);
+    auto local_hmatrix = std::make_shared<LocalHMatrix<CoefficientPrecision, CoordinatePrecision>>(generator, m_global_target_root_cluster, m_global_source_root_cluster, epsilon, eta, m_symmetry, m_UPLO, false, false, rankWorld);
+    m_local_hmatrices.emplace_back(local_hmatrix.get());
+    m_local_operators.push_back(local_hmatrix);
+}
+
+template <typename CoefficientPrecision, typename CoordinatePrecision>
+void DistributedOperator<CoefficientPrecision, CoordinatePrecision>::build_default_local_hierarchical_approximation(const VirtualGenerator<CoefficientPrecision> &generator, double epsilon, double eta) {
+    int rankWorld;
+    MPI_Comm_rank(m_comm, &rankWorld);
+    std::shared_ptr<const Cluster<CoordinatePrecision>> local_target_root_cluster                         = std::make_shared<const Cluster<CoordinatePrecision>>(clone_cluster_tree_from_partition(*m_global_target_root_cluster, rankWorld));
+    std::shared_ptr<const Cluster<htool::underlying_type<CoordinatePrecision>>> local_source_root_cluster = std::make_shared<const Cluster<CoordinatePrecision>>(clone_cluster_tree_from_partition(*m_global_source_root_cluster, rankWorld));
+
+    auto local_hmatrix = std::make_shared<LocalHMatrix<CoefficientPrecision, CoordinatePrecision>>(generator, local_target_root_cluster, local_source_root_cluster, epsilon, eta, m_symmetry, m_UPLO);
+    m_local_hmatrices.emplace_back(local_hmatrix.get());
+    m_local_operators.push_back(local_hmatrix);
+}
+
+template <typename CoefficientPrecision, typename CoordinatePrecision>
 void DistributedOperator<CoefficientPrecision, CoordinatePrecision>::vector_product_global_to_global(const CoefficientPrecision *const in, CoefficientPrecision *const out) const {
     double time = MPI_Wtime();
     int sizeWorld, rankWorld;
-    MPI_Comm_rank(comm, &rankWorld);
-    MPI_Comm_size(comm, &sizeWorld);
+    MPI_Comm_rank(m_comm, &rankWorld);
+    MPI_Comm_size(m_comm, &sizeWorld);
     int nr         = m_global_target_root_cluster->get_size();
     int nc         = m_global_source_root_cluster->get_size();
     int local_size = m_local_cluster_target->get_size();
@@ -127,9 +152,9 @@ void DistributedOperator<CoefficientPrecision, CoordinatePrecision>::vector_prod
     }
 
     if (!m_use_permutation) {
-        MPI_Allgatherv(out_perm.data(), recvcounts[rankWorld], wrapper_mpi<CoefficientPrecision>::mpi_type(), out, &(recvcounts[0]), &(displs[0]), wrapper_mpi<CoefficientPrecision>::mpi_type(), comm);
+        MPI_Allgatherv(out_perm.data(), recvcounts[rankWorld], wrapper_mpi<CoefficientPrecision>::mpi_type(), out, &(recvcounts[0]), &(displs[0]), wrapper_mpi<CoefficientPrecision>::mpi_type(), m_comm);
     } else if (m_use_permutation) {
-        MPI_Allgatherv(out_perm.data(), recvcounts[rankWorld], wrapper_mpi<CoefficientPrecision>::mpi_type(), output_buffer.data(), &(recvcounts[0]), &(displs[0]), wrapper_mpi<CoefficientPrecision>::mpi_type(), comm);
+        MPI_Allgatherv(out_perm.data(), recvcounts[rankWorld], wrapper_mpi<CoefficientPrecision>::mpi_type(), output_buffer.data(), &(recvcounts[0]), &(displs[0]), wrapper_mpi<CoefficientPrecision>::mpi_type(), m_comm);
         this->cluster_to_target_permutation(output_buffer.data(), out);
     }
 
@@ -142,8 +167,8 @@ template <typename CoefficientPrecision, typename CoordinatePrecision>
 void DistributedOperator<CoefficientPrecision, CoordinatePrecision>::matrix_product_global_to_global(const CoefficientPrecision *const in, CoefficientPrecision *const out, int mu) const {
     double time = MPI_Wtime();
     int sizeWorld, rankWorld;
-    MPI_Comm_rank(comm, &rankWorld);
-    MPI_Comm_size(comm, &sizeWorld);
+    MPI_Comm_rank(m_comm, &rankWorld);
+    MPI_Comm_size(m_comm, &sizeWorld);
     int nr         = m_global_target_root_cluster->get_size();
     int nc         = m_global_source_root_cluster->get_size();
     int local_size = m_local_cluster_target->get_size();
@@ -190,7 +215,7 @@ void DistributedOperator<CoefficientPrecision, CoordinatePrecision>::matrix_prod
             displs[i] = displs[i - 1] + recvcounts[i - 1];
     }
 
-    MPI_Allgatherv(out_perm.data(), recvcounts[rankWorld], wrapper_mpi<CoefficientPrecision>::mpi_type(), output_buffer.data(), &(recvcounts[0]), &(displs[0]), wrapper_mpi<CoefficientPrecision>::mpi_type(), comm);
+    MPI_Allgatherv(out_perm.data(), recvcounts[rankWorld], wrapper_mpi<CoefficientPrecision>::mpi_type(), output_buffer.data(), &(recvcounts[0]), &(displs[0]), wrapper_mpi<CoefficientPrecision>::mpi_type(), m_comm);
 
     for (int i = 0; i < mu; i++) {
         if (m_use_permutation) {
@@ -309,8 +334,8 @@ template <typename CoefficientPrecision, typename CoordinatePrecision>
 void DistributedOperator<CoefficientPrecision, CoordinatePrecision>::vector_product_local_to_local(const CoefficientPrecision *const in, CoefficientPrecision *const out, CoefficientPrecision *work) const {
 
     int sizeWorld, rankWorld;
-    MPI_Comm_rank(comm, &rankWorld);
-    MPI_Comm_size(comm, &sizeWorld);
+    MPI_Comm_rank(m_comm, &rankWorld);
+    MPI_Comm_size(m_comm, &sizeWorld);
     int local_size_source = m_local_cluster_source->get_size();
     int local_size        = m_local_cluster_target->get_size();
     int nc                = m_global_source_root_cluster->get_size();
@@ -348,8 +373,8 @@ void DistributedOperator<CoefficientPrecision, CoordinatePrecision>::matrix_prod
     }
 
     int sizeWorld, rankWorld;
-    MPI_Comm_rank(comm, &rankWorld);
-    MPI_Comm_size(comm, &sizeWorld);
+    MPI_Comm_rank(m_comm, &rankWorld);
+    MPI_Comm_size(m_comm, &sizeWorld);
     int local_size_source = m_local_cluster_source->get_size();
     int local_size        = m_local_cluster_target->get_size();
 
@@ -401,8 +426,8 @@ void DistributedOperator<CoefficientPrecision, CoordinatePrecision>::vector_prod
     int local_size        = m_local_cluster_target->get_size();
     int nc                = m_global_source_root_cluster->get_size();
     int sizeWorld, rankWorld;
-    MPI_Comm_rank(comm, &rankWorld);
-    MPI_Comm_size(comm, &sizeWorld);
+    MPI_Comm_rank(m_comm, &rankWorld);
+    MPI_Comm_size(m_comm, &sizeWorld);
 
     if (m_symmetry == 'S') {
         this->vector_product_local_to_local(in, out, work);
@@ -448,8 +473,8 @@ void DistributedOperator<CoefficientPrecision, CoordinatePrecision>::matrix_prod
     int local_size        = m_local_cluster_target->get_size();
     int nc                = m_global_source_root_cluster->get_size();
     int sizeWorld, rankWorld;
-    MPI_Comm_rank(comm, &rankWorld);
-    MPI_Comm_size(comm, &sizeWorld);
+    MPI_Comm_rank(m_comm, &rankWorld);
+    MPI_Comm_size(m_comm, &sizeWorld);
 
     if (m_symmetry == 'S') {
         this->matrix_product_local_to_local(in, out, mu, work);
@@ -544,7 +569,7 @@ void DistributedOperator<CoefficientPrecision, CoordinatePrecision>::internal_ve
         local_operator->add_vector_product_transp_local_to_global(1, in, 1, out);
     }
 
-    MPI_Allreduce(MPI_IN_PLACE, out, nc, wrapper_mpi<CoefficientPrecision>::mpi_type(), MPI_SUM, comm);
+    MPI_Allreduce(MPI_IN_PLACE, out, nc, wrapper_mpi<CoefficientPrecision>::mpi_type(), MPI_SUM, m_comm);
 }
 
 template <typename CoefficientPrecision, typename CoordinatePrecision>
@@ -555,7 +580,7 @@ void DistributedOperator<CoefficientPrecision, CoordinatePrecision>::internal_ma
     for (auto &local_operator : m_local_operators) {
         local_operator->add_matrix_product_transp_local_to_global(1, in, 1, out, mu);
     }
-    MPI_Allreduce(MPI_IN_PLACE, out, nc * mu, wrapper_mpi<CoefficientPrecision>::mpi_type(), MPI_SUM, comm);
+    MPI_Allreduce(MPI_IN_PLACE, out, nc * mu, wrapper_mpi<CoefficientPrecision>::mpi_type(), MPI_SUM, m_comm);
 }
 
 template <typename CoefficientPrecision, typename CoordinatePrecision>
@@ -600,8 +625,8 @@ void DistributedOperator<CoefficientPrecision, CoordinatePrecision>::internal_ve
     }
 
     int sizeWorld, rankWorld;
-    MPI_Comm_rank(comm, &rankWorld);
-    MPI_Comm_size(comm, &sizeWorld);
+    MPI_Comm_rank(m_comm, &rankWorld);
+    MPI_Comm_size(m_comm, &sizeWorld);
     bool need_delete      = false;
     int local_size_source = m_local_cluster_source->get_size();
     int nc                = m_global_source_root_cluster->get_size();
@@ -634,7 +659,7 @@ void DistributedOperator<CoefficientPrecision, CoordinatePrecision>::internal_ve
         }
     }
 
-    MPI_Alltoallv(work, &(scounts[0]), &(sdispls[0]), wrapper_mpi<CoefficientPrecision>::mpi_type(), rbuf, &(rcounts[0]), &(rdispls[0]), wrapper_mpi<CoefficientPrecision>::mpi_type(), comm);
+    MPI_Alltoallv(work, &(scounts[0]), &(sdispls[0]), wrapper_mpi<CoefficientPrecision>::mpi_type(), rbuf, &(rcounts[0]), &(rdispls[0]), wrapper_mpi<CoefficientPrecision>::mpi_type(), m_comm);
 
     for (int i = 0; i < sizeWorld; i++)
         std::transform(out, out + local_size_source, rbuf + rdispls[i], out, std::plus<CoefficientPrecision>());
@@ -653,8 +678,8 @@ void DistributedOperator<CoefficientPrecision, CoordinatePrecision>::internal_ma
     }
 
     int sizeWorld, rankWorld;
-    MPI_Comm_rank(comm, &rankWorld);
-    MPI_Comm_size(comm, &sizeWorld);
+    MPI_Comm_rank(m_comm, &rankWorld);
+    MPI_Comm_size(m_comm, &sizeWorld);
     bool need_delete      = false;
     int local_size_source = m_local_cluster_source->get_size();
     int nc                = m_global_source_root_cluster->get_size();
@@ -686,7 +711,7 @@ void DistributedOperator<CoefficientPrecision, CoordinatePrecision>::internal_ma
         }
     }
 
-    MPI_Alltoallv(work, &(scounts[0]), &(sdispls[0]), wrapper_mpi<CoefficientPrecision>::mpi_type(), rbuf, &(rcounts[0]), &(rdispls[0]), wrapper_mpi<CoefficientPrecision>::mpi_type(), comm);
+    MPI_Alltoallv(work, &(scounts[0]), &(sdispls[0]), wrapper_mpi<CoefficientPrecision>::mpi_type(), rbuf, &(rcounts[0]), &(rdispls[0]), wrapper_mpi<CoefficientPrecision>::mpi_type(), m_comm);
 
     for (int i = 0; i < sizeWorld; i++)
         std::transform(out, out + local_size_source * mu, rbuf + rdispls[i], out, std::plus<CoefficientPrecision>());
@@ -720,28 +745,28 @@ void DistributedOperator<CoefficientPrecision, CoordinatePrecision>::cluster_to_
 template <typename CoefficientPrecision, typename CoordinatePrecision>
 void DistributedOperator<CoefficientPrecision, CoordinatePrecision>::local_target_to_local_cluster(const CoefficientPrecision *const in, CoefficientPrecision *const out) const {
     int rankWorld;
-    MPI_Comm_rank(comm, &rankWorld);
+    MPI_Comm_rank(m_comm, &rankWorld);
     local_to_local_cluster(*m_global_target_root_cluster, rankWorld, in, out);
 }
 
 template <typename CoefficientPrecision, typename CoordinatePrecision>
 void DistributedOperator<CoefficientPrecision, CoordinatePrecision>::local_source_to_local_cluster(const CoefficientPrecision *const in, CoefficientPrecision *const out) const {
     int rankWorld;
-    MPI_Comm_rank(comm, &rankWorld);
+    MPI_Comm_rank(m_comm, &rankWorld);
     local_to_local_cluster(*m_global_source_root_cluster, rankWorld, in, out);
 }
 
 template <typename CoefficientPrecision, typename CoordinatePrecision>
 void DistributedOperator<CoefficientPrecision, CoordinatePrecision>::local_cluster_to_local_target(const CoefficientPrecision *const in, CoefficientPrecision *const out) const {
     int rankWorld;
-    MPI_Comm_rank(comm, &rankWorld);
+    MPI_Comm_rank(m_comm, &rankWorld);
     local_cluster_to_local(*m_global_target_root_cluster, rankWorld, in, out);
 }
 
 template <typename CoefficientPrecision, typename CoordinatePrecision>
 void DistributedOperator<CoefficientPrecision, CoordinatePrecision>::local_cluster_to_local_source(const CoefficientPrecision *const in, CoefficientPrecision *const out) const {
     int rankWorld;
-    MPI_Comm_rank(comm, &rankWorld);
+    MPI_Comm_rank(m_comm, &rankWorld);
     local_cluster_to_local(*m_global_source_root_cluster, rankWorld, in, out);
 }
 
@@ -750,8 +775,8 @@ template <typename CoefficientPrecision, typename CoordinatePrecision>
 void DistributedOperator<CoefficientPrecision, CoordinatePrecision>::local_to_global_target(const CoefficientPrecision *const in, CoefficientPrecision *const out, const int &mu) const {
     // Allgather
     int sizeWorld, rankWorld;
-    MPI_Comm_rank(comm, &rankWorld);
-    MPI_Comm_size(comm, &sizeWorld);
+    MPI_Comm_rank(m_comm, &rankWorld);
+    MPI_Comm_size(m_comm, &sizeWorld);
     std::vector<int> recvcounts(sizeWorld);
     std::vector<int> displs(sizeWorld);
 
@@ -763,15 +788,15 @@ void DistributedOperator<CoefficientPrecision, CoordinatePrecision>::local_to_gl
             displs[i] = displs[i - 1] + recvcounts[i - 1];
     }
 
-    MPI_Allgatherv(in, recvcounts[rankWorld], wrapper_mpi<CoefficientPrecision>::mpi_type(), out, &(recvcounts[0]), &(displs[0]), wrapper_mpi<CoefficientPrecision>::mpi_type(), comm);
+    MPI_Allgatherv(in, recvcounts[rankWorld], wrapper_mpi<CoefficientPrecision>::mpi_type(), out, &(recvcounts[0]), &(displs[0]), wrapper_mpi<CoefficientPrecision>::mpi_type(), m_comm);
 }
 
 template <typename CoefficientPrecision, typename CoordinatePrecision>
 void DistributedOperator<CoefficientPrecision, CoordinatePrecision>::local_to_global_source(const CoefficientPrecision *const in, CoefficientPrecision *const out, const int &mu) const {
     // Allgather
     int sizeWorld, rankWorld;
-    MPI_Comm_rank(comm, &rankWorld);
-    MPI_Comm_size(comm, &sizeWorld);
+    MPI_Comm_rank(m_comm, &rankWorld);
+    MPI_Comm_size(m_comm, &sizeWorld);
     std::vector<int> recvcounts(sizeWorld);
     std::vector<int> displs(sizeWorld);
 
@@ -782,7 +807,7 @@ void DistributedOperator<CoefficientPrecision, CoordinatePrecision>::local_to_gl
         if (i > 0)
             displs[i] = displs[i - 1] + recvcounts[i - 1];
     }
-    MPI_Allgatherv(in, recvcounts[rankWorld], wrapper_mpi<CoefficientPrecision>::mpi_type(), out, &(recvcounts[0]), &(displs[0]), wrapper_mpi<CoefficientPrecision>::mpi_type(), comm);
+    MPI_Allgatherv(in, recvcounts[rankWorld], wrapper_mpi<CoefficientPrecision>::mpi_type(), out, &(recvcounts[0]), &(displs[0]), wrapper_mpi<CoefficientPrecision>::mpi_type(), m_comm);
 }
 
 } // namespace htool
