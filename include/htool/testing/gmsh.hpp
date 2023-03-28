@@ -1,7 +1,7 @@
 #ifndef HTOOL_GEOMETRY_HPP
 #define HTOOL_GEOMETRY_HPP
 
-#include "../types/point.hpp"
+#include "point.hpp"
 #include <fstream>
 #include <sstream>
 #include <stdlib.h>

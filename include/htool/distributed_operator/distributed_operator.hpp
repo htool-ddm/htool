@@ -5,7 +5,8 @@
 #include "../local_operators/local_hmatrix.hpp"
 #include "../local_operators/virtual_local_operator.hpp"
 #include "../wrappers/wrapper_mpi.hpp"
-#include "virtual_distributed_operator.hpp"
+#include <map>
+
 namespace htool {
 template <typename CoefficientPrecision, typename CoordinatePrecision = htool::underlying_type<CoefficientPrecision>>
 class DistributedOperator {
@@ -88,6 +89,7 @@ class DistributedOperator {
     // Getters/setters
     bool &use_permutation() { return m_use_permutation; }
     const bool &use_permutation() const { return m_use_permutation; }
+    char get_symmetry() { return m_symmetry; }
 };
 
 template <typename CoefficientPrecision, typename CoordinatePrecision>
