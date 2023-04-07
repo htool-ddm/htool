@@ -59,8 +59,8 @@ int main(int argc, char *argv[]) {
         // Tell the user how to run the program
         cerr << "Usage: " << argv[0] << " outputpath" << endl;
         /* "Usage messages" are a conventional way of telling the user
-		 * how to run a program if they enter the command incorrectly.
-		 */
+         * how to run a program if they enter the command incorrectly.
+         */
         return 1;
     }
 

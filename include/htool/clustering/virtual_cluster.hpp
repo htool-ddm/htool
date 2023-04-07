@@ -82,7 +82,7 @@ class VirtualCluster {
     virtual void save_cluster(std::string filename, MPI_Comm comm = MPI_COMM_WORLD) const                                                          = 0;
     virtual void read_cluster(std::string file_permutation, std::string file_tree, MPI_Comm comm = MPI_COMM_WORLD)                                 = 0;
 
-    virtual ~VirtualCluster(){};
+    virtual ~VirtualCluster() {}
 };
 
 // Permutations

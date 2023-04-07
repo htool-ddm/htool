@@ -32,7 +32,7 @@ class IMatrix {
 
     virtual void add_mvprod_row_major(const T *const in, T *const out, const int &mu, char transb = 'T', char op = 'N') const = 0;
 
-    virtual ~IMatrix(){};
+    virtual ~IMatrix() {}
 };
 
 template <typename T>
@@ -117,7 +117,7 @@ class Matrix : public IMatrix<T> {
 
     //! ### Access operator
     /*!
-    */
+     */
 
     T *data() { return this->mat; }
     T *data() const { return this->mat; }
@@ -221,7 +221,7 @@ class Matrix : public IMatrix<T> {
 
     //! ### Matrix-scalar product
     /*!
-    */
+     */
 
     friend Matrix
     operator*(const Matrix &A, const T &a) {
@@ -239,7 +239,7 @@ class Matrix : public IMatrix<T> {
 
     //! ### Matrix sum
     /*!
-    */
+     */
 
     Matrix operator+(const Matrix &A) const {
         assert(this->nr == A.nr && this->nc == A.nc);
@@ -254,7 +254,7 @@ class Matrix : public IMatrix<T> {
 
     //! ### Matrix -
     /*!
-    */
+     */
 
     Matrix operator-(const Matrix &A) const {
         assert(this->nr == A.nr && this->nc == A.nc);
@@ -269,7 +269,7 @@ class Matrix : public IMatrix<T> {
 
     //! ### Matrix-std::vector product
     /*!
-    */
+     */
 
     std::vector<T> operator*(const std::vector<T> &rhs) const {
         std::vector<T> lhs(this->nr);
@@ -279,7 +279,7 @@ class Matrix : public IMatrix<T> {
 
     //! ### Matrix-Matrix product
     /*!
-    */
+     */
     Matrix operator*(const Matrix &B) const {
         assert(this->nc == B.nr);
         Matrix R(this->nr, B.nc);
@@ -289,7 +289,7 @@ class Matrix : public IMatrix<T> {
 
     //! ### Interface with blas gemm
     /*!
-    */
+     */
     void mvprod(const T *const in, T *const out, const int &mu = 1) const {
         int nr  = this->nr;
         int nc  = this->nc;
@@ -316,7 +316,7 @@ class Matrix : public IMatrix<T> {
 
     //! ### Special mvprod
     /*!
-    */
+     */
     void mvprod_row_major(const T *const in, T *const out, const int &mu, char transb, char op = 'N') const {
         int nr  = this->nr;
         int nc  = this->nc;
@@ -349,7 +349,7 @@ class Matrix : public IMatrix<T> {
 
     //! ### Special add_mvprod
     /*!
-    */
+     */
     void add_mvprod_row_major(const T *const in, T *const out, const int &mu, char transb, char op = 'N') const {
         int nr  = this->nr;
         int nc  = this->nc;

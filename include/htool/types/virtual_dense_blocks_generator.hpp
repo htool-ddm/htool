@@ -13,7 +13,7 @@ class VirtualDenseBlocksGenerator {
     // C style
     virtual void copy_dense_blocks(const std::vector<int> &M, const std::vector<int> &N, const std::vector<const int *> &rows, const std::vector<const int *> &cols, std::vector<T *> &ptr) const = 0;
 
-    virtual ~VirtualDenseBlocksGenerator(){};
+    virtual ~VirtualDenseBlocksGenerator() {}
 };
 
 } // namespace htool

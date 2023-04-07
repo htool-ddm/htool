@@ -52,7 +52,7 @@ class LowRankMatrix : public IMatrix<T> {
                 // rank=-1 will be deleted
             }
         }
-    };
+    }
 
     // Getters
     // int nb_rows() const { return this->nr; }

@@ -302,7 +302,7 @@ int test_solver_ddm(int argc, char *argv[], int mu, char symmetric) {
 
         x_global = 0;
     }
-    //Finalize the MPI environment.
+    // Finalize the MPI environment.
     MPI_Finalize();
 
     return test;
