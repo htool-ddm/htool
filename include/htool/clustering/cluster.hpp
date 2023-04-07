@@ -233,9 +233,9 @@ class Cluster : public VirtualCluster {
     //// Getters for global data
     int get_max_depth() const { return root->max_depth; }
     int get_min_depth() const { return root->min_depth; }
-    const std::vector<int> &get_perm() const { return *permutation; };
-    std::shared_ptr<std::vector<int>> get_perm_ptr() const { return permutation; };
-    int get_perm(int i) const { return (*permutation)[i]; };
+    const std::vector<int> &get_perm() const { return *permutation; }
+    std::shared_ptr<std::vector<int>> get_perm_ptr() const { return permutation; }
+    int get_perm(int i) const { return (*permutation)[i]; }
     std::vector<int>::const_iterator get_perm_start() const { return permutation->begin(); }
     std::vector<int>::iterator get_perm_start() { return permutation->begin(); }
     const VirtualCluster *get_root() const {
@@ -299,7 +299,7 @@ class Cluster : public VirtualCluster {
             }
 
             for (auto &son : this->sons) {
-                if (son != NULL)
+                if (son != nullptr)
                     (*son).print();
             }
         }

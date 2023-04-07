@@ -64,7 +64,7 @@ class partialACA final : public VirtualLowRankGenerator<T> {
         std::vector<T> r(N), c(M);
         // Either we have a required rank
         // Or it is negative and we have to check the relative error between two iterations.
-        //But to do that we need a least two iterations.
+        // But to do that we need a least two iterations.
         while (((reqrank > 0) && (q < std::min(reqrank, std::min(M, N)))) || ((reqrank < 0) && (q == 0 || sqrt(aux / frob) > epsilon))) {
             // if (q != 0)
             // std::cout << sqrt(aux / frob) << " " << this->epsilon << " " << (sqrt(aux / frob) > this->epsilon) << std::endl;

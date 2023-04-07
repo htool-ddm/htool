@@ -25,7 +25,7 @@ class VirtualGenerator {
     int nb_cols() const { return nc; }
     int get_dimension() const { return dimension; }
 
-    virtual ~VirtualGenerator(){};
+    virtual ~VirtualGenerator() {}
 };
 
 } // namespace htool

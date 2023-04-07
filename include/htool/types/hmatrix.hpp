@@ -109,7 +109,7 @@ class HMatrix : public VirtualHMatrix<T> {
   public:
     // Special constructor for hand-made build (for MultiHMatrix for example)
 
-    HMatrix(int space_dim0, int nr0, int nc0, const std::shared_ptr<VirtualCluster> &cluster_tree_t0, const std::shared_ptr<VirtualCluster> &cluster_tree_s0, char symmetry0 = 'N', char UPLO = 'N', const MPI_Comm comm0 = MPI_COMM_WORLD) : nr(nr0), nc(nc0), space_dim(space_dim0), symmetry(symmetry0), UPLO(UPLO), use_permutation(true), delay_dense_computation(false), cluster_tree_t(cluster_tree_t0), cluster_tree_s(cluster_tree_s0), comm(comm0){};
+    HMatrix(int space_dim0, int nr0, int nc0, const std::shared_ptr<VirtualCluster> &cluster_tree_t0, const std::shared_ptr<VirtualCluster> &cluster_tree_s0, char symmetry0 = 'N', char UPLO = 'N', const MPI_Comm comm0 = MPI_COMM_WORLD) : nr(nr0), nc(nc0), space_dim(space_dim0), symmetry(symmetry0), UPLO(UPLO), use_permutation(true), delay_dense_computation(false), cluster_tree_t(cluster_tree_t0), cluster_tree_s(cluster_tree_s0), comm(comm0) {}
 
     // Constructor
     HMatrix(const std::shared_ptr<VirtualCluster> &cluster_tree_t0, const std::shared_ptr<VirtualCluster> &cluster_tree_s0, double epsilon0 = 1e-6, double eta0 = 10, char Symmetry = 'N', char UPLO = 'N', const int &reqrank0 = -1, const MPI_Comm comm0 = MPI_COMM_WORLD) : nr(0), nc(0), space_dim(cluster_tree_t0->get_space_dim()), dimension(1), reqrank(reqrank0), local_size(0), local_offset(0), symmetry(Symmetry), UPLO(UPLO), false_positive(0), use_permutation(true), delay_dense_computation(false), epsilon(epsilon0), eta(eta0), maxblocksize(1e6), minsourcedepth(0), mintargetdepth(0), cluster_tree_t(cluster_tree_t0), cluster_tree_s(cluster_tree_s0), comm(comm0) {
@@ -119,7 +119,7 @@ class HMatrix : public VirtualHMatrix<T> {
               && ((symmetry == 'H' && is_complex<T>()) || symmetry != 'H'))) {
             throw std::invalid_argument("[Htool error] Invalid arguments to create HMatrix"); // LCOV_EXCL_LINE
         }
-    };
+    }
 
     // Build
     void build(VirtualGenerator<T> &mat, const double *const xt, const double *const xs);
@@ -204,20 +204,20 @@ class HMatrix : public VirtualHMatrix<T> {
     void copy_local_diagonal_block(T *, bool = true) const;
     std::pair<int, int> get_max_size_blocks() const;
 
-    double get_epsilon() const { return this->epsilon; };
-    double get_eta() const { return this->eta; };
-    int get_dimension() const { return this->dimension; };
-    int get_minsourcedepth() const { return this->minsourcedepth; };
-    int get_mintargetdepth() const { return this->mintargetdepth; };
-    int get_maxblocksize() const { return this->maxblocksize; };
-    void set_epsilon(double epsilon0) { this->epsilon = epsilon0; };
-    void set_eta(double eta0) { this->eta = eta0; };
-    void set_minsourcedepth(unsigned int minsourcedepth0) { this->minsourcedepth = minsourcedepth0; };
-    void set_mintargetdepth(unsigned int mintargetdepth0) { this->mintargetdepth = mintargetdepth0; };
-    void set_maxblocksize(unsigned int maxblocksize0) { this->maxblocksize = maxblocksize0; };
-    void set_use_permutation(bool choice) { this->use_permutation = choice; };
-    void set_delay_dense_computation(bool choice) { this->delay_dense_computation = choice; };
-    void set_compression(std::shared_ptr<VirtualLowRankGenerator<T>> ptr) { LowRankGenerator = ptr; };
+    double get_epsilon() const { return this->epsilon; }
+    double get_eta() const { return this->eta; }
+    int get_dimension() const { return this->dimension; }
+    int get_minsourcedepth() const { return this->minsourcedepth; }
+    int get_mintargetdepth() const { return this->mintargetdepth; }
+    int get_maxblocksize() const { return this->maxblocksize; }
+    void set_epsilon(double epsilon0) { this->epsilon = epsilon0; }
+    void set_eta(double eta0) { this->eta = eta0; }
+    void set_minsourcedepth(unsigned int minsourcedepth0) { this->minsourcedepth = minsourcedepth0; }
+    void set_mintargetdepth(unsigned int mintargetdepth0) { this->mintargetdepth = mintargetdepth0; }
+    void set_maxblocksize(unsigned int maxblocksize0) { this->maxblocksize = maxblocksize0; }
+    void set_use_permutation(bool choice) { this->use_permutation = choice; }
+    void set_delay_dense_computation(bool choice) { this->delay_dense_computation = choice; }
+    void set_compression(std::shared_ptr<VirtualLowRankGenerator<T>> ptr) { LowRankGenerator = ptr; }
 
     // Infos
     const std::map<std::string, std::string> &get_infos() const { return infos; }

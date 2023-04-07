@@ -72,7 +72,7 @@ class VirtualHMatrix {
     virtual Matrix<T> get_local_dense_perm() const = 0;
     virtual void copy_local_dense_perm(T *) const  = 0;
 
-    virtual ~VirtualHMatrix(){};
+    virtual ~VirtualHMatrix() {}
 };
 
 } // namespace htool

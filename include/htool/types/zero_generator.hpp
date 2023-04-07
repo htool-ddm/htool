@@ -18,7 +18,7 @@ class ZeroGenerator : public VirtualGenerator<T> {
     // C style
     void copy_submatrix(int M, int N, const int *const, const int *const, T *ptr) const override {
         std::fill_n(ptr, M * N, T(0));
-    };
+    }
 };
 
 } // namespace htool

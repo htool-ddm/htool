@@ -7,26 +7,26 @@
 #include <complex>
 #include <iostream>
 #include <vector>
-//#include "point.hpp"
+// #include "point.hpp"
 
 namespace htool {
 //================================//
 //      DECLARATIONS DE TYPE      //
 //================================//
 
-//typedef vector<Cplx>    vectCplx;
+// typedef vector<Cplx>    vectCplx;
 
 //=================================================================//
 //                         CLASS SPARSE MATRIX
 /******************************************************************/ /**
-* Class for sparse matrices (in coordinate list format).
-* Its member objects are:
-*   - I: vector of the row indices,
-*   - J: vector of the column indices,
-*   - K: vector of the (complex) coefficients of the matrix,
-*   - nr: the number of rows,
-*   - nc: the number of columns.
-*********************************************************************/
+                                                                      * Class for sparse matrices (in coordinate list format).
+                                                                      * Its member objects are:
+                                                                      *   - I: vector of the row indices,
+                                                                      *   - J: vector of the column indices,
+                                                                      *   - K: vector of the (complex) coefficients of the matrix,
+                                                                      *   - nr: the number of rows,
+                                                                      *   - nc: the number of columns.
+                                                                      *********************************************************************/
 
 class SpMatrix {
 
@@ -39,13 +39,13 @@ class SpMatrix {
   public:
     //! ### Default constructor
     /*!
-	 Initializes the matrix to the size 0*0.
+         Initializes the matrix to the size 0*0.
   */
     SpMatrix() : nr(0), nc(0) {}
 
     //! ### Another constructor
     /*!
-	 Initializes the matrix with _nrp_ rows and _ncp_ columns,
+         Initializes the matrix with _nrp_ rows and _ncp_ columns,
      _Ip_ as vector of the row indices, _Jp_ as vector of the column indices,
      _Kp_ as vector of the coefficients of the matrix.
   */
@@ -53,14 +53,14 @@ class SpMatrix {
 
     //! ### Copy constructor
     /*!
-  */
+     */
     SpMatrix(const SpMatrix &A) : I(A.I), J(A.J), K(A.K), nr(A.nr), nc(A.nc) {}
 
     //! ### Assignement operator with a sparse matrix input argument
     /*!
-	 Copies the _I_, _J_, _K_ of the input _A_ argument
-	 (which is a sparse matrix) into the vectors of
-	 calling instance.
+         Copies the _I_, _J_, _K_ of the input _A_ argument
+         (which is a sparse matrix) into the vectors of
+         calling instance.
   */
     void operator=(const SpMatrix &A) {
         assert(nr == A.nr && nc == A.nc);
@@ -71,8 +71,8 @@ class SpMatrix {
 
     //! ### Matrix-vector product
     /*!
-	 The input parameter _u_ is the input vector
-	 (i.e. the right operand).
+         The input parameter _u_ is the input vector
+         (i.e. the right operand).
   */
     vectCplx operator*(const vectCplx &u) {
         int ncoef = I.size();
@@ -84,14 +84,14 @@ class SpMatrix {
 
     //! ### Matrix-vector product
     /*!
-	 Another instanciation of the matrix-vector product
-	 that avoids the generation of temporary instance for the
-	 output vector. This routine achieves the operation
+         Another instanciation of the matrix-vector product
+         that avoids the generation of temporary instance for the
+         output vector. This routine achieves the operation
 
-	 lhs = m*rhs
+         lhs = m*rhs
 
-	 The left and right operands (_lhs_ and _rhs_) are templated
-	 and can then be of any type (not necessarily of type vectCplx).
+         The left and right operands (_lhs_ and _rhs_) are templated
+         and can then be of any type (not necessarily of type vectCplx).
   */
     template <typename LhsType, typename RhsType>
     friend void MvProd(LhsType &lhs, const SpMatrix &m, const RhsType &rhs) {
@@ -145,13 +145,13 @@ class SpMatrix {
 
     //! ### Access to number of rows
     /*!
-	 Returns the number of rows of the input argument _A_.
+         Returns the number of rows of the input argument _A_.
   */
     friend const int &nb_rows(const SpMatrix &A) { return A.nr; }
 
     //! ### Access to number of columns
     /*!
-	 Returns the number of columns of the input argument _A_.
+         Returns the number of columns of the input argument _A_.
   */
     friend const int &nb_cols(const SpMatrix &A) { return A.nc; }
 
