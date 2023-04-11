@@ -22,9 +22,9 @@ inline MPI_Datatype wrapper_mpi<float>::mpi_type() { return MPI_FLOAT; }
 template <>
 inline MPI_Datatype wrapper_mpi<double>::mpi_type() { return MPI_DOUBLE; }
 template <>
-inline MPI_Datatype wrapper_mpi<std::complex<float>>::mpi_type() { return MPI_COMPLEX; }
+inline MPI_Datatype wrapper_mpi<std::complex<float>>::mpi_type() { return MPI_C_COMPLEX; }
 template <>
-inline MPI_Datatype wrapper_mpi<std::complex<double>>::mpi_type() { return MPI_DOUBLE_COMPLEX; }
+inline MPI_Datatype wrapper_mpi<std::complex<double>>::mpi_type() { return MPI_C_DOUBLE_COMPLEX; }
 
 // https: //stackoverflow.com/questions/40807833/sending-size-t-type-data-with-mpi
 #if SIZE_MAX == UCHAR_MAX
