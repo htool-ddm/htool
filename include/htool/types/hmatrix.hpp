@@ -1201,7 +1201,7 @@ void HMatrix<T>::mvprod_local_to_local(const T *const in, T *const out, const in
         // local permutation
         if (use_permutation) {
             // permutation
-            this->local_source_to_local_cluster(in, in_perm.data());
+            this->local_source_to_local_cluster(in, in_perm.data(), comm);
 
             // prod
             mymvprod_local_to_local(in_perm.data(), out_perm.data(), 1, work);
@@ -1222,7 +1222,7 @@ void HMatrix<T>::mvprod_local_to_local(const T *const in, T *const out, const in
         for (int i = 0; i < mu; i++) {
             // local permutation
             if (use_permutation) {
-                this->local_source_to_local_cluster(in + i * local_size_source, buffer.data());
+                this->local_source_to_local_cluster(in + i * local_size_source, buffer.data(), comm);
 
                 // Transpose
                 for (int j = 0; j < local_size_source; j++) {
@@ -1250,7 +1250,7 @@ void HMatrix<T>::mvprod_local_to_local(const T *const in, T *const out, const in
                 }
 
                 // local permutation
-                this->local_cluster_to_local_target(buffer.data(), out + i * local_size);
+                this->local_cluster_to_local_target(buffer.data(), out + i * local_size, comm);
             } else {
                 // Tranpose
                 for (int j = 0; j < local_size; j++) {
@@ -1382,7 +1382,7 @@ void HMatrix<T>::mvprod_transp_local_to_local(const T *const in, T *const out, c
 
         // local permutation
         if (use_permutation) {
-            this->local_target_to_local_cluster(in, in_perm.data());
+            this->local_target_to_local_cluster(in, in_perm.data(), comm);
 
             // prod
             mymvprod_transp_local_to_local(in_perm.data(), out_perm.data(), 1, work);
@@ -1403,7 +1403,7 @@ void HMatrix<T>::mvprod_transp_local_to_local(const T *const in, T *const out, c
         for (int i = 0; i < mu; i++) {
             // local permutation
             if (use_permutation) {
-                this->local_target_to_local_cluster(in + i * local_size, buffer.data());
+                this->local_target_to_local_cluster(in + i * local_size, buffer.data(), comm);
 
                 // Transpose
                 for (int j = 0; j < local_size; j++) {
@@ -1431,7 +1431,7 @@ void HMatrix<T>::mvprod_transp_local_to_local(const T *const in, T *const out, c
                 }
 
                 // local permutation
-                this->local_cluster_to_local_source(buffer.data(), out + i * local_size_source);
+                this->local_cluster_to_local_source(buffer.data(), out + i * local_size_source, comm);
             } else {
                 // Tranpose
                 for (int j = 0; j < local_size_source; j++) {
@@ -1869,7 +1869,7 @@ void HMatrix<T>::copy_local_diagonal(T *ptr, bool permutation) const {
     }
 
     if (permutation) {
-        this->local_cluster_to_local_target(d, ptr);
+        this->local_cluster_to_local_target(d, ptr, comm);
     }
 }
 
