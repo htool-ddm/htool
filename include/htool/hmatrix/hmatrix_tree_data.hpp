@@ -3,7 +3,6 @@
 
 #include "interfaces/virtual_admissibility_condition.hpp"
 #include "interfaces/virtual_lrmat_generator.hpp"
-#include "lrmat/sympartialACA.hpp"
 
 namespace htool {
 
