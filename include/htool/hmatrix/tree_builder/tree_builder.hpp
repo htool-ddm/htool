@@ -2,6 +2,7 @@
 #define HTOOL_HMATRIX_TREE_BUILDER_HPP
 
 #include "../hmatrix.hpp"
+#include "../lrmat/sympartialACA.hpp"
 
 namespace htool {
 
@@ -198,7 +199,7 @@ bool HMatrixTreeBuilder<CoefficientPrecision, CoordinatePrecision>::build_block_
                 && target_cluster.get_depth() >= m_mintargetdepth
                 && source_cluster.get_depth() >= m_minsourcedepth
                 && std::all_of(child_blocks.begin(), child_blocks.end(), [this](HMatrixType *block) {
-                       return !(block != block->get_diagonal_hmatrix());
+                       return (block != block->get_diagonal_hmatrix());
                    })) {
                 child_blocks.clear();
                 current_hmatrix->delete_children();

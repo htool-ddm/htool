@@ -27,6 +27,15 @@ class LocalOperator : public VirtualLocalOperator<CoefficientPrecision> {
     virtual void local_add_matrix_product_row_major(char trans, CoefficientPrecision alpha, const CoefficientPrecision *in, CoefficientPrecision beta, CoefficientPrecision *out, int mu) const                                     = 0;
     virtual void local_add_matrix_product_symmetric_row_major(char trans, CoefficientPrecision alpha, const CoefficientPrecision *in, CoefficientPrecision beta, CoefficientPrecision *out, int mu, char UPLO, char symmetry) const = 0;
 
+    virtual void local_sub_matrix_vector_product(const CoefficientPrecision *const in, CoefficientPrecision *const out, int mu, int offset, int size, int margin) const {
+        std::vector<CoefficientPrecision> temp(m_source_root_cluster->get_size() * mu, 0);
+        int rankWorld;
+        MPI_Comm_rank(MPI_COMM_WORLD, &rankWorld);
+
+        std::copy_n(in, size * mu, temp.data() + offset * mu);
+        add_matrix_product_global_to_local(1, temp.data(), 0, out, mu);
+    }
+
   public:
     // -- Operations --
     void add_vector_product_global_to_local(CoefficientPrecision alpha, const CoefficientPrecision *in, CoefficientPrecision beta, CoefficientPrecision *out) const override {
@@ -210,6 +219,30 @@ class LocalOperator : public VirtualLocalOperator<CoefficientPrecision> {
         if (m_symmetry == 'H') {
             conj_if_complex<CoefficientPrecision>(out + m_source_root_cluster->get_offset() * mu, nc * mu);
         }
+    }
+
+    void sub_matrix_product_to_local(const CoefficientPrecision *const in, CoefficientPrecision *const out, int mu, int offset, int size, int margin) const override {
+        int source_offset   = m_source_root_cluster->get_offset();
+        int source_size     = m_source_root_cluster->get_size();
+        bool is_output_null = ((offset + size) < source_offset) || (source_offset + m_source_root_cluster->get_size() < offset);
+
+        if (!is_output_null) {
+            // Same size as local operator
+            if (source_offset == offset && source_size + source_offset == size + offset)
+                local_add_matrix_product_row_major('N', 1, in, 0, out, mu);
+            else {
+
+                int temp_offset                           = std::max(offset, source_offset);
+                const CoefficientPrecision *const temp_in = (offset < source_offset) ? in + source_offset - offset : in;
+                int temp_size                             = (size + offset <= source_size + source_offset) ? size - std::max(source_offset - offset, 0) : size - std::max(source_offset - offset, 0) - (size + offset - source_offset - source_size);
+
+                local_sub_matrix_vector_product(temp_in, out, mu, temp_offset, temp_size, margin);
+            }
+        }
+        // std::vector<CoefficientPrecision> test(source_size * mu, 0);
+        // std::copy_n(in, size * mu, test.data() + offset * mu);
+        // int rankWorld;
+        // local_add_matrix_product_row_major('N', 1, test.data(), 0, out, mu);
     }
 };
 } // namespace htool

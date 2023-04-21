@@ -85,7 +85,7 @@ class partialACA final : public VirtualLowRankGenerator<CoefficientPrecision, Co
                 // Compute the first cross
                 //==================//
                 // Look for a column
-
+                std::fill(r.begin(), r.end(), CoefficientPrecision(0));
                 A.copy_submatrix(1, source_size, I + target_offset, source_offset, r.data());
                 for (int j = 0; j < uu.size(); j++) {
                     coef = -uu[j][I];
@@ -110,7 +110,7 @@ class partialACA final : public VirtualLowRankGenerator<CoefficientPrecision, Co
                 //==================//
                 // Look for a line
                 if (std::abs(r[J]) > 1e-15) {
-
+                    std::fill(c.begin(), c.end(), CoefficientPrecision(0));
                     A.copy_submatrix(target_size, 1, target_offset, J + source_offset, c.data());
                     for (int k = 0; k < uu.size(); k++) {
                         coef = -vv[k][J];

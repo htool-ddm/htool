@@ -37,6 +37,8 @@ class ClusterTreeBuilder {
 
     ClusterTreeBuilder(int number_of_points, int spatial_dimension, const T *coordinates, int number_of_children, int size_partition, const DirectionComputationStrategy &direction_computation_strategy = DirectionComputationStrategy(), const SplittingStrategy &splitting_strategy = SplittingStrategy()) : ClusterTreeBuilder(number_of_points, spatial_dimension, coordinates, nullptr, nullptr, number_of_children, size_partition, direction_computation_strategy, splitting_strategy) {}
 
+    std::vector<std::pair<int, int>> get_partition() const { return m_partition; }
+
     void set_partition(const std::vector<std::pair<int, int>> &partition) {
         m_partition_type = Given;
         m_size_partition = partition.size();
@@ -172,6 +174,11 @@ Cluster<T> ClusterTreeBuilder<T, DirectionComputationStrategy, SplittingStrategy
         } else {
             current_cluster->set_maximal_depth(std::max(current_cluster->get_maximal_depth(), current_cluster->get_depth()));
             current_cluster->set_minimal_depth(std::min(current_cluster->get_minimal_depth(), current_cluster->get_depth()));
+        }
+
+        if (m_partition_type == PartitionType::Simple && current_cluster->get_depth() == 0) {
+            for (const auto &child : children)
+                m_partition.emplace_back(child->get_offset(), child->get_size());
         }
     }
 

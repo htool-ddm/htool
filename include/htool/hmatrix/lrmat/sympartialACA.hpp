@@ -98,7 +98,7 @@ class sympartialACA final : public VirtualLowRankGenerator<CoefficientPrecision,
                 q = -1;
                 break;
             } else {
-
+                std::fill(u1.begin(), u1.end(), CoefficientPrecision(0));
                 if (t.get_offset() >= s.get_offset()) {
                     A.copy_submatrix(1, n2, i1 + I1, i2, u1.data());
                 } else {
@@ -127,6 +127,7 @@ class sympartialACA final : public VirtualLowRankGenerator<CoefficientPrecision,
                 //==================//
                 // Look for a line
                 if (std::abs(u1[I2]) > 1e-15) {
+                    std::fill(u2.begin(), u2.end(), CoefficientPrecision(0));
                     if (t.get_offset() >= s.get_offset()) {
                         A.copy_submatrix(n1, 1, i1, i2 + I2, u2.data());
                     } else {

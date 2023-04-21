@@ -20,7 +20,11 @@ class DistributedOperator {
 
     // Local operators
     std::vector<std::shared_ptr<VirtualLocalOperator<CoefficientPrecision>>> m_local_operators = {};
-    std::vector<LocalHMatrix<CoefficientPrecision, CoordinatePrecision> *> m_local_hmatrices   = {};
+
+    // Views
+    std::vector<const LocalHMatrix<CoefficientPrecision, CoordinatePrecision> *> m_local_hmatrices = {};
+
+    const HMatrix<CoefficientPrecision, CoordinatePrecision> *m_diagonal_block_hmatrix = nullptr;
 
     // Properties
     bool m_use_permutation = true;
@@ -69,8 +73,8 @@ class DistributedOperator {
     void internal_vector_product_transp_local_to_local(const CoefficientPrecision *const in, CoefficientPrecision *const out, CoefficientPrecision *work = nullptr) const;
     void internal_matrix_product_transp_local_to_local(const CoefficientPrecision *const in, CoefficientPrecision *const out, int mu, CoefficientPrecision *work = nullptr) const;
 
-    // // Special matrix-vector product for building coarse space
-    // virtual void mvprod_subrhs(const CoefficientPrecision *const in, CoefficientPrecision *const out, const int &mu, const int &offset, const int &size, const int &margin) const = 0;
+    // Special matrix-vector product for building coarse space
+    void internal_sub_matrix_product_to_local(const CoefficientPrecision *const in, CoefficientPrecision *const out, int mu, int offset, int size, int margin) const;
 
     // Permutations
     void source_to_cluster_permutation(const CoefficientPrecision *const in, CoefficientPrecision *const out) const;
@@ -89,7 +93,21 @@ class DistributedOperator {
     // Getters/setters
     bool &use_permutation() { return m_use_permutation; }
     const bool &use_permutation() const { return m_use_permutation; }
-    char get_symmetry() { return m_symmetry; }
+    char get_symmetry_type() const { return m_symmetry; }
+    char get_storage_type() const { return m_UPLO; }
+    MPI_Comm get_comm() const { return m_comm; }
+    const Cluster<CoordinatePrecision> &get_root_target_cluster() const { return *m_global_target_root_cluster; }
+    const Cluster<CoordinatePrecision> &get_root_source_cluster() const { return *m_global_source_root_cluster; }
+    const Cluster<CoordinatePrecision> &get_local_target_cluster() const { return *m_local_cluster_target; }
+    const Cluster<CoordinatePrecision> &get_local_source_cluster() const { return *m_local_cluster_source; }
+
+    std::vector<const LocalHMatrix<CoefficientPrecision, CoordinatePrecision> *> get_local_hmatrices() {
+        return m_local_hmatrices;
+    }
+
+    void copy_local_diagonal_block_to_dense(CoefficientPrecision *ptr) const {
+        copy_to_dense(*m_diagonal_block_hmatrix, ptr);
+    }
 };
 
 template <typename CoefficientPrecision, typename CoordinatePrecision>
@@ -100,6 +118,7 @@ void DistributedOperator<CoefficientPrecision, CoordinatePrecision>::build_defau
     auto local_hmatrix = std::make_shared<LocalHMatrix<CoefficientPrecision, CoordinatePrecision>>(generator, m_global_target_root_cluster, m_global_source_root_cluster, epsilon, eta, m_symmetry, m_UPLO, false, false, rankWorld);
     m_local_hmatrices.emplace_back(local_hmatrix.get());
     m_local_operators.push_back(local_hmatrix);
+    m_diagonal_block_hmatrix = local_hmatrix->get_hmatrix().get_diagonal_hmatrix();
 }
 
 template <typename CoefficientPrecision, typename CoordinatePrecision>
@@ -112,6 +131,7 @@ void DistributedOperator<CoefficientPrecision, CoordinatePrecision>::build_defau
     auto local_hmatrix = std::make_shared<LocalHMatrix<CoefficientPrecision, CoordinatePrecision>>(generator, local_target_root_cluster, local_source_root_cluster, epsilon, eta, m_symmetry, m_UPLO);
     m_local_hmatrices.emplace_back(local_hmatrix.get());
     m_local_operators.push_back(local_hmatrix);
+    m_diagonal_block_hmatrix = local_hmatrix->get_hmatrix().get_diagonal_hmatrix();
 }
 
 template <typename CoefficientPrecision, typename CoordinatePrecision>
@@ -346,7 +366,7 @@ void DistributedOperator<CoefficientPrecision, CoordinatePrecision>::vector_prod
         work        = new CoefficientPrecision[nc];
         need_delete = true;
     }
-    if (!(m_global_source_root_cluster->is_permutation_local()) || !(m_global_target_root_cluster->is_permutation_local())) {
+    if ((!(m_global_source_root_cluster->is_permutation_local()) || !(m_global_target_root_cluster->is_permutation_local())) && m_use_permutation) {
         throw std::logic_error("[Htool error] Permutation is not local, vector_product_local_to_local cannot be used"); // LCOV_EXCL_LINE
     }
 
@@ -549,6 +569,7 @@ template <typename CoefficientPrecision, typename CoordinatePrecision>
 void DistributedOperator<CoefficientPrecision, CoordinatePrecision>::internal_vector_product_global_to_local(const CoefficientPrecision *const in, CoefficientPrecision *const out) const {
     int nc         = m_global_source_root_cluster->get_size();
     int local_size = m_local_cluster_target->get_size();
+    std::fill_n(out, local_size, CoefficientPrecision(0));
     for (auto &local_operator : m_local_operators) {
         local_operator->add_vector_product_global_to_local(1, in, 1, out);
     }
@@ -557,6 +578,7 @@ template <typename CoefficientPrecision, typename CoordinatePrecision>
 void DistributedOperator<CoefficientPrecision, CoordinatePrecision>::internal_matrix_product_global_to_local(const CoefficientPrecision *const in, CoefficientPrecision *const out, int mu) const {
     int nc         = m_global_source_root_cluster->get_size();
     int local_size = m_local_cluster_target->get_size();
+    std::fill_n(out, local_size * mu, CoefficientPrecision(0));
     for (auto &local_operator : m_local_operators) {
         local_operator->add_matrix_product_global_to_local(1, in, 1, out, mu);
     }
@@ -720,6 +742,13 @@ void DistributedOperator<CoefficientPrecision, CoordinatePrecision>::internal_ma
     if (need_delete) {
         delete[] work;
         work = nullptr;
+    }
+}
+
+template <typename CoefficientPrecision, typename CoordinatePrecision>
+void DistributedOperator<CoefficientPrecision, CoordinatePrecision>::internal_sub_matrix_product_to_local(const CoefficientPrecision *const in, CoefficientPrecision *const out, int mu, int offset, int size, int margin) const {
+    for (auto &local_operator : m_local_operators) {
+        local_operator->sub_matrix_product_to_local(in, out, mu, offset, size, margin);
     }
 }
 
