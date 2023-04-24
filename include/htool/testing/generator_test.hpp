@@ -184,21 +184,21 @@ class GeneratorTestComplexHermitian : public GeneratorTest<std::complex<double>>
     }
 };
 
-// template <typename T>
-// class GeneratorFromMatrix : public VirtualGenerator<T> {
-//     const Matrix<T> &A;
+template <typename T>
+class GeneratorFromMatrix : public VirtualGeneratorWithPermutation<T> {
+    const Matrix<T> &A;
 
-//   public:
-//     explicit GeneratorFromMatrix(const Matrix<T> &A0) : VirtualGenerator<T>(A0.nb_rows(), A0.nb_cols()), A(A0) {}
+  public:
+    explicit GeneratorFromMatrix(const Matrix<T> &A0, const std::vector<int> &target_permutation, const std::vector<int> &source_permutation) : VirtualGeneratorWithPermutation<T>(target_permutation, source_permutation), A(A0) {}
 
-//     void copy_submatrix(int M, int N, const int *const rows, const int *const cols, T *ptr) const override {
-//         for (int i = 0; i < M; i++) {
-//             for (int j = 0; j < N; j++) {
-//                 ptr[i + M * j] = A(rows[i], cols[j]);
-//             }
-//         }
-//     }
-// };
+    void copy_submatrix(int M, int N, const int *const rows, const int *const cols, T *ptr) const override {
+        for (int i = 0; i < M; i++) {
+            for (int j = 0; j < N; j++) {
+                ptr[i + M * j] = A(rows[i], cols[j]);
+            }
+        }
+    }
+};
 
 } // namespace htool
 

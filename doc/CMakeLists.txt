@@ -3,8 +3,6 @@ if(NOT DOXYGEN_FOUND)
     message("Doxygen not found, I will not generate/install the documentation")
 else()
     # set input and output files
-    message(${CMAKE_CURRENT_SOURCE_DIR})
-    message(${CMAKE_CURRENT_BINARY_DIR})
     set(DOXYGEN_IN ${CMAKE_CURRENT_SOURCE_DIR}/Doxyfile.in)
     set(DOXYGEN_OUT ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile)
 
