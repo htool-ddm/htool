@@ -295,7 +295,6 @@ class Cluster : public VirtualCluster {
                 for (std::vector<int>::const_iterator i = permutation->begin() + offset; i != permutation->begin() + offset + size; ++i)
                     std::cout << *i << ',';
                 std::cout << "\b]" << std::endl;
-                ;
             }
 
             for (auto &son : this->sons) {
