@@ -1916,7 +1916,6 @@ void HMatrix<T>::copy_local_interaction(T *ptr, bool permutation) const {
         int local_nc                 = lmat.nb_cols();
         int offset_i                 = lmat.get_offset_i() - local_offset;
         int offset_j                 = lmat.get_offset_j() - local_offset_source;
-        ;
         Matrix<T> FarFielBlock(local_nr, local_nc);
         lmat.get_whole_matrix(&(FarFielBlock(0, 0)));
         for (int i = 0; i < local_nc; i++) {
