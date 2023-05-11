@@ -77,7 +77,6 @@ int test_hmat_local_get(int argc, char *argv[], char symmetry, char UPLO) {
     double norm  = 0;
     for (int i = 0; i < MasterOffset[2 * rank + 1]; i++) {
         error += (A.get_coef(i + MasterOffset[2 * rank], i + MasterOffset[2 * rank]) - local_diagonal[i]) * (A.get_coef(i + MasterOffset[2 * rank], i + MasterOffset[2 * rank]) - local_diagonal[i]);
-        ;
         norm += A.get_coef(i + MasterOffset[2 * rank], i + MasterOffset[2 * rank]) * A.get_coef(i + MasterOffset[2 * rank], i + MasterOffset[2 * rank]);
     }
 
@@ -168,7 +167,6 @@ int test_hmat_local_get_complex(int argc, char *argv[], char symmetry, char UPLO
     double norm  = 0;
     for (int i = 0; i < MasterOffset[2 * rank + 1]; i++) {
         error += std::abs((A.get_coef(i + MasterOffset[2 * rank], i + MasterOffset[2 * rank]) - local_diagonal[i]) * (A.get_coef(i + MasterOffset[2 * rank], i + MasterOffset[2 * rank]) - local_diagonal[i]));
-        ;
         norm += std::abs(A.get_coef(i + MasterOffset[2 * rank], i + MasterOffset[2 * rank]) * A.get_coef(i + MasterOffset[2 * rank], i + MasterOffset[2 * rank]));
     }
 
@@ -259,7 +257,6 @@ int test_hmat_local_get_complex_hermitian(int argc, char *argv[], char symmetry,
     double norm  = 0;
     for (int i = 0; i < MasterOffset[2 * rank + 1]; i++) {
         error += std::abs((A.get_coef(i + MasterOffset[2 * rank], i + MasterOffset[2 * rank]) - local_diagonal[i]) * (A.get_coef(i + MasterOffset[2 * rank], i + MasterOffset[2 * rank]) - local_diagonal[i]));
-        ;
         norm += std::abs(A.get_coef(i + MasterOffset[2 * rank], i + MasterOffset[2 * rank]) * A.get_coef(i + MasterOffset[2 * rank], i + MasterOffset[2 * rank]));
     }
 

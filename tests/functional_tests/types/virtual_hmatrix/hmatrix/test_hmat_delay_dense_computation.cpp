@@ -19,13 +19,13 @@ class BlockGenerator : public VirtualDenseBlocksGenerator<double> {
     const VirtualGenerator<double> &mat;
 
   public:
-    BlockGenerator(const VirtualGenerator<double> &mat0) : mat(mat0){};
+    BlockGenerator(const VirtualGenerator<double> &mat0) : mat(mat0) {}
 
     void copy_dense_blocks(const std::vector<int> &M, const std::vector<int> &N, const std::vector<const int *> &rows, const std::vector<const int *> &cols, std::vector<double *> &ptr) const override {
         for (int i = 0; i < M.size(); i++) {
             mat.copy_submatrix(M[i], N[i], rows[i], cols[i], ptr[i]);
         }
-    };
+    }
 };
 
 int main(int argc, char *argv[]) {

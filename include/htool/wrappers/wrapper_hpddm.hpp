@@ -19,7 +19,7 @@ template <typename T>
 class DDM;
 
 template <typename T>
-class HPDDMDense : public HpDense<T, 'G'> {
+class HPDDMDense final : public HpDense<T, 'G'> {
   protected:
     const VirtualHMatrix<T> *const HA;
     std::vector<T> *in_global, *buffer;
@@ -38,7 +38,7 @@ class HPDDMDense : public HpDense<T, 'G'> {
         buffer = nullptr;
     }
 
-    virtual int GMV(const T *const in, T *const out, const int &mu = 1) const override {
+    int GMV(const T *const in, T *const out, const int &mu = 1) const override {
         int local_size = HA->get_local_size();
 
         // Tranpose without overlap
@@ -94,5 +94,7 @@ class HPDDMDense : public HpDense<T, 'G'> {
 } // namespace htool
 
 template <typename T>
-struct HPDDM::hpddm_method_id<htool::HPDDMDense<T>> { static constexpr char value = HPDDM::hpddm_method_id<HpDense<T, 'G'>>::value; };
+struct HPDDM::hpddm_method_id<htool::HPDDMDense<T>> {
+    static constexpr char value = HPDDM::hpddm_method_id<HpDense<T, 'G'>>::value;
+};
 #endif

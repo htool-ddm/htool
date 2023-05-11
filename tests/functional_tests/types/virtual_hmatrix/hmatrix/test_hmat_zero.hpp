@@ -27,7 +27,7 @@ class GeneratorTestZero : public VirtualGenerator<double> {
 
     explicit GeneratorTestZero(int space_dim0, int nr, const std::vector<double> &p10, double coef0 = 0) : VirtualGenerator<double>(nr, nr), p1(p10), p2(p10), space_dim(space_dim0), coef(coef0) {}
 
-    double get_coef(const int &i, const int &j) const { return 0; };
+    double get_coef(const int &i, const int &j) const { return 0; }
 
     void copy_submatrix(int M, int N, const int *const rows, const int *const cols, double *ptr) const override {
         for (int i = 0; i < M; i++) {

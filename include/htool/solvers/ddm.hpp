@@ -652,17 +652,16 @@ class DDM {
     }
     int get_nb_cols() const {
         return nb_cols;
-    };
+    }
     int get_nb_rows() const {
         return nb_rows;
-    };
+    }
     int get_local_size() const {
         return n;
-    };
+    }
     const std::vector<int> &get_local_to_global_numbering() const {
         return renum_to_global;
-        ;
-    };
+    }
     MPI_Comm get_comm() const {
         return comm;
     }
