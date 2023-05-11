@@ -56,7 +56,6 @@ int main(int argc, char *argv[]) {
         sympartialACA<double> compressor;
         LowRankMatrix<double> A_sympartialACA_fixed(A.get_dimension(), t.get_perm(), s.get_perm(), reqrank_max, epsilon);
         A_sympartialACA_fixed.build(A, compressor, t, xt.data(), s, xs.data());
-        ;
 
         // ACA automatic building
         LowRankMatrix<double> A_sympartialACA(A.get_dimension(), t.get_perm(), s.get_perm());

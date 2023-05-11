@@ -57,7 +57,6 @@ int main(int argc, char *argv[]) {
         LowRankMatrix<double> A_partialACA_fixed(A.get_dimension(), t.get_perm(), s.get_perm(), reqrank_max, epsilon);
         partialACA<double> compressor;
         A_partialACA_fixed.build(A, compressor, t, xt.data(), s, xs.data());
-        ;
 
         // ACA automatic building
         LowRankMatrix<double> A_partialACA(A.get_dimension(), t.get_perm(), s.get_perm());
