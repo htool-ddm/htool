@@ -1,7 +1,7 @@
 #ifndef HTOOL_HMATRIX_HPP
 #define HTOOL_HMATRIX_HPP
 
-#if _OPENMP
+#if defined(_OPENMP)
 #    include <omp.h>
 #endif
 
@@ -421,7 +421,7 @@ void HMatrix<T>::build_dense_blocks(VirtualDenseBlocksGenerator<T> &dense_block_
 // TODO: recursivity -> stack for compute blocks
 template <typename T>
 void HMatrix<T>::ComputeBlocks(VirtualGenerator<T> &mat, const double *const xt, const double *const xs) {
-#if _OPENMP && !defined(PYTHON_INTERFACE)
+#if defined(_OPENMP) && !defined(PYTHON_INTERFACE)
 #    pragma omp parallel
 #endif
     {
@@ -431,7 +431,7 @@ void HMatrix<T>::ComputeBlocks(VirtualGenerator<T> &mat, const double *const xt,
         std::vector<Block *> local_tasks = BlockTree->get_local_tasks();
 
         int false_positive_local = 0;
-#if _OPENMP && !defined(PYTHON_INTERFACE)
+#if defined(_OPENMP) && !defined(PYTHON_INTERFACE)
 #    pragma omp for schedule(guided)
 #endif
         for (int p = 0; p < local_tasks.size(); p++) {
@@ -450,7 +450,7 @@ void HMatrix<T>::ComputeBlocks(VirtualGenerator<T> &mat, const double *const xt,
                 }
             }
         }
-#if _OPENMP && !defined(PYTHON_INTERFACE)
+#if defined(_OPENMP) && !defined(PYTHON_INTERFACE)
 #    pragma omp critical
 #endif
         {
@@ -820,7 +820,7 @@ void HMatrix<T>::ComputeInfos(const std::vector<double> &mytime) {
     infos["Local_size_min"]           = NbrToStr(mininfos[3]);
 
     infos["Number_of_MPI_tasks"] = NbrToStr(sizeWorld);
-#if _OPENMP
+#if defined(_OPENMP)
     infos["Number_of_threads_per_tasks"] = NbrToStr(omp_get_max_threads());
     infos["Number_of_procs"]             = NbrToStr(sizeWorld * omp_get_max_threads());
 #else
@@ -848,7 +848,7 @@ void HMatrix<T>::mymvprod_global_to_local(const T *const in, T *const out, const
     T da(1);
 
     // Contribution champ lointain
-#if _OPENMP
+#if defined(_OPENMP)
 #    pragma omp parallel
 #endif
     {
@@ -861,7 +861,7 @@ void HMatrix<T>::mymvprod_global_to_local(const T *const in, T *const out, const
         }
 
         // Contribution champ lointain
-#if _OPENMP
+#if defined(_OPENMP)
 #    pragma omp for schedule(guided) nowait
 #endif
         for (int b = 0; b < MyComputedBlocks.size(); b++) {
@@ -880,7 +880,7 @@ void HMatrix<T>::mymvprod_global_to_local(const T *const in, T *const out, const
                 op_sym = 'C';
             }
 
-#if _OPENMP
+#if defined(_OPENMP)
 #    pragma omp for schedule(guided) nowait
 #endif
             for (int b = 0; b < MyDiagComputedBlocks.size(); b++) {
@@ -892,7 +892,7 @@ void HMatrix<T>::mymvprod_global_to_local(const T *const in, T *const out, const
                 }
             }
 
-#if _OPENMP
+#if defined(_OPENMP)
 #    pragma omp for schedule(guided) nowait
 #endif
             for (int b = 0; b < MyStrictlyDiagNearFieldMats.size(); b++) {
@@ -903,7 +903,7 @@ void HMatrix<T>::mymvprod_global_to_local(const T *const in, T *const out, const
             }
         }
 
-#if _OPENMP
+#if defined(_OPENMP)
 #    pragma omp critical
 #endif
         Blas<T>::axpy(&local_size_rhs, &da, temp.data(), &incx, out, &incy);
@@ -918,12 +918,12 @@ void HMatrix<T>::mymvprod_transp_local_to_global(const T *const in, T *const out
     T da(1);
 
     // Contribution champ lointain
-#if _OPENMP
+#if defined(_OPENMP)
 #    pragma omp parallel
 #endif
     {
         std::vector<T> temp(this->nc * mu, 0);
-#if _OPENMP
+#if defined(_OPENMP)
 #    pragma omp for schedule(guided) nowait
 #endif
         for (int b = 0; b < MyComputedBlocks.size(); b++) {
@@ -934,7 +934,7 @@ void HMatrix<T>::mymvprod_transp_local_to_global(const T *const in, T *const out
             }
         }
 
-#if _OPENMP
+#if defined(_OPENMP)
 #    pragma omp critical
 #endif
         Blas<T>::axpy(&(global_size_rhs), &da, temp.data(), &incx, out, &incy);
@@ -1020,12 +1020,12 @@ void HMatrix<T>::mymvprod_transp_local_to_local(const T *const in, T *const out,
     T *rbuf = work + this->nc * mu;
 
     // Contribution champ lointain
-#if _OPENMP
+#if defined(_OPENMP)
 #    pragma omp parallel
 #endif
     {
         std::vector<T> temp(this->nc * mu, 0);
-#if _OPENMP
+#if defined(_OPENMP)
 #    pragma omp for schedule(guided) nowait
 #endif
         for (int b = 0; b < MyComputedBlocks.size(); b++) {
@@ -1036,7 +1036,7 @@ void HMatrix<T>::mymvprod_transp_local_to_local(const T *const in, T *const out,
             }
         }
 
-#if _OPENMP
+#if defined(_OPENMP)
 #    pragma omp critical
 #endif
         Blas<T>::axpy(&(global_size_rhs), &da, temp.data(), &incx, work, &incy);
@@ -1459,7 +1459,7 @@ void HMatrix<T>::mvprod_subrhs(const T *const in, T *const out, const int &mu, c
     std::fill(out, out + local_size * mu, 0);
 
     // Contribution champ lointain
-#if _OPENMP
+#if defined(_OPENMP)
 #    pragma omp parallel
 #endif
     {
@@ -1470,7 +1470,7 @@ void HMatrix<T>::mvprod_subrhs(const T *const in, T *const out, const int &mu, c
         if (symmetry == 'H') {
             transb = 'C';
         }
-#if _OPENMP
+#if defined(_OPENMP)
 #    pragma omp for schedule(guided)
 #endif
         for (int b = 0; b < MyFarFieldMats.size(); b++) {
@@ -1484,7 +1484,7 @@ void HMatrix<T>::mvprod_subrhs(const T *const in, T *const out, const int &mu, c
             }
         }
 // Contribution champ proche
-#if _OPENMP
+#if defined(_OPENMP)
 #    pragma omp for schedule(guided)
 #endif
         for (int b = 0; b < MyNearFieldMats.size(); b++) {
@@ -1505,7 +1505,7 @@ void HMatrix<T>::mvprod_subrhs(const T *const in, T *const out, const int &mu, c
             if (symmetry == 'H') {
                 op_sym = 'C';
             }
-#if _OPENMP
+#if defined(_OPENMP)
 #    pragma omp for schedule(guided)
 #endif
             for (int b = 0; b < MyDiagFarFieldMats.size(); b++) {
@@ -1520,7 +1520,7 @@ void HMatrix<T>::mvprod_subrhs(const T *const in, T *const out, const int &mu, c
             }
 
 // Contribution champ proche
-#if _OPENMP
+#if defined(_OPENMP)
 #    pragma omp for schedule(guided)
 #endif
             for (int b = 0; b < MyDiagNearFieldMats.size(); b++) {
@@ -1533,7 +1533,7 @@ void HMatrix<T>::mvprod_subrhs(const T *const in, T *const out, const int &mu, c
                     M.add_mvprod_row_major(in + (offset_j - offset + margin) * mu, temp.data() + (offset_i - local_offset) * mu, mu, transb, op_sym);
                 }
             }
-#if _OPENMP
+#if defined(_OPENMP)
 #    pragma omp for schedule(guided)
 #endif
             for (int b = 0; b < MyStrictlyDiagNearFieldMats.size(); b++) {
@@ -1546,7 +1546,7 @@ void HMatrix<T>::mvprod_subrhs(const T *const in, T *const out, const int &mu, c
                 }
             }
         }
-#if _OPENMP
+#if defined(_OPENMP)
 #    pragma omp critical
 #endif
         std::transform(temp.begin(), temp.end(), out, out, std::plus<T>());

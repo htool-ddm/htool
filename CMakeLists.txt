@@ -191,9 +191,10 @@ if((CMAKE_PROJECT_NAME STREQUAL PROJECT_NAME) AND BUILD_TESTING)
                       -Wno-sign-compare
                       -Wextra-semi
                       -Wextra-semi-stmt
-                      -Wzero-as-null-pointer-constant)
+                      -Wzero-as-null-pointer-constant
+                      -Wundef)
     elseif(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
-        target_compile_options(htool INTERFACE -Wall -Wextra -Wpedantic -Wno-sign-compare)
+        target_compile_options(htool INTERFACE -Wall -Wextra -Wpedantic -Wno-sign-compare -Wundef)
     endif()
     add_custom_target(build-tests)
     add_subdirectory(tests EXCLUDE_FROM_ALL)
