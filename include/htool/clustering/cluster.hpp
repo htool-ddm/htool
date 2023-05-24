@@ -156,6 +156,72 @@ class Cluster : public VirtualCluster {
         this->build(nb_pt0, x0, std::vector<double>(nb_pt0, 0).data(), std::vector<double>(nb_pt0, 1).data(), MasterOffset0, nb_sons, comm);
     }
 
+    void build_with_perm(int nb_pt0, const double *const x0, const double *const r0, const double *const g0, const int *const MasterOffset0, int nb_sons = -1, MPI_Comm comm = MPI_COMM_WORLD) {
+        this->nb_pt = nb_pt0;
+        // MPI parameters
+        int rankWorld, sizeWorld;
+        MPI_Comm_size(comm, &sizeWorld);
+        MPI_Comm_rank(comm, &rankWorld);
+
+        // Impossible value for nb_sons
+        if (nb_sons == 0 || nb_sons == 1)
+            throw std::string("Impossible value for nb_sons:" + NbrToStr<int>(nb_sons)); // LCOV_EXCL_LINE
+
+        // nb_sons=-1 is automatic mode
+        if (nb_sons == -1) {
+            nb_sons = 2;
+        }
+
+        // Initialisation of root
+
+        this->rad   = 0;
+        this->nb_pt = nb_pt0;
+        this->size  = this->nb_pt;
+        this->rank  = -1;
+        this->MasterOffset.resize(sizeWorld);
+        this->permutation->resize(this->nb_pt);
+        this->depth            = 0; // ce constructeur est appele juste pour la racine
+        this->LocalPermutation = false;
+        int cpt                = 0;
+        for (int p = 0; p < sizeWorld; p++) {
+            this->MasterOffset[p].first  = cpt;
+            this->MasterOffset[p].second = 0;
+            for (int i = 0; i < this->nb_pt; i++) {
+                if (MasterOffset0[i] == p) {
+                    (*(this->permutation))[cpt] = i;
+                    this->MasterOffset[p].second++;
+                    cpt++;
+                }
+            }
+        }
+
+        // Build level of depth 1 with the given partition and prepare recursion
+        std::stack<Cluster *> s;
+        std::stack<std::vector<int>> n;
+
+        for (int p = 0; p < sizeWorld; p++) {
+            this->sons.emplace_back(new Cluster(this, p, this->depth + 1, this->permutation));
+            this->sons[p]->set_offset(this->MasterOffset[p].first);
+            this->sons[p]->set_size(this->MasterOffset[p].second);
+            this->sons[p]->set_rank(p);
+
+            if (rankWorld == this->sons[p]->get_counter()) {
+                this->local_cluster = this->sons[p].get();
+            }
+
+            s.push(this->sons[p].get());
+            n.push(std::vector<int>(this->permutation->begin() + this->sons[p]->get_offset(), this->permutation->begin() + this->sons[p]->get_offset() + this->sons[p]->get_size()));
+        }
+
+        // Recursion
+        clustering_type.recursive_build(x0, r0, g0, nb_sons, comm, s, n);
+    }
+
+    void build_with_perm(int nb_pt0, const double *const x0, const int *const MasterOffset0, int nb_sons = -1, MPI_Comm comm = MPI_COMM_WORLD) {
+        this->nb_pt = nb_pt0;
+        this->build_with_perm(nb_pt0, x0, std::vector<double>(nb_pt0, 0).data(), std::vector<double>(nb_pt0, 1).data(), MasterOffset0, nb_sons, comm);
+    }
+
     //// Getters for local data
     double get_rad() const { return rad; }
     const std::vector<double> &get_ctr() const { return ctr; }
