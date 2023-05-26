@@ -35,6 +35,25 @@ All notable changes to this project will be documented in this file.
 ### Fixed
 
 - Fix const-correctness for g++ 4.8.5
+- 
+## [0.8.1] - 2023-05-26
+
+### Added
+
+- `set_delay_dense_computation` to `HMatrix`
+- clustering with user partition requiring permutation
+
+### Changed
+
+- improved CI with stricter flags
+- moved version number definition from `misc/define.hpp` to `htool_version.hpp`
+
+### Fixed
+
+- Fix const-correctness for g++ 4.8.5
+- Fix compatibility with c++20
+- Fix MPI data type for complex float and double
+- Fix issue with default MPI communicator
 
 ## [0.8] - 2022-01-27
 

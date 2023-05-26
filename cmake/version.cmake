@@ -6,7 +6,7 @@ else()
     message(STATUS "Git not found!")
 endif()
 
-function(check_version_number CODE_VERSION_FILE CODE_VARIABLE_VERSION)
+function(check_version_number CODE_VERSION_FILE CODE_VARIABLE_MAJOR_VERSION CODE_VARIABLE_MINOR_VERSION CODE_VARIABLE_SUBMINOR_VERSION)
     # Git version number
     if(Git_FOUND)
         set(git_version_number "unknown")
@@ -28,9 +28,15 @@ function(check_version_number CODE_VERSION_FILE CODE_VARIABLE_VERSION)
     endif()
 
     file(READ ${VERSION_FILE} ver)
-    string(REGEX MATCH "${CODE_VARIABLE_VERSION} \"([0-9]+.[0-9]+.[0-9]+)\"" _ ${ver})
-    set(code_version_number ${CMAKE_MATCH_1})
+    string(REGEX MATCH "${CODE_VARIABLE_MAJOR_VERSION} ([0-9]+)" _ ${ver})
+    set(code_major_version_number ${CMAKE_MATCH_1})
+    string(REGEX MATCH "${CODE_VARIABLE_MINOR_VERSION} ([0-9]+)" _ ${ver})
+    set(code_minor_version_number ${CMAKE_MATCH_1})
+    string(REGEX MATCH "${CODE_VARIABLE_SUBMINOR_VERSION} ([0-9]+)" _ ${ver})
+    set(code_subminor_version_number ${CMAKE_MATCH_1})
 
+    set(code_version_number "${code_major_version_number}.${code_minor_version_number}.${code_subminor_version_number}")
+    message("Htool version: " "${code_version_number}")
     # Check version number: error if code unconsistent
     if(NOT "${code_version_number}" STREQUAL "${CMAKE_PROJECT_VERSION}")
         message(FATAL_ERROR "Inconsistent version number:\n* Source code version number: ${code_version_number}\n* CMake version number: ${CMAKE_PROJECT_VERSION}\n")
