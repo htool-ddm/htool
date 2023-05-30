@@ -1,6 +1,7 @@
 #ifndef HTOOL_HTOOL_HPP
 #define HTOOL_HTOOL_HPP
 
+#include "htool_version.hpp"
 #include "misc/define.hpp"
 
 #include "clustering/bounding_box_1.hpp"
