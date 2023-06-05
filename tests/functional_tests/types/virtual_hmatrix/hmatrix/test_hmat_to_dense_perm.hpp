@@ -24,19 +24,12 @@ int test_hmat_to_dense_perm(int argc, char *argv[]) {
     double eta         = 0.1;
     int minclustersize = 2;
 
-    srand(1);
-    // we set a constant seed for rand because we want always the same result if we run the check many times
-    // (two different initializations with the same seed will generate the same succession of results in the subsequent calls to rand)
-
     int nr = 500;
     int nc = 500;
 
     double z1 = 1;
     vector<double> p2(3 * nc);
     vector<double> p1(3 * nr);
-    srand(1);
-    // we set a constant seed for rand because we want always the same result if we run the check many times
-    // (two different initializations with the same seed will generate the same succession of results in the subsequent calls to rand)
     create_disk(3, z1, nr, p1.data());
     create_disk(3, z1 + 1, nc, p2.data());
 
@@ -120,17 +113,10 @@ int test_hmat_to_dense_perm_sym(int argc, char *argv[], char UPLO) {
     double eta         = 0.1;
     int minclustersize = 2;
 
-    srand(1);
-    // we set a constant seed for rand because we want always the same result if we run the check many times
-    // (two different initializations with the same seed will generate the same succession of results in the subsequent calls to rand)
-
     int nr = 500;
 
     double z1 = 1;
     vector<double> p1(3 * nr);
-    srand(1);
-    // we set a constant seed for rand because we want always the same result if we run the check many times
-    // (two different initializations with the same seed will generate the same succession of results in the subsequent calls to rand)
     create_disk(3, z1, nr, p1.data());
 
     GeneratorTestDoubleSymmetric A(3, nr, nr, p1, p1);
@@ -199,17 +185,10 @@ int test_hmat_to_dense_perm_sym_complex(int argc, char *argv[], char UPLO) {
     double eta         = 0.1;
     int minclustersize = 2;
 
-    srand(1);
-    // we set a constant seed for rand because we want always the same result if we run the check many times
-    // (two different initializations with the same seed will generate the same succession of results in the subsequent calls to rand)
-
     int nr = 500;
 
     double z1 = 1;
     vector<double> p1(3 * nr);
-    srand(1);
-    // we set a constant seed for rand because we want always the same result if we run the check many times
-    // (two different initializations with the same seed will generate the same succession of results in the subsequent calls to rand)
     create_disk(3, z1, nr, p1.data());
 
     GeneratorTestComplexSymmetric A(3, nr, nr, p1, p1);
@@ -278,17 +257,10 @@ int test_hmat_to_dense_perm_hermitian_complex(int argc, char *argv[], char UPLO)
     double eta         = 0.1;
     int minclustersize = 2;
 
-    srand(1);
-    // we set a constant seed for rand because we want always the same result if we run the check many times
-    // (two different initializations with the same seed will generate the same succession of results in the subsequent calls to rand)
-
     int nr = 500;
 
     double z1 = 1;
     vector<double> p1(3 * nr);
-    srand(1);
-    // we set a constant seed for rand because we want always the same result if we run the check many times
-    // (two different initializations with the same seed will generate the same succession of results in the subsequent calls to rand)
     create_disk(3, z1, nr, p1.data());
 
     GeneratorTestComplexHermitian A(3, nr, nr, p1, p1);

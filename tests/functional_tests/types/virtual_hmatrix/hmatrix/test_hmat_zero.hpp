@@ -92,11 +92,6 @@ int test_hmat_zero(int argc, char *argv[], double margin = 0) {
     int mintargetdepth = 0;
 
     for (int idist = 0; idist < ndistance; idist++) {
-        // cout << "Distance between the clusters: " << distance[idist] << endl;
-
-        srand(1);
-        // we set a constant seed for rand because we want always the same result if we run the check many times
-        // (two different initializations with the same seed will generate the same succession of results in the subsequent calls to rand)
 
         int nr = 500;
         int nc = 400;
@@ -106,9 +101,6 @@ int test_hmat_zero(int argc, char *argv[], double margin = 0) {
         vector<double> p1(3 * nr);
         vector<double> p2(3 * nc);
 
-        srand(1);
-        // we set a constant seed for rand because we want always the same result if we run the check many times
-        // (two different initializations with the same seed will generate the same succession of results in the subsequent calls to rand)
         create_disk(3, z1, nr, p1.data());
         create_disk(3, z2, nc, p2.data());
 

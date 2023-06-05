@@ -13,17 +13,17 @@ int main(int argc, char *argv[]) {
     // Initialize the MPI environment
     MPI_Init(&argc, &argv);
 
-    bool test = test_virtual_hmat_product<double, GeneratorTestDouble, Cluster<PCA<SplittingTypes::GeometricSplitting>>, fullACA, HMatrix>(2000, 1000, 1, true, 'N', 'N', 'T');
+    bool test = test_virtual_hmat_product<double, GeneratorTestDouble, Cluster<PCA<SplittingTypes::GeometricSplitting>>, fullACA, HMatrix>(2000, 1000, 1, true, 'N', 'N', 'T', false);
 
-    test = test || test_virtual_hmat_product<double, GeneratorTestDouble, Cluster<PCA<SplittingTypes::GeometricSplitting>>, fullACA, HMatrix>(2000, 1000, 1, false, 'N', 'N', 'T');
+    test = test || test_virtual_hmat_product<double, GeneratorTestDouble, Cluster<PCA<SplittingTypes::GeometricSplitting>>, fullACA, HMatrix>(2000, 1000, 1, false, 'N', 'N', 'T', false);
 
-    test = test || test_virtual_hmat_product<double, GeneratorTestDoubleSymmetric, Cluster<PCA<SplittingTypes::GeometricSplitting>>, fullACA, HMatrix>(2000, 2000, 1, true, 'S', 'L', 'T');
+    test = test || test_virtual_hmat_product<double, GeneratorTestDoubleSymmetric, Cluster<PCA<SplittingTypes::GeometricSplitting>>, fullACA, HMatrix>(2000, 2000, 1, true, 'S', 'L', 'T', false);
 
-    test = test || test_virtual_hmat_product<double, GeneratorTestDoubleSymmetric, Cluster<PCA<SplittingTypes::GeometricSplitting>>, fullACA, HMatrix>(2000, 2000, 1, false, 'S', 'L', 'T');
+    test = test || test_virtual_hmat_product<double, GeneratorTestDoubleSymmetric, Cluster<PCA<SplittingTypes::GeometricSplitting>>, fullACA, HMatrix>(2000, 2000, 1, false, 'S', 'L', 'T', false);
 
-    test = test || test_virtual_hmat_product<double, GeneratorTestDoubleSymmetric, Cluster<PCA<SplittingTypes::GeometricSplitting>>, fullACA, HMatrix>(2000, 2000, 1, true, 'S', 'U', 'T');
+    test = test || test_virtual_hmat_product<double, GeneratorTestDoubleSymmetric, Cluster<PCA<SplittingTypes::GeometricSplitting>>, fullACA, HMatrix>(2000, 2000, 1, true, 'S', 'U', 'T', false);
 
-    test = test || test_virtual_hmat_product<double, GeneratorTestDoubleSymmetric, Cluster<PCA<SplittingTypes::GeometricSplitting>>, fullACA, HMatrix>(2000, 2000, 1, false, 'S', 'U', 'T');
+    test = test || test_virtual_hmat_product<double, GeneratorTestDoubleSymmetric, Cluster<PCA<SplittingTypes::GeometricSplitting>>, fullACA, HMatrix>(2000, 2000, 1, false, 'S', 'U', 'T', false);
 
     // Finalize the MPI environment.
     MPI_Finalize();

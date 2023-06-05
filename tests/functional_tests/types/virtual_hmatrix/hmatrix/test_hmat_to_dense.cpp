@@ -28,10 +28,6 @@ int main(int argc, char *argv[]) {
     double eta         = 0.1;
     int minclustersize = 2;
 
-    srand(1);
-    // we set a constant seed for rand because we want always the same result if we run the check many times
-    // (two different initializations with the same seed will generate the same succession of results in the subsequent calls to rand)
-
     int nr = 1000;
     int nc = 500;
 
@@ -39,10 +35,6 @@ int main(int argc, char *argv[]) {
     double z2 = 1 + distance;
     vector<double> p1(3 * nr);
     vector<double> p2(3 * nc);
-
-    srand(1);
-    // we set a constant seed for rand because we want always the same result if we run the check many times
-    // (two different initializations with the same seed will generate the same succession of results in the subsequent calls to rand)
     create_disk(3, z1, nr, p1.data());
     create_disk(3, z2, nc, p2.data());
 
@@ -69,8 +61,8 @@ int main(int argc, char *argv[]) {
     double norm  = 0;
     for (int i = 0; i < t->get_local_size(); i++) {
         for (int j = 0; j < nc; j++) {
-            error += std::abs((A.get_coef(t->get_perm(i + t->get_local_offset()), s->get_perm(j)) - DA_local(i, j)) * (A.get_coef(t->get_perm(i + t->get_local_offset()), s->get_perm(j)) - DA_local(i, j)));
-            norm += std::abs(A.get_coef(t->get_perm(i + t->get_local_offset()), s->get_perm(j)) * A.get_coef(t->get_perm(i + t->get_local_offset()), s->get_perm(j)));
+            error += std::abs((A.get_coef(t->get_global_perm(i + t->get_local_offset()), s->get_global_perm(j)) - DA_local(i, j)) * (A.get_coef(t->get_global_perm(i + t->get_local_offset()), s->get_global_perm(j)) - DA_local(i, j)));
+            norm += std::abs(A.get_coef(t->get_global_perm(i + t->get_local_offset()), s->get_global_perm(j)) * A.get_coef(t->get_global_perm(i + t->get_local_offset()), s->get_global_perm(j)));
         }
     }
     std::cout << error << std::endl;
