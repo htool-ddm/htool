@@ -16,13 +16,13 @@ else()
         LANGUAGES CXX)
 endif()
 
-# To force c++11
+# To force c++14
 if(${CMAKE_VERSION} VERSION_LESS 3.1)
-    add_compile_options(-std=c++11)
+    add_compile_options(-std=c++14)
 elseif(${CMAKE_VERSION} VERSION_LESS 3.6.3 AND ${CMAKE_CXX_COMPILER_ID} STREQUAL "Intel")
-    add_compile_options(-std=c++11)
+    add_compile_options(-std=c++14)
 else()
-    set(CMAKE_CXX_STANDARD 11)
+    set(CMAKE_CXX_STANDARD 14)
     set(CMAKE_CXX_STANDARD_REQUIRED ON)
 endif()
 
@@ -93,9 +93,8 @@ option(HTOOL_WITH_DOC "Build documentation" ON)
 #=============================================================================#
 # MPI
 find_package(MPI REQUIRED)
-message("-- MPI libraries found in " "${MPI_LIBRARIES}")
-message("-- MPI include files found in " "${MPI_INCLUDE_PATH}")
 separate_arguments(MPIEXEC_PREFLAGS) # to support multi flags
+message(STATUS "Run: ${MPIEXEC} ${MPIEXEC_NUMPROC_FLAG} ${MPIEXEC_MAX_NUMPROCS} ${MPIEXEC_PREFLAGS} EXECUTABLE ${MPIEXEC_POSTFLAGS} ARGS")
 
 # OPENMP
 find_package(OpenMP)
@@ -121,8 +120,10 @@ find_package(HPDDM)
 #=== HTOOL as header only library
 add_library(htool INTERFACE)
 target_include_directories(htool INTERFACE $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include> $<INSTALL_INTERFACE:include> ${MPI_INCLUDE_PATH} ${HPDDM_INCLUDE_DIRS} ${MKL_INC_DIR})
-target_link_libraries(htool INTERFACE ${MPI_LIBRARIES} ${BLAS_LIBRARIES} ${LAPACK_LIBRARIES} ${ARPACK_LIBRARIES} OpenMP::OpenMP_CXX)
-
+target_link_libraries(htool INTERFACE MPI::MPI_CXX ${BLAS_LIBRARIES} ${LAPACK_LIBRARIES} ${ARPACK_LIBRARIES})
+if(OpenMP_CXX_FOUND)
+    target_link_libraries(htool INTERFACE OpenMP::OpenMP_CXX)
+endif()
 target_compile_features(htool INTERFACE cxx_std_11)
 
 if("${BLA_VENDOR}" STREQUAL "Intel10_64lp_seq" OR "${BLA_VENDOR}" STREQUAL "Intel10_64lp")
@@ -181,21 +182,33 @@ if((CMAKE_PROJECT_NAME STREQUAL PROJECT_NAME) AND BUILD_TESTING)
         target_compile_options(htool INTERFACE -fprofile-arcs -ftest-coverage)
         target_link_libraries(htool INTERFACE gcov)
     endif()
+    target_compile_options(
+        htool
+        INTERFACE -Wall
+                  -Wextra
+                  -Werror
+                  -Wshadow
+                  -Wnon-virtual-dtor
+                  -pedantic
+                  #   -Wold-style-cast
+                  -Wcast-align
+                  -Wunused
+                  -Woverloaded-virtual
+                  #   -Wconversion
+                  #   -Wsign-conversion
+                  -Wdouble-promotion
+                  -Wno-sign-compare
+                  -Wextra-semi
+                  #   -Wzero-as-null-pointer-constant
+                  -Wundef)
     if(CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
-        message("test")
+        target_compile_options(htool INTERFACE -Wimplicit-fallthrough -Wextra-semi-stmt -ferror-limit=200)
+    elseif(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
         target_compile_options(
             htool
-            INTERFACE -Wall
-                      -Wextra
-                      -Wpedantic
-                      -Wno-sign-compare
-                      -Wextra-semi
-                      -Wextra-semi-stmt
-                      -Wnon-virtual-dtor
-                      -Wzero-as-null-pointer-constant
-                      -Wundef)
-    elseif(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
-        target_compile_options(htool INTERFACE -Wall -Wextra -Wpedantic -Wno-sign-compare -Wundef)
+            INTERFACE -Wmisleading-indentation -Wduplicated-cond -Wduplicated-branches -Wlogical-op
+                      #   -Wnull-dereference
+                      -Wuseless-cast -fmax-errors=200)
     endif()
     add_custom_target(build-tests)
     add_subdirectory(tests EXCLUDE_FROM_ALL)

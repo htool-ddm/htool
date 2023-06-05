@@ -12,13 +12,14 @@
 #include "define.hpp"
 #include "misc.hpp"
 
-#include "../clustering/bounding_box_1.hpp"
-#include "../clustering/pca.hpp"
-#include "../lrmat/SVD.hpp"
-#include "../lrmat/fullACA.hpp"
-#include "../lrmat/lrmat.hpp"
-#include "../lrmat/sympartialACA.hpp"
-#include "../types/hmatrix.hpp"
+#include "../clustering/clustering.hpp"
+#include "../distributed_operator/distributed_operator.hpp"
+#include "../distributed_operator/implementations/partition_from_cluster.hpp"
+#include "../hmatrix/hmatrix.hpp"
+#include "../hmatrix/lrmat/SVD.hpp"
+#include "../hmatrix/lrmat/fullACA.hpp"
+#include "../hmatrix/lrmat/lrmat.hpp"
+#include "../hmatrix/lrmat/sympartialACA.hpp"
 
 #if defined(__clang__)
 #    pragma clang diagnostic pop

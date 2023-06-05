@@ -672,5 +672,7 @@ class ContinuousOperator : public HPDDM::EmptyOperator<T> {
 } // namespace htool
 
 template <typename T>
-struct HPDDM::hpddm_method_id<htool::HPDDMDense<T>> { static constexpr char value = HPDDM::hpddm_method_id<HpDense<T, 'G'>>::value; };
+struct HPDDM::hpddm_method_id<htool::HPDDMDense<T>> {
+    static constexpr char value = HPDDM::hpddm_method_id<HpDense<T, 'G'>>::value;
+};
 #endif

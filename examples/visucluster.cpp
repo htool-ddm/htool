@@ -1,10 +1,10 @@
-#include <htool/clustering/pca.hpp>
+#include <htool/htool.hpp>
+#include <htool/testing/geometry.hpp>
 
 using namespace std;
 using namespace htool;
 
 int main(int argc, char *argv[]) {
-    MPI_Init(&argc, &argv);
 
     // Check the number of parameters
     if (argc < 1) {
@@ -18,27 +18,17 @@ int main(int argc, char *argv[]) {
     std::string outputname = argv[1];
 
     // Geometry
-    int size = 1000;
-    double z = 1;
-    vector<double> p(3 * size);
-
-    for (int j = 0; j < size; j++) {
-        double rho   = ((double)rand() / (double)(RAND_MAX)); // (double) otherwise integer division!
-        double theta = ((double)rand() / (double)(RAND_MAX));
-        p[j + 0]     = sqrt(rho) * cos(2 * M_PI * theta);
-        p[j + 1]     = sqrt(rho) * sin(2 * M_PI * theta);
-        p[j + 2]     = z;
-        // sqrt(rho) otherwise the points would be concentrated in the center of the disk
-    }
+    const int size              = 1000;
+    const int spatial_dimension = 3;
+    vector<double> p(spatial_dimension * size);
+    create_sphere(size, p.data());
 
     // Clustering
-    Cluster<PCA<SplittingTypes::GeometricSplitting>> t(3);
-    t.build(size, p.data(), 2);
+    ClusterTreeBuilder<double> recursive_build_strategy;
+    Cluster<double> cluster = recursive_build_strategy.create_cluster_tree(size, spatial_dimension, p.data(), 2, 2);
 
     // Output
-    t.save_geometry(p.data(), outputname + "/clustering_output", {1, 2, 3});
+    save_clustered_geometry(cluster, 3, p.data(), outputname + "/clustering_output", {1, 2, 3});
 
-    std::cout << outputname + "/clustering_output" << std::endl;
-    MPI_Finalize();
     return 0;
 }
