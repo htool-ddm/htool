@@ -1,10 +1,11 @@
 #ifndef HTOOL_WRAPPER_MPI_HPP
 #define HTOOL_WRAPPER_MPI_HPP
 
-#include "../misc/define.hpp"
-#include <limits.h>
-#include <mpi.h>
-#include <stdint.h>
+#include "htool/misc/misc.hpp" // for underlying_type
+#include <climits>             // for UCHAR_MAX, UINT_MAX, ULONG_MAX, USHRT...
+#include <complex>             // for complex
+#include <cstdint>             // for SIZE_MAX
+#include <mpi.h>               // for MPI_Datatype, MPI_C_COMPLEX, MPI_C_DO...
 
 namespace htool {
 template <typename T>

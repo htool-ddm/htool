@@ -1,8 +1,10 @@
 #ifndef HTOOL_INFOS_HPP
 #define HTOOL_INFOS_HPP
 
-#include <algorithm>
-#include <complex>
+#include <algorithm>   // for transform
+#include <complex>     // for complex
+#include <type_traits> // for enable_if, false_type, true_type
+
 namespace htool {
 template <class T>
 struct underlying_type_spec {
