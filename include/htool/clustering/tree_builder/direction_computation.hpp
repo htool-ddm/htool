@@ -2,16 +2,28 @@
 #define HTOOL_CLUSTERING_TREE_BUILDER_DIRECTION_COMPUTATION_HPP
 
 #include "../../misc/evp.hpp"
+#include "../../misc/logger.hpp"
 #include "../cluster_node.hpp"
 
 namespace htool {
 
 template <typename T>
-class ComputeLargestExtent {
+class VirtualDirectionComputationStrategy {
   public:
-    std::vector<T> compute_direction(const Cluster<T> *cluster, const std::vector<int> &permutation, int spatial_dimension, const T *const coordinates, const T *const, const T *const weights) {
+    virtual std::vector<T> compute_direction(const Cluster<T> *cluster, const std::vector<int> &permutation, int spatial_dimension, const T *const coordinates, const T *const, const T *const weights) = 0;
+
+    virtual ~VirtualDirectionComputationStrategy() {}
+};
+
+template <typename T>
+class ComputeLargestExtent final : public VirtualDirectionComputationStrategy<T> {
+  public:
+    using VirtualDirectionComputationStrategy<T>::VirtualDirectionComputationStrategy;
+
+    std::vector<T> compute_direction(const Cluster<T> *cluster, const std::vector<int> &permutation, int spatial_dimension, const T *const coordinates, const T *const, const T *const weights) override {
         if (spatial_dimension != 2 && spatial_dimension != 3) {
-            throw std::logic_error("[Htool error] clustering not define for spatial dimension !=2 and !=3"); // LCOV_EXCL_LINE
+            htool::Logger::get_instance().log(LogLevel::ERROR, "clustering not define for spatial dimension !=2 and !=3"); // LCOV_EXCL_LINE
+            // throw std::logic_error("[Htool error] clustering not define for spatial dimension !=2 and !=3"); // LCOV_EXCL_LINE
         }
 
         Matrix<T> cov(spatial_dimension, spatial_dimension);
@@ -33,17 +45,17 @@ class ComputeLargestExtent {
             direction = solve_EVP_2(cov);
         } else if (spatial_dimension == 3) {
             direction = solve_EVP_3(cov);
-        } else {
-            throw std::logic_error("[Htool error] clustering not define for spatial dimension !=2 and !=3"); // LCOV_EXCL_LINE
         }
         return direction;
     }
 };
 
 template <typename T>
-class ComputeBoundingBox {
+class ComputeBoundingBox final : public VirtualDirectionComputationStrategy<T> {
   public:
-    std::vector<T> compute_direction(const Cluster<T> *cluster, const std::vector<int> &permutation, int spatial_dimension, const T *const coordinates, const T *const, const T *const) {
+    using VirtualDirectionComputationStrategy<T>::VirtualDirectionComputationStrategy;
+
+    std::vector<T> compute_direction(const Cluster<T> *cluster, const std::vector<int> &permutation, int spatial_dimension, const T *const coordinates, const T *const, const T *const) override {
 
         // min max for each axis
         std::vector<T> min_point(spatial_dimension, std::numeric_limits<T>::max());

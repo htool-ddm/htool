@@ -15,37 +15,35 @@ class GeneratorTest : public VirtualGenerator<CoefficientPrecision> {
     int m_target_size, m_source_size;
     const std::vector<CoordinatePrecision> &p1;
     const std::vector<CoordinatePrecision> &p2;
-    std::shared_ptr<const Cluster<CoordinatePrecision>> m_target_cluster;
-    std::shared_ptr<const Cluster<CoordinatePrecision>> m_source_cluster;
+    const Cluster<CoordinatePrecision> &m_target_cluster;
+    const Cluster<CoordinatePrecision> &m_source_cluster;
     bool m_use_target_permutation{true};
     bool m_use_source_permutation{true};
     int space_dim;
 
   public:
-    explicit GeneratorTest(int space_dim0, int nr0, int nc0, const std::vector<underlying_type<CoefficientPrecision>> &p10, const std::vector<underlying_type<CoefficientPrecision>> &p20, std::shared_ptr<const Cluster<CoordinatePrecision>> target_cluster, std::shared_ptr<const Cluster<CoordinatePrecision>> source_cluster) : m_target_size(nr0), m_source_size(nc0), p1(p10), p2(p20), m_target_cluster(target_cluster), m_source_cluster(source_cluster), m_use_target_permutation(true), m_use_source_permutation(true), space_dim(space_dim0) {}
-
-    explicit GeneratorTest(int space_dim0, int nr0, int nc0, const std::vector<underlying_type<CoefficientPrecision>> &p10, const std::vector<underlying_type<CoefficientPrecision>> &p20) : m_target_size(nr0), m_source_size(nc0), p1(p10), p2(p20), m_use_target_permutation(false), m_use_source_permutation(false), space_dim(space_dim0) {}
+    explicit GeneratorTest(int space_dim0, int nr0, int nc0, const std::vector<underlying_type<CoefficientPrecision>> &p10, const std::vector<underlying_type<CoefficientPrecision>> &p20, const Cluster<CoordinatePrecision> &target_cluster, const Cluster<CoordinatePrecision> &source_cluster, bool use_target_permutation, bool use_source_permutation) : m_target_size(nr0), m_source_size(nc0), p1(p10), p2(p20), m_target_cluster(target_cluster), m_source_cluster(source_cluster), m_use_target_permutation(use_target_permutation), m_use_source_permutation(use_source_permutation), space_dim(space_dim0) {}
 
     virtual CoefficientPrecision get_coef(const int &i, const int &j) const = 0;
 
     void copy_submatrix(int M, int N, int row_offset, int col_offset, CoefficientPrecision *ptr) const override {
         if (m_use_target_permutation && m_use_source_permutation) {
-            const auto &target_permutation = m_target_cluster->get_permutation();
-            const auto &source_permutation = m_source_cluster->get_permutation();
+            const auto &target_permutation = m_target_cluster.get_permutation();
+            const auto &source_permutation = m_source_cluster.get_permutation();
             for (int i = 0; i < M; i++) {
                 for (int j = 0; j < N; j++) {
                     ptr[i + M * j] = this->get_coef(target_permutation[i + row_offset], source_permutation[j + col_offset]);
                 }
             }
         } else if (m_use_target_permutation) {
-            const auto &target_permutation = m_target_cluster->get_permutation();
+            const auto &target_permutation = m_target_cluster.get_permutation();
             for (int i = 0; i < M; i++) {
                 for (int j = 0; j < N; j++) {
                     ptr[i + M * j] = this->get_coef(target_permutation[i + row_offset], j + col_offset);
                 }
             }
         } else if (m_use_source_permutation) {
-            const auto &source_permutation = m_source_cluster->get_permutation();
+            const auto &source_permutation = m_source_cluster.get_permutation();
             for (int i = 0; i < M; i++) {
                 for (int j = 0; j < N; j++) {
                     ptr[i + M * j] = this->get_coef(i + row_offset, source_permutation[j + col_offset]);
@@ -187,7 +185,7 @@ class GeneratorFromMatrix : public VirtualGeneratorWithPermutation<T> {
     const Matrix<T> &A;
 
   public:
-    explicit GeneratorFromMatrix(const Matrix<T> &A0, const std::vector<int> &target_permutation, const std::vector<int> &source_permutation) : VirtualGeneratorWithPermutation<T>(target_permutation, source_permutation), A(A0) {}
+    explicit GeneratorFromMatrix(const Matrix<T> &A0, const std::vector<int> &target_permutation, const std::vector<int> &source_permutation) : VirtualGeneratorWithPermutation<T>(target_permutation.data(), source_permutation.data()), A(A0) {}
 
     void copy_submatrix(int M, int N, const int *const rows, const int *const cols, T *ptr) const override {
         for (int i = 0; i < M; i++) {

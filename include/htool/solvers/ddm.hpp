@@ -3,6 +3,7 @@
 
 #include "../basic_types/matrix.hpp"
 #include "../distributed_operator/distributed_operator.hpp"
+#include "../misc/logger.hpp"
 #include "../misc/misc.hpp"
 #include "../wrappers/wrapper_hpddm.hpp"
 #include "../wrappers/wrapper_mpi.hpp"
@@ -50,10 +51,12 @@ class DDM {
         if (distributed_operator->get_symmetry_type() == 'S' || (distributed_operator->get_symmetry_type() == 'H' && is_complex<CoefficientPrecision>())) {
             sym = true;
             if (distributed_operator->get_storage_type() == 'U') {
-                throw std::invalid_argument("[Htool error] HPDDM takes lower symmetric/hermitian matrices or regular matrices"); // LCOV_EXCL_LINE
+                htool::Logger::get_instance().log(LogLevel::ERROR, "HPDDM takes lower symmetric/hermitian matrices or regular matrices"); // LCOV_EXCL_LINE
+                // throw std::invalid_argument("[Htool error] HPDDM takes lower symmetric/hermitian matrices or regular matrices"); // LCOV_EXCL_LINE
             }
             if (distributed_operator->get_symmetry_type() == 'S' && is_complex<CoefficientPrecision>()) {
-                std::cout << "[Htool warning] A symmetric matrix with UPLO='L' has been given to DDM solver. It will be considered hermitian by the solver." << std::endl;
+                htool::Logger::get_instance().log(LogLevel::WARNING, "A symmetric matrix with UPLO='L' has been given to DDM solver. It will be considered hermitian by the solver"); // LCOV_EXCL_LINE
+                // std::cout << "[Htool warning] A symmetric matrix with UPLO='L' has been given to DDM solver. It will be considered hermitian by the solver." << std::endl;
             }
         }
 
@@ -161,10 +164,12 @@ class DDM {
             sym = true;
 
             if (distributed_operator->get_storage_type() == 'U') {
-                throw std::invalid_argument("[Htool error] HPDDM takes lower symmetric/hermitian matrices or regular matrices"); // LCOV_EXCL_LINE
+                htool::Logger::get_instance().log(LogLevel::ERROR, "HPDDM takes lower symmetric/hermitian matrices or regular matrices"); // LCOV_EXCL_LINE
+                // throw std::invalid_argument("[Htool error] HPDDM takes lower symmetric/hermitian matrices or regular matrices");                  // LCOV_EXCL_LINE
             }
             if (distributed_operator->get_symmetry_type() == 'S' && is_complex<CoefficientPrecision>()) {
-                std::cout << "[Htool warning] A symmetric matrix with UPLO='L' has been given to DDM solver. It will be considered hermitian by the solver." << std::endl;
+                htool::Logger::get_instance().log(LogLevel::WARNING, "A symmetric matrix with UPLO='L' has been given to DDM solver. It will be considered hermitian by the solver"); // LCOV_EXCL_LINE
+                // std::cout << "[Htool warning] A symmetric matrix with UPLO='L' has been given to DDM solver. It will be considered hermitian by the solver." << std::endl;
             }
         }
 
@@ -487,7 +492,8 @@ class DDM {
     void solve(const CoefficientPrecision *const rhs, CoefficientPrecision *const x, const int &mu = 1) {
         // Check facto
         if (!one_level && two_level) {
-            throw std::logic_error("[Htool error] Factorisation for one-level missing"); // LCOV_EXCL_LINE
+            htool::Logger::get_instance().log(LogLevel::ERROR, "Factorisation for one-level missing"); // LCOV_EXCL_LINE
+            // throw std::logic_error("[Htool error] Factorisation for one-level missing"); // LCOV_EXCL_LINE
         }
 
         // Eventually change one-level type
@@ -519,9 +525,9 @@ class DDM {
         int sizeWorld;
         MPI_Comm_rank(comm, &rankWorld);
         MPI_Comm_size(comm, &sizeWorld);
-        int offset = hpddm_op->HA->get_target_partition()->get_offset_of_partition(rankWorld);
+        int offset = hpddm_op->HA->get_target_partition().get_offset_of_partition(rankWorld);
         // int size        = hpddm_op->HA->get_local_size();
-        int nb_rows = hpddm_op->HA->get_target_partition()->get_global_size();
+        int nb_rows = hpddm_op->HA->get_target_partition().get_global_size();
         // int nb_vec_prod = StrToNbr<int>(hpddm_op->HA->get_infos("nb_mat_vec_prod"));
         double time = MPI_Wtime();
 
@@ -535,7 +541,7 @@ class DDM {
         // TODO: blocking ?
         for (int i = 0; i < mu; i++) {
             // Permutation
-            hpddm_op->HA->get_target_partition()->global_to_partition_numbering(rhs + i * nb_rows, rhs_perm.data());
+            hpddm_op->HA->get_target_partition().global_to_partition_numbering(rhs + i * nb_rows, rhs_perm.data());
             // global_to_root_cluster(hpddm_op->HA->get_root_target_cluster(), rhs + i * nb_rows, rhs_perm.data());
             // hpddm_op->HA->target_to_cluster_permutation(rhs + i * nb_rows, rhs_perm.data());
 
@@ -565,7 +571,7 @@ class DDM {
 
         for (int i = 0; i < sizeWorld; i++) {
             // recvcounts[i] = (hpddm_op->HA->get_root_target_cluster().get_clusters_on_partition()[i]->get_size()) * mu;
-            recvcounts[i] = (hpddm_op->HA->get_target_partition()->get_size_of_partition(i)) * mu;
+            recvcounts[i] = (hpddm_op->HA->get_target_partition().get_size_of_partition(i)) * mu;
             if (i > 0)
                 displs[i] = displs[i - 1] + recvcounts[i - 1];
         }
@@ -582,7 +588,7 @@ class DDM {
             }
 
             // Permutation
-            hpddm_op->HA->get_target_partition()->partition_to_global_numbering(hpddm_op->in_global->data() + i * nb_rows, x + i * nb_rows);
+            hpddm_op->HA->get_target_partition().partition_to_global_numbering(hpddm_op->in_global->data() + i * nb_rows, x + i * nb_rows);
             // root_cluster_to_global(hpddm_op->HA->get_root_target_cluster(), hpddm_op->in_global->data() + i * nb_rows, x + i * nb_rows);
             // hpddm_op->HA->cluster_to_target_permutation(hpddm_op->in_global->data() + i * nb_rows, x + i * nb_rows);
         }

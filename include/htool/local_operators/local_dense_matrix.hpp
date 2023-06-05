@@ -10,28 +10,42 @@
 namespace htool {
 
 template <typename CoefficientPrecision, typename CoordinatePrecision = CoefficientPrecision>
-class LocalDenseMatrix : public LocalOperator<CoefficientPrecision, CoordinatePrecision> {
-    Matrix<CoefficientPrecision> m_data;
+class LocalDenseMatrix final : public LocalOperator<CoefficientPrecision, CoordinatePrecision> {
+    const Matrix<CoefficientPrecision> &m_data;
 
   public:
-    LocalDenseMatrix(const VirtualGenerator<CoefficientPrecision> &mat, std::shared_ptr<const Cluster<CoordinatePrecision>> cluster_tree_target, std::shared_ptr<const Cluster<CoordinatePrecision>> cluster_tree_source, char symmetry = 'N', char UPLO = 'N', bool target_use_permutation_to_mvprod = false, bool source_use_permutation_to_mvprod = false) : LocalOperator<CoefficientPrecision, CoordinatePrecision>(cluster_tree_target, cluster_tree_source, symmetry, UPLO, target_use_permutation_to_mvprod, source_use_permutation_to_mvprod), m_data(cluster_tree_target->get_size(), cluster_tree_source->get_size()) {
+    LocalDenseMatrix(const Matrix<CoefficientPrecision> &matrix, const Cluster<CoordinatePrecision> &cluster_tree_target, const Cluster<CoordinatePrecision> &cluster_tree_source, char symmetry = 'N', char UPLO = 'N', bool target_use_permutation_to_mvprod = false, bool source_use_permutation_to_mvprod = false) : LocalOperator<CoefficientPrecision, CoordinatePrecision>(cluster_tree_target, cluster_tree_source, symmetry, UPLO, target_use_permutation_to_mvprod, source_use_permutation_to_mvprod), m_data(matrix) {
 
-        if (this->m_symmetry == 'N') {
-            mat.copy_submatrix(m_data.nb_rows(), m_data.nb_cols(), this->m_target_root_cluster->get_offset(), this->m_source_root_cluster->get_offset(), m_data.data());
-        } else if ((this->m_symmetry == 'S' || this->m_symmetry == 'H') && this->m_UPLO == 'L') {
-            for (int i = 0; i < m_data.nb_rows(); i++) {
-                for (int j = 0; j < i + 1; j++) {
-                    mat.copy_submatrix(1, 1, i + this->m_target_root_cluster->get_offset(), j + this->m_source_root_cluster->get_offset(), m_data.data() + i + j * m_data.nb_rows());
-                }
-            }
-        } else if ((this->m_symmetry == 'S' || this->m_symmetry == 'H') && this->m_UPLO == 'U') {
-            for (int j = 0; j < m_data.nb_cols(); j++) {
-                for (int i = 0; i < j + 1; i++) {
-                    mat.copy_submatrix(1, 1, i + this->m_target_root_cluster->get_offset(), j + this->m_source_root_cluster->get_offset(), m_data.data() + i + j * m_data.nb_rows());
-                }
-            }
-        }
+        // const Cluster<CoordinatePrecision> *local_target_cluster = nullptr;
+
+        // if (target_partition_number < 0) {
+        //     local_target_cluster = this->m_target_root_cluster.get();
+        // } else {
+        //     local_target_cluster = this->m_target_root_cluster->get_clusters_on_partition()[target_partition_number];
+        // }
+
+        // if (this->m_symmetry == 'N') {
+        //     mat.copy_submatrix(m_data.nb_rows(), m_data.nb_cols(), this->m_target_root_cluster->get_offset(), this->m_source_root_cluster->get_offset(), m_data.data());
+        // } else if ((this->m_symmetry == 'S' || this->m_symmetry == 'H') && this->m_UPLO == 'L') {
+        //     for (int i = 0; i < m_data.nb_rows(); i++) {
+        //         for (int j = 0; j < i + 1; j++) {
+        //             mat.copy_submatrix(1, 1, i + this->m_target_root_cluster->get_offset(), j + this->m_source_root_cluster->get_offset(), m_data.data() + i + j * m_data.nb_rows());
+        //         }
+        //     }
+        // } else if ((this->m_symmetry == 'S' || this->m_symmetry == 'H') && this->m_UPLO == 'U') {
+        //     for (int j = 0; j < m_data.nb_cols(); j++) {
+        //         for (int i = 0; i < j + 1; i++) {
+        //             mat.copy_submatrix(1, 1, i + this->m_target_root_cluster->get_offset(), j + this->m_source_root_cluster->get_offset(), m_data.data() + i + j * m_data.nb_rows());
+        //         }
+        //     }
+        // }
     }
+
+    LocalDenseMatrix(const LocalDenseMatrix &)                                = default;
+    LocalDenseMatrix &operator=(const LocalDenseMatrix &)                     = default;
+    LocalDenseMatrix(LocalDenseMatrix &&LocalDenseMatrix) noexcept            = default;
+    LocalDenseMatrix &operator=(LocalDenseMatrix &&LocalDenseMatrix) noexcept = default;
+    ~LocalDenseMatrix()                                                       = default;
 
     void local_add_vector_product(char trans, CoefficientPrecision alpha, const CoefficientPrecision *in, CoefficientPrecision beta, CoefficientPrecision *out) const override { m_data.add_vector_product(trans, alpha, in, beta, out); }
     void local_add_vector_product_symmetric(char trans, CoefficientPrecision alpha, const CoefficientPrecision *in, CoefficientPrecision beta, CoefficientPrecision *out, char UPLO, char symmetry) const override { m_data.add_vector_product_symmetric(trans, alpha, in, beta, out, UPLO, symmetry); }

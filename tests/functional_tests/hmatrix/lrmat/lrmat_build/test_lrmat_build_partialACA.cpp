@@ -36,25 +36,24 @@ int main(int argc, char *argv[]) {
         create_disk(3, 0., nr, xt.data());
         create_disk(3, distance[idist], nc, xs.data());
 
-        ClusterTreeBuilder<double, ComputeLargestExtent<double>, RegularSplitting<double>> target_recursive_build_strategy(nr, 3, xt.data(), 2, 2);
-        ClusterTreeBuilder<double, ComputeLargestExtent<double>, RegularSplitting<double>> source_recursive_build_strategy(nc, 3, xs.data(), 2, 2);
+        ClusterTreeBuilder<double> recursive_build_strategy;
 
-        std::shared_ptr<Cluster<double>> t = std::make_shared<Cluster<double>>(target_recursive_build_strategy.create_cluster_tree());
-        std::shared_ptr<Cluster<double>> s = std::make_shared<Cluster<double>>(source_recursive_build_strategy.create_cluster_tree());
+        Cluster<double> t = recursive_build_strategy.create_cluster_tree(nr, 3, xt.data(), 2, 2);
+        Cluster<double> s = recursive_build_strategy.create_cluster_tree(nc, 3, xt.data(), 2, 2);
 
-        GeneratorTestDouble A(3, nr, nc, xt, xs, t, s);
+        GeneratorTestDouble A(3, nr, nc, xt, xs, t, s, true, true);
 
         // partialACA fixed rank
         int reqrank_max = 10;
         partialACA<double> compressor;
-        LowRankMatrix<double> A_fullACA_fixed(A, compressor, *t, *s, reqrank_max, epsilon);
+        LowRankMatrix<double> A_fullACA_fixed(A, compressor, t, s, reqrank_max, epsilon);
 
         // ACA automatic building
-        LowRankMatrix<double> A_fullACA(A, compressor, *t, *s, -1, epsilon);
+        LowRankMatrix<double> A_fullACA(A, compressor, t, s, -1, epsilon);
 
         std::pair<double, double> fixed_compression_interval(0.87, 0.89);
         std::pair<double, double> auto_compression_interval(0.93, 0.96);
-        test = test || (test_lrmat(*t, *s, A, A_fullACA_fixed, A_fullACA, fixed_compression_interval, auto_compression_interval));
+        test = test || (test_lrmat(t, s, A, A_fullACA_fixed, A_fullACA, fixed_compression_interval, auto_compression_interval));
     }
 
     cout << "test : " << test << endl;

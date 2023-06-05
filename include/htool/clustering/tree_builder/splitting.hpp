@@ -6,8 +6,17 @@
 namespace htool {
 
 template <typename T>
-class RegularSplitting {
+class VirtualSplittingStrategy {
   public:
+    virtual void splitting(Cluster<T> *curr_cluster, const std::vector<int> &, int, const T *, int current_number_of_children, int minclustersize, const std::vector<T> &, std::vector<std::pair<int, int>> &current_partition) = 0;
+
+    virtual ~VirtualSplittingStrategy() {}
+};
+template <typename T>
+class RegularSplitting final : public VirtualSplittingStrategy<T> {
+  public:
+    using VirtualSplittingStrategy<T>::VirtualSplittingStrategy;
+
     void splitting(Cluster<T> *curr_cluster, const std::vector<int> &, int, const T *, int current_number_of_children, int minclustersize, const std::vector<T> &, std::vector<std::pair<int, int>> &current_partition) {
 
         int size = curr_cluster->get_size();
@@ -27,10 +36,11 @@ class RegularSplitting {
 };
 
 template <typename T>
-class GeometricSplitting {
+class GeometricSplitting final : public VirtualSplittingStrategy<T> {
     RegularSplitting<T> regular_splitting;
 
   public:
+    using VirtualSplittingStrategy<T>::VirtualSplittingStrategy;
     void splitting(Cluster<T> *curr_cluster, const std::vector<int> &permutation, int spatial_dimension, const T *x, int current_number_of_children, int minclustersize, const std::vector<T> &dir, std::vector<std::pair<int, int>> &current_partition) {
 
         // Geometry of current cluster

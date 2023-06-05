@@ -7,6 +7,7 @@
 
 #include "../basic_types/tree.hpp"
 #include "../clustering/cluster_node.hpp"
+#include "../misc/logger.hpp"
 #include "hmatrix_tree_data.hpp"
 #include "interfaces/virtual_admissibility_condition.hpp"
 #include "interfaces/virtual_dense_blocks_generator.hpp"
@@ -84,9 +85,7 @@ class HMatrix : public TreeNode<HMatrix<CoefficientPrecision, CoordinatePrecisio
 
   public:
     // Root constructor
-    HMatrix(std::shared_ptr<const Cluster<CoordinatePrecision>> target_cluster, std::shared_ptr<const Cluster<CoordinatePrecision>> source_cluster) : TreeNode<HMatrix, HMatrixTreeData<CoefficientPrecision, CoordinatePrecision>>(), m_target_cluster(target_cluster.get()), m_source_cluster(source_cluster.get()) {
-        this->m_tree_data->m_target_cluster_tree = target_cluster;
-        this->m_tree_data->m_source_cluster_tree = source_cluster;
+    HMatrix(const Cluster<CoordinatePrecision> &target_cluster, const Cluster<CoordinatePrecision> &source_cluster) : TreeNode<HMatrix, HMatrixTreeData<CoefficientPrecision, CoordinatePrecision>>(), m_target_cluster(&target_cluster), m_source_cluster(&source_cluster) {
     }
 
     // Child constructor
@@ -932,7 +931,8 @@ void HMatrix<CoefficientPrecision, CoordinatePrecision>::threaded_hierarchical_a
 
     if ((trans == 'T' && m_symmetry_type_for_leaves == 'H')
         || (trans == 'C' && m_symmetry_type_for_leaves == 'S')) {
-        throw std::invalid_argument("[Htool error] Operation is not supported (" + std::string(1, trans) + " with " + m_symmetry_type_for_leaves + ")"); // LCOV_EXCL_LINE
+        htool::Logger::get_instance().log(LogLevel::ERROR, "Operation is not supported (" + std::string(1, trans) + " with " + m_symmetry_type_for_leaves + ")"); // LCOV_EXCL_LINE
+        // throw std::invalid_argument("[Htool error] Operation is not supported (" + std::string(1, trans) + " with " + m_symmetry_type_for_leaves + ")");                  // LCOV_EXCL_LINE
     }
 
     int out_size(m_target_cluster->get_size() * mu);
@@ -1907,7 +1907,8 @@ void copy_to_dense(const HMatrix<CoefficientPrecision, CoordinatePrecision> &hma
 template <typename CoefficientPrecision, typename CoordinatePrecision>
 void copy_diagonal(const HMatrix<CoefficientPrecision, CoordinatePrecision> &hmatrix, CoefficientPrecision *ptr) {
     if (hmatrix.get_target_cluster().get_offset() != hmatrix.get_source_cluster().get_offset() || hmatrix.get_target_cluster().get_size() != hmatrix.get_source_cluster().get_size()) {
-        throw std::logic_error("[Htool error] Matrix is not square a priori, get_local_diagonal cannot be used"); // LCOV_EXCL_LINE
+        htool::Logger::get_instance().log(LogLevel::ERROR, "Matrix is not square a priori, get_local_diagonal cannot be used"); // LCOV_EXCL_LINE
+        // throw std::logic_error("[Htool error] Matrix is not square a priori, get_local_diagonal cannot be used");                       // LCOV_EXCL_LINE
     }
 
     int target_offset = hmatrix.get_target_cluster().get_offset();

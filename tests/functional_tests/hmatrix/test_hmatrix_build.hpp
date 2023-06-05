@@ -4,6 +4,7 @@
 #include <htool/hmatrix/hmatrix_distributed_output.hpp>
 #include <htool/hmatrix/hmatrix_output.hpp>
 #include <htool/hmatrix/tree_builder/tree_builder.hpp>
+#include <htool/testing/dense_blocks_generator_test.hpp>
 #include <htool/testing/generator_input.hpp>
 #include <htool/testing/generator_test.hpp>
 #include <htool/testing/geometry.hpp>
@@ -14,7 +15,7 @@ using namespace std;
 using namespace htool;
 
 template <typename T, typename GeneratorTestType>
-bool test_hmatrix_build(int nr, int nc, bool use_local_cluster, char Symmetry, char UPLO, htool::underlying_type<T> epsilon) {
+bool test_hmatrix_build(int nr, int nc, bool use_local_cluster, char Symmetry, char UPLO, htool::underlying_type<T> epsilon, bool use_dense_blocks_generator) {
 
     // Get the number of processes
     int sizeWorld;
@@ -38,12 +39,12 @@ bool test_hmatrix_build(int nr, int nc, bool use_local_cluster, char Symmetry, c
     test_partition(3, nr, p1, sizeWorld, partition);
 
     // Clustering
-    ClusterTreeBuilder<htool::underlying_type<T>, ComputeLargestExtent<htool::underlying_type<T>>, RegularSplitting<htool::underlying_type<T>>> target_recursive_build_strategy(nr, 3, p1.data(), 2, sizeWorld);
-    target_recursive_build_strategy.set_partition(partition);
-    // target_recursive_build_strategy.set_minclustersize(2);
+    ClusterTreeBuilder<htool::underlying_type<T>> recursive_build_strategy;
+    recursive_build_strategy.set_partition(partition);
+    // recursive_build_strategy.set_minclustersize(2);
 
     std::shared_ptr<const Cluster<htool::underlying_type<T>>> source_root_cluster;
-    std::shared_ptr<const Cluster<htool::underlying_type<T>>> target_root_cluster = make_shared<const Cluster<htool::underlying_type<T>>>(target_recursive_build_strategy.create_cluster_tree());
+    std::shared_ptr<const Cluster<htool::underlying_type<T>>> target_root_cluster = make_shared<const Cluster<htool::underlying_type<T>>>(recursive_build_strategy.create_cluster_tree(nr, 3, p1.data(), 2, sizeWorld));
 
     if (Symmetry == 'N' && nr != nc) {
         // Geometry
@@ -54,11 +55,10 @@ bool test_hmatrix_build(int nr, int nc, bool use_local_cluster, char Symmetry, c
         test_partition(3, nc, p2, sizeWorld, partition);
 
         // Clustering
-        ClusterTreeBuilder<htool::underlying_type<T>, ComputeLargestExtent<htool::underlying_type<T>>, RegularSplitting<htool::underlying_type<T>>> source_recursive_build_strategy(nc, 3, p2.data(), 2, sizeWorld);
-        source_recursive_build_strategy.set_partition(partition);
+        recursive_build_strategy.set_partition(partition);
         // source_recursive_build_strategy.set_minclustersize(2);
 
-        source_root_cluster = make_shared<const Cluster<htool::underlying_type<T>>>(source_recursive_build_strategy.create_cluster_tree());
+        source_root_cluster = make_shared<const Cluster<htool::underlying_type<T>>>(recursive_build_strategy.create_cluster_tree(nc, 3, p2.data(), 2, sizeWorld));
     } else {
         source_root_cluster = target_root_cluster;
         p2                  = p1;
@@ -85,25 +85,23 @@ bool test_hmatrix_build(int nr, int nc, bool use_local_cluster, char Symmetry, c
     }
 
     // Generator
-    GeneratorTestType generator(3, nr, nc, p1_permuted, p2_permuted);
+    GeneratorTestType generator(3, nr, nc, p1_permuted, p2_permuted, *target_root_cluster, *source_root_cluster, false, false);
 
     // HMatrix
     double eta = 10;
 
     std::unique_ptr<HMatrixTreeBuilder<T, htool::underlying_type<T>>> hmatrix_tree_builder;
     if (use_local_cluster) {
-        std::shared_ptr<const Cluster<htool::underlying_type<T>>> local_target_cluster = std::make_shared<const Cluster<htool::underlying_type<T>>>(clone_cluster_tree_from_partition(*target_root_cluster, rankWorld));
-        std::shared_ptr<const Cluster<htool::underlying_type<T>>> local_source_cluster;
-        if (Symmetry == 'N' && nr != nc) {
-            local_source_cluster = std::make_shared<const Cluster<htool::underlying_type<T>>>(clone_cluster_tree_from_partition(*source_root_cluster, rankWorld));
-        } else {
-            local_source_cluster = local_target_cluster;
-        }
-        hmatrix_tree_builder = std::unique_ptr<HMatrixTreeBuilder<T, htool::underlying_type<T>>>(new HMatrixTreeBuilder<T, htool::underlying_type<T>>(local_target_cluster, local_source_cluster, epsilon, eta, Symmetry, UPLO));
+        hmatrix_tree_builder = std::make_unique<HMatrixTreeBuilder<T, htool::underlying_type<T>>>(target_root_cluster->get_cluster_on_partition(rankWorld), source_root_cluster->get_cluster_on_partition(rankWorld), epsilon, eta, Symmetry, UPLO, -1, -1);
     } else {
-        hmatrix_tree_builder = std::unique_ptr<HMatrixTreeBuilder<T, htool::underlying_type<T>>>(new HMatrixTreeBuilder<T, htool::underlying_type<T>>(target_root_cluster, source_root_cluster, epsilon, eta, Symmetry, UPLO));
-        hmatrix_tree_builder->set_target_partition_number(rankWorld);
+        hmatrix_tree_builder = std::make_unique<HMatrixTreeBuilder<T, htool::underlying_type<T>>>(*target_root_cluster, *source_root_cluster, epsilon, eta, Symmetry, UPLO, -1, rankWorld);
     }
+
+    std::shared_ptr<VirtualDenseBlocksGenerator<T>> dense_blocks_generator;
+    if (use_dense_blocks_generator) {
+        dense_blocks_generator = std::make_shared<DenseBlocksGeneratorTest<T>>(generator);
+    }
+    hmatrix_tree_builder->set_dense_blocks_generator(dense_blocks_generator);
 
     // build
     auto root_hmatrix = hmatrix_tree_builder->build(generator);

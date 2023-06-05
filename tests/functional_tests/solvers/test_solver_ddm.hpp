@@ -48,8 +48,7 @@ int test_solver_ddm(int argc, char *argv[], int mu, char symmetric, bool) {
     // Clustering
     if (rank == 0)
         std::cout << "Creating cluster tree" << std::endl;
-    std::shared_ptr<const Cluster<double>> target_cluster = std::make_shared<Cluster<double>>(
-        read_cluster_tree<double>(datapath + "/cluster_" + NbrToStr(size) + "_cluster_tree_properties.csv", datapath + "/cluster_" + NbrToStr(size) + "_cluster_tree.csv"));
+    Cluster<double> target_cluster = read_cluster_tree<double>(datapath + "/cluster_" + NbrToStr(size) + "_cluster_tree_properties.csv", datapath + "/cluster_" + NbrToStr(size) + "_cluster_tree.csv");
 
     // std::vector<int>tab(n);
     // std::iota(tab.begin(),tab.end(),int(0));
@@ -63,7 +62,7 @@ int test_solver_ddm(int argc, char *argv[], int mu, char symmetric, bool) {
         std::cout << "Creating generators" << std::endl;
     Matrix<complex<double>> A;
     A.bytes_to_matrix(datapath + "/matrix.bin");
-    GeneratorFromMatrix<std::complex<double>> Generator(A, target_cluster->get_permutation(), target_cluster->get_permutation());
+    GeneratorFromMatrix<std::complex<double>> Generator(A, target_cluster.get_permutation(), target_cluster.get_permutation());
     int n = A.nb_rows();
 
     // Right-hand side
@@ -82,7 +81,10 @@ int test_solver_ddm(int argc, char *argv[], int mu, char symmetric, bool) {
 
     const HMatrix<Cplx> *local_block_diagonal_hmatrix = nullptr;
 
-    DistributedOperator<Cplx> Operator = build_default_hierarchical_approximation(Generator, target_cluster, target_cluster, epsilon, eta, symmetric, UPLO, MPI_COMM_WORLD, &local_block_diagonal_hmatrix);
+    auto default_build = build_default_hierarchical_approximation(Generator, target_cluster, target_cluster, epsilon, eta, symmetric, UPLO, MPI_COMM_WORLD);
+
+    DistributedOperator<Cplx> &Operator = default_build.distributed_operator;
+    local_block_diagonal_hmatrix        = default_build.block_diagonal_hmatrix;
 
     // if (off_diagonal_approximation) {
     //     // Setup data for off diagonal geometry
@@ -126,7 +128,8 @@ int test_solver_ddm(int argc, char *argv[], int mu, char symmetric, bool) {
     // }
 
     // Global vectors
-    Matrix<complex<double>> x_global(n, mu), x_ref(n, mu), test_global(n, mu);
+    Matrix<complex<double>>
+        x_global(n, mu), x_ref(n, mu), test_global(n, mu);
     bytes_to_vector(temp, datapath + "sol.bin");
     for (int i = 0; i < mu; i++) {
         x_ref.set_col(i, temp);

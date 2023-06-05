@@ -15,11 +15,11 @@ class VirtualLocalOperator {
     virtual ~VirtualLocalOperator() {}
 
   protected:
-    VirtualLocalOperator()                                        = default;
-    VirtualLocalOperator(const VirtualLocalOperator &)            = default;
-    VirtualLocalOperator(VirtualLocalOperator &&)                 = default;
-    VirtualLocalOperator &operator=(const VirtualLocalOperator &) = default;
-    VirtualLocalOperator &operator=(VirtualLocalOperator &&)      = default;
+    VirtualLocalOperator()                                            = default;
+    VirtualLocalOperator(const VirtualLocalOperator &)                = default;
+    VirtualLocalOperator(VirtualLocalOperator &&) noexcept            = default;
+    VirtualLocalOperator &operator=(const VirtualLocalOperator &)     = default;
+    VirtualLocalOperator &operator=(VirtualLocalOperator &&) noexcept = default;
 };
 } // namespace htool
 #endif

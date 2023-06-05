@@ -81,18 +81,19 @@ void print_tree_parameters(const HMatrix<CoefficientPrecision, CoordinatePrecisi
     const HMatrixTreeData<CoefficientPrecision, CoordinatePrecision> *hmatrix_tree_data = hmatrix.get_hmatrix_tree_data();
 
     int output_size = 23;
+    os << std::setfill('_') << std::left;
     os << "Block tree parameters\n";
-    os << std::setw(output_size) << std::setfill('_') << "Eta" << hmatrix_tree_data->m_eta << "\n";
-    os << std::setw(output_size) << std::setfill('_') << "Epsilon" << hmatrix_tree_data->m_epsilon << "\n";
-    os << std::setw(output_size) << std::setfill('_') << "MaxBlockSize" << hmatrix_tree_data->m_maxblocksize << "\n";
-    os << std::setw(output_size) << std::setfill('_') << "MinTargetDepth" << hmatrix_tree_data->m_minimal_target_depth << "\n";
-    os << std::setw(output_size) << std::setfill('_') << "MinClusterSizeTarget" << hmatrix.get_target_cluster().get_minclustersize() << "\n";
-    os << std::setw(output_size) << std::setfill('_') << "MaxClusterDepthTarget" << hmatrix.get_target_cluster().get_maximal_depth() << "\n";
-    os << std::setw(output_size) << std::setfill('_') << "MinClusterDepthTarget" << hmatrix.get_target_cluster().get_minimal_depth() << "\n";
-    os << std::setw(output_size) << std::setfill('_') << "MinSourceDepth" << hmatrix_tree_data->m_minimal_source_depth << "\n";
-    os << std::setw(output_size) << std::setfill('_') << "MinClusterSizeSource" << hmatrix.get_source_cluster().get_minclustersize() << "\n";
-    os << std::setw(output_size) << std::setfill('_') << "MaxClusterDepthSource" << hmatrix.get_source_cluster().get_maximal_depth() << "\n";
-    os << std::setw(output_size) << std::setfill('_') << "MinClusterDepthSource" << hmatrix.get_source_cluster().get_minimal_depth() << "\n";
+    os << std::setw(output_size) << "Eta" << hmatrix_tree_data->m_eta << "\n";
+    os << std::setw(output_size) << "Epsilon" << hmatrix_tree_data->m_epsilon << "\n";
+    os << std::setw(output_size) << "MaxBlockSize" << hmatrix_tree_data->m_maxblocksize << "\n";
+    os << std::setw(output_size) << "MinTargetDepth" << hmatrix_tree_data->m_minimal_target_depth << "\n";
+    os << std::setw(output_size) << "MinClusterSizeTarget" << hmatrix.get_target_cluster().get_minclustersize() << "\n";
+    os << std::setw(output_size) << "MaxClusterDepthTarget" << hmatrix.get_target_cluster().get_maximal_depth() << "\n";
+    os << std::setw(output_size) << "MinClusterDepthTarget" << hmatrix.get_target_cluster().get_minimal_depth() << "\n";
+    os << std::setw(output_size) << "MinSourceDepth" << hmatrix_tree_data->m_minimal_source_depth << "\n";
+    os << std::setw(output_size) << "MinClusterSizeSource" << hmatrix.get_source_cluster().get_minclustersize() << "\n";
+    os << std::setw(output_size) << "MaxClusterDepthSource" << hmatrix.get_source_cluster().get_maximal_depth() << "\n";
+    os << std::setw(output_size) << "MinClusterDepthSource" << hmatrix.get_source_cluster().get_minimal_depth() << "\n";
     os << "\n";
 }
 

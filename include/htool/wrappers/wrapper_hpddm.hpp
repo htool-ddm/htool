@@ -62,7 +62,7 @@ class HPDDMDense final : public HpDense<CoefficientPrecision, 'G'> {
     int GMV(const CoefficientPrecision *const in, CoefficientPrecision *const out, const int &mu = 1) const override {
         int rankWorld;
         MPI_Comm_rank(HA->get_comm(), &rankWorld);
-        int local_size = HA->get_target_partition()->get_size_of_partition(rankWorld);
+        int local_size = HA->get_target_partition().get_size_of_partition(rankWorld);
 
         // Tranpose without overlap
         if (mu != 1) {

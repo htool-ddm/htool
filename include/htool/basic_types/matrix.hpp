@@ -1,6 +1,7 @@
 #ifndef HTOOL_BASIC_TYPES_MATRIX_HPP
 #define HTOOL_BASIC_TYPES_MATRIX_HPP
 
+#include "../misc/logger.hpp"
 #include "../misc/misc.hpp"
 #include "../wrappers/wrapper_blas.hpp"
 #include "vector.hpp"
@@ -407,7 +408,8 @@ class Matrix {
                 std::transform(out, out + nr, out, [](const T &c) { return std::conj(c); });
 
             } else {
-                throw std::invalid_argument("[Htool error] Invalid arguments for add_vector_product_symmetric"); // LCOV_EXCL_LINE
+                htool::Logger::get_instance().log(LogLevel::ERROR, "Invalid arguments for add_vector_product_symmetric: " + std::string(1, trans) + " with " + symmetry + ")\n"); // LCOV_EXCL_LINE
+                // throw std::invalid_argument("[Htool error] Invalid arguments for add_vector_product_symmetric");               // LCOV_EXCL_LINE
             }
         }
     }
@@ -460,7 +462,9 @@ class Matrix {
                 Blas<T>::hemm(&side, &UPLO, &M, &N, &conjugate_alpha, m_data, &lda, conjugate_in.data(), &ldb, &conjugate_beta, out, &ldc);
                 std::transform(out, out + nr * mu, out, [](const T &c) { return std::conj(c); });
             } else {
-                throw std::invalid_argument("[Htool error] Operation is not supported (" + std::string(1, trans) + " with " + symmetry + ")"); // LCOV_EXCL_LINE
+                htool::Logger::get_instance().log(LogLevel::ERROR, "Invalid arguments for add_matrix_product_symmetric: " + std::string(1, trans) + " with " + symmetry + ")\n"); // LCOV_EXCL_LINE
+
+                // throw std::invalid_argument("[Htool error] Operation is not supported (" + std::string(1, trans) + " with " + symmetry + ")");                                            // LCOV_EXCL_LINE
             }
         }
     }
@@ -578,7 +582,8 @@ class Matrix {
                 Blas<T>::hemm(&side, &UPLO, &M, &N, &conjugate_alpha, m_data, &lda, conjugate_in.data(), &ldb, &conjugate_beta, out, &ldc);
                 conj_if_complex<T>(out, m_number_of_cols * mu);
             } else {
-                throw std::invalid_argument("[Htool error] Operation is not supported (" + std::string(1, trans) + " with " + symmetry + ")"); // LCOV_EXCL_LINE
+                htool::Logger::get_instance().log(LogLevel::ERROR, "Invalid arguments for add_matrix_product_symmetric_row_major: " + std::string(1, trans) + " with " + symmetry + ")\n"); // LCOV_EXCL_LINE
+                // throw std::invalid_argument("[Htool error] Operation is not supported (" + std::string(1, trans) + " with " + symmetry + ")"); // LCOV_EXCL_LINE
             }
         }
     }
@@ -663,7 +668,8 @@ class Matrix {
         std::ofstream os(file);
         try {
             if (!os) {
-                throw std::string("Cannot create file " + file);
+                htool::Logger::get_instance().log(LogLevel::WARNING, "Cannot create file " + file); // LCOV_EXCL_LINE
+                // throw std::string("Cannot create file " + file);
             }
         } catch (std::string const &error) {
             std::cerr << error << std::endl;

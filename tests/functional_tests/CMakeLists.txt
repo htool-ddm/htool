@@ -2,6 +2,10 @@ add_custom_target(build-tests-basic-types)
 add_dependencies(build-tests build-tests-basic-types)
 add_subdirectory(basic_types)
 
+add_custom_target(build-tests-misc)
+add_dependencies(build-tests build-tests-misc)
+add_subdirectory(misc)
+
 add_custom_target(build-tests-clustering)
 add_dependencies(build-tests build-tests-clustering)
 add_subdirectory(clustering)

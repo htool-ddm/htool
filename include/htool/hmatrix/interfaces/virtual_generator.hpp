@@ -25,14 +25,15 @@ template <typename CoefficientPrecision>
 class VirtualGeneratorWithPermutation : public VirtualGenerator<CoefficientPrecision> {
 
   protected:
-    const std::vector<int> &m_target_permutation;
-    const std::vector<int> &m_source_permutation;
+    const int *m_target_permutation;
+    const int *m_source_permutation;
 
   public:
-    VirtualGeneratorWithPermutation(const std::vector<int> &target_permutation, const std::vector<int> &source_permutation) : m_target_permutation(target_permutation), m_source_permutation(source_permutation) {}
+    VirtualGeneratorWithPermutation(const int *target_permutation, const int *source_permutation) : m_target_permutation(target_permutation), m_source_permutation(source_permutation) {
+    }
 
     virtual void copy_submatrix(int M, int N, int row_offset, int col_offset, CoefficientPrecision *ptr) const override {
-        copy_submatrix(M, N, m_target_permutation.data() + row_offset, m_source_permutation.data() + col_offset, ptr);
+        copy_submatrix(M, N, m_target_permutation + row_offset, m_source_permutation + col_offset, ptr);
     }
 
     virtual void copy_submatrix(int M, int N, const int *rows, const int *cols, CoefficientPrecision *ptr) const = 0;

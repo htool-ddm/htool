@@ -38,12 +38,14 @@ bool test_cluster(int size, bool use_given_partition) {
             cout << "Number of sons : " << nb_sons << endl;
         }
 
-        ClusterTreeBuilder<T, DirectionComputetationStrategy, SplittingStrategy> recursive_build_strategy(size, dim, coordinates.data(), nb_sons, sizeWorld);
+        ClusterTreeBuilder<T> recursive_build_strategy;
+        recursive_build_strategy.set_direction_computation_strategy(std::make_shared<DirectionComputetationStrategy>());
+        recursive_build_strategy.set_splitting_strategy(std::make_shared<SplittingStrategy>());
         if (use_given_partition) {
             recursive_build_strategy.set_partition(partition);
         }
         recursive_build_strategy.set_minclustersize(1);
-        Cluster<T> root_cluster = recursive_build_strategy.create_cluster_tree();
+        Cluster<T> root_cluster = recursive_build_strategy.create_cluster_tree(size, dim, coordinates.data(), nb_sons, sizeWorld);
         is_error                = is_error || !(root_cluster.is_root());
 
         if (rankWorld == 0)
@@ -178,7 +180,7 @@ bool test_cluster(int size, bool use_given_partition) {
 
         if (root_cluster.is_permutation_local()) {
             // Test copy branch with local cluster
-            Cluster<T> local_cluster = clone_cluster_tree_from_partition(root_cluster, rankWorld);
+            const Cluster<T> &local_cluster = root_cluster.get_cluster_on_partition(rankWorld);
             std::stack<const Cluster<T> *> s_local_1;
             std::stack<const Cluster<T> *> s_local_2;
             s_local_1.push(&local_cluster);
@@ -206,8 +208,8 @@ bool test_cluster(int size, bool use_given_partition) {
 
             MPI_Bcast(local_random_vector.data(), local_random_vector.size(), wrapper_mpi<int>::mpi_type(), 0, MPI_COMM_WORLD);
 
-            global_to_root_cluster(local_cluster, local_random_vector.data(), local_temporary_vector.data());
-            root_cluster_to_global(local_cluster, local_temporary_vector.data(), local_result_vector.data());
+            local_to_local_cluster(local_cluster, rankWorld, local_random_vector.data(), local_temporary_vector.data());
+            local_cluster_to_local(local_cluster, rankWorld, local_temporary_vector.data(), local_result_vector.data());
             is_error = is_error || !(local_random_vector == local_result_vector);
         }
     }
