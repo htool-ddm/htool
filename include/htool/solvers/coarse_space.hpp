@@ -1,19 +1,21 @@
 #ifndef HTOOL_COARSE_SPACE_HPP
 #define HTOOL_COARSE_SPACE_HPP
 
+#include "../distributed_operator/distributed_operator.hpp"
 #include "../misc/misc.hpp"
-#include "../types/hmatrix.hpp"
-#include "../types/virtual_hmatrix.hpp"
 #include <algorithm>
 #include <numeric>
 
 namespace htool {
 template <typename T>
-void build_coarse_space_outside(const VirtualHMatrix<T> *const HA, int nevi, int n, const T *const *Z, std::vector<T> &E) {
+void build_coarse_space_outside(const DistributedOperator<T> *const HA, int nevi, int n, const T *const *Z, std::vector<T> &E) {
     //
-    int n_inside  = HA->get_local_size();
-    int sizeWorld = HA->get_sizeworld();
-    int rankWorld = HA->get_rankworld();
+
+    MPI_Comm comm = HA->get_comm();
+    int sizeWorld, rankWorld;
+    MPI_Comm_rank(comm, &rankWorld);
+    MPI_Comm_size(comm, &sizeWorld);
+    int n_inside = HA->get_target_partition()->get_size_of_partition(rankWorld);
 
     // Allgather
     std::vector<int> recvcounts(sizeWorld);
@@ -34,21 +36,42 @@ void build_coarse_space_outside(const VirtualHMatrix<T> *const HA, int nevi, int
         std::copy_n(Z[i], n_inside, evi.data() + i * n);
     }
 
-    std::pair<int, int> max_local_size = HA->get_max_size_blocks();
-    int local_max_size_i               = max_local_size.first;
-    int local_max_size_j               = max_local_size.second;
-    int local_max_size                 = std::max(local_max_size_i, local_max_size_j);
-    int margin                         = local_max_size_j;
-    if (HA->get_symmetry_type() != 'N') {
-        margin = local_max_size;
-    }
+    // There should not be any bloc larger than the size of the subdmain, so margin should be useless
+    // std::pair<int, int> max_local_size = HA->get_max_size_blocks();
+    // int local_max_size_i               = max_local_size.first;
+    // int local_max_size_j               = max_local_size.second;
+    // int local_max_size                 = std::max(local_max_size_i, local_max_size_j);
+    // int margin                         = local_max_size_j;
+    // if (HA->get_symmetry_type() != 'N') {
+    //     margin = local_max_size;
+    // }
+    int margin = 0;
+
     std::vector<T> AZ(nevi_max * n_inside, 0);
     std::vector<T> vec_ovr(n);
+
+    // if (rankWorld == 0) {
+    //     for (int i = 0; i < nevi; i++) {
+    //         for (int j = 0; j < n_inside; j++) {
+    //             std::cout << evi[i * n + j] << " ";
+    //         }
+    //         std::cout << "\n";
+    //     }
+    // }
+    // MPI_Barrier(MPI_COMM_WORLD);
+    // if (rankWorld == 1) {
+    //     for (int i = 0; i < nevi; i++) {
+    //         for (int j = 0; j < n_inside; j++) {
+    //             std::cout << evi[i * n + j] << " ";
+    //         }
+    //         std::cout << "\n";
+    //     }
+    // }
 
     for (int i = 0; i < sizeWorld; i++) {
         if (recvcounts[i] == 0)
             continue;
-        std::vector<T> buffer((HA->get_target_cluster()->get_masteroffset(i).second + 2 * margin) * recvcounts[i], 0);
+        std::vector<T> buffer((HA->get_target_partition()->get_size_of_partition(i) + 2 * margin) * recvcounts[i], 0);
         std::fill_n(AZ.data(), recvcounts[i] * n_inside, 0);
 
         if (rankWorld == i) {
@@ -59,11 +82,20 @@ void build_coarse_space_outside(const VirtualHMatrix<T> *const HA, int nevi, int
                 }
             }
         }
-        MPI_Bcast(buffer.data() + margin * recvcounts[i], HA->get_target_cluster()->get_masteroffset(i).second * recvcounts[i], wrapper_mpi<T>::mpi_type(), i, HA->get_comm());
+        // if (rankWorld == 0) {
+        //     // std::cout << buffer.size() << " " << HA->get_target_partition()->get_size_of_partition(i) << " " << recvcounts[i] << "\n";
+        //     std::cout << buffer << "\n";
+        // }
+        MPI_Bcast(buffer.data() + margin * recvcounts[i], HA->get_target_partition()->get_size_of_partition(i) * recvcounts[i], wrapper_mpi<T>::mpi_type(), i, HA->get_comm());
         if (HA->get_symmetry_type() == 'H') {
             conj_if_complex(buffer.data(), buffer.size());
         }
-        HA->mvprod_subrhs(buffer.data(), AZ.data(), recvcounts[i], HA->get_target_cluster()->get_masteroffset(i).first, HA->get_target_cluster()->get_masteroffset(i).second, margin);
+        HA->internal_sub_matrix_product_to_local(buffer.data(), AZ.data(), recvcounts[i], HA->get_target_partition()->get_offset_of_partition(i), HA->get_target_partition()->get_size_of_partition(i));
+
+        // if (rankWorld == 0) {
+        //     std::cout << "AZ " << i << "\n";
+        //     std::cout << AZ << "\n";
+        // }
 
         // Removed because complex scalar product afterward
         // if (HA->get_symmetry_type() == 'H') {

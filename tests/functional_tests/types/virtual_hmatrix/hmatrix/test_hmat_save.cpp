@@ -36,11 +36,6 @@ int main(int argc, char *argv[]) {
     double eta     = 0.1;
 
     for (int idist = 0; idist < ndistance; idist++) {
-        // cout << "Distance between the clusters: " << distance[idist] << endl;
-
-        srand(1);
-        // we set a constant seed for rand because we want always the same result if we run the check many times
-        // (two different initializations with the same seed will generate the same succession of results in the subsequent calls to rand)
 
         int nr = 500;
         int nc = 400;
@@ -50,9 +45,6 @@ int main(int argc, char *argv[]) {
         vector<double> p1(3 * nr);
         vector<double> p2(3 * nc);
 
-        srand(1);
-        // we set a constant seed for rand because we want always the same result if we run the check many times
-        // (two different initializations with the same seed will generate the same succession of results in the subsequent calls to rand)
         create_disk(3, z1, nr, p1.data());
         create_disk(3, z2, nc, p2.data());
 
@@ -66,7 +58,7 @@ int main(int argc, char *argv[]) {
         HA.set_compression(compressor);
         HA.build(A, p1.data(), p2.data());
         HA.print_infos();
-
+        auto test = HA.get_output();
         HA.save_plot("plot_" + NbrToStr(idist));
     }
 

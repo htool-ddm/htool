@@ -39,11 +39,6 @@ int main(int argc, char *argv[]) {
     double eta     = 0.1;
 
     for (int idist = 0; idist < ndistance; idist++) {
-        // cout << "Distance between the clusters: " << distance[idist] << endl;
-
-        srand(1);
-        // we set a constant seed for rand because we want always the same result if we run the check many times
-        // (two different initializations with the same seed will generate the same succession of results in the subsequent calls to rand)
 
         int nr = 2000;
         int nc = 1000;
@@ -53,9 +48,6 @@ int main(int argc, char *argv[]) {
         vector<double> p1(3 * nr);
         vector<double> p2(3 * nc);
 
-        srand(1);
-        // we set a constant seed for rand because we want always the same result if we run the check many times
-        // (two different initializations with the same seed will generate the same succession of results in the subsequent calls to rand)
         create_disk(3, z1, nr, p1.data());
         create_disk(3, z2, nc, p2.data());
 
@@ -101,15 +93,15 @@ int main(int argc, char *argv[]) {
         // without permutation
         vector<double> p1_perm(3 * nr);
         vector<double> p2_perm(3 * nc);
-        for (int i = 0; i < t->get_perm().size(); i++) {
-            p1_perm[i * 3 + 0] = p1[t->get_perm(i) * 3 + 0];
-            p1_perm[i * 3 + 1] = p1[t->get_perm(i) * 3 + 1];
-            p1_perm[i * 3 + 2] = p1[t->get_perm(i) * 3 + 2];
+        for (int i = 0; i < t->get_global_perm().size(); i++) {
+            p1_perm[i * 3 + 0] = p1[t->get_global_perm(i) * 3 + 0];
+            p1_perm[i * 3 + 1] = p1[t->get_global_perm(i) * 3 + 1];
+            p1_perm[i * 3 + 2] = p1[t->get_global_perm(i) * 3 + 2];
         }
-        for (int i = 0; i < s->get_perm().size(); i++) {
-            p2_perm[i * 3 + 0] = p2[s->get_perm(i) * 3 + 0];
-            p2_perm[i * 3 + 1] = p2[s->get_perm(i) * 3 + 1];
-            p2_perm[i * 3 + 2] = p2[s->get_perm(i) * 3 + 2];
+        for (int i = 0; i < s->get_global_perm().size(); i++) {
+            p2_perm[i * 3 + 0] = p2[s->get_global_perm(i) * 3 + 0];
+            p2_perm[i * 3 + 1] = p2[s->get_global_perm(i) * 3 + 1];
+            p2_perm[i * 3 + 2] = p2[s->get_global_perm(i) * 3 + 2];
         }
 
         GeneratorTestDouble A_perm(3, nr, nc, p1_perm, p2_perm);

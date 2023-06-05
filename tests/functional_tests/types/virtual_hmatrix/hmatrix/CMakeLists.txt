@@ -52,7 +52,8 @@ add_test(NAME Test_hmat_to_dense_perm_4 COMMAND ${MPIEXEC} ${MPIEXEC_NUMPROC_FLA
 add_executable(Test_hmat_save test_hmat_save.cpp)
 target_link_libraries(Test_hmat_save htool)
 add_dependencies(build-tests-virtual-hmatrix-hmatrix Test_hmat_save)
-add_test(NAME Test_hmat_save COMMAND ${MPIEXEC} ${MPIEXEC_NUMPROC_FLAG} 1 ${MPIEXEC_PREFLAGS} ${CMAKE_CURRENT_BINARY_DIR}/Test_hmat_save)
+add_test(NAME Test_hmat_save_1 COMMAND ${MPIEXEC} ${MPIEXEC_NUMPROC_FLAG} 1 ${MPIEXEC_PREFLAGS} ${CMAKE_CURRENT_BINARY_DIR}/Test_hmat_save)
+add_test(NAME Test_hmat_save_2 COMMAND ${MPIEXEC} ${MPIEXEC_NUMPROC_FLAG} 2 ${MPIEXEC_PREFLAGS} ${CMAKE_CURRENT_BINARY_DIR}/Test_hmat_save)
 
 #=== local get
 add_executable(Test_hmat_local_get test_hmat_local_get.cpp)

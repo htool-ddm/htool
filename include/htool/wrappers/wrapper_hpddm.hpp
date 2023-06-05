@@ -1,6 +1,5 @@
 #ifndef HTOOL_WRAPPER_HPDDM_HPP
 #define HTOOL_WRAPPER_HPDDM_HPP
-
 #define HPDDM_NUMBERING 'F'
 #define HPDDM_DENSE 1
 #define HPDDM_FETI 0
@@ -8,28 +7,50 @@
 #define LAPACKSUB
 #define DLAPACK
 #define EIGENSOLVER 1
-// #include "../solvers/proto_ddm.hpp"
-#include "../types/matrix.hpp"
-#include "../types/virtual_hmatrix.hpp"
+
+#if defined(__clang__)
+#    pragma clang diagnostic push
+#    pragma clang diagnostic ignored "-Wsign-compare"
+#    pragma clang diagnostic ignored "-Wshadow"
+#    pragma clang diagnostic ignored "-Wdouble-promotion"
+#    pragma clang diagnostic ignored "-Wunused-parameter"
+#    pragma clang diagnostic ignored "-Wnon-virtual-dtor"
+#elif defined(__GNUC__) || defined(__GNUG__)
+#    pragma GCC diagnostic push
+#    pragma GCC diagnostic ignored "-Wsign-compare"
+#    pragma GCC diagnostic ignored "-Wshadow"
+#    pragma GCC diagnostic ignored "-Wdouble-promotion"
+#    pragma GCC diagnostic ignored "-Wunused-parameter"
+#    pragma GCC diagnostic ignored "-Wnon-virtual-dtor"
+#endif
+
 #include <HPDDM.hpp>
+
+#if defined(__clang__)
+#    pragma clang diagnostic pop
+#elif defined(__GNUC__) || defined(__GNUG__)
+#    pragma GCC diagnostic pop
+#endif
+
+#include "../distributed_operator/distributed_operator.hpp"
 
 namespace htool {
 
-template <typename T>
+template <typename CoefficientPrecision>
 class DDM;
 
-template <typename T>
-class HPDDMDense final : public HpDense<T, 'G'> {
+template <typename CoefficientPrecision>
+class HPDDMDense final : public HpDense<CoefficientPrecision, 'G'> {
   protected:
-    const VirtualHMatrix<T> *const HA;
-    std::vector<T> *in_global, *buffer;
+    const DistributedOperator<CoefficientPrecision> *HA;
+    std::vector<CoefficientPrecision> *in_global, *buffer;
 
   public:
-    typedef HpDense<T, 'G'> super;
+    typedef HpDense<CoefficientPrecision, 'G'> super;
 
-    HPDDMDense(const VirtualHMatrix<T> *const A) : HA(A) {
-        in_global = new std::vector<T>;
-        buffer    = new std::vector<T>;
+    HPDDMDense(const DistributedOperator<CoefficientPrecision> *A) : HA(A) {
+        in_global = new std::vector<CoefficientPrecision>;
+        buffer    = new std::vector<CoefficientPrecision>;
     }
     ~HPDDMDense() {
         delete in_global;
@@ -38,8 +59,10 @@ class HPDDMDense final : public HpDense<T, 'G'> {
         buffer = nullptr;
     }
 
-    int GMV(const T *const in, T *const out, const int &mu = 1) const override {
-        int local_size = HA->get_local_size();
+    int GMV(const CoefficientPrecision *const in, CoefficientPrecision *const out, const int &mu = 1) const override {
+        int rankWorld;
+        MPI_Comm_rank(HA->get_comm(), &rankWorld);
+        int local_size = HA->get_target_partition()->get_size_of_partition(rankWorld);
 
         // Tranpose without overlap
         if (mu != 1) {
@@ -54,10 +77,10 @@ class HPDDMDense final : public HpDense<T, 'G'> {
         }
 
         // All gather
-        if (mu == 1) { // C'est moche
-            HA->mymvprod_local_to_local(in, out, mu, in_global->data());
+        if (mu == 1) {
+            HA->internal_vector_product_local_to_local(in, out, in_global->data());
         } else {
-            HA->mymvprod_local_to_local(buffer->data(), buffer->data() + local_size * mu, mu, in_global->data());
+            HA->internal_matrix_product_local_to_local(buffer->data(), buffer->data() + local_size * mu, mu, in_global->data());
         }
 
         // Tranpose
@@ -82,13 +105,13 @@ class HPDDMDense final : public HpDense<T, 'G'> {
         return 0;
     }
 
-    void scaledexchange(T *const out, const int &mu = 1) const {
+    void scaledexchange(CoefficientPrecision *const out, const int &mu = 1) const {
         this->template exchange<true>(out, mu);
     }
 
-    void setType(typename super::Prcndtnr type) { this->_type = type; };
+    void setType(typename super::Prcndtnr type) { this->type_ = type; }
 
-    friend class DDM<T>;
+    friend class DDM<CoefficientPrecision>;
 };
 
 } // namespace htool

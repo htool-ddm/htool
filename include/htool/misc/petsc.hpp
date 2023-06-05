@@ -14,10 +14,10 @@
 
 #include "../clustering/bounding_box_1.hpp"
 #include "../clustering/pca.hpp"
-#include "../lrmat/SVD.hpp"
-#include "../lrmat/fullACA.hpp"
-#include "../lrmat/lrmat.hpp"
-#include "../lrmat/sympartialACA.hpp"
+#include "../hmatrix/lrmat/SVD.hpp"
+#include "../hmatrix/lrmat/fullACA.hpp"
+#include "../hmatrix/lrmat/lrmat.hpp"
+#include "../hmatrix/lrmat/sympartialACA.hpp"
 #include "../types/hmatrix.hpp"
 
 #if defined(__clang__)

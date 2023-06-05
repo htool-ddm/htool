@@ -16,13 +16,13 @@ else()
         LANGUAGES CXX)
 endif()
 
-# To force c++11
+# To force c++14
 if(${CMAKE_VERSION} VERSION_LESS 3.1)
-    add_compile_options(-std=c++11)
+    add_compile_options(-std=c++14)
 elseif(${CMAKE_VERSION} VERSION_LESS 3.6.3 AND ${CMAKE_CXX_COMPILER_ID} STREQUAL "Intel")
-    add_compile_options(-std=c++11)
+    add_compile_options(-std=c++14)
 else()
-    set(CMAKE_CXX_STANDARD 11)
+    set(CMAKE_CXX_STANDARD 14)
     set(CMAKE_CXX_STANDARD_REQUIRED ON)
 endif()
 
@@ -181,21 +181,29 @@ if((CMAKE_PROJECT_NAME STREQUAL PROJECT_NAME) AND BUILD_TESTING)
         target_compile_options(htool INTERFACE -fprofile-arcs -ftest-coverage)
         target_link_libraries(htool INTERFACE gcov)
     endif()
+    target_compile_options(
+        htool
+        INTERFACE -Wall
+                  -Wextra
+                  -Werror
+                  -Wshadow
+                  -Wnon-virtual-dtor
+                  -pedantic
+                  #   -Wold-style-cast
+                  -Wcast-align
+                  -Wunused
+                  -Woverloaded-virtual
+                  #   -Wconversion
+                  #   -Wsign-conversion
+                  -Wdouble-promotion
+                  -Wno-sign-compare
+                  -Wextra-semi
+                  #   -Wzero-as-null-pointer-constant
+                  -Wundef)
     if(CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
-        message("test")
-        target_compile_options(
-            htool
-            INTERFACE -Wall
-                      -Wextra
-                      -Wpedantic
-                      -Wno-sign-compare
-                      -Wextra-semi
-                      -Wextra-semi-stmt
-                      -Wnon-virtual-dtor
-                      -Wzero-as-null-pointer-constant
-                      -Wundef)
+        target_compile_options(htool INTERFACE -Wimplicit-fallthrough -Wextra-semi-stmt)
     elseif(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
-        target_compile_options(htool INTERFACE -Wall -Wextra -Wpedantic -Wno-sign-compare -Wundef)
+        target_compile_options(htool INTERFACE -Wmisleading-indentation -Wduplicated-cond -Wduplicated-branches -Wlogical-op -Wnull-dereference -Wuseless-cast)
     endif()
     add_custom_target(build-tests)
     add_subdirectory(tests EXCLUDE_FROM_ALL)
