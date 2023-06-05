@@ -2,6 +2,7 @@
 #define HTOOL_CLUSTERING_CLUSTER_NODE_HPP
 
 #include "../basic_types/tree.hpp"
+#include "../misc/logger.hpp"
 #include "../misc/user.hpp"
 #include "cluster_tree_data.hpp"
 #include <functional>
@@ -82,7 +83,8 @@ bool is_cluster_on_partition(const Cluster<CoordinatesPrecision> &cluster) {
 template <typename CoordinatesPrecision>
 Cluster<CoordinatesPrecision> clone_cluster_tree_from_partition(const Cluster<CoordinatesPrecision> &cluster, int index) {
     if (!cluster.is_permutation_local()) {
-        throw std::logic_error("[Htool error] Permutation is not local to partition, cluster on partition cannot be cloned."); // LCOV_EXCL_LINE
+        htool::Logger::get_instance().log(Logger::LogLevel::ERROR, "Permutation is not local to partition, cluster on partition cannot be cloned"); // LCOV_EXCL_LINE
+        // throw std::logic_error("[Htool error] Permutation is not local to partition, cluster on partition cannot be cloned.");                           // LCOV_EXCL_LINE
     }
     const Cluster<CoordinatesPrecision> &cluster_on_partition = *cluster.get_clusters_on_partition()[index];
 
@@ -138,7 +140,8 @@ Cluster<CoordinatesPrecision> clone_cluster_tree_from_partition(const Cluster<Co
 template <typename CoefficientPrecision, typename CoordinatesPrecision = CoefficientPrecision>
 void root_cluster_to_global(const Cluster<CoordinatesPrecision> &root_cluster, const CoefficientPrecision *const in, CoefficientPrecision *const out) {
     if (!root_cluster.is_root()) {
-        throw std::logic_error("[Htool error] Permutation needs root cluster."); // LCOV_EXCL_LINE
+        htool::Logger::get_instance().log(Logger::LogLevel::ERROR, "Permutation needs root cluster"); // LCOV_EXCL_LINE
+        // throw std::logic_error("[Htool error] Permutation needs root cluster."); // LCOV_EXCL_LINE
     }
     const auto &permutation = root_cluster.get_permutation();
     for (int i = 0; i < root_cluster.get_size(); i++) {
@@ -149,7 +152,8 @@ void root_cluster_to_global(const Cluster<CoordinatesPrecision> &root_cluster, c
 template <typename CoefficientPrecision, typename CoordinatesPrecision = CoefficientPrecision>
 void global_to_root_cluster(const Cluster<CoordinatesPrecision> &root_cluster, const CoefficientPrecision *const in, CoefficientPrecision *const out) {
     if (!root_cluster.is_root()) {
-        throw std::logic_error("[Htool error] Permutation needs root cluster."); // LCOV_EXCL_LINE
+        htool::Logger::get_instance().log(Logger::LogLevel::ERROR, "Permutation needs root cluster"); // LCOV_EXCL_LINE
+        // throw std::logic_error("[Htool error] Permutation needs root cluster."); // LCOV_EXCL_LINE
     }
     const auto &permutation = root_cluster.get_permutation();
     for (int i = 0; i < root_cluster.get_size(); i++) {
@@ -161,7 +165,8 @@ void global_to_root_cluster(const Cluster<CoordinatesPrecision> &root_cluster, c
 template <typename CoefficientPrecision, typename CoordinatesPrecision = CoefficientPrecision>
 void local_cluster_to_local(const Cluster<CoordinatesPrecision> &cluster, int index, const CoefficientPrecision *in, CoefficientPrecision *out) {
     if (!cluster.is_permutation_local()) {
-        throw std::logic_error("[Htool error] Permutation is not local to partition, local_cluster_to_local cannot be used"); // LCOV_EXCL_LINE
+        htool::Logger::get_instance().log(Logger::LogLevel::ERROR, "Permutation is not local to partition, local_cluster_to_local cannot be used"); // LCOV_EXCL_LINE
+        // throw std::logic_error("[Htool error] Permutation is not local to partition, local_cluster_to_local cannot be used"); // LCOV_EXCL_LINE
     }
     const auto &permutation                                   = cluster.get_permutation();
     const Cluster<CoordinatesPrecision> *cluster_on_partition = cluster.get_clusters_on_partition()[index];
@@ -173,7 +178,8 @@ void local_cluster_to_local(const Cluster<CoordinatesPrecision> &cluster, int in
 template <typename CoefficientPrecision, typename CoordinatesPrecision = CoefficientPrecision>
 void local_to_local_cluster(const Cluster<CoordinatesPrecision> &cluster, int index, const CoefficientPrecision *in, CoefficientPrecision *out) {
     if (!cluster.is_permutation_local()) {
-        throw std::logic_error("[Htool error] Permutation is not local to partition, local_cluster_to_local cannot be used"); // LCOV_EXCL_LINE
+        htool::Logger::get_instance().log(Logger::LogLevel::ERROR, "Permutation is not local to partition, local_cluster_to_local cannot be used"); // LCOV_EXCL_LINE
+        // throw std::logic_error("[Htool error] Permutation is not local to partition, local_cluster_to_local cannot be used"); // LCOV_EXCL_LINE
     }
 
     const auto &permutation                                   = cluster.get_permutation();

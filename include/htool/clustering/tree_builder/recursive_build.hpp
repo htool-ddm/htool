@@ -2,6 +2,7 @@
 #define HTOOL_CLUSTERING_TREE_BUILDER_HPP
 
 #include "../../misc/evp.hpp"
+#include "../../misc/logger.hpp"
 #include "../cluster_node.hpp"
 
 #include <stack>
@@ -169,7 +170,7 @@ Cluster<T> ClusterTreeBuilder<T, DirectionComputationStrategy, SplittingStrategy
                 cluster_stack.push(child);
             }
         } else if (current_cluster->get_rank() < 0) {
-            throw std::logic_error("[Htool error] Cluster tree reached maximal depth, but not enough children to define a partition."); // LCOV_EXCL_LINE
+            htool::Logger::get_instance().log(Logger::LogLevel::ERROR, "Cluster tree reached maximal depth, but not enough children to define a partition"); // LCOV_EXCL_LINE
         } else {
             current_cluster->set_maximal_depth(std::max(current_cluster->get_maximal_depth(), current_cluster->get_depth()));
             current_cluster->set_minimal_depth(std::min(current_cluster->get_minimal_depth(), current_cluster->get_depth()));

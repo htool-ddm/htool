@@ -3,6 +3,7 @@
 
 #include "../local_operators/local_hmatrix.hpp"
 #include "../local_operators/virtual_local_operator.hpp"
+#include "../misc/logger.hpp"
 #include "../wrappers/wrapper_mpi.hpp"
 #include "interfaces/partition.hpp"
 #include <map>
@@ -336,7 +337,8 @@ void DistributedOperator<CoefficientPrecision>::vector_product_local_to_local(co
     CoefficientPrecision *buffer_ptr = (work == nullptr) ? buffer.data() : work;
 
     if ((!(m_source_partition->is_renumbering_local()) || !(m_target_partition->is_renumbering_local())) && m_use_permutation) {
-        throw std::logic_error("[Htool error] Permutation is not local, vector_product_local_to_local cannot be used"); // LCOV_EXCL_LINE
+        htool::Logger::get_instance().log(Logger::LogLevel::ERROR, "Permutation is not local, vector_product_local_to_local cannot be used"); // LCOV_EXCL_LINE
+        // throw std::logic_error("[Htool error] Permutation is not local, vector_product_local_to_local cannot be used"); // LCOV_EXCL_LINE
     }
 
     std::vector<CoefficientPrecision> in_perm(m_use_permutation ? local_size_source : 0);
@@ -369,7 +371,8 @@ void DistributedOperator<CoefficientPrecision>::matrix_product_local_to_local(co
     int local_size_source = m_source_partition->get_size_of_partition(rankWorld);
 
     if ((!(m_source_partition->is_renumbering_local()) || !(m_target_partition->is_renumbering_local())) && m_use_permutation) {
-        throw std::logic_error("[Htool error] Permutation is not local, mvprod_local_to_local cannot be used"); // LCOV_EXCL_LINE
+        htool::Logger::get_instance().log(Logger::LogLevel::ERROR, "Permutation is not local, mvprod_local_to_local cannot be used"); // LCOV_EXCL_LINE
+        // throw std::logic_error("[Htool error] Permutation is not local, mvprod_local_to_local cannot be used"); // LCOV_EXCL_LINE
     }
 
     std::vector<CoefficientPrecision> input_buffer(local_size_source * mu);
@@ -443,7 +446,8 @@ void DistributedOperator<CoefficientPrecision>::vector_product_transp_local_to_l
     }
 
     if ((!(m_source_partition->is_renumbering_local()) || !(m_target_partition->is_renumbering_local())) && m_use_permutation) {
-        throw std::logic_error("[Htool error] Permutation is not local, mvprod_local_to_local cannot be used"); // LCOV_EXCL_LINE
+        htool::Logger::get_instance().log(Logger::LogLevel::ERROR, "Permutation is not local, mvprod_local_to_local cannot be used"); // LCOV_EXCL_LINE
+        // throw std::logic_error("[Htool error] Permutation is not local, mvprod_local_to_local cannot be used"); // LCOV_EXCL_LINE
     }
 
     std::vector<CoefficientPrecision> in_perm(m_use_permutation ? local_size : 0);
@@ -496,7 +500,8 @@ void DistributedOperator<CoefficientPrecision>::matrix_product_transp_local_to_l
     }
 
     if ((!(m_source_partition->is_renumbering_local()) || !(m_target_partition->is_renumbering_local())) && m_use_permutation) {
-        throw std::logic_error("[Htool error] Permutation is not local, mvprod_local_to_local cannot be used"); // LCOV_EXCL_LINE
+        htool::Logger::get_instance().log(Logger::LogLevel::ERROR, "Permutation is not local, mvprod_local_to_local cannot be used"); // LCOV_EXCL_LINE
+        // throw std::logic_error("[Htool error] Permutation is not local, mvprod_local_to_local cannot be used"); // LCOV_EXCL_LINE
     }
     std::vector<CoefficientPrecision> in_perm(local_size * mu);
     std::vector<CoefficientPrecision> out_perm(local_size_source * mu);

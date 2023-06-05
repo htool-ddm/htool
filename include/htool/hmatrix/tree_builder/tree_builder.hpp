@@ -1,6 +1,7 @@
 #ifndef HTOOL_HMATRIX_TREE_BUILDER_HPP
 #define HTOOL_HMATRIX_TREE_BUILDER_HPP
 
+#include "../../misc/logger.hpp"
 #include "../hmatrix.hpp"
 #include "../lrmat/sympartialACA.hpp"
 #include <chrono>
@@ -99,7 +100,8 @@ class HMatrixTreeBuilder {
             error_message.push_back(m_symmetry_type);
             error_message += " and m_UPLO_type=";
             error_message.push_back(m_UPLO_type);
-            throw std::invalid_argument(error_message); // LCOV_EXCL_LINE
+            htool::Logger::get_instance().log(Logger::LogLevel::ERROR, error_message); // LCOV_EXCL_LINE
+            // throw std::invalid_argument(error_message); // LCOV_EXCL_LINE
         }
     }
 
@@ -117,7 +119,8 @@ class HMatrixTreeBuilder {
     void set_admissibility_condition(std::shared_ptr<VirtualAdmissibilityCondition<CoordinatePrecision>> ptr) { m_admissibility_condition = ptr; }
     void set_target_partition_number(int target_partition_number) {
         if (target_partition_number >= m_target_root_cluster->get_clusters_on_partition().size()) {
-            throw std::logic_error("[Htool error] Target partition number cannot exceed number of partitions.");
+            htool::Logger::get_instance().log(Logger::LogLevel::ERROR, "Target partition number cannot exceed number of partitions"); // LCOV_EXCL_LINE
+            // throw std::logic_error("[Htool error] Target partition number cannot exceed number of partitions.");
         }
         m_target_partition_number = target_partition_number;
     }

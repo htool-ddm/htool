@@ -3,6 +3,7 @@
 
 #include "../basic_types/matrix.hpp"
 #include "../distributed_operator/distributed_operator.hpp"
+#include "../misc/logger.hpp"
 #include "../misc/misc.hpp"
 #include "../wrappers/wrapper_hpddm.hpp"
 #include "../wrappers/wrapper_mpi.hpp"
@@ -50,10 +51,12 @@ class DDM {
         if (distributed_operator->get_symmetry_type() == 'S' || (distributed_operator->get_symmetry_type() == 'H' && is_complex<CoefficientPrecision>())) {
             sym = true;
             if (distributed_operator->get_storage_type() == 'U') {
-                throw std::invalid_argument("[Htool error] HPDDM takes lower symmetric/hermitian matrices or regular matrices"); // LCOV_EXCL_LINE
+                htool::Logger::get_instance().log(Logger::LogLevel::ERROR, "HPDDM takes lower symmetric/hermitian matrices or regular matrices"); // LCOV_EXCL_LINE
+                // throw std::invalid_argument("[Htool error] HPDDM takes lower symmetric/hermitian matrices or regular matrices"); // LCOV_EXCL_LINE
             }
             if (distributed_operator->get_symmetry_type() == 'S' && is_complex<CoefficientPrecision>()) {
-                std::cout << "[Htool warning] A symmetric matrix with UPLO='L' has been given to DDM solver. It will be considered hermitian by the solver." << std::endl;
+                htool::Logger::get_instance().log(Logger::LogLevel::WARNING, "A symmetric matrix with UPLO='L' has been given to DDM solver. It will be considered hermitian by the solver"); // LCOV_EXCL_LINE
+                // std::cout << "[Htool warning] A symmetric matrix with UPLO='L' has been given to DDM solver. It will be considered hermitian by the solver." << std::endl;
             }
         }
 
@@ -161,10 +164,12 @@ class DDM {
             sym = true;
 
             if (distributed_operator->get_storage_type() == 'U') {
-                throw std::invalid_argument("[Htool error] HPDDM takes lower symmetric/hermitian matrices or regular matrices"); // LCOV_EXCL_LINE
+                htool::Logger::get_instance().log(Logger::LogLevel::ERROR, "HPDDM takes lower symmetric/hermitian matrices or regular matrices"); // LCOV_EXCL_LINE
+                // throw std::invalid_argument("[Htool error] HPDDM takes lower symmetric/hermitian matrices or regular matrices");                  // LCOV_EXCL_LINE
             }
             if (distributed_operator->get_symmetry_type() == 'S' && is_complex<CoefficientPrecision>()) {
-                std::cout << "[Htool warning] A symmetric matrix with UPLO='L' has been given to DDM solver. It will be considered hermitian by the solver." << std::endl;
+                htool::Logger::get_instance().log(Logger::LogLevel::WARNING, "A symmetric matrix with UPLO='L' has been given to DDM solver. It will be considered hermitian by the solver"); // LCOV_EXCL_LINE
+                // std::cout << "[Htool warning] A symmetric matrix with UPLO='L' has been given to DDM solver. It will be considered hermitian by the solver." << std::endl;
             }
         }
 
@@ -487,7 +492,8 @@ class DDM {
     void solve(const CoefficientPrecision *const rhs, CoefficientPrecision *const x, const int &mu = 1) {
         // Check facto
         if (!one_level && two_level) {
-            throw std::logic_error("[Htool error] Factorisation for one-level missing"); // LCOV_EXCL_LINE
+            htool::Logger::get_instance().log(Logger::LogLevel::ERROR, "Factorisation for one-level missing"); // LCOV_EXCL_LINE
+            // throw std::logic_error("[Htool error] Factorisation for one-level missing"); // LCOV_EXCL_LINE
         }
 
         // Eventually change one-level type
