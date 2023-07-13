@@ -28,10 +28,9 @@ bool test_lrmat_product(int nr, int nc, int mu, char op, htool::underlying_type<
         create_disk(3, 0., nr, xt.data());
         create_disk(3, distance[idist], nc, xs.data());
 
-        ClusterTreeBuilder<htool::underlying_type<T>, ComputeLargestExtent<htool::underlying_type<T>>, RegularSplitting<htool::underlying_type<T>>> target_recursive_build_strategy(nr, 3, xt.data(), 2, 2);
-        ClusterTreeBuilder<htool::underlying_type<T>, ComputeLargestExtent<htool::underlying_type<T>>, RegularSplitting<htool::underlying_type<T>>> source_recursive_build_strategy(nc, 3, xs.data(), 2, 2);
-        std::shared_ptr<Cluster<htool::underlying_type<T>>> target_root_cluster = std::make_shared<Cluster<htool::underlying_type<T>>>(target_recursive_build_strategy.create_cluster_tree());
-        std::shared_ptr<Cluster<htool::underlying_type<T>>> source_root_cluster = std::make_shared<Cluster<htool::underlying_type<T>>>(source_recursive_build_strategy.create_cluster_tree());
+        ClusterTreeBuilder<htool::underlying_type<T>> recursive_build_strategy;
+        std::shared_ptr<Cluster<htool::underlying_type<T>>> target_root_cluster = std::make_shared<Cluster<htool::underlying_type<T>>>(recursive_build_strategy.create_cluster_tree(nr, 3, xt.data(), 2, 2));
+        std::shared_ptr<Cluster<htool::underlying_type<T>>> source_root_cluster = std::make_shared<Cluster<htool::underlying_type<T>>>(recursive_build_strategy.create_cluster_tree(nc, 3, xs.data(), 2, 2));
 
         GeneratorTestType A(3, nr, nc, xt, xs, target_root_cluster, source_root_cluster);
 

@@ -35,11 +35,10 @@ int main(int argc, char *argv[]) {
         create_disk(3, 0., nr, xt.data());
         create_disk(3, distance[idist], nc, xs.data());
 
-        ClusterTreeBuilder<double, ComputeLargestExtent<double>, RegularSplitting<double>> target_recursive_build_strategy(nr, 3, xt.data(), 2, 2);
-        ClusterTreeBuilder<double, ComputeLargestExtent<double>, RegularSplitting<double>> source_recursive_build_strategy(nc, 3, xs.data(), 2, 2);
+        ClusterTreeBuilder<double> recursive_build_strategy;
 
-        std::shared_ptr<Cluster<double>> target_cluster = std::make_shared<Cluster<double>>(target_recursive_build_strategy.create_cluster_tree());
-        std::shared_ptr<Cluster<double>> source_cluster = std::make_shared<Cluster<double>>(source_recursive_build_strategy.create_cluster_tree());
+        std::shared_ptr<Cluster<double>> target_cluster = std::make_shared<Cluster<double>>(recursive_build_strategy.create_cluster_tree(nr, 3, xt.data(), 2, 2));
+        std::shared_ptr<Cluster<double>> source_cluster = std::make_shared<Cluster<double>>(recursive_build_strategy.create_cluster_tree(nc, 3, xt.data(), 2, 2));
 
         GeneratorTestDouble A(3, nr, nc, xt, xs, target_cluster, source_cluster);
 

@@ -8,9 +8,19 @@
 namespace htool {
 
 template <typename T>
-class ComputeLargestExtent {
+class VirtualDirectionComputationStrategy {
   public:
-    std::vector<T> compute_direction(const Cluster<T> *cluster, const std::vector<int> &permutation, int spatial_dimension, const T *const coordinates, const T *const, const T *const weights) {
+    virtual std::vector<T> compute_direction(const Cluster<T> *cluster, const std::vector<int> &permutation, int spatial_dimension, const T *const coordinates, const T *const, const T *const weights) = 0;
+
+    virtual ~VirtualDirectionComputationStrategy() {}
+};
+
+template <typename T>
+class ComputeLargestExtent final : public VirtualDirectionComputationStrategy<T> {
+  public:
+    using VirtualDirectionComputationStrategy<T>::VirtualDirectionComputationStrategy;
+
+    std::vector<T> compute_direction(const Cluster<T> *cluster, const std::vector<int> &permutation, int spatial_dimension, const T *const coordinates, const T *const, const T *const weights) override {
         if (spatial_dimension != 2 && spatial_dimension != 3) {
             htool::Logger::get_instance().log(Logger::LogLevel::ERROR, "clustering not define for spatial dimension !=2 and !=3"); // LCOV_EXCL_LINE
             // throw std::logic_error("[Htool error] clustering not define for spatial dimension !=2 and !=3"); // LCOV_EXCL_LINE
@@ -41,9 +51,11 @@ class ComputeLargestExtent {
 };
 
 template <typename T>
-class ComputeBoundingBox {
+class ComputeBoundingBox final : public VirtualDirectionComputationStrategy<T> {
   public:
-    std::vector<T> compute_direction(const Cluster<T> *cluster, const std::vector<int> &permutation, int spatial_dimension, const T *const coordinates, const T *const, const T *const) {
+    using VirtualDirectionComputationStrategy<T>::VirtualDirectionComputationStrategy;
+
+    std::vector<T> compute_direction(const Cluster<T> *cluster, const std::vector<int> &permutation, int spatial_dimension, const T *const coordinates, const T *const, const T *const) override {
 
         // min max for each axis
         std::vector<T> min_point(spatial_dimension, std::numeric_limits<T>::max());

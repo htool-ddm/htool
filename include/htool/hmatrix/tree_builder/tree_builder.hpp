@@ -190,7 +190,7 @@ bool HMatrixTreeBuilder<CoefficientPrecision, CoordinatePrecision>::build_block_
     bool is_admissible = m_admissibility_condition->ComputeAdmissibility(target_cluster, source_cluster, m_eta);
 
     ///////////////////// Diagonal blocks
-    // std::cout << target_cluster.get_offset() << " " << target_cluster.get_size() << " " << source_cluster.get_offset() << " " << source_cluster.get_size() << " " << is_block_diagonal(target_cluster, source_cluster) << "\n";
+    // std::cout << target_cluster.get_offset() << " " << target_cluster.get_size() << " " << source_cluster.get_offset() << " " << source_cluster.get_size() << " " << is_block_diagonal(*current_hmatrix) << " " << is_target_cluster_in_target_partition(target_cluster) << " " << target_cluster.get_rank() << "\n";
     if (is_block_diagonal(*current_hmatrix)) {
         current_hmatrix->set_diagonal_hmatrix(current_hmatrix);
     }
@@ -213,7 +213,7 @@ bool HMatrixTreeBuilder<CoefficientPrecision, CoordinatePrecision>::build_block_
             std::vector<bool> Blocks_not_pushed{};
             std::vector<HMatrixType *> child_blocks{};
             for (const auto &target_child : target_children) {
-                if (is_target_cluster_in_target_partition(*target_child) && !is_removed_by_symmetry(*target_child, source_cluster)) {
+                if ((is_target_cluster_in_target_partition(*target_child) || target_cluster.get_rank() < 0) && !is_removed_by_symmetry(*target_child, source_cluster)) {
                     // child_blocks.emplace_back(new HMatrixType(target_child, source_cluster, current_hmatrix->m_depth + 1));
                     child_blocks.emplace_back(current_hmatrix->add_child(target_child.get(), &source_cluster));
                     set_hmatrix_symmetry(*child_blocks.back());
@@ -281,7 +281,7 @@ bool HMatrixTreeBuilder<CoefficientPrecision, CoordinatePrecision>::build_block_
                 std::vector<bool> Blocks_not_pushed{};
                 std::vector<HMatrixType *> child_blocks{};
                 for (const auto &target_child : target_children) {
-                    if (is_target_cluster_in_target_partition(*target_child) && !is_removed_by_symmetry(*target_child, source_cluster)) {
+                    if ((is_target_cluster_in_target_partition(*target_child) || target_cluster.get_rank() < 0) && !is_removed_by_symmetry(*target_child, source_cluster)) {
                         child_blocks.emplace_back(current_hmatrix->add_child(target_child.get(), &source_cluster));
                         set_hmatrix_symmetry(*child_blocks.back());
                         Blocks_not_pushed.push_back(build_block_tree(child_blocks.back()));
@@ -342,7 +342,7 @@ bool HMatrixTreeBuilder<CoefficientPrecision, CoordinatePrecision>::build_block_
                 std::vector<HMatrixType *> child_blocks{};
                 for (const auto &target_child : target_children) {
                     for (const auto &source_child : source_children) {
-                        if (is_target_cluster_in_target_partition(*target_child) && !is_removed_by_symmetry(*target_child, *source_child)) {
+                        if ((is_target_cluster_in_target_partition(*target_child) || target_cluster.get_rank() < 0) && !is_removed_by_symmetry(*target_child, *source_child)) {
                             child_blocks.emplace_back(current_hmatrix->add_child(target_child.get(), source_child.get()));
                             set_hmatrix_symmetry(*child_blocks.back());
                             Blocks_not_pushed.push_back(build_block_tree(child_blocks.back()));

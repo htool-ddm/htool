@@ -38,12 +38,14 @@ bool test_cluster(int size, bool use_given_partition) {
             cout << "Number of sons : " << nb_sons << endl;
         }
 
-        ClusterTreeBuilder<T, DirectionComputetationStrategy, SplittingStrategy> recursive_build_strategy(size, dim, coordinates.data(), nb_sons, sizeWorld);
+        ClusterTreeBuilder<T> recursive_build_strategy;
+        recursive_build_strategy.set_direction_computation_strategy(std::make_shared<DirectionComputetationStrategy>());
+        recursive_build_strategy.set_splitting_strategy(std::make_shared<SplittingStrategy>());
         if (use_given_partition) {
             recursive_build_strategy.set_partition(partition);
         }
         recursive_build_strategy.set_minclustersize(1);
-        Cluster<T> root_cluster = recursive_build_strategy.create_cluster_tree();
+        Cluster<T> root_cluster = recursive_build_strategy.create_cluster_tree(size, dim, coordinates.data(), nb_sons, sizeWorld);
         is_error                = is_error || !(root_cluster.is_root());
 
         if (rankWorld == 0)

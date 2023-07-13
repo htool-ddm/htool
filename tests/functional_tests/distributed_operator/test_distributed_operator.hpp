@@ -51,10 +51,10 @@ bool test_distributed_operator(int nr, int nc, int mu, bool use_permutation, cha
     size_numbering = nc / sizeWorld;
     count_size     = 0;
 
-    ClusterTreeBuilder<htool::underlying_type<T>, ComputeLargestExtent<htool::underlying_type<T>>, GeometricSplitting<htool::underlying_type<T>>> target_recursive_build(nr, 3, p1.data(), 2, sizeWorld);
-    target_recursive_build.set_partition(sizeWorld, MasterOffset_target.data());
+    ClusterTreeBuilder<htool::underlying_type<T>> recursive_build;
+    recursive_build.set_partition(sizeWorld, MasterOffset_target.data());
     std::shared_ptr<const Cluster<htool::underlying_type<T>>> source_root_cluster;
-    std::shared_ptr<const Cluster<htool::underlying_type<T>>> target_root_cluster = make_shared<const Cluster<htool::underlying_type<T>>>(target_recursive_build.create_cluster_tree());
+    std::shared_ptr<const Cluster<htool::underlying_type<T>>> target_root_cluster = make_shared<const Cluster<htool::underlying_type<T>>>(recursive_build.create_cluster_tree(nr, 3, p1.data(), 2, sizeWorld));
 
     if (Symmetry == 'N') {
         double z2 = 1 + 0.1;
@@ -69,10 +69,9 @@ bool test_distributed_operator(int nr, int nc, int mu, bool use_permutation, cha
         MasterOffset_source.push_back(count_size);
         MasterOffset_source.push_back(nc - count_size);
 
-        ClusterTreeBuilder<htool::underlying_type<T>, ComputeLargestExtent<htool::underlying_type<T>>, GeometricSplitting<htool::underlying_type<T>>> source_recursive_build(nc, 3, p2.data(), 2, sizeWorld);
-        source_recursive_build.set_partition(sizeWorld, MasterOffset_source.data());
+        recursive_build.set_partition(sizeWorld, MasterOffset_source.data());
 
-        source_root_cluster = make_shared<const Cluster<htool::underlying_type<T>>>(source_recursive_build.create_cluster_tree());
+        source_root_cluster = make_shared<const Cluster<htool::underlying_type<T>>>(recursive_build.create_cluster_tree(nc, 3, p2.data(), 2, sizeWorld));
 
     } else {
 
@@ -168,9 +167,8 @@ bool test_distributed_operator(int nr, int nc, int mu, bool use_permutation, cha
         off_diagonal_partition.push_back(off_diagonal_nc_1 + nc_local);
         off_diagonal_partition.push_back(off_diagonal_nc_2);
 
-        ClusterTreeBuilder<htool::underlying_type<T>, ComputeLargestExtent<htool::underlying_type<T>>, GeometricSplitting<htool::underlying_type<T>>> off_diagonal_recursive_build(nc, 3, p2_permuted.data(), 2, 3);
-        off_diagonal_recursive_build.set_partition(2, off_diagonal_partition.data());
-        std::shared_ptr<const Cluster<htool::underlying_type<T>>> off_diagonal_cluster = make_shared<const Cluster<htool::underlying_type<T>>>(off_diagonal_recursive_build.create_cluster_tree());
+        recursive_build.set_partition(2, off_diagonal_partition.data());
+        std::shared_ptr<const Cluster<htool::underlying_type<T>>> off_diagonal_cluster = make_shared<const Cluster<htool::underlying_type<T>>>(recursive_build.create_cluster_tree(nc, 3, p2_permuted.data(), 2, 3));
 
         // Generators
         std::unique_ptr<GeneratorTestType> generator_off_diagonal;

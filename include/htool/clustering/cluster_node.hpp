@@ -35,7 +35,10 @@ class Cluster : public TreeNode<Cluster<CoordinatesPrecision>, ClusterTreeData<C
     // Child constructor
     Cluster(const Cluster &parent, CoordinatesPrecision radius, std::vector<CoordinatesPrecision> &center, int rank, int offset, int size, int counter, bool is_on_partition) : TreeNode<Cluster, ClusterTreeData<CoordinatesPrecision>>(parent), m_radius(radius), m_center(center), m_rank(rank), m_offset(offset), m_size(size), m_counter(counter) {
         if (is_on_partition) {
-            this->m_tree_data->m_clusters_on_partition.push_back(this);
+            if (rank + 1 > this->m_tree_data->m_clusters_on_partition.size()) {
+                this->m_tree_data->m_clusters_on_partition.resize(rank + 1, nullptr);
+            }
+            this->m_tree_data->m_clusters_on_partition[rank] = this;
         }
     }
 
@@ -83,7 +86,7 @@ bool is_cluster_on_partition(const Cluster<CoordinatesPrecision> &cluster) {
 template <typename CoordinatesPrecision>
 Cluster<CoordinatesPrecision> clone_cluster_tree_from_partition(const Cluster<CoordinatesPrecision> &cluster, int index) {
     if (!cluster.is_permutation_local()) {
-        htool::Logger::get_instance().log(Logger::LogLevel::ERROR, "Permutation is not local to partition, cluster on partition cannot be cloned"); // LCOV_EXCL_LINE
+        htool::Logger::get_instance().log(Logger::LogLevel::INFO, "Permutation is not local to partition, cloned cluster from partition cannot be used for local to/from local cluster permutation"); // LCOV_EXCL_LINE
         // throw std::logic_error("[Htool error] Permutation is not local to partition, cluster on partition cannot be cloned.");                           // LCOV_EXCL_LINE
     }
     const Cluster<CoordinatesPrecision> &cluster_on_partition = *cluster.get_clusters_on_partition()[index];
@@ -145,6 +148,8 @@ void root_cluster_to_global(const Cluster<CoordinatesPrecision> &root_cluster, c
     }
     const auto &permutation = root_cluster.get_permutation();
     for (int i = 0; i < root_cluster.get_size(); i++) {
+        // std::cout << i << " " << permutation[i + root_cluster.get_offset()] - root_cluster.get_offset() << " "
+        //   << "\n";
         out[permutation[i + root_cluster.get_offset()] - root_cluster.get_offset()] = in[i];
     }
 }
