@@ -18,7 +18,7 @@ class IObjectWriter {
 
 class StandartOutputWriter : public IObjectWriter {
   public:
-    void write(const std::string &message) override { std::cout << message; }
+    void write(const std::string &message) override { std::cout << message << "\n"; }
 };
 
 class Logger {

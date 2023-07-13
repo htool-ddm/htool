@@ -20,6 +20,8 @@ class LocalHMatrix : public LocalOperator<CoefficientPrecision, CoordinatePrecis
 
         HMatrixTreeBuilder<CoefficientPrecision, CoordinatePrecision> hmatrix_tree_builder(this->m_target_root_cluster, this->m_source_root_cluster, epsilon, eta, this->m_symmetry, this->m_UPLO);
         if (target_partition_number >= 0) {
+            std::shared_ptr<const Cluster<CoordinatePrecision>> local_target_root_cluster = std::make_shared<const Cluster<CoordinatePrecision>>(clone_cluster_tree_from_partition(*cluster_tree_target, target_partition_number));
+            this->m_target_root_cluster                                                   = local_target_root_cluster;
             hmatrix_tree_builder.set_target_partition_number(target_partition_number);
         }
         m_data = std::make_unique<HMatrix<CoefficientPrecision, CoordinatePrecision>>(hmatrix_tree_builder.build(mat));

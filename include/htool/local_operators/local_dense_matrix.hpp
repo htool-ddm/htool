@@ -14,7 +14,15 @@ class LocalDenseMatrix : public LocalOperator<CoefficientPrecision, CoordinatePr
     Matrix<CoefficientPrecision> m_data;
 
   public:
-    LocalDenseMatrix(const VirtualGenerator<CoefficientPrecision> &mat, std::shared_ptr<const Cluster<CoordinatePrecision>> cluster_tree_target, std::shared_ptr<const Cluster<CoordinatePrecision>> cluster_tree_source, char symmetry = 'N', char UPLO = 'N', bool target_use_permutation_to_mvprod = false, bool source_use_permutation_to_mvprod = false) : LocalOperator<CoefficientPrecision, CoordinatePrecision>(cluster_tree_target, cluster_tree_source, symmetry, UPLO, target_use_permutation_to_mvprod, source_use_permutation_to_mvprod), m_data(cluster_tree_target->get_size(), cluster_tree_source->get_size()) {
+    LocalDenseMatrix(const VirtualGenerator<CoefficientPrecision> &mat, std::shared_ptr<const Cluster<CoordinatePrecision>> cluster_tree_target, std::shared_ptr<const Cluster<CoordinatePrecision>> cluster_tree_source, char symmetry = 'N', char UPLO = 'N', bool target_use_permutation_to_mvprod = false, bool source_use_permutation_to_mvprod = false, int target_partition_number = -1) : LocalOperator<CoefficientPrecision, CoordinatePrecision>(cluster_tree_target, cluster_tree_source, symmetry, UPLO, target_use_permutation_to_mvprod, source_use_permutation_to_mvprod), m_data(cluster_tree_target->get_size(), cluster_tree_source->get_size()) {
+
+        const Cluster<CoordinatePrecision> *local_target_cluster = nullptr;
+
+        if (target_partition_number < 0) {
+            local_target_cluster = this->m_target_root_cluster.get();
+        } else {
+            local_target_cluster = this->m_target_root_cluster->get_clusters_on_partition()[target_partition_number];
+        }
 
         if (this->m_symmetry == 'N') {
             mat.copy_submatrix(m_data.nb_rows(), m_data.nb_cols(), this->m_target_root_cluster->get_offset(), this->m_source_root_cluster->get_offset(), m_data.data());
