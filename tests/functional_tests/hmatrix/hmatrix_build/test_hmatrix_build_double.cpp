@@ -14,14 +14,16 @@ int main(int argc, char *argv[]) {
 
     for (auto use_local_cluster : {true, false}) {
         for (auto epsilon : {1e-14, 1e-6}) {
-            // Square matrix
-            is_error = is_error || test_hmatrix_build<double, GeneratorTestDoubleSymmetric>(number_of_rows, number_of_columns, use_local_cluster, 'N', 'N', epsilon);
-            is_error = is_error || test_hmatrix_build<double, GeneratorTestDoubleSymmetric>(number_of_rows, number_of_columns, use_local_cluster, 'S', 'U', epsilon);
-            is_error = is_error || test_hmatrix_build<double, GeneratorTestDoubleSymmetric>(number_of_rows, number_of_columns, use_local_cluster, 'S', 'L', epsilon);
+            for (auto use_dense_block_generator : {true, false}) {
+                // Square matrix
+                is_error = is_error || test_hmatrix_build<double, GeneratorTestDoubleSymmetric>(number_of_rows, number_of_columns, use_local_cluster, 'N', 'N', epsilon, use_dense_block_generator);
+                is_error = is_error || test_hmatrix_build<double, GeneratorTestDoubleSymmetric>(number_of_rows, number_of_columns, use_local_cluster, 'S', 'U', epsilon, use_dense_block_generator);
+                is_error = is_error || test_hmatrix_build<double, GeneratorTestDoubleSymmetric>(number_of_rows, number_of_columns, use_local_cluster, 'S', 'L', epsilon, use_dense_block_generator);
 
-            // Rectangle matrix
-            is_error = is_error || test_hmatrix_build<double, GeneratorTestDouble>(number_of_rows_increased, number_of_columns, use_local_cluster, 'N', 'N', epsilon);
-            is_error = is_error || test_hmatrix_build<double, GeneratorTestDouble>(number_of_rows, number_of_columns_increased, use_local_cluster, 'N', 'N', epsilon);
+                // Rectangle matrix
+                is_error = is_error || test_hmatrix_build<double, GeneratorTestDouble>(number_of_rows_increased, number_of_columns, use_local_cluster, 'N', 'N', epsilon, use_dense_block_generator);
+                is_error = is_error || test_hmatrix_build<double, GeneratorTestDouble>(number_of_rows, number_of_columns_increased, use_local_cluster, 'N', 'N', epsilon, use_dense_block_generator);
+            }
         }
     }
 

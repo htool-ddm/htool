@@ -8,18 +8,24 @@
 namespace htool {
 
 template <typename CoefficientPrecision, typename CoordinatePrecision>
-DistributedOperator<CoefficientPrecision> build_default_hierarchical_approximation(const VirtualGenerator<CoefficientPrecision> &generator, std::shared_ptr<const Cluster<CoordinatePrecision>> target_cluster, std::shared_ptr<const Cluster<CoordinatePrecision>> source_cluster, double epsilon, double eta, char symmetry, char UPLO, MPI_Comm communicator, const HMatrix<CoefficientPrecision, CoordinatePrecision> **block_diagonal_hmatrix = nullptr) {
+DistributedOperator<CoefficientPrecision> build_default_hierarchical_approximation(const VirtualGenerator<CoefficientPrecision> &generator, std::shared_ptr<const Cluster<CoordinatePrecision>> target_cluster, std::shared_ptr<const Cluster<CoordinatePrecision>> source_cluster, double epsilon, double eta, char symmetry, char UPLO, MPI_Comm communicator, const HMatrix<CoefficientPrecision, CoordinatePrecision> **block_diagonal_hmatrix = nullptr, std::ostream &os = std::cout) {
 
     //
     int rankWorld;
     MPI_Comm_rank(communicator, &rankWorld);
 
+    // HMatrix builder
+    HMatrixTreeBuilder<CoefficientPrecision, CoordinatePrecision> hmatrix_tree_builder(target_cluster, source_cluster, epsilon, eta, symmetry, UPLO);
+    hmatrix_tree_builder.set_target_partition_number(rankWorld);
+
     // HMatrix compression
-    auto local_hmatrix = std::make_shared<LocalHMatrix<CoefficientPrecision, CoordinatePrecision>>(generator, target_cluster, source_cluster, epsilon, eta, symmetry, UPLO, false, false, rankWorld);
+    std::shared_ptr<const Cluster<CoordinatePrecision>> local_target_root_cluster = std::make_shared<const Cluster<CoordinatePrecision>>(clone_cluster_tree_from_partition(*target_cluster, rankWorld));
+
+    auto local_hmatrix = std::make_shared<LocalHMatrix<CoefficientPrecision, CoordinatePrecision>>(generator, hmatrix_tree_builder, local_target_root_cluster, source_cluster, symmetry, UPLO, false, false);
     if (block_diagonal_hmatrix != nullptr) {
         *block_diagonal_hmatrix = local_hmatrix->get_hmatrix().get_diagonal_hmatrix();
     }
-    print_distributed_hmatrix_information(local_hmatrix->get_hmatrix(), std::cout, communicator);
+    print_distributed_hmatrix_information(local_hmatrix->get_hmatrix(), os, communicator);
 
     // Distributed operator
     std::shared_ptr<PartitionFromCluster<CoefficientPrecision, CoordinatePrecision>> target_partition = std::make_shared<PartitionFromCluster<CoefficientPrecision, CoordinatePrecision>>(target_cluster);
@@ -31,7 +37,7 @@ DistributedOperator<CoefficientPrecision> build_default_hierarchical_approximati
 }
 
 template <typename CoefficientPrecision, typename CoordinatePrecision>
-DistributedOperator<CoefficientPrecision> build_default_local_hierarchical_approximation(const VirtualGenerator<CoefficientPrecision> &generator, std::shared_ptr<const Cluster<CoordinatePrecision>> target_cluster, std::shared_ptr<const Cluster<CoordinatePrecision>> source_cluster, double epsilon, double eta, char symmetry, char UPLO, MPI_Comm communicator, const HMatrix<CoefficientPrecision, CoordinatePrecision> **block_diagonal_hmatrix = nullptr) {
+DistributedOperator<CoefficientPrecision> build_default_local_hierarchical_approximation(const VirtualGenerator<CoefficientPrecision> &generator, std::shared_ptr<const Cluster<CoordinatePrecision>> target_cluster, std::shared_ptr<const Cluster<CoordinatePrecision>> source_cluster, double epsilon, double eta, char symmetry, char UPLO, MPI_Comm communicator, const HMatrix<CoefficientPrecision, CoordinatePrecision> **block_diagonal_hmatrix = nullptr, std::ostream &os = std::cout) {
 
     //
     int rankWorld;

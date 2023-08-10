@@ -4,6 +4,7 @@
 #include <htool/hmatrix/hmatrix_distributed_output.hpp>
 #include <htool/hmatrix/hmatrix_output.hpp>
 #include <htool/hmatrix/tree_builder/tree_builder.hpp>
+#include <htool/testing/dense_blocks_generator_test.hpp>
 #include <htool/testing/generator_input.hpp>
 #include <htool/testing/generator_test.hpp>
 #include <htool/testing/geometry.hpp>
@@ -14,7 +15,7 @@ using namespace std;
 using namespace htool;
 
 template <typename T, typename GeneratorTestType>
-bool test_hmatrix_build(int nr, int nc, bool use_local_cluster, char Symmetry, char UPLO, htool::underlying_type<T> epsilon) {
+bool test_hmatrix_build(int nr, int nc, bool use_local_cluster, char Symmetry, char UPLO, htool::underlying_type<T> epsilon, bool use_dense_blocks_generator) {
 
     // Get the number of processes
     int sizeWorld;
@@ -103,6 +104,12 @@ bool test_hmatrix_build(int nr, int nc, bool use_local_cluster, char Symmetry, c
         hmatrix_tree_builder = std::unique_ptr<HMatrixTreeBuilder<T, htool::underlying_type<T>>>(new HMatrixTreeBuilder<T, htool::underlying_type<T>>(target_root_cluster, source_root_cluster, epsilon, eta, Symmetry, UPLO));
         hmatrix_tree_builder->set_target_partition_number(rankWorld);
     }
+
+    std::shared_ptr<VirtualDenseBlocksGenerator<T>> dense_blocks_generator;
+    if (use_dense_blocks_generator) {
+        dense_blocks_generator = std::make_shared<DenseBlocksGeneratorTest<T>>(generator);
+    }
+    hmatrix_tree_builder->set_dense_blocks_generator(dense_blocks_generator);
 
     // build
     auto root_hmatrix = hmatrix_tree_builder->build(generator);
