@@ -60,6 +60,14 @@ bool test_hmatrix_product(int nr, int nc, int mu, bool use_local_cluster, char o
         p2                  = p1;
     }
 
+    std::shared_ptr<Cluster<htool::underlying_type<T>>> local_target_cluster = std::make_shared<Cluster<htool::underlying_type<T>>>(clone_cluster_tree_from_partition(*target_root_cluster, rankWorld));
+    std::shared_ptr<Cluster<htool::underlying_type<T>>> local_source_cluster;
+    if (Symmetry == 'N' && nr != nc) {
+        local_source_cluster = std::make_shared<Cluster<htool::underlying_type<T>>>(clone_cluster_tree_from_partition(*source_root_cluster, rankWorld));
+    } else {
+        local_source_cluster = local_target_cluster;
+    }
+
     // Permutation on geometry
     p1_permuted.resize(3 * nr);
     const auto &target_permutation = target_root_cluster->get_permutation();
@@ -81,24 +89,16 @@ bool test_hmatrix_product(int nr, int nc, int mu, bool use_local_cluster, char o
     }
 
     // Generator
-    GeneratorTestType generator(3, nr, nc, p1_permuted, p2_permuted);
+    GeneratorTestType generator(3, nr, nc, p1_permuted, p2_permuted, *target_root_cluster, *source_root_cluster, false, false);
 
     // HMatrix
     double eta = 10;
 
     std::unique_ptr<HMatrixTreeBuilder<T, htool::underlying_type<T>>> hmatrix_tree_builder;
     if (use_local_cluster) {
-        std::shared_ptr<Cluster<htool::underlying_type<T>>> local_target_cluster = std::make_shared<Cluster<htool::underlying_type<T>>>(clone_cluster_tree_from_partition(*target_root_cluster, rankWorld));
-        std::shared_ptr<Cluster<htool::underlying_type<T>>> local_source_cluster;
-        if (Symmetry == 'N' && nr != nc) {
-            local_source_cluster = std::make_shared<Cluster<htool::underlying_type<T>>>(clone_cluster_tree_from_partition(*source_root_cluster, rankWorld));
-        } else {
-            local_source_cluster = local_target_cluster;
-        }
-        hmatrix_tree_builder = std::unique_ptr<HMatrixTreeBuilder<T, htool::underlying_type<T>>>(new HMatrixTreeBuilder<T, htool::underlying_type<T>>(local_target_cluster, local_source_cluster, epsilon, eta, Symmetry, UPLO));
+        hmatrix_tree_builder = std::make_unique<HMatrixTreeBuilder<T, htool::underlying_type<T>>>(*local_target_cluster, *local_source_cluster, epsilon, eta, Symmetry, UPLO, -1, -1);
     } else {
-        hmatrix_tree_builder = std::unique_ptr<HMatrixTreeBuilder<T, htool::underlying_type<T>>>(new HMatrixTreeBuilder<T, htool::underlying_type<T>>(target_root_cluster, source_root_cluster, epsilon, eta, Symmetry, UPLO));
-        hmatrix_tree_builder->set_target_partition_number(rankWorld);
+        hmatrix_tree_builder = std::make_unique<HMatrixTreeBuilder<T, htool::underlying_type<T>>>(*target_root_cluster, *source_root_cluster, epsilon, eta, Symmetry, UPLO, -1, rankWorld);
     }
 
     // build

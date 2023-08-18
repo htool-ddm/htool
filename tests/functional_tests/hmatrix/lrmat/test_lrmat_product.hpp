@@ -29,18 +29,18 @@ bool test_lrmat_product(int nr, int nc, int mu, char op, htool::underlying_type<
         create_disk(3, distance[idist], nc, xs.data());
 
         ClusterTreeBuilder<htool::underlying_type<T>> recursive_build_strategy;
-        std::shared_ptr<Cluster<htool::underlying_type<T>>> target_root_cluster = std::make_shared<Cluster<htool::underlying_type<T>>>(recursive_build_strategy.create_cluster_tree(nr, 3, xt.data(), 2, 2));
-        std::shared_ptr<Cluster<htool::underlying_type<T>>> source_root_cluster = std::make_shared<Cluster<htool::underlying_type<T>>>(recursive_build_strategy.create_cluster_tree(nc, 3, xs.data(), 2, 2));
+        Cluster<htool::underlying_type<T>> target_root_cluster = recursive_build_strategy.create_cluster_tree(nr, 3, xt.data(), 2, 2);
+        Cluster<htool::underlying_type<T>> source_root_cluster = recursive_build_strategy.create_cluster_tree(nc, 3, xs.data(), 2, 2);
 
-        GeneratorTestType A(3, nr, nc, xt, xs, target_root_cluster, source_root_cluster);
+        GeneratorTestType A(3, nr, nc, xt, xs, target_root_cluster, source_root_cluster, true, true);
 
         // partialACA fixed rank
         int reqrank_max = 10;
         Compressor compressor;
-        LowRankMatrix<T> Fixed_approximation(A, compressor, *target_root_cluster, *source_root_cluster, reqrank_max, epsilon);
+        LowRankMatrix<T> Fixed_approximation(A, compressor, target_root_cluster, source_root_cluster, reqrank_max, epsilon);
 
         // ACA automatic building
-        LowRankMatrix<T> Auto_approximation(A, compressor, *target_root_cluster, *source_root_cluster, -1, epsilon);
+        LowRankMatrix<T> Auto_approximation(A, compressor, target_root_cluster, source_root_cluster, -1, epsilon);
 
         // Input sizes
         int ni = (op == 'T' || op == 'C') ? nr : nc;
@@ -68,13 +68,13 @@ bool test_lrmat_product(int nr, int nc, int mu, char op, htool::underlying_type<
         vector<T> x_perm(x), y_perm(y), ref_perm(ref), out_perm(ref), x_perm_row_major(x), y_perm_row_major(y), ref_perm_row_major(ref);
         for (int j = 0; j < mu; j++) {
             if (op == 'T' || op == 'C') {
-                global_to_root_cluster(*target_root_cluster, x.data() + ni * j, x_perm.data() + ni * j);
-                global_to_root_cluster(*source_root_cluster, y.data() + no * j, y_perm.data() + no * j);
-                global_to_root_cluster(*source_root_cluster, ref.data() + no * j, ref_perm.data() + no * j);
+                global_to_root_cluster(target_root_cluster, x.data() + ni * j, x_perm.data() + ni * j);
+                global_to_root_cluster(source_root_cluster, y.data() + no * j, y_perm.data() + no * j);
+                global_to_root_cluster(source_root_cluster, ref.data() + no * j, ref_perm.data() + no * j);
             } else {
-                global_to_root_cluster(*source_root_cluster, x.data() + ni * j, x_perm.data() + ni * j);
-                global_to_root_cluster(*target_root_cluster, y.data() + no * j, y_perm.data() + no * j);
-                global_to_root_cluster(*target_root_cluster, ref.data() + no * j, ref_perm.data() + no * j);
+                global_to_root_cluster(source_root_cluster, x.data() + ni * j, x_perm.data() + ni * j);
+                global_to_root_cluster(target_root_cluster, y.data() + no * j, y_perm.data() + no * j);
+                global_to_root_cluster(target_root_cluster, ref.data() + no * j, ref_perm.data() + no * j);
             }
         }
 

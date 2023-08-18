@@ -39,22 +39,22 @@ int main(int argc, char *argv[]) {
 
         ClusterTreeBuilder<double> recursive_build_strategy;
 
-        std::shared_ptr<Cluster<double>> t = std::make_shared<Cluster<double>>(recursive_build_strategy.create_cluster_tree(nr, 3, xt.data(), 2, 2));
-        std::shared_ptr<Cluster<double>> s = std::make_shared<Cluster<double>>(recursive_build_strategy.create_cluster_tree(nc, 3, xt.data(), 2, 2));
+        Cluster<double> t = recursive_build_strategy.create_cluster_tree(nr, 3, xt.data(), 2, 2);
+        Cluster<double> s = recursive_build_strategy.create_cluster_tree(nc, 3, xt.data(), 2, 2);
 
-        GeneratorTestDouble A(3, nr, nc, xt, xs, t, s);
+        GeneratorTestDouble A(3, nr, nc, xt, xs, t, s, true, true);
 
         // sympartialACA fixed rank
         int reqrank_max = 10;
         sympartialACA<double> compressor;
-        LowRankMatrix<double> A_sympartialACA_fixed(A, compressor, *t, *s, reqrank_max, epsilon);
+        LowRankMatrix<double> A_sympartialACA_fixed(A, compressor, t, s, reqrank_max, epsilon);
 
         // ACA automatic building
-        LowRankMatrix<double> A_sympartialACA(A, compressor, *t, *s, -1, epsilon);
+        LowRankMatrix<double> A_sympartialACA(A, compressor, t, s, -1, epsilon);
 
         std::pair<double, double> fixed_compression_interval(0.87, 0.89);
         std::pair<double, double> auto_compression_interval(0.93, 0.96);
-        test = test || (test_lrmat(*t, *s, A, A_sympartialACA_fixed, A_sympartialACA, fixed_compression_interval, auto_compression_interval));
+        test = test || (test_lrmat(t, s, A, A_sympartialACA_fixed, A_sympartialACA, fixed_compression_interval, auto_compression_interval));
     }
     cout << "test : " << test << endl;
 

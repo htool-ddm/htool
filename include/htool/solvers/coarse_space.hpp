@@ -15,7 +15,7 @@ void build_coarse_space_outside(const DistributedOperator<T> *const HA, int nevi
     int sizeWorld, rankWorld;
     MPI_Comm_rank(comm, &rankWorld);
     MPI_Comm_size(comm, &sizeWorld);
-    int n_inside = HA->get_target_partition()->get_size_of_partition(rankWorld);
+    int n_inside = HA->get_target_partition().get_size_of_partition(rankWorld);
 
     // Allgather
     std::vector<int> recvcounts(sizeWorld);
@@ -71,7 +71,7 @@ void build_coarse_space_outside(const DistributedOperator<T> *const HA, int nevi
     for (int i = 0; i < sizeWorld; i++) {
         if (recvcounts[i] == 0)
             continue;
-        std::vector<T> buffer((HA->get_target_partition()->get_size_of_partition(i) + 2 * margin) * recvcounts[i], 0);
+        std::vector<T> buffer((HA->get_target_partition().get_size_of_partition(i) + 2 * margin) * recvcounts[i], 0);
         std::fill_n(AZ.data(), recvcounts[i] * n_inside, 0);
 
         if (rankWorld == i) {
@@ -86,11 +86,11 @@ void build_coarse_space_outside(const DistributedOperator<T> *const HA, int nevi
         //     // std::cout << buffer.size() << " " << HA->get_target_partition()->get_size_of_partition(i) << " " << recvcounts[i] << "\n";
         //     std::cout << buffer << "\n";
         // }
-        MPI_Bcast(buffer.data() + margin * recvcounts[i], HA->get_target_partition()->get_size_of_partition(i) * recvcounts[i], wrapper_mpi<T>::mpi_type(), i, HA->get_comm());
+        MPI_Bcast(buffer.data() + margin * recvcounts[i], HA->get_target_partition().get_size_of_partition(i) * recvcounts[i], wrapper_mpi<T>::mpi_type(), i, HA->get_comm());
         if (HA->get_symmetry_type() == 'H') {
             conj_if_complex(buffer.data(), buffer.size());
         }
-        HA->internal_sub_matrix_product_to_local(buffer.data(), AZ.data(), recvcounts[i], HA->get_target_partition()->get_offset_of_partition(i), HA->get_target_partition()->get_size_of_partition(i));
+        HA->internal_sub_matrix_product_to_local(buffer.data(), AZ.data(), recvcounts[i], HA->get_target_partition().get_offset_of_partition(i), HA->get_target_partition().get_size_of_partition(i));
 
         // if (rankWorld == 0) {
         //     std::cout << "AZ " << i << "\n";

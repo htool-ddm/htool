@@ -14,11 +14,11 @@ class DistributedOperator {
 
   private:
     //
-    std::shared_ptr<IPartition<CoefficientPrecision>> m_target_partition;
-    std::shared_ptr<IPartition<CoefficientPrecision>> m_source_partition;
+    const IPartition<CoefficientPrecision> &m_target_partition;
+    const IPartition<CoefficientPrecision> &m_source_partition;
 
     // Local operators
-    std::vector<std::shared_ptr<VirtualLocalOperator<CoefficientPrecision>>> m_local_operators = {};
+    std::vector<const VirtualLocalOperator<CoefficientPrecision> *> m_local_operators = {};
 
     // Properties
     bool m_use_permutation = true;
@@ -38,9 +38,9 @@ class DistributedOperator {
     virtual ~DistributedOperator()                                         = default;
 
     // Constructor
-    explicit DistributedOperator(std::shared_ptr<IPartition<CoefficientPrecision>> target_partition, std::shared_ptr<IPartition<CoefficientPrecision>> source_partition, char symmetry, char UPLO, MPI_Comm comm) : m_target_partition(target_partition), m_source_partition(source_partition), m_symmetry(symmetry), m_UPLO(UPLO), m_comm(comm) {}
+    explicit DistributedOperator(IPartition<CoefficientPrecision> &target_partition, IPartition<CoefficientPrecision> &source_partition, char symmetry, char UPLO, MPI_Comm comm) : m_target_partition(target_partition), m_source_partition(source_partition), m_symmetry(symmetry), m_UPLO(UPLO), m_comm(comm) {}
 
-    void add_local_operator(std::shared_ptr<VirtualLocalOperator<CoefficientPrecision>> local_operator) {
+    void add_local_operator(const VirtualLocalOperator<CoefficientPrecision> *local_operator) {
         m_local_operators.push_back(local_operator);
     }
 
@@ -79,8 +79,8 @@ class DistributedOperator {
     char get_symmetry_type() const { return m_symmetry; }
     char get_storage_type() const { return m_UPLO; }
     MPI_Comm get_comm() const { return m_comm; }
-    const IPartition<CoefficientPrecision> *get_target_partition() const { return m_target_partition.get(); }
-    const IPartition<CoefficientPrecision> *get_source_partition() const { return m_source_partition.get(); }
+    const IPartition<CoefficientPrecision> &get_target_partition() const { return m_target_partition; }
+    const IPartition<CoefficientPrecision> &get_source_partition() const { return m_source_partition; }
 };
 
 template <typename CoefficientPrecision>
@@ -92,16 +92,16 @@ void DistributedOperator<CoefficientPrecision>::vector_product_global_to_global(
     // int nr = m_global_target_root_cluster->get_size();
     // int nc = m_global_source_root_cluster->get_size();
     // int local_size = m_local_cluster_target->get_size();
-    int nr         = m_target_partition->get_global_size();
-    int nc         = m_source_partition->get_global_size();
-    int local_size = m_target_partition->get_size_of_partition(rankWorld);
+    int nr         = m_target_partition.get_global_size();
+    int nc         = m_source_partition.get_global_size();
+    int local_size = m_target_partition.get_size_of_partition(rankWorld);
     std::vector<CoefficientPrecision> out_perm(local_size);
     std::vector<CoefficientPrecision> input_buffer(m_use_permutation ? nc : 0);
     std::vector<CoefficientPrecision> output_buffer(m_use_permutation ? nr : 0);
 
     // Permutation
     if (m_use_permutation) {
-        m_source_partition->global_to_partition_numbering(in, input_buffer.data());
+        m_source_partition.global_to_partition_numbering(in, input_buffer.data());
         // this->source_to_cluster_permutation(in, input_buffer.data());
     }
     const CoefficientPrecision *input = m_use_permutation ? input_buffer.data() : in;
@@ -120,7 +120,7 @@ void DistributedOperator<CoefficientPrecision>::vector_product_global_to_global(
 
     for (int i = 0; i < sizeWorld; i++) {
         // recvcounts[i] = m_global_target_root_cluster->get_clusters_on_partition()[i]->get_size();
-        recvcounts[i] = m_target_partition->get_size_of_partition(i);
+        recvcounts[i] = m_target_partition.get_size_of_partition(i);
         // if (rankWorld == 0)
         //     std::cout << recvcounts[i] << "\n";
         if (i > 0)
@@ -131,7 +131,7 @@ void DistributedOperator<CoefficientPrecision>::vector_product_global_to_global(
         MPI_Allgatherv(out_perm.data(), recvcounts[rankWorld], wrapper_mpi<CoefficientPrecision>::mpi_type(), out, &(recvcounts[0]), &(displs[0]), wrapper_mpi<CoefficientPrecision>::mpi_type(), m_comm);
     } else if (m_use_permutation) {
         MPI_Allgatherv(out_perm.data(), recvcounts[rankWorld], wrapper_mpi<CoefficientPrecision>::mpi_type(), output_buffer.data(), &(recvcounts[0]), &(displs[0]), wrapper_mpi<CoefficientPrecision>::mpi_type(), m_comm);
-        m_target_partition->partition_to_global_numbering(output_buffer.data(), out);
+        m_target_partition.partition_to_global_numbering(output_buffer.data(), out);
         // this->cluster_to_target_permutation(output_buffer.data(), out);
     }
 
@@ -149,9 +149,9 @@ void DistributedOperator<CoefficientPrecision>::matrix_product_global_to_global(
     // int nr = m_global_target_root_cluster->get_size();
     // int nc = m_global_source_root_cluster->get_size();
     // int local_size = m_local_cluster_target->get_size();
-    int nr         = m_target_partition->get_global_size();
-    int nc         = m_source_partition->get_global_size();
-    int local_size = m_target_partition->get_size_of_partition(rankWorld);
+    int nr         = m_target_partition.get_global_size();
+    int nc         = m_source_partition.get_global_size();
+    int local_size = m_target_partition.get_size_of_partition(rankWorld);
     std::vector<CoefficientPrecision> out_perm(2 * local_size * mu, 0);
     std::vector<CoefficientPrecision> input_buffer_transpose(m_use_permutation ? nc : 0);
     std::vector<CoefficientPrecision> input_buffer(nc * mu);
@@ -160,7 +160,7 @@ void DistributedOperator<CoefficientPrecision>::matrix_product_global_to_global(
     // Permutation and column major to row major
     for (int i = 0; i < mu; i++) {
         if (m_use_permutation) {
-            m_source_partition->global_to_partition_numbering(in + i * nc, input_buffer_transpose.data());
+            m_source_partition.global_to_partition_numbering(in + i * nc, input_buffer_transpose.data());
             // this->source_to_cluster_permutation(in + i * nc, input_buffer_transpose.data());
             for (int j = 0; j < nc; j++) {
                 input_buffer[i + j * mu] = input_buffer_transpose[j];
@@ -192,7 +192,7 @@ void DistributedOperator<CoefficientPrecision>::matrix_product_global_to_global(
 
     for (int i = 0; i < sizeWorld; i++) {
         // recvcounts[i] = m_global_target_root_cluster->get_clusters_on_partition()[i]->get_size() * mu;
-        recvcounts[i] = m_target_partition->get_size_of_partition(i) * mu;
+        recvcounts[i] = m_target_partition.get_size_of_partition(i) * mu;
         if (i > 0)
             displs[i] = displs[i - 1] + recvcounts[i - 1];
     }
@@ -206,8 +206,8 @@ void DistributedOperator<CoefficientPrecision>::matrix_product_global_to_global(
             }
 
             // Permutation
-            // m_target_partition->this->cluster_to_target_permutation(output_buffer.data() + nr * mu + i * nr, out + i * nr);
-            m_target_partition->partition_to_global_numbering(output_buffer.data() + nr * mu + i * nr, out + i * nr);
+            // m_target_partition.this->cluster_to_target_permutation(output_buffer.data() + nr * mu + i * nr, out + i * nr);
+            m_target_partition.partition_to_global_numbering(output_buffer.data() + nr * mu + i * nr, out + i * nr);
         } else {
             for (int j = 0; j < sizeWorld; j++) {
                 std::copy_n(output_buffer.data() + displs[j] + i * recvcounts[j] / mu, recvcounts[j] / mu, out + i * nr + displs[j] / mu);
@@ -226,10 +226,10 @@ void DistributedOperator<CoefficientPrecision>::vector_product_transp_global_to_
     // int nc         = m_global_source_root_cluster->get_size();
     int rankWorld;
     MPI_Comm_rank(m_comm, &rankWorld);
-    int nr = m_target_partition->get_global_size();
-    int nc = m_source_partition->get_global_size();
+    int nr = m_target_partition.get_global_size();
+    int nc = m_source_partition.get_global_size();
 
-    int local_offset = m_target_partition->get_offset_of_partition(rankWorld);
+    int local_offset = m_target_partition.get_offset_of_partition(rankWorld);
 
     if (m_symmetry == 'S') {
         this->vector_product_global_to_global(in, out);
@@ -246,7 +246,7 @@ void DistributedOperator<CoefficientPrecision>::vector_product_transp_global_to_
     std::vector<CoefficientPrecision> in_perm(m_use_permutation ? nr : 0);
     std::vector<CoefficientPrecision> out_perm(m_use_permutation ? nc : 0);
     if (m_use_permutation) {
-        m_target_partition->global_to_partition_numbering(in, in_perm.data());
+        m_target_partition.global_to_partition_numbering(in, in_perm.data());
         // this->target_to_cluster_permutation(in, in_perm.data());
     }
 
@@ -257,7 +257,7 @@ void DistributedOperator<CoefficientPrecision>::vector_product_transp_global_to_
     this->internal_vector_product_transp_local_to_global(input + local_offset, output);
 
     if (m_use_permutation) {
-        m_source_partition->partition_to_global_numbering(output, out);
+        m_source_partition.partition_to_global_numbering(output, out);
         // this->cluster_to_source_permutation(output, out);
     }
 
@@ -270,10 +270,10 @@ template <typename CoefficientPrecision>
 void DistributedOperator<CoefficientPrecision>::matrix_product_transp_global_to_global(const CoefficientPrecision *const in, CoefficientPrecision *const out, int mu) const {
     int rankWorld;
     MPI_Comm_rank(m_comm, &rankWorld);
-    int nr           = m_target_partition->get_global_size();
-    int nc           = m_source_partition->get_global_size();
-    int local_size   = m_target_partition->get_size_of_partition(rankWorld);
-    int local_offset = m_target_partition->get_offset_of_partition(rankWorld);
+    int nr           = m_target_partition.get_global_size();
+    int nc           = m_source_partition.get_global_size();
+    int local_size   = m_target_partition.get_size_of_partition(rankWorld);
+    int local_offset = m_target_partition.get_offset_of_partition(rankWorld);
 
     if (m_symmetry == 'S') {
         this->matrix_product_global_to_global(in, out, mu);
@@ -293,7 +293,7 @@ void DistributedOperator<CoefficientPrecision>::matrix_product_transp_global_to_
     for (int i = 0; i < mu; i++) {
         // Permutation
         if (m_use_permutation) {
-            m_target_partition->global_to_partition_numbering(in + i * nr, buffer.data());
+            m_target_partition.global_to_partition_numbering(in + i * nr, buffer.data());
             // this->target_to_cluster_permutation(in + i * nr, buffer.data());
             // Transpose
             for (int j = local_offset; j < local_offset + local_size; j++) {
@@ -315,7 +315,7 @@ void DistributedOperator<CoefficientPrecision>::matrix_product_transp_global_to_
             for (int j = 0; j < nc; j++) {
                 out_perm[i * nc + j] = in_perm[i + j * mu + local_size * mu];
             }
-            m_source_partition->partition_to_global_numbering(out_perm.data() + i * nc, out + i * nc);
+            m_source_partition.partition_to_global_numbering(out_perm.data() + i * nc, out + i * nc);
             // cluster_to_source_permutation(out_perm.data() + i * nc, out + i * nc);
         } else {
             for (int j = 0; j < nc; j++) {
@@ -329,14 +329,14 @@ template <typename CoefficientPrecision>
 void DistributedOperator<CoefficientPrecision>::vector_product_local_to_local(const CoefficientPrecision *const in, CoefficientPrecision *const out, CoefficientPrecision *work) const {
     int rankWorld;
     MPI_Comm_rank(m_comm, &rankWorld);
-    int nc                = m_source_partition->get_global_size();
-    int local_size        = m_target_partition->get_size_of_partition(rankWorld);
-    int local_size_source = m_source_partition->get_size_of_partition(rankWorld);
+    int nc                = m_source_partition.get_global_size();
+    int local_size        = m_target_partition.get_size_of_partition(rankWorld);
+    int local_size_source = m_source_partition.get_size_of_partition(rankWorld);
 
     std::vector<CoefficientPrecision> buffer((work == nullptr) ? nc : 0);
     CoefficientPrecision *buffer_ptr = (work == nullptr) ? buffer.data() : work;
 
-    if ((!(m_source_partition->is_renumbering_local()) || !(m_target_partition->is_renumbering_local())) && m_use_permutation) {
+    if ((!(m_source_partition.is_renumbering_local()) || !(m_target_partition.is_renumbering_local())) && m_use_permutation) {
         htool::Logger::get_instance().log(Logger::LogLevel::ERROR, "Permutation is not local, vector_product_local_to_local cannot be used"); // LCOV_EXCL_LINE
         // throw std::logic_error("[Htool error] Permutation is not local, vector_product_local_to_local cannot be used"); // LCOV_EXCL_LINE
     }
@@ -348,29 +348,29 @@ void DistributedOperator<CoefficientPrecision>::vector_product_local_to_local(co
 
     if (m_use_permutation) {
         // this->local_source_to_local_cluster(in, in_perm.data());
-        m_source_partition->local_to_local_partition_numbering(rankWorld, in, in_perm.data());
+        m_source_partition.local_to_local_partition_numbering(rankWorld, in, in_perm.data());
     }
 
     this->internal_vector_product_local_to_local(input, output, buffer_ptr);
 
     if (m_use_permutation) {
         // this->local_cluster_to_local_target(output, out);
-        m_target_partition->local_partition_to_local_numbering(rankWorld, output, out);
+        m_target_partition.local_partition_to_local_numbering(rankWorld, output, out);
     }
 }
 
 template <typename CoefficientPrecision>
 void DistributedOperator<CoefficientPrecision>::matrix_product_local_to_local(const CoefficientPrecision *const in, CoefficientPrecision *const out, int mu, CoefficientPrecision *work) const {
 
-    std::vector<CoefficientPrecision> buffer((work == nullptr) ? m_source_partition->get_global_size() * mu : 0);
+    std::vector<CoefficientPrecision> buffer((work == nullptr) ? m_source_partition.get_global_size() * mu : 0);
     CoefficientPrecision *buffer_ptr = (work == nullptr) ? buffer.data() : work;
 
     int rankWorld;
     MPI_Comm_rank(m_comm, &rankWorld);
-    int local_size        = m_target_partition->get_size_of_partition(rankWorld);
-    int local_size_source = m_source_partition->get_size_of_partition(rankWorld);
+    int local_size        = m_target_partition.get_size_of_partition(rankWorld);
+    int local_size_source = m_source_partition.get_size_of_partition(rankWorld);
 
-    if ((!(m_source_partition->is_renumbering_local()) || !(m_target_partition->is_renumbering_local())) && m_use_permutation) {
+    if ((!(m_source_partition.is_renumbering_local()) || !(m_target_partition.is_renumbering_local())) && m_use_permutation) {
         htool::Logger::get_instance().log(Logger::LogLevel::ERROR, "Permutation is not local, mvprod_local_to_local cannot be used"); // LCOV_EXCL_LINE
         // throw std::logic_error("[Htool error] Permutation is not local, mvprod_local_to_local cannot be used"); // LCOV_EXCL_LINE
     }
@@ -383,7 +383,7 @@ void DistributedOperator<CoefficientPrecision>::matrix_product_local_to_local(co
     // Permutation
     for (int i = 0; i < mu; i++) {
         if (m_use_permutation) {
-            m_source_partition->local_to_local_partition_numbering(rankWorld, in + i * local_size_source, input_buffer_transpose.data());
+            m_source_partition.local_to_local_partition_numbering(rankWorld, in + i * local_size_source, input_buffer_transpose.data());
             // this->local_source_to_local_cluster(in + i * local_size_source, input_buffer_transpose.data());
             for (int j = 0; j < local_size_source; j++) {
                 input_buffer[i + j * mu] = input_buffer_transpose[j];
@@ -405,7 +405,7 @@ void DistributedOperator<CoefficientPrecision>::matrix_product_local_to_local(co
                 output_buffer_transpose[j] = output_perm[i + j * mu];
             }
             // this->local_cluster_to_local_target(output_buffer_transpose.data(), out + i * local_size);
-            m_target_partition->local_partition_to_local_numbering(rankWorld, output_buffer_transpose.data(), out + i * local_size);
+            m_target_partition.local_partition_to_local_numbering(rankWorld, output_buffer_transpose.data(), out + i * local_size);
         } else {
             // Transpose
             for (int j = 0; j < local_size; j++) {
@@ -420,9 +420,9 @@ void DistributedOperator<CoefficientPrecision>::vector_product_transp_local_to_l
     int sizeWorld, rankWorld;
     MPI_Comm_rank(m_comm, &rankWorld);
     MPI_Comm_size(m_comm, &sizeWorld);
-    int local_size        = m_target_partition->get_size_of_partition(rankWorld);
-    int local_size_source = m_source_partition->get_size_of_partition(rankWorld);
-    int nc                = m_source_partition->get_global_size();
+    int local_size        = m_target_partition.get_size_of_partition(rankWorld);
+    int local_size_source = m_source_partition.get_size_of_partition(rankWorld);
+    int nc                = m_source_partition.get_global_size();
 
     // int local_size_source = m_local_cluster_source->get_size();
     // int local_size        = m_local_cluster_target->get_size();
@@ -445,7 +445,7 @@ void DistributedOperator<CoefficientPrecision>::vector_product_transp_local_to_l
         return;
     }
 
-    if ((!(m_source_partition->is_renumbering_local()) || !(m_target_partition->is_renumbering_local())) && m_use_permutation) {
+    if ((!(m_source_partition.is_renumbering_local()) || !(m_target_partition.is_renumbering_local())) && m_use_permutation) {
         htool::Logger::get_instance().log(Logger::LogLevel::ERROR, "Permutation is not local, mvprod_local_to_local cannot be used"); // LCOV_EXCL_LINE
         // throw std::logic_error("[Htool error] Permutation is not local, mvprod_local_to_local cannot be used"); // LCOV_EXCL_LINE
     }
@@ -457,7 +457,7 @@ void DistributedOperator<CoefficientPrecision>::vector_product_transp_local_to_l
 
     // local permutation
     if (m_use_permutation) {
-        m_target_partition->local_to_local_partition_numbering(rankWorld, in, in_perm.data());
+        m_target_partition.local_to_local_partition_numbering(rankWorld, in, in_perm.data());
         // this->local_target_to_local_cluster(in, in_perm.data());
     }
     // prod
@@ -465,7 +465,7 @@ void DistributedOperator<CoefficientPrecision>::vector_product_transp_local_to_l
 
     // permutation
     if (m_use_permutation) {
-        m_source_partition->local_partition_to_local_numbering(rankWorld, output, out);
+        m_source_partition.local_partition_to_local_numbering(rankWorld, output, out);
         // this->local_cluster_to_local_source(output, out);
     }
 }
@@ -481,9 +481,9 @@ void DistributedOperator<CoefficientPrecision>::matrix_product_transp_local_to_l
     int sizeWorld, rankWorld;
     MPI_Comm_rank(m_comm, &rankWorld);
     MPI_Comm_size(m_comm, &sizeWorld);
-    int local_size        = m_target_partition->get_size_of_partition(rankWorld);
-    int local_size_source = m_source_partition->get_size_of_partition(rankWorld);
-    int nc                = m_source_partition->get_global_size();
+    int local_size        = m_target_partition.get_size_of_partition(rankWorld);
+    int local_size_source = m_source_partition.get_size_of_partition(rankWorld);
+    int nc                = m_source_partition.get_global_size();
 
     std::vector<CoefficientPrecision> buffer((work == nullptr) ? (nc + sizeWorld * local_size_source) * mu : 0);
     CoefficientPrecision *buffer_ptr = (work == nullptr) ? buffer.data() : work;
@@ -499,7 +499,7 @@ void DistributedOperator<CoefficientPrecision>::matrix_product_transp_local_to_l
         return;
     }
 
-    if ((!(m_source_partition->is_renumbering_local()) || !(m_target_partition->is_renumbering_local())) && m_use_permutation) {
+    if ((!(m_source_partition.is_renumbering_local()) || !(m_target_partition.is_renumbering_local())) && m_use_permutation) {
         htool::Logger::get_instance().log(Logger::LogLevel::ERROR, "Permutation is not local, mvprod_local_to_local cannot be used"); // LCOV_EXCL_LINE
         // throw std::logic_error("[Htool error] Permutation is not local, mvprod_local_to_local cannot be used"); // LCOV_EXCL_LINE
     }
@@ -511,7 +511,7 @@ void DistributedOperator<CoefficientPrecision>::matrix_product_transp_local_to_l
     for (int i = 0; i < mu; i++) {
         // local permutation
         if (m_use_permutation) {
-            m_target_partition->local_to_local_partition_numbering(rankWorld, in + i * local_size, buffer_in.data());
+            m_target_partition.local_to_local_partition_numbering(rankWorld, in + i * local_size, buffer_in.data());
             // this->local_target_to_local_cluster(in + i * local_size, buffer_in.data());
 
             // Transpose
@@ -541,7 +541,7 @@ void DistributedOperator<CoefficientPrecision>::matrix_product_transp_local_to_l
 
             // local permutation
             // this->local_cluster_to_local_source(buffer_out.data(), out + i * local_size_source);
-            m_source_partition->local_partition_to_local_numbering(rankWorld, buffer_out.data(), out + i * local_size_source);
+            m_source_partition.local_partition_to_local_numbering(rankWorld, buffer_out.data(), out + i * local_size_source);
         } else {
             // Tranpose
             for (int j = 0; j < local_size_source; j++) {
@@ -558,7 +558,7 @@ void DistributedOperator<CoefficientPrecision>::internal_vector_product_global_t
     // int local_size = m_local_cluster_target->get_size();
     int rankWorld;
     MPI_Comm_rank(m_comm, &rankWorld);
-    int local_size = m_target_partition->get_size_of_partition(rankWorld);
+    int local_size = m_target_partition.get_size_of_partition(rankWorld);
     std::fill_n(out, local_size, CoefficientPrecision(0));
     for (auto &local_operator : m_local_operators) {
         local_operator->add_vector_product_global_to_local(1, in, 1, out);
@@ -570,7 +570,7 @@ void DistributedOperator<CoefficientPrecision>::internal_matrix_product_global_t
     // int local_size = m_local_cluster_target->get_size();
     int rankWorld;
     MPI_Comm_rank(m_comm, &rankWorld);
-    int local_size = m_target_partition->get_size_of_partition(rankWorld);
+    int local_size = m_target_partition.get_size_of_partition(rankWorld);
     std::fill_n(out, local_size * mu, CoefficientPrecision(0));
     for (auto &local_operator : m_local_operators) {
         local_operator->add_matrix_product_global_to_local(1, in, 1, out, mu);
@@ -581,7 +581,7 @@ template <typename CoefficientPrecision>
 void DistributedOperator<CoefficientPrecision>::internal_vector_product_transp_local_to_global(const CoefficientPrecision *const in, CoefficientPrecision *const out) const {
     int rankWorld;
     MPI_Comm_rank(m_comm, &rankWorld);
-    int nc = m_source_partition->get_global_size();
+    int nc = m_source_partition.get_global_size();
 
     std::fill(out, out + nc, 0);
     for (auto &local_operator : m_local_operators) {
@@ -595,7 +595,7 @@ template <typename CoefficientPrecision>
 void DistributedOperator<CoefficientPrecision>::internal_matrix_product_transp_local_to_global(const CoefficientPrecision *const in, CoefficientPrecision *const out, int mu) const {
     int rankWorld;
     MPI_Comm_rank(m_comm, &rankWorld);
-    int nc = m_source_partition->get_global_size();
+    int nc = m_source_partition.get_global_size();
 
     std::fill(out, out + nc * mu, 0);
     for (auto &local_operator : m_local_operators) {
@@ -607,7 +607,7 @@ void DistributedOperator<CoefficientPrecision>::internal_matrix_product_transp_l
 template <typename CoefficientPrecision>
 void DistributedOperator<CoefficientPrecision>::internal_vector_product_local_to_local(const CoefficientPrecision *const in, CoefficientPrecision *const out, CoefficientPrecision *work) const {
 
-    std::vector<CoefficientPrecision> buffer((work == nullptr) ? m_source_partition->get_global_size() : 0);
+    std::vector<CoefficientPrecision> buffer((work == nullptr) ? m_source_partition.get_global_size() : 0);
     CoefficientPrecision *buffer_ptr = (work == nullptr) ? buffer.data() : work;
 
     this->local_to_global_source(in, buffer_ptr, 1);
@@ -617,7 +617,7 @@ void DistributedOperator<CoefficientPrecision>::internal_vector_product_local_to
 template <typename CoefficientPrecision>
 void DistributedOperator<CoefficientPrecision>::internal_matrix_product_local_to_local(const CoefficientPrecision *const in, CoefficientPrecision *const out, int mu, CoefficientPrecision *work) const {
 
-    std::vector<CoefficientPrecision> buffer((work == nullptr) ? m_source_partition->get_global_size() * mu : 0);
+    std::vector<CoefficientPrecision> buffer((work == nullptr) ? m_source_partition.get_global_size() * mu : 0);
     CoefficientPrecision *buffer_ptr = (work == nullptr) ? buffer.data() : work;
 
     this->local_to_global_source(in, buffer_ptr, mu);
@@ -635,8 +635,8 @@ void DistributedOperator<CoefficientPrecision>::internal_vector_product_transp_l
     MPI_Comm_rank(m_comm, &rankWorld);
     MPI_Comm_size(m_comm, &sizeWorld);
 
-    int local_size_source = m_source_partition->get_size_of_partition(rankWorld);
-    int nc                = m_source_partition->get_global_size();
+    int local_size_source = m_source_partition.get_size_of_partition(rankWorld);
+    int nc                = m_source_partition.get_global_size();
 
     std::vector<CoefficientPrecision> buffer((work == nullptr) ? nc + local_size_source * sizeWorld : 0);
     CoefficientPrecision *buffer_ptr = (work == nullptr) ? buffer.data() : work;
@@ -657,7 +657,7 @@ void DistributedOperator<CoefficientPrecision>::internal_vector_product_transp_l
 
     for (int i = 0; i < sizeWorld; i++) {
         // scounts[i] = (m_global_source_root_cluster->get_clusters_on_partition()[i]->get_size());
-        scounts[i] = m_source_partition->get_size_of_partition(i);
+        scounts[i] = m_source_partition.get_size_of_partition(i);
         rcounts[i] = (local_size_source);
         if (i > 0) {
             sdispls[i] = sdispls[i - 1] + scounts[i - 1];
@@ -681,8 +681,8 @@ void DistributedOperator<CoefficientPrecision>::internal_matrix_product_transp_l
     int sizeWorld, rankWorld;
     MPI_Comm_rank(m_comm, &rankWorld);
     MPI_Comm_size(m_comm, &sizeWorld);
-    int local_size_source = m_source_partition->get_size_of_partition(rankWorld);
-    int nc                = m_source_partition->get_global_size();
+    int local_size_source = m_source_partition.get_size_of_partition(rankWorld);
+    int nc                = m_source_partition.get_global_size();
 
     std::vector<CoefficientPrecision> buffer((work == nullptr) ? (nc + local_size_source * sizeWorld) * mu : 0);
     CoefficientPrecision *buffer_ptr = (work == nullptr) ? buffer.data() : work;
@@ -702,7 +702,7 @@ void DistributedOperator<CoefficientPrecision>::internal_matrix_product_transp_l
 
     for (int i = 0; i < sizeWorld; i++) {
         // scounts[i] = (m_global_source_root_cluster->get_clusters_on_partition()[i]->get_size()) * mu;
-        scounts[i] = m_source_partition->get_size_of_partition(i) * mu;
+        scounts[i] = m_source_partition.get_size_of_partition(i) * mu;
         rcounts[i] = (local_size_source)*mu;
         if (i > 0) {
             sdispls[i] = sdispls[i - 1] + scounts[i - 1];
@@ -737,7 +737,7 @@ void DistributedOperator<CoefficientPrecision>::local_to_global_target(const Coe
 
     for (int i = 0; i < sizeWorld; i++) {
         // recvcounts[i] = (m_global_target_root_cluster->partition()[i].second) * mu;
-        recvcounts[i] = (m_target_partition->get_size_of_partition(i)) * mu;
+        recvcounts[i] = (m_target_partition.get_size_of_partition(i)) * mu;
         if (i > 0)
             displs[i] = displs[i - 1] + recvcounts[i - 1];
     }
@@ -758,7 +758,7 @@ void DistributedOperator<CoefficientPrecision>::local_to_global_source(const Coe
 
     for (int i = 0; i < sizeWorld; i++) {
         // recvcounts[i] = (m_global_source_root_cluster->get_clusters_on_partition()[i]->get_size()) * mu;
-        recvcounts[i] = (m_source_partition->get_size_of_partition(i)) * mu;
+        recvcounts[i] = (m_source_partition.get_size_of_partition(i)) * mu;
         if (i > 0)
             displs[i] = displs[i - 1] + recvcounts[i - 1];
     }

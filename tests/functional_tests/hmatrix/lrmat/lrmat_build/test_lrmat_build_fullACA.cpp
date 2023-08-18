@@ -37,21 +37,21 @@ int main(int argc, char *argv[]) {
 
         ClusterTreeBuilder<double> recursive_build_strategy;
 
-        std::shared_ptr<Cluster<double>> target_cluster = std::make_shared<Cluster<double>>(recursive_build_strategy.create_cluster_tree(nr, 3, xt.data(), 2, 2));
-        std::shared_ptr<Cluster<double>> source_cluster = std::make_shared<Cluster<double>>(recursive_build_strategy.create_cluster_tree(nc, 3, xt.data(), 2, 2));
+        Cluster<double> target_cluster = recursive_build_strategy.create_cluster_tree(nr, 3, xt.data(), 2, 2);
+        Cluster<double> source_cluster = recursive_build_strategy.create_cluster_tree(nc, 3, xt.data(), 2, 2);
 
-        GeneratorTestDouble A(3, nr, nc, xt, xs, target_cluster, source_cluster);
+        GeneratorTestDouble A(3, nr, nc, xt, xs, target_cluster, source_cluster, true, true);
 
         // fullACA fixed rank
         int reqrank_max = 10;
         fullACA<double> compressor;
-        LowRankMatrix<double> A_fullACA_fixed(A, compressor, *target_cluster, *source_cluster, reqrank_max, epsilon);
+        LowRankMatrix<double> A_fullACA_fixed(A, compressor, target_cluster, source_cluster, reqrank_max, epsilon);
 
         // ACA automatic building
-        LowRankMatrix<double> A_fullACA(A, compressor, *target_cluster, *source_cluster, -1, epsilon);
+        LowRankMatrix<double> A_fullACA(A, compressor, target_cluster, source_cluster, -1, epsilon);
         std::pair<double, double> fixed_compression_interval(0.87, 0.89);
         std::pair<double, double> auto_compression_interval(0.95, 0.97);
-        test = test || (test_lrmat(*target_cluster, *source_cluster, A, A_fullACA_fixed, A_fullACA, fixed_compression_interval, auto_compression_interval));
+        test = test || (test_lrmat(target_cluster, source_cluster, A, A_fullACA_fixed, A_fullACA, fixed_compression_interval, auto_compression_interval));
     }
     cout << "test : " << test << endl;
 

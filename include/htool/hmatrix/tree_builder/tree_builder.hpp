@@ -22,7 +22,7 @@ class HMatrixTreeBuilder {
     using ClusterType = Cluster<CoordinatePrecision>;
 
     // Parameters
-    std::shared_ptr<const ClusterType> m_target_root_cluster, m_source_root_cluster;
+    const ClusterType &m_target_root_cluster, &m_source_root_cluster;
     underlying_type<CoefficientPrecision> m_epsilon{1e-6};
     CoordinatePrecision m_eta{10};
     int m_maxblocksize{1000000};
@@ -61,14 +61,14 @@ class HMatrixTreeBuilder {
                && ((m_UPLO_type == 'U'
                     && target_cluster.get_offset() >= (source_cluster.get_offset() + source_cluster.get_size())
                     && ((m_target_partition_number == -1)
-                        || source_cluster.get_offset() >= m_source_root_cluster->get_clusters_on_partition()[m_target_partition_number]->get_offset())
+                        || source_cluster.get_offset() >= m_source_root_cluster.get_clusters_on_partition()[m_target_partition_number]->get_offset())
                     // && ((m_target_partition_number != -1)
                     //     || source_cluster.get_offset() >= target_cluster.get_offset())
                     )
                    || (m_UPLO_type == 'L'
                        && source_cluster.get_offset() >= (target_cluster.get_offset() + target_cluster.get_size())
                        && ((m_target_partition_number == -1)
-                           || source_cluster.get_offset() < m_source_root_cluster->get_clusters_on_partition()[m_target_partition_number]->get_offset() + m_source_root_cluster->get_clusters_on_partition()[m_target_partition_number]->get_size())
+                           || source_cluster.get_offset() < m_source_root_cluster.get_clusters_on_partition()[m_target_partition_number]->get_offset() + m_source_root_cluster.get_clusters_on_partition()[m_target_partition_number]->get_size())
                        //    && ((m_target_partition_number != -1)
                        //    || source_cluster.get_offset() < target_cluster.get_offset() + target_cluster.get_size())
                        ));
@@ -79,10 +79,10 @@ class HMatrixTreeBuilder {
         const auto &source_cluster       = hmatrix.get_source_cluster();
 
         return (is_there_a_target_partition
-                && (target_cluster == *m_target_root_cluster->get_clusters_on_partition()[m_target_partition_number])
-                && source_cluster == *m_source_root_cluster->get_clusters_on_partition()[m_target_partition_number])
+                && (target_cluster == *m_target_root_cluster.get_clusters_on_partition()[m_target_partition_number])
+                && source_cluster == *m_source_root_cluster.get_clusters_on_partition()[m_target_partition_number])
                || (!is_there_a_target_partition
-                   && target_cluster == *m_target_root_cluster
+                   && target_cluster == m_target_root_cluster
                    && target_cluster == source_cluster);
     }
 
@@ -96,7 +96,7 @@ class HMatrixTreeBuilder {
     }
 
   public:
-    explicit HMatrixTreeBuilder(std::shared_ptr<const ClusterType> root_cluster_tree_target, std::shared_ptr<const ClusterType> root_source_cluster_tree, underlying_type<CoefficientPrecision> epsilon = 1e-6, CoordinatePrecision eta = 10, char symmetry = 'N', char UPLO = 'N', int reqrank = -1) : m_target_root_cluster(root_cluster_tree_target), m_source_root_cluster(root_source_cluster_tree), m_epsilon(epsilon), m_eta(eta), m_reqrank(reqrank), m_symmetry_type(symmetry), m_UPLO_type(UPLO), m_low_rank_generator(std::make_shared<sympartialACA<CoefficientPrecision, CoordinatePrecision>>()), m_admissibility_condition(std::make_shared<RjasanowSteinbach<CoordinatePrecision>>()) {
+    explicit HMatrixTreeBuilder(const ClusterType &root_cluster_tree_target, const ClusterType &root_source_cluster_tree, underlying_type<CoefficientPrecision> epsilon, CoordinatePrecision eta, char symmetry, char UPLO, int reqrank, int target_partition_number) : m_target_root_cluster(root_cluster_tree_target), m_source_root_cluster(root_source_cluster_tree), m_epsilon(epsilon), m_eta(eta), m_reqrank(reqrank), m_target_partition_number(target_partition_number), m_symmetry_type(symmetry), m_UPLO_type(UPLO), m_low_rank_generator(std::make_shared<sympartialACA<CoefficientPrecision, CoordinatePrecision>>()), m_admissibility_condition(std::make_shared<RjasanowSteinbach<CoordinatePrecision>>()) {
         if (!((m_symmetry_type == 'N' || m_symmetry_type == 'H' || m_symmetry_type == 'S')
               && (m_UPLO_type == 'N' || m_UPLO_type == 'L' || m_UPLO_type == 'U')
               && ((m_symmetry_type == 'N' && m_UPLO_type == 'N') || (m_symmetry_type != 'N' && m_UPLO_type != 'N'))
@@ -107,6 +107,10 @@ class HMatrixTreeBuilder {
             error_message.push_back(m_UPLO_type);
             htool::Logger::get_instance().log(Logger::LogLevel::ERROR, error_message); // LCOV_EXCL_LINE
             // throw std::invalid_argument(error_message); // LCOV_EXCL_LINE
+        }
+        if (target_partition_number != -1 && target_partition_number >= m_target_root_cluster.get_clusters_on_partition().size()) {
+            htool::Logger::get_instance().log(Logger::LogLevel::ERROR, "Target partition number cannot exceed number of partitions"); // LCOV_EXCL_LINE
+            // throw std::logic_error("[Htool error] Target partition number cannot exceed number of partitions.");
         }
     }
 
@@ -122,13 +126,6 @@ class HMatrixTreeBuilder {
     // Setters
     void set_low_rank_generator(std::shared_ptr<VirtualLowRankGenerator<CoefficientPrecision, CoordinatePrecision>> ptr) { m_low_rank_generator = ptr; }
     void set_admissibility_condition(std::shared_ptr<VirtualAdmissibilityCondition<CoordinatePrecision>> ptr) { m_admissibility_condition = ptr; }
-    void set_target_partition_number(int target_partition_number) {
-        if (target_partition_number >= m_target_root_cluster->get_clusters_on_partition().size()) {
-            htool::Logger::get_instance().log(Logger::LogLevel::ERROR, "Target partition number cannot exceed number of partitions"); // LCOV_EXCL_LINE
-            // throw std::logic_error("[Htool error] Target partition number cannot exceed number of partitions.");
-        }
-        m_target_partition_number = target_partition_number;
-    }
     void set_maximal_block_size(int maxblock_size) { m_maxblocksize = maxblock_size; }
     void set_minimal_source_depth(int minimal_source_depth) { m_minsourcedepth = minimal_source_depth; }
     void set_minimal_target_depth(int minimal_target_depth) { m_mintargetdepth = minimal_target_depth; }
@@ -406,7 +403,7 @@ void HMatrixTreeBuilder<CoefficientPrecision, CoordinatePrecision>::reset_root_o
         root_hmatrix.delete_children();
         root_hmatrix.assign_children(new_root_children);
         root_hmatrix.set_target_cluster(root_hmatrix.get_target_cluster().get_clusters_on_partition()[target_partition_number]);
-        // m_storage.emplace_back(new HMatrixType(m_target_root_cluster->get_clusters_on_partition()[target_partition_number], &m_root_hmatrix->get_source_cluster(), 0));
+        // m_storage.emplace_back(new HMatrixType(m_target_root_cluster.get_clusters_on_partition()[target_partition_number], &m_root_hmatrix->get_source_cluster(), 0));
         // m_root_hmatrix = m_storage.back().get();
         // for (const auto &new_child : new_root_children) {
         //     m_storage.back().get()->m_children.push_back(new_child);

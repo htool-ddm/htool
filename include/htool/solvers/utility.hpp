@@ -14,7 +14,7 @@ DDM<CoefficientPrecision> build_ddm_solver(DistributedOperator<CoefficientPrecis
     MPI_Comm_rank(distributed_operator.get_comm(), &rankWorld);
 
     // Local dense operator
-    int local_size = distributed_operator.get_target_partition()->get_size_of_partition(rankWorld);
+    int local_size = distributed_operator.get_target_partition().get_size_of_partition(rankWorld);
 
     std::unique_ptr<Matrix<CoefficientPrecision>> local_dense_operator = std::make_unique<Matrix<CoefficientPrecision>>(local_size, local_size);
     std::cout << "local size " << local_size << "\n";

@@ -525,9 +525,9 @@ class DDM {
         int sizeWorld;
         MPI_Comm_rank(comm, &rankWorld);
         MPI_Comm_size(comm, &sizeWorld);
-        int offset = hpddm_op->HA->get_target_partition()->get_offset_of_partition(rankWorld);
+        int offset = hpddm_op->HA->get_target_partition().get_offset_of_partition(rankWorld);
         // int size        = hpddm_op->HA->get_local_size();
-        int nb_rows = hpddm_op->HA->get_target_partition()->get_global_size();
+        int nb_rows = hpddm_op->HA->get_target_partition().get_global_size();
         // int nb_vec_prod = StrToNbr<int>(hpddm_op->HA->get_infos("nb_mat_vec_prod"));
         double time = MPI_Wtime();
 
@@ -541,7 +541,7 @@ class DDM {
         // TODO: blocking ?
         for (int i = 0; i < mu; i++) {
             // Permutation
-            hpddm_op->HA->get_target_partition()->global_to_partition_numbering(rhs + i * nb_rows, rhs_perm.data());
+            hpddm_op->HA->get_target_partition().global_to_partition_numbering(rhs + i * nb_rows, rhs_perm.data());
             // global_to_root_cluster(hpddm_op->HA->get_root_target_cluster(), rhs + i * nb_rows, rhs_perm.data());
             // hpddm_op->HA->target_to_cluster_permutation(rhs + i * nb_rows, rhs_perm.data());
 
@@ -571,7 +571,7 @@ class DDM {
 
         for (int i = 0; i < sizeWorld; i++) {
             // recvcounts[i] = (hpddm_op->HA->get_root_target_cluster().get_clusters_on_partition()[i]->get_size()) * mu;
-            recvcounts[i] = (hpddm_op->HA->get_target_partition()->get_size_of_partition(i)) * mu;
+            recvcounts[i] = (hpddm_op->HA->get_target_partition().get_size_of_partition(i)) * mu;
             if (i > 0)
                 displs[i] = displs[i - 1] + recvcounts[i - 1];
         }
@@ -588,7 +588,7 @@ class DDM {
             }
 
             // Permutation
-            hpddm_op->HA->get_target_partition()->partition_to_global_numbering(hpddm_op->in_global->data() + i * nb_rows, x + i * nb_rows);
+            hpddm_op->HA->get_target_partition().partition_to_global_numbering(hpddm_op->in_global->data() + i * nb_rows, x + i * nb_rows);
             // root_cluster_to_global(hpddm_op->HA->get_root_target_cluster(), hpddm_op->in_global->data() + i * nb_rows, x + i * nb_rows);
             // hpddm_op->HA->cluster_to_target_permutation(hpddm_op->in_global->data() + i * nb_rows, x + i * nb_rows);
         }

@@ -38,21 +38,21 @@ int main(int argc, char *argv[]) {
 
         ClusterTreeBuilder<double> recursive_build_strategy;
 
-        std::shared_ptr<Cluster<double>> t = std::make_shared<Cluster<double>>(recursive_build_strategy.create_cluster_tree(nr, 3, xt.data(), 2, 2));
-        std::shared_ptr<Cluster<double>> s = std::make_shared<Cluster<double>>(recursive_build_strategy.create_cluster_tree(nc, 3, xs.data(), 2, 2));
+        Cluster<double> t = recursive_build_strategy.create_cluster_tree(nr, 3, xt.data(), 2, 2);
+        Cluster<double> s = recursive_build_strategy.create_cluster_tree(nc, 3, xs.data(), 2, 2);
 
-        GeneratorTestDouble A(3, nr, nc, xt, xs, t, s);
+        GeneratorTestDouble A(3, nr, nc, xt, xs, t, s, true, true);
 
         // SVD fixed rank
         int reqrank_max = 10;
         SVD<double> compressor_SVD;
-        LowRankMatrix<double> A_SVD_fixed(A, compressor_SVD, *t, *s, reqrank_max, epsilon);
+        LowRankMatrix<double> A_SVD_fixed(A, compressor_SVD, t, s, reqrank_max, epsilon);
         std::vector<double> SVD_fixed_errors;
         std::vector<double> SVD_errors_check(reqrank_max, 0);
 
         // compute singular values
         Matrix<double> matrix(nr, nc);
-        A.copy_submatrix(t->get_size(), s->get_size(), t->get_offset(), s->get_offset(), matrix.data());
+        A.copy_submatrix(t.get_size(), s.get_size(), t.get_offset(), s.get_offset(), matrix.data());
         int lda   = nr;
         int ldu   = nr;
         int ldvt  = nc;
@@ -71,7 +71,7 @@ int main(int argc, char *argv[]) {
         Lapack<double>::gesvd("A", "A", &nr, &nc, matrix.data(), &lda, singular_values.data(), u.data(), &ldu, vt.data(), &ldvt, work.data(), &lwork, rwork.data(), &info);
 
         for (int k = 0; k < reqrank_max; k++) {
-            SVD_fixed_errors.push_back(Frobenius_absolute_error(*t, *s, A_SVD_fixed, A, k));
+            SVD_fixed_errors.push_back(Frobenius_absolute_error(t, s, A_SVD_fixed, A, k));
             for (int l = k; l < min(nr, nc); l++) {
                 SVD_errors_check[k] += singular_values[l] * singular_values[l];
             }
@@ -85,11 +85,11 @@ int main(int argc, char *argv[]) {
         cout << "> Errors computed with the remaining eigenvalues : " << SVD_errors_check << endl;
 
         // ACA automatic building
-        LowRankMatrix<double> A_SVD(A, compressor_SVD, *t, *s, -1, epsilon);
+        LowRankMatrix<double> A_SVD(A, compressor_SVD, t, s, -1, epsilon);
 
         std::pair<double, double> fixed_compression_interval(0.87, 0.89);
         std::pair<double, double> auto_compression_interval(0.95, 0.97);
-        test = test || test_lrmat(*t, *s, A, A_SVD_fixed, A_SVD, fixed_compression_interval, auto_compression_interval);
+        test = test || test_lrmat(t, s, A, A_SVD_fixed, A_SVD, fixed_compression_interval, auto_compression_interval);
     }
     cout << "test : " << test << endl;
 
