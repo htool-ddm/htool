@@ -187,16 +187,22 @@ int test_vector_product(GeneratorTestType generator, const DistributedOperator<T
 }
 
 template <typename T, typename GeneratorTestType>
-auto add_off_diagonal_operator(ClusterTreeBuilder<htool::underlying_type<T>> &recursive_build, DistributedOperator<T> &distributed_operator, const Cluster<htool::underlying_type<T>> &target_root_cluster, const Cluster<htool::underlying_type<T>> &local_target_root_cluster, const std::vector<double> p1, const std::vector<double> p1_permuted, const Cluster<htool::underlying_type<T>> &source_root_cluster, const Cluster<htool::underlying_type<T>> &local_source_root_cluster, const std::vector<double> p2_permuted, bool use_permutation, DataType data_type, htool::underlying_type<T> epsilon, htool::underlying_type<T> eta) {
+auto add_off_diagonal_operator(ClusterTreeBuilder<htool::underlying_type<T>> &recursive_build, DistributedOperator<T> &distributed_operator, const Cluster<htool::underlying_type<T>> &target_root_cluster, const std::vector<double> p1, const std::vector<double> p1_permuted, const Cluster<htool::underlying_type<T>> &source_root_cluster, const std::vector<double> p2_permuted, bool use_permutation, DataType data_type, htool::underlying_type<T> epsilon, htool::underlying_type<T> eta) {
     struct Holder {
         std::unique_ptr<const Cluster<htool::underlying_type<T>>> off_diagonal_cluster;
-        std::unique_ptr<const Cluster<htool::underlying_type<T>>> local_off_diagonal_cluster_tree_1, local_off_diagonal_cluster_tree_2;
+        // std::unique_ptr<const Cluster<htool::underlying_type<T>>> local_off_diagonal_cluster_tree_1, local_off_diagonal_cluster_tree_2;
         std::unique_ptr<GeneratorTestType> generator_off_diagonal;
         std::unique_ptr<Matrix<T>> off_diagonal_matrix_1, off_diagonal_matrix_2;
         std::unique_ptr<HMatrix<T, htool::underlying_type<T>>> off_diagonal_hmatrix_1, off_diagonal_hmatrix_2;
         std::unique_ptr<LocalOperator<T, htool::underlying_type<T>>> local_off_diagonal_operator_1, local_off_diagonal_operator_2;
 
-        Holder(ClusterTreeBuilder<htool::underlying_type<T>> &recursive_build, const Cluster<htool::underlying_type<T>> &target_root_cluster, const Cluster<htool::underlying_type<T>> &local_target_root_cluster, const std::vector<double> p1, const std::vector<double> p1_permuted, const Cluster<htool::underlying_type<T>> &source_root_cluster, const Cluster<htool::underlying_type<T>> &local_source_root_cluster, const std::vector<double> p2_permuted, bool use_permutation, DataType data_type, htool::underlying_type<T> epsilon, htool::underlying_type<T> eta) {
+        Holder(ClusterTreeBuilder<htool::underlying_type<T>> &recursive_build, const Cluster<htool::underlying_type<T>> &target_root_cluster, const std::vector<double> p1, const std::vector<double> p1_permuted, const Cluster<htool::underlying_type<T>> &source_root_cluster, const std::vector<double> p2_permuted, bool use_permutation, DataType data_type, htool::underlying_type<T> epsilon, htool::underlying_type<T> eta) {
+            // Local clusters
+            int rankWorld;
+            MPI_Comm_rank(MPI_COMM_WORLD, &rankWorld);
+            const Cluster<htool::underlying_type<T>> &local_target_root_cluster = target_root_cluster.get_cluster_on_partition(rankWorld);
+            const Cluster<htool::underlying_type<T>> &local_source_root_cluster = source_root_cluster.get_cluster_on_partition(rankWorld);
+
             // Sizes
             int nc       = source_root_cluster.get_size();
             int nr       = target_root_cluster.get_size();
@@ -226,8 +232,8 @@ auto add_off_diagonal_operator(ClusterTreeBuilder<htool::underlying_type<T>> &re
             }
 
             // Off diagonal LocalDenseMatrix
-            local_off_diagonal_cluster_tree_1 = make_unique<const Cluster<htool::underlying_type<T>>>(clone_cluster_tree_from_partition(*off_diagonal_cluster, 0));
-            local_off_diagonal_cluster_tree_2 = make_unique<const Cluster<htool::underlying_type<T>>>(clone_cluster_tree_from_partition(*off_diagonal_cluster, 1));
+            const Cluster<htool::underlying_type<T>> *local_off_diagonal_cluster_tree_1 = &off_diagonal_cluster->get_cluster_on_partition(0);
+            const Cluster<htool::underlying_type<T>> *local_off_diagonal_cluster_tree_2 = &off_diagonal_cluster->get_cluster_on_partition(1);
 
             if (data_type == DataType::Matrix) {
                 off_diagonal_matrix_1 = std::make_unique<Matrix<T>>(local_target_root_cluster.get_size(), local_off_diagonal_cluster_tree_1->get_size());
@@ -250,10 +256,10 @@ auto add_off_diagonal_operator(ClusterTreeBuilder<htool::underlying_type<T>> &re
         }
     };
 
-    Holder holder(recursive_build, target_root_cluster, local_target_root_cluster, p1, p1_permuted, source_root_cluster, local_source_root_cluster, p2_permuted, use_permutation, data_type, epsilon, eta);
-    if (holder.local_off_diagonal_cluster_tree_1->get_size() > 0)
+    Holder holder(recursive_build, target_root_cluster, p1, p1_permuted, source_root_cluster, p2_permuted, use_permutation, data_type, epsilon, eta);
+    if (holder.off_diagonal_cluster->get_cluster_on_partition(0).get_size() > 0)
         distributed_operator.add_local_operator(holder.local_off_diagonal_operator_1.get());
-    if (holder.local_off_diagonal_cluster_tree_2->get_size() > 0)
+    if (holder.off_diagonal_cluster->get_cluster_on_partition(1).get_size() > 0)
         distributed_operator.add_local_operator(holder.local_off_diagonal_operator_2.get());
     return holder;
 }
@@ -348,12 +354,8 @@ bool test_custom_distributed_operator(int nr, int nc, int mu, bool use_permutati
 
     // Diagonal LocalDenseMatrix
     std::shared_ptr<LocalOperator<T, htool::underlying_type<T>>> local_operator;
-    std::shared_ptr<const Cluster<htool::underlying_type<T>>> local_target_root_cluster = make_shared<const Cluster<htool::underlying_type<T>>>(clone_cluster_tree_from_partition(*target_root_cluster, rankWorld));
-
-    std::shared_ptr<const Cluster<htool::underlying_type<T>>> local_source_root_cluster = make_shared<const Cluster<htool::underlying_type<T>>>(clone_cluster_tree_from_partition(*source_root_cluster, rankWorld));
-    const Cluster<htool::underlying_type<T>> *actual_target_cluster                     = local_target_root_cluster.get();
-    ;
-    const Cluster<htool::underlying_type<T>> *actual_source_cluster = off_diagonal_approximation ? local_source_root_cluster.get() : source_root_cluster.get();
+    const Cluster<htool::underlying_type<T>> *actual_target_cluster = &target_root_cluster->get_cluster_on_partition(rankWorld);
+    const Cluster<htool::underlying_type<T>> *actual_source_cluster = off_diagonal_approximation ? &source_root_cluster->get_cluster_on_partition(rankWorld) : source_root_cluster.get();
 
     char symmetry = (sizeWorld == 1 || off_diagonal_approximation) ? Symmetry : 'N';
     char uplo     = (sizeWorld == 1 || off_diagonal_approximation) ? UPLO : 'N';
@@ -393,7 +395,7 @@ bool test_custom_distributed_operator(int nr, int nc, int mu, bool use_permutati
     distributed_operator.use_permutation() = use_permutation;
 
     if (off_diagonal_approximation) {
-        auto dependencies = add_off_diagonal_operator<T, GeneratorTestType>(recursive_build, distributed_operator, *target_root_cluster, *local_target_root_cluster, p1, p1_permuted, *source_root_cluster, *local_source_root_cluster, p2_permuted, use_permutation, data_type, epsilon, eta);
+        auto dependencies = add_off_diagonal_operator<T, GeneratorTestType>(recursive_build, distributed_operator, *target_root_cluster, p1, p1_permuted, *source_root_cluster, p2_permuted, use_permutation, data_type, epsilon, eta);
 
         test = test_vector_product(generator, distributed_operator, *target_root_cluster, MasterOffset_target, *source_root_cluster, MasterOffset_source, mu, op, use_permutation, epsilon);
     } else {
@@ -491,15 +493,12 @@ bool test_default_distributed_operator(int nr, int nc, int mu, bool use_permutat
     GeneratorTestType generator(3, nr, nc, p1, p2, *target_root_cluster, *source_root_cluster, true, true);
     GeneratorTestType generator_permuted(3, nr, nc, p1_permuted, p2_permuted, *target_root_cluster, *source_root_cluster, false, false);
 
-    std::shared_ptr<const Cluster<htool::underlying_type<T>>> local_target_root_cluster = make_shared<const Cluster<htool::underlying_type<T>>>(clone_cluster_tree_from_partition(*target_root_cluster, rankWorld));
-
-    std::shared_ptr<const Cluster<htool::underlying_type<T>>> local_source_root_cluster = make_shared<const Cluster<htool::underlying_type<T>>>(clone_cluster_tree_from_partition(*source_root_cluster, rankWorld));
     if (off_diagonal_approximation) {
         auto distributed_operator_holder = build_default_local_hierarchical_approximation(generator_permuted, *target_root_cluster, *source_root_cluster, epsilon, eta, Symmetry, UPLO, MPI_COMM_WORLD);
 
         DistributedOperator<T> &distributed_operator = distributed_operator_holder.distributed_operator;
         distributed_operator.use_permutation()       = use_permutation;
-        auto dependencies                            = add_off_diagonal_operator<T, GeneratorTestType>(recursive_build, distributed_operator, *target_root_cluster, *local_target_root_cluster, p1, p1_permuted, *source_root_cluster, *local_source_root_cluster, p2_permuted, use_permutation, data_type, epsilon, eta);
+        auto dependencies                            = add_off_diagonal_operator<T, GeneratorTestType>(recursive_build, distributed_operator, *target_root_cluster, p1, p1_permuted, *source_root_cluster, p2_permuted, use_permutation, data_type, epsilon, eta);
 
         test = test_vector_product(generator, distributed_operator, *target_root_cluster, MasterOffset_target, *source_root_cluster, MasterOffset_source, mu, op, use_permutation, epsilon);
     } else {

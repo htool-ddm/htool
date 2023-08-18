@@ -65,6 +65,9 @@ class Cluster : public TreeNode<Cluster<CoordinatesPrecision>, ClusterTreeData<C
     unsigned int get_minimal_depth() const { return this->m_tree_data->m_min_depth; }
     unsigned int get_minclustersize() const { return this->m_tree_data->m_minclustersize; }
     const std::vector<const Cluster<CoordinatesPrecision> *> &get_clusters_on_partition() const { return this->m_tree_data->m_clusters_on_partition; }
+    const Cluster<CoordinatesPrecision> &get_cluster_on_partition(size_t index) const {
+        return *this->m_tree_data->m_clusters_on_partition[index];
+    }
     const std::vector<int> &get_permutation() const { return *(this->m_tree_data->m_permutation); }
     std::vector<int> &get_permutation() { return *(this->m_tree_data->m_permutation); }
 
@@ -83,61 +86,61 @@ bool is_cluster_on_partition(const Cluster<CoordinatesPrecision> &cluster) {
     return cluster.get_depth() == cluster.get_clusters_on_partition()[0]->get_depth();
 }
 
-template <typename CoordinatesPrecision>
-Cluster<CoordinatesPrecision> clone_cluster_tree_from_partition(const Cluster<CoordinatesPrecision> &cluster, int index) {
-    if (!cluster.is_permutation_local()) {
-        htool::Logger::get_instance().log(Logger::LogLevel::INFO, "Permutation is not local to partition, cloned cluster from partition cannot be used for local to/from local cluster permutation"); // LCOV_EXCL_LINE
-        // throw std::logic_error("[Htool error] Permutation is not local to partition, cluster on partition cannot be cloned.");                           // LCOV_EXCL_LINE
-    }
-    const Cluster<CoordinatesPrecision> &cluster_on_partition = *cluster.get_clusters_on_partition()[index];
+// template <typename CoordinatesPrecision>
+// Cluster<CoordinatesPrecision> clone_cluster_tree_from_partition(const Cluster<CoordinatesPrecision> &cluster, int index) {
+//     if (!cluster.is_permutation_local()) {
+//         htool::Logger::get_instance().log(LogLevel::INFO, "Permutation is not local to partition, cloned cluster from partition cannot be used for local to/from local cluster permutation"); // LCOV_EXCL_LINE
+//         // throw std::logic_error("[Htool error] Permutation is not local to partition, cluster on partition cannot be cloned.");                           // LCOV_EXCL_LINE
+//     }
+//     const Cluster<CoordinatesPrecision> &cluster_on_partition = *cluster.get_clusters_on_partition()[index];
 
-    // Initialisation of new root own properties
-    CoordinatesPrecision radius              = cluster_on_partition.get_radius();
-    std::vector<CoordinatesPrecision> center = cluster_on_partition.get_center();
-    int rank                                 = cluster_on_partition.get_rank();
-    int offset                               = cluster_on_partition.get_offset();
-    int size                                 = cluster_on_partition.get_size();
-    int counter                              = 0;
+//     // Initialisation of new root own properties
+//     CoordinatesPrecision radius              = cluster_on_partition.get_radius();
+//     std::vector<CoordinatesPrecision> center = cluster_on_partition.get_center();
+//     int rank                                 = cluster_on_partition.get_rank();
+//     int offset                               = cluster_on_partition.get_offset();
+//     int size                                 = cluster_on_partition.get_size();
+//     int counter                              = 0;
 
-    // Build new cluster tree
-    Cluster<CoordinatesPrecision> new_root_cluster(radius, center, rank, offset, size);
-    new_root_cluster.set_maximal_depth(cluster.get_maximal_depth());
-    new_root_cluster.set_maximal_depth(cluster.get_maximal_depth() - cluster_on_partition.get_depth());
-    new_root_cluster.set_minimal_depth(cluster.get_minimal_depth() - cluster_on_partition.get_depth());
-    new_root_cluster.set_is_permutation_local(cluster.is_permutation_local());
-    // Cluster<CoordinatesPrecision> *new_root = new_cluster_tree.add_root(radius, center, rank, offset, size, counter);
-    new_root_cluster.get_permutation() = cluster.get_permutation();
+//     // Build new cluster tree
+//     Cluster<CoordinatesPrecision> new_root_cluster(radius, center, rank, offset, size);
+//     new_root_cluster.set_maximal_depth(cluster.get_maximal_depth());
+//     new_root_cluster.set_maximal_depth(cluster.get_maximal_depth() - cluster_on_partition.get_depth());
+//     new_root_cluster.set_minimal_depth(cluster.get_minimal_depth() - cluster_on_partition.get_depth());
+//     new_root_cluster.set_is_permutation_local(cluster.is_permutation_local());
+//     // Cluster<CoordinatesPrecision> *new_root = new_cluster_tree.add_root(radius, center, rank, offset, size, counter);
+//     new_root_cluster.get_permutation() = cluster.get_permutation();
 
-    int counter_offset = cluster_on_partition.get_counter();
+//     int counter_offset = cluster_on_partition.get_counter();
 
-    // Recursivity
-    std::stack<const Cluster<CoordinatesPrecision> *> old_cluster_stack;
-    std::stack<Cluster<CoordinatesPrecision> *> new_cluster_stack;
-    new_cluster_stack.push(&new_root_cluster);
-    old_cluster_stack.push(&cluster_on_partition);
+//     // Recursivity
+//     std::stack<const Cluster<CoordinatesPrecision> *> old_cluster_stack;
+//     std::stack<Cluster<CoordinatesPrecision> *> new_cluster_stack;
+//     new_cluster_stack.push(&new_root_cluster);
+//     old_cluster_stack.push(&cluster_on_partition);
 
-    while (!new_cluster_stack.empty()) {
-        const Cluster<CoordinatesPrecision> *current_old_cluster = old_cluster_stack.top();
-        Cluster<CoordinatesPrecision> *current_new_cluster       = new_cluster_stack.top();
-        old_cluster_stack.pop();
-        new_cluster_stack.pop();
+//     while (!new_cluster_stack.empty()) {
+//         const Cluster<CoordinatesPrecision> *current_old_cluster = old_cluster_stack.top();
+//         Cluster<CoordinatesPrecision> *current_new_cluster       = new_cluster_stack.top();
+//         old_cluster_stack.pop();
+//         new_cluster_stack.pop();
 
-        for (const auto &child : current_old_cluster->get_children()) {
-            // Copy
-            radius  = child->get_radius();
-            center  = child->get_center();
-            rank    = child->get_rank();
-            offset  = child->get_offset();
-            size    = child->get_size();
-            counter = child->get_counter() - counter_offset;
+//         for (const auto &child : current_old_cluster->get_children()) {
+//             // Copy
+//             radius  = child->get_radius();
+//             center  = child->get_center();
+//             rank    = child->get_rank();
+//             offset  = child->get_offset();
+//             size    = child->get_size();
+//             counter = child->get_counter() - counter_offset;
 
-            old_cluster_stack.push(child.get());
-            new_cluster_stack.push(current_new_cluster->add_child(radius, center, rank, offset, size, counter, false));
-        }
-    }
+//             old_cluster_stack.push(child.get());
+//             new_cluster_stack.push(current_new_cluster->add_child(radius, center, rank, offset, size, counter, false));
+//         }
+//     }
 
-    return new_root_cluster;
-}
+//     return new_root_cluster;
+// }
 
 // Permutations
 template <typename CoefficientPrecision, typename CoordinatesPrecision = CoefficientPrecision>
