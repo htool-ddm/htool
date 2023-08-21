@@ -105,7 +105,7 @@ Cluster<T> ClusterTreeBuilder<T>::create_cluster_tree(int number_of_points, int 
             depth_of_partition                    = static_cast<int>(floor(log(size_partition) / log(number_of_children)));
             number_of_children_on_partition_level = number_of_children;
             if (size_partition != std::pow(number_of_children, depth_of_partition)) {
-                Logger::get_instance().log(Logger::LogLevel::WARNING, "The given size for the partition is not a power of the number of children in the cluster tree.");
+                Logger::get_instance().log(LogLevel::WARNING, "The given size for the partition is not a power of the number of children in the cluster tree.");
                 additional_children_on_last_partition = size_partition - std::pow(number_of_children, depth_of_partition);
             }
         } else {
@@ -217,7 +217,7 @@ Cluster<T> ClusterTreeBuilder<T>::create_cluster_tree(int number_of_points, int 
                 cluster_stack.push(child);
             }
         } else if (current_cluster->get_rank() < 0) {
-            htool::Logger::get_instance().log(Logger::LogLevel::ERROR, "Cluster tree reached maximal depth, but not enough children to define a partition"); // LCOV_EXCL_LINE
+            htool::Logger::get_instance().log(LogLevel::ERROR, "Cluster tree reached maximal depth, but not enough children to define a partition"); // LCOV_EXCL_LINE
         } else {
             current_cluster->set_maximal_depth(std::max(current_cluster->get_maximal_depth(), current_cluster->get_depth()));
             current_cluster->set_minimal_depth(std::min(current_cluster->get_minimal_depth(), current_cluster->get_depth()));

@@ -6,16 +6,16 @@
 class TestWriter : public htool::IObjectWriter {
   public:
     std::string m_string = "";
-    void write(const std::string &message) override { m_string.append(message); }
+    void write(htool::LogLevel logging_level, const std::string &message) override { m_string.append(logging_level_to_string(logging_level) + message); }
 };
 
 int main() {
-    std::array<htool::Logger::LogLevel, 5> log_levels{
-        htool::Logger::LogLevel::CRITICAL,
-        htool::Logger::LogLevel::ERROR,
-        htool::Logger::LogLevel::WARNING,
-        htool::Logger::LogLevel::DEBUG,
-        htool::Logger::LogLevel::INFO};
+    std::array<htool::LogLevel, 5> log_levels{
+        htool::LogLevel::CRITICAL,
+        htool::LogLevel::ERROR,
+        htool::LogLevel::WARNING,
+        htool::LogLevel::DEBUG,
+        htool::LogLevel::INFO};
 
     auto test_writer = std::make_shared<TestWriter>();
     for (auto log_level : log_levels) {

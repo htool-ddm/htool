@@ -22,7 +22,7 @@ class ComputeLargestExtent final : public VirtualDirectionComputationStrategy<T>
 
     std::vector<T> compute_direction(const Cluster<T> *cluster, const std::vector<int> &permutation, int spatial_dimension, const T *const coordinates, const T *const, const T *const weights) override {
         if (spatial_dimension != 2 && spatial_dimension != 3) {
-            htool::Logger::get_instance().log(Logger::LogLevel::ERROR, "clustering not define for spatial dimension !=2 and !=3"); // LCOV_EXCL_LINE
+            htool::Logger::get_instance().log(LogLevel::ERROR, "clustering not define for spatial dimension !=2 and !=3"); // LCOV_EXCL_LINE
             // throw std::logic_error("[Htool error] clustering not define for spatial dimension !=2 and !=3"); // LCOV_EXCL_LINE
         }
 

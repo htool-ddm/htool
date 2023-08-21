@@ -105,11 +105,11 @@ class HMatrixTreeBuilder {
             error_message.push_back(m_symmetry_type);
             error_message += " and m_UPLO_type=";
             error_message.push_back(m_UPLO_type);
-            htool::Logger::get_instance().log(Logger::LogLevel::ERROR, error_message); // LCOV_EXCL_LINE
+            htool::Logger::get_instance().log(LogLevel::ERROR, error_message); // LCOV_EXCL_LINE
             // throw std::invalid_argument(error_message); // LCOV_EXCL_LINE
         }
         if (target_partition_number != -1 && target_partition_number >= m_target_root_cluster.get_clusters_on_partition().size()) {
-            htool::Logger::get_instance().log(Logger::LogLevel::ERROR, "Target partition number cannot exceed number of partitions"); // LCOV_EXCL_LINE
+            htool::Logger::get_instance().log(LogLevel::ERROR, "Target partition number cannot exceed number of partitions"); // LCOV_EXCL_LINE
             // throw std::logic_error("[Htool error] Target partition number cannot exceed number of partitions.");
         }
     }

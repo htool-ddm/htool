@@ -158,7 +158,7 @@ class partialACA final : public VirtualLowRankGenerator<CoefficientPrecision, Co
                     if (q == 0) { // corner case where first row is zero, ACA fails, we build a dense block instead
                         q = -1;
                     }
-                    htool::Logger::get_instance().log(Logger::LogLevel::WARNING, "ACA found a zero row in a " + std::to_string(target_size) + "x" + std::to_string(source_size) + " block. Final rank is " + std::to_string(q)); // LCOV_EXCL_LINE
+                    htool::Logger::get_instance().log(LogLevel::WARNING, "ACA found a zero row in a " + std::to_string(target_size) + "x" + std::to_string(source_size) + " block. Final rank is " + std::to_string(q)); // LCOV_EXCL_LINE
                     // std::cout << "[Htool warning] ACA found a zero row in a " + std::to_string(target_size) + "x" + std::to_string(source_size) + " block. Final rank is " + std::to_string(q) << std::endl;
                     break;
                 }

@@ -86,7 +86,7 @@ class LocalOperator : public VirtualLocalOperator<CoefficientPrecision> {
         } else if (m_symmetry == 'S' || m_symmetry == 'H') {
             local_add_vector_product_symmetric('N', alpha, input, beta, output, m_UPLO, m_symmetry);
         } else {
-            htool::Logger::get_instance().log(Logger::LogLevel::ERROR, "Invalid arguments for LocalDenseMatrix"); // LCOV_EXCL_LINE
+            htool::Logger::get_instance().log(LogLevel::ERROR, "Invalid arguments for LocalDenseMatrix"); // LCOV_EXCL_LINE
             // throw std::invalid_argument("[Htool error] Invalid arguments for LocalDenseMatrix");
         }
 
@@ -143,7 +143,7 @@ class LocalOperator : public VirtualLocalOperator<CoefficientPrecision> {
         } else if (m_symmetry == 'S' || m_symmetry == 'H') {
             local_add_matrix_product_symmetric_row_major('N', alpha, input, beta, output, mu, m_UPLO, m_symmetry);
         } else {
-            htool::Logger::get_instance().log(Logger::LogLevel::ERROR, "Invalid arguments for LocalDenseMatrix"); // LCOV_EXCL_LINE
+            htool::Logger::get_instance().log(LogLevel::ERROR, "Invalid arguments for LocalDenseMatrix"); // LCOV_EXCL_LINE
             // throw std::invalid_argument("[Htool error] Invalid arguments for LocalDenseMatrix");
         }
 
@@ -175,7 +175,7 @@ class LocalOperator : public VirtualLocalOperator<CoefficientPrecision> {
             // m_data.add_vector_product('T', alpha, in, beta, output);
             local_add_vector_product_symmetric('T', alpha, in, beta, output, m_UPLO, m_symmetry);
         } else {
-            htool::Logger::get_instance().log(Logger::LogLevel::ERROR, "Invalid arguments for LocalDenseMatrix"); // LCOV_EXCL_LINE
+            htool::Logger::get_instance().log(LogLevel::ERROR, "Invalid arguments for LocalDenseMatrix"); // LCOV_EXCL_LINE
             // throw std::invalid_argument("[Htool error] Invalid arguments for LocalDenseMatrix");
         }
 
@@ -206,7 +206,7 @@ class LocalOperator : public VirtualLocalOperator<CoefficientPrecision> {
         } else if (m_symmetry == 'S' || m_symmetry == 'H') {
             local_add_matrix_product_symmetric_row_major('T', alpha, input, beta, output_perm.data(), mu, m_UPLO, m_symmetry);
         } else {
-            htool::Logger::get_instance().log(Logger::LogLevel::ERROR, "Invalid arguments for LocalDenseMatrix"); // LCOV_EXCL_LINE
+            htool::Logger::get_instance().log(LogLevel::ERROR, "Invalid arguments for LocalDenseMatrix"); // LCOV_EXCL_LINE
             // throw std::invalid_argument("[Htool error] Invalid arguments for LocalDenseMatrix");
         }
 
