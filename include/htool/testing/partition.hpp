@@ -8,7 +8,7 @@
 namespace htool {
 
 template <typename CoordinatePrecision>
-void test_partition(int spatial_dimension, int number_of_points, std::vector<CoordinatePrecision> &coordinates, int partition_size, std::vector<std::pair<int, int>> &partition) {
+void test_partition(int spatial_dimension, int number_of_points, std::vector<CoordinatePrecision> &coordinates, int partition_size, std::vector<int> &partition) {
     // Compute largest extent
     std::vector<CoordinatePrecision> direction(spatial_dimension, 0);
     Matrix<CoordinatePrecision> cov(spatial_dimension, spatial_dimension);
@@ -54,10 +54,12 @@ void test_partition(int spatial_dimension, int number_of_points, std::vector<Coo
     int size_numbering = number_of_points / partition_size;
     int count_size     = 0;
     for (int p = 0; p < partition_size - 1; p++) {
-        partition.emplace_back(count_size, size_numbering);
+        partition.emplace_back(count_size);
+        partition.emplace_back(size_numbering);
         count_size += size_numbering;
     }
-    partition.emplace_back(count_size, number_of_points - count_size);
+    partition.emplace_back(count_size);
+    partition.emplace_back(number_of_points - count_size);
 }
 } // namespace htool
 #endif

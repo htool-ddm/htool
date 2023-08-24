@@ -470,7 +470,9 @@ void HMatrixTreeBuilder<CoefficientPrecision, CoordinatePrecision>::compute_bloc
             cols_offsets[i] = this->m_dense_tasks[i]->get_source_cluster().get_offset();
             ptr[i]          = this->m_dense_tasks[i]->get_dense_data()->data();
         }
-        m_dense_blocks_generator->copy_dense_blocks(rows_sizes, cols_sizes, rows_offsets, cols_offsets, ptr);
+        if (!m_dense_tasks.empty()) {
+            m_dense_blocks_generator->copy_dense_blocks(rows_sizes, cols_sizes, rows_offsets, cols_offsets, ptr);
+        }
     }
 
     // if (m_block_diagonal_hmatrix != nullptr) {

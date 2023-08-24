@@ -6,7 +6,14 @@
 class TestWriter : public htool::IObjectWriter {
   public:
     std::string m_string = "";
-    void write(htool::LogLevel logging_level, const std::string &message) override { m_string.append(logging_level_to_string(logging_level) + message); }
+    htool::LogLevel m_current_log_level;
+    void write(htool::LogLevel log_level, const std::string &message) override {
+        if (log_level <= m_current_log_level) {
+            m_string.append(logging_level_to_string(log_level) + message);
+        }
+    }
+    void set_log_level(htool::LogLevel log_level) override { m_current_log_level = log_level; }
+    htool::LogLevel get_log_level() { return m_current_log_level; }
 };
 
 int main() {
@@ -23,7 +30,7 @@ int main() {
             auto &logger = htool::Logger::get_instance();
             logger.set_current_log_level(verbosity);
             logger.set_current_writer(test_writer);
-            unsigned int current_log_level = static_cast<unsigned int>(logger.get_current_log_level());
+            unsigned int current_log_level = static_cast<unsigned int>(test_writer->get_log_level());
             logger.log(log_level, "current log level: " + std::to_string(current_log_level) + "\n");
         }
     }
@@ -50,6 +57,8 @@ int main() {
 [Htool debug]    current log level: 40
 [Htool info]     current log level: 40
 )";
-
+    if (!(ref_string == test_writer->m_string)) {
+        std::cout << test_writer->m_string;
+    }
     return !(ref_string == test_writer->m_string);
 }

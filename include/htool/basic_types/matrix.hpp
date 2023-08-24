@@ -20,7 +20,7 @@ class Matrix {
     bool m_is_owning_data;
 
   public:
-    Matrix() : m_number_of_rows(0), m_number_of_cols(0), m_data(nullptr) {}
+    Matrix() : m_number_of_rows(0), m_number_of_cols(0), m_data(nullptr), m_is_owning_data(true) {}
     Matrix(int nbr, int nbc) : m_number_of_rows(nbr), m_number_of_cols(nbc), m_is_owning_data(true) {
         m_data = new T[nbr * nbc];
         std::fill_n(m_data, nbr * nbc, 0);
@@ -210,6 +210,7 @@ class Matrix {
         m_number_of_rows = nbr;
         m_number_of_cols = nbc;
         std::fill_n(m_data, nbr * nbc, value);
+        m_is_owning_data = true;
     }
 
     //! ### Matrix-scalar product

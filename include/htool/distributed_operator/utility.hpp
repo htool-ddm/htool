@@ -13,12 +13,12 @@ auto build_default_hierarchical_approximation(const VirtualGenerator<Coefficient
       public:
         PartitionFromCluster<CoefficientPrecision, CoordinatePrecision> target_partition, source_partition;
         HMatrix<CoefficientPrecision, CoordinatePrecision> hmatrix;
-        std::unique_ptr<const LocalHMatrix<CoefficientPrecision, CoordinatePrecision>> local_hmatrix;
+        LocalHMatrix<CoefficientPrecision, CoordinatePrecision> local_hmatrix;
         DistributedOperator<CoefficientPrecision> distributed_operator;
         const HMatrix<CoefficientPrecision, CoordinatePrecision> *block_diagonal_hmatrix{nullptr};
 
-        Holder(const VirtualGenerator<CoefficientPrecision> &generator, const Cluster<CoordinatePrecision> &target_cluster, const Cluster<CoordinatePrecision> &source_cluster, htool::underlying_type<CoefficientPrecision> epsilon, htool::underlying_type<CoefficientPrecision> eta, char symmetry, char UPLO, int rankWorld, MPI_Comm communicator) : target_partition(target_cluster), source_partition(source_cluster), hmatrix(HMatrixTreeBuilder<CoefficientPrecision, CoordinatePrecision>(target_cluster, source_cluster, epsilon, eta, symmetry, UPLO, -1, rankWorld).build(generator)), local_hmatrix(std::make_unique<LocalHMatrix<CoefficientPrecision, CoordinatePrecision>>(hmatrix, target_cluster.get_cluster_on_partition(rankWorld), source_cluster, symmetry, UPLO, false, false)), distributed_operator(target_partition, source_partition, symmetry, UPLO, communicator) {
-            distributed_operator.add_local_operator(local_hmatrix.get());
+        Holder(const VirtualGenerator<CoefficientPrecision> &generator, const Cluster<CoordinatePrecision> &target_cluster, const Cluster<CoordinatePrecision> &source_cluster, htool::underlying_type<CoefficientPrecision> epsilon, htool::underlying_type<CoefficientPrecision> eta, char symmetry, char UPLO, int rankWorld, MPI_Comm communicator) : target_partition(target_cluster), source_partition(source_cluster), hmatrix(HMatrixTreeBuilder<CoefficientPrecision, CoordinatePrecision>(target_cluster, source_cluster, epsilon, eta, symmetry, UPLO, -1, rankWorld).build(generator)), local_hmatrix(hmatrix, target_cluster.get_cluster_on_partition(rankWorld), source_cluster, symmetry, UPLO, false, false), distributed_operator(target_partition, source_partition, symmetry, UPLO, communicator) {
+            distributed_operator.add_local_operator(&local_hmatrix);
             block_diagonal_hmatrix = hmatrix.get_diagonal_hmatrix();
         }
 

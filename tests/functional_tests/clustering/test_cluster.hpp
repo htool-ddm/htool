@@ -26,7 +26,7 @@ bool test_cluster(int size, bool use_given_partition) {
 
     create_disk(dim, T(0.), size, coordinates.data());
 
-    std::vector<std::pair<int, int>> partition{};
+    std::vector<int> partition{};
 
     if (use_given_partition) {
         test_partition(dim, size, coordinates, sizeWorld, partition);
@@ -41,11 +41,11 @@ bool test_cluster(int size, bool use_given_partition) {
         ClusterTreeBuilder<T> recursive_build_strategy;
         recursive_build_strategy.set_direction_computation_strategy(std::make_shared<DirectionComputetationStrategy>());
         recursive_build_strategy.set_splitting_strategy(std::make_shared<SplittingStrategy>());
-        if (use_given_partition) {
-            recursive_build_strategy.set_partition(partition);
-        }
+        // if (use_given_partition) {
+        //     recursive_build_strategy.set_partition(partition);
+        // }
         recursive_build_strategy.set_minclustersize(1);
-        Cluster<T> root_cluster = recursive_build_strategy.create_cluster_tree(size, dim, coordinates.data(), nb_sons, sizeWorld);
+        Cluster<T> root_cluster = recursive_build_strategy.create_cluster_tree(size, dim, coordinates.data(), nb_sons, sizeWorld, (use_given_partition) ? partition.data() : nullptr);
         is_error                = is_error || !(root_cluster.is_root());
 
         if (rankWorld == 0)
@@ -90,8 +90,8 @@ bool test_cluster(int size, bool use_given_partition) {
         if (use_given_partition) {
             int p = 0;
             for (const auto &cluster_on_partition : clusters_on_partition) {
-                is_error = is_error || !(cluster_on_partition->get_size() == partition[p].second);
-                is_error = is_error || !(cluster_on_partition->get_offset() == partition[p].first);
+                is_error = is_error || !(cluster_on_partition->get_size() == partition[2 * p + 1]);
+                is_error = is_error || !(cluster_on_partition->get_offset() == partition[2 * p]);
                 p++;
             }
         }
