@@ -187,7 +187,7 @@ class GeneratorFromMatrix : public VirtualGeneratorWithPermutation<T> {
   public:
     explicit GeneratorFromMatrix(const Matrix<T> &A0, const std::vector<int> &target_permutation, const std::vector<int> &source_permutation) : VirtualGeneratorWithPermutation<T>(target_permutation.data(), source_permutation.data()), A(A0) {}
 
-    void copy_submatrix(int M, int N, const int *const rows, const int *const cols, T *ptr) const override {
+    void copy_submatrix_from_user_numbering(int M, int N, const int *const rows, const int *const cols, T *ptr) const override {
         for (int i = 0; i < M; i++) {
             for (int j = 0; j < N; j++) {
                 ptr[i + M * j] = A(rows[i], cols[j]);

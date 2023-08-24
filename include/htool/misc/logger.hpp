@@ -43,23 +43,28 @@ std::string logging_level_to_string(LogLevel logging_level) {
 
 class IObjectWriter {
   public:
+    virtual void set_log_level(LogLevel)              = 0;
     virtual void write(LogLevel, const std::string &) = 0;
     virtual ~IObjectWriter() {}
 };
 
 class StandartOutputWriter : public IObjectWriter {
-  public:
-    void write(LogLevel logging_level, const std::string &message) override {
-        std::string prefix;
+    LogLevel m_current_log_level = LogLevel::ERROR;
 
-        std::cout << logging_level_to_string(logging_level) + message << "\n";
+  public:
+    void write(LogLevel log_level, const std::string &message) override {
+        std::string prefix;
+        if (log_level <= m_current_log_level) {
+            std::cout << logging_level_to_string(log_level) + message << "\n";
+        }
     }
+    void set_log_level(LogLevel log_level) override { m_current_log_level = log_level; }
 };
 
 class Logger {
   public:
-    void set_current_log_level(unsigned int log_level) { m_current_log_level = static_cast<LogLevel>(log_level); }
-    void set_current_log_level(LogLevel log_level) { m_current_log_level = log_level; }
+    void set_current_log_level(unsigned int log_level) { m_writer->set_log_level(static_cast<LogLevel>(log_level)); }
+    void set_current_log_level(LogLevel log_level) { m_writer->set_log_level(log_level); }
     static Logger &get_instance() {
         static Logger instance;
         return instance;
@@ -67,14 +72,8 @@ class Logger {
 
     void set_current_writer(std::shared_ptr<IObjectWriter> writer) { m_writer = writer; }
 
-    LogLevel get_current_log_level() const {
-        return m_current_log_level;
-    }
-
     void log(LogLevel log_level, std::string message) {
-        if (log_level <= m_current_log_level) {
-            m_writer->write(log_level, message);
-        }
+        m_writer->write(log_level, message);
     }
 
   protected:
@@ -85,7 +84,6 @@ class Logger {
     virtual ~Logger() {}
 
   private:
-    LogLevel m_current_log_level            = LogLevel::ERROR;
     std::shared_ptr<IObjectWriter> m_writer = std::make_shared<StandartOutputWriter>();
 };
 

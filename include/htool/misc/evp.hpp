@@ -28,7 +28,7 @@ std::vector<T> solve_EVP_2(const Matrix<T> &cov) {
         do {
             dir[0]  = prod(0, ind);
             dir[1]  = prod(1, ind);
-            dirnorm = sqrt(dir[0] * dir[0] + dir[1] * dir[1]);
+            dirnorm = std::sqrt(dir[0] * dir[0] + dir[1] * dir[1]);
             ind++;
         } while ((dirnorm < std::numeric_limits<T>::epsilon()) && (ind < 2));
         if (dirnorm < std::numeric_limits<T>::epsilon()) {
@@ -45,7 +45,7 @@ std::vector<T> solve_EVP_2(const Matrix<T> &cov) {
 template <typename T>
 std::vector<T> solve_EVP_3(const Matrix<T> &cov) {
     std::vector<T> dir(3, 0);
-    T p1 = pow(cov(0, 1), 2) + pow(cov(0, 2), 2) + pow(cov(1, 2), 2);
+    T p1 = std::pow(cov(0, 1), 2) + std::pow(cov(0, 2), 2) + std::pow(cov(1, 2), 2);
     std::vector<T> eigs(3);
     Matrix<T> I(3, 3);
     I(0, 0) = 1;
@@ -78,8 +78,8 @@ std::vector<T> solve_EVP_3(const Matrix<T> &cov) {
         }
     } else {
         T q  = (cov(0, 0) + cov(1, 1) + cov(2, 2)) / static_cast<T>(3.);
-        T p2 = pow(cov(0, 0) - q, static_cast<T>(2)) + pow(cov(1, 1) - q, static_cast<T>(2)) + pow(cov(2, 2) - q, static_cast<T>(2)) + static_cast<T>(2.) * p1;
-        T p  = sqrt(p2 / static_cast<T>(6.));
+        T p2 = static_cast<T>(std::pow(cov(0, 0) - q, 2)) + static_cast<T>(std::pow(cov(1, 1) - q, 2)) + static_cast<T>(std::pow(cov(2, 2) - q, 2)) + static_cast<T>(2.) * p1;
+        T p  = std::sqrt(p2 / static_cast<T>(6.));
         Matrix<T> B(3, 3);
         B      = (static_cast<T>(1) / p) * (cov - q * I);
         T detB = B(0, 0) * (B(1, 1) * B(2, 2) - B(1, 2) * B(2, 1))
@@ -91,16 +91,16 @@ std::vector<T> solve_EVP_3(const Matrix<T> &cov) {
         // but computation error can leave it slightly outside this range.
         T phi;
         if (r <= -1)
-            phi = static_cast<T>(3.14159265358979323846) / static_cast<T>(3.);
+            phi = static_cast<T>(1.047197551196598);
         else if (r >= 1)
             phi = 0;
         else
-            phi = acos(r) / static_cast<T>(3.);
+            phi = std::acos(r) / static_cast<T>(3.);
 
         // the eigenvalues satisfy eig3 <= eig2 <= eig1
-        eigs[0] = q + static_cast<T>(2.) * p * cos(phi);
-        eigs[2] = q + static_cast<T>(2.) * p * cos(phi + (static_cast<T>(2.) * static_cast<T>(3.14159265358979323846) / static_cast<T>(3.)));
-        eigs[1] = static_cast<T>(3.) * q - eigs[0] - eigs[2]; // since trace(cov) = eig1 + eig2 + eig3
+        eigs[0] = q + static_cast<T>(2) * p * std::cos(phi);
+        eigs[2] = q + static_cast<T>(2) * p * std::cos(phi + static_cast<T>(2.094395102393195));
+        eigs[1] = static_cast<T>(3) * q - eigs[0] - eigs[2]; // since trace(cov) = eig1 + eig2 + eig3
 
         // clean up near zero values to zeros (needed when cov has a kernel)
         if (std::abs(eigs[1]) < std::numeric_limits<T>::epsilon())
@@ -118,7 +118,7 @@ std::vector<T> solve_EVP_3(const Matrix<T> &cov) {
                 dir[0]  = prod(0, ind);
                 dir[1]  = prod(1, ind);
                 dir[2]  = prod(2, ind);
-                dirnorm = sqrt(dir[0] * dir[0] + dir[1] * dir[1] + dir[2] * dir[2]);
+                dirnorm = std::sqrt(dir[0] * dir[0] + dir[1] * dir[1] + dir[2] * dir[2]);
                 ind++;
             } while ((dirnorm < std::numeric_limits<T>::epsilon()) && (ind < 3));
             if (dirnorm < std::numeric_limits<T>::epsilon()) {

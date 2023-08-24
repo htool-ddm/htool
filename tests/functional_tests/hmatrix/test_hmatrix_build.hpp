@@ -35,16 +35,16 @@ bool test_hmatrix_build(int nr, int nc, bool use_local_cluster, char Symmetry, c
     create_disk(3, z1, nr, p1.data());
 
     // Partition
-    std::vector<std::pair<int, int>> partition{};
+    std::vector<int> partition{};
     test_partition(3, nr, p1, sizeWorld, partition);
 
     // Clustering
     ClusterTreeBuilder<htool::underlying_type<T>> recursive_build_strategy;
-    recursive_build_strategy.set_partition(partition);
+    // recursive_build_strategy.set_partition(partition);
     // recursive_build_strategy.set_minclustersize(2);
 
     std::shared_ptr<const Cluster<htool::underlying_type<T>>> source_root_cluster;
-    std::shared_ptr<const Cluster<htool::underlying_type<T>>> target_root_cluster = make_shared<const Cluster<htool::underlying_type<T>>>(recursive_build_strategy.create_cluster_tree(nr, 3, p1.data(), 2, sizeWorld));
+    std::shared_ptr<const Cluster<htool::underlying_type<T>>> target_root_cluster = make_shared<const Cluster<htool::underlying_type<T>>>(recursive_build_strategy.create_cluster_tree(nr, 3, p1.data(), 2, sizeWorld, partition.data()));
 
     if (Symmetry == 'N' && nr != nc) {
         // Geometry
@@ -55,10 +55,9 @@ bool test_hmatrix_build(int nr, int nc, bool use_local_cluster, char Symmetry, c
         test_partition(3, nc, p2, sizeWorld, partition);
 
         // Clustering
-        recursive_build_strategy.set_partition(partition);
         // source_recursive_build_strategy.set_minclustersize(2);
 
-        source_root_cluster = make_shared<const Cluster<htool::underlying_type<T>>>(recursive_build_strategy.create_cluster_tree(nc, 3, p2.data(), 2, sizeWorld));
+        source_root_cluster = make_shared<const Cluster<htool::underlying_type<T>>>(recursive_build_strategy.create_cluster_tree(nc, 3, p2.data(), 2, sizeWorld, partition.data()));
     } else {
         source_root_cluster = target_root_cluster;
         p2                  = p1;

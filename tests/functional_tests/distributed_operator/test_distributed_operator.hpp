@@ -219,8 +219,8 @@ auto add_off_diagonal_operator(ClusterTreeBuilder<htool::underlying_type<T>> &re
             off_diagonal_partition.push_back(off_diagonal_nc_1 + nc_local);
             off_diagonal_partition.push_back(off_diagonal_nc_2);
 
-            recursive_build.set_partition(2, off_diagonal_partition.data());
-            off_diagonal_cluster = make_unique<const Cluster<htool::underlying_type<T>>>(recursive_build.create_cluster_tree(nc, 3, p2_permuted.data(), 2, 3));
+            // recursive_build.set_partition(2, off_diagonal_partition.data());
+            off_diagonal_cluster = make_unique<const Cluster<htool::underlying_type<T>>>(recursive_build.create_cluster_tree(nc, 3, p2_permuted.data(), 2, 2, off_diagonal_partition.data()));
 
             // Generators
             if (use_permutation) {
@@ -300,9 +300,8 @@ bool test_custom_distributed_operator(int nr, int nc, int mu, bool use_permutati
     count_size     = 0;
 
     ClusterTreeBuilder<htool::underlying_type<T>> recursive_build;
-    recursive_build.set_partition(sizeWorld, MasterOffset_target.data());
     std::shared_ptr<const Cluster<htool::underlying_type<T>>> source_root_cluster;
-    std::shared_ptr<const Cluster<htool::underlying_type<T>>> target_root_cluster = make_shared<const Cluster<htool::underlying_type<T>>>(recursive_build.create_cluster_tree(nr, 3, p1.data(), 2, sizeWorld));
+    std::shared_ptr<const Cluster<htool::underlying_type<T>>> target_root_cluster = make_shared<const Cluster<htool::underlying_type<T>>>(recursive_build.create_cluster_tree(nr, 3, p1.data(), 2, sizeWorld, MasterOffset_target.data()));
 
     if (Symmetry == 'N') {
         double z2 = 1 + 0.1;
@@ -317,9 +316,9 @@ bool test_custom_distributed_operator(int nr, int nc, int mu, bool use_permutati
         MasterOffset_source.push_back(count_size);
         MasterOffset_source.push_back(nc - count_size);
 
-        recursive_build.set_partition(sizeWorld, MasterOffset_source.data());
+        // recursive_build.set_partition(sizeWorld, MasterOffset_source.data());
 
-        source_root_cluster = make_shared<const Cluster<htool::underlying_type<T>>>(recursive_build.create_cluster_tree(nc, 3, p2.data(), 2, sizeWorld));
+        source_root_cluster = make_shared<const Cluster<htool::underlying_type<T>>>(recursive_build.create_cluster_tree(nc, 3, p2.data(), 2, sizeWorld, MasterOffset_source.data()));
 
     } else {
 
@@ -441,9 +440,8 @@ bool test_default_distributed_operator(int nr, int nc, int mu, bool use_permutat
     count_size     = 0;
 
     ClusterTreeBuilder<htool::underlying_type<T>> recursive_build;
-    recursive_build.set_partition(sizeWorld, MasterOffset_target.data());
     std::shared_ptr<const Cluster<htool::underlying_type<T>>> source_root_cluster;
-    std::shared_ptr<const Cluster<htool::underlying_type<T>>> target_root_cluster = make_shared<const Cluster<htool::underlying_type<T>>>(recursive_build.create_cluster_tree(nr, 3, p1.data(), 2, sizeWorld));
+    std::shared_ptr<const Cluster<htool::underlying_type<T>>> target_root_cluster = make_shared<const Cluster<htool::underlying_type<T>>>(recursive_build.create_cluster_tree(nr, 3, p1.data(), 2, sizeWorld, MasterOffset_target.data()));
 
     if (Symmetry == 'N') {
         double z2 = 1 + 0.1;
@@ -458,9 +456,9 @@ bool test_default_distributed_operator(int nr, int nc, int mu, bool use_permutat
         MasterOffset_source.push_back(count_size);
         MasterOffset_source.push_back(nc - count_size);
 
-        recursive_build.set_partition(sizeWorld, MasterOffset_source.data());
+        // recursive_build.set_partition(sizeWorld, MasterOffset_source.data());
 
-        source_root_cluster = make_shared<const Cluster<htool::underlying_type<T>>>(recursive_build.create_cluster_tree(nc, 3, p2.data(), 2, sizeWorld));
+        source_root_cluster = make_shared<const Cluster<htool::underlying_type<T>>>(recursive_build.create_cluster_tree(nc, 3, p2.data(), 2, sizeWorld, MasterOffset_source.data()));
 
     } else {
 
@@ -494,7 +492,7 @@ bool test_default_distributed_operator(int nr, int nc, int mu, bool use_permutat
     GeneratorTestType generator_permuted(3, nr, nc, p1_permuted, p2_permuted, *target_root_cluster, *source_root_cluster, false, false);
 
     if (off_diagonal_approximation) {
-        auto distributed_operator_holder = build_default_local_hierarchical_approximation(generator_permuted, *target_root_cluster, *source_root_cluster, epsilon, eta, Symmetry, UPLO, MPI_COMM_WORLD);
+        DefaultLocalApproximationBuilder<T, htool::underlying_type<T>> distributed_operator_holder(generator_permuted, *target_root_cluster, *source_root_cluster, epsilon, eta, Symmetry, UPLO, MPI_COMM_WORLD);
 
         DistributedOperator<T> &distributed_operator = distributed_operator_holder.distributed_operator;
         distributed_operator.use_permutation()       = use_permutation;
@@ -502,7 +500,7 @@ bool test_default_distributed_operator(int nr, int nc, int mu, bool use_permutat
 
         test = test_vector_product(generator, distributed_operator, *target_root_cluster, MasterOffset_target, *source_root_cluster, MasterOffset_source, mu, op, use_permutation, epsilon);
     } else {
-        auto distributed_operator_holder = build_default_hierarchical_approximation(generator_permuted, *target_root_cluster, *source_root_cluster, epsilon, eta, Symmetry, UPLO, MPI_COMM_WORLD);
+        DefaultApproximationBuilder<T, htool::underlying_type<T>> distributed_operator_holder(generator_permuted, *target_root_cluster, *source_root_cluster, epsilon, eta, Symmetry, UPLO, MPI_COMM_WORLD);
 
         DistributedOperator<T> &distributed_operator = distributed_operator_holder.distributed_operator;
         distributed_operator.use_permutation()       = use_permutation;

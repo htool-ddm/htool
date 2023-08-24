@@ -21,6 +21,7 @@ struct ClusterTreeData {
     bool m_is_permutation_local{false};
 
     // Nodes
+    const Cluster<CoordinatePrecision> *m_root_cluster{nullptr};
     std::vector<const Cluster<CoordinatePrecision> *> m_clusters_on_partition{};
 };
 

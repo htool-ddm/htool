@@ -14,6 +14,11 @@ namespace htool {
 template <typename CoefficientPrecision>
 class DDM {
   private:
+    std::function<int(MPI_Comm)> get_rankWorld = [](MPI_Comm comm) {
+    int rankWorld;
+    MPI_Comm_rank(comm, &rankWorld);
+    return rankWorld; };
+
     int n;
     int n_inside;
     std::vector<int> neighbors;
@@ -22,7 +27,7 @@ class DDM {
     std::vector<std::vector<int>> intersections;
     std::vector<CoefficientPrecision> vec_ovr;
     std::unique_ptr<HPDDMDense<CoefficientPrecision>> hpddm_op;
-    std::unique_ptr<Matrix<CoefficientPrecision>> mat_loc;
+    Matrix<CoefficientPrecision> &mat_loc;
     std::vector<double> D;
     int nevi;
     int size_E;
@@ -43,163 +48,23 @@ class DDM {
         hpddm_op.reset();
     }
 
-    // Without overlap
-    DDM(const DistributedOperator<CoefficientPrecision> *distributed_operator, std::unique_ptr<Matrix<CoefficientPrecision>> local_dense_matrix) : n(local_dense_matrix->nb_rows()), n_inside(n), hpddm_op(std::make_unique<HPDDMDense<CoefficientPrecision>>(distributed_operator)), mat_loc(std::move(local_dense_matrix)), D(n), nevi(0), size_E(0), one_level(0), two_level(0) {
-        double mytime, maxtime;
-        double time = MPI_Wtime();
-        bool sym    = false;
-        if (distributed_operator->get_symmetry_type() == 'S' || (distributed_operator->get_symmetry_type() == 'H' && is_complex<CoefficientPrecision>())) {
-            sym = true;
-            if (distributed_operator->get_storage_type() == 'U') {
-                htool::Logger::get_instance().log(LogLevel::ERROR, "HPDDM takes lower symmetric/hermitian matrices or regular matrices"); // LCOV_EXCL_LINE
-                // throw std::invalid_argument("[Htool error] HPDDM takes lower symmetric/hermitian matrices or regular matrices"); // LCOV_EXCL_LINE
-            }
-            if (distributed_operator->get_symmetry_type() == 'S' && is_complex<CoefficientPrecision>()) {
-                htool::Logger::get_instance().log(LogLevel::WARNING, "A symmetric matrix with UPLO='L' has been given to DDM solver. It will be considered hermitian by the solver"); // LCOV_EXCL_LINE
-                // std::cout << "[Htool warning] A symmetric matrix with UPLO='L' has been given to DDM solver. It will be considered hermitian by the solver." << std::endl;
-            }
-        }
-
-        hpddm_op->initialize(n, sym, mat_loc->data(), neighbors, intersections);
-
-        fill(D.begin(), D.begin() + n_inside, 1);
-        fill(D.begin() + n_inside, D.end(), 0);
-
-        hpddm_op->HPDDMDense<CoefficientPrecision>::super::super::initialize(D.data());
-        mytime = MPI_Wtime() - time;
-        MPI_Reduce(&(mytime), &(maxtime), 1, MPI_DOUBLE, MPI_MAX, 0, hpddm_op->HA->get_comm());
-
-        infos["DDM_setup_one_level_max"] = NbrToStr(maxtime);
-    }
-
-    // DDM(const DistributedOperator<CoefficientPrecision> *const hmat_0, std::shared_ptr<HPDDMDense<CoefficientPrecision>> myddm_op = nullptr, const Matrix<CoefficientPrecision> *localblock = nullptr) : n(hmat_0->get_local_target_cluster().get_size()), n_inside(n), mat_loc(n * n), D(n), comm(hmat_0->get_comm()), nevi(0), size_E(0), one_level(0), two_level(0) {
-    //     if (myddm_op == nullptr)
-    //         hpddm_op = std::make_shared<HPDDMDense<CoefficientPrecision>>(hmat_0);
-    //     else
-    //         hpddm_op = myddm_op;
-    //     // Timing
-    //     double mytime, maxtime;
-    //     double time = MPI_Wtime();
-
-    //     // Building Ai
-    //     bool sym = false;
-    //     if (hmat_0->get_symmetry_type() == 'S' || (hmat_0->get_symmetry_type() == 'H' && is_complex<CoefficientPrecision>())) {
-    //         sym = true;
-    //         if (hmat_0->get_storage_type() == 'U') {
-    //             throw std::invalid_argument("[Htool error] HPDDM takes lower symmetric/hermitian matrices or regular matrices"); // LCOV_EXCL_LINE
-    //         }
-    //         if (hmat_0->get_symmetry_type() == 'S' && is_complex<CoefficientPrecision>()) {
-    //             std::cout << "[Htool warning] A symmetric matrix with UPLO='L' has been given to DDM solver. It will be considered hermitian by the solver." << std::endl;
-    //         }
-    //     }
-    //     int rankWorld;
-    //     int sizeWorld;
-    //     MPI_Comm_rank(comm, &rankWorld);
-    //     MPI_Comm_size(comm, &sizeWorld);
-    //     if (!localblock) {
-    //         hpddm_op->HA->copy_local_diagonal_block_to_dense(mat_loc.data());
-
-    //         // Matrix<CoefficientPrecision> diagonal_block = hpddm_op->HA->get_local_diagonal_block(false);
-    //         // std::copy_n(diagonal_block.data(), diagonal_block.nb_rows() * diagonal_block.nb_cols(), mat_loc.data());
-    //     } else {
-    //         std::copy_n(localblock->data(), localblock->nb_rows() * localblock->nb_cols(), mat_loc.data());
-    //     }
-    //     // int rankWorld;
-    //     // int sizeWorld;
-    //     // MPI_Comm_rank(comm, &rankWorld);
-    //     // MPI_Comm_size(comm, &sizeWorld);
-    //     // Matrix<CoefficientPrecision> test;
-    //     // test.assign(n, n, mat_loc.data(), false);
-    //     // test.csv_save("local_mat_" + NbrToStr(rankWorld) + ".csv");
-
-    //     std::vector<int> neighbors;
-    //     std::vector<std::vector<int>> intersections;
-    //     hpddm_op->initialize(n, sym, mat_loc.data(), neighbors, intersections);
-
-    //     fill(D.begin(), D.begin() + n_inside, 1);
-    //     fill(D.begin() + n_inside, D.end(), 0);
-
-    //     hpddm_op->HPDDMDense<CoefficientPrecision>::super::super::initialize(D.data());
-    //     mytime = MPI_Wtime() - time;
-
-    //     // Timing
-    //     MPI_Reduce(&(mytime), &(maxtime), 1, MPI_DOUBLE, MPI_MAX, 0, hpddm_op->HA->get_comm());
-
-    //     infos["DDM_setup_one_level_max"] = NbrToStr(maxtime);
-    // }
-
-    // With overlap
-    DDM(const DistributedOperator<CoefficientPrecision> *distributed_operator, const Matrix<CoefficientPrecision> &local_dense_matrix, const VirtualGeneratorWithPermutation<CoefficientPrecision> &mat0, const std::vector<int> &ovr_subdomain_to_global0, const std::vector<int> &cluster_to_ovr_subdomain0, const std::vector<int> &neighbors0, const std::vector<std::vector<int>> &intersections0) : n(ovr_subdomain_to_global0.size()), n_inside(cluster_to_ovr_subdomain0.size()), neighbors(neighbors0), vec_ovr(n), hpddm_op(std::make_unique<HPDDMDense<CoefficientPrecision>>(distributed_operator)), mat_loc(std::make_unique<Matrix<CoefficientPrecision>>(n, n)), D(n), one_level(0), two_level(0) {
+    DDM(const DistributedOperator<CoefficientPrecision> &distributed_operator, Matrix<CoefficientPrecision> &local_dense_matrix, const std::vector<int> &neighbors0, const std::vector<std::vector<int>> &intersections0) : n(local_dense_matrix.nb_rows()), n_inside(distributed_operator.get_target_partition().get_size_of_partition(get_rankWorld(distributed_operator.get_comm()))), neighbors(neighbors0), intersections(intersections0), vec_ovr(n), hpddm_op(std::make_unique<HPDDMDense<CoefficientPrecision>>(&distributed_operator)), mat_loc(local_dense_matrix), D(n), one_level(0), two_level(0) {
         // Timing
         double mytime, maxtime;
         double time = MPI_Wtime();
 
-        std::vector<int> renum(n, -1);
-        renum_to_global.resize(n);
-
-        for (int i = 0; i < cluster_to_ovr_subdomain0.size(); i++) {
-            renum[cluster_to_ovr_subdomain0[i]] = i;
-            renum_to_global[i]                  = ovr_subdomain_to_global0[cluster_to_ovr_subdomain0[i]];
-        }
-        int count = cluster_to_ovr_subdomain0.size();
-        // std::cout << count << std::endl;
-        for (int i = 0; i < n; i++) {
-            if (renum[i] == -1) {
-                renum[i]                 = count;
-                renum_to_global[count++] = ovr_subdomain_to_global0[i];
-            }
-        }
-
-        intersections.resize(neighbors.size());
-        for (int i = 0; i < neighbors.size(); i++) {
-            intersections[i].resize(intersections0[i].size());
-            for (int j = 0; j < intersections[i].size(); j++) {
-                intersections[i][j] = renum[intersections0[i][j]];
-            }
-        }
-
         // Symmetry and storage
         bool sym = false;
-        if (distributed_operator->get_symmetry_type() == 'S' || (distributed_operator->get_symmetry_type() == 'H' && is_complex<CoefficientPrecision>())) {
+        if (distributed_operator.get_symmetry_type() == 'S' || (distributed_operator.get_symmetry_type() == 'H' && is_complex<CoefficientPrecision>())) {
             sym = true;
 
-            if (distributed_operator->get_storage_type() == 'U') {
+            if (distributed_operator.get_storage_type() == 'U') {
                 htool::Logger::get_instance().log(LogLevel::ERROR, "HPDDM takes lower symmetric/hermitian matrices or regular matrices"); // LCOV_EXCL_LINE
                 // throw std::invalid_argument("[Htool error] HPDDM takes lower symmetric/hermitian matrices or regular matrices");                  // LCOV_EXCL_LINE
             }
-            if (distributed_operator->get_symmetry_type() == 'S' && is_complex<CoefficientPrecision>()) {
+            if (distributed_operator.get_symmetry_type() == 'S' && is_complex<CoefficientPrecision>()) {
                 htool::Logger::get_instance().log(LogLevel::WARNING, "A symmetric matrix with UPLO='L' has been given to DDM solver. It will be considered hermitian by the solver"); // LCOV_EXCL_LINE
                 // std::cout << "[Htool warning] A symmetric matrix with UPLO='L' has been given to DDM solver. It will be considered hermitian by the solver." << std::endl;
-            }
-        }
-
-        // Building Ai
-        // Matrix<CoefficientPrecision> main_diagonal_block = hpddm_op->HA->get_local_diagonal_block(false);
-        for (int j = 0; j < n_inside; j++) {
-            std::copy_n(local_dense_matrix.data() + j * n_inside, n_inside, mat_loc->data() + j * n);
-        }
-
-        // Overlap
-        std::vector<CoefficientPrecision> horizontal_block((n - n_inside) * n_inside), diagonal_block((n - n_inside) * (n - n_inside));
-
-        std::vector<int> overlap_num(renum_to_global.begin() + n_inside, renum_to_global.end());
-        std::vector<int> inside_num(renum_to_global.begin(), renum_to_global.begin() + n_inside);
-
-        mat0.copy_submatrix(n - n_inside, n_inside, overlap_num.data(), inside_num.data(), horizontal_block.data());
-        for (int j = 0; j < n_inside; j++) {
-            std::copy_n(horizontal_block.begin() + j * (n - n_inside), n - n_inside, mat_loc->data() + n_inside + j * n);
-        }
-
-        mat0.copy_submatrix(n - n_inside, n - n_inside, overlap_num.data(), overlap_num.data(), diagonal_block.data());
-        for (int j = 0; j < n - n_inside; j++) {
-            std::copy_n(diagonal_block.begin() + j * (n - n_inside), n - n_inside, mat_loc->data() + n_inside + (j + n_inside) * n);
-        }
-
-        if (!sym) {
-            std::vector<CoefficientPrecision> vertical_block(n_inside * (n - n_inside));
-            mat0.copy_submatrix(n_inside, n - n_inside, inside_num.data(), overlap_num.data(), vertical_block.data());
-            for (int j = n_inside; j < n; j++) {
-                std::copy_n(vertical_block.begin() + (j - n_inside) * n_inside, n_inside, mat_loc->data() + j * n);
             }
         }
 
@@ -208,12 +73,12 @@ class DDM {
             for (int j = 0; j < n; j++) {
                 for (int i = 0; i < j; i++) {
 
-                    (*mat_loc)(i, j) = (*mat_loc)(j, i);
+                    mat_loc(i, j) = mat_loc(j, i);
                 }
             }
         }
 
-        hpddm_op->initialize(n, sym, mat_loc->data(), neighbors, intersections);
+        hpddm_op->initialize(n, sym, mat_loc.data(), neighbors, intersections);
 
         fill(D.begin(), D.begin() + n_inside, 1);
         fill(D.begin() + n_inside, D.end(), 0);
@@ -346,7 +211,7 @@ class DDM {
         // Partition of unity
         Matrix<CoefficientPrecision> DAiD(n, n);
         for (int i = 0; i < n_inside; i++) {
-            std::copy_n(mat_loc->data() + i * n, n_inside, &(DAiD(0, i)));
+            std::copy_n(mat_loc.data() + i * n, n_inside, &(DAiD(0, i)));
         }
 
         // Build local eigenvalue problem

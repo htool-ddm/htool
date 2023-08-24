@@ -33,10 +33,10 @@ class VirtualGeneratorWithPermutation : public VirtualGenerator<CoefficientPreci
     }
 
     virtual void copy_submatrix(int M, int N, int row_offset, int col_offset, CoefficientPrecision *ptr) const override {
-        copy_submatrix(M, N, m_target_permutation + row_offset, m_source_permutation + col_offset, ptr);
+        copy_submatrix_from_user_numbering(M, N, m_target_permutation + row_offset, m_source_permutation + col_offset, ptr);
     }
 
-    virtual void copy_submatrix(int M, int N, const int *rows, const int *cols, CoefficientPrecision *ptr) const = 0;
+    virtual void copy_submatrix_from_user_numbering(int M, int N, const int *rows, const int *cols, CoefficientPrecision *ptr) const = 0;
 };
 
 } // namespace htool

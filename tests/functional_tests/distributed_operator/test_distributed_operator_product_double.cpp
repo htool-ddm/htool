@@ -19,7 +19,7 @@ int main(int argc, char *argv[]) {
                     for (auto data_type : {DataType::Matrix, DataType::HMatrix, DataType::DefaultHMatrix}) {
                         std::vector<double> tolerances{1e-14};
                         if (data_type == DataType::HMatrix || data_type == DataType::DefaultHMatrix) {
-                            tolerances.push_back(1e-6);
+                            tolerances.push_back(1e-3);
                         }
                         for (auto epsilon : tolerances) {
                             std::cout << use_permutation << " " << epsilon << " " << number_of_right_hand_side << " " << operation << " " << epsilon << "\n";

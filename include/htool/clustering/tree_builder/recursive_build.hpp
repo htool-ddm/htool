@@ -30,32 +30,21 @@ class ClusterTreeBuilder {
   public:
     ClusterTreeBuilder() {}
 
-    std::vector<std::pair<int, int>> get_partition() const { return m_partition; }
-
-    void set_partition(const std::vector<std::pair<int, int>> &partition) {
-        m_partition_type = Given;
-        m_partition      = partition;
-    }
-    void set_partition(int size_partition, const int *partition) {
-        m_partition_type = Given;
-        m_partition.resize(size_partition);
-        for (int p = 0; p < size_partition; p++) {
-            m_partition[p].first  = partition[2 * p];
-            m_partition[p].second = partition[2 * p + 1];
-        }
-    }
-
     void set_direction_computation_strategy(std::shared_ptr<VirtualDirectionComputationStrategy<T>> direction_computation_strategy) { m_direction_computation_strategy = direction_computation_strategy; }
 
     void set_splitting_strategy(std::shared_ptr<VirtualSplittingStrategy<T>> splitting_strategy) { m_splitting_strategy = splitting_strategy; }
 
     void set_minclustersize(int minclustersize) { m_minclustersize = minclustersize; }
-    Cluster<T> create_cluster_tree(int number_of_points, int spatial_dimension, const T *coordinates, const T *radii, const T *weights, int number_of_children, int size_of_partition);
-    Cluster<T> create_cluster_tree(int number_of_points, int spatial_dimension, const T *coordinates, int number_of_children, int size_of_partition) { return create_cluster_tree(number_of_points, spatial_dimension, coordinates, nullptr, nullptr, number_of_children, size_of_partition); }
+
+    Cluster<T> create_cluster_tree(int number_of_points, int spatial_dimension, const T *coordinates, const T *radii, const T *weights, int number_of_children, int size_of_partition, const int *partition);
+
+    Cluster<T> create_cluster_tree(int number_of_points, int spatial_dimension, const T *coordinates, int number_of_children, int size_of_partition) { return create_cluster_tree(number_of_points, spatial_dimension, coordinates, nullptr, nullptr, number_of_children, size_of_partition, nullptr); }
+
+    Cluster<T> create_cluster_tree(int number_of_points, int spatial_dimension, const T *coordinates, int number_of_children, int size_of_partition, const int *partition) { return create_cluster_tree(number_of_points, spatial_dimension, coordinates, nullptr, nullptr, number_of_children, size_of_partition, partition); }
 };
 
 template <typename T>
-Cluster<T> ClusterTreeBuilder<T>::create_cluster_tree(int number_of_points, int spatial_dimension, const T *coordinates, const T *radii, const T *weights, int number_of_children, int size_partition) {
+Cluster<T> ClusterTreeBuilder<T>::create_cluster_tree(int number_of_points, int spatial_dimension, const T *coordinates, const T *radii, const T *weights, int number_of_children, int size_partition, const int *partition) {
 
     // default values
     std::vector<T> default_radii{};
@@ -89,18 +78,20 @@ Cluster<T> ClusterTreeBuilder<T>::create_cluster_tree(int number_of_points, int 
     int depth_of_partition;
     int number_of_children_on_partition_level = size_partition;
     int additional_children_on_last_partition = 0;
-    if (m_partition_type == Given) {
+    if (partition != nullptr) {
+        m_partition_type   = Given;
         depth_of_partition = 1;
         cluster_stack.pop();
         bool is_child_on_partition = true;
         root_cluster.set_is_permutation_local(true);
-        for (int p = 0; p < m_partition.size(); p++) {
-            center                           = compute_center(spatial_dimension, coordinates, weights, m_partition[p].first, m_partition[p].second, permutation.data());
-            radius                           = compute_radius(spatial_dimension, coordinates, radii, center, m_partition[p].first, m_partition[p].second, permutation.data());
-            Cluster<T> *cluster_on_partition = root_cluster.add_child(radius, center, p, m_partition[p].first, m_partition[p].second, p, is_child_on_partition);
+        for (int p = 0; p < size_partition; p++) {
+            center                           = compute_center(spatial_dimension, coordinates, weights, partition[2 * p], partition[2 * p + 1], permutation.data());
+            radius                           = compute_radius(spatial_dimension, coordinates, radii, center, partition[2 * p], partition[2 * p + 1], permutation.data());
+            Cluster<T> *cluster_on_partition = root_cluster.add_child(radius, center, p, partition[2 * p], partition[2 * p + 1], p, is_child_on_partition);
             cluster_stack.push(cluster_on_partition);
         }
     } else {
+        m_partition_type = Simple;
         if (size_partition >= number_of_children) {
             depth_of_partition                    = static_cast<int>(floor(log(size_partition) / log(number_of_children)));
             number_of_children_on_partition_level = number_of_children;
