@@ -81,7 +81,7 @@ int test_solver_ddm(int argc, char *argv[], int mu, char symmetric, bool) {
 
     const HMatrix<Cplx> *local_block_diagonal_hmatrix = nullptr;
 
-    auto default_build = build_default_hierarchical_approximation(Generator, target_cluster, target_cluster, epsilon, eta, symmetric, UPLO, MPI_COMM_WORLD);
+    DefaultApproximationBuilder<Cplx, htool::underlying_type<Cplx>> default_build(Generator, target_cluster, target_cluster, epsilon, eta, symmetric, UPLO, MPI_COMM_WORLD);
 
     DistributedOperator<Cplx> &Operator = default_build.distributed_operator;
     local_block_diagonal_hmatrix        = default_build.block_diagonal_hmatrix;

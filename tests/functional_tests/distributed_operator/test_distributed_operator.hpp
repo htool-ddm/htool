@@ -492,7 +492,7 @@ bool test_default_distributed_operator(int nr, int nc, int mu, bool use_permutat
     GeneratorTestType generator_permuted(3, nr, nc, p1_permuted, p2_permuted, *target_root_cluster, *source_root_cluster, false, false);
 
     if (off_diagonal_approximation) {
-        auto distributed_operator_holder = build_default_local_hierarchical_approximation(generator_permuted, *target_root_cluster, *source_root_cluster, epsilon, eta, Symmetry, UPLO, MPI_COMM_WORLD);
+        DefaultLocalApproximationBuilder<T, htool::underlying_type<T>> distributed_operator_holder(generator_permuted, *target_root_cluster, *source_root_cluster, epsilon, eta, Symmetry, UPLO, MPI_COMM_WORLD);
 
         DistributedOperator<T> &distributed_operator = distributed_operator_holder.distributed_operator;
         distributed_operator.use_permutation()       = use_permutation;
@@ -500,7 +500,7 @@ bool test_default_distributed_operator(int nr, int nc, int mu, bool use_permutat
 
         test = test_vector_product(generator, distributed_operator, *target_root_cluster, MasterOffset_target, *source_root_cluster, MasterOffset_source, mu, op, use_permutation, epsilon);
     } else {
-        auto distributed_operator_holder = build_default_hierarchical_approximation(generator_permuted, *target_root_cluster, *source_root_cluster, epsilon, eta, Symmetry, UPLO, MPI_COMM_WORLD);
+        DefaultApproximationBuilder<T, htool::underlying_type<T>> distributed_operator_holder(generator_permuted, *target_root_cluster, *source_root_cluster, epsilon, eta, Symmetry, UPLO, MPI_COMM_WORLD);
 
         DistributedOperator<T> &distributed_operator = distributed_operator_holder.distributed_operator;
         distributed_operator.use_permutation()       = use_permutation;

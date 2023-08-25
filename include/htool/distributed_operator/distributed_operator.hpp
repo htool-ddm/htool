@@ -38,7 +38,7 @@ class DistributedOperator {
     virtual ~DistributedOperator()                                         = default;
 
     // Constructor
-    explicit DistributedOperator(IPartition<CoefficientPrecision> &target_partition, IPartition<CoefficientPrecision> &source_partition, char symmetry, char UPLO, MPI_Comm comm) : m_target_partition(target_partition), m_source_partition(source_partition), m_symmetry(symmetry), m_UPLO(UPLO), m_comm(comm) {}
+    explicit DistributedOperator(const IPartition<CoefficientPrecision> &target_partition, const IPartition<CoefficientPrecision> &source_partition, char symmetry, char UPLO, MPI_Comm comm) : m_target_partition(target_partition), m_source_partition(source_partition), m_symmetry(symmetry), m_UPLO(UPLO), m_comm(comm) {}
 
     void add_local_operator(const VirtualLocalOperator<CoefficientPrecision> *local_operator) {
         m_local_operators.push_back(local_operator);
