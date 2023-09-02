@@ -140,13 +140,13 @@ int test_solver_ddm(int argc, char *argv[], int mu, char symmetric, bool) {
     std::vector<int> ovr_subdomain_to_global;
     std::vector<int> neighbors;
     std::vector<std::vector<int>> intersections;
-    bytes_to_vector(cluster_to_ovr_subdomain, datapath + "cluster_to_ovr_subdomain_" + NbrToStr(size) + "_" + NbrToStr(rank) + ".bin");
-    bytes_to_vector(ovr_subdomain_to_global, datapath + "ovr_subdomain_to_global_" + NbrToStr(size) + "_" + NbrToStr(rank) + ".bin");
-    bytes_to_vector(neighbors, datapath + "neighbors_" + NbrToStr(size) + "_" + NbrToStr(rank) + ".bin");
+    bytes_to_vector(cluster_to_ovr_subdomain, datapath + "/cluster_to_ovr_subdomain_" + NbrToStr(size) + "_" + NbrToStr(rank) + ".bin");
+    bytes_to_vector(ovr_subdomain_to_global, datapath + "/ovr_subdomain_to_global_" + NbrToStr(size) + "_" + NbrToStr(rank) + ".bin");
+    bytes_to_vector(neighbors, datapath + "/neighbors_" + NbrToStr(size) + "_" + NbrToStr(rank) + ".bin");
 
     intersections.resize(neighbors.size());
     for (int p = 0; p < neighbors.size(); p++) {
-        bytes_to_vector(intersections[p], datapath + "intersections_" + NbrToStr(size) + "_" + NbrToStr(rank) + "_" + NbrToStr(p) + ".bin");
+        bytes_to_vector(intersections[p], datapath + "/intersections_" + NbrToStr(size) + "_" + NbrToStr(rank) + "_" + NbrToStr(p) + ".bin");
     }
 
     // Errors

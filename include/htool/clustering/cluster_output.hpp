@@ -92,7 +92,7 @@ Cluster<CoordinatesPrecision> read_cluster_tree(std::string file_cluster_tree_pr
     // Clusters informtation
     std::ifstream input_tree(file_cluster_tree);
     if (!input_tree) {
-        htool::Logger::get_instance().log(LogLevel::ERROR, "Cannot open file containing tree"); // LCOV_EXCL_LINE
+        htool::Logger::get_instance().log(LogLevel::ERROR, "Cannot open file containing tree: " + file_cluster_tree); // LCOV_EXCL_LINE
         // throw std::logic_error("[Htool error] Cannot open file containing tree");
     }
     std::vector<std::vector<std::string>> outputs;
@@ -125,7 +125,7 @@ Cluster<CoordinatesPrecision> read_cluster_tree(std::string file_cluster_tree_pr
     // Cluster tree
     std::ifstream input_permutation(file_cluster_tree_properties);
     if (!input_permutation) {
-        htool::Logger::get_instance().log(LogLevel::ERROR, "Cannot open file containing permutation"); // LCOV_EXCL_LINE
+        htool::Logger::get_instance().log(LogLevel::ERROR, "Cannot open file containing permutation: " + file_cluster_tree_properties); // LCOV_EXCL_LINE
         // throw std::logic_error("[Htool error] Cannot open file containing permutation");
     }
 

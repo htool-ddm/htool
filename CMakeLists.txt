@@ -93,9 +93,8 @@ option(HTOOL_WITH_DOC "Build documentation" ON)
 #=============================================================================#
 # MPI
 find_package(MPI REQUIRED)
-message("-- MPI libraries found in " "${MPI_LIBRARIES}")
-message("-- MPI include files found in " "${MPI_INCLUDE_PATH}")
 separate_arguments(MPIEXEC_PREFLAGS) # to support multi flags
+message(STATUS "Run: ${MPIEXEC} ${MPIEXEC_NUMPROC_FLAG} ${MPIEXEC_MAX_NUMPROCS} ${MPIEXEC_PREFLAGS} EXECUTABLE ${MPIEXEC_POSTFLAGS} ARGS")
 
 # OPENMP
 find_package(OpenMP)
@@ -121,8 +120,10 @@ find_package(HPDDM)
 #=== HTOOL as header only library
 add_library(htool INTERFACE)
 target_include_directories(htool INTERFACE $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include> $<INSTALL_INTERFACE:include> ${MPI_INCLUDE_PATH} ${HPDDM_INCLUDE_DIRS} ${MKL_INC_DIR})
-target_link_libraries(htool INTERFACE ${MPI_LIBRARIES} ${BLAS_LIBRARIES} ${LAPACK_LIBRARIES} ${ARPACK_LIBRARIES} OpenMP::OpenMP_CXX)
-
+target_link_libraries(htool INTERFACE MPI::MPI_CXX ${BLAS_LIBRARIES} ${LAPACK_LIBRARIES} ${ARPACK_LIBRARIES})
+if(OpenMP_CXX_FOUND)
+    target_link_libraries(htool INTERFACE OpenMP::OpenMP_CXX)
+endif()
 target_compile_features(htool INTERFACE cxx_std_11)
 
 if("${BLA_VENDOR}" STREQUAL "Intel10_64lp_seq" OR "${BLA_VENDOR}" STREQUAL "Intel10_64lp")

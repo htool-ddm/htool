@@ -126,17 +126,17 @@ jobs:
     # Steps represent a sequence of tasks that will be executed as part of the job
     steps:
       - name: Checkout htool
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
         with:
           path: "htool"
           # ref: 14d013835eceb940b9b51dd90462fe67834db777
           fetch-depth: 0 # to get tags
       - name: Checkout hpddm
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
         with:
+          path: "hpddm"
           repository: hpddm/hpddm
           ref: 314f74e8210b02e76fa16ea706641249594ce92f
-          path: "hpddm"
 
       - name: Build tests
         run: |
