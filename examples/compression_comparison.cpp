@@ -3,34 +3,38 @@
 #include <vector>
 
 #include <htool/htool.hpp>
-
+#include <htool/testing/geometry.hpp>
 using namespace std;
 using namespace htool;
 
 class MyMatrix : public VirtualGenerator<double> {
-    const vector<double> &p1;
-    const vector<double> &p2;
-    int space_dim;
+    const vector<int> &m_target_permutation;
+    const vector<int> &m_source_permutation;
+    const vector<double> &m_p1;
+    const vector<double> &m_p2;
+    int m_space_dim;
+    int m_nr;
+    int m_nc;
 
   public:
     // Constructor
-    MyMatrix(int space_dim0, int nr, int nc, const vector<double> &p10, const vector<double> &p20) : VirtualGenerator(nr, nc), p1(p10), p2(p20), space_dim(space_dim0) {}
+    MyMatrix(int space_dim0, const vector<int> &target_permutation, const vector<int> &source_permutation, const vector<double> &p10, const vector<double> &p20) : m_target_permutation(target_permutation), m_source_permutation(source_permutation), m_p1(p10), m_p2(p20), m_space_dim(space_dim0), m_nr(target_permutation.size()), m_nc(source_permutation.size()) {}
     double get_coef(const int &k, const int &j) const {
-        return 1. / (1 + std::sqrt(std::inner_product(p1.begin() + space_dim * k, p1.begin() + space_dim * k + space_dim, p2.begin() + space_dim * j, double(0), std::plus<double>(), [](double u, double v) { return (u - v) * (u - v); })));
+        return 1. / (1 + std::sqrt(std::inner_product(m_p1.begin() + m_space_dim * k, m_p1.begin() + m_space_dim * k + m_space_dim, m_p2.begin() + m_space_dim * j, double(0), std::plus<double>(), [](double u, double v) { return (u - v) * (u - v); })));
     }
 
-    void copy_submatrix(int M, int N, const int *const rows, const int *const cols, double *ptr) const override {
+    void copy_submatrix(int M, int N, int row_offset, int col_offset, double *ptr) const override {
         for (int j = 0; j < M; j++) {
             for (int k = 0; k < N; k++) {
-                ptr[j + M * k] = this->get_coef(rows[j], cols[k]);
+                ptr[j + M * k] = this->get_coef(m_target_permutation[j + row_offset], m_source_permutation[k + col_offset]);
             }
         }
     }
 
     std::vector<double> operator*(std::vector<double> a) {
-        std::vector<double> result(nr, 0);
-        for (int i = 0; i < nr; i++) {
-            for (int k = 0; k < nc; k++) {
+        std::vector<double> result(m_nr, 0);
+        for (int i = 0; i < m_nr; i++) {
+            for (int k = 0; k < m_nc; k++) {
                 result[i] += this->get_coef(i, k) * a[k];
             }
         }
@@ -39,8 +43,8 @@ class MyMatrix : public VirtualGenerator<double> {
 
     double normFrob() {
         double norm = 0;
-        for (int i = 0; i < nr; i++) {
-            for (int k = 0; k < nc; k++) {
+        for (int i = 0; i < m_nr; i++) {
+            for (int k = 0; k < m_nc; k++) {
                 norm = norm + std::pow(this->get_coef(i, k), 2);
             }
         }
@@ -67,87 +71,57 @@ int main(int argc, char *argv[]) {
     std::string outputfile = argv[2];
     std::string outputpath = argv[3];
 
+    // Parameters
     double epsilon  = 0.0001;
     int reqrank_max = 50;
-    srand(1);
-    // we set a constant seed for rand because we want always the same result if we run the check many times
-    // (two different initializations with the same seed will generate the same succession of results in the subsequent calls to rand)
+    int nr          = 500;
+    int nc          = 100;
 
-    int nr = 500;
-    int nc = 100;
-
-    double z1 = 1;
+    // Geometry
     vector<double> p1(3 * nr);
-    std::vector<int> tab1(nr);
-
-    for (int j = 0; j < nr; j++) {
-
-        double rho    = ((double)rand() / (double)(RAND_MAX)); // (double) otherwise integer division!
-        double theta  = ((double)rand() / (double)(RAND_MAX));
-        p1[3 * j + 0] = sqrt(rho) * cos(2 * M_PI * theta);
-        p1[3 * j + 1] = sqrt(rho) * sin(2 * M_PI * theta);
-        p1[3 * j + 2] = z1;
-        tab1[j]       = j;
-    }
-    // p2: points in a unit disk of the plane z=z2
-    double z2 = 1 + distance;
     vector<double> p2(3 * nc);
-    std::vector<int> tab2(nc);
-    for (int j = 0; j < nc; j++) {
-        double rho    = ((double)rand() / (RAND_MAX)); // (double) otherwise integer division!
-        double theta  = ((double)rand() / (RAND_MAX));
-        p2[3 * j + 0] = sqrt(rho) * cos(2 * M_PI * theta);
-        p2[3 * j + 1] = sqrt(rho) * sin(2 * M_PI * theta);
-        p2[3 * j + 2] = z2;
-        tab2[j]       = j;
-    }
+    double z2 = distance;
+    create_sphere(nr, p1.data());
+    create_sphere(nc, p2.data(), {distance, 0, 0});
 
     // Clustering
+    ClusterTreeBuilder<double> recursive_build_strategy;
+    Cluster<double> target_cluster = recursive_build_strategy.create_cluster_tree(nr, 3, p1.data(), 2, 1);
+    Cluster<double> source_cluster = recursive_build_strategy.create_cluster_tree(nc, 3, p2.data(), 2, 1);
 
-    Cluster<PCAGeometricClustering> t, s;
-    t.build(nr, p1.data());
-    s.build(nc, p2.data());
-
-    std::shared_ptr<VirtualAdmissibilityCondition> AdmissibilityCondition = std::make_shared<RjasanowSteinbach>();
-    Block<double> block(AdmissibilityCondition.get(), t, s);
-
-    MyMatrix A(3, nr, nc, p1, p2);
+    MyMatrix A(3, target_cluster.get_permutation(), source_cluster.get_permutation(), p1, p2);
     double norm_A = A.normFrob();
 
     // SVD with fixed rank
     SVD<double> compressor_SVD;
-    LowRankMatrix<double> A_SVD(block, A, compressor_SVD, p1.data(), p2.data(), reqrank_max, epsilon);
+    LowRankMatrix<double> A_SVD(A, compressor_SVD, target_cluster, source_cluster, reqrank_max, epsilon);
     std::vector<double> SVD_fixed_errors;
     for (int k = 0; k < A_SVD.rank_of() + 1; k++) {
-        SVD_fixed_errors.push_back(Frobenius_absolute_error(block, A_SVD, A, k) / norm_A);
+        SVD_fixed_errors.push_back(Frobenius_absolute_error(target_cluster, source_cluster, A_SVD, A, k) / norm_A);
     }
-    std::cout << SVD_fixed_errors << std::endl;
 
     // fullACA with fixed rank
     fullACA<double> compressor_fullACA;
-    LowRankMatrix<double> A_fullACA_fixed(block, A, compressor_fullACA, p1.data(), p2.data(), reqrank_max, epsilon);
+    LowRankMatrix<double> A_fullACA_fixed(A, compressor_fullACA, target_cluster, source_cluster, reqrank_max, epsilon);
     std::vector<double> fullACA_fixed_errors;
     for (int k = 0; k < A_fullACA_fixed.rank_of() + 1; k++) {
-        fullACA_fixed_errors.push_back(Frobenius_absolute_error(block, A_fullACA_fixed, A, k) / norm_A);
+        fullACA_fixed_errors.push_back(Frobenius_absolute_error(target_cluster, source_cluster, A_fullACA_fixed, A, k) / norm_A);
     }
-    std::cout << fullACA_fixed_errors << std::endl;
 
     // partialACA with fixed rank
     partialACA<double> compressor_partialACA;
-    LowRankMatrix<double> A_partialACA_fixed(block, A, compressor_partialACA, p1.data(), p2.data(), reqrank_max, epsilon);
+    LowRankMatrix<double> A_partialACA_fixed(A, compressor_partialACA, target_cluster, source_cluster, reqrank_max, epsilon);
     std::vector<double> partialACA_fixed_errors;
-    std::cout << A_partialACA_fixed.rank_of() << " " << reqrank_max << std::endl;
     for (int k = 0; k < A_partialACA_fixed.rank_of() + 1; k++) {
-        partialACA_fixed_errors.push_back(Frobenius_absolute_error(block, A_partialACA_fixed, A, k) / norm_A);
+        partialACA_fixed_errors.push_back(Frobenius_absolute_error(target_cluster, source_cluster, A_partialACA_fixed, A, k) / norm_A);
     }
 
-    std::cout << partialACA_fixed_errors << std::endl;
     // sympartialACA with fixed rank
     sympartialACA<double> compressor_sympartialACA;
-    LowRankMatrix<double> A_sympartialACA_fixed(block, A, compressor_sympartialACA, p1.data(), p2.data(), reqrank_max, epsilon);
+    LowRankMatrix<double> A_sympartialACA_fixed(A, compressor_sympartialACA, target_cluster, source_cluster, reqrank_max, epsilon);
     std::vector<double> sympartialACA_fixed_errors;
     for (int k = 0; k < A_sympartialACA_fixed.rank_of() + 1; k++) {
-        sympartialACA_fixed_errors.push_back(Frobenius_absolute_error(block, A_sympartialACA_fixed, A, k) / norm_A);
+        sympartialACA_fixed_errors.push_back(Frobenius_absolute_error(target_cluster, source_cluster, A_sympartialACA_fixed, A, k) / norm_A);
     }
 
     // Output
@@ -155,16 +129,6 @@ int main(int argc, char *argv[]) {
     file_fixed << "Rank,SVD,Full ACA,partial ACA,sym partial ACA" << endl;
     for (int i = 0; i < reqrank_max; i++) {
         file_fixed << i << "," << SVD_fixed_errors[i] << "," << fullACA_fixed_errors[i] << "," << partialACA_fixed_errors[i] << "," << sympartialACA_fixed_errors[i] << endl;
-    }
-
-    ofstream geometry_1((outputpath + "/geometry_1_" + outputfile).c_str());
-    for (int i = 0; i < nr; i++) {
-        geometry_1 << p1[i + 0] << "," << p1[i + 1] << "," << p1[i + 2] << endl;
-    }
-
-    ofstream geometry_2((outputpath + "/geometry_2_" + outputfile).c_str());
-    for (int i = 0; i < nc; i++) {
-        geometry_2 << p2[i + 0] << "," << p2[i + 1] << "," << p2[i + 2] << endl;
     }
 
     // Finalize the MPI environment.
