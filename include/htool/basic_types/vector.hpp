@@ -64,7 +64,7 @@ std::vector<T> minus(const std::vector<T> &a, const std::vector<T> &b) {
 template <typename T>
 std::vector<T> mult(T value, const std::vector<T> &a) {
     std::vector<T> result(a.size(), 0);
-    std::transform(a.begin(), a.end(), result.begin(), [value](T a) { return a * value; });
+    std::transform(a.begin(), a.end(), result.begin(), [value](T coef) { return coef * value; });
 
     return result;
 }

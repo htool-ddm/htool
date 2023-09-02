@@ -30,6 +30,7 @@ class Cluster : public TreeNode<Cluster<CoordinatesPrecision>, ClusterTreeData<C
     Cluster(CoordinatesPrecision radius, std::vector<CoordinatesPrecision> &center, int rank, int offset, int size) : TreeNode<Cluster, ClusterTreeData<CoordinatesPrecision>>(), m_radius(radius), m_center(center), m_rank(rank), m_offset(offset), m_size(size), m_counter(0) {
         this->m_tree_data->m_permutation = std::make_shared<std::vector<int>>(m_size);
         std::iota(this->m_tree_data->m_permutation->begin(), this->m_tree_data->m_permutation->end(), int(0));
+        this->m_tree_data->m_root_cluster = this;
     }
 
     // Child constructor
@@ -68,6 +69,7 @@ class Cluster : public TreeNode<Cluster<CoordinatesPrecision>, ClusterTreeData<C
     const Cluster<CoordinatesPrecision> &get_cluster_on_partition(size_t index) const {
         return *this->m_tree_data->m_clusters_on_partition[index];
     }
+    const Cluster<CoordinatesPrecision> &get_root_cluster() const { return *this->m_tree_data->m_root_cluster; }
     const std::vector<int> &get_permutation() const { return *(this->m_tree_data->m_permutation); }
     std::vector<int> &get_permutation() { return *(this->m_tree_data->m_permutation); }
 
@@ -195,6 +197,35 @@ void local_to_local_cluster(const Cluster<CoordinatesPrecision> &cluster, int in
 
     for (int i = 0; i < cluster_on_partition->get_size(); i++) {
         out[i] = in[permutation[cluster_on_partition->get_offset() + i] - cluster_on_partition->get_offset()];
+    }
+}
+
+// Local permutations
+template <typename CoefficientPrecision, typename CoordinatesPrecision = CoefficientPrecision>
+void cluster_to_user(const Cluster<CoordinatesPrecision> &cluster, const CoefficientPrecision *in, CoefficientPrecision *out) {
+    if (!cluster.is_root() && !is_cluster_on_partition(cluster)) {
+        htool::Logger::get_instance().log(LogLevel::ERROR, "Cluster is neither root nor local, permutation is not stable."); // LCOV_EXCL_LINE
+    }
+    if (is_cluster_on_partition(cluster) && !cluster.is_permutation_local()) {
+        htool::Logger::get_instance().log(LogLevel::ERROR, "Cluster is local, but permutation is not, so permutation is not stable."); // LCOV_EXCL_LINE
+    }
+    const auto &permutation = cluster.get_permutation();
+    for (int i = 0; i < cluster.get_size(); i++) {
+        out[permutation[cluster.get_offset() + i] - cluster.get_offset()] = in[i];
+    }
+}
+template <typename CoefficientPrecision, typename CoordinatesPrecision = CoefficientPrecision>
+void user_to_cluster(const Cluster<CoordinatesPrecision> &cluster, const CoefficientPrecision *in, CoefficientPrecision *out) {
+    if (!cluster.is_root() && !is_cluster_on_partition(cluster)) {
+        htool::Logger::get_instance().log(LogLevel::ERROR, "Cluster is neither root nor local, permutation is not stable."); // LCOV_EXCL_LINE
+    }
+    if (is_cluster_on_partition(cluster) && !cluster.is_permutation_local()) {
+        htool::Logger::get_instance().log(LogLevel::ERROR, "Cluster is local, but permutation is not, so permutation is not stable."); // LCOV_EXCL_LINE
+    }
+
+    const auto &permutation = cluster.get_permutation();
+    for (int i = 0; i < cluster.get_size(); i++) {
+        out[i] = in[permutation[cluster.get_offset() + i] - cluster.get_offset()];
     }
 }
 

@@ -2,9 +2,11 @@
 #define HTOOL_CLUSTERING_CLUSTER_OUTPUT_HPP
 
 #include "../misc/logger.hpp"
+#include "../misc/user.hpp"
 #include <algorithm>
 #include <fstream>
 #include <iostream>
+#include <stack>
 #include <string>
 #include <vector>
 
