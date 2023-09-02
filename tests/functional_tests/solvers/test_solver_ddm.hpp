@@ -153,8 +153,10 @@ int test_solver_ddm(int argc, char *argv[], int mu, char symmetric, bool) {
     double error2;
 
     // Solve
-    DDM<complex<double>> ddm_wo_overlap   = build_ddm_solver(Operator, local_block_diagonal_hmatrix);
-    DDM<complex<double>> ddm_with_overlap = build_ddm_solver(Operator, local_block_diagonal_hmatrix, Generator, ovr_subdomain_to_global, cluster_to_ovr_subdomain, neighbors, intersections);
+    DefaultSolverBuilder<complex<double>, double> default_solver(Operator, local_block_diagonal_hmatrix);
+    DefaultDDMSolverBuilder<complex<double>, double> default_ddm_solver(Operator, local_block_diagonal_hmatrix, Generator, ovr_subdomain_to_global, cluster_to_ovr_subdomain, neighbors, intersections);
+    DDM<complex<double>> &ddm_wo_overlap   = default_solver.solver;     //  = build_ddm_solver(Operator, local_block_diagonal_hmatrix);
+    DDM<complex<double>> &ddm_with_overlap = default_ddm_solver.solver; // build_ddm_solver(Operator, local_block_diagonal_hmatrix, Generator, ovr_subdomain_to_global, cluster_to_ovr_subdomain, neighbors, intersections);
 
     // Test renum_to_global
     std::vector<int> renum(ovr_subdomain_to_global.size(), -1);
@@ -323,7 +325,8 @@ int test_solver_ddm(int argc, char *argv[], int mu, char symmetric, bool) {
             std::cout << "RAS two level with overlap and threshold:" << std::endl;
         opt.parse("-hpddm_schwarz_method ras -hpddm_schwarz_coarse_correction additive -hpddm_geneo_threshold 100");
         // DDM<complex<double>> ddm_with_overlap_threshold(Generator, &Operator, ovr_subdomain_to_global, cluster_to_ovr_subdomain, neighbors, intersections);
-        DDM<complex<double>> ddm_with_overlap_threshold = build_ddm_solver(Operator, local_block_diagonal_hmatrix, Generator, ovr_subdomain_to_global, cluster_to_ovr_subdomain, neighbors, intersections);
+        DefaultDDMSolverBuilder<complex<double>, double> default_ddm_solver_with_threshold(Operator, local_block_diagonal_hmatrix, Generator, ovr_subdomain_to_global, cluster_to_ovr_subdomain, neighbors, intersections);
+        DDM<complex<double>> &ddm_with_overlap_threshold = default_ddm_solver_with_threshold.solver; // build_ddm_solver(Operator, local_block_diagonal_hmatrix, Generator, ovr_subdomain_to_global, cluster_to_ovr_subdomain, neighbors, intersections);
         Ki.bytes_to_matrix(datapath + "/Ki_" + NbrToStr(size) + "_" + NbrToStr(rank) + ".bin");
         ddm_with_overlap_threshold.build_coarse_space(Ki);
         ddm_with_overlap_threshold.facto_one_level();

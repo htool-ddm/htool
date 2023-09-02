@@ -22,6 +22,8 @@
 #    pragma GCC diagnostic ignored "-Wdouble-promotion"
 #    pragma GCC diagnostic ignored "-Wunused-parameter"
 #    pragma GCC diagnostic ignored "-Wnon-virtual-dtor"
+#    pragma GCC diagnostic ignored "-Wuseless-cast"
+#    pragma GCC diagnostic ignored "-Wunused-local-typedefs"
 #endif
 
 #include <HPDDM.hpp>

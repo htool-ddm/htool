@@ -201,9 +201,17 @@ if((CMAKE_PROJECT_NAME STREQUAL PROJECT_NAME) AND BUILD_TESTING)
                   #   -Wzero-as-null-pointer-constant
                   -Wundef)
     if(CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
-        target_compile_options(htool INTERFACE -Wimplicit-fallthrough -Wextra-semi-stmt)
+        target_compile_options(htool INTERFACE -Wimplicit-fallthrough -Wextra-semi-stmt -ferror-limit=200)
     elseif(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
-        target_compile_options(htool INTERFACE -Wmisleading-indentation -Wduplicated-cond -Wduplicated-branches -Wlogical-op -Wnull-dereference -Wuseless-cast)
+        target_compile_options(
+            htool
+            INTERFACE -Wmisleading-indentation
+                      -Wduplicated-cond
+                      -Wduplicated-branches
+                      -Wlogical-op
+                      -Wnull-dereference
+                      -Wuseless-cast
+                      -fmax-errors=200)
     endif()
     add_custom_target(build-tests)
     add_subdirectory(tests EXCLUDE_FROM_ALL)

@@ -11,9 +11,9 @@ template <typename CoefficientPrecision, typename CoordinatePrecision>
 class DefaultApproximationBuilder {
   private:
     const PartitionFromCluster<CoefficientPrecision, CoordinatePrecision> target_partition, source_partition;
-    std::function<int(MPI_Comm)> get_rankWorld = [](MPI_Comm communicator) {
+    std::function<int(MPI_Comm)> get_rankWorld = [](MPI_Comm comm) {
     int rankWorld;
-    MPI_Comm_rank(communicator, &rankWorld); 
+    MPI_Comm_rank(comm, &rankWorld); 
     return rankWorld; };
 
   public:
@@ -36,9 +36,9 @@ template <typename CoefficientPrecision, typename CoordinatePrecision>
 class DefaultLocalApproximationBuilder {
   private:
     const PartitionFromCluster<CoefficientPrecision, CoordinatePrecision> target_partition, source_partition;
-    std::function<int(MPI_Comm)> get_rankWorld = [](MPI_Comm communicator) {
+    std::function<int(MPI_Comm)> get_rankWorld = [](MPI_Comm comm) {
     int rankWorld;
-    MPI_Comm_rank(communicator, &rankWorld); 
+    MPI_Comm_rank(comm, &rankWorld); 
     return rankWorld; };
 
   public:
