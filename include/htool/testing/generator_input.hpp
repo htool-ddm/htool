@@ -74,15 +74,15 @@ void generate_random_scalar(std::complex<T> &coefficient) {
     coefficient.imag(dist(mersenne_engine));
 }
 
-template <>
-void generate_random_scalar(int &coefficient) {
-    int lower_bound = 0;
-    int upper_bound = 10000;
-    std::random_device rd;
-    std::mt19937 mersenne_engine(rd());
-    std::uniform_int_distribution<int> dist(lower_bound, upper_bound);
-    coefficient = dist(mersenne_engine);
-}
+// template <>
+// void generate_random_scalar(int &coefficient) {
+//     int lower_bound = 0;
+//     int upper_bound = 10000;
+//     std::random_device rd;
+//     std::mt19937 mersenne_engine(rd());
+//     std::uniform_int_distribution<int> dist(lower_bound, upper_bound);
+//     coefficient = dist(mersenne_engine);
+// }
 
 } // namespace htool
 

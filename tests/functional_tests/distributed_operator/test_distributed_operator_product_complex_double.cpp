@@ -28,6 +28,8 @@ int main(int argc, char *argv[]) {
                             is_error = is_error || test_distributed_operator<std::complex<double>, GeneratorTestComplex>(number_of_rows, number_of_columns, number_of_right_hand_side, use_permutation, 'N', 'N', operation, offdiagonal_approximation, data_type, epsilon);
                             is_error = is_error || test_distributed_operator<std::complex<double>, GeneratorTestComplexSymmetric>(number_of_rows, number_of_columns, number_of_right_hand_side, use_permutation, 'S', 'L', operation, offdiagonal_approximation, data_type, epsilon);
                             is_error = is_error || test_distributed_operator<std::complex<double>, GeneratorTestComplexSymmetric>(number_of_rows, number_of_columns, number_of_right_hand_side, use_permutation, 'S', 'U', operation, offdiagonal_approximation, data_type, epsilon);
+                            is_error = is_error || test_distributed_operator<std::complex<double>, GeneratorTestComplexHermitian>(number_of_rows, number_of_columns, number_of_right_hand_side, use_permutation, 'H', 'L', operation, offdiagonal_approximation, data_type, epsilon);
+                            is_error = is_error || test_distributed_operator<std::complex<double>, GeneratorTestComplexHermitian>(number_of_rows, number_of_columns, number_of_right_hand_side, use_permutation, 'H', 'U', operation, offdiagonal_approximation, data_type, epsilon);
 
                             // Rectangular matrix
                             is_error = is_error || test_distributed_operator<std::complex<double>, GeneratorTestComplex>(number_of_rows_increased, number_of_columns, number_of_right_hand_side, use_permutation, 'N', 'N', operation, offdiagonal_approximation, data_type, epsilon);
