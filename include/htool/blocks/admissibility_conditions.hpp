@@ -8,6 +8,7 @@ namespace htool {
 class VirtualAdmissibilityCondition {
   public:
     virtual bool ComputeAdmissibility(const VirtualCluster &target, const VirtualCluster &source, double eta) const = 0;
+    virtual ~VirtualAdmissibilityCondition() {}
 };
 
 // Rjasanow - Steinbach (3.15) p111 Chap Approximation of Boundary Element Matrices

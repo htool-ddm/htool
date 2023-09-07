@@ -129,12 +129,12 @@ jobs:
     if: "!contains(github.event.head_commit.message, '[ci skip]')"
     steps:
       - name: Checkout htool
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
         with:
           path: "htool"
           fetch-depth: 0 # to get tags
       - name: Checkout hpddm
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
         with:
           repository: hpddm/hpddm
           ref: d19056d0e3010b905fca5b73f5c48a766b8a042d

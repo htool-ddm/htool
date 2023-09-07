@@ -191,6 +191,7 @@ if((CMAKE_PROJECT_NAME STREQUAL PROJECT_NAME) AND BUILD_TESTING)
                       -Wno-sign-compare
                       -Wextra-semi
                       -Wextra-semi-stmt
+                      -Wnon-virtual-dtor
                       -Wzero-as-null-pointer-constant
                       -Wundef)
     elseif(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
