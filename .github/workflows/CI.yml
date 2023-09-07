@@ -160,10 +160,18 @@ jobs:
           cd htool/build
           make doc
 
-      - name: Check format
+      - name: Check c++ format
+        uses: DoozyX/clang-format-lint-action@v0.16.2
+        with:
+          source: 'htool/include htool/tests'
+          # exclude: './third_party ./external'
+          extensions: 'hpp,cpp'
+          clangFormatVersion: 16
+          style: file
+
+      - name: Check cmake format
         run: |
           cd htool/build
-          make format
           make cmake-format
           git diff --exit-code
 
