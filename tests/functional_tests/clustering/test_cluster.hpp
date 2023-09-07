@@ -162,6 +162,10 @@ bool test_cluster(int size, bool use_given_partition) {
         root_cluster_to_global(root_cluster, temporary_vector.data(), result_vector.data());
         is_error = is_error || !(random_vector == result_vector);
 
+        user_to_cluster(root_cluster, random_vector.data(), temporary_vector.data());
+        cluster_to_user(root_cluster, temporary_vector.data(), result_vector.data());
+        is_error = is_error || !(random_vector == result_vector);
+
         // Test renumbering on partition
         if (root_cluster.is_permutation_local()) {
             int partition_index = 0;
@@ -173,6 +177,10 @@ bool test_cluster(int size, bool use_given_partition) {
                 MPI_Bcast(local_random_vector.data(), local_random_vector.size(), wrapper_mpi<int>::mpi_type(), 0, MPI_COMM_WORLD);
                 local_to_local_cluster(root_cluster, partition_index, random_vector.data(), temporary_vector.data());
                 local_cluster_to_local(root_cluster, partition_index, temporary_vector.data(), result_vector.data());
+                is_error = is_error || !(random_vector == result_vector);
+
+                user_to_cluster(*cluster_on_partition, random_vector.data(), temporary_vector.data());
+                cluster_to_user(*cluster_on_partition, temporary_vector.data(), result_vector.data());
                 is_error = is_error || !(random_vector == result_vector);
             }
             partition_index++;
@@ -205,11 +213,13 @@ bool test_cluster(int size, bool use_given_partition) {
             }
             // Test renumbering with copied local cluster
             std::vector<int> local_random_vector(local_cluster.get_size(), 1), local_temporary_vector(local_cluster.get_size(), 1), local_result_vector(local_cluster.get_size(), 1);
-
-            MPI_Bcast(local_random_vector.data(), local_random_vector.size(), wrapper_mpi<int>::mpi_type(), 0, MPI_COMM_WORLD);
-
+            generate_random_vector(local_random_vector);
             local_to_local_cluster(local_cluster, rankWorld, local_random_vector.data(), local_temporary_vector.data());
             local_cluster_to_local(local_cluster, rankWorld, local_temporary_vector.data(), local_result_vector.data());
+            is_error = is_error || !(local_random_vector == local_result_vector);
+
+            user_to_cluster(local_cluster, local_random_vector.data(), local_temporary_vector.data());
+            cluster_to_user(local_cluster, local_temporary_vector.data(), local_result_vector.data());
             is_error = is_error || !(local_random_vector == local_result_vector);
         }
     }
