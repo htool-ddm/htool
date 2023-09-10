@@ -606,13 +606,12 @@ class DDM {
         }
     }
 
-    std::string get_infos(const std::string &key) const {
-        if (hpddm_op->HA->get_rankworld() == 0) {
-            return infos[key];
-        }
-        return "";
+    std::string get_information(const std::string &key) const {
+        return infos[key];
     }
-
+    std::map<std::string, std::string> get_information() const {
+        return infos;
+    }
     int get_nevi() const {
         return nevi;
     }
