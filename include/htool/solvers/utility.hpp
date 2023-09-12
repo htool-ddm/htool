@@ -36,20 +36,19 @@ class DefaultDDMSolverBuilder {
         copy_to_dense(*block_diagonal_hmatrix0, block_diagonal_dense_matrix_without_overlap.data());
 
         // Renumbering for the overlap
-        std::vector<int> renum_to_global;
         std::vector<int> renum(local_size_with_overlap, -1);
-        renum_to_global.resize(local_size_with_overlap);
+        local_to_global_numbering.resize(local_size_with_overlap);
 
         for (int i = 0; i < cluster_to_ovr_subdomain0.size(); i++) {
             renum[cluster_to_ovr_subdomain0[i]] = i;
-            renum_to_global[i]                  = ovr_subdomain_to_global0[cluster_to_ovr_subdomain0[i]];
+            local_to_global_numbering[i]        = ovr_subdomain_to_global0[cluster_to_ovr_subdomain0[i]];
         }
         int count = cluster_to_ovr_subdomain0.size();
         // std::cout << count << std::endl;
         for (int i = 0; i < local_size_with_overlap; i++) {
             if (renum[i] == -1) {
-                renum[i]                 = count;
-                renum_to_global[count++] = ovr_subdomain_to_global0[i];
+                renum[i]                           = count;
+                local_to_global_numbering[count++] = ovr_subdomain_to_global0[i];
             }
         }
 
@@ -69,8 +68,8 @@ class DefaultDDMSolverBuilder {
         // Overlap
         std::vector<CoefficientPrecision> horizontal_block((local_size_with_overlap - local_size_without_overlap) * local_size_without_overlap), diagonal_block((local_size_with_overlap - local_size_without_overlap) * (local_size_with_overlap - local_size_without_overlap));
 
-        std::vector<int> overlap_num(renum_to_global.begin() + local_size_without_overlap, renum_to_global.end());
-        std::vector<int> inside_num(renum_to_global.begin(), renum_to_global.begin() + local_size_without_overlap);
+        std::vector<int> overlap_num(local_to_global_numbering.begin() + local_size_without_overlap, local_to_global_numbering.end());
+        std::vector<int> inside_num(local_to_global_numbering.begin(), local_to_global_numbering.begin() + local_size_without_overlap);
 
         generator0.copy_submatrix_from_user_numbering(local_size_with_overlap - local_size_without_overlap, local_size_without_overlap, overlap_num.data(), inside_num.data(), horizontal_block.data());
         for (int j = 0; j < local_size_without_overlap; j++) {
@@ -97,6 +96,7 @@ class DefaultDDMSolverBuilder {
 
   public:
     DDM<CoefficientPrecision> solver;
+    std::vector<int> local_to_global_numbering;
 
     DefaultDDMSolverBuilder(DistributedOperator<CoefficientPrecision> &distributed_operator, const HMatrix<CoefficientPrecision, CoordinatePrecision> *block_diagonal_hmatrix, const VirtualGeneratorWithPermutation<CoefficientPrecision> &generator, const std::vector<int> &ovr_subdomain_to_global, const std::vector<int> &cluster_to_ovr_subdomain, const std::vector<int> &neighbors, const std::vector<std::vector<int>> &intersections) : m_intersections(intersections), m_block_diagonal_dense_matrix(initialize_diagonal_block(distributed_operator, block_diagonal_hmatrix, generator, ovr_subdomain_to_global, cluster_to_ovr_subdomain, neighbors, intersections)), solver(distributed_operator, m_block_diagonal_dense_matrix, neighbors, m_intersections) {}
 };
