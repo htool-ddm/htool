@@ -339,7 +339,6 @@ class DDM {
         if (rankWorld == 0) {
             Matrix<CoefficientPrecision> E_mat(size_E, size_E);
             E_mat.assign(size_E, size_E, E.data(), false);
-            E_mat.print(std::cout, ",");
         }
 
         hpddm_op->buildTwo(MPI_COMM_WORLD, E.data());
