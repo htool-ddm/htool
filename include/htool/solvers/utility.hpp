@@ -92,13 +92,17 @@ class DefaultDDMSolverBuilder {
         return block_diagonal_dense_matrix_with_overlap;
     };
     std::vector<std::vector<int>> m_intersections;
+
+  public:
+    std::vector<int> local_to_global_numbering;
+
+  private:
     Matrix<CoefficientPrecision> m_block_diagonal_dense_matrix;
 
   public:
     DDM<CoefficientPrecision> solver;
-    std::vector<int> local_to_global_numbering;
 
-    DefaultDDMSolverBuilder(DistributedOperator<CoefficientPrecision> &distributed_operator, const HMatrix<CoefficientPrecision, CoordinatePrecision> *block_diagonal_hmatrix, const VirtualGeneratorWithPermutation<CoefficientPrecision> &generator, const std::vector<int> &ovr_subdomain_to_global, const std::vector<int> &cluster_to_ovr_subdomain, const std::vector<int> &neighbors, const std::vector<std::vector<int>> &intersections) : m_intersections(intersections), m_block_diagonal_dense_matrix(initialize_diagonal_block(distributed_operator, block_diagonal_hmatrix, generator, ovr_subdomain_to_global, cluster_to_ovr_subdomain, neighbors, intersections)), solver(distributed_operator, m_block_diagonal_dense_matrix, neighbors, m_intersections) {}
+    DefaultDDMSolverBuilder(DistributedOperator<CoefficientPrecision> &distributed_operator, const HMatrix<CoefficientPrecision, CoordinatePrecision> *block_diagonal_hmatrix, const VirtualGeneratorWithPermutation<CoefficientPrecision> &generator, const std::vector<int> &ovr_subdomain_to_global, const std::vector<int> &cluster_to_ovr_subdomain, const std::vector<int> &neighbors, const std::vector<std::vector<int>> &intersections) : m_intersections(intersections), local_to_global_numbering(ovr_subdomain_to_global.size()), m_block_diagonal_dense_matrix(initialize_diagonal_block(distributed_operator, block_diagonal_hmatrix, generator, ovr_subdomain_to_global, cluster_to_ovr_subdomain, neighbors, intersections)), solver(distributed_operator, m_block_diagonal_dense_matrix, neighbors, m_intersections) {}
 };
 
 } // namespace htool
