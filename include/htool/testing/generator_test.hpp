@@ -133,6 +133,14 @@ class GeneratorTestDouble : public GeneratorTest<double> {
     using GeneratorTest::GeneratorTest;
     double get_coef(const int &i, const int &j) const override {
         return 1. / (4 * M_PI * std::sqrt(std::inner_product(p1.begin() + this->space_dim * i, this->p1.begin() + this->space_dim * i + this->space_dim, p2.begin() + this->space_dim * j, double(0), std::plus<double>(), [](double u, double v) { return (u - v) * (u - v); })));
+        // return std::trunc(100000000. / (4 * M_PI * std::sqrt(std::inner_product(p1.begin() + this->space_dim * i, this->p1.begin() + this->space_dim * i + this->space_dim, p2.begin() + this->space_dim * j, double(0), std::plus<double>(), [](double u, double v) { return (u - v) * (u - v); }))));
+        // double test;
+        // if (i <= j) {
+        //     test = 1;
+        // } else {
+        //     test = 0;
+        // }
+        // return test;
     }
 };
 

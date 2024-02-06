@@ -82,6 +82,11 @@ class partialACA final : public VirtualLowRankGenerator<CoefficientPrecision, Co
                 q = -1;
                 break;
             } else {
+                // std::cout << "++++++++++++++++++ \nA=" << endl;
+                // Matrix<CoefficientPrecision> TotMat(target_size, source_size);
+                // A.copy_submatrix(target_size, source_size, target_offset, source_offset, TotMat.data());
+                // TotMat.print(cout, ",");
+                // std::cout << "++++++++++++++++++" << endl;
 
                 // Compute the first cross
                 //==================//
@@ -105,6 +110,7 @@ class partialACA final : public VirtualLowRankGenerator<CoefficientPrecision, Co
                     J     = k;
                     // std::cout << pivot << " " << J << std::endl;
                 }
+                // std::cout << "J=" << J << endl;
 
                 visited_row[I]             = true;
                 CoefficientPrecision gamma = CoefficientPrecision(1.) / r[J];
@@ -130,6 +136,8 @@ class partialACA final : public VirtualLowRankGenerator<CoefficientPrecision, Co
                         I     = k;
                     }
                     visited_col[J] = true;
+                    // std::cout << "I=" << I << endl;
+
                     // Test if no given rank
                     if (reqrank < 0) {
                         // Error estimator
@@ -163,6 +171,8 @@ class partialACA final : public VirtualLowRankGenerator<CoefficientPrecision, Co
                     break;
                 }
             }
+            // std::cout << "========== Fin d'iteration ===========\n";
+            // getchar();
         }
         // Final rank
         rank = q;

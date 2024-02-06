@@ -46,7 +46,6 @@ bool test_lrmat(const Cluster<double> &target_cluster, const Cluster<double> &so
     // Test Frobenius error
     test = test || !(auto_errors[Auto_approximation.rank_of()] < Auto_approximation.get_epsilon());
     cout << "> Errors with Frobenius norm: " << auto_errors << endl;
-
     // Test compression rate
     test = test || !(auto_compression_interval.first < Auto_approximation.space_saving() && Auto_approximation.space_saving() < auto_compression_interval.second);
     cout << "> Compression rate : " << Auto_approximation.space_saving() << endl;

@@ -87,6 +87,24 @@ class sympartialACA final : public VirtualLowRankGenerator<CoefficientPrecision,
         int incx(1), incy(1);
         std::vector<CoefficientPrecision> u1(n2), u2(n1);
 
+        // =====================================================================================
+        // std::cout << std::fixed             // fix the number of decimal digits...
+        //           << std::setprecision(11); // ... to 11
+        // std::cout << "reqrank=" << reqrank << endl;
+        // std::cout << "++++++++++++++++++ \nA=" << endl;
+        // Matrix<CoefficientPrecision> TotMat(n1, n2);
+        // if (t.get_offset() >= s.get_offset()) {
+        //     A.copy_submatrix(n1, n2, i1, i2, TotMat.data());
+        //     TotMat.print(cout, ",");
+        // } else {
+        //     TotMat.resize(n2, n1);
+        //     A.copy_submatrix(n2, n1, i2, i1, TotMat.data());
+        //     TotMat.print(cout, ",");
+        // }
+        // std::cout << "++++++++++++++++++" << endl;
+        // getchar();
+        // =====================================================================================
+
         // Either we have a required rank
         // Or it is negative and we have to check the relative error between two iterations.
         // But to do that we need a least two iterations.
@@ -124,6 +142,15 @@ class sympartialACA final : public VirtualLowRankGenerator<CoefficientPrecision,
                 }
                 visited_1[I1]              = true;
                 CoefficientPrecision gamma = CoefficientPrecision(1.) / u1[I2];
+                // u1 *= gamma;
+
+                // std::cout << "++++++++++++++++++ \nu1=" << endl;
+                // for (int j = 0; j < n2; j++) {
+                //     std::cout << u1[j] << ",";
+                // }
+                // std::cout << "\n++++++++++++++++++" << endl;
+                // std::cout << "I1=" << I1 << endl;
+                // std::cout << "I2=" << I2 << endl;
 
                 //==================//
                 // Look for a line
@@ -138,6 +165,13 @@ class sympartialACA final : public VirtualLowRankGenerator<CoefficientPrecision,
                         coef = -vv[k][I2];
                         Blas<CoefficientPrecision>::axpy(&(n1), &(coef), uu[k].data(), &incx, u2.data(), &incy);
                     }
+
+                    // std::cout << "++++++++++++++++++ \nu2=" << endl;
+                    // for (int j = 0; j < n1; j++) {
+                    //     std::cout << u2[j] << ",";
+                    // }
+                    // std::cout << endl;
+
                     u2 *= gamma;
                     pivot = 0.;
                     tmp   = 0;
@@ -152,6 +186,26 @@ class sympartialACA final : public VirtualLowRankGenerator<CoefficientPrecision,
                     }
                     visited_2[I2] = true;
 
+                    // std::cout << "++++++++++++++++++ \nu2=" << endl;
+                    // for (int j = 0; j < n1; j++) {
+                    //     std::cout << u2[j] << ",";
+                    // }
+                    // std::cout << "\n++++++++++++++++++" << endl;
+                    // std::cout << "I1=" << I1 << endl;
+
+                    // std::cout << "++++++++++++++++++ \nu2*u1=" << endl;
+                    // Matrix<CoefficientPrecision> U2U1(n1, n2);
+                    // for (int j = 0; j < n1; j++) {
+                    //     for (int i = 0; i < n2; i++) {
+                    //         // std::cout << u2[j] * u1[i] << ",";
+                    //         U2U1(j, i) = u2[j] * u1[i];
+                    //     }
+                    //     // std::cout << endl;
+                    // }
+                    // U2U1.print(cout, ", ");
+                    // std::cout << "\n++++++++++++++++++" << endl;
+                    // std::cout << "||A-u2*u1||=" << normFrob(U2U1 - TotMat) << endl;
+
                     // Test if no given rank
                     if (reqrank < 0) {
                         // Error estimator
@@ -165,6 +219,10 @@ class sympartialACA final : public VirtualLowRankGenerator<CoefficientPrecision,
                         // frob_aux: termes croises du developpement du carre' de la norme de Frobenius de la matrice low rank
                         frob += aux + 2 * std::real(frob_aux); // frob: Frobenius norm of the low rank matrix
                                                                //==================//
+                        // std::cout << "sqrt(aux=" << sqrt(aux) << endl;
+                        // std::cout << "sqrt(frob=" << sqrt(frob) << endl;
+                        // std::cout << "sqrt(frob_aux=" << sqrt(std::real(frob_aux)) << endl;
+                        // getchar();
                     }
                     // Matrix<T> M=A.get_submatrix(this->ir,this->ic);
                     // uu.push_back(M.get_col(J));
@@ -172,7 +230,6 @@ class sympartialACA final : public VirtualLowRankGenerator<CoefficientPrecision,
                     // New cross added
                     uu.push_back(u2);
                     vv.push_back(u1);
-
                 } else {
                     q -= 1;
                     if (q == 0) { // corner case where first row is zero, ACA fails, we build a dense block instead
@@ -183,6 +240,8 @@ class sympartialACA final : public VirtualLowRankGenerator<CoefficientPrecision,
                     break;
                 }
             }
+            // std::cout << "========== Fin d'iteration ===========\n";
+            // getchar();
         }
 
         // Final rank

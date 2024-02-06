@@ -9,7 +9,7 @@ using namespace std;
 using namespace htool;
 
 template <typename T, typename GeneratorTestType, class Compressor>
-bool test_lrmat_product(int nr, int nc, int mu, char op, htool::underlying_type<T> margin) {
+bool test_lrmat_product(int nr, int nc, int mu, char op, Compressor &compressor, htool::underlying_type<T> margin) {
     const int ndistance = 4;
     htool::underlying_type<T> distance[ndistance];
     distance[0] = 15;
@@ -36,7 +36,6 @@ bool test_lrmat_product(int nr, int nc, int mu, char op, htool::underlying_type<
 
         // partialACA fixed rank
         int reqrank_max = 10;
-        Compressor compressor;
         LowRankMatrix<T> Fixed_approximation(A, compressor, target_root_cluster, source_root_cluster, reqrank_max, epsilon);
 
         // ACA automatic building

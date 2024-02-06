@@ -2,6 +2,7 @@
 #include <iostream>
 #include <vector>
 
+#include <htool/hmatrix/lrmat/blocACA.hpp>
 #include <htool/htool.hpp>
 #include <htool/testing/geometry.hpp>
 using namespace std;
@@ -73,9 +74,9 @@ int main(int argc, char *argv[]) {
 
     // Parameters
     double epsilon  = 0.0001;
-    int reqrank_max = 50;
-    int nr          = 500;
-    int nc          = 100;
+    int reqrank_max = 70;
+    int nr          = 1500;
+    int nc          = 1100;
 
     // Geometry
     vector<double> p1(3 * nr);
@@ -123,11 +124,19 @@ int main(int argc, char *argv[]) {
         sympartialACA_fixed_errors.push_back(Frobenius_absolute_error(target_cluster, source_cluster, A_sympartialACA_fixed, A, k) / norm_A);
     }
 
+    // blocACA with fixed rank
+    blocACA<double> compressor_blocACA(10);
+    LowRankMatrix<double> A_blocACA_fixed(A, compressor_blocACA, target_cluster, source_cluster, reqrank_max, epsilon);
+    std::vector<double> blocACA_fixed_errors;
+    for (int k = 0; k < A_blocACA_fixed.rank_of() + 1; k++) {
+        blocACA_fixed_errors.push_back(Frobenius_absolute_error(target_cluster, source_cluster, A_blocACA_fixed, A, k) / norm_A);
+    }
+
     // Output
     ofstream file_fixed((outputpath + "/" + outputfile).c_str());
-    file_fixed << "Rank,SVD,Full ACA,partial ACA,sym partial ACA" << endl;
+    file_fixed << "Rank,SVD,Full ACA,partial ACA,sym partial ACA, bloc ACA" << endl;
     for (int i = 0; i < reqrank_max; i++) {
-        file_fixed << i << "," << SVD_fixed_errors[i] << "," << fullACA_fixed_errors[i] << "," << partialACA_fixed_errors[i] << "," << sympartialACA_fixed_errors[i] << endl;
+        file_fixed << i << "," << SVD_fixed_errors[i] << "," << fullACA_fixed_errors[i] << "," << partialACA_fixed_errors[i] << "," << sympartialACA_fixed_errors[i] << "," << blocACA_fixed_errors[i] << endl;
     }
 
     // Finalize the MPI environment.
