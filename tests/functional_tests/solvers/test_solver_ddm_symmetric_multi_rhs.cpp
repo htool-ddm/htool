@@ -1,5 +1,14 @@
 #include "test_solver_ddm.hpp"
 
 int main(int argc, char *argv[]) {
-    return test_solver_ddm(argc, argv, 10, 'S');
+
+    // Initialize the MPI environment
+    MPI_Init(&argc, &argv);
+
+    bool test = test_solver_ddm(argc, argv, 10, 'S', false);
+
+    // test = test || test_solver_ddm(argc, argv, 10, 'S', true);
+    // Finalize the MPI environment.
+    MPI_Finalize();
+    return test;
 }

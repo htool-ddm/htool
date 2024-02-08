@@ -28,14 +28,25 @@ All notable changes to this project will be documented in this file.
 
 ### Added
 
-- `set_delay_dense_computation` to `HMatrix`
+- The old implementation of `HMatrix` was mixing the distributed operations and compression via hierarchical matrices. This is fixed by replacing `HMatrix` by:
+    - `DistributedOperator` which contains a list of local operators and implements all the distributed operations,
+    - `VirtualLocalOperator` which is the interface local operators must satisfy,
+    - `LocalDenseMatrix` is an example of local operator consisting of a dense matrix `Matrix`,
+    - and `LocalHMatrix` which is an example of local operator consisting of a hierarchical matrix based on `HMatrix` (different from the previous `HMatrix`, see below).
+    
 
 ### Changed
 
+- `HMatrix` is now a class representing a hierarchical matrix without distributed-memory parallelism (note that it can still use shared-memory parallelism):
+    - It inherits from `TreeNode`, and it provides the algebra related to hierchical matrices.
+    - The algorithms for building the block cluster tree is contained in `HMatrixTreeBuilder`. Users can provide their own "factory".
+- `VirtualCluster` is removed and the clustering part of the library has been rewritten:
+    - `Cluster` now derives from `TreeNode`, whose template parameter corresponds to the precision of cluster nodes' radius and centre (previously only `double`).
+    - Standards recursive build algorithms are provided via `ClusterTreeBuilder`. Users can provide their own "factory".
+    - `ClusterTreeBuilder` is a class template and uses the policy pattern (a policy for computing direction, and another for splitting along the direction).
+
 ### Fixed
 
-- Fix const-correctness for g++ 4.8.5
-- 
 ## [0.8.1] - 2023-05-26
 
 ### Added
@@ -60,8 +71,8 @@ All notable changes to this project will be documented in this file.
 ### Added
 
 - doxygen documentation
-- mvprod_transp_global_to_global and mvprod_transp_local_to_local added to VirtualHMatrix
-- getters for clusters in VirtualHMatrix
+- mvprod_transp_global_to_global and mvprod_transp_local_to_local added to `VirtualHMatrix`
+- getters for clusters in `VirtualHMatrix`
 - custom gmv in ddm
 
 ### Changed
@@ -80,12 +91,12 @@ All notable changes to this project will be documented in this file.
 - Test for warnings coming from `include/htool/*`
 - Coverage added
 - Methods in ddm interface to get local numbering
-- VirtualLowRankGenerator and VirtualAdmissibilityCondition added for better modularity
+- `VirtualLowRankGenerator` and `VirtualAdmissibilityCondition` added for better modularity
   
 ### Changed
 
 - Remove unnecessary arguments in HMatrix and cluster interfaces
-- MutliHMatrix deprecated for the moment (everything related to this in `htool/multi`)
+- `MultiHMatrix` deprecated for the moment (everything related to this in `htool/multi`)
 
 ### Fixed
 

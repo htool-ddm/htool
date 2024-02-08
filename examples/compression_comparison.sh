@@ -17,7 +17,7 @@ distances=(1 2 3)
 # Run
 for distance in "${distances[@]}"
 do
-    ./examples/compression_comparison ${distance} compression_comparison_${distance}.csv ${outputpath}
+    ./examples/Compression_comparison ${distance} compression_comparison_${distance}.csv ${outputpath}
 done
 
 
