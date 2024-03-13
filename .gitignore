@@ -1,3 +1,11 @@
+# Dotfiles
+.*
+!.gitignore
+!.clang-format
+!.clang-tidy
+!.devcontainer
+!.github
+
 # Compiled Object files
 *.slo
 *.lo

@@ -32,10 +32,6 @@ int main(int argc, char *argv[]) {
 
     for (int idist = 0; idist < ndistance; idist++) {
 
-        srand(1);
-        // we set a constant seed for rand because we want always the same result if we run the check many times
-        // (two different initializations with the same seed will generate the same succession of results in the subsequent calls to rand)
-
         create_disk(3, 0, nr, xt.data());
         create_disk(3, distance[idist], nc, xs.data());
 

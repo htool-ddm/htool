@@ -11,6 +11,7 @@
 
 #define HTOOL_GENERATE_EXTERN_BLAS(C, T)                                                                                                                                                     \
     void HTOOL_BLAS_F77(C##axpy)(const int *, const T *, const T *, const int *, T *, const int *);                                                                                          \
+    void HTOOL_BLAS_F77(C##scal)(const int *, const T *, T *, const int *);                                                                                                                  \
     void HTOOL_BLAS_F77(C##gemv)(const char *, const int *, const int *, const T *, const T *, const int *, const T *, const int *, const T *, T *, const int *);                            \
     void HTOOL_BLAS_F77(C##gemm)(const char *, const char *, const int *, const int *, const int *, const T *, const T *, const int *, const T *, const int *, const T *, T *, const int *); \
     void HTOOL_BLAS_F77(C##symv)(const char *, const int *, const T *, const T *, const int *, const T *, const int *, const T *, T *, const int *);                                         \
@@ -58,6 +59,9 @@ struct Blas {
     /* Function: axpy
      *  Computes a scalar-vector product and adds the result to a vector. */
     static void axpy(const int *const, const K *const, const K *const, const int *const, K *const, const int *const);
+    /* Function: scal
+     *  Computes the product of a vector by a scalar. */
+    static void scal(const int *const, const K *const, K *const, const int *const);
     /* Function: nrm2
      *  Computes the Euclidean norm of a vector. */
     static underlying_type<K> nrm2(const int *const, const K *const, const int *const);
@@ -107,6 +111,11 @@ struct Blas {
         inline void Blas<T>::axpy(const int *const n, const T *const a, const T *const x, const int *const incx, T *const y, const int *const incy) {                                                                                                                                    \
             HTOOL_BLAS_F77(C##axpy)                                                                                                                                                                                                                                                      \
             (n, a, x, incx, y, incy);                                                                                                                                                                                                                                                    \
+        }                                                                                                                                                                                                                                                                                \
+        template <>                                                                                                                                                                                                                                                                      \
+        inline void Blas<T>::scal(const int *const n, const T *const a, T *const x, const int *const incx) {                                                                                                                                                                             \
+            HTOOL_BLAS_F77(C##scal)                                                                                                                                                                                                                                                      \
+            (n, a, x, incx);                                                                                                                                                                                                                                                             \
         }                                                                                                                                                                                                                                                                                \
         template <>                                                                                                                                                                                                                                                                      \
         inline T Blas<T>::dot(const int *const n, const T *const x, const int *const incx, const T *const y, const int *const incy) {                                                                                                                                                    \

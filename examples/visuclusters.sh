@@ -14,7 +14,7 @@ mkdir -p ../output/examples/visucluster
 outputpath=../output/examples/visucluster/
 
 # Run
-mpirun -np 2 ./examples/visucluster ${outputpath}
+./examples/visucluster ${outputpath}
 
 
 # python3 ../tools/plot_cluster.py --inputfile ../output/examples/visucluster/clustering_output.csv --depth 2

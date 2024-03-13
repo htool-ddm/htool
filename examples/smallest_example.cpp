@@ -1,36 +1,40 @@
-#include <htool/htool.hpp>
+#include <htool/clustering/tree_builder/recursive_build.hpp>
+#include <htool/distributed_operator/utility.hpp>
+#include <htool/testing/geometry.hpp>
 
 using namespace std;
 using namespace htool;
 
 class MyMatrix : public VirtualGenerator<double> {
-    const vector<double> &p1;
-    const vector<double> &p2;
-    int space_dim;
+    const vector<int> &m_target_permutation;
+    const vector<int> &m_source_permutation;
+    const vector<double> &m_p1;
+    const vector<double> &m_p2;
+    int m_space_dim;
+    int m_nr;
+    int m_nc;
 
   public:
     // Constructor
-    MyMatrix(int space_dim0, int nr, int nc, const vector<double> &p10, const vector<double> &p20) : VirtualGenerator(nr, nc), p1(p10), p2(p20), space_dim(space_dim0) {}
-
-    // Virtual function to overload
+    MyMatrix(int space_dim0, const vector<int> &target_permutation, const vector<int> &source_permutation, const vector<double> &p10, const vector<double> &p20) : m_target_permutation(target_permutation), m_source_permutation(source_permutation), m_p1(p10), m_p2(p20), m_space_dim(space_dim0), m_nr(target_permutation.size()), m_nc(source_permutation.size()) {}
     double get_coef(const int &k, const int &j) const {
-        return (1.) / (4 * M_PI * std::sqrt(1e-5 + std::inner_product(p1.begin() + space_dim * k, p1.begin() + space_dim * k + space_dim, p2.begin() + space_dim * j, double(0), std::plus<double>(), [](double u, double v) { return (u - v) * (u - v); })));
+        return 1. / (1 + std::sqrt(std::inner_product(m_p1.begin() + m_space_dim * k, m_p1.begin() + m_space_dim * k + m_space_dim, m_p2.begin() + m_space_dim * j, double(0), std::plus<double>(), [](double u, double v) { return (u - v) * (u - v); })));
     }
 
     // Virtual function to overload
-    void copy_submatrix(int M, int N, const int *const rows, const int *const cols, double *ptr) const override {
+    void copy_submatrix(int M, int N, int row_offset, int col_offset, double *ptr) const override {
         for (int j = 0; j < M; j++) {
             for (int k = 0; k < N; k++) {
-                ptr[j + M * k] = this->get_coef(rows[j], cols[k]);
+                ptr[j + M * k] = this->get_coef(m_target_permutation[j + row_offset], m_source_permutation[k + col_offset]);
             }
         }
     }
 
     // Matrix vector product
     std::vector<double> operator*(std::vector<double> a) {
-        std::vector<double> result(nr, 0);
-        for (int j = 0; j < nr; j++) {
-            for (int k = 0; k < nc; k++) {
+        std::vector<double> result(m_nr, 0);
+        for (int j = 0; j < m_nr; j++) {
+            for (int k = 0; k < m_nc; k++) {
                 result[j] += this->get_coef(j, k) * a[k];
             }
         }
@@ -40,8 +44,8 @@ class MyMatrix : public VirtualGenerator<double> {
     // Frobenius norm
     double norm() {
         double norm = 0;
-        for (int j = 0; j < nr; j++) {
-            for (int k = 0; k < nc; k++) {
+        for (int j = 0; j < m_nr; j++) {
+            for (int k = 0; k < m_nc; k++) {
                 norm += this->get_coef(j, k);
             }
         }
@@ -53,6 +57,9 @@ int main(int argc, char *argv[]) {
 
     // Initialize the MPI environment
     MPI_Init(&argc, &argv);
+    int sizeWorld, rankWorld;
+    MPI_Comm_rank(MPI_COMM_WORLD, &rankWorld);
+    MPI_Comm_size(MPI_COMM_WORLD, &sizeWorld);
 
     // Check the number of parameters
     if (argc < 1) {
@@ -70,37 +77,43 @@ int main(int argc, char *argv[]) {
     double epsilon = 0.001;
     double eta     = 100;
 
-    // n² points on a regular grid in a square
-    int n    = std::sqrt(4761);
-    int size = n * n;
-
-    // p1: points in a square in the plane z=z1
-    double z = 1;
+    // Geometry
+    int size = 5000;
     vector<double> p(3 * size);
-    for (int j = 0; j < n; j++) {
-        for (int k = 0; k < n; k++) {
-            p[3 * (j + k * n) + 0] = j;
-            p[3 * (j + k * n) + 1] = k;
-            p[3 * (j + k * n) + 2] = z;
-        }
+    create_sphere(size, p.data());
+
+    // Clustering
+    ClusterTreeBuilder<double> recursive_build_strategy;
+    Cluster<double> cluster = recursive_build_strategy.create_cluster_tree(size, 3, p.data(), 2, sizeWorld);
+
+    // Generator
+    MyMatrix A(3, cluster.get_permutation(), cluster.get_permutation(), p, p);
+
+    // Distributed operator
+    DefaultApproximationBuilder<double, double> default_approximation_builder(A, cluster, cluster, epsilon, eta, 'S', 'U', MPI_COMM_WORLD);
+    DistributedOperator<double> &distributed_operator = default_approximation_builder.distributed_operator;
+
+    // Matrix vector product
+    std::vector<double> x(size, 1), result(size, 0), ref(size, 0);
+    distributed_operator.matrix_product_global_to_global(x.data(), result.data(), 1);
+    ref = A * x;
+    if (rankWorld == 0) {
+        std::cout << "relative error on matrix vector product : ";
+        std::cout << norm2(ref - result) / norm2(ref) << "\n";
     }
 
-    // Hmatrix
-    MyMatrix A(3, size, size, p, p);
-    std::vector<double> x(size, 1), result(size, 0);
-    std::shared_ptr<Cluster<PCA<SplittingTypes::RegularSplitting>>> t = make_shared<Cluster<PCA<SplittingTypes::RegularSplitting>>>(3);
-    t->build(size, p.data(), 2);
-    HMatrix<double> HA(t, t, epsilon, eta, 'S', 'U');
-    HA.build(A, p.data());
-    result = HA * x;
-
     // Output
-    HA.print_infos();
-    HA.save_plot(outputpath + "/smallest_example_plot");
-    HA.get_target_cluster()->save_geometry(p.data(), outputpath + "/smallest_example_cluster", {1, 2, 3});
-    std::cout << outputpath + "/smallest_example_plot" << std::endl;
-    std::cout << Frobenius_absolute_error(HA, A) / A.norm() << std::endl;
-    std::cout << norm2(A * x - result) / norm2(A * x) << std::endl;
+    const HMatrix<double, double> &local_hmatrix = default_approximation_builder.hmatrix;
+
+    if (rankWorld == 0) {
+        std::cout << "Tree parameters\n";
+        print_tree_parameters(local_hmatrix, std::cout);
+        std::cout << "Information about the hmatrix on rank 0\n";
+        print_hmatrix_information(local_hmatrix, std::cout);
+        std::cout << "Information about hmatrices accross all processors\n";
+    }
+    print_distributed_hmatrix_information(local_hmatrix, std::cout, MPI_COMM_WORLD);
+    save_leaves_with_rank(local_hmatrix, outputpath + "/local_hmatrix_" + std::to_string(rankWorld));
 
     // Finalize the MPI environment.
     MPI_Finalize();
