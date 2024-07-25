@@ -29,8 +29,10 @@ class Matrix {
   public:
     Matrix() : m_number_of_rows(0), m_number_of_cols(0), m_data(nullptr), m_is_owning_data(true), m_pivots(0) {}
     Matrix(int nbr, int nbc, T value = 0) : m_number_of_rows(nbr), m_number_of_cols(nbc), m_is_owning_data(true), m_pivots(0) {
-        m_data = new T[nbr * nbc];
-        std::fill_n(m_data, nbr * nbc, value);
+        // std::cout << std::numeric_limits<int>::max() << " " << nbr * nbc << " " << std::size_t(nbr) * std::size_t(nbc) << std::endl;
+        std::size_t size = std::size_t(nbr) * std::size_t(nbc);
+        m_data           = new T[size];
+        std::fill_n(m_data, std::size_t(nbr) * std::size_t(nbc), value);
     }
     Matrix(const Matrix &rhs) : m_number_of_rows(rhs.m_number_of_rows), m_number_of_cols(rhs.m_number_of_cols), m_is_owning_data(true), m_pivots(rhs.m_pivots) {
         m_data = new T[rhs.m_number_of_rows * rhs.m_number_of_cols]();
