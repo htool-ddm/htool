@@ -136,8 +136,8 @@ std::map<std::string, std::string> get_hmatrix_information(const HMatrix<Coeffic
 
     std::map<std::string, std::string> hmatrix_information;
 
-    unsigned int nb_rows = hmatrix.get_target_cluster().get_size();
-    unsigned int nb_cols = hmatrix.get_source_cluster().get_size();
+    std::size_t nb_rows = hmatrix.get_target_cluster().get_size(); // unsigned int replaced by std::size_t
+    std::size_t nb_cols = hmatrix.get_source_cluster().get_size();
 
     // 0 : dense mat ; 1 : lr mat ; 2 : rank ; 3 : local_size
     std::array<std::size_t, 3> maxinfos = {0, 0, 0};
