@@ -87,6 +87,7 @@ endif()
 # Options
 option(HTOOL_WITH_EXAMPLES "Build htool examples ?" ON)
 option(HTOOL_WITH_DOC "Build documentation" ON)
+option(HTOOL_WITH_STRICT_TESTS "Add -Werror to the tests" OFF)
 
 #=============================================================================#
 #========================== External Libraries ===============================#
@@ -126,7 +127,12 @@ if(OpenMP_CXX_FOUND)
 endif()
 target_compile_features(htool INTERFACE cxx_std_11)
 
-if("${BLA_VENDOR}" STREQUAL "Intel10_64lp_seq" OR "${BLA_VENDOR}" STREQUAL "Intel10_64lp")
+if("${BLA_VENDOR}" STREQUAL "Intel10_32"
+   OR "${BLA_VENDOR}" STREQUAL "Intel10_64lp"
+   OR "${BLA_VENDOR}" STREQUAL "Intel10_64lp_seq"
+   OR "${BLA_VENDOR}" STREQUAL "Intel10_64ilp"
+   OR "${BLA_VENDOR}" STREQUAL "Intel10_64ilp_seq"
+   OR "${BLA_VENDOR}" STREQUAL "Intel10_64_dyn")
     target_compile_definitions(htool INTERFACE "-DHPDDM_MKL -DHTOOL_MKL")
 endif()
 
@@ -182,11 +188,13 @@ if((CMAKE_PROJECT_NAME STREQUAL PROJECT_NAME) AND BUILD_TESTING)
         target_compile_options(htool INTERFACE -fprofile-arcs -ftest-coverage)
         target_link_libraries(htool INTERFACE gcov)
     endif()
+    if(HTOOL_WITH_STRICT_TESTS)
+        target_compile_options(htool INTERFACE -Werror)
+    endif()
     target_compile_options(
         htool
         INTERFACE -Wall
                   -Wextra
-                  -Werror
                   -Wshadow
                   -Wnon-virtual-dtor
                   -pedantic
@@ -199,7 +207,7 @@ if((CMAKE_PROJECT_NAME STREQUAL PROJECT_NAME) AND BUILD_TESTING)
                   -Wdouble-promotion
                   -Wno-sign-compare
                   -Wextra-semi
-                  #   -Wzero-as-null-pointer-constant
+                  -Wzero-as-null-pointer-constant
                   -Wundef)
     if(CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
         target_compile_options(htool INTERFACE -Wimplicit-fallthrough -Wextra-semi-stmt -ferror-limit=200)

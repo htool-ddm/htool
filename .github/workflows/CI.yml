@@ -5,10 +5,9 @@ name: CI
 # Controls when the action will run.
 on:
   # Triggers the workflow on push or pull request events but only for the master branch
-  push:
-    branches: [main, develop]
+
   pull_request:
-    branches: [main, develop]
+    branches: [main]
 
   # Allows you to run this workflow manually from the Actions tab
   workflow_dispatch:
@@ -31,11 +30,11 @@ jobs:
             CXX_COMPILER: g++
             container: "ubuntu_gcc_openmpi"
             MPIEXEC_PREFLAGS: "--allow-run-as-root --oversubscribe"
-            USE_SANITIZER: Address""
-            ASAN_OPTIONS: "ASAN_OPTIONS=detect_leaks=0" # issue probably with openmpi
-            CMAKE_BUILD_TYPE: Release
-            DOCKER_OPTIONS: " "
+            USE_SANITIZER: ""
+            # ASAN_OPTIONS: "ASAN_OPTIONS=detect_leaks=0" # issue probably with openmpi
+            CMAKE_BUILD_TYPE: Debug
             CODE_COVERAGE: "OFF"
+            DOCKER_OPTIONS: "--cap-add SYS_PTRACE"
 
           - name: "Ubuntu OpenMPI clang++"
             CC_COMPILER: clang
@@ -43,9 +42,9 @@ jobs:
             container: "ubuntu_clang_openmpi"
             MPIEXEC_PREFLAGS: "--allow-run-as-root --oversubscribe"
             USE_SANITIZER: ""
-            CMAKE_BUILD_TYPE: Release
-            DOCKER_OPTIONS: " "
+            CMAKE_BUILD_TYPE: Debug
             CODE_COVERAGE: "OFF"
+            DOCKER_OPTIONS: "--cap-add SYS_PTRACE"
 
           - name: "Ubuntu MPICH g++"
             CC_COMPILER: gcc
@@ -70,27 +69,26 @@ jobs:
             CODE_COVERAGE: "OFF"
 
           # Hangs up on github
-          # - name: "Debian OpenMPI g++"
-          #   CC_COMPILER: gcc
-          #   CXX_COMPILER: g++
-          #   container: "debian_openmpi"
-          #   MPIEXEC_PREFLAGS: "--allow-run-as-root --oversubscribe"
-          #   USE_SANITIZER: "Address"
-          #   ASAN_OPTIONS: "ASAN_OPTIONS=detect_leaks=0" # issue probably with openmpi
-          #   CMAKE_BUILD_TYPE: Debug
-          #   DOCKER_OPTIONS: " "
-          #   CODE_COVERAGE: "OFF"
-          #   # DOCKER_OPTIONS: "--cap-add SYS_PTRACE"
-          # - name: "Debian OpenMPI clang++"
-          #   CC_COMPILER: clang
-          #   CXX_COMPILER: clang++
-          #   container: "debian_openmpi"
-          #   MPIEXEC_PREFLAGS: "--allow-run-as-root --oversubscribe"
-          #   USE_SANITIZER: ""
-          #   CMAKE_BUILD_TYPE: Debug
-          #   DOCKER_OPTIONS: " "
-          #   CODE_COVERAGE: "OFF"
-          # DOCKER_OPTIONS: "--cap-add SYS_PTRACE"
+          - name: "Debian OpenMPI g++"
+            CC_COMPILER: gcc
+            CXX_COMPILER: g++
+            container: "debian_gcc_openmpi"
+            MPIEXEC_PREFLAGS: "--allow-run-as-root --oversubscribe"
+            USE_SANITIZER: ""
+            # ASAN_OPTIONS: "ASAN_OPTIONS=detect_leaks=0" # issue probably with openmpi
+            CMAKE_BUILD_TYPE: Debug
+            CODE_COVERAGE: "OFF"
+            DOCKER_OPTIONS: "--cap-add SYS_PTRACE"
+
+          - name: "Debian OpenMPI clang++"
+            CC_COMPILER: clang
+            CXX_COMPILER: clang++
+            container: "debian_clang_openmpi"
+            MPIEXEC_PREFLAGS: "--allow-run-as-root --oversubscribe"
+            USE_SANITIZER: ""
+            CMAKE_BUILD_TYPE: Debug
+            CODE_COVERAGE: "OFF"
+            DOCKER_OPTIONS: "--cap-add SYS_PTRACE"
 
           - name: "Debian MPICH g++"
             CC_COMPILER: gcc
@@ -126,46 +124,63 @@ jobs:
     name: CI (${{ matrix.name }})
 
     # Steps represent a sequence of tasks that will be executed as part of the job
-    if: "!contains(github.event.head_commit.message, '[ci skip]')"
     steps:
       - name: Checkout htool
         uses: actions/checkout@v3
         with:
           path: "htool"
+          # ref: 14d013835eceb940b9b51dd90462fe67834db777
           fetch-depth: 0 # to get tags
       - name: Checkout hpddm
-        uses: actions/checkout@v3
-        with:
-          repository: hpddm/hpddm
-          ref: d19056d0e3010b905fca5b73f5c48a766b8a042d
-          path: "hpddm"
+        run: |
+          git clone https://github.com/hpddm/hpddm.git hpddm
+          cd hpddm && git checkout 5890d5addf3962d539dc25c441ec3ff4af93b3ab
+        # uses: actions/checkout@v3
+        # with:
+        #   path: "hpddm"
+        #   repository: hpddm/hpddm
+        #   ref: afb9562c9c6673d9ff760985b104ef8d4caa3621
+
+      - name: Activate virtualenv
+        run: |
+          . /usr/local/share/venv/bin/activate
+          echo PATH=$PATH >> $GITHUB_ENV
 
       - name: Build tests
         run: |
           cd htool && mkdir build && cd build
-          cmake -DHTOOL_WITH_EXAMPLES=1 -DMPIEXEC_PREFLAGS="${{ matrix.MPIEXEC_PREFLAGS }}" -DUSE_SANITIZER=${{ matrix.USE_SANITIZER }} -DCMAKE_BUILD_TYPE=${{ matrix.CMAKE_BUILD_TYPE }} -DCODE_COVERAGE=${{ matrix.CODE_COVERAGE }} ../
-          make -j2 build-tests
+          cmake -DHTOOL_WITH_EXAMPLES=ON -DHTOOL_WITH_DOC=ON -DHTOOL_WITH_STRICT_TESTS=ON -DMPIEXEC_PREFLAGS="${{ matrix.MPIEXEC_PREFLAGS }}" -DUSE_SANITIZER=${{ matrix.USE_SANITIZER }} -DCMAKE_BUILD_TYPE=${{ matrix.CMAKE_BUILD_TYPE }} -DCODE_COVERAGE=${{ matrix.CODE_COVERAGE }} ../
+          make -j 4 build-tests
 
       - name: Run tests
         run: |
           cd htool/build
           export OMP_NUM_THREADS=2
-          ${{ matrix.ASAN_OPTIONS }} ctest --output-on-failure
+          ${{ matrix.ASAN_OPTIONS }} ctest -j 4 --output-on-failure
 
       - name: Build examples
         run: |
           cd htool/build
-          make -j2 build-examples
+          make -j 4 build-examples
 
       - name: Build documentation
         run: |
           cd htool/build
           make doc
 
-      - name: Check format
+      - name: Check c++ format
+        uses: DoozyX/clang-format-lint-action@v0.16.2
+        with:
+          source: 'htool/include htool/tests'
+          # exclude: './third_party ./external'
+          extensions: 'hpp,cpp'
+          clangFormatVersion: 16
+          style: file
+
+      - name: Check cmake format
         run: |
+          . /usr/local/share/venv/bin/activate
           cd htool/build
-          make format
           make cmake-format
           git diff --exit-code
 
@@ -174,10 +189,36 @@ jobs:
         run: |
           cd htool/
           lcov --capture --base-directory ./ --directory build/ --output-file coverage.info
-          lcov --remove  coverage.info '/usr/*' '*/hpddm/*' --output-file  coverage.info
+          lcov --remove  coverage.info '/usr/*' '*/hpddm/*' --output-file  ../coverage.info
 
-      - name: Upload coverage to Codecov
-        if: matrix.CODE_COVERAGE == 'ON'
-        uses: codecov/codecov-action@v2
+      - uses: actions/upload-artifact@v4
         with:
-          file: htool/coverage.info
+          path: coverage.info
+          if-no-files-found: error
+        if: matrix.CODE_COVERAGE == 'ON'
+
+      # - name: Upload coverage to Codecov
+      #   if: matrix.CODE_COVERAGE == 'ON'
+      #   uses: codecov/codecov-action@v4.5.0
+      #   with:
+      #     fail_ci_if_error: true
+      #     files: htool/coverage.info
+      #     token: ${{ secrets.CODECOV_TOKEN }}
+      #     verbose: true
+
+  coverage:
+    runs-on: ubuntu-latest
+    if: ${{ success() }}
+    needs: [ linux ]
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/download-artifact@v4
+      - name: Upload coverage report
+        uses: codecov/codecov-action@v4
+        with:
+          fail_ci_if_error: true
+          file: ./coverage.info
+          token: ${{ secrets.CODECOV_TOKEN }}
+          verbose: true

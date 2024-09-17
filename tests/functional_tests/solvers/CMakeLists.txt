@@ -11,7 +11,10 @@ FetchContent_Declare(
     GIT_SUBMODULES_RECURSE FALSE
     GIT_SUBMODULES "")
 
-FetchContent_MakeAvailable(data_test_repository)
+FetchContent_GetProperties(data_test_repository)
+if(NOT data_test_repository_POPULATED)
+    FetchContent_Populate(data_test_repository)
+endif()
 
 set(Test_solver_ARGS ${data_test_repository_SOURCE_DIR}/data/)
 

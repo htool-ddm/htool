@@ -7,5 +7,5 @@ BinPackArguments: false
 IndentPPDirectives: AfterHash
 AlwaysBreakTemplateDeclarations: true
 BreakBeforeBinaryOperators: NonAssignment
-AlignConsecutiveAssignments: true
+AlignConsecutiveAssignments: Consecutive
 ColumnLimit: 0
