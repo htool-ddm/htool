@@ -26,16 +26,41 @@ All notable changes to this project will be documented in this file.
 
 ## Unreleased
 
+## [0.9.0] - 2024-09-19
+
 ### Added
 
-- `set_delay_dense_computation` to `HMatrix`
+- The old implementation of `HMatrix` was mixing the distributed operations and compression via hierarchical matrices. This is fixed by replacing `HMatrix` by:
+    - `DistributedOperator` which contains a list of local operators and implements all the distributed operations,
+    - `VirtualLocalOperator` which is the interface local operators must satisfy,
+    - `LocalDenseMatrix` is an example of local operator consisting of a dense matrix `Matrix`,
+    - and `LocalHMatrix` is an example of local operator consisting of a hierarchical matrix based on `HMatrix` (different from the previous `HMatrix`, see below).
+- Utility classes that help build `DistributedOperator` and `DDM` objects are available, for example: `DefaultApproximationBuilder` and `DDMSolverBuilder`. They do all the wiring between the inner interfaces between Htool-DDM's objects, see `include/htool/istributed_operator/utility.hpp` and `include/htool/solvers/utility.hpp`.
+- Formatter has been added, see `.clang_format`.
+- A logger has been added with `Logger`. Its output can be customizerd via `IObjectWriter`.
 
 ### Changed
 
-### Fixed
+- `HMatrix` is now a class representing a hierarchical matrix without distributed-memory parallelism (note that it can still use shared-memory parallelism):
+    - It inherits from `TreeNode`, and it provides the algebra related to hierarchical matrices via free functions:
+        - product with vector and matrix (threaded with OpenMP),
+        - and with this new version, LU and Cholesky factorization (not threaded yet, WIP).
+    - The algorithms for building the block cluster tree is contained in `HMatrixTreeBuilder`. Users can provide their own "factory".
+- `VirtualCluster` is removed and the clustering part of the library has been rewritten:
+    - `Cluster` now derives from `TreeNode`, whose template parameter corresponds to the precision of cluster nodes' radius and centre (previously only `double`).
+    - Standards recursive build algorithms are provided via `ClusterTreeBuilder`. Users can provide their own "factory".
+    - `ClusterTreeBuilder` is a class template and uses the policy pattern (a policy for computing direction, and another for splitting along the direction).
+- `DDM` has been modified, one-level and two-level preconditioners can be customized now via `VirtualLocalSolver`, `VirtualCoarseSpaceBuilder` and `VirtualCoarseOperatorBuilder`.
+    - Three one-level preconditioners are provided by Htool-DDM via `DDMSolverBuilder`:
+        - block-jacobi with a local HMatrix
+        - a DDM preconditioner where the local subdomain with overlap uses one HMatrix
+        - a DDM preconditioner where the local subdomain with overlap uses one HMatrix for the local subdomain without overlap, and dense matrices for the overlap and its interaction with the subdomain without overlap.
+    - A second-level (GenEO coarse space) is provided with `GeneoCoarseSpaceDenseBuilder` and `GeneoCoarseOperatorBuilder`.
 
-- Fix const-correctness for g++ 4.8.5
-- 
+### Removed
+
+- `multilrmat` and `multihmatrix` are removed.
+
 ## [0.8.1] - 2023-05-26
 
 ### Added
@@ -60,8 +85,8 @@ All notable changes to this project will be documented in this file.
 ### Added
 
 - doxygen documentation
-- mvprod_transp_global_to_global and mvprod_transp_local_to_local added to VirtualHMatrix
-- getters for clusters in VirtualHMatrix
+- mvprod_transp_global_to_global and mvprod_transp_local_to_local added to `VirtualHMatrix`
+- getters for clusters in `VirtualHMatrix`
 - custom gmv in ddm
 
 ### Changed
@@ -80,12 +105,12 @@ All notable changes to this project will be documented in this file.
 - Test for warnings coming from `include/htool/*`
 - Coverage added
 - Methods in ddm interface to get local numbering
-- VirtualLowRankGenerator and VirtualAdmissibilityCondition added for better modularity
+- `VirtualLowRankGenerator` and `VirtualAdmissibilityCondition` added for better modularity
   
 ### Changed
 
 - Remove unnecessary arguments in HMatrix and cluster interfaces
-- MutliHMatrix deprecated for the moment (everything related to this in `htool/multi`)
+- `MultiHMatrix` deprecated for the moment (everything related to this in `htool/multi`)
 
 ### Fixed
 
