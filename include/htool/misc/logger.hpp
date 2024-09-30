@@ -17,7 +17,7 @@ enum class LogLevel : unsigned int {
     INFO     = 40,
 };
 
-std::string logging_level_to_string(LogLevel logging_level) {
+inline std::string logging_level_to_string(LogLevel logging_level) {
     switch (logging_level) {
     case LogLevel::CRITICAL:
         return "[Htool critical] ";

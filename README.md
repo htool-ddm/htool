@@ -1,4 +1,4 @@
-# HTOOL [![CI](https://github.com/htool-ddm/htool/actions/workflows/CI.yml/badge.svg?branch=develop)](https://github.com/htool-ddm/htool/actions/workflows/CI.yml) [![codecov](https://codecov.io/gh/htool-ddm/htool/branch/main/graph/badge.svg?token=1JJ40GPFA5)](https://codecov.io/gh/htool-ddm/htool)
+# HTOOL [![CI](https://github.com/htool-ddm/htool/actions/workflows/CI.yml/badge.svg)](https://github.com/htool-ddm/htool/actions/workflows/CI.yml) [![codecov](https://codecov.io/gh/htool-ddm/htool/branch/main/graph/badge.svg?token=1JJ40GPFA5)](https://codecov.io/gh/htool-ddm/htool)
 
 ## What is Htool?
 
