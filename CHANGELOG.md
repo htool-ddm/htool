@@ -26,6 +26,10 @@ All notable changes to this project will be documented in this file.
 
 ## Unreleased
 
+### Fixed
+
+- fix inline definition of `logging_level_to_string`
+
 ## [0.9.0] - 2024-09-19
 
 ### Added
