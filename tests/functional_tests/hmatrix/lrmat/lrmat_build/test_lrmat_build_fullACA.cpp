@@ -46,13 +46,13 @@ int main(int, char *[]) {
 
         // fullACA fixed rank
         int reqrank_max = 10;
-        fullACA<double> compressor;
+        fullACA<double> compressor(A);
         test = test || !(compressor.is_htool_owning_data());
 
-        LowRankMatrix<double> A_fullACA_fixed(A, compressor, target_cluster, source_cluster, reqrank_max, epsilon);
+        LowRankMatrix<double> A_fullACA_fixed(compressor, target_cluster.get_size(), source_cluster.get_size(), target_cluster.get_offset(), source_cluster.get_offset(), reqrank_max, epsilon);
 
         // ACA automatic building
-        LowRankMatrix<double> A_fullACA(A, compressor, target_cluster, source_cluster, -1, epsilon);
+        LowRankMatrix<double> A_fullACA(compressor, target_cluster.get_size(), source_cluster.get_size(), target_cluster.get_offset(), source_cluster.get_offset(), -1, epsilon);
         std::pair<double, double> fixed_compression_interval(0.87, 0.89);
         std::pair<double, double> auto_compression_interval(0.95, 0.97);
         test = test || (test_lrmat(target_cluster, source_cluster, A, A_fullACA_fixed, A_fullACA, fixed_compression_interval, auto_compression_interval));

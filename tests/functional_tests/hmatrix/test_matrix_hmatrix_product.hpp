@@ -58,11 +58,10 @@ bool test_matrix_hmatrix_product(const TestCaseProduct<T, GeneratorTestType> &te
         }
     }
 
-    HMatrixTreeBuilder<T, htool::underlying_type<T>> hmatrix_tree_builder(*root_cluster_B_output, *root_cluster_B_input, epsilon, eta, 'N', 'N', -1, -1, rankWorld);
-    hmatrix_tree_builder.set_low_rank_generator(std::make_shared<SVD<T>>());
+    HMatrixTreeBuilder<T, htool::underlying_type<T>> hmatrix_tree_builder(epsilon, eta, 'N', 'N', -1, std ::make_shared<SVD<T>>(*test_case.operator_B));
 
     // build
-    HMatrix<T, htool::underlying_type<T>> root_hmatrix = hmatrix_tree_builder.build(*test_case.operator_B);
+    HMatrix<T, htool::underlying_type<T>> root_hmatrix = hmatrix_tree_builder.build(*test_case.operator_B, *root_cluster_B_output, *root_cluster_B_input);
 
     // Dense matrix
     int ni_A = root_cluster_A_input->get_size();
@@ -82,9 +81,9 @@ bool test_matrix_hmatrix_product(const TestCaseProduct<T, GeneratorTestType> &te
     copy_to_dense(root_hmatrix, HB_dense.data());
 
     // lrmat
-    SVD<T> compressor;
+    SVD<T> compressor(*test_case.operator_C);
     htool::underlying_type<T> lrmat_tolerance = 0.0001;
-    LowRankMatrix<T> C_auto_approximation(*test_case.operator_C, compressor, *root_cluster_C_output, *root_cluster_C_input, -1, lrmat_tolerance), lrmat_test(lrmat_tolerance);
+    LowRankMatrix<T> C_auto_approximation(compressor, root_cluster_C_output->get_size(), root_cluster_C_input->get_size(), root_cluster_C_output->get_offset(), root_cluster_C_input->get_offset(), -1, lrmat_tolerance), lrmat_test(lrmat_tolerance);
 
     // Random Input matrix
     std::vector<T> B_vec, C_vec, test_vec;

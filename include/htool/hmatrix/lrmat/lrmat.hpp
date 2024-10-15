@@ -12,7 +12,7 @@
 
 namespace htool {
 
-template <typename CoefficientPrecision, typename CoordinatesPrecision = underlying_type<CoefficientPrecision>>
+template <typename CoefficientPrecision>
 class LowRankMatrix {
 
   protected:
@@ -21,13 +21,13 @@ class LowRankMatrix {
 
   public:
     // Constructors
-    LowRankMatrix(const VirtualInternalGenerator<CoefficientPrecision> &A, const VirtualLowRankGenerator<CoefficientPrecision, CoordinatesPrecision> &LRGenerator, const Cluster<CoordinatesPrecision> &target_cluster, const Cluster<CoordinatesPrecision> &source_cluster, int rank = -1, underlying_type<CoefficientPrecision> epsilon = 1e-3) : m_U(), m_V(), m_epsilon(epsilon) {
+    LowRankMatrix(const VirtualInternalLowRankGenerator<CoefficientPrecision> &LRGenerator, int M, int N, int row_offset, int col_offset, int rank = -1, underlying_type<CoefficientPrecision> epsilon = 1e-3) : m_U(), m_V(), m_epsilon(epsilon) {
 
         if (rank == 0) {
-            m_U.resize(target_cluster.get_size(), 0);
-            m_V.resize(0, source_cluster.get_size());
+            m_U.resize(M, 0);
+            m_V.resize(0, N);
         } else {
-            LRGenerator.copy_low_rank_approximation(A, target_cluster, source_cluster, epsilon, rank, m_U, m_V);
+            LRGenerator.copy_low_rank_approximation(M, N, row_offset, col_offset, epsilon, rank, m_U, m_V);
         }
     }
 
@@ -144,7 +144,7 @@ class LowRankMatrix {
 };
 
 template <typename CoefficientPrecision, typename CoordinatePrecision = underlying_type<CoefficientPrecision>>
-underlying_type<CoefficientPrecision> Frobenius_relative_error(const Cluster<CoordinatePrecision> &target_cluster, const Cluster<CoordinatePrecision> &source_cluster, const LowRankMatrix<CoefficientPrecision, CoordinatePrecision> &lrmat, const VirtualInternalGenerator<CoefficientPrecision> &ref, int reqrank = -1) {
+underlying_type<CoefficientPrecision> Frobenius_relative_error(const Cluster<CoordinatePrecision> &target_cluster, const Cluster<CoordinatePrecision> &source_cluster, const LowRankMatrix<CoefficientPrecision> &lrmat, const VirtualInternalGenerator<CoefficientPrecision> &ref, int reqrank = -1) {
     if (reqrank == -1) {
         reqrank = lrmat.rank_of();
     }
@@ -166,7 +166,7 @@ underlying_type<CoefficientPrecision> Frobenius_relative_error(const Cluster<Coo
 }
 
 template <typename CoefficientPrecision, typename CoordinatePrecision = underlying_type<CoefficientPrecision>>
-underlying_type<CoefficientPrecision> Frobenius_absolute_error(const Cluster<CoordinatePrecision> &target_cluster, const Cluster<CoordinatePrecision> &source_cluster, const LowRankMatrix<CoefficientPrecision, CoordinatePrecision> &lrmat, const VirtualInternalGenerator<CoefficientPrecision> &ref, int reqrank = -1) {
+underlying_type<CoefficientPrecision> Frobenius_absolute_error(const Cluster<CoordinatePrecision> &target_cluster, const Cluster<CoordinatePrecision> &source_cluster, const LowRankMatrix<CoefficientPrecision> &lrmat, const VirtualInternalGenerator<CoefficientPrecision> &ref, int reqrank = -1) {
     if (reqrank == -1) {
         reqrank = lrmat.rank_of();
     }

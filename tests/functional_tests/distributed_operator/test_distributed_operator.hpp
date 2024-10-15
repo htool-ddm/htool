@@ -266,11 +266,11 @@ auto add_off_diagonal_operator(ClusterTreeBuilder<htool::underlying_type<T>> &re
                 local_off_diagonal_operator_2 = make_unique<LocalDenseMatrix<T, htool::underlying_type<T>>>(*off_diagonal_matrix_2, local_target_root_cluster, *local_off_diagonal_cluster_tree_2, 'N', 'N', false, true);
 
             } else if (data_type == DataType::HMatrix || data_type == DataType::DefaultHMatrix) {
-                HMatrixTreeBuilder<T, htool::underlying_type<T>> hmatrix_builder_1(local_target_root_cluster, *local_off_diagonal_cluster_tree_1, epsilon, eta, 'N', 'N', -1, -1, -1);
-                HMatrixTreeBuilder<T, htool::underlying_type<T>> hmatrix_builder_2(local_target_root_cluster, *local_off_diagonal_cluster_tree_2, epsilon, eta, 'N', 'N', -1, -1, -1);
+                HMatrixTreeBuilder<T, htool::underlying_type<T>> hmatrix_builder_1(epsilon, eta, 'N', 'N');
+                HMatrixTreeBuilder<T, htool::underlying_type<T>> hmatrix_builder_2(epsilon, eta, 'N', 'N');
 
-                off_diagonal_hmatrix_1 = make_unique<HMatrix<T, htool::underlying_type<T>>>(hmatrix_builder_1.build(*generator_off_diagonal));
-                off_diagonal_hmatrix_2 = make_unique<HMatrix<T, htool::underlying_type<T>>>(hmatrix_builder_2.build(*generator_off_diagonal));
+                off_diagonal_hmatrix_1 = make_unique<HMatrix<T, htool::underlying_type<T>>>(hmatrix_builder_1.build(*generator_off_diagonal, local_target_root_cluster, *local_off_diagonal_cluster_tree_1));
+                off_diagonal_hmatrix_2 = make_unique<HMatrix<T, htool::underlying_type<T>>>(hmatrix_builder_2.build(*generator_off_diagonal, local_target_root_cluster, *local_off_diagonal_cluster_tree_2));
 
                 local_off_diagonal_operator_1 = make_unique<LocalHMatrix<T, htool::underlying_type<T>>>(*off_diagonal_hmatrix_1, local_target_root_cluster, *local_off_diagonal_cluster_tree_1, 'N', 'N', false, true);
                 local_off_diagonal_operator_2 = make_unique<LocalHMatrix<T, htool::underlying_type<T>>>(*off_diagonal_hmatrix_2, local_target_root_cluster, *local_off_diagonal_cluster_tree_2, 'N', 'N', false, true);

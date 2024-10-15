@@ -35,37 +35,36 @@ namespace htool {
 //           et en particulier le paragraphe 3.2
 //
 //=================================//
-template <typename CoefficientPrecision, typename CoordinatePrecision = underlying_type<CoefficientPrecision>>
-class sympartialACA final : public VirtualLowRankGenerator<CoefficientPrecision, CoordinatePrecision> {
+template <typename CoefficientPrecision>
+class sympartialACA final : public VirtualInternalLowRankGenerator<CoefficientPrecision> {
+    const VirtualInternalGenerator<CoefficientPrecision> &m_A;
 
   public:
-    //=========================//
-    //    PARTIAL PIVOT ACA    //
-    //=========================//
-    // If reqrank=-1 (default value), we use the precision given by epsilon for the stopping criterion;
-    // otherwise, we use the required rank for the stopping criterion (!: at the end the rank could be lower)
-    using VirtualLowRankGenerator<CoefficientPrecision, CoordinatePrecision>::VirtualLowRankGenerator;
+    using VirtualInternalLowRankGenerator<CoefficientPrecision>::VirtualInternalLowRankGenerator;
 
-    void copy_low_rank_approximation(const VirtualInternalGenerator<CoefficientPrecision> &A, const Cluster<CoordinatePrecision> &t, const Cluster<CoordinatePrecision> &s, underlying_type<CoefficientPrecision> epsilon, int &rank, Matrix<CoefficientPrecision> &U, Matrix<CoefficientPrecision> &V) const {
+    sympartialACA(const VirtualInternalGenerator<CoefficientPrecision> &A) : m_A(A) {}
+    sympartialACA(const VirtualGenerator<CoefficientPrecision> &A) : m_A(InternalGeneratorWithPermutation<CoefficientPrecision>(A)) {}
+
+    void copy_low_rank_approximation(int M, int N, int row_offset, int col_offset, underlying_type<CoefficientPrecision> epsilon, int &rank, Matrix<CoefficientPrecision> &U, Matrix<CoefficientPrecision> &V) const {
 
         int n1, n2;
         int i1;
         int i2;
         // const double *x1;
 
-        if (t.get_offset() >= s.get_offset()) {
+        if (row_offset >= col_offset) {
 
-            n1 = t.get_size();
-            n2 = s.get_size();
-            i1 = t.get_offset();
-            i2 = s.get_offset();
+            n1 = M;
+            n2 = N;
+            i1 = row_offset;
+            i2 = col_offset;
             // x1        = xt;
             // cluster_1 = &t;
         } else {
-            n1 = s.get_size();
-            n2 = t.get_size();
-            i1 = s.get_offset();
-            i2 = t.get_offset();
+            n1 = N;
+            n2 = M;
+            i1 = col_offset;
+            i2 = row_offset;
             // x1        = xs;
             // cluster_1 = &s;
         }
@@ -110,10 +109,10 @@ class sympartialACA final : public VirtualLowRankGenerator<CoefficientPrecision,
                 break;
             } else {
                 std::fill(u1.begin(), u1.end(), CoefficientPrecision(0));
-                if (t.get_offset() >= s.get_offset()) {
-                    A.copy_submatrix(1, n2, i1 + I1, i2, u1.data());
+                if (row_offset >= col_offset) {
+                    m_A.copy_submatrix(1, n2, i1 + I1, i2, u1.data());
                 } else {
-                    A.copy_submatrix(n2, 1, i2, i1 + I1, u1.data());
+                    m_A.copy_submatrix(n2, 1, i2, i1 + I1, u1.data());
                 }
 
                 for (int j = 0; j < uu.size(); j++) {
@@ -139,10 +138,10 @@ class sympartialACA final : public VirtualLowRankGenerator<CoefficientPrecision,
                 // Look for a line
                 if (std::abs(u1[I2]) > 1e-15) {
                     std::fill(u2.begin(), u2.end(), CoefficientPrecision(0));
-                    if (t.get_offset() >= s.get_offset()) {
-                        A.copy_submatrix(n1, 1, i1, i2 + I2, u2.data());
+                    if (row_offset >= col_offset) {
+                        m_A.copy_submatrix(n1, 1, i1, i2 + I2, u2.data());
                     } else {
-                        A.copy_submatrix(1, n1, i2 + I2, i1, u2.data());
+                        m_A.copy_submatrix(1, n1, i2 + I2, i1, u2.data());
                     }
                     for (int k = 0; k < uu.size(); k++) {
                         coef = -vv[k][I2];
@@ -188,8 +187,8 @@ class sympartialACA final : public VirtualLowRankGenerator<CoefficientPrecision,
                     if (q == 0) { // corner case where first row is zero, ACA fails, we build a dense block instead
                         q = -1;
                     }
-                    htool::Logger::get_instance().log(LogLevel::WARNING, "ACA found a zero row in a " + std::to_string(t.get_size()) + "x" + std::to_string(s.get_size()) + " block. Final rank is " + std::to_string(q)); // LCOV_EXCL_LINE
-                    // std::cout << "[Htool warning] ACA found a zero row in a " + std::to_string(t.get_size()) + "x" + std::to_string(s.get_size()) + " block. Final rank is " + std::to_string(q) << std::endl;
+                    htool::Logger::get_instance().log(LogLevel::WARNING, "ACA found a zero row in a " + std::to_string(M) + "x" + std::to_string(N) + " block. Final rank is " + std::to_string(q)); // LCOV_EXCL_LINE
+                    // std::cout << "[Htool warning] ACA found a zero row in a " + std::to_string(M) + "x" + std::to_string(N) + " block. Final rank is " + std::to_string(q) << std::endl;
                     break;
                 }
             }
@@ -198,20 +197,20 @@ class sympartialACA final : public VirtualLowRankGenerator<CoefficientPrecision,
         // Final rank
         rank = q;
         if (rank > 0) {
-            U.resize(t.get_size(), rank);
-            V.resize(rank, s.get_size());
+            U.resize(M, rank);
+            V.resize(rank, N);
 
-            if (t.get_offset() >= s.get_offset()) {
+            if (row_offset >= col_offset) {
                 for (int k = 0; k < rank; k++) {
-                    std::move(uu[k].begin(), uu[k].end(), U.data() + k * t.get_size());
-                    for (int j = 0; j < s.get_size(); j++) {
+                    std::move(uu[k].begin(), uu[k].end(), U.data() + k * M);
+                    for (int j = 0; j < N; j++) {
                         V(k, j) = vv[k][j];
                     }
                 }
             } else {
                 for (int k = 0; k < rank; k++) {
-                    std::move(vv[k].begin(), vv[k].end(), U.data() + k * t.get_size());
-                    for (int j = 0; j < s.get_size(); j++) {
+                    std::move(vv[k].begin(), vv[k].end(), U.data() + k * M);
+                    for (int j = 0; j < N; j++) {
                         V(k, j) = uu[k][j];
                     }
                 }

@@ -28,10 +28,9 @@ bool test_lrmat_product(char transa, char transb, int n1, int n2, int n3, htool:
         generate_random_scalar(scaling_coefficient);
 
         // lrmat
-        Compressor compressor;
-        LowRankMatrix<T> A_auto_approximation(*test_case.operator_A, compressor, *test_case.root_cluster_A_output, *test_case.root_cluster_A_input, -1, epsilon);
-        LowRankMatrix<T> B_auto_approximation(*test_case.operator_B, compressor, *test_case.root_cluster_B_output, *test_case.root_cluster_B_input, -1, epsilon);
-        LowRankMatrix<T> C_auto_approximation(*test_case.operator_C, compressor, *test_case.root_cluster_C_output, *test_case.root_cluster_C_input, -1, epsilon);
+        LowRankMatrix<T> A_auto_approximation(Compressor(*test_case.operator_A), test_case.root_cluster_A_output->get_size(), test_case.root_cluster_A_input->get_size(), test_case.root_cluster_A_output->get_offset(), test_case.root_cluster_A_input->get_offset(), -1, epsilon);
+        LowRankMatrix<T> B_auto_approximation(Compressor(*test_case.operator_B), test_case.root_cluster_B_output->get_size(), test_case.root_cluster_B_input->get_size(), test_case.root_cluster_B_output->get_offset(), test_case.root_cluster_B_input->get_offset(), -1, epsilon);
+        LowRankMatrix<T> C_auto_approximation(Compressor(*test_case.operator_C), test_case.root_cluster_C_output->get_size(), test_case.root_cluster_C_input->get_size(), test_case.root_cluster_C_output->get_offset(), test_case.root_cluster_C_input->get_offset(), -1, epsilon);
 
         // dense
         Matrix<T> A_dense(test_case.no_A, test_case.ni_A), B_dense(test_case.no_B, test_case.ni_B), C_dense(test_case.no_C, test_case.ni_C);

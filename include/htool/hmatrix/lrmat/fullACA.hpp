@@ -31,8 +31,10 @@ namespace htool {
 //           et en particulier le paragraphe 3.2
 //
 //=================================//
-template <typename CoefficientPrecision, typename CoordinatesPrecision = underlying_type<CoefficientPrecision>>
-class fullACA final : public VirtualLowRankGenerator<CoefficientPrecision, CoordinatesPrecision> {
+template <typename CoefficientPrecision>
+class fullACA final : public VirtualInternalLowRankGenerator<CoefficientPrecision> {
+
+    const VirtualInternalGenerator<CoefficientPrecision> &m_A;
 
   public:
     //=========================//
@@ -40,16 +42,16 @@ class fullACA final : public VirtualLowRankGenerator<CoefficientPrecision, Coord
     //=========================//
     // If reqrank=-1 (default value), we use the precision given by epsilon for the stopping criterion;
     // otherwise, we use the required rank for the stopping criterion (!: at the end the rank could be lower)
-    using VirtualLowRankGenerator<CoefficientPrecision, CoordinatesPrecision>::VirtualLowRankGenerator;
+    using VirtualInternalLowRankGenerator<CoefficientPrecision>::VirtualInternalLowRankGenerator;
 
-    void copy_low_rank_approximation(const VirtualInternalGenerator<CoefficientPrecision> &A, const Cluster<CoordinatesPrecision> &target_cluster, const Cluster<CoordinatesPrecision> &source_cluster, underlying_type<CoefficientPrecision> epsilon, int &rank, Matrix<CoefficientPrecision> &U, Matrix<CoefficientPrecision> &V) const override {
+    fullACA(const VirtualInternalGenerator<CoefficientPrecision> &A) : m_A(A) {}
+    fullACA(const VirtualGenerator<CoefficientPrecision> &A) : m_A(InternalGeneratorWithPermutation<CoefficientPrecision>(A)) {}
 
-        int M = target_cluster.get_size();
-        int N = source_cluster.get_size();
+    void copy_low_rank_approximation(int M, int N, int row_offset, int col_offset, underlying_type<CoefficientPrecision> epsilon, int &rank, Matrix<CoefficientPrecision> &U, Matrix<CoefficientPrecision> &V) const override {
 
         // Matrix assembling
         Matrix<CoefficientPrecision> mat(M, N);
-        A.copy_submatrix(M, N, target_cluster.get_offset(), source_cluster.get_offset(), mat.data());
+        m_A.copy_submatrix(M, N, row_offset, col_offset, mat.data());
 
         // Full pivot
         int q       = 0;
