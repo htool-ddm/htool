@@ -58,11 +58,10 @@ bool test_matrix_hmatrix_product(const TestCaseProduct<T, GeneratorTestType> &te
         }
     }
 
-    HMatrixTreeBuilder<T, htool::underlying_type<T>> hmatrix_tree_builder(*root_cluster_B_output, *root_cluster_B_input, epsilon, eta, 'N', 'N', -1, -1, rankWorld);
-    hmatrix_tree_builder.set_low_rank_generator(std::make_shared<SVD<T>>());
+    HMatrixTreeBuilder<T, htool::underlying_type<T>> hmatrix_tree_builder(epsilon, eta, 'N', 'N', -1, std ::make_shared<SVD<T>>());
 
     // build
-    HMatrix<T, htool::underlying_type<T>> root_hmatrix = hmatrix_tree_builder.build(*test_case.operator_B);
+    HMatrix<T, htool::underlying_type<T>> root_hmatrix = hmatrix_tree_builder.build(*test_case.operator_B, *root_cluster_B_output, *root_cluster_B_input);
 
     // Dense matrix
     int ni_A = root_cluster_A_input->get_size();

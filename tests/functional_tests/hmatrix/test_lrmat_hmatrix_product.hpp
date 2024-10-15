@@ -57,15 +57,13 @@ bool test_lrmat_hmatrix_product(const TestCaseProduct<T, GeneratorTestType> &tes
         }
     }
 
-    HMatrixTreeBuilder<T, htool::underlying_type<T>> hmatrix_tree_builder(*root_cluster_B_output, *root_cluster_B_input, epsilon, eta, 'N', 'N', -1, -1, rankWorld);
-    hmatrix_tree_builder.set_low_rank_generator(std::make_shared<SVD<T>>());
+    HMatrixTreeBuilder<T, htool::underlying_type<T>> hmatrix_tree_builder(epsilon, eta, 'N', 'N', -1, std::make_shared<SVD<T>>());
 
-    HMatrixTreeBuilder<T, htool::underlying_type<T>> hmatrix_tree_builder_C(*root_cluster_C_output, *root_cluster_C_input, epsilon, eta, 'N', 'N', -1, -1, rankWorld);
-    hmatrix_tree_builder_C.set_low_rank_generator(std::make_shared<SVD<T>>());
+    HMatrixTreeBuilder<T, htool::underlying_type<T>> hmatrix_tree_builder_C(epsilon, eta, 'N', 'N', -1, std::make_shared<SVD<T>>());
 
     // build
-    HMatrix<T, htool::underlying_type<T>> root_hmatrix = hmatrix_tree_builder.build(*test_case.operator_B);
-    HMatrix<T, htool::underlying_type<T>> C            = hmatrix_tree_builder_C.build(*test_case.operator_C);
+    HMatrix<T, htool::underlying_type<T>> root_hmatrix = hmatrix_tree_builder.build(*test_case.operator_B, *root_cluster_B_output, *root_cluster_B_input);
+    HMatrix<T, htool::underlying_type<T>> C            = hmatrix_tree_builder_C.build(*test_case.operator_C, *root_cluster_C_output, *root_cluster_C_input);
     HMatrix<T, htool::underlying_type<T>> hmatrix_test(C);
 
     // Dense matrix

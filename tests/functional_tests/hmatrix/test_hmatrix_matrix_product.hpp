@@ -68,11 +68,11 @@ bool test_hmatrix_matrix_product(const TestCaseProduct<T, GeneratorTestType> &te
         }
     }
 
-    HMatrixTreeBuilder<T, htool::underlying_type<T>> hmatrix_tree_builder(*root_cluster_A_output, *root_cluster_A_input, epsilon, eta, 'N', 'N', -1, -1, rankWorld);
+    HMatrixTreeBuilder<T, htool::underlying_type<T>> hmatrix_tree_builder(epsilon, eta, 'N', 'N');
     hmatrix_tree_builder.set_low_rank_generator(std::make_shared<SVD<T>>());
 
     // build
-    HMatrix<T, htool::underlying_type<T>> root_hmatrix = hmatrix_tree_builder.build(*test_case.operator_A);
+    HMatrix<T, htool::underlying_type<T>> root_hmatrix = hmatrix_tree_builder.build(*test_case.operator_A, *root_cluster_A_output, *root_cluster_A_input);
 
     // Dense matrix
     int ni_A = root_cluster_A_input->get_size();
@@ -200,11 +200,10 @@ bool test_symmetric_hmatrix_matrix_product(const TestCaseSymmetricProduct<T, Gen
     root_cluster_C_output = &test_case.root_cluster_C_output->get_cluster_on_partition(rankWorld);
     root_cluster_C_input  = &test_case.root_cluster_C_input->get_cluster_on_partition(rankWorld);
 
-    HMatrixTreeBuilder<T, htool::underlying_type<T>> hmatrix_tree_builder(*root_cluster_A_output, *root_cluster_A_input, epsilon, eta, 'S', UPLO, -1, -1, rankWorld);
-    hmatrix_tree_builder.set_low_rank_generator(std::make_shared<SVD<T>>());
+    HMatrixTreeBuilder<T, htool::underlying_type<T>> hmatrix_tree_builder(epsilon, eta, 'S', UPLO, -1, std::make_shared<SVD<T>>());
 
     // build
-    HMatrix<T, htool::underlying_type<T>> root_hmatrix = hmatrix_tree_builder.build(*test_case.operator_A);
+    HMatrix<T, htool::underlying_type<T>> root_hmatrix = hmatrix_tree_builder.build(*test_case.operator_A, *root_cluster_A_output, *root_cluster_A_input);
 
     // Dense matrix
     int ni_A = root_cluster_A_input->get_size();
@@ -313,11 +312,10 @@ bool test_hermitian_hmatrix_matrix_product(const TestCaseSymmetricProduct<T, Gen
     root_cluster_C_output = &test_case.root_cluster_C_output->get_cluster_on_partition(rankWorld);
     root_cluster_C_input  = &test_case.root_cluster_C_input->get_cluster_on_partition(rankWorld);
 
-    HMatrixTreeBuilder<T, htool::underlying_type<T>> hmatrix_tree_builder(*root_cluster_A_output, *root_cluster_A_input, epsilon, eta, 'H', UPLO, -1, -1, rankWorld);
-    hmatrix_tree_builder.set_low_rank_generator(std::make_shared<SVD<T>>());
+    HMatrixTreeBuilder<T, htool::underlying_type<T>> hmatrix_tree_builder(epsilon, eta, 'H', UPLO, -1, std::make_shared<SVD<T>>());
 
     // build
-    HMatrix<T, htool::underlying_type<T>> root_hmatrix = hmatrix_tree_builder.build(*test_case.operator_A);
+    HMatrix<T, htool::underlying_type<T>> root_hmatrix = hmatrix_tree_builder.build(*test_case.operator_A, *root_cluster_A_output, *root_cluster_A_input);
 
     // Dense matrix
     int ni_A = root_cluster_A_input->get_size();

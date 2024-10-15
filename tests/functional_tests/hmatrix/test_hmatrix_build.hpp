@@ -80,23 +80,22 @@ bool test_hmatrix_build(int nr, int nc, bool use_local_cluster, char Symmetry, c
 
     // HMatrix
     double eta = 10;
-
-    std::unique_ptr<HMatrixTreeBuilder<T, htool::underlying_type<T>>> hmatrix_tree_builder;
-    if (use_local_cluster) {
-        hmatrix_tree_builder = std::make_unique<HMatrixTreeBuilder<T, htool::underlying_type<T>>>(target_root_cluster->get_cluster_on_partition(rankWorld), source_root_cluster->get_cluster_on_partition(rankWorld), epsilon, eta, Symmetry, UPLO, -1, -1, -1);
-    } else {
-        hmatrix_tree_builder = std::make_unique<HMatrixTreeBuilder<T, htool::underlying_type<T>>>(*target_root_cluster, *source_root_cluster, epsilon, eta, Symmetry, UPLO, -1, rankWorld, rankWorld);
-    }
-    hmatrix_tree_builder->set_block_tree_consistency(block_tree_consistency);
-
+    HMatrixTreeBuilder<T, htool::underlying_type<T>> hmatrix_tree_builder(epsilon, eta, Symmetry, UPLO);
     std::shared_ptr<VirtualDenseBlocksGenerator<T>> dense_blocks_generator;
     if (use_dense_blocks_generator) {
         dense_blocks_generator = std::make_shared<DenseBlocksGeneratorTest<T>>(generator_with_permutation);
     }
-    hmatrix_tree_builder->set_dense_blocks_generator(dense_blocks_generator);
+    hmatrix_tree_builder.set_dense_blocks_generator(dense_blocks_generator);
+    hmatrix_tree_builder.set_block_tree_consistency(block_tree_consistency);
 
     // build
-    auto root_hmatrix = hmatrix_tree_builder->build(generator);
+    std::unique_ptr<HMatrix<T, htool::underlying_type<T>>> root_hmatrix_ptr;
+    if (use_local_cluster) {
+        root_hmatrix_ptr = std::make_unique<HMatrix<T, htool::underlying_type<T>>>(hmatrix_tree_builder.build(generator, target_root_cluster->get_cluster_on_partition(rankWorld), source_root_cluster->get_cluster_on_partition(rankWorld), -1, -1));
+    } else {
+        root_hmatrix_ptr = std::make_unique<HMatrix<T, htool::underlying_type<T>>>(hmatrix_tree_builder.build(generator, *target_root_cluster, *source_root_cluster, rankWorld, rankWorld));
+    }
+    auto &root_hmatrix = *root_hmatrix_ptr;
 
     save_leaves_with_rank(root_hmatrix, "leaves_" + htool::NbrToStr(rankWorld));
     save_levels(root_hmatrix, "level_" + htool::NbrToStr(rankWorld) + "_", {0, 1, 2});

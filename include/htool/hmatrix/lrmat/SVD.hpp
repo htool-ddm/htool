@@ -13,10 +13,10 @@
 namespace htool {
 
 template <typename CoefficientPrecision, typename CoordinatesPrecision = underlying_type<CoefficientPrecision>>
-class SVD final : public VirtualLowRankGenerator<CoefficientPrecision, CoordinatesPrecision> {
+class SVD final : public VirtualInternalLowRankGenerator<CoefficientPrecision, CoordinatesPrecision> {
 
   public:
-    using VirtualLowRankGenerator<CoefficientPrecision, CoordinatesPrecision>::VirtualLowRankGenerator;
+    using VirtualInternalLowRankGenerator<CoefficientPrecision, CoordinatesPrecision>::VirtualInternalLowRankGenerator;
 
     void copy_low_rank_approximation(const VirtualInternalGenerator<CoefficientPrecision> &A, const Cluster<CoordinatesPrecision> &target_cluster, const Cluster<CoordinatesPrecision> &source_cluster, underlying_type<CoefficientPrecision> epsilon, int &rank, Matrix<CoefficientPrecision> &U, Matrix<CoefficientPrecision> &V) const override {
 

@@ -36,7 +36,7 @@ namespace htool {
 //
 //=================================//
 template <typename CoefficientPrecision, typename CoordinatesPrecision = underlying_type<CoefficientPrecision>>
-class partialACA final : public VirtualLowRankGenerator<CoefficientPrecision, CoordinatesPrecision> {
+class partialACA final : public VirtualInternalLowRankGenerator<CoefficientPrecision, CoordinatesPrecision> {
 
   public:
     //=========================//
@@ -44,7 +44,7 @@ class partialACA final : public VirtualLowRankGenerator<CoefficientPrecision, Co
     //=========================//
     // If reqrank=-1 (default value), we use the precision given by epsilon for the stopping criterion;
     // otherwise, we use the required rank for the stopping criterion (!: at the end the rank could be lower)
-    using VirtualLowRankGenerator<CoefficientPrecision, CoordinatesPrecision>::VirtualLowRankGenerator;
+    using VirtualInternalLowRankGenerator<CoefficientPrecision, CoordinatesPrecision>::VirtualInternalLowRankGenerator;
 
     void copy_low_rank_approximation(const VirtualInternalGenerator<CoefficientPrecision> &A, const Cluster<CoordinatesPrecision> &target_cluster, const Cluster<CoordinatesPrecision> &source_cluster, underlying_type<CoefficientPrecision> epsilon, int &rank, Matrix<CoefficientPrecision> &U, Matrix<CoefficientPrecision> &V) const override {
 
