@@ -11,7 +11,7 @@
 
 namespace htool {
 template <typename CoefficientPrecision, typename CoordinatePrecision = underlying_type<CoefficientPrecision>>
-void add_lrmat_lrmat(const LowRankMatrix<CoefficientPrecision, CoordinatePrecision> &X_lrmat, const Cluster<CoordinatePrecision> &X_target_cluster, const Cluster<CoordinatePrecision> &X_source_cluster, LowRankMatrix<CoefficientPrecision, CoordinatePrecision> &Y_lrmat, const Cluster<CoordinatePrecision> &Y_target_cluster, const Cluster<CoordinatePrecision> &Y_source_cluster) {
+void add_lrmat_lrmat(const LowRankMatrix<CoefficientPrecision> &X_lrmat, const Cluster<CoordinatePrecision> &X_target_cluster, const Cluster<CoordinatePrecision> &X_source_cluster, LowRankMatrix<CoefficientPrecision> &Y_lrmat, const Cluster<CoordinatePrecision> &Y_target_cluster, const Cluster<CoordinatePrecision> &Y_source_cluster) {
     if (left_cluster_contains_right_cluster(Y_target_cluster, X_target_cluster) && left_cluster_contains_right_cluster(Y_source_cluster, X_source_cluster)) { // extends X and add to Y
         int row_offset = X_target_cluster.get_offset() - Y_target_cluster.get_offset();
         int col_offset = X_source_cluster.get_offset() - Y_source_cluster.get_offset();

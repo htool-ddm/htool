@@ -35,8 +35,10 @@ namespace htool {
 //           et en particulier le paragraphe 3.2
 //
 //=================================//
-template <typename CoefficientPrecision, typename CoordinatesPrecision = underlying_type<CoefficientPrecision>>
-class partialACA final : public VirtualLowRankGenerator<CoefficientPrecision, CoordinatesPrecision> {
+template <typename CoefficientPrecision>
+class partialACA final : public VirtualInternalLowRankGenerator<CoefficientPrecision> {
+
+    const VirtualInternalGenerator<CoefficientPrecision> &m_A;
 
   public:
     //=========================//
@@ -44,14 +46,17 @@ class partialACA final : public VirtualLowRankGenerator<CoefficientPrecision, Co
     //=========================//
     // If reqrank=-1 (default value), we use the precision given by epsilon for the stopping criterion;
     // otherwise, we use the required rank for the stopping criterion (!: at the end the rank could be lower)
-    using VirtualLowRankGenerator<CoefficientPrecision, CoordinatesPrecision>::VirtualLowRankGenerator;
+    using VirtualInternalLowRankGenerator<CoefficientPrecision>::VirtualInternalLowRankGenerator;
 
-    void copy_low_rank_approximation(const VirtualInternalGenerator<CoefficientPrecision> &A, const Cluster<CoordinatesPrecision> &target_cluster, const Cluster<CoordinatesPrecision> &source_cluster, underlying_type<CoefficientPrecision> epsilon, int &rank, Matrix<CoefficientPrecision> &U, Matrix<CoefficientPrecision> &V) const override {
+    partialACA(const VirtualInternalGenerator<CoefficientPrecision> &A) : m_A(A) {}
+    partialACA(const VirtualGenerator<CoefficientPrecision> &A) : m_A(InternalGeneratorWithPermutation<CoefficientPrecision>(A)) {}
 
-        int target_size   = target_cluster.get_size();
-        int source_size   = source_cluster.get_size();
-        int target_offset = target_cluster.get_offset();
-        int source_offset = source_cluster.get_offset();
+    void copy_low_rank_approximation(int M, int N, int row_offset, int col_offset, underlying_type<CoefficientPrecision> epsilon, int &rank, Matrix<CoefficientPrecision> &U, Matrix<CoefficientPrecision> &V) const override {
+
+        int target_size   = M;
+        int source_size   = N;
+        int target_offset = row_offset;
+        int source_offset = col_offset;
 
         //// Choice of the first row (see paragraph 3.4.3 page 151 Bebendorf)
         // double dist = 1e30;
@@ -97,7 +102,7 @@ class partialACA final : public VirtualLowRankGenerator<CoefficientPrecision, Co
                 //==================//
                 // Look for a column
                 std::fill(r.begin(), r.end(), CoefficientPrecision(0));
-                A.copy_submatrix(1, source_size, I + target_offset, source_offset, r.data());
+                m_A.copy_submatrix(1, source_size, I + target_offset, source_offset, r.data());
                 for (int j = 0; j < uu.size(); j++) {
                     coef = -uu[j][I];
                     Blas<CoefficientPrecision>::axpy(&(source_size), &(coef), vv[j].data(), &incx, r.data(), &incy);
@@ -122,7 +127,7 @@ class partialACA final : public VirtualLowRankGenerator<CoefficientPrecision, Co
                 // Look for a line
                 if (std::abs(r[J]) > 1e-15) {
                     std::fill(c.begin(), c.end(), CoefficientPrecision(0));
-                    A.copy_submatrix(target_size, 1, target_offset, J + source_offset, c.data());
+                    m_A.copy_submatrix(target_size, 1, target_offset, J + source_offset, c.data());
                     for (int k = 0; k < uu.size(); k++) {
                         coef = -vv[k][J];
                         Blas<CoefficientPrecision>::axpy(&(target_size), &(coef), uu[k].data(), &incx, c.data(), &incy);

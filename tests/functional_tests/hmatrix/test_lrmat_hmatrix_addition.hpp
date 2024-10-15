@@ -21,13 +21,12 @@ bool test_lrmat_hmatrix_addition(int n1, int n2, htool::underlying_type<T> epsil
     TestCaseProduct<T, GeneratorTestType> test_case('N', 'N', n1, n2, n2, 1, 4);
 
     // HMatrix
-    HMatrixTreeBuilder<T, htool::underlying_type<T>> hmatrix_tree_builder_A(*test_case.root_cluster_A_output, *test_case.root_cluster_A_input, epsilon, eta, 'N', 'N', -1, -1, -1);
-    HMatrix<T, htool::underlying_type<T>> A = hmatrix_tree_builder_A.build(*test_case.operator_A);
+    HMatrixTreeBuilder<T, htool::underlying_type<T>> hmatrix_tree_builder_A(epsilon, eta, 'N', 'N');
+    HMatrix<T, htool::underlying_type<T>> A = hmatrix_tree_builder_A.build(*test_case.operator_A, *test_case.root_cluster_A_output, *test_case.root_cluster_A_input);
     HMatrix<T, htool::underlying_type<T>> hmatrix_test(A);
 
     // lrmat
-    Compressor compressor;
-    LowRankMatrix<T> C_approximation(*test_case.operator_C, compressor, *test_case.root_cluster_C_output, *test_case.root_cluster_C_input, -1, epsilon);
+    LowRankMatrix<T> C_approximation(Compressor(*test_case.operator_C), test_case.root_cluster_C_output->get_size(), test_case.root_cluster_C_input->get_size(), test_case.root_cluster_C_output->get_offset(), test_case.root_cluster_C_input->get_offset(), -1, epsilon);
 
     // Reference
     Matrix<T> A_dense(A.nb_rows(), A.nb_cols(), 0);

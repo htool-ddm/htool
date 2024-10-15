@@ -59,15 +59,13 @@ bool test_hmatrix_lrmat_product(const TestCaseProduct<T, GeneratorTestType> &tes
         }
     }
 
-    HMatrixTreeBuilder<T, htool::underlying_type<T>> hmatrix_tree_builder_A(*root_cluster_A_output, *root_cluster_A_input, epsilon, eta, 'N', 'N', -1, -1, rankWorld);
-    hmatrix_tree_builder_A.set_low_rank_generator(std::make_shared<SVD<T>>());
+    HMatrixTreeBuilder<T, htool::underlying_type<T>> hmatrix_tree_builder_A(epsilon, eta, 'N', 'N', -1, std::make_shared<SVD<T>>(*test_case.operator_A));
 
-    HMatrixTreeBuilder<T, htool::underlying_type<T>> hmatrix_tree_builder_C(*root_cluster_C_output, *root_cluster_C_input, epsilon, eta, 'N', 'N', -1, -1, rankWorld);
-    hmatrix_tree_builder_C.set_low_rank_generator(std::make_shared<SVD<T>>());
+    HMatrixTreeBuilder<T, htool::underlying_type<T>> hmatrix_tree_builder_C(epsilon, eta, 'N', 'N', -1, std::make_shared<SVD<T>>(*test_case.operator_C));
 
     // build
-    HMatrix<T, htool::underlying_type<T>> root_hmatrix = hmatrix_tree_builder_A.build(*test_case.operator_A);
-    HMatrix<T, htool::underlying_type<T>> C            = hmatrix_tree_builder_C.build(*test_case.operator_C);
+    HMatrix<T, htool::underlying_type<T>> root_hmatrix = hmatrix_tree_builder_A.build(*test_case.operator_A, *root_cluster_A_output, *root_cluster_A_input);
+    HMatrix<T, htool::underlying_type<T>> C            = hmatrix_tree_builder_C.build(*test_case.operator_C, *root_cluster_C_output, *root_cluster_C_input);
     HMatrix<T, htool::underlying_type<T>> hmatrix_test(C);
 
     // Dense matrix
@@ -85,16 +83,15 @@ bool test_hmatrix_lrmat_product(const TestCaseProduct<T, GeneratorTestType> &tes
     Matrix<T> matrix_test, dense_lrmat_test;
 
     // lrmat
-    SVD<T> compressor;
     htool::underlying_type<T> lrmat_tolerance                  = 1e-6;
-    std::unique_ptr<LowRankMatrix<T>> B_auto_approximation_ptr = std::make_unique<LowRankMatrix<T>>(*test_case.operator_B, compressor, *root_cluster_B_output, *root_cluster_B_input, -1, lrmat_tolerance);
+    std::unique_ptr<LowRankMatrix<T>> B_auto_approximation_ptr = std::make_unique<LowRankMatrix<T>>(SVD<T>(*test_case.operator_B), root_cluster_B_output->get_size(), root_cluster_B_input->get_size(), root_cluster_B_output->get_offset(), root_cluster_B_input->get_offset(), -1, lrmat_tolerance);
 
     // LowRankMatrix<T> B_auto_approximation(*test_case.operator_B, compressor, *root_cluster_B_output, *root_cluster_B_input, -1, lrmat_tolerance);
     LowRankMatrix<T> lrmat_test(epsilon);
-    LowRankMatrix<T> C_auto_approximation(*test_case.operator_C, compressor, *root_cluster_C_output, *root_cluster_C_input, -1, lrmat_tolerance);
+    LowRankMatrix<T> C_auto_approximation(SVD<T>(*test_case.operator_C), root_cluster_C_output->get_size(), root_cluster_C_input->get_size(), root_cluster_C_output->get_offset(), root_cluster_C_input->get_offset(), -1, lrmat_tolerance);
 
     if (B_auto_approximation_ptr->rank_of() == 0) {
-        B_auto_approximation_ptr = std::make_unique<LowRankMatrix<T>>(*test_case.operator_B, compressor, *root_cluster_B_output, *root_cluster_B_input, (root_cluster_B_output->get_size() * root_cluster_B_input->get_size()) / (root_cluster_B_output->get_size() + root_cluster_B_input->get_size()), epsilon);
+        B_auto_approximation_ptr = std::make_unique<LowRankMatrix<T>>(SVD<T>(*test_case.operator_B), root_cluster_B_output->get_size(), root_cluster_B_input->get_size(), root_cluster_B_output->get_offset(), root_cluster_B_input->get_offset(), (root_cluster_B_output->get_size() * root_cluster_B_input->get_size()) / (root_cluster_B_output->get_size() + root_cluster_B_input->get_size()), epsilon);
     }
 
     LowRankMatrix<T> &B_auto_approximation = *B_auto_approximation_ptr;
