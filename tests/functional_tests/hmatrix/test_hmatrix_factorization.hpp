@@ -22,8 +22,8 @@ bool test_hmatrix_lu(char trans, int n1, int n2, htool::underlying_type<T> epsil
     htool::TestCaseSolve<T, GeneratorTestType> test_case('L', trans, n1, n2, 1, -1);
 
     // HMatrix
-    HMatrixTreeBuilder<T, htool::underlying_type<T>> hmatrix_tree_builder_A(*test_case.root_cluster_A_output, *test_case.root_cluster_A_input, epsilon, eta, 'N', 'N', -1, -1, -1);
-    HMatrix<T, htool::underlying_type<T>> A = hmatrix_tree_builder_A.build(*test_case.operator_A);
+    HMatrixTreeBuilder<T, htool::underlying_type<T>> hmatrix_tree_builder_A(epsilon, eta, 'N', 'N');
+    HMatrix<T, htool::underlying_type<T>> A = hmatrix_tree_builder_A.build(*test_case.operator_in_user_numbering_A, *test_case.root_cluster_A_output, *test_case.root_cluster_A_input);
 
     // Matrix
     int ni_A = test_case.root_cluster_A_input->get_size();
@@ -59,8 +59,8 @@ bool test_hmatrix_cholesky(char UPLO, int n1, int n2, htool::underlying_type<T> 
     htool::TestCaseSolve<T, GeneratorTestType> test_case('L', 'N', n1, n2, 1, -1);
 
     // HMatrix
-    HMatrixTreeBuilder<T, htool::underlying_type<T>> hmatrix_tree_builder_A(*test_case.root_cluster_A_output, *test_case.root_cluster_A_input, epsilon, eta, is_complex<T>() ? 'H' : 'S', UPLO, -1, -1, -1);
-    HMatrix<T, htool::underlying_type<T>> HA = hmatrix_tree_builder_A.build(*test_case.operator_A);
+    HMatrixTreeBuilder<T, htool::underlying_type<T>> hmatrix_tree_builder_A(epsilon, eta, is_complex<T>() ? 'H' : 'S', UPLO);
+    HMatrix<T, htool::underlying_type<T>> HA = hmatrix_tree_builder_A.build(*test_case.operator_in_user_numbering_A, *test_case.root_cluster_A_output, *test_case.root_cluster_A_input);
 
     // Matrix
     int ni_A = test_case.root_cluster_A_input->get_size();
@@ -96,8 +96,8 @@ bool test_hmatrix_cholesky(char UPLO, int n1, int n2, htool::underlying_type<T> 
     htool::TestCaseSolve<T, GeneratorTestType> test_case('L', 'N', n1, n2, 1, -1);
 
     // HMatrix
-    HMatrixTreeBuilder<T, htool::underlying_type<T>> hmatrix_tree_builder_A(*test_case.root_cluster_A_output, *test_case.root_cluster_A_input, epsilon, eta, is_complex<T>() ? 'H' : 'S', UPLO, -1, -1, -1);
-    HMatrix<T, htool::underlying_type<T>> HA = hmatrix_tree_builder_A.build(*test_case.operator_A);
+    HMatrixTreeBuilder<T, htool::underlying_type<T>> hmatrix_tree_builder_A(epsilon, eta, is_complex<T>() ? 'H' : 'S', UPLO);
+    HMatrix<T, htool::underlying_type<T>> HA = hmatrix_tree_builder_A.build(*test_case.operator_in_user_numbering_A, *test_case.root_cluster_A_output, *test_case.root_cluster_A_input);
 
     // Matrix
     int ni_A = test_case.root_cluster_A_input->get_size();

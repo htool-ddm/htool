@@ -21,7 +21,7 @@ class LowRankMatrix {
 
   public:
     // Constructors
-    LowRankMatrix(const VirtualInternalGenerator<CoefficientPrecision> &A, const VirtualLowRankGenerator<CoefficientPrecision, CoordinatesPrecision> &LRGenerator, const Cluster<CoordinatesPrecision> &target_cluster, const Cluster<CoordinatesPrecision> &source_cluster, int rank = -1, underlying_type<CoefficientPrecision> epsilon = 1e-3) : m_U(), m_V(), m_epsilon(epsilon) {
+    LowRankMatrix(const VirtualInternalGenerator<CoefficientPrecision> &A, const VirtualInternalLowRankGenerator<CoefficientPrecision, CoordinatesPrecision> &LRGenerator, const Cluster<CoordinatesPrecision> &target_cluster, const Cluster<CoordinatesPrecision> &source_cluster, int rank = -1, underlying_type<CoefficientPrecision> epsilon = 1e-3) : m_U(), m_V(), m_epsilon(epsilon) {
 
         if (rank == 0) {
             m_U.resize(target_cluster.get_size(), 0);
