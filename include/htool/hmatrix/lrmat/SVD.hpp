@@ -13,19 +13,21 @@
 namespace htool {
 
 template <typename CoefficientPrecision, typename CoordinatesPrecision = underlying_type<CoefficientPrecision>>
-class SVD final : public VirtualInternalLowRankGenerator<CoefficientPrecision, CoordinatesPrecision> {
+class SVD final : public VirtualInternalLowRankGenerator<CoefficientPrecision> {
+
+    const VirtualInternalGenerator<CoefficientPrecision> &m_A;
 
   public:
-    using VirtualInternalLowRankGenerator<CoefficientPrecision, CoordinatesPrecision>::VirtualInternalLowRankGenerator;
+    using VirtualInternalLowRankGenerator<CoefficientPrecision>::VirtualInternalLowRankGenerator;
 
-    void copy_low_rank_approximation(const VirtualInternalGenerator<CoefficientPrecision> &A, const Cluster<CoordinatesPrecision> &target_cluster, const Cluster<CoordinatesPrecision> &source_cluster, underlying_type<CoefficientPrecision> epsilon, int &rank, Matrix<CoefficientPrecision> &U, Matrix<CoefficientPrecision> &V) const override {
+    SVD(const VirtualInternalGenerator<CoefficientPrecision> &A) : m_A(A) {}
+    SVD(const VirtualGenerator<CoefficientPrecision> &A) : m_A(InternalGeneratorWithPermutation<CoefficientPrecision>(A)) {}
 
-        int M = target_cluster.get_size();
-        int N = source_cluster.get_size();
+    void copy_low_rank_approximation(int M, int N, int row_offset, int col_offset, underlying_type<CoefficientPrecision> epsilon, int &rank, Matrix<CoefficientPrecision> &U, Matrix<CoefficientPrecision> &V) const override {
 
         //// Matrix assembling
         Matrix<CoefficientPrecision> mat(M, N);
-        A.copy_submatrix(target_cluster.get_size(), source_cluster.get_size(), target_cluster.get_offset(), source_cluster.get_offset(), mat.data());
+        m_A.copy_submatrix(M, N, row_offset, col_offset, mat.data());
 
         //// SVD
         std::vector<underlying_type<CoefficientPrecision>> singular_values(std::min(M, N));

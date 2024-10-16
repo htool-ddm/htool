@@ -51,7 +51,7 @@ void internal_add_matrix_hmatrix_product(char transa, char transb, CoefficientPr
 }
 
 template <typename CoefficientPrecision, typename CoordinatePrecision = CoefficientPrecision>
-void internal_add_matrix_hmatrix_product(char transa, char transb, CoefficientPrecision alpha, const Matrix<CoefficientPrecision> &A, const HMatrix<CoefficientPrecision, CoordinatePrecision> &B, CoefficientPrecision beta, LowRankMatrix<CoefficientPrecision, CoordinatePrecision> &C) {
+void internal_add_matrix_hmatrix_product(char transa, char transb, CoefficientPrecision alpha, const Matrix<CoefficientPrecision> &A, const HMatrix<CoefficientPrecision, CoordinatePrecision> &B, CoefficientPrecision beta, LowRankMatrix<CoefficientPrecision> &C) {
     bool C_is_overwritten = (beta == CoefficientPrecision(0) || C.rank_of() == 0);
 
     int nb_rows = (transa == 'N') ? A.nb_rows() : A.nb_cols();

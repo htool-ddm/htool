@@ -15,7 +15,7 @@
 namespace htool {
 
 template <typename CoefficientPrecision, typename CoordinatePrecision = CoefficientPrecision>
-void internal_add_lrmat_hmatrix_product(char transa, char transb, CoefficientPrecision alpha, const LowRankMatrix<CoefficientPrecision, CoordinatePrecision> &A, const HMatrix<CoefficientPrecision, CoordinatePrecision> &B, CoefficientPrecision beta, Matrix<CoefficientPrecision> &C) {
+void internal_add_lrmat_hmatrix_product(char transa, char transb, CoefficientPrecision alpha, const LowRankMatrix<CoefficientPrecision> &A, const HMatrix<CoefficientPrecision, CoordinatePrecision> &B, CoefficientPrecision beta, Matrix<CoefficientPrecision> &C) {
     auto rank = A.rank_of();
     if (rank != 0) {
         auto &U = A.get_U();
@@ -33,7 +33,7 @@ void internal_add_lrmat_hmatrix_product(char transa, char transb, CoefficientPre
 }
 
 template <typename CoefficientPrecision, typename CoordinatePrecision = CoefficientPrecision>
-void internal_add_lrmat_hmatrix_product(char transa, char transb, CoefficientPrecision alpha, const LowRankMatrix<CoefficientPrecision, CoordinatePrecision> &A, const HMatrix<CoefficientPrecision, CoordinatePrecision> &B, CoefficientPrecision beta, LowRankMatrix<CoefficientPrecision, CoordinatePrecision> &C) {
+void internal_add_lrmat_hmatrix_product(char transa, char transb, CoefficientPrecision alpha, const LowRankMatrix<CoefficientPrecision> &A, const HMatrix<CoefficientPrecision, CoordinatePrecision> &B, CoefficientPrecision beta, LowRankMatrix<CoefficientPrecision> &C) {
     auto rank = A.rank_of();
     if (rank != 0) {
         auto &U_A = A.get_U();
@@ -104,12 +104,12 @@ void internal_add_lrmat_hmatrix_product(char transa, char transb, CoefficientPre
 }
 
 template <typename CoefficientPrecision, typename CoordinatePrecision = CoefficientPrecision>
-void internal_add_lrmat_hmatrix_product(char transa, char transb, CoefficientPrecision alpha, const LowRankMatrix<CoefficientPrecision, CoordinatePrecision> &A, const HMatrix<CoefficientPrecision, CoordinatePrecision> &B, CoefficientPrecision beta, HMatrix<CoefficientPrecision, CoordinatePrecision> &C) {
+void internal_add_lrmat_hmatrix_product(char transa, char transb, CoefficientPrecision alpha, const LowRankMatrix<CoefficientPrecision> &A, const HMatrix<CoefficientPrecision, CoordinatePrecision> &B, CoefficientPrecision beta, HMatrix<CoefficientPrecision, CoordinatePrecision> &C) {
     if (beta != CoefficientPrecision(1)) {
         scale(beta, C);
     }
 
-    LowRankMatrix<CoefficientPrecision, CoordinatePrecision> lrmat(A.get_epsilon());
+    LowRankMatrix<CoefficientPrecision> lrmat(A.get_epsilon());
     internal_add_lrmat_hmatrix_product(transa, transb, alpha, A, B, CoefficientPrecision(1), lrmat);
     internal_add_lrmat_hmatrix(lrmat, C);
 }

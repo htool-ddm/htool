@@ -12,7 +12,7 @@
 namespace htool {
 
 template <typename CoefficientPrecision, typename CoordinatePrecision = CoefficientPrecision>
-void internal_add_lrmat_hmatrix(const LowRankMatrix<CoefficientPrecision, CoordinatePrecision> &lrmat, HMatrix<CoefficientPrecision, CoordinatePrecision> &hmatrix) {
+void internal_add_lrmat_hmatrix(const LowRankMatrix<CoefficientPrecision> &lrmat, HMatrix<CoefficientPrecision, CoordinatePrecision> &hmatrix) {
     std::vector<HMatrix<CoefficientPrecision, CoordinatePrecision> *> leaves;
     preorder_tree_traversal(hmatrix, [&leaves](HMatrix<CoefficientPrecision, CoordinatePrecision> &current_node) {
         if (!current_node.is_hierarchical()) {

@@ -24,6 +24,7 @@
 #    pragma GCC diagnostic ignored "-Wnon-virtual-dtor"
 #    pragma GCC diagnostic ignored "-Wuseless-cast"
 #    pragma GCC diagnostic ignored "-Wunused-local-typedefs"
+#    pragma GCC diagnostic ignored "-Wmaybe-uninitialized"
 #endif
 
 #include <HPDDM.hpp>

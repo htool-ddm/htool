@@ -92,9 +92,8 @@ bool test_hmatrix_hmatrix_product(const TestCaseProduct<T, GeneratorTestType> &t
     copy_to_dense(C, HC_dense.data());
 
     // lrmat
-    SVD<T> compressor;
     htool::underlying_type<T> lrmat_tol = 1e-6;
-    LowRankMatrix<T> C_auto_approximation(*test_case.operator_C, compressor, *root_cluster_C_output, *root_cluster_C_input, -1, lrmat_tol), lrmat_test(lrmat_tol);
+    LowRankMatrix<T> C_auto_approximation(SVD<T>(*test_case.operator_C), root_cluster_C_output->get_size(), root_cluster_C_input->get_size(), root_cluster_C_output->get_offset(), root_cluster_C_input->get_offset(), -1, lrmat_tol), lrmat_test(lrmat_tol);
 
     // Random Input
     T alpha(1), beta(0), scaling_coefficient;

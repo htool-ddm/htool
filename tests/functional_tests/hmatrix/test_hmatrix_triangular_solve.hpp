@@ -43,9 +43,8 @@ bool test_hmatrix_triangular_solve(char side, char transa, int n1, int n2, htool
     HMatrix<T, htool::underlying_type<T>> hmatrix_test(B);
 
     // Lrmat rhs
-    SVD<T> compressor;
     htool::underlying_type<T> lrmat_tolerance = 1e-3;
-    LowRankMatrix<T> X_lrmat(*test_case.operator_X, compressor, *test_case.root_cluster_X_output, *test_case.root_cluster_X_input, 15, lrmat_tolerance);
+    LowRankMatrix<T> X_lrmat(SVD<T>(*test_case.operator_X), test_case.root_cluster_X_output->get_size(), test_case.root_cluster_X_input->get_size(), test_case.root_cluster_X_output->get_offset(), test_case.root_cluster_X_input->get_offset(), 15, lrmat_tolerance);
     LowRankMatrix<T> lrmat_test(epsilon);
 
     // Triangular hmatrices

@@ -15,14 +15,14 @@ bool test_lrmat_lrmat_addition(int n1, int n2, htool::underlying_type<T> epsilon
     TestCaseAddition<T, GeneratorTestType> test_case(n1, n2, 2);
 
     // lrmat
-    Compressor compressor;
-    LowRankMatrix<T> A_approximation(*test_case.operator_A, compressor, *test_case.root_cluster_A_output, *test_case.root_cluster_A_input, -1, epsilon);
-    LowRankMatrix<T> zero_A_approximation(*test_case.operator_A, compressor, *test_case.root_cluster_A_output, *test_case.root_cluster_A_input, 0, epsilon);
-    LowRankMatrix<T> sub_zero_A_approximation(*test_case.operator_A, compressor, *test_case.root_cluster_B_output, *test_case.root_cluster_B_input, 0, epsilon);
+    Compressor compressor(*test_case.operator_A);
+    LowRankMatrix<T> A_approximation(compressor, test_case.root_cluster_A_output->get_size(), test_case.root_cluster_A_input->get_size(), test_case.root_cluster_A_output->get_offset(), test_case.root_cluster_A_input->get_offset(), -1, epsilon);
+    LowRankMatrix<T> zero_A_approximation(compressor, test_case.root_cluster_A_output->get_size(), test_case.root_cluster_A_input->get_size(), test_case.root_cluster_A_output->get_offset(), test_case.root_cluster_A_input->get_offset(), 0, epsilon);
+    LowRankMatrix<T> sub_zero_A_approximation(compressor, test_case.root_cluster_B_output->get_size(), test_case.root_cluster_B_input->get_size(), test_case.root_cluster_B_output->get_offset(), test_case.root_cluster_B_input->get_offset(), 0, epsilon);
 
-    std::unique_ptr<LowRankMatrix<T>> sub_A_approximation_ptr = std::make_unique<LowRankMatrix<T>>(*test_case.operator_A, compressor, *test_case.root_cluster_B_output, *test_case.root_cluster_B_input, -1, epsilon);
+    std::unique_ptr<LowRankMatrix<T>> sub_A_approximation_ptr = std::make_unique<LowRankMatrix<T>>(compressor, test_case.root_cluster_B_output->get_size(), test_case.root_cluster_B_input->get_size(), test_case.root_cluster_B_output->get_offset(), test_case.root_cluster_B_input->get_offset(), -1, epsilon);
     if (sub_A_approximation_ptr->rank_of() == 0) {
-        sub_A_approximation_ptr = std::make_unique<LowRankMatrix<T>>(*test_case.operator_A, compressor, *test_case.root_cluster_B_output, *test_case.root_cluster_B_input, (test_case.root_cluster_B_output->get_size() * test_case.root_cluster_B_input->get_size()) / (test_case.root_cluster_B_output->get_size() + test_case.root_cluster_B_input->get_size()), epsilon);
+        sub_A_approximation_ptr = std::make_unique<LowRankMatrix<T>>(compressor, test_case.root_cluster_B_output->get_size(), test_case.root_cluster_B_input->get_size(), test_case.root_cluster_B_output->get_offset(), test_case.root_cluster_B_input->get_offset(), (test_case.root_cluster_B_output->get_size() * test_case.root_cluster_B_input->get_size()) / (test_case.root_cluster_B_output->get_size() + test_case.root_cluster_B_input->get_size()), epsilon);
     }
     LowRankMatrix<T> &sub_A_approximation = *sub_A_approximation_ptr;
 

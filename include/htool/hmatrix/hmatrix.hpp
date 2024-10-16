@@ -41,7 +41,7 @@ class HMatrix : public TreeNode<HMatrix<CoefficientPrecision, CoordinatePrecisio
     char m_UPLO{'N'};
 
     std::unique_ptr<Matrix<CoefficientPrecision>> m_dense_data{nullptr};
-    std::unique_ptr<LowRankMatrix<CoefficientPrecision, CoordinatePrecision>> m_low_rank_data{nullptr};
+    std::unique_ptr<LowRankMatrix<CoefficientPrecision>> m_low_rank_data{nullptr};
 
     //
     char m_symmetry_type_for_leaves{'N'};
@@ -72,7 +72,7 @@ class HMatrix : public TreeNode<HMatrix<CoefficientPrecision, CoordinatePrecisio
             m_dense_data = std::make_unique<Matrix<CoefficientPrecision>>(*rhs.m_dense_data);
         }
         if (rhs.m_low_rank_data) {
-            m_low_rank_data = std::make_unique<LowRankMatrix<CoefficientPrecision, CoordinatePrecision>>(*rhs.m_low_rank_data);
+            m_low_rank_data = std::make_unique<LowRankMatrix<CoefficientPrecision>>(*rhs.m_low_rank_data);
         }
     }
     HMatrix &operator=(const HMatrix &rhs) {
@@ -99,7 +99,7 @@ class HMatrix : public TreeNode<HMatrix<CoefficientPrecision, CoordinatePrecisio
             m_dense_data = std::make_unique<Matrix<CoefficientPrecision>>(*rhs.m_dense_data);
         }
         if (rhs.m_low_rank_data) {
-            m_low_rank_data = std::make_unique<LowRankMatrix<CoefficientPrecision, CoordinatePrecision>>(*rhs.m_low_rank_data);
+            m_low_rank_data = std::make_unique<LowRankMatrix<CoefficientPrecision>>(*rhs.m_low_rank_data);
         }
         return *this;
     }
@@ -145,8 +145,8 @@ class HMatrix : public TreeNode<HMatrix<CoefficientPrecision, CoordinatePrecisio
 
     const Matrix<CoefficientPrecision> *get_dense_data() const { return m_dense_data.get(); }
     Matrix<CoefficientPrecision> *get_dense_data() { return m_dense_data.get(); }
-    const LowRankMatrix<CoefficientPrecision, CoordinatePrecision> *get_low_rank_data() const { return m_low_rank_data.get(); }
-    LowRankMatrix<CoefficientPrecision, CoordinatePrecision> *get_low_rank_data() { return m_low_rank_data.get(); }
+    const LowRankMatrix<CoefficientPrecision> *get_low_rank_data() const { return m_low_rank_data.get(); }
+    LowRankMatrix<CoefficientPrecision> *get_low_rank_data() { return m_low_rank_data.get(); }
     char get_symmetry() const { return m_symmetry; }
     char get_UPLO() const { return m_UPLO; }
     const HMatrixTreeData<CoefficientPrecision, CoordinatePrecision> *get_hmatrix_tree_data() const { return this->m_tree_data.get(); }
@@ -205,7 +205,7 @@ class HMatrix : public TreeNode<HMatrix<CoefficientPrecision, CoordinatePrecisio
     // HMatrix Tree setters
     void set_eta(CoordinatePrecision eta) { this->m_tree_data->m_eta = eta; }
     void set_epsilon(underlying_type<CoefficientPrecision> epsilon) { this->m_tree_data->m_epsilon = epsilon; }
-    void set_low_rank_generator(std::shared_ptr<VirtualInternalLowRankGenerator<CoefficientPrecision, CoordinatePrecision>> ptr) { this->m_tree_data->m_low_rank_generator = ptr; }
+    void set_low_rank_generator(std::shared_ptr<VirtualInternalLowRankGenerator<CoefficientPrecision>> ptr) { this->m_tree_data->m_low_rank_generator = ptr; }
     void set_admissibility_condition(std::shared_ptr<VirtualAdmissibilityCondition<CoordinatePrecision>> ptr) { this->m_tree_data->m_admissibility_condition = ptr; }
     void set_minimal_target_depth(unsigned int minimal_target_depth) { this->m_tree_data->m_minimal_target_depth = minimal_target_depth; }
     void set_minimal_source_depth(unsigned int minimal_source_depth) { this->m_tree_data->m_minimal_source_depth = minimal_source_depth; }
@@ -225,8 +225,8 @@ class HMatrix : public TreeNode<HMatrix<CoefficientPrecision, CoordinatePrecisio
         m_storage_type = StorageType::Dense;
     }
 
-    void compute_low_rank_data(const VirtualInternalGenerator<CoefficientPrecision> &generator, const VirtualInternalLowRankGenerator<CoefficientPrecision, CoordinatePrecision> &low_rank_generator, int reqrank, underlying_type<CoefficientPrecision> epsilon) {
-        m_low_rank_data = std::make_unique<LowRankMatrix<CoefficientPrecision, CoordinatePrecision>>(generator, low_rank_generator, *m_target_cluster, *m_source_cluster, reqrank, epsilon);
+    void compute_low_rank_data(const VirtualInternalLowRankGenerator<CoefficientPrecision> &low_rank_generator, int reqrank, underlying_type<CoefficientPrecision> epsilon) {
+        m_low_rank_data = std::make_unique<LowRankMatrix<CoefficientPrecision>>(low_rank_generator, m_target_cluster->get_size(), m_source_cluster->get_size(), m_target_cluster->get_offset(), m_source_cluster->get_offset(), reqrank, epsilon);
         m_storage_type  = StorageType::LowRank;
     }
     void clear_low_rank_data() { m_low_rank_data.reset(); }

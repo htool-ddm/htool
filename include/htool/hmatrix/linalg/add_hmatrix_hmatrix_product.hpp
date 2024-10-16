@@ -21,7 +21,7 @@
 namespace htool {
 
 template <typename CoefficientPrecision, typename CoordinatePrecision = CoefficientPrecision>
-void internal_add_hmatrix_hmatrix_product(char transa, char transb, CoefficientPrecision alpha, const HMatrix<CoefficientPrecision, CoordinatePrecision> &A, const HMatrix<CoefficientPrecision, CoordinatePrecision> &B, CoefficientPrecision beta, LowRankMatrix<CoefficientPrecision, CoordinatePrecision> &C) {
+void internal_add_hmatrix_hmatrix_product(char transa, char transb, CoefficientPrecision alpha, const HMatrix<CoefficientPrecision, CoordinatePrecision> &A, const HMatrix<CoefficientPrecision, CoordinatePrecision> &B, CoefficientPrecision beta, LowRankMatrix<CoefficientPrecision> &C) {
     if (beta != CoefficientPrecision(1)) {
         scale(beta, C);
     }
@@ -30,7 +30,7 @@ void internal_add_hmatrix_hmatrix_product(char transa, char transb, CoefficientP
 
         bool block_tree_not_consistent = (A.get_target_cluster().get_rank() < 0 || A.get_source_cluster().get_rank() < 0 || B.get_target_cluster().get_rank() < 0 || B.get_source_cluster().get_rank() < 0);
 
-        std::vector<LowRankMatrix<CoefficientPrecision, CoordinatePrecision>> low_rank_matrices;
+        std::vector<LowRankMatrix<CoefficientPrecision>> low_rank_matrices;
         std::vector<const Cluster<CoordinatePrecision> *> output_clusters, middle_clusters, input_clusters;
 
         const Cluster<CoordinatePrecision> &output_cluster = transa == 'N' ? A.get_target_cluster() : A.get_source_cluster();
@@ -276,7 +276,7 @@ void internal_add_hmatrix_hmatrix_product(char transa, char transb, CoefficientP
             }
         } else {
             if (A.is_low_rank() || B.is_low_rank()) {
-                LowRankMatrix<CoefficientPrecision, CoordinatePrecision> lrmat(A.is_low_rank() ? A.get_low_rank_data()->get_epsilon() : B.get_low_rank_data()->get_epsilon());
+                LowRankMatrix<CoefficientPrecision> lrmat(A.is_low_rank() ? A.get_low_rank_data()->get_epsilon() : B.get_low_rank_data()->get_epsilon());
 
                 if (A.is_dense() and B.is_low_rank()) {
                     add_matrix_lrmat_product(transa, transb, alpha, *A.get_dense_data(), *B.get_low_rank_data(), beta, lrmat);
@@ -292,7 +292,7 @@ void internal_add_hmatrix_hmatrix_product(char transa, char transb, CoefficientP
 
                 internal_add_lrmat_hmatrix(lrmat, C);
             } else {
-                LowRankMatrix<CoefficientPrecision, CoordinatePrecision> lrmat(C.get_epsilon());
+                LowRankMatrix<CoefficientPrecision> lrmat(C.get_epsilon());
                 if (A.is_dense() and B.is_dense()) {
                     add_matrix_matrix_product(transa, transb, alpha, *A.get_dense_data(), *B.get_dense_data(), beta, lrmat);
                 } else if (A.is_dense() and B.is_hierarchical()) {

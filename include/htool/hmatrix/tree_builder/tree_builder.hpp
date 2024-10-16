@@ -50,13 +50,14 @@ class HMatrixTreeBuilder {
     mutable int m_partition_number_for_symmetry{-1};
     mutable const Cluster<CoordinatePrecision> *m_target_root_cluster{nullptr};
     mutable const Cluster<CoordinatePrecision> *m_source_root_cluster{nullptr};
+    mutable std::shared_ptr<VirtualInternalLowRankGenerator<CoefficientPrecision>> m_used_low_rank_generator{nullptr};
 
     // Information
     mutable int m_false_positive{0};
 
     // Strategies
-    std::shared_ptr<VirtualLowRankGenerator<CoefficientPrecision, CoordinatePrecision>> m_low_rank_generator{nullptr};
-    std::shared_ptr<VirtualInternalLowRankGenerator<CoefficientPrecision, CoordinatePrecision>> m_internal_low_rank_generator;
+    std::shared_ptr<VirtualInternalLowRankGenerator<CoefficientPrecision>> m_internal_low_rank_generator{nullptr};
+    std::shared_ptr<VirtualLowRankGenerator<CoefficientPrecision>> m_low_rank_generator{nullptr};
     std::shared_ptr<VirtualAdmissibilityCondition<CoordinatePrecision>> m_admissibility_condition;
     std::shared_ptr<VirtualDenseBlocksGenerator<CoefficientPrecision>> m_dense_blocks_generator;
     bool m_is_block_tree_consistent{true};
@@ -140,11 +141,11 @@ class HMatrixTreeBuilder {
     }
 
   public:
-    explicit HMatrixTreeBuilder(underlying_type<CoefficientPrecision> epsilon, CoordinatePrecision eta, char symmetry, char UPLO, int reqrank, std::shared_ptr<VirtualInternalLowRankGenerator<CoefficientPrecision, CoordinatePrecision>> low_rank_strategy, std::shared_ptr<VirtualAdmissibilityCondition<CoordinatePrecision>> admissibility_condition_strategy = nullptr) : m_epsilon(epsilon), m_eta(eta), m_reqrank(reqrank), m_symmetry_type(symmetry), m_UPLO_type(UPLO), m_internal_low_rank_generator(low_rank_strategy ? low_rank_strategy : std::make_shared<sympartialACA<CoefficientPrecision, CoordinatePrecision>>()), m_admissibility_condition(admissibility_condition_strategy ? admissibility_condition_strategy : std::make_shared<RjasanowSteinbach<CoordinatePrecision>>()) {
+    explicit HMatrixTreeBuilder(underlying_type<CoefficientPrecision> epsilon, CoordinatePrecision eta, char symmetry, char UPLO, int reqrank, std::shared_ptr<VirtualInternalLowRankGenerator<CoefficientPrecision>> low_rank_strategy, std::shared_ptr<VirtualAdmissibilityCondition<CoordinatePrecision>> admissibility_condition_strategy = nullptr) : m_epsilon(epsilon), m_eta(eta), m_reqrank(reqrank), m_symmetry_type(symmetry), m_UPLO_type(UPLO), m_internal_low_rank_generator(low_rank_strategy), m_admissibility_condition(admissibility_condition_strategy ? admissibility_condition_strategy : std::make_shared<RjasanowSteinbach<CoordinatePrecision>>()) {
         check_inputs();
     }
 
-    explicit HMatrixTreeBuilder(underlying_type<CoefficientPrecision> epsilon, CoordinatePrecision eta, char symmetry, char UPLO, int reqrank = -1, std::shared_ptr<VirtualLowRankGenerator<CoefficientPrecision, CoordinatePrecision>> low_rank_strategy = nullptr, std::shared_ptr<VirtualAdmissibilityCondition<CoordinatePrecision>> admissibility_condition_strategy = nullptr) : m_epsilon(epsilon), m_eta(eta), m_reqrank(reqrank), m_symmetry_type(symmetry), m_UPLO_type(UPLO), m_low_rank_generator(low_rank_strategy ? low_rank_strategy : nullptr), m_internal_low_rank_generator(low_rank_strategy ? std::make_shared<InternalLowRankGenerator<CoefficientPrecision, CoordinatePrecision>>(*m_low_rank_generator) : static_cast<std::shared_ptr<VirtualInternalLowRankGenerator<CoefficientPrecision, CoordinatePrecision>>>(std::make_shared<sympartialACA<CoefficientPrecision, CoordinatePrecision>>())), m_admissibility_condition(admissibility_condition_strategy ? admissibility_condition_strategy : std::make_shared<RjasanowSteinbach<CoordinatePrecision>>()) {
+    explicit HMatrixTreeBuilder(underlying_type<CoefficientPrecision> epsilon, CoordinatePrecision eta, char symmetry, char UPLO, int reqrank = -1, std::shared_ptr<VirtualLowRankGenerator<CoefficientPrecision>> low_rank_strategy = nullptr, std::shared_ptr<VirtualAdmissibilityCondition<CoordinatePrecision>> admissibility_condition_strategy = nullptr) : m_epsilon(epsilon), m_eta(eta), m_reqrank(reqrank), m_symmetry_type(symmetry), m_UPLO_type(UPLO), m_low_rank_generator(low_rank_strategy), m_admissibility_condition(admissibility_condition_strategy ? admissibility_condition_strategy : std::make_shared<RjasanowSteinbach<CoordinatePrecision>>()) {
         check_inputs();
     }
 
@@ -183,10 +184,10 @@ class HMatrixTreeBuilder {
         check_inputs();
     }
     void set_low_rank_generator(std::shared_ptr<VirtualLowRankGenerator<CoefficientPrecision, CoordinatePrecision>> ptr) {
-        m_low_rank_generator          = ptr;
-        m_internal_low_rank_generator = std::make_shared<InternalLowRankGenerator<CoefficientPrecision, CoordinatePrecision>>(*m_low_rank_generator);
+        m_internal_low_rank_generator.reset();
+        m_low_rank_generator = ptr;
     }
-    void set_low_rank_generator(std::shared_ptr<VirtualInternalLowRankGenerator<CoefficientPrecision, CoordinatePrecision>> ptr) {
+    void set_low_rank_generator(std::shared_ptr<VirtualInternalLowRankGenerator<CoefficientPrecision>> ptr) {
         m_low_rank_generator.reset();
         m_internal_low_rank_generator = ptr;
     }
@@ -206,7 +207,8 @@ class HMatrixTreeBuilder {
     char get_UPLO() const { return m_UPLO_type; }
     char get_epsilon() const { return m_epsilon; }
     char get_eta() const { return m_eta; }
-    std::shared_ptr<VirtualLowRankGenerator<CoefficientPrecision, CoordinatePrecision>> get_low_rank_generator() const { return m_low_rank_generator; }
+    std::shared_ptr<VirtualInternalLowRankGenerator<CoefficientPrecision>> get_internal_low_rank_generator() const { return m_internal_low_rank_generator; }
+    std::shared_ptr<VirtualLowRankGenerator<CoefficientPrecision>> get_low_rank_generator() const { return m_low_rank_generator; }
 };
 
 template <typename CoefficientPrecision, typename CoordinatePrecision>
@@ -224,11 +226,18 @@ HMatrix<CoefficientPrecision, CoordinatePrecision> HMatrixTreeBuilder<Coefficien
     m_source_root_cluster           = &root_source_cluster_tree;
     m_target_partition_number       = target_partition_number;
     m_partition_number_for_symmetry = partition_number_for_symmetry;
+    if (!m_internal_low_rank_generator && !m_low_rank_generator) {
+        m_used_low_rank_generator = std::make_shared<sympartialACA<CoefficientPrecision>>(generator);
+    } else if (!m_internal_low_rank_generator) {
+        m_used_low_rank_generator = std::make_shared<InternalLowRankGenerator<CoefficientPrecision>>(*m_low_rank_generator, root_target_cluster_tree.get_permutation().data(), root_source_cluster_tree.get_permutation().data());
+    } else {
+        m_used_low_rank_generator = m_internal_low_rank_generator;
+    }
 
     // Create root hmatrix
     HMatrixType root_hmatrix(root_target_cluster_tree, root_source_cluster_tree);
     root_hmatrix.set_admissibility_condition(m_admissibility_condition);
-    root_hmatrix.set_low_rank_generator(m_internal_low_rank_generator);
+    root_hmatrix.set_low_rank_generator(m_used_low_rank_generator);
     root_hmatrix.set_eta(m_eta);
     root_hmatrix.set_epsilon(m_epsilon);
     root_hmatrix.set_minimal_target_depth(m_mintargetdepth);
@@ -429,7 +438,7 @@ void HMatrixTreeBuilder<CoefficientPrecision, CoordinatePrecision>::compute_bloc
 #    pragma omp for schedule(guided) nowait
 #endif
         for (int p = 0; p < m_admissible_tasks.size(); p++) {
-            m_admissible_tasks[p]->compute_low_rank_data(generator, *m_internal_low_rank_generator, m_reqrank, m_epsilon);
+            m_admissible_tasks[p]->compute_low_rank_data(*m_used_low_rank_generator, m_reqrank, m_epsilon);
             // local_low_rank_leaves.emplace_back(m_admissible_tasks[p]);
             if (m_admissible_tasks[p]->get_low_rank_data()->get_U().nb_rows() != m_admissible_tasks[p]->get_target_cluster().get_size() || m_admissible_tasks[p]->get_low_rank_data()->get_V().nb_cols() != m_admissible_tasks[p]->get_source_cluster().get_size()) {
                 // local_low_rank_leaves.pop_back();
