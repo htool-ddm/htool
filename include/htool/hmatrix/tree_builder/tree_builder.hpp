@@ -183,7 +183,7 @@ class HMatrixTreeBuilder {
         m_UPLO_type = UPLO_type;
         check_inputs();
     }
-    void set_low_rank_generator(std::shared_ptr<VirtualLowRankGenerator<CoefficientPrecision, CoordinatePrecision>> ptr) {
+    void set_low_rank_generator(std::shared_ptr<VirtualLowRankGenerator<CoefficientPrecision>> ptr) {
         m_internal_low_rank_generator.reset();
         m_low_rank_generator = ptr;
     }
