@@ -22,12 +22,10 @@ namespace htool {
 template <typename T>
 class ClusterTreeBuilder {
 
-    std::vector<std::pair<int, int>> m_partition{};
     int m_minclustersize{10};
     enum PartitionType { PowerOfNumberOfChildren,
                          Given,
                          Simple };
-    PartitionType m_partition_type{Simple};
 
     std::vector<T> compute_center(int spatial_dimension, const T *coordinates, const T *weights, int offset, int size, const int *permutation = nullptr) const;
     T compute_radius(int spatial_dimension, const T *coordinates, const T *radii, std::vector<T> center, int offset, int size, const int *permutation = nullptr) const;
@@ -44,15 +42,18 @@ class ClusterTreeBuilder {
 
     void set_minclustersize(int minclustersize) { m_minclustersize = minclustersize; }
 
-    Cluster<T> create_cluster_tree(int number_of_points, int spatial_dimension, const T *coordinates, const T *radii, const T *weights, int number_of_children, int size_of_partition, const int *partition);
+    Cluster<T> create_cluster_tree(int number_of_points, int spatial_dimension, const T *coordinates, const T *radii, const T *weights, int number_of_children, int size_of_partition, const int *partition) const;
 
-    Cluster<T> create_cluster_tree(int number_of_points, int spatial_dimension, const T *coordinates, int number_of_children, int size_of_partition) { return create_cluster_tree(number_of_points, spatial_dimension, coordinates, nullptr, nullptr, number_of_children, size_of_partition, nullptr); }
+    Cluster<T> create_cluster_tree(int number_of_points, int spatial_dimension, const T *coordinates, int number_of_children, int size_of_partition) const { return create_cluster_tree(number_of_points, spatial_dimension, coordinates, nullptr, nullptr, number_of_children, size_of_partition, nullptr); }
 
-    Cluster<T> create_cluster_tree(int number_of_points, int spatial_dimension, const T *coordinates, int number_of_children, int size_of_partition, const int *partition) { return create_cluster_tree(number_of_points, spatial_dimension, coordinates, nullptr, nullptr, number_of_children, size_of_partition, partition); }
+    Cluster<T> create_cluster_tree(int number_of_points, int spatial_dimension, const T *coordinates, int number_of_children, int size_of_partition, const int *partition)const  { return create_cluster_tree(number_of_points, spatial_dimension, coordinates, nullptr, nullptr, number_of_children, size_of_partition, partition); }
 };
 
 template <typename T>
-Cluster<T> ClusterTreeBuilder<T>::create_cluster_tree(int number_of_points, int spatial_dimension, const T *coordinates, const T *radii, const T *weights, int number_of_children, int size_partition, const int *partition) {
+Cluster<T> ClusterTreeBuilder<T>::create_cluster_tree(int number_of_points, int spatial_dimension, const T *coordinates, const T *radii, const T *weights, int number_of_children, int size_partition, const int *partition) const{
+
+    std::vector<std::pair<int, int>> partition{};
+    PartitionType partition_type{Simple};
 
     // default values
     std::vector<T> default_radii{};
@@ -79,7 +80,7 @@ Cluster<T> ClusterTreeBuilder<T>::create_cluster_tree(int number_of_points, int 
     int number_of_children_on_partition_level = size_partition;
     int additional_children_on_last_partition = 0;
     if (partition != nullptr) {
-        m_partition_type   = Given;
+        partition_type   = Given;
         depth_of_partition = 1;
         cluster_stack.pop();
         bool is_child_on_partition = true;
@@ -91,7 +92,7 @@ Cluster<T> ClusterTreeBuilder<T>::create_cluster_tree(int number_of_points, int 
             cluster_stack.push(cluster_on_partition);
         }
     } else {
-        m_partition_type = Simple;
+        partition_type = Simple;
         if (size_partition >= number_of_children) {
             depth_of_partition                    = static_cast<int>(floor(log(size_partition) / log(number_of_children)));
             number_of_children_on_partition_level = number_of_children;
@@ -112,9 +113,9 @@ Cluster<T> ClusterTreeBuilder<T>::create_cluster_tree(int number_of_points, int 
         cluster_stack.pop();
         auto current_offset            = current_cluster->get_offset();
         auto current_size              = current_cluster->get_size();
-        int current_number_of_children = ((current_cluster->get_depth() == depth_of_partition - 1) && (m_partition_type == Simple)) ? number_of_children_on_partition_level : number_of_children;
+        int current_number_of_children = ((current_cluster->get_depth() == depth_of_partition - 1) && (partition_type == Simple)) ? number_of_children_on_partition_level : number_of_children;
 
-        if ((current_cluster->get_depth() == depth_of_partition - 1) && (m_partition_type == Simple) && current_cluster->get_counter() == std::pow(number_of_children, current_cluster->get_depth()) - 1) {
+        if ((current_cluster->get_depth() == depth_of_partition - 1) && (partition_type == Simple) && current_cluster->get_counter() == std::pow(number_of_children, current_cluster->get_depth()) - 1) {
             current_number_of_children += additional_children_on_last_partition;
         }
 
@@ -141,7 +142,7 @@ Cluster<T> ClusterTreeBuilder<T>::create_cluster_tree(int number_of_points, int 
 
                 int rank_of_child    = current_cluster->get_rank();
                 int counter_of_child = current_cluster->get_counter() * current_number_of_children + p;
-                if ((current_cluster->get_depth() == depth_of_partition - 1) && (m_partition_type == Simple)) {
+                if ((current_cluster->get_depth() == depth_of_partition - 1) && (partition_type == Simple)) {
                     rank_of_child         = current_cluster->get_counter() * number_of_children_on_partition_level + p;
                     counter_of_child      = rank_of_child;
                     is_child_on_partition = true;
@@ -161,9 +162,9 @@ Cluster<T> ClusterTreeBuilder<T>::create_cluster_tree(int number_of_points, int 
             current_cluster->set_minimal_depth(std::min(current_cluster->get_minimal_depth(), current_cluster->get_depth()));
         }
 
-        if (m_partition_type == PartitionType::Simple && current_cluster->get_depth() == depth_of_partition - 1) {
+        if (partition_type == PartitionType::Simple && current_cluster->get_depth() == depth_of_partition - 1) {
             for (const auto &child : children) {
-                m_partition.emplace_back(child->get_offset(), child->get_size());
+                partition.emplace_back(child->get_offset(), child->get_size());
             }
         }
     }
