@@ -48,13 +48,13 @@ int main(int, char *[]) {
 
         // sympartialACA fixed rank
         int reqrank_max = 10;
-        sympartialACA<double> compressor;
+        sympartialACA<double> compressor(A);
         test = test || !(compressor.is_htool_owning_data());
 
-        LowRankMatrix<double> A_sympartialACA_fixed(A, compressor, t, s, reqrank_max, epsilon);
+        LowRankMatrix<double> A_sympartialACA_fixed(compressor, t.get_size(), s.get_size(), t.get_offset(), s.get_offset(), reqrank_max, epsilon);
 
         // ACA automatic building
-        LowRankMatrix<double> A_sympartialACA(A, compressor, t, s, -1, epsilon);
+        LowRankMatrix<double> A_sympartialACA(compressor, t.get_size(), s.get_size(), t.get_offset(), s.get_offset(), -1, epsilon);
 
         std::pair<double, double> fixed_compression_interval(0.87, 0.89);
         std::pair<double, double> auto_compression_interval(0.93, 0.96);

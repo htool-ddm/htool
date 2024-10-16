@@ -330,7 +330,7 @@ int test_solver_ddm<DDMSolverBuilder<complex<double>>>(int argc, char *argv[], i
         std::cout << "Creating HMatrix" << std::endl;
     std::vector<double> geometry(n);
     bytes_to_vector(geometry, datapath + "/geometry.bin");
-    DDMSolverBuilder<complex<double>> default_ddm_solver(Operator, ovr_subdomain_to_global, cluster_to_ovr_subdomain, neighbors, intersections, Generator, 3, geometry.data(), ClusterTreeBuilder<double>(), HMatrixTreeBuilder<complex<double>>(epsilon,eta,symmetric,UPLO));
+    DDMSolverBuilder<complex<double>> default_ddm_solver(Operator, ovr_subdomain_to_global, cluster_to_ovr_subdomain, neighbors, intersections, Generator, 3, geometry.data(), ClusterTreeBuilder<double>(), HMatrixTreeBuilder<complex<double>>(epsilon, eta, symmetric, UPLO));
     auto &ddm_with_overlap = default_ddm_solver.solver;
 
     // No precond with overlap
@@ -435,7 +435,7 @@ int test_solver_ddm<DDMSolverBuilder<complex<double>>>(int argc, char *argv[], i
             std::cout << "RAS two level with overlap and threshold:" << std::endl;
         opt.parse("-hpddm_schwarz_method ras -hpddm_schwarz_coarse_correction additive");
         // DDM<complex<double>> ddm_with_overlap_threshold(Generator, &Operator, ovr_subdomain_to_global, cluster_to_ovr_subdomain, neighbors, intersections);
-        DDMSolverBuilder<std::complex<double>> default_ddm_solver_with_threshold(Operator, ovr_subdomain_to_global, cluster_to_ovr_subdomain, neighbors, intersections, Generator, 3, geometry.data(), ClusterTreeBuilder<double>(), HMatrixTreeBuilder<complex<double>>(epsilon,eta,symmetric,UPLO));
+        DDMSolverBuilder<std::complex<double>> default_ddm_solver_with_threshold(Operator, ovr_subdomain_to_global, cluster_to_ovr_subdomain, neighbors, intersections, Generator, 3, geometry.data(), ClusterTreeBuilder<double>(), HMatrixTreeBuilder<complex<double>>(epsilon, eta, symmetric, UPLO));
         auto &ddm_with_overlap_threshold = default_ddm_solver_with_threshold.solver;
         Ki.bytes_to_matrix(datapath + "/Ki_" + NbrToStr(size) + "_" + NbrToStr(rank) + ".bin");
         int local_size_wo_overlap             = Operator.get_target_partition().get_size_of_partition(rank);

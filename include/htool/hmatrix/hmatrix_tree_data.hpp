@@ -29,7 +29,7 @@ struct HMatrixTreeData {
     mutable std::map<std::string, std::chrono::duration<double>> m_timings;
 
     // Strategies
-    std::shared_ptr<VirtualInternalLowRankGenerator<CoefficientPrecision, CoordinatePrecision>>
+    std::shared_ptr<VirtualInternalLowRankGenerator<CoefficientPrecision>>
         m_low_rank_generator;
     std::shared_ptr<VirtualAdmissibilityCondition<CoordinatePrecision>> m_admissibility_condition;
 };
