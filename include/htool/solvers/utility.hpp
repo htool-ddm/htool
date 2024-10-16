@@ -304,12 +304,11 @@ class DDMSolverBuilder {
         // Local low rank generator
         HMatrixTreeBuilder<CoefficientPrecision, CoordinatePrecision> m_local_hmatrix_builder(local_hmatrix_builder.get_epsilon(), local_hmatrix_builder.get_eta(), local_hmatrix_builder.get_symmetry(), local_hmatrix_builder.get_UPLO());
 
-        if (local_hmatrix_builder.get_internal_low_rank_generator()) {
-            // Logger::get_instance().log(LogLevel::INFO, "Local hmatrix builder given as input does not have . DDMSolverBuilder will use InternalLowRankGenerator instead."); // LCOV_EXCL_LINE
-            return m_local_hmatrix_builder.build(local_generator, *m_local_cluster, *m_local_cluster);                                                                                               // LCOV_EXCL_LINE
+        if (local_hmatrix_builder.get_internal_low_rank_generator() != nullptr) {
+            m_local_hmatrix_builder.set_low_rank_generator(local_hmatrix_builder.get_internal_low_rank_generator());
+        } else if (local_hmatrix_builder.get_low_rank_generator() != nullptr) {
+            m_local_hmatrix_builder.set_low_rank_generator(std::make_shared<LocalLowRankGenerator>(local_hmatrix_builder.get_low_rank_generator(), *m_local_cluster, *m_local_cluster, local_to_global_numbering, local_to_global_numbering));
         }
-
-        m_local_hmatrix_builder.set_low_rank_generator(std::make_shared<LocalLowRankGenerator>(local_hmatrix_builder.get_low_rank_generator(),*m_local_cluster,*m_local_cluster ,local_to_global_numbering, local_to_global_numbering));
 
         return m_local_hmatrix_builder.build(local_generator, *m_local_cluster, *m_local_cluster);
     };
