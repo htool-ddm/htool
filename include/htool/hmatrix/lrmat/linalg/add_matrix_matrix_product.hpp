@@ -7,7 +7,7 @@
 #include "../../../misc/misc.hpp"                   // for underlying_type
 #include "../../../wrappers/wrapper_blas.hpp"       // for Blas
 #include "../lrmat.hpp"                             // for LowRankMatrix
-#include "../utils/recompression.hpp"               // for recompression
+#include "../utils/SVD_recompression.hpp"           // for recompression
 #include <algorithm>                                // for copy_n, min
 #include <vector>                                   // for vector
 namespace htool {
@@ -86,7 +86,7 @@ void add_matrix_matrix_product(char transa, char transb, CoefficientPrecision al
     }
     C.get_U() = new_U;
     C.get_V() = new_V;
-    recompression(C);
+    SVD_recompression(C);
 }
 
 } // namespace htool
