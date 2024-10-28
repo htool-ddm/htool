@@ -2,6 +2,7 @@
 #define HTOOL_VIRTUAL_LRMAT_GENERATOR_HPP
 
 #include "../../clustering/cluster_node.hpp" // for Cluster
+#include "../../hmatrix/lrmat/lrmat.hpp"     // for LowRankMatrix
 #include "../../matrix/matrix.hpp"           // for Matrix
 #include "../../misc/misc.hpp"               // for underlying_type
 
@@ -13,7 +14,9 @@ class VirtualInternalLowRankGenerator {
     VirtualInternalLowRankGenerator() {}
 
     // C style
-    virtual void copy_low_rank_approximation(int M, int N, int row_offset, int col_offset, underlying_type<CoefficientPrecision> epsilon, int &rank, Matrix<CoefficientPrecision> &U, Matrix<CoefficientPrecision> &V) const = 0;
+    virtual bool copy_low_rank_approximation(int M, int N, int row_offset, int col_offset, LowRankMatrix<CoefficientPrecision> &lrmat) const = 0;
+
+    virtual bool copy_low_rank_approximation(int M, int N, int row_offset, int col_offset, int reqrank, LowRankMatrix<CoefficientPrecision> &lrmat) const = 0;
 
     virtual bool is_htool_owning_data() const { return true; }
     virtual ~VirtualInternalLowRankGenerator() {}
@@ -25,7 +28,9 @@ class VirtualLowRankGenerator {
     VirtualLowRankGenerator() {}
 
     // C style
-    virtual void copy_low_rank_approximation(int M, int N, const int *rows, const int *cols, underlying_type<CoefficientPrecision> epsilon, int &rank, Matrix<CoefficientPrecision> &U, Matrix<CoefficientPrecision> &V) const = 0;
+    virtual bool copy_low_rank_approximation(int M, int N, const int *rows, const int *cols, LowRankMatrix<CoefficientPrecision> &lrmat) const = 0;
+
+    virtual bool copy_low_rank_approximation(int M, int N, const int *rows, const int *cols, int reqrank, LowRankMatrix<CoefficientPrecision> &lrmat) const = 0;
 
     virtual bool is_htool_owning_data() const { return true; }
     virtual ~VirtualLowRankGenerator() {}
@@ -43,8 +48,12 @@ class InternalLowRankGenerator : public VirtualInternalLowRankGenerator<Coeffici
     InternalLowRankGenerator(const VirtualLowRankGenerator<CoefficientPrecision> &low_rank_generator, const int *target_permutation, const int *source_permutation) : m_low_rank_generator(low_rank_generator), m_target_permutation(target_permutation), m_source_permutation(source_permutation) {
     }
 
-    virtual void copy_low_rank_approximation(int M, int N, int row_offset, int col_offset, underlying_type<CoefficientPrecision> epsilon, int &rank, Matrix<CoefficientPrecision> &U, Matrix<CoefficientPrecision> &V) const override {
-        m_low_rank_generator.copy_low_rank_approximation(M, N, m_target_permutation + row_offset, m_source_permutation + col_offset, epsilon, rank, U, V);
+    virtual bool copy_low_rank_approximation(int M, int N, int row_offset, int col_offset, LowRankMatrix<CoefficientPrecision> &lrmat) const override {
+        return m_low_rank_generator.copy_low_rank_approximation(M, N, m_target_permutation + row_offset, m_source_permutation + col_offset, lrmat);
+    }
+
+    virtual bool copy_low_rank_approximation(int M, int N, int row_offset, int col_offset, int reqrank, LowRankMatrix<CoefficientPrecision> &lrmat) const override {
+        return m_low_rank_generator.copy_low_rank_approximation(M, N, m_target_permutation + row_offset, m_source_permutation + col_offset, reqrank, lrmat);
     }
 
     virtual bool is_htool_owning_data() const override { return m_low_rank_generator.is_htool_owning_data(); }

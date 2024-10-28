@@ -75,7 +75,7 @@ void internal_add_hmatrix_hmatrix_product(char transa, char transb, CoefficientP
 
         for (auto &output_cluster_child : output_clusters) {
             for (auto &input_cluster_child : input_clusters) {
-                low_rank_matrices.emplace_back(C.get_epsilon());
+                low_rank_matrices.emplace_back(output_cluster_child->get_size(), input_cluster_child->get_size(), C.get_epsilon());
                 low_rank_matrices.back().get_U().resize(output_cluster_child->get_size(), 0);
                 low_rank_matrices.back().get_V().resize(0, input_cluster_child->get_size());
                 for (auto &middle_cluster_child : middle_clusters) {
@@ -276,7 +276,7 @@ void internal_add_hmatrix_hmatrix_product(char transa, char transb, CoefficientP
             }
         } else {
             if (A.is_low_rank() || B.is_low_rank()) {
-                LowRankMatrix<CoefficientPrecision> lrmat(A.is_low_rank() ? A.get_low_rank_data()->get_epsilon() : B.get_low_rank_data()->get_epsilon());
+                LowRankMatrix<CoefficientPrecision> lrmat(A.nb_rows(), B.nb_cols(), A.is_low_rank() ? A.get_low_rank_data()->get_epsilon() : B.get_low_rank_data()->get_epsilon());
 
                 if (A.is_dense() and B.is_low_rank()) {
                     add_matrix_lrmat_product(transa, transb, alpha, *A.get_dense_data(), *B.get_low_rank_data(), beta, lrmat);
@@ -292,7 +292,7 @@ void internal_add_hmatrix_hmatrix_product(char transa, char transb, CoefficientP
 
                 internal_add_lrmat_hmatrix(lrmat, C);
             } else {
-                LowRankMatrix<CoefficientPrecision> lrmat(C.get_epsilon());
+                LowRankMatrix<CoefficientPrecision> lrmat(A.nb_rows(), B.nb_cols(), C.get_epsilon());
                 if (A.is_dense() and B.is_dense()) {
                     add_matrix_matrix_product(transa, transb, alpha, *A.get_dense_data(), *B.get_dense_data(), beta, lrmat);
                 } else if (A.is_dense() and B.is_hierarchical()) {

@@ -26,6 +26,15 @@ All notable changes to this project will be documented in this file.
 
 ## Unreleased
 
+### Added
+
+- `HMatrix` recompression with SVD.
+
+### Changed
+
+- `VirtualInternalLowRankGenerator` and `VirtualLowRankGenerator`'s `copy_low_rank_approximation` function takes a `LowRankMatrix` as input to populate it and returns a boolean. The return value is true if the compression succeded, false otherwise.
+- `LowRankMatrix` constructors changed. It only takes sizes and an epsilon or a required rank. Then, it is expected to call a `VirtualInternalLowRankGenerator` to populate it.
+
 ### Fixed
 
 - fix inline definition of `logging_level_to_string`

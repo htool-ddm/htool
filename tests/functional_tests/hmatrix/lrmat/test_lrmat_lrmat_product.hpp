@@ -12,7 +12,7 @@ bool test_lrmat_lrmat_product(char transa, char transb, T alpha, T beta, const L
 
     bool is_error = false;
     Matrix<T> matrix_test, dense_lrmat_test;
-    LowRankMatrix<T> lrmat_test(epsilon);
+    LowRankMatrix<T> lrmat_test(A_auto_approximation.nb_rows(), B_auto_approximation.nb_cols(), epsilon);
     htool::underlying_type<T> error;
 
     // Product with automatic rank

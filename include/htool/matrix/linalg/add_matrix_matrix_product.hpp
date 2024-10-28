@@ -1,6 +1,7 @@
 #ifndef HTOOL_MATRIX_LINALG_ADD_MATRIX_MATRIX_PRODUCT_HPP
 #define HTOOL_MATRIX_LINALG_ADD_MATRIX_MATRIX_PRODUCT_HPP
 
+#include "../../matrix/linalg/scale.hpp"   // for scale
 #include "../../matrix/matrix.hpp"         // for Matrix
 #include "../../wrappers/wrapper_blas.hpp" // for Blas
 namespace htool {
@@ -36,7 +37,11 @@ void add_matrix_matrix_product(char transa, char transb, T alpha, const Matrix<T
     int ldb = transb == 'N' ? K : N;
     int ldc = M;
 
-    Blas<T>::gemm(&transa, &transb, &M, &N, &K, &alpha, A.data(), &lda, B.data(), &ldb, &beta, C.data(), &ldc);
+    if (ldb > 0) { // AB is zero
+        Blas<T>::gemm(&transa, &transb, &M, &N, &K, &alpha, A.data(), &lda, B.data(), &ldb, &beta, C.data(), &ldc);
+    } else {
+        scale(beta, C);
+    }
 
     // add_matrix_matrix_product(transa, transb, alpha, A, B.data(), beta, C.data(), C.nb_cols());
 }

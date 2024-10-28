@@ -44,8 +44,11 @@ bool test_hmatrix_triangular_solve(char side, char transa, int n1, int n2, htool
 
     // Lrmat rhs
     htool::underlying_type<T> lrmat_tolerance = 1e-3;
-    LowRankMatrix<T> X_lrmat(SVD<T>(*test_case.operator_X), test_case.root_cluster_X_output->get_size(), test_case.root_cluster_X_input->get_size(), test_case.root_cluster_X_output->get_offset(), test_case.root_cluster_X_input->get_offset(), 15, lrmat_tolerance);
-    LowRankMatrix<T> lrmat_test(epsilon);
+    SVD<T> compressor(*test_case.operator_X);
+    int reqrank = 15;
+    LowRankMatrix<T> X_lrmat(test_case.root_cluster_X_output->get_size(), test_case.root_cluster_X_input->get_size(), lrmat_tolerance, reqrank);
+    LowRankMatrix<T> lrmat_test(test_case.root_cluster_X_output->get_size(), test_case.root_cluster_X_input->get_size(), epsilon);
+    compressor.copy_low_rank_approximation(test_case.root_cluster_X_output->get_size(), test_case.root_cluster_X_input->get_size(), test_case.root_cluster_X_output->get_offset(), test_case.root_cluster_X_input->get_offset(), X_lrmat);
 
     // Triangular hmatrices
     HMatrix<T, htool::underlying_type<T>> LA(A);
@@ -117,7 +120,7 @@ bool test_hmatrix_triangular_solve(char side, char transa, int n1, int n2, htool
             }
         }
     }
-    LowRankMatrix<T> UB_lrmat(epsilon), LB_lrmat(epsilon);
+    LowRankMatrix<T> UB_lrmat(UA_dense.nb_rows(), X_lrmat.nb_cols(), epsilon), LB_lrmat(LA_dense.nb_rows(), X_lrmat.nb_cols(), epsilon);
     if (side == 'L') {
         add_matrix_matrix_product(transa, 'N', T(1) / alpha, UA_dense, X_dense, T(0), UB_dense);
         add_matrix_matrix_product(transa, 'N', T(1) / alpha, LA_dense, X_dense, T(0), LB_dense);

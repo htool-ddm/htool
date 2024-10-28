@@ -36,7 +36,7 @@ class DistributedOperatorFromHMatrix {
     return rankWorld; };
 
   public:
-    const HMatrix<CoefficientPrecision, CoordinatePrecision> hmatrix;
+    HMatrix<CoefficientPrecision, CoordinatePrecision> hmatrix;
 
   private:
     const LocalHMatrix<CoefficientPrecision, CoordinatePrecision> local_hmatrix;
@@ -64,7 +64,7 @@ class DefaultApproximationBuilder {
     DistributedOperatorFromHMatrix<CoefficientPrecision, CoordinatePrecision> distributed_operator_builder;
 
   public:
-    const HMatrix<CoefficientPrecision, CoordinatePrecision> &hmatrix;
+    HMatrix<CoefficientPrecision, CoordinatePrecision> &hmatrix;
 
   public:
     DistributedOperator<CoefficientPrecision> &distributed_operator;
@@ -84,7 +84,7 @@ class DefaultLocalApproximationBuilder {
     return rankWorld; };
 
   public:
-    const HMatrix<CoefficientPrecision, CoordinatePrecision> hmatrix;
+    HMatrix<CoefficientPrecision, CoordinatePrecision> hmatrix;
 
   private:
     const LocalHMatrix<CoefficientPrecision, CoordinatePrecision> local_hmatrix;

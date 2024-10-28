@@ -7,7 +7,7 @@
 #include "../../../matrix/matrix.hpp"                           // for Matrix
 #include "../../../misc/misc.hpp"                               // for conj...
 #include "../lrmat.hpp"                                         // for LowR...
-#include "../utils/recompression.hpp"                           // for reco...
+#include "../utils/SVD_recompression.hpp"                       // for reco...
 #include <algorithm>                                            // for copy_n
 
 namespace htool {
@@ -105,7 +105,7 @@ void add_matrix_lrmat_product(char transa, char transb, CoefficientPrecision alp
 
             C.get_U() = new_U;
             C.get_V() = new_V;
-            recompression(C);
+            SVD_recompression(C);
         }
     }
 }

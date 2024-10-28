@@ -1,6 +1,6 @@
 #ifndef HTOOL_LRMAT_LINALG_ADD_LRMAT_LRMAT_PRODUCT_HPP
 #define HTOOL_LRMAT_LINALG_ADD_LRMAT_LRMAT_PRODUCT_HPP
-#include "../../../hmatrix/lrmat/utils/recompression.hpp"       // for reco...
+#include "../../../hmatrix/lrmat/utils/SVD_recompression.hpp"   // for reco...
 #include "../../../matrix/linalg/add_matrix_matrix_product.hpp" // for add_...
 #include "../../../matrix/linalg/scale.hpp"                     // for scale
 #include "../../../matrix/linalg/transpose.hpp"                 // for tran...
@@ -93,7 +93,7 @@ void add_lrmat_lrmat_product(char transa, char transb, CoefficientPrecision alph
 
             C.get_U() = new_U;
             C.get_V() = new_V;
-            recompression(C);
+            SVD_recompression(C);
         }
     }
 }

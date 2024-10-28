@@ -26,7 +26,9 @@ bool test_lrmat_hmatrix_addition(int n1, int n2, htool::underlying_type<T> epsil
     HMatrix<T, htool::underlying_type<T>> hmatrix_test(A);
 
     // lrmat
-    LowRankMatrix<T> C_approximation(Compressor(*test_case.operator_C), test_case.root_cluster_C_output->get_size(), test_case.root_cluster_C_input->get_size(), test_case.root_cluster_C_output->get_offset(), test_case.root_cluster_C_input->get_offset(), -1, epsilon);
+    Compressor compressor(*test_case.operator_C);
+    LowRankMatrix<T> C_approximation(test_case.root_cluster_C_output->get_size(), test_case.root_cluster_C_input->get_size(), epsilon);
+    compressor.copy_low_rank_approximation(test_case.root_cluster_C_output->get_size(), test_case.root_cluster_C_input->get_size(), test_case.root_cluster_C_output->get_offset(), test_case.root_cluster_C_input->get_offset(), C_approximation);
 
     // Reference
     Matrix<T> A_dense(A.nb_rows(), A.nb_cols(), 0);

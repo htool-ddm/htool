@@ -93,7 +93,9 @@ bool test_hmatrix_hmatrix_product(const TestCaseProduct<T, GeneratorTestType> &t
 
     // lrmat
     htool::underlying_type<T> lrmat_tol = 1e-6;
-    LowRankMatrix<T> C_auto_approximation(SVD<T>(*test_case.operator_C), root_cluster_C_output->get_size(), root_cluster_C_input->get_size(), root_cluster_C_output->get_offset(), root_cluster_C_input->get_offset(), -1, lrmat_tol), lrmat_test(lrmat_tol);
+    SVD<T> compressor_C(*test_case.operator_C);
+    LowRankMatrix<T> C_auto_approximation(root_cluster_C_output->get_size(), root_cluster_C_input->get_size(), lrmat_tol), lrmat_test(root_cluster_C_output->get_size(), root_cluster_C_input->get_size(), lrmat_tol);
+    compressor_C.copy_low_rank_approximation(root_cluster_C_output->get_size(), root_cluster_C_input->get_size(), root_cluster_C_output->get_offset(), root_cluster_C_input->get_offset(), C_auto_approximation);
 
     // Random Input
     T alpha(1), beta(0), scaling_coefficient;
