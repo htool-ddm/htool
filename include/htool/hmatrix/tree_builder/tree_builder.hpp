@@ -205,8 +205,8 @@ class HMatrixTreeBuilder {
     // Getters
     char get_symmetry() const { return m_symmetry_type; }
     char get_UPLO() const { return m_UPLO_type; }
-    char get_epsilon() const { return m_epsilon; }
-    char get_eta() const { return m_eta; }
+    double get_epsilon() const { return m_epsilon; }
+    double get_eta() const { return m_eta; }
     std::shared_ptr<VirtualInternalLowRankGenerator<CoefficientPrecision>> get_internal_low_rank_generator() const { return m_internal_low_rank_generator; }
     std::shared_ptr<VirtualLowRankGenerator<CoefficientPrecision>> get_low_rank_generator() const { return m_low_rank_generator; }
 };
@@ -438,9 +438,9 @@ void HMatrixTreeBuilder<CoefficientPrecision, CoordinatePrecision>::compute_bloc
 #    pragma omp for schedule(guided) nowait
 #endif
         for (int p = 0; p < m_admissible_tasks.size(); p++) {
-            m_admissible_tasks[p]->compute_low_rank_data(*m_used_low_rank_generator, m_reqrank, m_epsilon);
+            bool has_low_rank_approximation_succeded = m_admissible_tasks[p]->compute_low_rank_data(*m_used_low_rank_generator, m_reqrank, m_epsilon);
             // local_low_rank_leaves.emplace_back(m_admissible_tasks[p]);
-            if (m_admissible_tasks[p]->get_low_rank_data()->get_U().nb_rows() != m_admissible_tasks[p]->get_target_cluster().get_size() || m_admissible_tasks[p]->get_low_rank_data()->get_V().nb_cols() != m_admissible_tasks[p]->get_source_cluster().get_size()) {
+            if (!has_low_rank_approximation_succeded) {
                 // local_low_rank_leaves.pop_back();
                 m_admissible_tasks[p]->clear_low_rank_data();
                 // if (m_dense_blocks_generator.get() == nullptr) {

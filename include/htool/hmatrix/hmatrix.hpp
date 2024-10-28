@@ -225,9 +225,15 @@ class HMatrix : public TreeNode<HMatrix<CoefficientPrecision, CoordinatePrecisio
         m_storage_type = StorageType::Dense;
     }
 
-    void compute_low_rank_data(const VirtualInternalLowRankGenerator<CoefficientPrecision> &low_rank_generator, int reqrank, underlying_type<CoefficientPrecision> epsilon) {
-        m_low_rank_data = std::make_unique<LowRankMatrix<CoefficientPrecision>>(low_rank_generator, m_target_cluster->get_size(), m_source_cluster->get_size(), m_target_cluster->get_offset(), m_source_cluster->get_offset(), reqrank, epsilon);
+    bool compute_low_rank_data(const VirtualInternalLowRankGenerator<CoefficientPrecision> &low_rank_generator, int reqrank, underlying_type<CoefficientPrecision> epsilon) {
+        m_low_rank_data = std::make_unique<LowRankMatrix<CoefficientPrecision>>(m_target_cluster->get_size(), m_source_cluster->get_size(), reqrank, epsilon);
         m_storage_type  = StorageType::LowRank;
+
+        if (reqrank > 0) {
+            return low_rank_generator.copy_low_rank_approximation(m_target_cluster->get_size(), m_source_cluster->get_size(), m_target_cluster->get_offset(), m_source_cluster->get_offset(), reqrank, *m_low_rank_data);
+        } else {
+            return low_rank_generator.copy_low_rank_approximation(m_target_cluster->get_size(), m_source_cluster->get_size(), m_target_cluster->get_offset(), m_source_cluster->get_offset(), *m_low_rank_data);
+        }
     }
     void clear_low_rank_data() { m_low_rank_data.reset(); }
 
@@ -265,6 +271,28 @@ std::pair<std::vector<const HMatrix<CoefficientPrecision, CoordinatePrecision> *
         }
     }
     return result;
+}
+
+template <typename CoefficientPrecision, typename CoordinatePrecision = underlying_type<CoefficientPrecision>>
+std::vector<HMatrix<CoefficientPrecision, CoordinatePrecision> *> get_low_rank_leaves_from(HMatrix<CoefficientPrecision, CoordinatePrecision> &hmatrix) {
+    std::vector<HMatrix<CoefficientPrecision, CoordinatePrecision> *> leaves;
+
+    std::stack<HMatrix<CoefficientPrecision, CoordinatePrecision> *> hmatrix_stack;
+    hmatrix_stack.push(&hmatrix);
+
+    while (!hmatrix_stack.empty()) {
+        HMatrix<CoefficientPrecision, CoordinatePrecision> *current_hmatrix = hmatrix_stack.top();
+        hmatrix_stack.pop();
+
+        if (current_hmatrix->is_leaf() && current_hmatrix->is_low_rank()) {
+            leaves.push_back(current_hmatrix);
+        }
+
+        for (const auto &child : current_hmatrix->get_children()) {
+            hmatrix_stack.push(child.get());
+        }
+    }
+    return leaves;
 }
 
 template <typename CoefficientPrecision, typename CoordinatePrecision = underlying_type<CoefficientPrecision>>

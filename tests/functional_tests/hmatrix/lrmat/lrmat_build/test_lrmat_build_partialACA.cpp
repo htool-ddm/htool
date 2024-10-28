@@ -51,14 +51,16 @@ int main(int, char *[]) {
         partialACA<double> compressor(A);
         test = test || !(compressor.is_htool_owning_data());
 
-        LowRankMatrix<double> A_fullACA_fixed(compressor, t.get_size(), s.get_size(), t.get_offset(), s.get_offset(), reqrank_max, epsilon);
+        LowRankMatrix<double> A_partialACA_fixed(t.get_size(), s.get_size(), reqrank_max, epsilon);
+        compressor.copy_low_rank_approximation(t.get_size(), s.get_size(), t.get_offset(), s.get_offset(), reqrank_max, A_partialACA_fixed);
 
         // ACA automatic building
-        LowRankMatrix<double> A_fullACA(compressor, t.get_size(), s.get_size(), t.get_offset(), s.get_offset(), -1, epsilon);
+        LowRankMatrix<double> A_partialACA(t.get_size(), s.get_size(), epsilon);
+        compressor.copy_low_rank_approximation(t.get_size(), s.get_size(), t.get_offset(), s.get_offset(), A_partialACA);
 
         std::pair<double, double> fixed_compression_interval(0.87, 0.89);
         std::pair<double, double> auto_compression_interval(0.93, 0.96);
-        test = test || (test_lrmat(t, s, A, A_fullACA_fixed, A_fullACA, fixed_compression_interval, auto_compression_interval));
+        test = test || (test_lrmat(t, s, A, A_partialACA_fixed, A_partialACA, fixed_compression_interval, auto_compression_interval));
     }
 
     cout << "test : " << test << endl;
