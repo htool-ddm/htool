@@ -23,7 +23,7 @@ class SVD final : public VirtualInternalLowRankGenerator<CoefficientPrecision> {
     SVD(const VirtualInternalGenerator<CoefficientPrecision> &A) : m_A(A) {}
     SVD(const VirtualGenerator<CoefficientPrecision> &A) : m_A(InternalGeneratorWithPermutation<CoefficientPrecision>(A)) {}
 
-    void copy_low_rank_approximation(int M, int N, int row_offset, int col_offset, underlying_type<CoefficientPrecision> epsilon, int &rank, Matrix<CoefficientPrecision> &U, Matrix<CoefficientPrecision> &V) const override {
+    bool copy_low_rank_approximation(int M, int N, int row_offset, int col_offset, LowRankMatrix<CoefficientPrecision> &lrmat) const override {
 
         //// Matrix assembling
         Matrix<CoefficientPrecision> mat(M, N);
@@ -34,18 +34,15 @@ class SVD final : public VirtualInternalLowRankGenerator<CoefficientPrecision> {
         Matrix<CoefficientPrecision> u(M, M);
         Matrix<CoefficientPrecision> vt(N, N);
 
-        int truncated_rank = SVD_truncation(mat, epsilon, u, vt, singular_values);
+        int truncated_rank = SVD_truncation(mat, lrmat.get_epsilon(), u, vt, singular_values);
 
-        if (rank == -1) {
-            if (truncated_rank * (M + N) > (M * N)) {
-                truncated_rank = -1;
-            }
-
-        } else {
-            truncated_rank = std::min(rank, std::min(M, N));
+        if (truncated_rank * (M + N) > (M * N)) {
+            return false;
         }
 
         if (truncated_rank > 0) {
+            auto &U = lrmat.get_U();
+            auto &V = lrmat.get_V();
             U.resize(M, truncated_rank);
             V.resize(truncated_rank, N);
             for (int i = 0; i < M; i++) {
@@ -58,7 +55,39 @@ class SVD final : public VirtualInternalLowRankGenerator<CoefficientPrecision> {
                     V(i, j) = vt(i, j);
                 }
             }
+            return true;
         }
+        return false;
+    }
+
+    bool copy_low_rank_approximation(int M, int N, int row_offset, int col_offset, int rank, LowRankMatrix<CoefficientPrecision> &lrmat) const override {
+        //// Matrix assembling
+        Matrix<CoefficientPrecision> mat(M, N);
+        m_A.copy_submatrix(M, N, row_offset, col_offset, mat.data());
+
+        //// SVD
+        std::vector<underlying_type<CoefficientPrecision>> singular_values(std::min(M, N));
+        Matrix<CoefficientPrecision> u(M, M);
+        Matrix<CoefficientPrecision> vt(N, N);
+
+        int truncated_rank = SVD_truncation(mat, lrmat.get_epsilon(), u, vt, singular_values);
+        truncated_rank     = std::min(rank, std::min(M, N));
+
+        auto &U = lrmat.get_U();
+        auto &V = lrmat.get_V();
+        U.resize(M, truncated_rank);
+        V.resize(truncated_rank, N);
+        for (int i = 0; i < M; i++) {
+            for (int j = 0; j < truncated_rank; j++) {
+                U(i, j) = u(i, j) * singular_values[j];
+            }
+        }
+        for (int i = 0; i < truncated_rank; i++) {
+            for (int j = 0; j < N; j++) {
+                V(i, j) = vt(i, j);
+            }
+        }
+        return true;
     }
 };
 
