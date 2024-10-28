@@ -16,42 +16,29 @@
 #include <vector>                                               // for vector
 
 namespace htool {
-//================================//
-//   CLASSE MATRICE RANG FAIBLE   //
-//================================//
-//
-// Refs biblio:
-//
-//  -> slides de Stéphanie Chaillat:
-//           http://uma.ensta-paristech.fr/var/files/chaillat/seance2.pdf
-//           et en particulier la slide 25
-//
-//  -> livre de M.Bebendorf:
-//           http://www.springer.com/kr/book/9783540771463
-//           et en particulier le paragraphe 3.4
-//
-//  -> livre de Rjasanow-Steinbach:
-//           http://www.ems-ph.org/books/book.php?proj_nr=125
-//           et en particulier le paragraphe 3.2
-//
-//=================================//
+
 template <typename CoefficientPrecision>
 class partialACA final : public VirtualInternalLowRankGenerator<CoefficientPrecision> {
 
     const VirtualInternalGenerator<CoefficientPrecision> &m_A;
 
   public:
-    //=========================//
-    //    PARTIAL PIVOT ACA    //
-    //=========================//
-    // If reqrank=-1 (default value), we use the precision given by epsilon for the stopping criterion;
-    // otherwise, we use the required rank for the stopping criterion (!: at the end the rank could be lower)
     using VirtualInternalLowRankGenerator<CoefficientPrecision>::VirtualInternalLowRankGenerator;
 
     partialACA(const VirtualInternalGenerator<CoefficientPrecision> &A) : m_A(A) {}
     partialACA(const VirtualGenerator<CoefficientPrecision> &A) : m_A(InternalGeneratorWithPermutation<CoefficientPrecision>(A)) {}
 
-    void copy_low_rank_approximation(int M, int N, int row_offset, int col_offset, underlying_type<CoefficientPrecision> epsilon, int &rank, Matrix<CoefficientPrecision> &U, Matrix<CoefficientPrecision> &V) const override {
+    bool copy_low_rank_approximation(int M, int N, int row_offset, int col_offset, LowRankMatrix<CoefficientPrecision> &lrmat) const override {
+        int reqrank = -1;
+        return copy_low_rank_approximation(M, N, row_offset, col_offset, lrmat.get_epsilon(), reqrank, lrmat);
+    }
+
+    bool copy_low_rank_approximation(int M, int N, int row_offset, int col_offset, int reqrank, LowRankMatrix<CoefficientPrecision> &lrmat) const override {
+        return copy_low_rank_approximation(M, N, row_offset, col_offset, lrmat.get_epsilon(), reqrank, lrmat);
+    }
+
+  private:
+    bool copy_low_rank_approximation(int M, int N, int row_offset, int col_offset, underlying_type<CoefficientPrecision> epsilon, int &rank, LowRankMatrix<CoefficientPrecision> &lrmat) const {
 
         int target_size   = M;
         int source_size   = N;
@@ -118,7 +105,6 @@ class partialACA final : public VirtualInternalLowRankGenerator<CoefficientPreci
                         continue;
                     pivot = tmp;
                     J     = k;
-                    // std::cout << pivot << " " << J << std::endl;
                 }
 
                 visited_row[I]             = true;
@@ -174,7 +160,6 @@ class partialACA final : public VirtualInternalLowRankGenerator<CoefficientPreci
                         q = -1;
                     }
                     htool::Logger::get_instance().log(LogLevel::WARNING, "ACA found a zero row in a " + std::to_string(target_size) + "x" + std::to_string(source_size) + " block. Final rank is " + std::to_string(q)); // LCOV_EXCL_LINE
-                    // std::cout << "[Htool warning] ACA found a zero row in a " + std::to_string(target_size) + "x" + std::to_string(source_size) + " block. Final rank is " + std::to_string(q) << std::endl;
                     break;
                 }
             }
@@ -182,6 +167,8 @@ class partialACA final : public VirtualInternalLowRankGenerator<CoefficientPreci
         // Final rank
         rank = q;
         if (rank > 0) {
+            auto &U = lrmat.get_U();
+            auto &V = lrmat.get_V();
             U.resize(target_size, rank);
             V.resize(rank, source_size);
             for (int k = 0; k < rank; k++) {
@@ -190,7 +177,9 @@ class partialACA final : public VirtualInternalLowRankGenerator<CoefficientPreci
                     V(k, j) = vv[k][j];
                 }
             }
+            return true;
         }
+        return false;
     }
 };
 } // namespace htool

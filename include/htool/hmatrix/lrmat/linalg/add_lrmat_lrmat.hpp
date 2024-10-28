@@ -1,13 +1,13 @@
 #ifndef HTOOL_LRMAT_LINALG_ADD_LRMAT_LRMAT_HPP
 #define HTOOL_LRMAT_LINALG_ADD_LRMAT_LRMAT_HPP
-#include "../../../clustering/cluster_node.hpp"           // for Cluster (ptr ...
-#include "../../../hmatrix/lrmat/utils/recompression.hpp" // for recompression
-#include "../../../matrix/matrix.hpp"                     // for Matrix
-#include "../../../misc/logger.hpp"                       // for Logger, LogLevel
-#include "../../../misc/misc.hpp"                         // for underlying_type
-#include "../lrmat.hpp"                                   // for LowRankMatrix
-#include <algorithm>                                      // for copy_n
-#include <string>                                         // for basic_string
+#include "../../../clustering/cluster_node.hpp"               // for Cluster (ptr ...
+#include "../../../hmatrix/lrmat/utils/SVD_recompression.hpp" // for recompression
+#include "../../../matrix/matrix.hpp"                         // for Matrix
+#include "../../../misc/logger.hpp"                           // for Logger, LogLevel
+#include "../../../misc/misc.hpp"                             // for underlying_type
+#include "../lrmat.hpp"                                       // for LowRankMatrix
+#include <algorithm>                                          // for copy_n
+#include <string>                                             // for basic_string
 
 namespace htool {
 template <typename CoefficientPrecision, typename CoordinatePrecision = underlying_type<CoefficientPrecision>>
@@ -56,7 +56,7 @@ void add_lrmat_lrmat(const LowRankMatrix<CoefficientPrecision> &X_lrmat, const C
             // Set C
             Y_lrmat.get_U() = new_U;
             Y_lrmat.get_V() = new_V;
-            recompression(Y_lrmat);
+            SVD_recompression(Y_lrmat);
         }
     } else if (left_cluster_contains_right_cluster(X_target_cluster, Y_target_cluster) && left_cluster_contains_right_cluster(X_source_cluster, Y_source_cluster)) { // restrict X and add to Y
         int row_offset = Y_target_cluster.get_offset() - X_target_cluster.get_offset();
@@ -100,7 +100,7 @@ void add_lrmat_lrmat(const LowRankMatrix<CoefficientPrecision> &X_lrmat, const C
             // Set C
             Y_lrmat.get_U() = new_U;
             Y_lrmat.get_V() = new_V;
-            recompression(Y_lrmat);
+            SVD_recompression(Y_lrmat);
         }
     } else {
         Logger::get_instance().log(LogLevel::ERROR, "Operation not implemented in add_lrmat_lrmat.");
