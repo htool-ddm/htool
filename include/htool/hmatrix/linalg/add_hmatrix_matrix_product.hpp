@@ -9,7 +9,7 @@
 #include "../../wrappers/wrapper_blas.hpp"          // for Blas
 #include "../hmatrix.hpp"                           // for HMatrix
 #include "../lrmat/lrmat.hpp"                       // for LowRankMatrix
-#include "../lrmat/utils/recompression.hpp"         // for recompression
+#include "../lrmat/utils/SVD_recompression.hpp"     // for recompression
 #include "add_hmatrix_matrix_product_row_major.hpp" // for sequential_ad...
 #include <algorithm>                                // for copy_n, min
 #include <vector>                                   // for vector
@@ -114,7 +114,7 @@ void internal_add_hmatrix_matrix_product(char transa, char transb, CoefficientPr
     // Set C
     C.get_U() = new_U;
     C.get_V() = new_V;
-    recompression(C);
+    SVD_recompression(C);
 }
 
 } // namespace htool

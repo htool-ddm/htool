@@ -1,14 +1,14 @@
 #ifndef HTOOL_LRMAT_HPP
 #define HTOOL_LRMAT_HPP
 
-#include "../../clustering/cluster_node.hpp"              // for Cluster
-#include "../../hmatrix/interfaces/virtual_generator.hpp" // for VirtualGenerator
-#include "../../matrix/matrix.hpp"                        // for Matrix
-#include "../../misc/misc.hpp"                            // for underlying_type
-#include "../../wrappers/wrapper_blas.hpp"                // for Blas
-#include "../interfaces/virtual_lrmat_generator.hpp"      // for VirtualLowRankG...
-#include <algorithm>                                      // for fill
-#include <vector>                                         // for vector
+#include "../../clustering/cluster_node.hpp"                 // for Cluster
+#include "../../hmatrix/interfaces/virtual_generator.hpp"    // for VirtualGenerator
+#include "../../matrix/linalg/add_matrix_matrix_product.hpp" // for add_matrix_matrix_product
+#include "../../matrix/matrix.hpp"                           // for Matrix
+#include "../../misc/misc.hpp"                               // for underlying_type
+#include "../../wrappers/wrapper_blas.hpp"                   // for Blas
+#include <algorithm>                                         // for fill
+#include <vector>                                            // for vector
 
 namespace htool {
 
@@ -21,17 +21,20 @@ class LowRankMatrix {
 
   public:
     // Constructors
-    LowRankMatrix(const VirtualInternalLowRankGenerator<CoefficientPrecision> &LRGenerator, int M, int N, int row_offset, int col_offset, int rank = -1, underlying_type<CoefficientPrecision> epsilon = 1e-3) : m_U(), m_V(), m_epsilon(epsilon) {
-
-        if (rank == 0) {
+    explicit LowRankMatrix(int M, int N, int rank, underlying_type<CoefficientPrecision> epsilon = 1e-3) : m_U(), m_V(), m_epsilon(epsilon) {
+        if (rank > 0) {
+            m_U.resize(M, rank);
+            m_V.resize(rank, N);
+        } else {
             m_U.resize(M, 0);
             m_V.resize(0, N);
-        } else {
-            LRGenerator.copy_low_rank_approximation(M, N, row_offset, col_offset, epsilon, rank, m_U, m_V);
         }
     }
 
-    LowRankMatrix(underlying_type<CoefficientPrecision> epsilon) : m_U(), m_V(), m_epsilon(epsilon) {}
+    explicit LowRankMatrix(int M, int N, underlying_type<CoefficientPrecision> epsilon) : m_U(), m_V(), m_epsilon(epsilon) {
+        m_U.resize(M, 0);
+        m_V.resize(0, N);
+    }
 
     LowRankMatrix &operator=(const LowRankMatrix &rhs) = default;
     LowRankMatrix(const LowRankMatrix &rhs)            = default;
@@ -48,6 +51,7 @@ class LowRankMatrix {
     CoefficientPrecision get_U(int i, int j) const { return m_U(i, j); }
     CoefficientPrecision get_V(int i, int j) const { return m_V(i, j); }
     underlying_type<CoefficientPrecision> get_epsilon() const { return m_epsilon; }
+    underlying_type<CoefficientPrecision> &get_epsilon() { return m_epsilon; }
 
     std::vector<CoefficientPrecision> operator*(const std::vector<CoefficientPrecision> &a) const {
         return m_U * (m_V * a);
@@ -95,17 +99,6 @@ class LowRankMatrix {
         }
     }
 
-    void
-    mvprod(const CoefficientPrecision *const in, CoefficientPrecision *const out) const {
-        if (m_U.nb_cols() == 0) {
-            std::fill(out, out + m_U.nb_cols(), 0);
-        } else {
-            std::vector<CoefficientPrecision> a(m_U.nb_cols());
-            m_V.mvprod(in, a.data());
-            m_U.mvprod(a.data(), out);
-        }
-    }
-
     void add_mvprod_row_major(const CoefficientPrecision *const in, CoefficientPrecision *const out, const int &mu, char transb = 'T', char op = 'N') const {
         if (m_U.nb_cols() != 0) {
             std::vector<CoefficientPrecision> a(m_U.nb_cols() * mu);
@@ -120,18 +113,9 @@ class LowRankMatrix {
     }
 
     void copy_to_dense(CoefficientPrecision *const out) const {
-        char transa                = 'N';
-        char transb                = 'N';
-        int M                      = m_U.nb_rows();
-        int N                      = m_V.nb_cols();
-        int K                      = m_U.nb_cols();
-        CoefficientPrecision alpha = 1;
-        int lda                    = m_U.nb_rows();
-        int ldb                    = m_V.nb_rows();
-        CoefficientPrecision beta  = 0;
-        int ldc                    = m_U.nb_rows();
-
-        Blas<CoefficientPrecision>::gemm(&transa, &transb, &M, &N, &K, &alpha, m_U.data(), &lda, m_V.data(), &ldb, &beta, out, &ldc);
+        Matrix<CoefficientPrecision> C;
+        C.assign(m_U.nb_rows(), m_V.nb_cols(), out, false);
+        add_matrix_matrix_product('N', 'N', CoefficientPrecision(1), m_U, m_V, CoefficientPrecision(0), C);
     }
 
     double compression_ratio() const {

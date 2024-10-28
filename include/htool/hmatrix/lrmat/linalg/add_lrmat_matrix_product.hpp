@@ -5,7 +5,7 @@
 #include "../../../matrix/linalg/scale.hpp"                     // for scale
 #include "../../../matrix/linalg/transpose.hpp"                 // for tran...
 #include "../lrmat.hpp"                                         // for LowR...
-#include "../utils/recompression.hpp"                           // for reco...
+#include "../utils/SVD_recompression.hpp"                       // for SVD_reco...
 #include "htool/matrix/matrix.hpp"                              // for Matrix
 #include "htool/misc/misc.hpp"                                  // for conj...
 #include <algorithm>                                            // for copy_n
@@ -55,7 +55,7 @@ void add_lrmat_matrix_product(char transa, char transb, CoefficientPrecision alp
                 add_matrix_matrix_product<CoefficientPrecision>(transa, transb, alpha, U_A, B, 0, V_C);
             }
             if (C.rank_of() * (C.nb_rows() + C.nb_cols()) > (C.nb_rows() * C.nb_cols())) {
-                recompression(C);
+                SVD_recompression(C);
             }
         } else {
             Matrix<CoefficientPrecision> VB;
@@ -101,7 +101,7 @@ void add_lrmat_matrix_product(char transa, char transb, CoefficientPrecision alp
             }
             C.get_U() = new_U;
             C.get_V() = new_V;
-            recompression(C);
+            SVD_recompression(C);
         }
     }
 }

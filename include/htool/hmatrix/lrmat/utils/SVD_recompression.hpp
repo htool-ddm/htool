@@ -1,5 +1,5 @@
-#ifndef HTOOL_LRMAT_UTILS_RECOMPRESSION_HPP
-#define HTOOL_LRMAT_UTILS_RECOMPRESSION_HPP
+#ifndef HTOOL_LRMAT_UTILS_SVD_RECOMPRESSION_HPP
+#define HTOOL_LRMAT_UTILS_SVD_RECOMPRESSION_HPP
 
 #include "../../../matrix/linalg/add_matrix_matrix_product.hpp" // for add_...
 #include "../../../matrix/matrix.hpp"                           // for Matrix
@@ -16,7 +16,7 @@
 namespace htool {
 
 template <typename CoefficientPrecision>
-void recompression(LowRankMatrix<CoefficientPrecision> &lrmat) {
+void SVD_recompression(LowRankMatrix<CoefficientPrecision> &lrmat) {
     Matrix<CoefficientPrecision> U = lrmat.get_U();
     Matrix<CoefficientPrecision> V = lrmat.get_V();
     auto rank                      = lrmat.rank_of();
@@ -176,13 +176,6 @@ void recompression(LowRankMatrix<CoefficientPrecision> &lrmat) {
             Lapack<CoefficientPrecision>::mlq(&size, &trans, &M, &N, &K, V.data(), &lda, tau_LQ.data(), new_V.data(), &ldc, work.data(), &lwork, &info);
         }
     }
-}
-
-template <typename CoefficientPrecision>
-std::unique_ptr<LowRankMatrix<CoefficientPrecision>> recompression(const LowRankMatrix<CoefficientPrecision> &lrmat) {
-    std::unique_ptr<LowRankMatrix<CoefficientPrecision>> new_lrmat_ptr = std::make_unique<LowRankMatrix<CoefficientPrecision>>(lrmat);
-    recompression(*new_lrmat_ptr);
-    return new_lrmat_ptr;
 }
 
 } // namespace htool

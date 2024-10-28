@@ -16,15 +16,23 @@ bool test_lrmat_lrmat_addition(int n1, int n2, htool::underlying_type<T> epsilon
 
     // lrmat
     Compressor compressor(*test_case.operator_A);
-    LowRankMatrix<T> A_approximation(compressor, test_case.root_cluster_A_output->get_size(), test_case.root_cluster_A_input->get_size(), test_case.root_cluster_A_output->get_offset(), test_case.root_cluster_A_input->get_offset(), -1, epsilon);
-    LowRankMatrix<T> zero_A_approximation(compressor, test_case.root_cluster_A_output->get_size(), test_case.root_cluster_A_input->get_size(), test_case.root_cluster_A_output->get_offset(), test_case.root_cluster_A_input->get_offset(), 0, epsilon);
-    LowRankMatrix<T> sub_zero_A_approximation(compressor, test_case.root_cluster_B_output->get_size(), test_case.root_cluster_B_input->get_size(), test_case.root_cluster_B_output->get_offset(), test_case.root_cluster_B_input->get_offset(), 0, epsilon);
+    LowRankMatrix<T> A_approximation(test_case.root_cluster_A_output->get_size(), test_case.root_cluster_A_input->get_size(), epsilon);
+    compressor.copy_low_rank_approximation(test_case.root_cluster_A_output->get_size(), test_case.root_cluster_A_input->get_size(), test_case.root_cluster_A_output->get_offset(), test_case.root_cluster_A_input->get_offset(), A_approximation);
 
-    std::unique_ptr<LowRankMatrix<T>> sub_A_approximation_ptr = std::make_unique<LowRankMatrix<T>>(compressor, test_case.root_cluster_B_output->get_size(), test_case.root_cluster_B_input->get_size(), test_case.root_cluster_B_output->get_offset(), test_case.root_cluster_B_input->get_offset(), -1, epsilon);
-    if (sub_A_approximation_ptr->rank_of() == 0) {
-        sub_A_approximation_ptr = std::make_unique<LowRankMatrix<T>>(compressor, test_case.root_cluster_B_output->get_size(), test_case.root_cluster_B_input->get_size(), test_case.root_cluster_B_output->get_offset(), test_case.root_cluster_B_input->get_offset(), (test_case.root_cluster_B_output->get_size() * test_case.root_cluster_B_input->get_size()) / (test_case.root_cluster_B_output->get_size() + test_case.root_cluster_B_input->get_size()), epsilon);
+    int zero_A_rank = 0;
+    LowRankMatrix<T> zero_A_approximation(test_case.root_cluster_A_output->get_size(), test_case.root_cluster_A_input->get_size(), zero_A_rank, epsilon);
+    compressor.copy_low_rank_approximation(test_case.root_cluster_A_output->get_size(), test_case.root_cluster_A_input->get_size(), test_case.root_cluster_A_output->get_offset(), test_case.root_cluster_A_input->get_offset(), zero_A_rank, zero_A_approximation);
+
+    int sub_zero_A_rank = 0;
+    LowRankMatrix<T> sub_zero_A_approximation(test_case.root_cluster_B_output->get_size(), test_case.root_cluster_B_input->get_size(), sub_zero_A_rank, epsilon);
+    compressor.copy_low_rank_approximation(test_case.root_cluster_B_output->get_size(), test_case.root_cluster_B_input->get_size(), test_case.root_cluster_B_output->get_offset(), test_case.root_cluster_B_input->get_offset(), sub_zero_A_rank, sub_zero_A_approximation);
+
+    LowRankMatrix<T> sub_A_approximation(test_case.root_cluster_B_output->get_size(), test_case.root_cluster_B_input->get_size(), epsilon);
+    compressor.copy_low_rank_approximation(test_case.root_cluster_B_output->get_size(), test_case.root_cluster_B_input->get_size(), test_case.root_cluster_B_output->get_offset(), test_case.root_cluster_B_input->get_offset(), sub_A_approximation);
+    if (sub_A_approximation.rank_of() == 0) {
+        int sub_A_reqrank = (test_case.root_cluster_B_output->get_size() * test_case.root_cluster_B_input->get_size()) / (test_case.root_cluster_B_output->get_size() + test_case.root_cluster_B_input->get_size());
+        compressor.copy_low_rank_approximation(test_case.root_cluster_B_output->get_size(), test_case.root_cluster_B_input->get_size(), test_case.root_cluster_B_output->get_offset(), test_case.root_cluster_B_input->get_offset(), sub_A_reqrank, sub_A_approximation);
     }
-    LowRankMatrix<T> &sub_A_approximation = *sub_A_approximation_ptr;
 
     // Reference
     Matrix<T> A_dense(A_approximation.nb_rows(), A_approximation.nb_cols(), 0);
@@ -44,8 +52,7 @@ bool test_lrmat_lrmat_addition(int n1, int n2, htool::underlying_type<T> epsilon
 
     // Addition
     htool::underlying_type<T> error;
-    LowRankMatrix<T> lrmat_test(epsilon);
-    lrmat_test = A_approximation;
+    LowRankMatrix<T> lrmat_test = A_approximation;
     add_lrmat_lrmat(sub_A_approximation, *test_case.root_cluster_B_output, *test_case.root_cluster_B_input, lrmat_test, *test_case.root_cluster_A_output, *test_case.root_cluster_A_input);
     lrmat_test.copy_to_dense(matrix_test.data());
     error    = normFrob(matrix_result_w_sum - matrix_test) / normFrob(matrix_result_w_sum);

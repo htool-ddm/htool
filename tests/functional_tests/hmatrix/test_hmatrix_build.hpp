@@ -8,6 +8,7 @@
 #include <htool/hmatrix/hmatrix_output.hpp>                  // for print_h...
 #include <htool/hmatrix/interfaces/virtual_generator.hpp>    // for Generat...
 #include <htool/hmatrix/tree_builder/tree_builder.hpp>       // for HMatrix...
+#include <htool/hmatrix/utils/recompression.hpp>             // for recomp...
 #include <htool/matrix/matrix.hpp>                           // for Matrix
 #include <htool/misc/misc.hpp>                               // for underly...
 #include <htool/misc/user.hpp>                               // for NbrToStr
@@ -96,6 +97,8 @@ bool test_hmatrix_build(int nr, int nc, bool use_local_cluster, char Symmetry, c
         root_hmatrix_ptr = std::make_unique<HMatrix<T, htool::underlying_type<T>>>(hmatrix_tree_builder.build(generator, *target_root_cluster, *source_root_cluster, rankWorld, rankWorld));
     }
     auto &root_hmatrix = *root_hmatrix_ptr;
+    recompression(root_hmatrix);
+    openmp_recompression(root_hmatrix);
 
     save_leaves_with_rank(root_hmatrix, "leaves_" + htool::NbrToStr(rankWorld));
     save_levels(root_hmatrix, "level_" + htool::NbrToStr(rankWorld) + "_", {0, 1, 2});
