@@ -1,16 +1,16 @@
 #ifndef HTOOL_HMATRIX_LINALG_ADD_LOW_RANK_MATRIX_HMATRIX_PRODUCT_HPP
 #define HTOOL_HMATRIX_LINALG_ADD_LOW_RANK_MATRIX_HMATRIX_PRODUCT_HPP
 
-#include "../../matrix/linalg/scale.hpp"     // for scale
-#include "../../matrix/linalg/transpose.hpp" // for transpose
-#include "../../matrix/matrix.hpp"           // for Matrix
-#include "../../misc/misc.hpp"               // for conj_if_complex
-#include "../hmatrix.hpp"                    // for HMatrix
-#include "../lrmat/lrmat.hpp"                // for LowRankMatrix
-#include "../lrmat/utils/recompression.hpp"  // for recompression
-#include "add_lrmat_hmatrix.hpp"             // for add_lrmat_hma...
-#include "add_matrix_hmatrix_product.hpp"    // for add_matrix_hm...
-#include <algorithm>                         // for copy_n
+#include "../../matrix/linalg/scale.hpp"        // for scale
+#include "../../matrix/linalg/transpose.hpp"    // for transpose
+#include "../../matrix/matrix.hpp"              // for Matrix
+#include "../../misc/misc.hpp"                  // for conj_if_complex
+#include "../hmatrix.hpp"                       // for HMatrix
+#include "../lrmat/lrmat.hpp"                   // for LowRankMatrix
+#include "../lrmat/utils/SVD_recompression.hpp" // for recompression
+#include "add_lrmat_hmatrix.hpp"                // for add_lrmat_hma...
+#include "add_matrix_hmatrix_product.hpp"       // for add_matrix_hm...
+#include <algorithm>                            // for copy_n
 
 namespace htool {
 
@@ -98,7 +98,7 @@ void internal_add_lrmat_hmatrix_product(char transa, char transb, CoefficientPre
             }
             C.get_U() = new_U;
             C.get_V() = new_V;
-            recompression(C);
+            SVD_recompression(C);
         }
     }
 }
@@ -109,7 +109,7 @@ void internal_add_lrmat_hmatrix_product(char transa, char transb, CoefficientPre
         scale(beta, C);
     }
 
-    LowRankMatrix<CoefficientPrecision> lrmat(A.get_epsilon());
+    LowRankMatrix<CoefficientPrecision> lrmat(A.nb_rows(), B.nb_cols(), A.get_epsilon());
     internal_add_lrmat_hmatrix_product(transa, transb, alpha, A, B, CoefficientPrecision(1), lrmat);
     internal_add_lrmat_hmatrix(lrmat, C);
 }

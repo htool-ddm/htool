@@ -83,9 +83,14 @@ bool test_lrmat_hmatrix_product(const TestCaseProduct<T, GeneratorTestType> &tes
     // lrmat
     htool::underlying_type<T> lrmat_tolerance = 1e-6;
     // std::unique_ptr<LowRankMatrix<T>> A_auto_approximation, C_auto_approximation;
-    LowRankMatrix<T> lrmat_test(epsilon);
-    LowRankMatrix<T> A_auto_approximation(SVD<T>(*test_case.operator_A), root_cluster_A_output->get_size(), root_cluster_A_input->get_size(), root_cluster_A_output->get_offset(), root_cluster_A_input->get_offset(), -1, lrmat_tolerance);
-    LowRankMatrix<T> C_auto_approximation(SVD<T>(*test_case.operator_C), root_cluster_C_output->get_size(), root_cluster_C_input->get_size(), root_cluster_C_output->get_offset(), root_cluster_C_input->get_offset(), -1, lrmat_tolerance);
+    LowRankMatrix<T> lrmat_test(root_cluster_C_output->get_size(), root_cluster_C_input->get_size(), epsilon);
+    SVD<T> compressor_A(*test_case.operator_A);
+    LowRankMatrix<T> A_auto_approximation(root_cluster_A_output->get_size(), root_cluster_A_input->get_size(), lrmat_tolerance);
+    compressor_A.copy_low_rank_approximation(root_cluster_A_output->get_size(), root_cluster_A_input->get_size(), root_cluster_A_output->get_offset(), root_cluster_A_input->get_offset(), A_auto_approximation);
+
+    SVD<T> compressor_C(*test_case.operator_C);
+    LowRankMatrix<T> C_auto_approximation(root_cluster_C_output->get_size(), root_cluster_C_input->get_size(), lrmat_tolerance);
+    compressor_C.copy_low_rank_approximation(root_cluster_C_output->get_size(), root_cluster_C_input->get_size(), root_cluster_C_output->get_offset(), root_cluster_C_input->get_offset(), C_auto_approximation);
 
     // Random Input matrix
     T alpha(1), beta(1), scaling_coefficient;

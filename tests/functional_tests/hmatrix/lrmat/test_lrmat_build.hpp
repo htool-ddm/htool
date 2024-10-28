@@ -1,9 +1,9 @@
-#include <htool/basic_types/vector.hpp>                // for operator<<
-#include <htool/hmatrix/lrmat/lrmat.hpp>               // for Frobenius_abs...
-#include <htool/hmatrix/lrmat/utils/recompression.hpp> // for recompression
-#include <iostream>                                    // for basic_ostream
-#include <utility>                                     // for pair
-#include <vector>                                      // for vector
+#include <htool/basic_types/vector.hpp>                    // for operator<<
+#include <htool/hmatrix/lrmat/lrmat.hpp>                   // for Frobenius_abs...
+#include <htool/hmatrix/lrmat/utils/SVD_recompression.hpp> // for recompression
+#include <iostream>                                        // for basic_ostream
+#include <utility>                                         // for pair
+#include <vector>                                          // for vector
 namespace htool {
 template <typename CoefficientPrecision>
 class VirtualGenerator;
@@ -42,7 +42,7 @@ bool test_lrmat(const Cluster<double> &target_cluster, const Cluster<double> &so
     cout << "> Compression rate : " << Fixed_approximation.space_saving() << endl;
 
     // Recompression with fixed rank
-    auto recompressed_fixed_approximation = recompression(Fixed_approximation);
+    auto recompressed_fixed_approximation = SVD_recompression(Fixed_approximation);
     if (recompressed_fixed_approximation) {
         std::vector<double> fixed_errors_after_recompression;
         for (int k = 0; k < recompressed_fixed_approximation->rank_of() + 1; k++) {
@@ -78,7 +78,7 @@ bool test_lrmat(const Cluster<double> &target_cluster, const Cluster<double> &so
     cout << "> Compression rate : " << Auto_approximation.space_saving() << endl;
 
     // Recompression with automatic rank
-    auto recompressed_auto_approximation = recompression(Auto_approximation);
+    auto recompressed_auto_approximation = SVD_recompression(Auto_approximation);
     if (recompressed_auto_approximation) {
         std::vector<double> fixed_errors_after_recompression;
         for (int k = 0; k < recompressed_auto_approximation->rank_of() + 1; k++) {

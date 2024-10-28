@@ -54,7 +54,8 @@ int main(int, char *[]) {
         SVD<double> compressor_SVD(A);
         test = test || !(compressor_SVD.is_htool_owning_data());
 
-        LowRankMatrix<double> A_SVD_fixed(compressor_SVD, t.get_size(), s.get_size(), t.get_offset(), s.get_offset(), reqrank_max, epsilon);
+        LowRankMatrix<double> A_SVD_fixed(t.get_size(), s.get_size(), reqrank_max, epsilon);
+        compressor_SVD.copy_low_rank_approximation(t.get_size(), s.get_size(), t.get_offset(), s.get_offset(), reqrank_max, A_SVD_fixed);
         std::vector<double> SVD_fixed_errors;
         std::vector<double> SVD_errors_check(reqrank_max, 0);
 
@@ -93,7 +94,8 @@ int main(int, char *[]) {
         cout << "> Errors computed with the remaining eigenvalues : " << SVD_errors_check << endl;
 
         // ACA automatic building
-        LowRankMatrix<double> A_SVD(compressor_SVD, t.get_size(), s.get_size(), t.get_offset(), s.get_offset(), -1, epsilon);
+        LowRankMatrix<double> A_SVD(t.get_size(), s.get_size(), epsilon);
+        compressor_SVD.copy_low_rank_approximation(t.get_size(), s.get_size(), t.get_offset(), s.get_offset(), A_SVD);
 
         std::pair<double, double> fixed_compression_interval(0.87, 0.89);
         std::pair<double, double> auto_compression_interval(0.95, 0.97);
