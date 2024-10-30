@@ -73,6 +73,7 @@ Cluster<T> ClusterTreeBuilder<T>::create_cluster_tree(int number_of_points, int 
 
     Cluster<T> root_cluster(radius, center, -1, 0, number_of_points);
     std::vector<int> &permutation = root_cluster.get_permutation();
+    root_cluster.set_minclustersize(m_minclustersize);
 
     // Taking care of partition initialisation
     std::stack<Cluster<T> *> cluster_stack(std::deque<Cluster<T> *>{&root_cluster});
