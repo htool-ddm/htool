@@ -205,8 +205,8 @@ class HMatrixTreeBuilder {
     // Getters
     char get_symmetry() const { return m_symmetry_type; }
     char get_UPLO() const { return m_UPLO_type; }
-    char get_epsilon() const { return m_epsilon; }
-    char get_eta() const { return m_eta; }
+    double get_epsilon() const { return m_epsilon; }
+    double get_eta() const { return m_eta; }
     std::shared_ptr<VirtualInternalLowRankGenerator<CoefficientPrecision>> get_internal_low_rank_generator() const { return m_internal_low_rank_generator; }
     std::shared_ptr<VirtualLowRankGenerator<CoefficientPrecision>> get_low_rank_generator() const { return m_low_rank_generator; }
 };
