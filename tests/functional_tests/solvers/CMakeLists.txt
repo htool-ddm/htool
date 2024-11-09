@@ -9,12 +9,10 @@ FetchContent_Declare(
     GIT_TAG origin/main
     GIT_SHALLOW TRUE
     GIT_SUBMODULES_RECURSE FALSE
-    GIT_SUBMODULES "")
+    GIT_SUBMODULES "" SOURCE_SUBDIR AVOID_calling_ADD_SUBDIR_in_subseqeuent_MAKEAVILABLE)
+# weird hack, see https://gitlab.kitware.com/cmake/cmake/-/issues/26220 and
 
-FetchContent_GetProperties(data_test_repository)
-if(NOT data_test_repository_POPULATED)
-    FetchContent_Populate(data_test_repository)
-endif()
+FetchContent_MakeAvailable(data_test_repository)
 
 set(Test_solver_ARGS ${data_test_repository_SOURCE_DIR}/data/)
 

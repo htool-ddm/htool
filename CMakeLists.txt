@@ -16,16 +16,6 @@ else()
         LANGUAGES CXX)
 endif()
 
-# To force c++14
-if(${CMAKE_VERSION} VERSION_LESS 3.1)
-    add_compile_options(-std=c++14)
-elseif(${CMAKE_VERSION} VERSION_LESS 3.6.3 AND ${CMAKE_CXX_COMPILER_ID} STREQUAL "Intel")
-    add_compile_options(-std=c++14)
-else()
-    set(CMAKE_CXX_STANDARD 14)
-    set(CMAKE_CXX_STANDARD_REQUIRED ON)
-endif()
-
 if(CMAKE_PROJECT_NAME STREQUAL PROJECT_NAME)
     # To set default CMAKE_BUILD_TYPE
     set(default_build_type "Release")
@@ -94,23 +84,21 @@ option(HTOOL_WITH_STRICT_TESTS "Add -Werror to the tests" OFF)
 #=============================================================================#
 # MPI
 find_package(MPI REQUIRED)
+message(STATUS "MPI libraries:" "${MPI_LIBRARIES}")
+message(STATUS "MPI include files:" "${MPI_INCLUDE_PATH}")
+message(STATUS "Tests run: ${MPIEXEC} ${MPIEXEC_NUMPROC_FLAG} ${MPIEXEC_MAX_NUMPROCS} ${MPIEXEC_PREFLAGS} EXECUTABLE ${MPIEXEC_POSTFLAGS} ARGS")
 separate_arguments(MPIEXEC_PREFLAGS) # to support multi flags
-message(STATUS "Run: ${MPIEXEC} ${MPIEXEC_NUMPROC_FLAG} ${MPIEXEC_MAX_NUMPROCS} ${MPIEXEC_PREFLAGS} EXECUTABLE ${MPIEXEC_POSTFLAGS} ARGS")
 
 # OPENMP
 find_package(OpenMP)
 
 # BLAS
 find_package(BLAS REQUIRED)
-message("-- Found Blas implementation:" "${BLAS_LIBRARIES}")
+message(STATUS "Blas implementation:" "${BLAS_LIBRARIES}")
 
 # LAPACK
 find_package(LAPACK)
-message("-- Found Lapack:" "${LAPACK_LIBRARIES}")
-
-# # ARPACK
-# find_package(ARPACK)
-# message("-- Found Arpack:" "${ARPACK_LIBRARIES}")
+message(STATUS "Lapack implementation:" "${LAPACK_LIBRARIES}")
 
 # HPDDM
 find_package(HPDDM)
@@ -120,12 +108,12 @@ find_package(HPDDM)
 #=============================================================================#
 #=== HTOOL as header only library
 add_library(htool INTERFACE)
-target_include_directories(htool INTERFACE $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include> $<INSTALL_INTERFACE:include> ${MPI_INCLUDE_PATH} ${HPDDM_INCLUDE_DIRS} ${MKL_INC_DIR})
-target_link_libraries(htool INTERFACE MPI::MPI_CXX ${BLAS_LIBRARIES} ${LAPACK_LIBRARIES} ${ARPACK_LIBRARIES})
+target_include_directories(htool INTERFACE $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include> $<INSTALL_INTERFACE:include> ${HPDDM_INCLUDE_DIRS} ${MKL_INC_DIR})
+target_link_libraries(htool INTERFACE MPI::MPI_CXX BLAS::BLAS LAPACK::LAPACK)
 if(OpenMP_CXX_FOUND)
     target_link_libraries(htool INTERFACE OpenMP::OpenMP_CXX)
 endif()
-target_compile_features(htool INTERFACE cxx_std_11)
+target_compile_features(htool INTERFACE cxx_std_17)
 
 if("${BLA_VENDOR}" STREQUAL "Intel10_32"
    OR "${BLA_VENDOR}" STREQUAL "Intel10_64lp"
@@ -198,7 +186,7 @@ if((CMAKE_PROJECT_NAME STREQUAL PROJECT_NAME) AND BUILD_TESTING)
                   -Wshadow
                   -Wnon-virtual-dtor
                   -pedantic
-                  #   -Wold-style-cast
+                  -Wold-style-cast
                   -Wcast-align
                   -Wunused
                   -Woverloaded-virtual

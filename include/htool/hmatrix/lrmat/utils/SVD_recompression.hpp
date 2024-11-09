@@ -70,7 +70,7 @@ void SVD_recompression(LowRankMatrix<CoefficientPrecision> &lrmat) {
             std::vector<CoefficientPrecision> work(1);
             tau_QR.resize(std::min(M, N));
             Lapack<CoefficientPrecision>::geqrf(&M, &N, U.data(), &lda, tau_QR.data(), work.data(), &lwork, &info);
-            lwork = (int)std::real(work[0]);
+            lwork = static_cast<int>(std::real(work[0]));
             work.resize(lwork);
             Lapack<CoefficientPrecision>::geqrf(&M, &N, U.data(), &lda, tau_QR.data(), work.data(), &lwork, &info);
         }
@@ -86,7 +86,7 @@ void SVD_recompression(LowRankMatrix<CoefficientPrecision> &lrmat) {
             std::vector<CoefficientPrecision> work(1);
             tau_LQ.resize(std::min(M, N));
             Lapack<CoefficientPrecision>::gelqf(&M, &N, V.data(), &lda, tau_LQ.data(), work.data(), &lwork, &info);
-            lwork = (int)std::real(work[0]);
+            lwork = static_cast<int>(std::real(work[0]));
             work.resize(lwork);
             Lapack<CoefficientPrecision>::gelqf(&M, &N, V.data(), &lda, tau_LQ.data(), work.data(), &lwork, &info);
         }
@@ -115,65 +115,67 @@ void SVD_recompression(LowRankMatrix<CoefficientPrecision> &lrmat) {
         Matrix<CoefficientPrecision> vt(rank, rank);
         int truncated_rank = SVD_truncation(RL, epsilon, u, vt, singular_values);
 
-        // new_U=u*sqrt(tildeS) and new_V=sqrt(tildeS)*vt in the right dimensions
-        Matrix<CoefficientPrecision> &new_U = lrmat.get_U();
-        Matrix<CoefficientPrecision> &new_V = lrmat.get_V();
-        {
-            int M    = U.nb_rows();
-            int N    = V.nb_cols();
-            int incx = 1;
-            new_U.resize(M, truncated_rank);
-            new_V.resize(truncated_rank, N);
-            CoefficientPrecision scaling_coef;
-            for (int r = 0; r < truncated_rank; r++) {
-                scaling_coef = std::sqrt(singular_values[r]);
-                std::copy_n(u.data() + r * rank, rank, new_U.data() + r * M);
-                Blas<CoefficientPrecision>::scal(&M, &scaling_coef, new_U.data() + r * M, &incx);
-            }
-            for (int r = 0; r < rank; r++) {
-                std::copy_n(vt.data() + r * rank, truncated_rank, new_V.data() + r * truncated_rank);
-            }
+        if (truncated_rank < rank) {
+            // new_U=u*sqrt(tildeS) and new_V=sqrt(tildeS)*vt in the right dimensions
+            Matrix<CoefficientPrecision> &new_U = lrmat.get_U();
+            Matrix<CoefficientPrecision> &new_V = lrmat.get_V();
+            {
+                int M    = U.nb_rows();
+                int N    = V.nb_cols();
+                int incx = 1;
+                new_U.resize(M, truncated_rank);
+                new_V.resize(truncated_rank, N);
+                CoefficientPrecision scaling_coef;
+                for (int r = 0; r < truncated_rank; r++) {
+                    scaling_coef = std::sqrt(singular_values[r]);
+                    std::copy_n(u.data() + r * rank, rank, new_U.data() + r * M);
+                    Blas<CoefficientPrecision>::scal(&M, &scaling_coef, new_U.data() + r * M, &incx);
+                }
+                for (int r = 0; r < rank; r++) {
+                    std::copy_n(vt.data() + r * rank, truncated_rank, new_V.data() + r * truncated_rank);
+                }
 
-            for (int r = 0; r < truncated_rank; r++) {
-                for (int j = 0; j < rank; j++) {
-                    new_V(r, j) = std::sqrt(singular_values[r]) * new_V(r, j);
+                for (int r = 0; r < truncated_rank; r++) {
+                    for (int j = 0; j < rank; j++) {
+                        new_V(r, j) = std::sqrt(singular_values[r]) * new_V(r, j);
+                    }
                 }
             }
-        }
 
-        // new_U=Q1*new_U
-        {
-            char size  = 'L';
-            char trans = 'N';
-            int M      = new_U.nb_rows();
-            int N      = new_U.nb_cols();
-            int K      = tau_QR.size();
-            int ldc    = M;
-            int lwork  = -1;
-            int info;
-            std::vector<CoefficientPrecision> work(1);
-            Lapack<CoefficientPrecision>::mqr(&size, &trans, &M, &N, &K, U.data(), &M, tau_QR.data(), new_U.data(), &ldc, work.data(), &lwork, &info);
-            lwork = (int)std::real(work[0]);
-            work.resize(lwork);
-            Lapack<CoefficientPrecision>::mqr(&size, &trans, &M, &N, &K, U.data(), &M, tau_QR.data(), new_U.data(), &ldc, work.data(), &lwork, &info);
-        }
+            // new_U=Q1*new_U
+            {
+                char size  = 'L';
+                char trans = 'N';
+                int M      = new_U.nb_rows();
+                int N      = new_U.nb_cols();
+                int K      = tau_QR.size();
+                int ldc    = M;
+                int lwork  = -1;
+                int info;
+                std::vector<CoefficientPrecision> work(1);
+                Lapack<CoefficientPrecision>::mqr(&size, &trans, &M, &N, &K, U.data(), &M, tau_QR.data(), new_U.data(), &ldc, work.data(), &lwork, &info);
+                lwork = static_cast<int>(std::real(work[0]));
+                work.resize(lwork);
+                Lapack<CoefficientPrecision>::mqr(&size, &trans, &M, &N, &K, U.data(), &M, tau_QR.data(), new_U.data(), &ldc, work.data(), &lwork, &info);
+            }
 
-        // new_V=new_V*Q2
-        {
-            char size  = 'R';
-            char trans = 'N';
-            int M      = new_V.nb_rows();
-            int N      = new_V.nb_cols();
-            int K      = tau_LQ.size();
-            int lda    = V.nb_rows();
-            int ldc    = M;
-            int lwork  = -1;
-            int info;
-            std::vector<CoefficientPrecision> work(1);
-            Lapack<CoefficientPrecision>::mlq(&size, &trans, &M, &N, &K, V.data(), &lda, tau_LQ.data(), new_V.data(), &ldc, work.data(), &lwork, &info);
-            lwork = (int)std::real(work[0]);
-            work.resize(lwork);
-            Lapack<CoefficientPrecision>::mlq(&size, &trans, &M, &N, &K, V.data(), &lda, tau_LQ.data(), new_V.data(), &ldc, work.data(), &lwork, &info);
+            // new_V=new_V*Q2
+            {
+                char size  = 'R';
+                char trans = 'N';
+                int M      = new_V.nb_rows();
+                int N      = new_V.nb_cols();
+                int K      = tau_LQ.size();
+                int lda    = V.nb_rows();
+                int ldc    = M;
+                int lwork  = -1;
+                int info;
+                std::vector<CoefficientPrecision> work(1);
+                Lapack<CoefficientPrecision>::mlq(&size, &trans, &M, &N, &K, V.data(), &lda, tau_LQ.data(), new_V.data(), &ldc, work.data(), &lwork, &info);
+                lwork = static_cast<int>(std::real(work[0]));
+                work.resize(lwork);
+                Lapack<CoefficientPrecision>::mlq(&size, &trans, &M, &N, &K, V.data(), &lda, tau_LQ.data(), new_V.data(), &ldc, work.data(), &lwork, &info);
+            }
         }
     }
 }
