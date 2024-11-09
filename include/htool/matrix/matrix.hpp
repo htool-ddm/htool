@@ -29,8 +29,10 @@ class Matrix {
   public:
     Matrix() : m_number_of_rows(0), m_number_of_cols(0), m_data(nullptr), m_is_owning_data(true), m_pivots(0) {}
     Matrix(int nbr, int nbc, T value = 0) : m_number_of_rows(nbr), m_number_of_cols(nbc), m_is_owning_data(true), m_pivots(0) {
-        m_data = new T[nbr * nbc];
-        std::fill_n(m_data, nbr * nbc, value);
+        // std::cout << std::numeric_limits<int>::max() << " " << nbr * nbc << " " << std::size_t(nbr) * std::size_t(nbc) << std::endl;
+        std::size_t size = std::size_t(nbr) * std::size_t(nbc);
+        m_data           = new T[size];
+        std::fill_n(m_data, std::size_t(nbr) * std::size_t(nbc), value);
     }
     Matrix(const Matrix &rhs) : m_number_of_rows(rhs.m_number_of_rows), m_number_of_cols(rhs.m_number_of_cols), m_is_owning_data(true), m_pivots(rhs.m_pivots) {
         m_data = new T[rhs.m_number_of_rows * rhs.m_number_of_cols]();
@@ -222,16 +224,20 @@ class Matrix {
     void resize(int nbr, int nbc, T value = 0) {
         if (m_data != nullptr and m_is_owning_data and m_number_of_rows * m_number_of_cols != nbr * nbc) {
             delete[] m_data;
-            m_data = nullptr;
-            m_data = new T[nbr * nbc];
+            m_data           = nullptr;
+            m_data           = new T[nbr * nbc];
+            m_is_owning_data = true;
         } else if (m_number_of_rows * m_number_of_cols != nbr * nbc) {
-            m_data = new T[nbr * nbc];
+            m_data           = new T[nbr * nbc];
+            m_is_owning_data = true;
+        } else if (!m_is_owning_data and m_number_of_rows * m_number_of_cols == nbr * nbc) {
+            m_data           = new T[nbr * nbc];
+            m_is_owning_data = true;
         }
 
         m_number_of_rows = nbr;
         m_number_of_cols = nbc;
         std::fill_n(m_data, nbr * nbc, value);
-        m_is_owning_data = true;
     }
 
     //! ### Matrix-scalar product
@@ -624,7 +630,7 @@ class Matrix {
     */
     friend std::pair<int, int> argmax(const Matrix<T> &M) {
         int p = std::max_element(M.data(), M.data() + M.nb_cols() * M.nb_rows(), [](T a, T b) { return std::abs(a) < std::abs(b); }) - M.data();
-        return std::pair<int, int>(p % M.m_number_of_rows, (int)p / M.m_number_of_rows);
+        return std::pair<int, int>(p % M.m_number_of_rows, p / M.m_number_of_rows);
     }
 
     //! ### Looking for the entry of maximal modulus
@@ -640,9 +646,9 @@ class Matrix {
         }
         int rows = m_number_of_rows;
         int cols = m_number_of_cols;
-        out.write((char *)(&rows), sizeof(int));
-        out.write((char *)(&cols), sizeof(int));
-        out.write((char *)m_data, rows * cols * sizeof(T));
+        out.write(reinterpret_cast<char *>(&rows), sizeof(int));
+        out.write(reinterpret_cast<char *>(&cols), sizeof(int));
+        out.write(reinterpret_cast<char *>(m_data), rows * cols * sizeof(T));
 
         out.close();
         return 0;
@@ -661,15 +667,15 @@ class Matrix {
         }
 
         int rows = 0, cols = 0;
-        in.read((char *)(&rows), sizeof(int));
-        in.read((char *)(&cols), sizeof(int));
+        in.read(reinterpret_cast<char *>(&rows), sizeof(int));
+        in.read(reinterpret_cast<char *>(&cols), sizeof(int));
         if (m_number_of_rows != 0 && m_number_of_cols != 0 && m_is_owning_data)
             delete[] m_data;
         m_data           = new T[rows * cols];
         m_number_of_rows = rows;
         m_number_of_cols = cols;
         m_is_owning_data = true;
-        in.read((char *)&(m_data[0]), rows * cols * sizeof(T));
+        in.read(reinterpret_cast<char *>(&(m_data[0])), rows * cols * sizeof(T));
 
         in.close();
         return 0;

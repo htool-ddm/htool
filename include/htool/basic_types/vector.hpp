@@ -133,8 +133,8 @@ int vector_to_bytes(const std::vector<T> vect, const std::string &file) {
         return 1;                                               // LCOV_EXCL_LINE
     }
     int size = vect.size();
-    out.write((char *)(&size), sizeof(int));
-    out.write((char *)&(vect[0]), size * sizeof(T));
+    out.write(reinterpret_cast<char *>(&size), sizeof(int));
+    out.write(reinterpret_cast<const char *>(vect.data()), size * sizeof(T));
 
     out.close();
     return 0;
@@ -151,9 +151,9 @@ int bytes_to_vector(std::vector<T> &vect, const std::string &file) {
     }
 
     int size = 0;
-    in.read((char *)(&size), sizeof(int));
+    in.read(reinterpret_cast<char *>(&size), sizeof(int));
     vect.resize(size);
-    in.read((char *)&(vect[0]), size * sizeof(T));
+    in.read(reinterpret_cast<char *>(vect.data()), size * sizeof(T));
 
     in.close();
     return 0;
