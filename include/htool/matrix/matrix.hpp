@@ -222,16 +222,20 @@ class Matrix {
     void resize(int nbr, int nbc, T value = 0) {
         if (m_data != nullptr and m_is_owning_data and m_number_of_rows * m_number_of_cols != nbr * nbc) {
             delete[] m_data;
-            m_data = nullptr;
-            m_data = new T[nbr * nbc];
+            m_data           = nullptr;
+            m_data           = new T[nbr * nbc];
+            m_is_owning_data = true;
         } else if (m_number_of_rows * m_number_of_cols != nbr * nbc) {
-            m_data = new T[nbr * nbc];
+            m_data           = new T[nbr * nbc];
+            m_is_owning_data = true;
+        } else if (!m_is_owning_data and m_number_of_rows * m_number_of_cols == nbr * nbc) {
+            m_data           = new T[nbr * nbc];
+            m_is_owning_data = true;
         }
 
         m_number_of_rows = nbr;
         m_number_of_cols = nbc;
         std::fill_n(m_data, nbr * nbc, value);
-        m_is_owning_data = true;
     }
 
     //! ### Matrix-scalar product
