@@ -308,7 +308,6 @@ class DDMSolverBuilder {
 
                 return m_low_rank_generator->copy_low_rank_approximation(M, N, new_rows.data(), new_cols.data(), reqrank, lrmat);
             }
-            bool is_htool_owning_data() const override { return m_low_rank_generator->is_htool_owning_data(); }
         };
 
         // Local Generator

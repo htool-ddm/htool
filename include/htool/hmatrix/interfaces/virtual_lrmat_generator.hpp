@@ -18,7 +18,6 @@ class VirtualInternalLowRankGenerator {
 
     virtual bool copy_low_rank_approximation(int M, int N, int row_offset, int col_offset, int reqrank, LowRankMatrix<CoefficientPrecision> &lrmat) const = 0;
 
-    virtual bool is_htool_owning_data() const { return true; }
     virtual ~VirtualInternalLowRankGenerator() {}
 };
 
@@ -32,7 +31,6 @@ class VirtualLowRankGenerator {
 
     virtual bool copy_low_rank_approximation(int M, int N, const int *rows, const int *cols, int reqrank, LowRankMatrix<CoefficientPrecision> &lrmat) const = 0;
 
-    virtual bool is_htool_owning_data() const { return true; }
     virtual ~VirtualLowRankGenerator() {}
 };
 
@@ -56,7 +54,6 @@ class InternalLowRankGenerator : public VirtualInternalLowRankGenerator<Coeffici
         return m_low_rank_generator.copy_low_rank_approximation(M, N, m_target_permutation + row_offset, m_source_permutation + col_offset, reqrank, lrmat);
     }
 
-    virtual bool is_htool_owning_data() const override { return m_low_rank_generator.is_htool_owning_data(); }
 };
 
 } // namespace htool
