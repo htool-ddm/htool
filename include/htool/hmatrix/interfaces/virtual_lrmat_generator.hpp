@@ -53,7 +53,6 @@ class InternalLowRankGenerator : public VirtualInternalLowRankGenerator<Coeffici
     virtual bool copy_low_rank_approximation(int M, int N, int row_offset, int col_offset, int reqrank, LowRankMatrix<CoefficientPrecision> &lrmat) const override {
         return m_low_rank_generator.copy_low_rank_approximation(M, N, m_target_permutation + row_offset, m_source_permutation + col_offset, reqrank, lrmat);
     }
-
 };
 
 } // namespace htool
