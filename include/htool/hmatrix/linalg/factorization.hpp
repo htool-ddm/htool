@@ -19,6 +19,9 @@ void lu_factorization(HMatrix<CoefficientPrecision, CoordinatePrecision> &hmatri
     if (!hmatrix.is_block_tree_consistent()) {
         htool::Logger::get_instance().log(LogLevel::ERROR, "lu_factorization is only implemented for consistent block tree."); // LCOV_EXCL_LINE
     }
+    if (hmatrix.get_UPLO() != 'N') {
+        htool::Logger::get_instance().log(LogLevel::ERROR, "lu_factorization cannot be used on a HMatrix with UPLO=" + std::string(1, hmatrix.get_UPLO()) + "!=N. You should use another factorization."); // LCOV_EXCL_LINE
+    }
 
     if (hmatrix.is_hierarchical()) {
 
@@ -89,6 +92,10 @@ template <typename CoefficientPrecision, typename CoordinatePrecision = underlyi
 void cholesky_factorization(char UPLO, HMatrix<CoefficientPrecision, CoordinatePrecision> &hmatrix) {
     if (!hmatrix.is_block_tree_consistent()) {
         htool::Logger::get_instance().log(LogLevel::ERROR, "cholesky_factorization is only implemented for consistent block tree."); // LCOV_EXCL_LINE
+    }
+    if ((hmatrix.get_UPLO() != 'S' and !is_complex<CoefficientPrecision>())
+        and (hmatrix.get_UPLO() != 'H' and is_complex<CoefficientPrecision>())) {
+        htool::Logger::get_instance().log(LogLevel::ERROR, "cholesky_factorization cannot be used on a HMatrix with UPLO=" + std::string(1, hmatrix.get_UPLO()) + "!=N. You should use another factorization."); // LCOV_EXCL_LINE
     }
 
     if (hmatrix.is_hierarchical()) {

@@ -8,7 +8,7 @@
 
 namespace htool {
 
-template <typename CoefficientPrecision, typename CoordinatePrecision = CoefficientPrecision>
+template <typename CoefficientPrecision, typename CoordinatePrecision = underlying_type<CoefficientPrecision>>
 class LocalDenseMatrix final : public LocalOperator<CoefficientPrecision, CoordinatePrecision> {
     const Matrix<CoefficientPrecision> &m_data;
 

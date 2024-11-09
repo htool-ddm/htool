@@ -17,7 +17,7 @@
 
 namespace htool {
 
-template <typename ExecutionPolicy, typename CoefficientPrecision, typename CoordinatePrecision = CoefficientPrecision>
+template <typename ExecutionPolicy, typename CoefficientPrecision, typename CoordinatePrecision = underlying_type<CoefficientPrecision>>
 void internal_add_hmatrix_matrix_product(ExecutionPolicy &&, char transa, char transb, CoefficientPrecision alpha, const HMatrix<CoefficientPrecision, CoordinatePrecision> &A, const Matrix<CoefficientPrecision> &B, CoefficientPrecision beta, Matrix<CoefficientPrecision> &C) {
     if (transb == 'N') {
         Matrix<CoefficientPrecision> transposed_B(B.nb_cols(), B.nb_rows()), transposed_C(C.nb_cols(), C.nb_rows());
@@ -30,10 +30,10 @@ void internal_add_hmatrix_matrix_product(ExecutionPolicy &&, char transa, char t
             } else if constexpr (std::is_same_v<std::decay_t<ExecutionPolicy>, std::execution::sequenced_policy>) {
                 sequential_internal_add_hmatrix_matrix_product_row_major(transa, transb, alpha, A, transposed_B.data(), beta, transposed_C.data(), transposed_C.nb_rows());
             } else {
-                static_assert(false, "Invalid execution policy for add_hmatrix_vector_product.");
+                static_assert(std::is_same_v<std::decay_t<ExecutionPolicy>, std::execution::sequenced_policy> || std::is_same_v<std::decay_t<ExecutionPolicy>, std::execution::parallel_policy>, "Invalid execution policy for add_hmatrix_vector_product.");
             }
         } else {
-            static_assert(false, "Invalid execution policy for add_hmatrix_vector_product.");
+            static_assert(std::is_execution_policy_v<std::decay_t<ExecutionPolicy>>, "Invalid execution policy for add_hmatrix_vector_product.");
         }
 #else
         sequential_internal_add_hmatrix_matrix_product_row_major(transa, transb, alpha, A, transposed_B.data(), beta, transposed_C.data(), transposed_C.nb_rows());
@@ -56,10 +56,10 @@ void internal_add_hmatrix_matrix_product(ExecutionPolicy &&, char transa, char t
             } else if constexpr (std::is_same_v<std::decay_t<ExecutionPolicy>, std::execution::sequenced_policy>) {
                 sequential_internal_add_hmatrix_matrix_product_row_major(transa, 'N', alpha, A, transb == 'C' ? buffer_B.data() : B.data(), beta, transposed_C.data(), transposed_C.nb_rows());
             } else {
-                static_assert(false, "Invalid execution policy for add_hmatrix_vector_product.");
+                static_assert(!std::is_same_v<std::decay_t<ExecutionPolicy>, std::execution::sequenced_policy> && !std::is_same_v<std::decay_t<ExecutionPolicy>, std::execution::parallel_policy>, "Invalid execution policy for add_hmatrix_vector_product.");
             }
         } else {
-            static_assert(false, "Invalid execution policy for add_hmatrix_vector_product.");
+            static_assert(!std::is_execution_policy_v<std::decay_t<ExecutionPolicy>>, "Invalid execution policy for add_hmatrix_vector_product.");
         }
 #else
         sequential_internal_add_hmatrix_matrix_product_row_major(transa, 'N', alpha, A, transb == 'C' ? buffer_B.data() : B.data(), beta, transposed_C.data(), transposed_C.nb_rows());
@@ -68,7 +68,7 @@ void internal_add_hmatrix_matrix_product(ExecutionPolicy &&, char transa, char t
     }
 }
 
-template <typename CoefficientPrecision, typename CoordinatePrecision = CoefficientPrecision>
+template <typename CoefficientPrecision, typename CoordinatePrecision = underlying_type<CoefficientPrecision>>
 void internal_add_hmatrix_matrix_product(char transa, char transb, CoefficientPrecision alpha, const HMatrix<CoefficientPrecision, CoordinatePrecision> &A, const Matrix<CoefficientPrecision> &B, CoefficientPrecision beta, Matrix<CoefficientPrecision> &C) {
 #if defined(__cpp_lib_execution) && __cplusplus >= 201703L
     internal_add_hmatrix_matrix_product(std::execution::seq, transa, transb, alpha, A, B, beta, C);
@@ -77,7 +77,7 @@ void internal_add_hmatrix_matrix_product(char transa, char transb, CoefficientPr
 #endif
 }
 
-template <typename CoefficientPrecision, typename CoordinatePrecision = CoefficientPrecision>
+template <typename CoefficientPrecision, typename CoordinatePrecision = underlying_type<CoefficientPrecision>>
 void internal_add_hmatrix_matrix_product(char transa, char transb, CoefficientPrecision alpha, const HMatrix<CoefficientPrecision, CoordinatePrecision> &A, const Matrix<CoefficientPrecision> &B, CoefficientPrecision beta, LowRankMatrix<CoefficientPrecision> &C) {
     bool C_is_overwritten = (beta == CoefficientPrecision(0) || C.rank_of() == 0);
 
@@ -161,10 +161,10 @@ void internal_add_hmatrix_matrix_product(char transa, char transb, CoefficientPr
 #        pragma clang diagnostic ignored "-Wunused-parameter"
 #    elif defined(__GNUC__) || defined(__GNUG__)
 #        pragma GCC diagnostic push
-#        pragma GCC diagnostic ignored "-Wunused-parameter]"
+#        pragma GCC diagnostic ignored "-Wunused-parameter"
 #    endif
 #endif
-template <typename ExecutionPolicy, typename CoefficientPrecision, typename CoordinatePrecision = CoefficientPrecision>
+template <typename ExecutionPolicy, typename CoefficientPrecision, typename CoordinatePrecision = underlying_type<CoefficientPrecision>>
 void add_hmatrix_matrix_product(ExecutionPolicy &&execution_policy, char transa, char transb, CoefficientPrecision alpha, const HMatrix<CoefficientPrecision, CoordinatePrecision> &A, const Matrix<CoefficientPrecision> &B, CoefficientPrecision beta, Matrix<CoefficientPrecision> &C, CoefficientPrecision *buffer = nullptr) {
     auto &target_cluster = A.get_target_cluster();
     auto &source_cluster = A.get_source_cluster();
@@ -200,7 +200,7 @@ void add_hmatrix_matrix_product(ExecutionPolicy &&execution_policy, char transa,
 #    endif
 #endif
 
-template <typename CoefficientPrecision, typename CoordinatePrecision = CoefficientPrecision>
+template <typename CoefficientPrecision, typename CoordinatePrecision = underlying_type<CoefficientPrecision>>
 void add_hmatrix_matrix_product(char transa, char transb, CoefficientPrecision alpha, const HMatrix<CoefficientPrecision, CoordinatePrecision> &A, const Matrix<CoefficientPrecision> &B, CoefficientPrecision beta, Matrix<CoefficientPrecision> &C, CoefficientPrecision *buffer = nullptr) {
 #if defined(__cpp_lib_execution) && __cplusplus >= 201703L
     add_hmatrix_matrix_product(std::execution::seq, transa, transb, alpha, A, B, beta, C, buffer);

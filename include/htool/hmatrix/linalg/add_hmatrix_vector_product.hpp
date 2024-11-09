@@ -53,7 +53,7 @@ void internal_add_hmatrix_vector_product(char trans, std::complex<CoefficientPre
     }
 }
 
-template <typename CoefficientPrecision, typename CoordinatePrecision = CoefficientPrecision>
+template <typename CoefficientPrecision, typename CoordinatePrecision = underlying_type<CoefficientPrecision>>
 void sequential_internal_add_hmatrix_vector_product(char trans, CoefficientPrecision alpha, const HMatrix<CoefficientPrecision, CoordinatePrecision> &A, const CoefficientPrecision *in, CoefficientPrecision beta, CoefficientPrecision *out) {
 
     int out_size(A.get_target_cluster().get_size());
@@ -97,7 +97,7 @@ void sequential_internal_add_hmatrix_vector_product(char trans, CoefficientPreci
     }
 }
 
-template <typename CoefficientPrecision, typename CoordinatePrecision = CoefficientPrecision>
+template <typename CoefficientPrecision, typename CoordinatePrecision = underlying_type<CoefficientPrecision>>
 void openmp_internal_add_hmatrix_vector_product(char trans, CoefficientPrecision alpha, const HMatrix<CoefficientPrecision, CoordinatePrecision> &A, const CoefficientPrecision *in, CoefficientPrecision beta, CoefficientPrecision *out) {
     std::vector<const HMatrix<CoefficientPrecision, CoordinatePrecision> *> leaves;
     std::vector<const HMatrix<CoefficientPrecision, CoordinatePrecision> *> leaves_for_symmetry;
@@ -159,7 +159,7 @@ void openmp_internal_add_hmatrix_vector_product(char trans, CoefficientPrecision
     }
 }
 
-template <typename ExecutionPolicy, typename CoefficientPrecision, typename CoordinatePrecision = CoefficientPrecision>
+template <typename ExecutionPolicy, typename CoefficientPrecision, typename CoordinatePrecision = underlying_type<CoefficientPrecision>>
 void add_hmatrix_vector_product(ExecutionPolicy &&, char trans, CoefficientPrecision alpha, const HMatrix<CoefficientPrecision, CoordinatePrecision> &A, const CoefficientPrecision *in, CoefficientPrecision beta, CoefficientPrecision *out, CoefficientPrecision *buffer = nullptr) {
     auto &source_cluster = A.get_source_cluster();
     auto &target_cluster = A.get_target_cluster();
@@ -175,21 +175,21 @@ void add_hmatrix_vector_product(ExecutionPolicy &&, char trans, CoefficientPreci
         } else if constexpr (std::is_same_v<std::decay_t<ExecutionPolicy>, std::execution::sequenced_policy>) {
             sequential_internal_add_hmatrix_vector_product(trans, alpha, A, buffer_ptr, beta, buffer_ptr + source_cluster.get_size());
         } else {
-            static_assert(false, "Invalid execution policy for add_hmatrix_vector_product.");
+            static_assert(std::is_same_v<std::decay_t<ExecutionPolicy>, std::execution::sequenced_policy> || std::is_same_v<std::decay_t<ExecutionPolicy>, std::execution::parallel_policy>, "Invalid execution policy for add_hmatrix_vector_product.");
         }
     } else {
-        static_assert(false, "Invalid execution policy for add_hmatrix_vector_product.");
+        static_assert(std::is_execution_policy_v<std::decay_t<ExecutionPolicy>>, "Invalid execution policy for add_hmatrix_vector_product.");
     }
 #else
-    openmp_internal_add_hmatrix_vector_product(trans, alpha, A, buffer_ptr, beta, buffer_ptr + source_cluster.get_size());
+    sequential_internal_add_hmatrix_vector_product(trans, alpha, A, buffer_ptr, beta, buffer_ptr + source_cluster.get_size());
 #endif
     cluster_to_user(target_cluster, buffer_ptr + source_cluster.get_size(), out);
 }
 
-template <typename CoefficientPrecision, typename CoordinatePrecision = CoefficientPrecision>
+template <typename CoefficientPrecision, typename CoordinatePrecision = underlying_type<CoefficientPrecision>>
 void add_hmatrix_vector_product(char trans, CoefficientPrecision alpha, const HMatrix<CoefficientPrecision, CoordinatePrecision> &A, const CoefficientPrecision *in, CoefficientPrecision beta, CoefficientPrecision *out, CoefficientPrecision *buffer = nullptr) {
 #if defined(__cpp_lib_execution) && __cplusplus >= 201703L
-    add_hmatrix_vector_product(std::execution::par, trans, alpha, A, in, beta, out, buffer);
+    add_hmatrix_vector_product(std::execution::seq, trans, alpha, A, in, beta, out, buffer);
 #else
     add_hmatrix_vector_product(nullptr, trans, alpha, A, in, beta, out, buffer);
 #endif

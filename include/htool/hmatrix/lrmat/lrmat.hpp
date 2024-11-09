@@ -119,11 +119,11 @@ class LowRankMatrix {
     }
 
     double compression_ratio() const {
-        return (m_U.nb_rows() * m_V.nb_cols()) / (double)(m_U.nb_cols() * (m_U.nb_rows() + m_V.nb_cols()));
+        return (m_U.nb_rows() * m_V.nb_cols()) / static_cast<double>(m_U.nb_cols() * (m_U.nb_rows() + m_V.nb_cols()));
     }
 
     double space_saving() const {
-        return (1 - (m_U.nb_cols() * (1. / double(m_U.nb_rows()) + 1. / double(m_V.nb_cols()))));
+        return (1 - (m_U.nb_cols() * (1. / double(m_U.nb_rows()) + 1. / static_cast<double>(m_V.nb_cols()))));
     }
 };
 
