@@ -115,7 +115,7 @@ void SVD_recompression(LowRankMatrix<CoefficientPrecision> &lrmat) {
         Matrix<CoefficientPrecision> vt(rank, rank);
         int truncated_rank = SVD_truncation(RL, epsilon, u, vt, singular_values);
 
-        if (truncated_rank<rank){
+        if (truncated_rank < rank) {
             // new_U=u*sqrt(tildeS) and new_V=sqrt(tildeS)*vt in the right dimensions
             Matrix<CoefficientPrecision> &new_U = lrmat.get_U();
             Matrix<CoefficientPrecision> &new_V = lrmat.get_V();
