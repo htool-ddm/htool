@@ -5,6 +5,7 @@
 #=== lrmat_SVD
 set(compressions "fullACA")
 list(APPEND compressions "partialACA")
+list(APPEND compressions "recompressed_partialACA")
 list(APPEND compressions "sympartialACA")
 list(APPEND compressions "SVD")
 foreach(compression ${compressions})

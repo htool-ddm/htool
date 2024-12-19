@@ -180,13 +180,6 @@ void SVD_recompression(LowRankMatrix<CoefficientPrecision> &lrmat) {
     }
 }
 
-template <typename CoefficientPrecision>
-std::unique_ptr<LowRankMatrix<CoefficientPrecision>> SVD_recompression(const LowRankMatrix<CoefficientPrecision> &lrmat) {
-    std::unique_ptr<LowRankMatrix<CoefficientPrecision>> new_lrmat_ptr = std::make_unique<LowRankMatrix<CoefficientPrecision>>(lrmat);
-    SVD_recompression(*new_lrmat_ptr);
-    return new_lrmat_ptr;
-}
-
 } // namespace htool
 
 #endif

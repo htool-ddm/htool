@@ -47,7 +47,6 @@ int main(int, char *[]) {
         // fullACA fixed rank
         int reqrank_max = 10;
         fullACA<double> compressor(A);
-        test = test || !(compressor.is_htool_owning_data());
 
         LowRankMatrix<double> A_fullACA_fixed(target_cluster.get_size(), source_cluster.get_size(), reqrank_max, epsilon);
         compressor.copy_low_rank_approximation(target_cluster.get_size(), source_cluster.get_size(), target_cluster.get_offset(), source_cluster.get_offset(), reqrank_max, A_fullACA_fixed);

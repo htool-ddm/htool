@@ -1,16 +1,17 @@
-#include "../test_lrmat_build.hpp"                           // for test_lrmat
-#include <algorithm>                                         // for max, copy
-#include <cmath>                                             // for pow, sqrt
-#include <htool/clustering/cluster_node.hpp>                 // for Cluster
-#include <htool/clustering/tree_builder/recursive_build.hpp> // for Cluster...
-#include <htool/hmatrix/interfaces/virtual_generator.hpp>    // for Generat...
-#include <htool/hmatrix/lrmat/lrmat.hpp>                     // for LowRank...
-#include <htool/hmatrix/lrmat/partialACA.hpp>                // for partialACA
-#include <htool/testing/generator_test.hpp>                  // for Generat...
-#include <htool/testing/geometry.hpp>                        // for create_...
-#include <iostream>                                          // for basic_o...
-#include <utility>                                           // for pair
-#include <vector>                                            // for vector
+#include "../test_lrmat_build.hpp"                                 // for test_lrmat
+#include <algorithm>                                               // for max, copy
+#include <cmath>                                                   // for pow, sqrt
+#include <htool/clustering/cluster_node.hpp>                       // for Cluster
+#include <htool/clustering/tree_builder/recursive_build.hpp>       // for Cluster...
+#include <htool/hmatrix/interfaces/virtual_generator.hpp>          // for Generat...
+#include <htool/hmatrix/lrmat/lrmat.hpp>                           // for LowRank...
+#include <htool/hmatrix/lrmat/partialACA.hpp>                      // for partialACA
+#include <htool/hmatrix/lrmat/recompressed_low_rank_generator.hpp> // for partialACA
+#include <htool/testing/generator_test.hpp>                        // for Generat...
+#include <htool/testing/geometry.hpp>                              // for create_...
+#include <iostream>                                                // for basic_o...
+#include <utility>                                                 // for pair
+#include <vector>                                                  // for vector
 
 using namespace std;
 using namespace htool;
@@ -48,7 +49,8 @@ int main(int, char *[]) {
 
         // partialACA fixed rank
         int reqrank_max = 10;
-        partialACA<double> compressor(A);
+        partialACA<double> compressor_partialACA(A);
+        RecompressedLowRankGenerator<double> compressor(compressor_partialACA, std::function<void(LowRankMatrix<double> &)>(SVD_recompression<double>));
 
         LowRankMatrix<double> A_partialACA_fixed(t.get_size(), s.get_size(), reqrank_max, epsilon);
         compressor.copy_low_rank_approximation(t.get_size(), s.get_size(), t.get_offset(), s.get_offset(), reqrank_max, A_partialACA_fixed);
@@ -58,7 +60,7 @@ int main(int, char *[]) {
         compressor.copy_low_rank_approximation(t.get_size(), s.get_size(), t.get_offset(), s.get_offset(), A_partialACA);
 
         std::pair<double, double> fixed_compression_interval(0.87, 0.89);
-        std::pair<double, double> auto_compression_interval(0.93, 0.96);
+        std::pair<double, double> auto_compression_interval(0.94, 0.97);
         test = test || (test_lrmat(t, s, A, A_partialACA_fixed, A_partialACA, fixed_compression_interval, auto_compression_interval));
     }
 
