@@ -12,7 +12,7 @@
 
 namespace htool {
 
-template <typename CoefficientPrecision, typename CoordinatesPrecision = underlying_type<CoefficientPrecision>>
+template <typename CoefficientPrecision>
 class SVD final : public VirtualInternalLowRankGenerator<CoefficientPrecision> {
 
     const VirtualInternalGenerator<CoefficientPrecision> &m_A;
