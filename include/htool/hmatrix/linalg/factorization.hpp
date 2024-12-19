@@ -19,6 +19,9 @@ void lu_factorization(HMatrix<CoefficientPrecision, CoordinatePrecision> &hmatri
     if (!hmatrix.is_block_tree_consistent()) {
         htool::Logger::get_instance().log(LogLevel::ERROR, "lu_factorization is only implemented for consistent block tree."); // LCOV_EXCL_LINE
     }
+    if (!hmatrix.set_UPLO() != 'N') {
+        htool::Logger::get_instance().log(LogLevel::ERROR, "lu_factorization cannot be used on a HMatrix with UPLO!=N. You should use another factorization."); // LCOV_EXCL_LINE
+    }
 
     if (hmatrix.is_hierarchical()) {
 
