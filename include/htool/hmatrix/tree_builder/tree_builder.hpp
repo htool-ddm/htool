@@ -44,7 +44,7 @@ class HMatrixTreeBuilder {
     char m_UPLO_type{'N'};
 
     // Cached information during build
-    mutable std::vector<HMatrixType *> m_admissible_tasks{};
+    mutable std::vector<std::pair<HMatrixType *, bool>> m_computation_tasks{};
     mutable std::vector<HMatrixType *> m_dense_tasks{};
     mutable int m_target_partition_number{-1};
     mutable int m_partition_number_for_symmetry{-1};
@@ -257,6 +257,15 @@ HMatrix<CoefficientPrecision, CoordinatePrecision> HMatrixTreeBuilder<Coefficien
 
     // Compute leave's data
     start = std::chrono::steady_clock::now();
+    std::sort(m_computation_tasks.begin(), m_computation_tasks.end(), [](const std::pair<HMatrixType *, bool> &a, const std::pair<HMatrixType *, bool> &b) {
+        const auto &hmatrix_a = *a.first;
+        const auto &hmatrix_b = *b.first;
+        if (hmatrix_a.get_target_cluster().get_offset() == hmatrix_b.get_target_cluster().get_offset()) {
+            return hmatrix_a.get_source_cluster().get_offset() < hmatrix_b.get_source_cluster().get_offset();
+        } else {
+            return hmatrix_a.get_target_cluster().get_offset() < hmatrix_b.get_target_cluster().get_offset();
+        }
+    });
     compute_blocks(generator);
     end = std::chrono::steady_clock::now();
 
@@ -294,9 +303,13 @@ void HMatrixTreeBuilder<CoefficientPrecision, CoordinatePrecision>::build_block_
     const auto &source_children = source_cluster.get_children();
 
     if (is_admissible && is_target_cluster_in_target_partition(target_cluster) && !is_removed_by_symmetry(target_cluster, source_cluster) && target_cluster.get_depth() >= m_mintargetdepth && source_cluster.get_depth() >= m_minsourcedepth && target_cluster.get_rank() >= 0 && (!m_is_block_tree_consistent || source_cluster.get_rank() >= 0)) {
-        m_admissible_tasks.push_back(current_hmatrix);
+        m_computation_tasks.push_back(std::make_pair(current_hmatrix, is_admissible));
+        // m_admissible_tasks.push_back(current_hmatrix);
     } else if (source_cluster.is_leaf() and target_cluster.is_leaf()) {
-        m_dense_tasks.push_back(current_hmatrix);
+        m_computation_tasks.push_back(std::make_pair(current_hmatrix, is_admissible));
+        if (m_dense_blocks_generator.get() != nullptr) {
+            m_dense_tasks.push_back(current_hmatrix);
+        }
     } else if (source_cluster.is_leaf() and not target_cluster.is_leaf()) {
         HMatrixType *hmatrix_child = nullptr;
         for (const auto &target_child : target_children) {
@@ -437,36 +450,31 @@ void HMatrixTreeBuilder<CoefficientPrecision, CoordinatePrecision>::compute_bloc
 #if defined(_OPENMP) && !defined(HTOOL_WITH_PYTHON_INTERFACE)
 #    pragma omp for schedule(guided) nowait
 #endif
-        for (int p = 0; p < m_admissible_tasks.size(); p++) {
-            bool has_low_rank_approximation_succeded = m_admissible_tasks[p]->compute_low_rank_data(*m_used_low_rank_generator, m_reqrank, m_epsilon);
-            // local_low_rank_leaves.emplace_back(m_admissible_tasks[p]);
-            if (!has_low_rank_approximation_succeded) {
-                // local_low_rank_leaves.pop_back();
-                m_admissible_tasks[p]->clear_low_rank_data();
-                // if (m_dense_blocks_generator.get() == nullptr) {
-                m_admissible_tasks[p]->compute_dense_data(generator);
-                // }
-                // local_dense_leaves.emplace_back(m_admissible_tasks[p]);
-                local_false_positive += 1;
+        for (int p = 0; p < m_computation_tasks.size(); p++) {
+            HMatrixType *local_leaf = m_computation_tasks[p].first;
+            bool is_admissible      = m_computation_tasks[p].second;
+            if (is_admissible) {
+                bool has_low_rank_approximation_succeded = local_leaf->compute_low_rank_data(*m_used_low_rank_generator, m_reqrank, m_epsilon);
+                // local_low_rank_leaves.emplace_back(m_admissible_tasks[p]);
+                if (!has_low_rank_approximation_succeded) {
+                    // local_low_rank_leaves.pop_back();
+                    local_leaf->clear_low_rank_data();
+                    // if (m_dense_blocks_generator.get() == nullptr) {
+                    local_leaf->compute_dense_data(generator);
+                    // }
+                    // local_dense_leaves.emplace_back(m_admissible_tasks[p]);
+                    local_false_positive += 1;
+                }
+            } else if (m_dense_blocks_generator.get() == nullptr) {
+                local_leaf->compute_dense_data(generator);
+            } else {
+                local_leaf->compute_dense_data(ZeroGenerator());
             }
-        }
-        if (m_dense_blocks_generator.get() == nullptr) {
-#if defined(_OPENMP) && !defined(HTOOL_WITH_PYTHON_INTERFACE)
-#    pragma omp for schedule(guided) nowait
-#endif
-            for (int p = 0; p < m_dense_tasks.size(); p++) {
-                m_dense_tasks[p]->compute_dense_data(generator);
-            }
-            // local_dense_leaves.emplace_back(m_dense_tasks[p]);
         }
 #if defined(_OPENMP) && !defined(HTOOL_WITH_PYTHON_INTERFACE)
 #    pragma omp critical
 #endif
         {
-            // m_low_rank_leaves.insert(m_low_rank_leaves.end(), std::make_move_iterator(local_low_rank_leaves.begin()), std::make_move_iterator(local_low_rank_leaves.end()));
-
-            // m_dense_leaves.insert(m_dense_leaves.end(), std::make_move_iterator(local_dense_leaves.begin()), std::make_move_iterator(local_dense_leaves.end()));
-
             m_false_positive += local_false_positive;
         }
     }
@@ -474,9 +482,7 @@ void HMatrixTreeBuilder<CoefficientPrecision, CoordinatePrecision>::compute_bloc
     if (m_dense_blocks_generator.get() != nullptr) {
         std::vector<int> rows_sizes(this->m_dense_tasks.size()), cols_sizes(this->m_dense_tasks.size()), rows_offsets(this->m_dense_tasks.size()), cols_offsets(this->m_dense_tasks.size());
         std::vector<CoefficientPrecision *> ptr(this->m_dense_tasks.size());
-        ZeroGenerator zero_generator;
         for (int i = 0; i < this->m_dense_tasks.size(); i++) {
-            this->m_dense_tasks[i]->compute_dense_data(zero_generator);
             rows_sizes[i]   = this->m_dense_tasks[i]->get_target_cluster().get_size();
             cols_sizes[i]   = this->m_dense_tasks[i]->get_source_cluster().get_size();
             rows_offsets[i] = this->m_dense_tasks[i]->get_target_cluster().get_offset();

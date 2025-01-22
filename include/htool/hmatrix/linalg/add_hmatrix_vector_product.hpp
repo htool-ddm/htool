@@ -102,6 +102,14 @@ void openmp_internal_add_hmatrix_vector_product(char trans, CoefficientPrecision
     std::vector<const HMatrix<CoefficientPrecision, CoordinatePrecision> *> leaves_for_symmetry;
     std::tie(leaves, leaves_for_symmetry) = get_leaves_from(A); // C++17 structured binding
 
+    std::sort(leaves.begin(), leaves.end(), [](const HMatrix<CoefficientPrecision, CoordinatePrecision> *hmatrix_a, const HMatrix<CoefficientPrecision, CoordinatePrecision> *hmatrix_b) {
+        if (hmatrix_a->get_target_cluster().get_offset() == hmatrix_b->get_target_cluster().get_offset()) {
+            return hmatrix_a->get_source_cluster().get_offset() < hmatrix_b->get_source_cluster().get_offset();
+        } else {
+            return hmatrix_a->get_target_cluster().get_offset() < hmatrix_b->get_target_cluster().get_offset();
+        }
+    });
+
     int out_size(A.get_target_cluster().get_size());
     auto get_output_cluster{&HMatrix<CoefficientPrecision, CoordinatePrecision>::get_target_cluster};
     auto get_input_cluster{&HMatrix<CoefficientPrecision, CoordinatePrecision>::get_source_cluster};
