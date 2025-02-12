@@ -235,18 +235,26 @@ class DDMSolverBuilder {
         return blocks_in_overlap0;
     };
 
-    std::function<Cluster<CoordinatePrecision>(int, const CoordinatePrecision *, const ClusterTreeBuilder<CoordinatePrecision> &)> initialize_local_cluster = [this](int spatial_dimension0, const CoordinatePrecision *global_geometry0, const ClusterTreeBuilder<CoordinatePrecision> &cluster_tree_builder) {
+    std::function<Cluster<CoordinatePrecision>(int, const CoordinatePrecision *,const CoordinatePrecision *, const CoordinatePrecision *, const ClusterTreeBuilder<CoordinatePrecision> &)> initialize_local_cluster = [this](int spatial_dimension0, const CoordinatePrecision *global_geometry0, const CoordinatePrecision *global_radii0, const CoordinatePrecision *global_weights0, const ClusterTreeBuilder<CoordinatePrecision> &cluster_tree_builder) {
         // Local geometry
         int local_size = local_to_global_numbering.size();
         std::vector<double> local_geometry(spatial_dimension0 * local_size);
+        std::vector<double> local_radii(global_radii0==nullptr ? 0:local_size);
+        std::vector<double> local_weights(global_weights0==nullptr ? 0:local_size);
         for (int i = 0; i < local_to_global_numbering.size(); i++) {
             for (int dimension = 0; dimension < spatial_dimension0; dimension++) {
                 local_geometry[spatial_dimension0 * i + dimension] = global_geometry0[spatial_dimension0 * local_to_global_numbering[i] + dimension];
+                if (global_radii0){
+                    local_radii[i] = global_radii0[local_to_global_numbering[i]];
+                }
+                if (global_weights0){
+                    local_weights[i] = global_weights0[local_to_global_numbering[i]];
+                }
             }
         }
 
         // Local cluster
-        return cluster_tree_builder.create_cluster_tree(local_to_global_numbering.size(), spatial_dimension0, local_geometry.data(), 2, 2);
+        return cluster_tree_builder.create_cluster_tree(local_to_global_numbering.size(), spatial_dimension0, local_geometry.data(), global_radii0==nullptr ? nullptr : local_radii.data(), global_weights0==nullptr ? nullptr : local_weights.data(), 2, 2,nullptr);
     };
 
     std::unique_ptr<Cluster<CoordinatePrecision>> m_local_cluster;
@@ -337,9 +345,9 @@ class DDMSolverBuilder {
     DDMSolverBuilder(DistributedOperator<CoefficientPrecision> &distributed_operator, HMatrix<CoefficientPrecision, CoordinatePrecision> &block_diagonal_hmatrix, const VirtualGenerator<CoefficientPrecision> &generator, const std::vector<int> &ovr_subdomain_to_global, const std::vector<int> &cluster_to_ovr_subdomain, const std::vector<int> &neighbors, const std::vector<std::vector<int>> &intersections) : m_local_numbering(ovr_subdomain_to_global, cluster_to_ovr_subdomain, intersections), local_to_global_numbering(m_local_numbering.local_to_global_numbering), blocks_in_overlap(initialize_blocks_in_overlap(distributed_operator, block_diagonal_hmatrix, generator)), solver(make_DDM_solver_w_custom_local_solver(distributed_operator, block_diagonal_hmatrix, blocks_in_overlap[0], blocks_in_overlap[1], blocks_in_overlap[2], neighbors, m_local_numbering.intersections)) {}
 
     // DDM building local hmatrix with overlap
-    // DDMSolverBuilder(DistributedOperator<CoefficientPrecision> &distributed_operator, const std::vector<int> &ovr_subdomain_to_global, const std::vector<int> &cluster_to_ovr_subdomain, const std::vector<int> &neighbors, const std::vector<std::vector<int>> &intersections, const VirtualGenerator<CoefficientPrecision> &generator, int spatial_dimension, const CoordinatePrecision *global_geometry, underlying_type<CoefficientPrecision> epsilon, CoordinatePrecision eta) : m_local_numbering(ovr_subdomain_to_global, cluster_to_ovr_subdomain, intersections), local_to_global_numbering(m_local_numbering.local_to_global_numbering), m_local_cluster(std::make_unique<Cluster<CoordinatePrecision>>(initialize_local_cluster(spatial_dimension, global_geometry))), m_local_hmatrix_builder(std::make_unique<HMatrixTreeBuilder<CoefficientPrecision, CoordinatePrecision>>(epsilon, eta, distributed_operator.get_symmetry_type(), distributed_operator.get_storage_type())), local_hmatrix(std::make_unique<HMatrix<CoefficientPrecision, CoordinatePrecision>>(initialize_local_hmatrix(generator, *m_local_hmatrix_builder))), solver(make_DDM_solver_w_custom_local_solver(distributed_operator, *local_hmatrix, neighbors, m_local_numbering.intersections, true)) {}
+    DDMSolverBuilder(DistributedOperator<CoefficientPrecision> &distributed_operator, const std::vector<int> &ovr_subdomain_to_global, const std::vector<int> &cluster_to_ovr_subdomain, const std::vector<int> &neighbors, const std::vector<std::vector<int>> &intersections, const VirtualGenerator<CoefficientPrecision> &generator, int spatial_dimension, const CoordinatePrecision *global_geometry, const CoordinatePrecision *radii, const CoordinatePrecision *weights, const ClusterTreeBuilder<CoordinatePrecision> &cluster_tree_builder, const HMatrixTreeBuilder<CoefficientPrecision, CoordinatePrecision> &local_hmatrix_builder) : m_local_numbering(ovr_subdomain_to_global, cluster_to_ovr_subdomain, intersections), local_to_global_numbering(m_local_numbering.local_to_global_numbering), m_local_cluster(std::make_unique<Cluster<CoordinatePrecision>>(initialize_local_cluster(spatial_dimension, global_geometry, radii, weights, cluster_tree_builder))), local_hmatrix(std::make_unique<HMatrix<CoefficientPrecision, CoordinatePrecision>>(initialize_local_hmatrix(generator, local_hmatrix_builder))), solver(make_DDM_solver_w_custom_local_solver(distributed_operator, *local_hmatrix, neighbors, m_local_numbering.intersections, true)) {}
 
-    DDMSolverBuilder(DistributedOperator<CoefficientPrecision> &distributed_operator, const std::vector<int> &ovr_subdomain_to_global, const std::vector<int> &cluster_to_ovr_subdomain, const std::vector<int> &neighbors, const std::vector<std::vector<int>> &intersections, const VirtualGenerator<CoefficientPrecision> &generator, int spatial_dimension, const CoordinatePrecision *global_geometry, const ClusterTreeBuilder<CoordinatePrecision> &cluster_tree_builder, const HMatrixTreeBuilder<CoefficientPrecision, CoordinatePrecision> &local_hmatrix_builder) : m_local_numbering(ovr_subdomain_to_global, cluster_to_ovr_subdomain, intersections), local_to_global_numbering(m_local_numbering.local_to_global_numbering), m_local_cluster(std::make_unique<Cluster<CoordinatePrecision>>(initialize_local_cluster(spatial_dimension, global_geometry, cluster_tree_builder))), local_hmatrix(std::make_unique<HMatrix<CoefficientPrecision, CoordinatePrecision>>(initialize_local_hmatrix(generator, local_hmatrix_builder))), solver(make_DDM_solver_w_custom_local_solver(distributed_operator, *local_hmatrix, neighbors, m_local_numbering.intersections, true)) {}
+    DDMSolverBuilder(DistributedOperator<CoefficientPrecision> &distributed_operator, const std::vector<int> &ovr_subdomain_to_global, const std::vector<int> &cluster_to_ovr_subdomain, const std::vector<int> &neighbors, const std::vector<std::vector<int>> &intersections, const VirtualGenerator<CoefficientPrecision> &generator, int spatial_dimension, const CoordinatePrecision *global_geometry, const ClusterTreeBuilder<CoordinatePrecision> &cluster_tree_builder, const HMatrixTreeBuilder<CoefficientPrecision, CoordinatePrecision> &local_hmatrix_builder) : DDMSolverBuilder(distributed_operator,ovr_subdomain_to_global,cluster_to_ovr_subdomain,neighbors,intersections,generator,spatial_dimension,global_geometry,nullptr,nullptr,cluster_tree_builder,local_hmatrix_builder) {}
 };
 
 } // namespace htool
