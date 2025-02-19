@@ -33,6 +33,18 @@ All notable changes to this project will be documented in this file.
 - Checks about `UPLO` for hmatrix factorization.
 - `HMatrixBuilder` for easier `HMatrix` creation (especially when using only the hmatrix part of Htool-DDM).
 - `add_hmatrix_vector_product` and `add_hmatrix_matrix_product` for working in user numbering. For C++17 and onward, these functions have preliminary support for execution policies with default being sequential execution. This tries to some extent to follow `<linalg>` API.
+- `task_based_tree_builder.hpp` for miscellaneous functions used for task based approach.
+- `hmatrix_output_dot.hpp` for L0 and block tree visualization.
+- `task_based_compute_blocks` for task based alternative to `compute_blocks`.
+- `task_based_internal_add_hmatrix_vector_product` for task based alternative to `internal_add_hmatrix_vector_product`.
+- `task_based_internal_add_hmatrix_hmatrix_product` for task based alternative to `internal_add_hmatrix_hmatrix_product`.
+- `task_based_internal_triangular_hmatrix_hmatrix_solve` for task based alternative to `internal_triangular_hmatrix_hmatrix_solve`.
+- `task_based_lu_factorization` and `task_based_cholesky_factorization` for task based alternatives to `lu_factorization` and `cholesky_factorization`.
+- `test_task_based_hmatrix_***.hpp` for testing various task based features.
+- `internal_add_lrmat_hmatrix` is now overloaded to handle the case where the HMatrix is larger than the LowRankMatrix.
+- `get_leaves_from` is overloaded to return non const arguments.
+- `get_false_positive` and `get_L0` in a tree builder.
+- `left_hmatrix_ancestor_of_right_hmatrix` and `left_hmatrix_descendant_of_right_hmatrix` for returning parent and children of a hmatrix.
 
 ### Changed
 
@@ -41,6 +53,7 @@ All notable changes to this project will be documented in this file.
 - `ClusterTreeBuilder` has now one strategy as `VirtualPartitioning`. Usual implementations are still available, for example using `Partitioning<double,ComputeLargestExtent,RegularSplitting>`.
 - When using `ClusterTreeBuilder` with `number_of_children=2^spatial_dimension`, it will do a binary/quad/octo-tree instead of `number_of_children` cut along the main direction.
 - `ClusterTreeBuilder` parameter `minclustersize` was removed, and a parameter `maximal_leaf_size` has been added.
+- `build` can now use `task_based_compute_blocks`
 
 ### Fixed
 
