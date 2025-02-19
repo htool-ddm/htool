@@ -470,5 +470,18 @@ void copy_diagonal_in_user_numbering(const HMatrix<CoefficientPrecision, Coordin
     }
 }
 
+template <typename CoefficientPrecision, typename CoordinatePrecision = underlying_type<CoefficientPrecision>>
+bool left_hmatrix_ancestor_of_right_hmatrix(const HMatrix<CoefficientPrecision, CoordinatePrecision> &hmatrix, const HMatrix<CoefficientPrecision, CoordinatePrecision> &other_hmatrix) {
+    if ((left_cluster_contains_right_cluster(hmatrix.get_target_cluster(), other_hmatrix.get_target_cluster())) and (left_cluster_contains_right_cluster(hmatrix.get_source_cluster(), other_hmatrix.get_source_cluster()))) {
+        return true;
+    }
+    return false;
+}
+
+template <typename CoefficientPrecision, typename CoordinatePrecision = underlying_type<CoefficientPrecision>>
+bool left_hmatrix_descendant_of_right_hmatrix(const HMatrix<CoefficientPrecision, CoordinatePrecision> &hmatrix, const HMatrix<CoefficientPrecision, CoordinatePrecision> &other_hmatrix) {
+    return left_hmatrix_ancestor_of_right_hmatrix(other_hmatrix, hmatrix);
+}
+
 } // namespace htool
 #endif
