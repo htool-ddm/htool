@@ -10,6 +10,10 @@ add_custom_target(build-tests-hmatrix-builder)
 add_dependencies(build-tests-hmatrix build-tests-hmatrix-builder)
 add_subdirectory(hmatrix_builder)
 
+add_custom_target(build-tests-hmatrix-task-based)
+add_dependencies(build-tests-hmatrix build-tests-hmatrix-task-based)
+add_subdirectory(hmatrix_task_based)
+
 add_custom_target(build-tests-hmatrix-product)
 add_dependencies(build-tests-hmatrix build-tests-hmatrix-product)
 add_subdirectory(hmatrix_product)
