@@ -1,0 +1,2 @@
+interceptor_via_fun:_gomp_task
+interceptor_via_lib:libgomp.so.1
