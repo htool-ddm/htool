@@ -36,7 +36,7 @@ function(check_version_number CODE_VERSION_FILE CODE_VARIABLE_MAJOR_VERSION CODE
     set(code_subminor_version_number ${CMAKE_MATCH_1})
 
     set(code_version_number "${code_major_version_number}.${code_minor_version_number}.${code_subminor_version_number}")
-    message("Htool version: " "${code_version_number}")
+    message(STATUS "Htool version: " "${code_version_number}")
     # Check version number: error if code unconsistent
     if(NOT "${code_version_number}" STREQUAL "${CMAKE_PROJECT_VERSION}")
         message(FATAL_ERROR "Inconsistent version number:\n* Source code version number: ${code_version_number}\n* CMake version number: ${CMAKE_PROJECT_VERSION}\n")
