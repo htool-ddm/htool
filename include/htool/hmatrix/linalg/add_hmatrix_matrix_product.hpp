@@ -11,18 +11,33 @@
 #include "../lrmat/lrmat.hpp"                       // for LowRankMatrix
 #include "../lrmat/utils/SVD_recompression.hpp"     // for recompression
 #include "add_hmatrix_matrix_product_row_major.hpp" // for sequential_ad...
-#include <algorithm>                                // for copy_n, min
-#include <vector>                                   // for vector
+#include "execution_policies.hpp"
+#include <algorithm> // for copy_n, min
+#include <vector>    // for vector
 
 namespace htool {
 
-template <typename CoefficientPrecision, typename CoordinatePrecision = CoefficientPrecision>
-void internal_add_hmatrix_matrix_product(char transa, char transb, CoefficientPrecision alpha, const HMatrix<CoefficientPrecision, CoordinatePrecision> &A, const Matrix<CoefficientPrecision> &B, CoefficientPrecision beta, Matrix<CoefficientPrecision> &C) {
+template <typename ExecutionPolicy, typename CoefficientPrecision, typename CoordinatePrecision = CoefficientPrecision>
+void internal_add_hmatrix_matrix_product(ExecutionPolicy &&, char transa, char transb, CoefficientPrecision alpha, const HMatrix<CoefficientPrecision, CoordinatePrecision> &A, const Matrix<CoefficientPrecision> &B, CoefficientPrecision beta, Matrix<CoefficientPrecision> &C) {
     if (transb == 'N') {
         Matrix<CoefficientPrecision> transposed_B(B.nb_cols(), B.nb_rows()), transposed_C(C.nb_cols(), C.nb_rows());
         transpose(B, transposed_B);
         transpose(C, transposed_C);
+#if defined(__cpp_lib_execution) && __cplusplus >= 201703L
+        if constexpr (std::is_execution_policy_v<std::decay_t<ExecutionPolicy>>) {
+            if constexpr (std::is_same_v<std::decay_t<ExecutionPolicy>, std::execution::parallel_policy>) {
+                openmp_internal_add_hmatrix_matrix_product_row_major(transa, transb, alpha, A, transposed_B.data(), beta, transposed_C.data(), transposed_C.nb_rows());
+            } else if constexpr (std::is_same_v<std::decay_t<ExecutionPolicy>, std::execution::sequenced_policy>) {
+                sequential_internal_add_hmatrix_matrix_product_row_major(transa, transb, alpha, A, transposed_B.data(), beta, transposed_C.data(), transposed_C.nb_rows());
+            } else {
+                static_assert(false, "Invalid execution policy for add_hmatrix_vector_product.");
+            }
+        } else {
+            static_assert(false, "Invalid execution policy for add_hmatrix_vector_product.");
+        }
+#else
         sequential_internal_add_hmatrix_matrix_product_row_major(transa, transb, alpha, A, transposed_B.data(), beta, transposed_C.data(), transposed_C.nb_rows());
+#endif
         transpose(transposed_C, C);
     } else {
         Matrix<CoefficientPrecision> transposed_C(C.nb_cols(), C.nb_rows());
@@ -34,9 +49,32 @@ void internal_add_hmatrix_matrix_product(char transa, char transb, CoefficientPr
             conj_if_complex(buffer_B.data(), buffer_B.size());
         }
 
+#if defined(__cpp_lib_execution) && __cplusplus >= 201703L
+        if constexpr (std::is_execution_policy_v<std::decay_t<ExecutionPolicy>>) {
+            if constexpr (std::is_same_v<std::decay_t<ExecutionPolicy>, std::execution::parallel_policy>) {
+                openmp_internal_add_hmatrix_matrix_product_row_major(transa, 'N', alpha, A, transb == 'C' ? buffer_B.data() : B.data(), beta, transposed_C.data(), transposed_C.nb_rows());
+            } else if constexpr (std::is_same_v<std::decay_t<ExecutionPolicy>, std::execution::sequenced_policy>) {
+                sequential_internal_add_hmatrix_matrix_product_row_major(transa, 'N', alpha, A, transb == 'C' ? buffer_B.data() : B.data(), beta, transposed_C.data(), transposed_C.nb_rows());
+            } else {
+                static_assert(false, "Invalid execution policy for add_hmatrix_vector_product.");
+            }
+        } else {
+            static_assert(false, "Invalid execution policy for add_hmatrix_vector_product.");
+        }
+#else
         sequential_internal_add_hmatrix_matrix_product_row_major(transa, 'N', alpha, A, transb == 'C' ? buffer_B.data() : B.data(), beta, transposed_C.data(), transposed_C.nb_rows());
+#endif
         transpose(transposed_C, C);
     }
+}
+
+template <typename CoefficientPrecision, typename CoordinatePrecision = CoefficientPrecision>
+void internal_add_hmatrix_matrix_product(char transa, char transb, CoefficientPrecision alpha, const HMatrix<CoefficientPrecision, CoordinatePrecision> &A, const Matrix<CoefficientPrecision> &B, CoefficientPrecision beta, Matrix<CoefficientPrecision> &C) {
+#if defined(__cpp_lib_execution) && __cplusplus >= 201703L
+    internal_add_hmatrix_matrix_product(std::execution::seq, transa, transb, alpha, A, B, beta, C);
+#else
+    internal_add_hmatrix_matrix_product(nullptr, transa, transb, alpha, A, B, beta, C);
+#endif
 }
 
 template <typename CoefficientPrecision, typename CoordinatePrecision = CoefficientPrecision>
@@ -117,6 +155,59 @@ void internal_add_hmatrix_matrix_product(char transa, char transb, CoefficientPr
     SVD_recompression(C);
 }
 
+#if !defined(__cpp_lib_execution) || __cplusplus < 201703L
+#    if defined(__clang__)
+#        pragma clang diagnostic push
+#        pragma clang diagnostic ignored "-Wunused-parameter"
+#    elif defined(__GNUC__) || defined(__GNUG__)
+#        pragma GCC diagnostic push
+#        pragma GCC diagnostic ignored "-Wunused-parameter]"
+#    endif
+#endif
+template <typename ExecutionPolicy, typename CoefficientPrecision, typename CoordinatePrecision = CoefficientPrecision>
+void add_hmatrix_matrix_product(ExecutionPolicy &&execution_policy, char transa, char transb, CoefficientPrecision alpha, const HMatrix<CoefficientPrecision, CoordinatePrecision> &A, const Matrix<CoefficientPrecision> &B, CoefficientPrecision beta, Matrix<CoefficientPrecision> &C, CoefficientPrecision *buffer = nullptr) {
+    auto &target_cluster = A.get_target_cluster();
+    auto &source_cluster = A.get_source_cluster();
+
+    std::vector<CoefficientPrecision> tmp(buffer == nullptr ? (target_cluster.get_size() + source_cluster.get_size()) * B.nb_cols() : 0, 0);
+
+    Matrix<CoefficientPrecision> permuted_B;
+    Matrix<CoefficientPrecision> permuted_C;
+    permuted_B.assign(B.nb_rows(), B.nb_cols(), (buffer == nullptr) ? tmp.data() : buffer, false);
+    permuted_C.assign(C.nb_rows(), C.nb_cols(), (buffer == nullptr) ? tmp.data() + B.nb_rows() * B.nb_cols() : buffer + B.nb_rows() * B.nb_cols(), false);
+
+    for (int i = 0; i < B.nb_cols(); i++) {
+        user_to_cluster(source_cluster, B.data() + source_cluster.get_size() * i, permuted_B.data() + source_cluster.get_size() * i);
+    }
+    for (int i = 0; i < C.nb_cols(); i++) {
+        user_to_cluster(target_cluster, C.data() + target_cluster.get_size() * i, permuted_C.data() + target_cluster.get_size() * i);
+    }
+
+#if defined(__cpp_lib_execution) && __cplusplus >= 201703L
+    internal_add_hmatrix_matrix_product(execution_policy, transa, transb, alpha, A, permuted_B, beta, permuted_C);
+#else
+    internal_add_hmatrix_matrix_product(transa, transb, alpha, A, permuted_B, beta, permuted_C);
+#endif
+    for (int i = 0; i < C.nb_cols(); i++) {
+        cluster_to_user(target_cluster, permuted_C.data() + target_cluster.get_size() * i, C.data() + target_cluster.get_size() * i);
+    }
+}
+#if !defined(__cpp_lib_execution) || __cplusplus < 201703L
+#    if defined(__clang__)
+#        pragma clang diagnostic pop
+#    elif defined(__GNUC__) || defined(__GNUG__)
+#        pragma GCC diagnostic pop
+#    endif
+#endif
+
+template <typename CoefficientPrecision, typename CoordinatePrecision = CoefficientPrecision>
+void add_hmatrix_matrix_product(char transa, char transb, CoefficientPrecision alpha, const HMatrix<CoefficientPrecision, CoordinatePrecision> &A, const Matrix<CoefficientPrecision> &B, CoefficientPrecision beta, Matrix<CoefficientPrecision> &C, CoefficientPrecision *buffer = nullptr) {
+#if defined(__cpp_lib_execution) && __cplusplus >= 201703L
+    add_hmatrix_matrix_product(std::execution::seq, transa, transb, alpha, A, B, beta, C, buffer);
+#else
+    add_hmatrix_matrix_product(nullptr, transa, transb, alpha, A, B, beta, C, buffer);
+#endif
+}
 } // namespace htool
 
 #endif
