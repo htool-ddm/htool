@@ -29,6 +29,10 @@ All notable changes to this project will be documented in this file.
 ### Added
 
 - `HMatrix` recompression with SVD.
+- Generic recompressed low-rank compression with `RecompressedLowRankGenerator`.
+- Checks about `UPLO` for hmatrix factorization.
+- `HMatrixBuilder` for easier `HMatrix` creation (especially when using only the hmatrix part of Htool-DDM).
+- `add_hmatrix_vector_product` and `add_hmatrix_matrix_product` for working in user numbering. For C++17 and onward, these functions have preliminary support for execution policies with default being sequential execution. This tries to some extent to follow `<linalg>` API.
 
 ### Changed
 
@@ -37,7 +41,9 @@ All notable changes to this project will be documented in this file.
 
 ### Fixed
 
-- fix inline definition of `logging_level_to_string`
+- Fix inline definition of `logging_level_to_string`.
+- Fix error when resizing `Matrix`.
+- Fix error due to using `int` instead of `size_t`, thanks to @vdubos.
 
 ## [0.9.0] - 2024-09-19
 
