@@ -44,6 +44,7 @@ All notable changes to this project will be documented in this file.
 - Fix inline definition of `logging_level_to_string`.
 - Fix error when resizing `Matrix`.
 - Fix error due to using `int` instead of `size_t`, thanks to @vdubos.
+- Fix warnings with `-Wold-style-cast`.
 
 ## [0.9.0] - 2024-09-19
 

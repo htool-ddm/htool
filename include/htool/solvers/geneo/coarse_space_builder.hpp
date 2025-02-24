@@ -87,7 +87,7 @@ class GeneoCoarseSpaceDenseBuilder : public VirtualCoarseSpaceBuilder<Coefficien
 
             // std::cout << "OUAAAAH\n";
             Lapack<CoefficientPrecision>::gv(&itype, "V", &m_uplo, &n, m_DAiD.data(), &lda, m_Bi.data(), &ldb, w.data(), work.data(), &lwork, rwork.data(), &info);
-            lwork = (int)std::real(work[0]);
+            lwork = static_cast<int>(std::real(work[0]));
             work.resize(lwork);
             Lapack<CoefficientPrecision>::gv(&itype, "V", &m_uplo, &n, m_DAiD.data(), &lda, m_Bi.data(), &ldb, w.data(), work.data(), &lwork, rwork.data(), &info);
 
@@ -136,7 +136,7 @@ class GeneoCoarseSpaceDenseBuilder : public VirtualCoarseSpaceBuilder<Coefficien
         std::vector<CoefficientPrecision> vl(n * n), vr(n * n);
 
         Lapack<CoefficientPrecision>::ggev("N", "V", &n, m_DAiD.data(), &lda, m_Bi.data(), &ldb, alphar.data(), alphai.data(), beta.data(), vl.data(), &ldvl, vr.data(), &ldvr, work.data(), &lwork, rwork.data(), &info);
-        lwork = (int)std::real(work[0]);
+        lwork = static_cast<int>(std::real(work[0]));
         work.resize(lwork);
         Lapack<CoefficientPrecision>::ggev("N", "V", &n, m_DAiD.data(), &lda, m_Bi.data(), &ldb, alphar.data(), alphai.data(), beta.data(), vl.data(), &ldvl, vr.data(), &ldvr, work.data(), &lwork, rwork.data(), &info);
 

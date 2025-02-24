@@ -186,7 +186,7 @@ if((CMAKE_PROJECT_NAME STREQUAL PROJECT_NAME) AND BUILD_TESTING)
                   -Wshadow
                   -Wnon-virtual-dtor
                   -pedantic
-                  #   -Wold-style-cast
+                  -Wold-style-cast
                   -Wcast-align
                   -Wunused
                   -Woverloaded-virtual
