@@ -6,9 +6,10 @@
 #include "../../wrappers/wrapper_blas.hpp"                   // for Blas
 #include "../hmatrix.hpp"                                    // for HMatrix
 #include "../lrmat/linalg/add_lrmat_vector_product.hpp"      // for add_lrm...
-#include <algorithm>                                         // for transform
-#include <complex>                                           // for complex
-#include <vector>                                            // for vector
+#include "execution_policies.hpp"
+#include <algorithm> // for transform
+#include <complex>   // for complex
+#include <vector>    // for vector
 
 namespace htool {
 
@@ -156,6 +157,42 @@ void openmp_internal_add_hmatrix_vector_product(char trans, CoefficientPrecision
 #endif
         Blas<CoefficientPrecision>::axpy(&out_size, &alpha, temp.data(), &incx, out, &incy);
     }
+}
+
+template <typename ExecutionPolicy, typename CoefficientPrecision, typename CoordinatePrecision = CoefficientPrecision>
+void add_hmatrix_vector_product(ExecutionPolicy &&, char trans, CoefficientPrecision alpha, const HMatrix<CoefficientPrecision, CoordinatePrecision> &A, const CoefficientPrecision *in, CoefficientPrecision beta, CoefficientPrecision *out, CoefficientPrecision *buffer = nullptr) {
+    auto &source_cluster = A.get_source_cluster();
+    auto &target_cluster = A.get_target_cluster();
+    std::vector<CoefficientPrecision> tmp(buffer == nullptr ? target_cluster.get_size() + source_cluster.get_size() : 0, 0);
+    CoefficientPrecision *buffer_ptr = buffer == nullptr ? tmp.data() : buffer;
+    user_to_cluster(source_cluster, in, buffer_ptr);
+    user_to_cluster(target_cluster, out, buffer_ptr + source_cluster.get_size());
+
+#if defined(__cpp_lib_execution) && __cplusplus >= 201703L
+    if constexpr (std::is_execution_policy_v<std::decay_t<ExecutionPolicy>>) {
+        if constexpr (std::is_same_v<std::decay_t<ExecutionPolicy>, std::execution::parallel_policy>) {
+            openmp_internal_add_hmatrix_vector_product(trans, alpha, A, buffer_ptr, beta, buffer_ptr + source_cluster.get_size());
+        } else if constexpr (std::is_same_v<std::decay_t<ExecutionPolicy>, std::execution::sequenced_policy>) {
+            sequential_internal_add_hmatrix_vector_product(trans, alpha, A, buffer_ptr, beta, buffer_ptr + source_cluster.get_size());
+        } else {
+            static_assert(false, "Invalid execution policy for add_hmatrix_vector_product.");
+        }
+    } else {
+        static_assert(false, "Invalid execution policy for add_hmatrix_vector_product.");
+    }
+#else
+    openmp_internal_add_hmatrix_vector_product(trans, alpha, A, buffer_ptr, beta, buffer_ptr + source_cluster.get_size());
+#endif
+    cluster_to_user(target_cluster, buffer_ptr + source_cluster.get_size(), out);
+}
+
+template <typename CoefficientPrecision, typename CoordinatePrecision = CoefficientPrecision>
+void add_hmatrix_vector_product(char trans, CoefficientPrecision alpha, const HMatrix<CoefficientPrecision, CoordinatePrecision> &A, const CoefficientPrecision *in, CoefficientPrecision beta, CoefficientPrecision *out, CoefficientPrecision *buffer = nullptr) {
+#if defined(__cpp_lib_execution) && __cplusplus >= 201703L
+    add_hmatrix_vector_product(std::execution::par, trans, alpha, A, in, beta, out, buffer);
+#else
+    add_hmatrix_vector_product(nullptr, trans, alpha, A, in, beta, out, buffer);
+#endif
 }
 
 } // namespace htool
