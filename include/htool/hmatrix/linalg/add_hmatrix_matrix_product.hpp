@@ -155,6 +155,15 @@ void internal_add_hmatrix_matrix_product(char transa, char transb, CoefficientPr
     SVD_recompression(C);
 }
 
+#if !defined(__cpp_lib_execution) || __cplusplus < 201703L
+#    if defined(__clang__)
+#        pragma clang diagnostic push
+#        pragma clang diagnostic ignored "-Wunused-parameter"
+#    elif defined(__GNUC__) || defined(__GNUG__)
+#        pragma GCC diagnostic push
+#        pragma GCC diagnostic ignored "-Wunused-parameter]"
+#    endif
+#endif
 template <typename ExecutionPolicy, typename CoefficientPrecision, typename CoordinatePrecision = CoefficientPrecision>
 void add_hmatrix_matrix_product(ExecutionPolicy &&execution_policy, char transa, char transb, CoefficientPrecision alpha, const HMatrix<CoefficientPrecision, CoordinatePrecision> &A, const Matrix<CoefficientPrecision> &B, CoefficientPrecision beta, Matrix<CoefficientPrecision> &C, CoefficientPrecision *buffer = nullptr) {
     auto &target_cluster = A.get_target_cluster();
@@ -183,6 +192,13 @@ void add_hmatrix_matrix_product(ExecutionPolicy &&execution_policy, char transa,
         cluster_to_user(target_cluster, permuted_C.data() + target_cluster.get_size() * i, C.data() + target_cluster.get_size() * i);
     }
 }
+#if !defined(__cpp_lib_execution) || __cplusplus < 201703L
+#    if defined(__clang__)
+#        pragma clang diagnostic pop
+#    elif defined(__GNUC__) || defined(__GNUG__)
+#        pragma GCC diagnostic pop
+#    endif
+#endif
 
 template <typename CoefficientPrecision, typename CoordinatePrecision = CoefficientPrecision>
 void add_hmatrix_matrix_product(char transa, char transb, CoefficientPrecision alpha, const HMatrix<CoefficientPrecision, CoordinatePrecision> &A, const Matrix<CoefficientPrecision> &B, CoefficientPrecision beta, Matrix<CoefficientPrecision> &C, CoefficientPrecision *buffer = nullptr) {
