@@ -70,7 +70,7 @@ void SVD_recompression(LowRankMatrix<CoefficientPrecision> &lrmat) {
             std::vector<CoefficientPrecision> work(1);
             tau_QR.resize(std::min(M, N));
             Lapack<CoefficientPrecision>::geqrf(&M, &N, U.data(), &lda, tau_QR.data(), work.data(), &lwork, &info);
-            lwork = (int)std::real(work[0]);
+            lwork = static_cast<int>(std::real(work[0]));
             work.resize(lwork);
             Lapack<CoefficientPrecision>::geqrf(&M, &N, U.data(), &lda, tau_QR.data(), work.data(), &lwork, &info);
         }
@@ -86,7 +86,7 @@ void SVD_recompression(LowRankMatrix<CoefficientPrecision> &lrmat) {
             std::vector<CoefficientPrecision> work(1);
             tau_LQ.resize(std::min(M, N));
             Lapack<CoefficientPrecision>::gelqf(&M, &N, V.data(), &lda, tau_LQ.data(), work.data(), &lwork, &info);
-            lwork = (int)std::real(work[0]);
+            lwork = static_cast<int>(std::real(work[0]));
             work.resize(lwork);
             Lapack<CoefficientPrecision>::gelqf(&M, &N, V.data(), &lda, tau_LQ.data(), work.data(), &lwork, &info);
         }
@@ -154,7 +154,7 @@ void SVD_recompression(LowRankMatrix<CoefficientPrecision> &lrmat) {
                 int info;
                 std::vector<CoefficientPrecision> work(1);
                 Lapack<CoefficientPrecision>::mqr(&size, &trans, &M, &N, &K, U.data(), &M, tau_QR.data(), new_U.data(), &ldc, work.data(), &lwork, &info);
-                lwork = (int)std::real(work[0]);
+                lwork = static_cast<int>(std::real(work[0]));
                 work.resize(lwork);
                 Lapack<CoefficientPrecision>::mqr(&size, &trans, &M, &N, &K, U.data(), &M, tau_QR.data(), new_U.data(), &ldc, work.data(), &lwork, &info);
             }
@@ -172,7 +172,7 @@ void SVD_recompression(LowRankMatrix<CoefficientPrecision> &lrmat) {
                 int info;
                 std::vector<CoefficientPrecision> work(1);
                 Lapack<CoefficientPrecision>::mlq(&size, &trans, &M, &N, &K, V.data(), &lda, tau_LQ.data(), new_V.data(), &ldc, work.data(), &lwork, &info);
-                lwork = (int)std::real(work[0]);
+                lwork = static_cast<int>(std::real(work[0]));
                 work.resize(lwork);
                 Lapack<CoefficientPrecision>::mlq(&size, &trans, &M, &N, &K, V.data(), &lda, tau_LQ.data(), new_V.data(), &ldc, work.data(), &lwork, &info);
             }

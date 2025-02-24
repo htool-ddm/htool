@@ -630,7 +630,7 @@ class Matrix {
     */
     friend std::pair<int, int> argmax(const Matrix<T> &M) {
         int p = std::max_element(M.data(), M.data() + M.nb_cols() * M.nb_rows(), [](T a, T b) { return std::abs(a) < std::abs(b); }) - M.data();
-        return std::pair<int, int>(p % M.m_number_of_rows, (int)p / M.m_number_of_rows);
+        return std::pair<int, int>(p % M.m_number_of_rows, p / M.m_number_of_rows);
     }
 
     //! ### Looking for the entry of maximal modulus
@@ -646,9 +646,9 @@ class Matrix {
         }
         int rows = m_number_of_rows;
         int cols = m_number_of_cols;
-        out.write((char *)(&rows), sizeof(int));
-        out.write((char *)(&cols), sizeof(int));
-        out.write((char *)m_data, rows * cols * sizeof(T));
+        out.write(reinterpret_cast<char *>(&rows), sizeof(int));
+        out.write(reinterpret_cast<char *>(&cols), sizeof(int));
+        out.write(reinterpret_cast<char *>(m_data), rows * cols * sizeof(T));
 
         out.close();
         return 0;
@@ -667,15 +667,15 @@ class Matrix {
         }
 
         int rows = 0, cols = 0;
-        in.read((char *)(&rows), sizeof(int));
-        in.read((char *)(&cols), sizeof(int));
+        in.read(reinterpret_cast<char *>(&rows), sizeof(int));
+        in.read(reinterpret_cast<char *>(&cols), sizeof(int));
         if (m_number_of_rows != 0 && m_number_of_cols != 0 && m_is_owning_data)
             delete[] m_data;
         m_data           = new T[rows * cols];
         m_number_of_rows = rows;
         m_number_of_cols = cols;
         m_is_owning_data = true;
-        in.read((char *)&(m_data[0]), rows * cols * sizeof(T));
+        in.read(reinterpret_cast<char *>(&(m_data[0])), rows * cols * sizeof(T));
 
         in.close();
         return 0;

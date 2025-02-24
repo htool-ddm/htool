@@ -74,7 +74,7 @@ int main(int, char *[]) {
         std::vector<double> rwork(5 * std::min(nr, nc));
 
         Lapack<double>::gesvd("A", "A", &nr, &nc, matrix.data(), &lda, singular_values.data(), u.data(), &ldu, vt.data(), &ldvt, work.data(), &lwork, rwork.data(), &info);
-        lwork = (int)std::real(work[0]);
+        lwork = static_cast<int>(std::real(work[0]));
         work.resize(lwork);
         Lapack<double>::gesvd("A", "A", &nr, &nc, matrix.data(), &lda, singular_values.data(), u.data(), &ldu, vt.data(), &ldvt, work.data(), &lwork, rwork.data(), &info);
 

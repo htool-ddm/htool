@@ -303,7 +303,7 @@ class DDM {
                 MPI_Reduce(&(nevi_min), &(nevi_min), 1, MPI_INT, MPI_MIN, 0, m_hpddm_op->HA->get_comm());
             }
 
-            infos["DDM_local_coarse_size_mean"] = NbrToStr((double)nevi_mean / (double)sizeWorld);
+            infos["DDM_local_coarse_size_mean"] = NbrToStr(static_cast<double>(nevi_mean) / static_cast<double>(sizeWorld));
             infos["DDM_local_coarse_size_max"]  = NbrToStr(nevi_max);
             infos["DDM_local_coarse_size_min"]  = NbrToStr(nevi_min);
 

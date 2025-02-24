@@ -28,7 +28,7 @@ int SVD_truncation(Matrix<CoefficientPrecision> &A, htool::underlying_type<Coeff
         std::vector<underlying_type<CoefficientPrecision>> rwork(5 * std::min(M, N));
 
         Lapack<CoefficientPrecision>::gesvd("A", "A", &M, &N, A.data(), &lda, singular_values.data(), u.data(), &ldu, vt.data(), &ldvt, work.data(), &lwork, rwork.data(), &info);
-        lwork = (int)std::real(work[0]);
+        lwork = static_cast<int>(std::real(work[0]));
         work.resize(lwork);
         Lapack<CoefficientPrecision>::gesvd("A", "A", &M, &N, A.data(), &lda, singular_values.data(), u.data(), &ldu, vt.data(), &ldvt, work.data(), &lwork, rwork.data(), &info);
     }
