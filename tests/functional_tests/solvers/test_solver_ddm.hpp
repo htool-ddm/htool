@@ -77,7 +77,7 @@ int test_solver_ddm(int argc, char *argv[], int mu, char data_symmetry, char sym
     if (rank == 0)
         std::cout << "Creating HMatrix" << std::endl;
 
-    DefaultApproximationBuilder<std::complex<double>, htool::underlying_type<std::complex<double>>> default_build(Generator, target_cluster, target_cluster, epsilon, eta, symmetric, UPLO, MPI_COMM_WORLD);
+    DefaultApproximationBuilder<std::complex<double>, htool::underlying_type<std::complex<double>>> default_build(Generator, target_cluster, target_cluster, HMatrixTreeBuilder<std::complex<double>>(epsilon, eta, symmetric, UPLO), MPI_COMM_WORLD);
 
     DistributedOperator<std::complex<double>> &Operator = default_build.distributed_operator;
 
@@ -296,7 +296,7 @@ int test_solver_ddm<DDMSolverBuilder<complex<double>>>(int argc, char *argv[], i
     if (rank == 0)
         std::cout << "Creating HMatrix" << std::endl;
 
-    DefaultApproximationBuilder<std::complex<double>, htool::underlying_type<std::complex<double>>> default_build(Generator, target_cluster, target_cluster, epsilon, eta, symmetric, UPLO, MPI_COMM_WORLD);
+    DefaultApproximationBuilder<std::complex<double>, htool::underlying_type<std::complex<double>>> default_build(Generator, target_cluster, target_cluster, HMatrixTreeBuilder<std::complex<double>>(epsilon, eta, symmetric, UPLO), MPI_COMM_WORLD);
 
     DistributedOperator<std::complex<double>> &Operator = default_build.distributed_operator;
 

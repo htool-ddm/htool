@@ -78,7 +78,7 @@ int test_solver_wo_overlap(int argc, char *argv[], int mu, char symmetric, char 
     if (rank == 0)
         std::cout << "Creating HMatrix" << std::endl;
 
-    DefaultApproximationBuilder<Cplx, htool::underlying_type<Cplx>> default_build(Generator, target_cluster, target_cluster, epsilon, eta, symmetric, UPLO, MPI_COMM_WORLD);
+    DefaultApproximationBuilder<Cplx, htool::underlying_type<Cplx>> default_build(Generator, target_cluster, target_cluster, HMatrixTreeBuilder<std::complex<double>>(epsilon, eta, symmetric, UPLO), MPI_COMM_WORLD);
 
     DistributedOperator<Cplx> &Operator        = default_build.distributed_operator;
     HMatrix<Cplx> local_block_diagonal_hmatrix = *default_build.block_diagonal_hmatrix;
