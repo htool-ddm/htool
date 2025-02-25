@@ -14,7 +14,7 @@
 
 namespace htool {
 
-template <typename CoefficientPrecision, typename CoordinatePrecision = CoefficientPrecision>
+template <typename CoefficientPrecision, typename CoordinatePrecision = underlying_type<CoefficientPrecision>>
 void internal_add_hmatrix_lrmat_product(char transa, char transb, CoefficientPrecision alpha, const HMatrix<CoefficientPrecision, CoordinatePrecision> &A, const LowRankMatrix<CoefficientPrecision> &B, CoefficientPrecision beta, Matrix<CoefficientPrecision> &C) {
     auto rank = B.rank_of();
 
@@ -37,7 +37,7 @@ void internal_add_hmatrix_lrmat_product(char transa, char transb, CoefficientPre
     }
 }
 
-template <typename CoefficientPrecision, typename CoordinatePrecision = CoefficientPrecision>
+template <typename CoefficientPrecision, typename CoordinatePrecision = underlying_type<CoefficientPrecision>>
 void internal_add_hmatrix_lrmat_product(char transa, char transb, CoefficientPrecision alpha, const HMatrix<CoefficientPrecision, CoordinatePrecision> &A, const LowRankMatrix<CoefficientPrecision> &B, CoefficientPrecision beta, LowRankMatrix<CoefficientPrecision> &C) {
     auto rank = B.rank_of();
 
@@ -113,7 +113,7 @@ void internal_add_hmatrix_lrmat_product(char transa, char transb, CoefficientPre
     }
 }
 
-template <typename CoefficientPrecision, typename CoordinatePrecision = CoefficientPrecision>
+template <typename CoefficientPrecision, typename CoordinatePrecision = underlying_type<CoefficientPrecision>>
 void internal_add_hmatrix_lrmat_product(char transa, char transb, CoefficientPrecision alpha, const HMatrix<CoefficientPrecision, CoordinatePrecision> &A, const LowRankMatrix<CoefficientPrecision> &B, CoefficientPrecision beta, HMatrix<CoefficientPrecision, CoordinatePrecision> &C) {
     if (beta != CoefficientPrecision(1)) {
         scale(beta, C);

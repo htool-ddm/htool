@@ -12,7 +12,7 @@
 
 namespace htool {
 
-template <typename CoefficientPrecision, typename CoordinatePrecision = CoefficientPrecision>
+template <typename CoefficientPrecision, typename CoordinatePrecision = underlying_type<CoefficientPrecision>>
 class LocalOperator : public VirtualLocalOperator<CoefficientPrecision> {
   protected:
     const Cluster<CoordinatePrecision> &m_target_cluster, &m_source_cluster;

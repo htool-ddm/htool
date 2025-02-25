@@ -8,7 +8,7 @@
 
 namespace htool {
 
-template <typename CoefficientPrecision, typename CoordinatePrecision = CoefficientPrecision>
+template <typename CoefficientPrecision, typename CoordinatePrecision = underlying_type<CoefficientPrecision>>
 void openmp_scale(CoefficientPrecision da, HMatrix<CoefficientPrecision, CoordinatePrecision> &A) {
     std::vector<HMatrix<CoefficientPrecision, CoordinatePrecision> *> leaves;
     preorder_tree_traversal(A, [&leaves](HMatrix<CoefficientPrecision, CoordinatePrecision> &current_node) {
@@ -34,7 +34,7 @@ void openmp_scale(CoefficientPrecision da, HMatrix<CoefficientPrecision, Coordin
     }
 }
 
-template <typename CoefficientPrecision, typename CoordinatePrecision = CoefficientPrecision>
+template <typename CoefficientPrecision, typename CoordinatePrecision = underlying_type<CoefficientPrecision>>
 void sequential_scale(CoefficientPrecision da, HMatrix<CoefficientPrecision, CoordinatePrecision> &A) {
     std::vector<HMatrix<CoefficientPrecision, CoordinatePrecision> *> leaves;
     preorder_tree_traversal(A, [&leaves](HMatrix<CoefficientPrecision, CoordinatePrecision> &current_node) {
@@ -51,7 +51,7 @@ void sequential_scale(CoefficientPrecision da, HMatrix<CoefficientPrecision, Coo
     }
 }
 
-template <typename CoefficientPrecision, typename CoordinatePrecision = CoefficientPrecision>
+template <typename CoefficientPrecision, typename CoordinatePrecision = underlying_type<CoefficientPrecision>>
 void scale(CoefficientPrecision da, HMatrix<CoefficientPrecision, CoordinatePrecision> &A) {
     openmp_scale(da, A);
 }

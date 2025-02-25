@@ -11,7 +11,7 @@
 #include <vector>                              // for vector
 namespace htool {
 
-template <typename CoefficientPrecision, typename CoordinatePrecision = CoefficientPrecision>
+template <typename CoefficientPrecision, typename CoordinatePrecision = underlying_type<CoefficientPrecision>>
 void internal_add_lrmat_hmatrix(const LowRankMatrix<CoefficientPrecision> &lrmat, HMatrix<CoefficientPrecision, CoordinatePrecision> &hmatrix) {
     std::vector<HMatrix<CoefficientPrecision, CoordinatePrecision> *> leaves;
     preorder_tree_traversal(hmatrix, [&leaves](HMatrix<CoefficientPrecision, CoordinatePrecision> &current_node) {
