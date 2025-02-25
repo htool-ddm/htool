@@ -17,10 +17,21 @@ class VirtualInternalGenerator {
     virtual ~VirtualInternalGenerator() {}
 };
 
+/// @brief Define the interface for the user to give Htool a function generating dense sub-blocks of the global matrix the user wants to compress. This is done by the user implementing VirtualGenerator::copy_submatrix.
+/// @tparam CoefficientPrecision Precision of the coefficients (float, double,...)
 template <typename CoefficientPrecision>
 class VirtualGenerator {
 
   public:
+    /**
+     * @brief Generate a dense sub-block of the global matrix the user wants to compress. Note that sub-blocks queried by Htool are potentially non-contiguous in the user's numbering.
+     *
+     * @param[in] M specifies the number of columns of the queried block
+     * @param[in] N specifies the number of rows of the queried block
+     * @param[in] rows is an integer array of size \f$M\f$. It specifies the queried columns in the user's numbering
+     * @param[in] cols is an integer array of size \f$N\f$. It specifies the queried rows in the user's numbering
+     * @param[out] ptr is a \p CoefficientPrecision precision array of size \f$ M\times N\f$. Htool already allocates and desallocates it internally, so it should **not** be allocated by the user.
+     */
     virtual void copy_submatrix(int M, int N, const int *rows, const int *cols, CoefficientPrecision *ptr) const = 0;
 
     VirtualGenerator() {}

@@ -195,6 +195,9 @@ class DDMSolverWithDenseLocalSolver {
     DDMSolverWithDenseLocalSolver(DistributedOperator<CoefficientPrecision> &distributed_operator, const std::vector<int> &ovr_subdomain_to_global, const std::vector<int> &cluster_to_ovr_subdomain, const std::vector<int> &neighbors, const std::vector<std::vector<int>> &intersections, const VirtualGenerator<CoefficientPrecision> &generator, int spatial_dimension, const CoordinatePrecision *global_geometry, underlying_type<CoefficientPrecision> epsilon, CoordinatePrecision eta) : m_local_numbering(ovr_subdomain_to_global, cluster_to_ovr_subdomain, intersections), local_to_global_numbering(m_local_numbering.local_to_global_numbering), local_cluster(std::make_unique<Cluster<CoordinatePrecision>>(initialize_local_cluster(spatial_dimension, global_geometry))), local_hmatrix(std::make_unique<HMatrix<CoefficientPrecision, CoordinatePrecision>>(initialize_local_hmatrix(generator, epsilon, eta, distributed_operator.get_symmetry_type()))), block_diagonal_dense_matrix(initialize_diagonal_block_with_overlap(*local_hmatrix)), solver(make_DDM_solver(distributed_operator, block_diagonal_dense_matrix, neighbors, m_local_numbering.intersections)) {}
 };
 
+/// @brief Builder that encapsulates all the implementation details for constructing DDM object.
+/// @tparam CoefficientPrecision
+/// @tparam CoordinatePrecision
 template <typename CoefficientPrecision, typename CoordinatePrecision = underlying_type<CoefficientPrecision>>
 class DDMSolverBuilder {
   private:
@@ -334,17 +337,43 @@ class DDMSolverBuilder {
     };
 
   public:
+    /// @brief HMatrix associated with the local problem with overlap. Built only if not using a HMatrix associated h the local problem without overlap.
     std::unique_ptr<HMatrix<CoefficientPrecision, CoordinatePrecision>> local_hmatrix;
+
+    /// @brief Dense blocks related to the overlap when using a solver with overlap, and a HMatrix for the local problem without overlap.
     std::array<Matrix<CoefficientPrecision>, 3> blocks_in_overlap; // B,C,D
+
+    /// @brief Resulting solver from builder.
     DDM<CoefficientPrecision, HPDDMCustomLocalSolver> solver;
 
-    // Block Jacobi
+    /// @brief Builder for DDM Block Jacobi solver (without overlap). The \p block_diagonal_hmatrix corresponding to the local subproblem is usually taken from the local diagonal block of the \p distributed_operator.
+    /// @param distributed_operator
+    /// @param block_diagonal_hmatrix
     DDMSolverBuilder(DistributedOperator<CoefficientPrecision> &distributed_operator, HMatrix<CoefficientPrecision, CoordinatePrecision> &block_diagonal_hmatrix) : local_to_global_numbering(block_diagonal_hmatrix.get_target_cluster().get_permutation()), solver(make_DDM_solver_w_custom_local_solver(distributed_operator, block_diagonal_hmatrix, m_neighbors, m_intersections, false)) {}
 
-    // DDM building local hmatrix adding overlap
+    /// @brief Builder for DDM Schwarz solver (with overlap), where \p block_diagonal_hmatrix correspond to the problem for the subdomain without overlap, usually taken from the local diagonal block of the \p distributed_operator. The problem in the overlapping subdomain is then assembled as a 2x2 block matrix where one diagonal block is the previous HMatrix, and the other blocks are dense blocks stored in #blocks_in_overlap.
+    /// @param distributed_operator
+    /// @param block_diagonal_hmatrix
+    /// @param generator
+    /// @param ovr_subdomain_to_global
+    /// @param cluster_to_ovr_subdomain
+    /// @param neighbors
+    /// @param intersections
     DDMSolverBuilder(DistributedOperator<CoefficientPrecision> &distributed_operator, HMatrix<CoefficientPrecision, CoordinatePrecision> &block_diagonal_hmatrix, const VirtualGenerator<CoefficientPrecision> &generator, const std::vector<int> &ovr_subdomain_to_global, const std::vector<int> &cluster_to_ovr_subdomain, const std::vector<int> &neighbors, const std::vector<std::vector<int>> &intersections) : m_local_numbering(ovr_subdomain_to_global, cluster_to_ovr_subdomain, intersections), local_to_global_numbering(m_local_numbering.local_to_global_numbering), blocks_in_overlap(initialize_blocks_in_overlap(distributed_operator, block_diagonal_hmatrix, generator)), solver(make_DDM_solver_w_custom_local_solver(distributed_operator, block_diagonal_hmatrix, blocks_in_overlap[0], blocks_in_overlap[1], blocks_in_overlap[2], neighbors, m_local_numbering.intersections)) {}
 
-    // DDM building local hmatrix with overlap
+    /// @brief Builder for DDM Schwarz solver (with overlap), where a HMatrix for the local subproblem with overlap is assembled and stored in #local_hmatrix. It can be useful when the DistributedOperator is not using any HMatrix for local compression.
+    /// @param distributed_operator
+    /// @param ovr_subdomain_to_global
+    /// @param cluster_to_ovr_subdomain
+    /// @param neighbors
+    /// @param intersections
+    /// @param generator
+    /// @param spatial_dimension
+    /// @param global_geometry
+    /// @param radii
+    /// @param weights
+    /// @param cluster_tree_builder
+    /// @param local_hmatrix_builder
     DDMSolverBuilder(DistributedOperator<CoefficientPrecision> &distributed_operator, const std::vector<int> &ovr_subdomain_to_global, const std::vector<int> &cluster_to_ovr_subdomain, const std::vector<int> &neighbors, const std::vector<std::vector<int>> &intersections, const VirtualGenerator<CoefficientPrecision> &generator, int spatial_dimension, const CoordinatePrecision *global_geometry, const CoordinatePrecision *radii, const CoordinatePrecision *weights, const ClusterTreeBuilder<CoordinatePrecision> &cluster_tree_builder, const HMatrixTreeBuilder<CoefficientPrecision, CoordinatePrecision> &local_hmatrix_builder) : m_local_numbering(ovr_subdomain_to_global, cluster_to_ovr_subdomain, intersections), local_to_global_numbering(m_local_numbering.local_to_global_numbering), m_local_cluster(std::make_unique<Cluster<CoordinatePrecision>>(initialize_local_cluster(spatial_dimension, global_geometry, radii, weights, cluster_tree_builder))), local_hmatrix(std::make_unique<HMatrix<CoefficientPrecision, CoordinatePrecision>>(initialize_local_hmatrix(generator, local_hmatrix_builder))), solver(make_DDM_solver_w_custom_local_solver(distributed_operator, *local_hmatrix, neighbors, m_local_numbering.intersections, true)) {}
 
     DDMSolverBuilder(DistributedOperator<CoefficientPrecision> &distributed_operator, const std::vector<int> &ovr_subdomain_to_global, const std::vector<int> &cluster_to_ovr_subdomain, const std::vector<int> &neighbors, const std::vector<std::vector<int>> &intersections, const VirtualGenerator<CoefficientPrecision> &generator, int spatial_dimension, const CoordinatePrecision *global_geometry, const ClusterTreeBuilder<CoordinatePrecision> &cluster_tree_builder, const HMatrixTreeBuilder<CoefficientPrecision, CoordinatePrecision> &local_hmatrix_builder) : DDMSolverBuilder(distributed_operator, ovr_subdomain_to_global, cluster_to_ovr_subdomain, neighbors, intersections, generator, spatial_dimension, global_geometry, nullptr, nullptr, cluster_tree_builder, local_hmatrix_builder) {}

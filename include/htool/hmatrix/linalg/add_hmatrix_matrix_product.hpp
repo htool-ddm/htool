@@ -164,6 +164,20 @@ void internal_add_hmatrix_matrix_product(char transa, char transb, CoefficientPr
 #        pragma GCC diagnostic ignored "-Wunused-parameter"
 #    endif
 #endif
+
+/// @brief test
+/// @tparam ExecutionPolicy
+/// @tparam CoefficientPrecision
+/// @tparam CoordinatePrecision
+/// @param execution_policy
+/// @param transa
+/// @param transb
+/// @param alpha
+/// @param A
+/// @param B
+/// @param beta
+/// @param C
+/// @param buffer
 template <typename ExecutionPolicy, typename CoefficientPrecision, typename CoordinatePrecision = underlying_type<CoefficientPrecision>>
 void add_hmatrix_matrix_product(ExecutionPolicy &&execution_policy, char transa, char transb, CoefficientPrecision alpha, const HMatrix<CoefficientPrecision, CoordinatePrecision> &A, const Matrix<CoefficientPrecision> &B, CoefficientPrecision beta, Matrix<CoefficientPrecision> &C, CoefficientPrecision *buffer = nullptr) {
     auto &target_cluster = A.get_target_cluster();
@@ -200,6 +214,17 @@ void add_hmatrix_matrix_product(ExecutionPolicy &&execution_policy, char transa,
 #    endif
 #endif
 
+/// @brief
+/// @tparam CoefficientPrecision
+/// @tparam CoordinatePrecision
+/// @param transa
+/// @param transb
+/// @param alpha
+/// @param A
+/// @param B
+/// @param beta
+/// @param C
+/// @param buffer
 template <typename CoefficientPrecision, typename CoordinatePrecision = underlying_type<CoefficientPrecision>>
 void add_hmatrix_matrix_product(char transa, char transb, CoefficientPrecision alpha, const HMatrix<CoefficientPrecision, CoordinatePrecision> &A, const Matrix<CoefficientPrecision> &B, CoefficientPrecision beta, Matrix<CoefficientPrecision> &C, CoefficientPrecision *buffer = nullptr) {
 #if defined(__cpp_lib_execution) && __cplusplus >= 201703L

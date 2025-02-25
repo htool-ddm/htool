@@ -159,6 +159,17 @@ void openmp_internal_add_hmatrix_vector_product(char trans, CoefficientPrecision
     }
 }
 
+/// @brief
+/// @tparam ExecutionPolicy
+/// @tparam CoefficientPrecision
+/// @tparam CoordinatePrecision
+/// @param trans
+/// @param alpha
+/// @param A
+/// @param in
+/// @param beta
+/// @param out
+/// @param buffer
 template <typename ExecutionPolicy, typename CoefficientPrecision, typename CoordinatePrecision = underlying_type<CoefficientPrecision>>
 void add_hmatrix_vector_product(ExecutionPolicy &&, char trans, CoefficientPrecision alpha, const HMatrix<CoefficientPrecision, CoordinatePrecision> &A, const CoefficientPrecision *in, CoefficientPrecision beta, CoefficientPrecision *out, CoefficientPrecision *buffer = nullptr) {
     auto &source_cluster = A.get_source_cluster();
@@ -186,6 +197,16 @@ void add_hmatrix_vector_product(ExecutionPolicy &&, char trans, CoefficientPreci
     cluster_to_user(target_cluster, buffer_ptr + source_cluster.get_size(), out);
 }
 
+/// @brief
+/// @tparam CoefficientPrecision
+/// @tparam CoordinatePrecision
+/// @param trans
+/// @param alpha
+/// @param A
+/// @param in
+/// @param beta
+/// @param out
+/// @param buffer
 template <typename CoefficientPrecision, typename CoordinatePrecision = underlying_type<CoefficientPrecision>>
 void add_hmatrix_vector_product(char trans, CoefficientPrecision alpha, const HMatrix<CoefficientPrecision, CoordinatePrecision> &A, const CoefficientPrecision *in, CoefficientPrecision beta, CoefficientPrecision *out, CoefficientPrecision *buffer = nullptr) {
 #if defined(__cpp_lib_execution) && __cplusplus >= 201703L

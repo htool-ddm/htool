@@ -14,6 +14,10 @@
 
 namespace htool {
 
+/// @brief
+/// @tparam CoefficientPrecision
+/// @tparam CoordinatePrecision
+/// @param hmatrix
 template <typename CoefficientPrecision, typename CoordinatePrecision = underlying_type<CoefficientPrecision>>
 void lu_factorization(HMatrix<CoefficientPrecision, CoordinatePrecision> &hmatrix) {
     if (!hmatrix.is_block_tree_consistent()) {
@@ -88,6 +92,11 @@ void internal_lu_solve(char trans, const HMatrix<CoefficientPrecision, Coordinat
     }
 }
 
+/// @brief
+/// @tparam CoefficientPrecision
+/// @tparam CoordinatePrecision
+/// @param UPLO
+/// @param hmatrix
 template <typename CoefficientPrecision, typename CoordinatePrecision = underlying_type<CoefficientPrecision>>
 void cholesky_factorization(char UPLO, HMatrix<CoefficientPrecision, CoordinatePrecision> &hmatrix) {
     if (!hmatrix.is_block_tree_consistent()) {
@@ -176,6 +185,12 @@ void internal_cholesky_solve(char UPLO, const HMatrix<CoefficientPrecision, Coor
     }
 }
 
+/// @brief
+/// @tparam CoefficientPrecision
+/// @tparam CoordinatePrecision
+/// @param trans
+/// @param A
+/// @param X
 template <typename CoefficientPrecision, typename CoordinatePrecision = underlying_type<CoefficientPrecision>>
 void lu_solve(char trans, const HMatrix<CoefficientPrecision, CoordinatePrecision> &A, Matrix<CoefficientPrecision> &X) {
 
@@ -193,6 +208,12 @@ void lu_solve(char trans, const HMatrix<CoefficientPrecision, CoordinatePrecisio
     }
 }
 
+/// @brief
+/// @tparam CoefficientPrecision
+/// @tparam CoordinatePrecision
+/// @param UPLO
+/// @param A
+/// @param X
 template <typename CoefficientPrecision, typename CoordinatePrecision = underlying_type<CoefficientPrecision>>
 void cholesky_solve(char UPLO, const HMatrix<CoefficientPrecision, CoordinatePrecision> &A, Matrix<CoefficientPrecision> &X) {
 
