@@ -371,9 +371,10 @@ bool test_default_distributed_operator(int nr, int nc, int mu, bool use_permutat
 
     // Generator
     GeneratorTestType generator_in_user_numbering(3, p1, p2);
+    HMatrixTreeBuilder<T, htool::underlying_type<T>> hmatrix_tree_builder(epsilon, eta, Symmetry, UPLO);
 
     if (off_diagonal_approximation) {
-        DefaultLocalApproximationBuilder<T, htool::underlying_type<T>> distributed_operator_holder(generator_in_user_numbering, *target_root_cluster, *source_root_cluster, epsilon, eta, Symmetry, UPLO, MPI_COMM_WORLD);
+        DefaultLocalApproximationBuilder<T, htool::underlying_type<T>> distributed_operator_holder(generator_in_user_numbering, *target_root_cluster, *source_root_cluster, hmatrix_tree_builder, MPI_COMM_WORLD);
 
         DistributedOperator<T> &distributed_operator = distributed_operator_holder.distributed_operator;
         distributed_operator.use_permutation()       = use_permutation;
@@ -381,7 +382,7 @@ bool test_default_distributed_operator(int nr, int nc, int mu, bool use_permutat
 
         test = test_vector_product(generator_in_user_numbering, distributed_operator, *target_root_cluster, MasterOffset_target, *source_root_cluster, MasterOffset_source, mu, op, use_permutation, epsilon);
     } else {
-        DefaultApproximationBuilder<T, htool::underlying_type<T>> distributed_operator_holder(generator_in_user_numbering, *target_root_cluster, *source_root_cluster, epsilon, eta, Symmetry, UPLO, MPI_COMM_WORLD);
+        DefaultApproximationBuilder<T, htool::underlying_type<T>> distributed_operator_holder(generator_in_user_numbering, *target_root_cluster, *source_root_cluster, hmatrix_tree_builder, MPI_COMM_WORLD);
 
         DistributedOperator<T> &distributed_operator = distributed_operator_holder.distributed_operator;
         distributed_operator.use_permutation()       = use_permutation;
