@@ -54,7 +54,7 @@ void internal_add_hmatrix_matrix_product_row_major(char transa, char transb, std
     }
 }
 
-template <typename CoefficientPrecision, typename CoordinatePrecision = CoefficientPrecision>
+template <typename CoefficientPrecision, typename CoordinatePrecision = underlying_type<CoefficientPrecision>>
 void sequential_internal_add_hmatrix_matrix_product_row_major(char transa, char transb, CoefficientPrecision alpha, const HMatrix<CoefficientPrecision, CoordinatePrecision> &A, const CoefficientPrecision *B, CoefficientPrecision beta, CoefficientPrecision *C, int mu) {
     std::vector<const HMatrix<CoefficientPrecision, CoordinatePrecision> *> leaves;
     std::vector<const HMatrix<CoefficientPrecision, CoordinatePrecision> *> leaves_for_symmetry;
@@ -109,7 +109,7 @@ void sequential_internal_add_hmatrix_matrix_product_row_major(char transa, char 
     Blas<CoefficientPrecision>::axpy(&out_size, &alpha, temp.data(), &incx, C, &incy);
 }
 
-template <typename CoefficientPrecision, typename CoordinatePrecision = CoefficientPrecision>
+template <typename CoefficientPrecision, typename CoordinatePrecision = underlying_type<CoefficientPrecision>>
 void openmp_internal_add_hmatrix_matrix_product_row_major(char transa, char transb, CoefficientPrecision alpha, const HMatrix<CoefficientPrecision, CoordinatePrecision> &A, const CoefficientPrecision *B, CoefficientPrecision beta, CoefficientPrecision *C, int mu) {
     std::vector<const HMatrix<CoefficientPrecision, CoordinatePrecision> *> leaves;
     std::vector<const HMatrix<CoefficientPrecision, CoordinatePrecision> *> leaves_for_symmetry;
