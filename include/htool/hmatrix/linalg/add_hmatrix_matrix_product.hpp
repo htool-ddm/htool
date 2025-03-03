@@ -30,10 +30,10 @@ void internal_add_hmatrix_matrix_product(ExecutionPolicy &&, char transa, char t
             } else if constexpr (std::is_same_v<std::decay_t<ExecutionPolicy>, std::execution::sequenced_policy>) {
                 sequential_internal_add_hmatrix_matrix_product_row_major(transa, transb, alpha, A, transposed_B.data(), beta, transposed_C.data(), transposed_C.nb_rows());
             } else {
-                static_assert(false, "Invalid execution policy for add_hmatrix_vector_product.");
+                static_assert(std::is_same_v<std::decay_t<ExecutionPolicy>, std::execution::sequenced_policy> || std::is_same_v<std::decay_t<ExecutionPolicy>, std::execution::parallel_policy>, "Invalid execution policy for add_hmatrix_vector_product.");
             }
         } else {
-            static_assert(false, "Invalid execution policy for add_hmatrix_vector_product.");
+            static_assert(std::is_execution_policy_v<std::decay_t<ExecutionPolicy>>, "Invalid execution policy for add_hmatrix_vector_product.");
         }
 #else
         sequential_internal_add_hmatrix_matrix_product_row_major(transa, transb, alpha, A, transposed_B.data(), beta, transposed_C.data(), transposed_C.nb_rows());
@@ -56,10 +56,10 @@ void internal_add_hmatrix_matrix_product(ExecutionPolicy &&, char transa, char t
             } else if constexpr (std::is_same_v<std::decay_t<ExecutionPolicy>, std::execution::sequenced_policy>) {
                 sequential_internal_add_hmatrix_matrix_product_row_major(transa, 'N', alpha, A, transb == 'C' ? buffer_B.data() : B.data(), beta, transposed_C.data(), transposed_C.nb_rows());
             } else {
-                static_assert(false, "Invalid execution policy for add_hmatrix_vector_product.");
+                static_assert(!std::is_same_v<std::decay_t<ExecutionPolicy>, std::execution::sequenced_policy> && !std::is_same_v<std::decay_t<ExecutionPolicy>, std::execution::parallel_policy>, "Invalid execution policy for add_hmatrix_vector_product.");
             }
         } else {
-            static_assert(false, "Invalid execution policy for add_hmatrix_vector_product.");
+            static_assert(!std::is_execution_policy_v<std::decay_t<ExecutionPolicy>>, "Invalid execution policy for add_hmatrix_vector_product.");
         }
 #else
         sequential_internal_add_hmatrix_matrix_product_row_major(transa, 'N', alpha, A, transb == 'C' ? buffer_B.data() : B.data(), beta, transposed_C.data(), transposed_C.nb_rows());

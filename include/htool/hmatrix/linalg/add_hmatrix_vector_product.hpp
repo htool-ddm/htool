@@ -175,10 +175,10 @@ void add_hmatrix_vector_product(ExecutionPolicy &&, char trans, CoefficientPreci
         } else if constexpr (std::is_same_v<std::decay_t<ExecutionPolicy>, std::execution::sequenced_policy>) {
             sequential_internal_add_hmatrix_vector_product(trans, alpha, A, buffer_ptr, beta, buffer_ptr + source_cluster.get_size());
         } else {
-            static_assert(false, "Invalid execution policy for add_hmatrix_vector_product.");
+            static_assert(std::is_same_v<std::decay_t<ExecutionPolicy>, std::execution::sequenced_policy> || std::is_same_v<std::decay_t<ExecutionPolicy>, std::execution::parallel_policy>, "Invalid execution policy for add_hmatrix_vector_product.");
         }
     } else {
-        static_assert(false, "Invalid execution policy for add_hmatrix_vector_product.");
+        static_assert(std::is_execution_policy_v<std::decay_t<ExecutionPolicy>>, "Invalid execution policy for add_hmatrix_vector_product.");
     }
 #else
     openmp_internal_add_hmatrix_vector_product(trans, alpha, A, buffer_ptr, beta, buffer_ptr + source_cluster.get_size());
