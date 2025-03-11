@@ -23,16 +23,17 @@ std::size_t cost_function(const HMatrix<CoefficientPrecision, CoordinatePrecisio
 }
 
 /**
- * @brief This function returns a vector of all the nodes in the group tree of the HMatrix
- * that have a cost less than an optimal criterion based on the maximum number of nodes
- * allowed (nb_nodes_max).
+ * @brief Find the nodes of the group tree such that the total cost of their
+ * leaves is less than or equal to nb_nodes_max.
  *
- * The criterion starts as the cost of the root node and is adjusted through a dichotomy
- * search to find an optimal set of nodes that does not exceed nb_nodes_max.
+ * This function performs a dichotomy search to find the optimal criterion
+ * such that the total cost of the nodes of the group tree is less than or
+ * equal to nb_nodes_max.
  *
- * @param hmatrix The input hierarchical matrix.
- * @param nb_nodes_max The maximum number of nodes in the result.
- * @return A vector of all the nodes in the group tree of the HMatrix that have a cost less than an optimal criterion.
+ * @param root_hmatrix The root node of the group tree.
+ * @param nb_nodes_max The maximum total cost of the nodes of the group tree.
+ * @return A vector of pointers to the nodes of the group tree such that the
+ * total cost of their leaves is less than or equal to nb_nodes_max.
  */
 template <typename CoefficientPrecision, typename CoordinatePrecision = underlying_type<CoefficientPrecision>>
 std::vector<const HMatrix<CoefficientPrecision, CoordinatePrecision> *> find_l0(const HMatrix<CoefficientPrecision, CoordinatePrecision> &root_hmatrix, const size_t nb_nodes_max) {
@@ -103,6 +104,17 @@ std::vector<const HMatrix<CoefficientPrecision, CoordinatePrecision> *> count_no
     return result;
 }
 
+/**
+ * @brief Enumerates the dependences of a hierarchical matrix with respect to a set of hierarchical matrices L0.
+ *
+ * The dependences are the hierarchical matrices in L0 that are ancestors or descendants of the given hierarchical matrix.
+ *
+ * The function returns a vector of pointers to the dependences.
+ *
+ * @param hmatrix The input hierarchical matrix.
+ * @param L0 The input set of hierarchical matrices.
+ * @return A vector of pointers to the dependences of hmatrix with respect to L0.
+ */
 template <typename CoefficientPrecision, typename CoordinatePrecision = underlying_type<CoefficientPrecision>>
 std::vector<const HMatrix<CoefficientPrecision, CoordinatePrecision> *> enumerate_dependences(const HMatrix<CoefficientPrecision, CoordinatePrecision> &hmatrix, const std::vector<const HMatrix<CoefficientPrecision, CoordinatePrecision> *> &L0) {
     // Case 1 : hmatrix is in L0
@@ -116,6 +128,9 @@ std::vector<const HMatrix<CoefficientPrecision, CoordinatePrecision> *> enumerat
         if (left_hmatrix_ancestor_of_right_hmatrix(hmatrix, *hmatrix_on_L0)) {
             children.push_back(hmatrix_on_L0);
         }
+    }
+    if (!children.empty()) {
+        return children;
     }
 
     // Case 3 : hmatrix is below L0. Find the unique ancestor of hmatrix in L0

@@ -4,7 +4,7 @@
 #include "hmatrix.hpp"
 
 /*
-This file contain usefull functions for task based hmatrix factorization as described in the phD thesis of Benoit Lizé {https://theses.hal.science/tel-01244260}.
+This file contain usefull functions for visualizing the block tree of a hierarchical matrix
 */
 
 namespace htool {
@@ -15,24 +15,23 @@ struct TreeCounts {
 };
 
 /**
- * @brief Visualizes the block tree of a hierarchical matrix (HMatrix).
+ * @brief Creates a DOT file visualizing the block tree of a hierarchical matrix.
  *
- * This function generates a DOT file representing the hierarchical structure of the given HMatrix.
- * The DOT file is then converted into an SVG image to visualize the block tree.
- * The function first determines an initial set of nodes (L0) with a maximum size of nb_nodes_max.
- * It then writes the block tree data, including nodes and edges, to a DOT file.
- * Tooltip information summarizing the block tree, such as the number of nodes and nodes in L0,
- * is added to the DOT file. Finally, the DOT file is converted to an SVG image using the
- * system's DOT command. Note that to generate a svg, you can use `dot -Tsvg block_tree.dot -o block_tree.svg`.
+ * This function takes a hierarchical matrix and a set of submatrices to color
+ * and generates a DOT file which can be used to visualize the block tree of the hierarchical matrix.
+ * The DOT file will contain a node for each HMatrix in the hierarchical matrix,
+ * and an edge between two nodes if the corresponding HMatrices are in the same
+ * block tree. The nodes are colored according to the set of submatrices given as input.
  *
- * @param hmatrix The input hierarchical matrix to be visualized.
- * @param nb_nodes_max The maximum number of nodes in L0.
+ * The DOT file also contains a tooltip that summarizes the block tree, giving
+ * the number of HMatrices and the number of submatrices to color.
+ *
+ * @param hmatrix The input hierarchical matrix for which the block tree is visualized.
+ * @param subhmatrices_to_color The set of submatrices to color in the block tree.
+ * @param dotFile The output stream to write the DOT file to.
  */
 template <typename CoefficientPrecision, typename CoordinatePrecision = underlying_type<CoefficientPrecision>>
 void view_block_tree(const HMatrix<CoefficientPrecision, CoordinatePrecision> &hmatrix, const std::vector<const HMatrix<CoefficientPrecision, CoordinatePrecision> *> &subhmatrices_to_color, std::ostream &dotFile) {
-    // Find the initial set of nodes L0 with a maximum size of nb_nodes_max
-    // std::vector<const HMatrix<CoefficientPrecision, CoordinatePrecision> *> L0 = find_l0(hmatrix, nb_nodes_max);
-
     // Start the DOT file content
     dotFile << "digraph {\n";
 
