@@ -71,93 +71,74 @@ bool test_hmatrix_task_based(int nr, int nc, char Symmetry, char UPLO, htool::un
     // print_hmatrix_information(root_hmatrix, std::cout);
     save_leaves_with_rank(root_hmatrix, "root_hmatrix_facto");
 
-    //
-    HMatrix<T> &child1       = *root_hmatrix.get_children()[0].get();
-    HMatrix<T> &child2       = *root_hmatrix.get_children()[1].get();
-    HMatrix<T> &child_child1 = *root_hmatrix.get_children()[0].get()->get_children()[0].get();
-    HMatrix<T> &child_child2 = *root_hmatrix.get_children()[0].get()->get_children()[1].get();
+    // Basic tree
+    HMatrix<T> &child1        = *root_hmatrix.get_children()[0].get();
+    HMatrix<T> &child2        = *root_hmatrix.get_children()[1].get();
+    HMatrix<T> &child1_child1 = *root_hmatrix.get_children()[0].get()->get_children()[0].get();
+    HMatrix<T> &child1_child2 = *root_hmatrix.get_children()[0].get()->get_children()[1].get();
 
+    // Tests for left_hmatrix_ancestor_of_right_hmatrix
     is_error = is_error || !(left_hmatrix_ancestor_of_right_hmatrix(root_hmatrix, child1));
     is_error = is_error || !(left_hmatrix_ancestor_of_right_hmatrix(root_hmatrix, child2));
-    is_error = is_error || !(left_hmatrix_ancestor_of_right_hmatrix(root_hmatrix, child_child1));
-    is_error = is_error || !(left_hmatrix_ancestor_of_right_hmatrix(root_hmatrix, child_child2));
+    is_error = is_error || !(left_hmatrix_ancestor_of_right_hmatrix(root_hmatrix, child1_child1));
+    is_error = is_error || !(left_hmatrix_ancestor_of_right_hmatrix(root_hmatrix, child1_child2));
 
-    std::vector<const HMatrix<T> *> L0, dependences;
-    // Test case 1: hmatrix is in L0
+    // Tests for left_hmatrix_descendant_of_right_hmatrix
+    is_error = is_error || !(left_hmatrix_descendant_of_right_hmatrix(child1, root_hmatrix));
+    is_error = is_error || !(left_hmatrix_descendant_of_right_hmatrix(child2, root_hmatrix));
+    is_error = is_error || !(left_hmatrix_descendant_of_right_hmatrix(child1_child1, root_hmatrix));
+    is_error = is_error || !(left_hmatrix_descendant_of_right_hmatrix(child1_child2, root_hmatrix));
+
+    // Tests for enumerate_dependences
     {
-        // 1-level check
-        L0          = {&child1};
-        dependences = enumerate_dependences<T>(child1, L0);
-        is_error    = is_error || !(dependences.size() == 1);
-        //     ASSERT(dependences[0] == &child1, "dependences[0] == &child1");
+        std::vector<const HMatrix<T> *> L0, dependences;
+
+        // Test case 1: hmatrix is in L0
+        {
+            L0          = {&child1_child1, &child1_child2, &child2};
+            dependences = enumerate_dependences<T>(child2, L0);
+            is_error    = is_error || !(dependences.size() == 1);
+            is_error    = is_error || !(dependences[0] == &child2);
+        }
+
+        // Test case 2: hmatrix is above L0
+        {
+            L0          = {&child1_child1, &child1_child2, &child2};
+            dependences = enumerate_dependences<T>(root_hmatrix, L0);
+            is_error    = is_error || !(dependences.size() == 3);
+            is_error    = is_error || !(dependences[0] == &child1_child1);
+            is_error    = is_error || !(dependences[1] == &child1_child2);
+            is_error    = is_error || !(dependences[2] == &child2);
+        }
+
+        // Test case 3: hmatrix is below L0
+        {
+            L0 = {&root_hmatrix};
+
+            dependences = enumerate_dependences<T>(child1, L0);
+            is_error    = is_error || !(dependences.size() == 1);
+            is_error    = is_error || !(dependences[0] == &root_hmatrix);
+
+            dependences = enumerate_dependences<T>(child2, L0);
+            is_error    = is_error || !(dependences.size() == 1);
+            is_error    = is_error || !(dependences[0] == &root_hmatrix);
+
+            dependences = enumerate_dependences<T>(child1_child2, L0);
+            is_error    = is_error || !(dependences.size() == 1);
+            is_error    = is_error || !(dependences[0] == &root_hmatrix);
+        }
+
+        // Test case 4 : L0 is empty
+        // L0.clear();
+        // dependences = enumerate_dependences(root_hmatrix, L0);
+        // is_error    = is_error || !(dependences.empty());
+
+    } // end of tests for enumerate_dependences
+
+    if (is_error) {
+        std::cerr << "Error: test_hmatrix_task_based failed." << std::endl;
+    } else {
+        std::cout << "Passed: test_hmatrix_task_based passed." << std::endl;
     }
-    //     // 2-level check
-    //     L0          = {&child1, &child_child2};
-    //     dependences = enumerate_dependences(child_child2, L0);
-    //     ASSERT(dependences.size() == 1, "dependences.size() == 1");
-    //     ASSERT(dependences[0] == &child_child2, "dependences[0] == &child_child2");
-    // }
-
-    // // Test case 2: hmatrix is above L0
-    // {
-    //     L0          = {&child1, &child2};
-    //     dependences = enumerate_dependences(root_hmatrix, L0);
-    //     ASSERT(dependences.size() == 2, "dependences.size() == 2");
-    //     ASSERT(dependences[0] == &child1, "dependences[0] == &child1");
-    //     ASSERT(dependences[1] == &child2, "dependences[1] == &child2");
-    // }
-
-    // // Test case 3: hmatrix is below L0
-    // // L0          = {&root_hmatrix};
-    // L0          = find_l0(root_hmatrix, 1);
-    // dependences = enumerate_dependences(child1, L0, root_hmatrix);
-    // cout << "dependences.size(): " << dependences.size() << endl;
-    // for (auto dep : dependences) {
-    //     cout << "Dependance: " << dep << endl;
-    // }
-    // ASSERT(dependences.size() == 1, "dependences.size() == 1");
-    // ASSERT(dependences[0] == &root_hmatrix, "dependences[0] == &root_hmatrix");
-
-    // // Test case 4: hmatrix is not in the tree
-    // dependences = enumerate_dependences(root_hmatrix, L0, child1);
-    // ASSERT(dependences.empty(), "dependences.empty()");
-
-    // // Test case 5: L0 is empty
-    // L0.clear();
-    // dependences = enumerate_dependences(root_hmatrix, L0, root_hmatrix);
-    // ASSERT(dependences.empty(), "dependences.empty()");
-    // } // end tests for enumerate_dependences
-    // // tests
-    // {
-
-    //     // double criterion = cost_function(root_hmatrix);
-    //     // cout << "criterion: " << criterion << endl;
-
-    //     // std::vector<const HMatrix<double, double> *> L0;
-    //     // int values[] = {0, 1, 3, 4, 15, 16, 57, 58, 225, 226, 227};
-    //     // for (int i : values) {
-    //     //     L0 = find_l0(root_hmatrix, i);
-    //     //     cout << "i: " << i << endl;
-    //     //     cout << "|L0|: " << L0.size() << endl;
-    //     //     cout << "============" << endl;
-    //     // }
-    // view_block_tree(root_hmatrix, 64);
-
-    //     // cout << "id : " << get_hmatrix_id(root_hmatrix) << endl;
-
-    //     // tests for enumerate_dependences
-    //     {
-    //         // Create a simple tree structure
-    //         HMatrix<double, double> &root         = root_hmatrix;
-    //         HMatrix<double, double> &child1       = root_hmatrix->get_children()[0].get();
-    //         HMatrix<double, double> &child2       = root_hmatrix->get_children()[1].get();
-    //         HMatrix<double, double> &child_child1 = root_hmatrix->get_children()[0].get()->get_children()[0].get();
-    //         HMatrix<double, double> &child_child2 = root_hmatrix->get_children()[0].get()->get_children()[1].get();
-
-    //         std::vector<const HMatrix<double, double> *> L0 = {&child1};
-    //         auto dependences                                = enumerate_dependences(child1, L0, root);
-
-    // } // end tests
-
     return is_error;
 }
