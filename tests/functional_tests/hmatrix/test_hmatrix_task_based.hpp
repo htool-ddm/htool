@@ -36,8 +36,7 @@ bool test_hmatrix_task_based(int nr, int nc, char Symmetry, char UPLO, htool::un
 
     // Clustering
     ClusterTreeBuilder<htool::underlying_type<T>> cluster_tree_builder;
-    // recursive_build_strategy.set_partition(partition);
-    // recursive_build_strategy.set_minclustersize(2);
+    // cluster_tree_builder.set_minclustersize(2);
 
     std::shared_ptr<const Cluster<htool::underlying_type<T>>> source_root_cluster;
     std::shared_ptr<const Cluster<htool::underlying_type<T>>> target_root_cluster = make_shared<const Cluster<htool::underlying_type<T>>>(cluster_tree_builder.create_cluster_tree(nr, 3, p1.data(), 2, 2));
@@ -67,7 +66,7 @@ bool test_hmatrix_task_based(int nr, int nc, char Symmetry, char UPLO, htool::un
     // build
     auto root_hmatrix = hmatrix_tree_builder.build(generator);
 
-    // Visualization
+    // Hmatrix Visualization
     // print_hmatrix_information(root_hmatrix, std::cout);
     save_leaves_with_rank(root_hmatrix, "root_hmatrix_facto");
 
@@ -134,6 +133,14 @@ bool test_hmatrix_task_based(int nr, int nc, char Symmetry, char UPLO, htool::un
         // is_error    = is_error || !(dependences.empty());
 
     } // end of tests for enumerate_dependences
+
+    // Tests for find_l0. Visual verification of the block tree in dotfile.dot
+    {
+        std::vector<const HMatrix<T> *> L0 = find_l0(root_hmatrix, 256);
+        // std::cout << "L0.size() = " << L0.size() << std::endl;
+        std::ofstream dotfile("dotfile.dot");
+        view_block_tree(root_hmatrix, L0, dotfile);
+    }
 
     if (is_error) {
         std::cerr << "Error: test_hmatrix_task_based failed." << std::endl;
