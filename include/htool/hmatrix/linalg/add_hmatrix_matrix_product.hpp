@@ -161,7 +161,7 @@ void internal_add_hmatrix_matrix_product(char transa, char transb, CoefficientPr
 #        pragma clang diagnostic ignored "-Wunused-parameter"
 #    elif defined(__GNUC__) || defined(__GNUG__)
 #        pragma GCC diagnostic push
-#        pragma GCC diagnostic ignored "-Wunused-parameter]"
+#        pragma GCC diagnostic ignored "-Wunused-parameter"
 #    endif
 #endif
 template <typename ExecutionPolicy, typename CoefficientPrecision, typename CoordinatePrecision = underlying_type<CoefficientPrecision>>
