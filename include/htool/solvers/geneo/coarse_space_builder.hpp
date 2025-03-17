@@ -195,9 +195,9 @@ class VirtualGeneoCoarseSpaceBuilder : public VirtualCoarseSpaceBuilder<Coeffici
 
     public:
 
-    static VirtualGeneoCoarseSpaceBuilder GeneoWithNu(int size_wo_overlap, int size_with_overlap, const HMatrix<CoefficientPrecision,CoordinatePrecision> &Ai, char symmetry, char uplo, int geneo_nu) { return VirtualGeneoCoarseSpaceBuilder{size_wo_overlap, size_with_overlap, Ai, symmetry, uplo, geneo_nu, -1}; }
+    // static VirtualGeneoCoarseSpaceBuilder GeneoWithNu(int size_wo_overlap, int size_with_overlap, const HMatrix<CoefficientPrecision,CoordinatePrecision> &Ai, char symmetry, char uplo, int geneo_nu) { return VirtualGeneoCoarseSpaceBuilder{size_wo_overlap, size_with_overlap, Ai, symmetry, uplo, geneo_nu, -1}; }
 
-    static VirtualGeneoCoarseSpaceBuilder GeneoWithThreshold(int size_wo_overlap, int size_with_overlap, const HMatrix<CoefficientPrecision,CoordinatePrecision> &Ai, char symmetry, char uplo, htool::underlying_type<CoefficientPrecision> geneo_threshold) { return VirtualGeneoCoarseSpaceBuilder{size_wo_overlap, size_with_overlap, Ai, symmetry, uplo, 0, geneo_threshold}; }
+    // static VirtualGeneoCoarseSpaceBuilder GeneoWithThreshold(int size_wo_overlap, int size_with_overlap, const HMatrix<CoefficientPrecision,CoordinatePrecision> &Ai, char symmetry, char uplo, htool::underlying_type<CoefficientPrecision> geneo_threshold) { return VirtualGeneoCoarseSpaceBuilder{size_wo_overlap, size_with_overlap, Ai, symmetry, uplo, 0, geneo_threshold}; }
 
 };
 
