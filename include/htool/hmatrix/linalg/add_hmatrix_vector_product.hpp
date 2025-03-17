@@ -181,7 +181,7 @@ void add_hmatrix_vector_product(ExecutionPolicy &&, char trans, CoefficientPreci
         static_assert(std::is_execution_policy_v<std::decay_t<ExecutionPolicy>>, "Invalid execution policy for add_hmatrix_vector_product.");
     }
 #else
-    openmp_internal_add_hmatrix_vector_product(trans, alpha, A, buffer_ptr, beta, buffer_ptr + source_cluster.get_size());
+    sequential_internal_add_hmatrix_vector_product(trans, alpha, A, buffer_ptr, beta, buffer_ptr + source_cluster.get_size());
 #endif
     cluster_to_user(target_cluster, buffer_ptr + source_cluster.get_size(), out);
 }
@@ -189,7 +189,7 @@ void add_hmatrix_vector_product(ExecutionPolicy &&, char trans, CoefficientPreci
 template <typename CoefficientPrecision, typename CoordinatePrecision = underlying_type<CoefficientPrecision>>
 void add_hmatrix_vector_product(char trans, CoefficientPrecision alpha, const HMatrix<CoefficientPrecision, CoordinatePrecision> &A, const CoefficientPrecision *in, CoefficientPrecision beta, CoefficientPrecision *out, CoefficientPrecision *buffer = nullptr) {
 #if defined(__cpp_lib_execution) && __cplusplus >= 201703L
-    add_hmatrix_vector_product(std::execution::par, trans, alpha, A, in, beta, out, buffer);
+    add_hmatrix_vector_product(std::execution::seq, trans, alpha, A, in, beta, out, buffer);
 #else
     add_hmatrix_vector_product(nullptr, trans, alpha, A, in, beta, out, buffer);
 #endif
