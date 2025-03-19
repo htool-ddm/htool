@@ -8,7 +8,7 @@
 #include <htool/hmatrix/hmatrix_output.hpp>                       // for print_h...
 #include <htool/hmatrix/hmatrix_output_dot.hpp>                   // for view_block_tree...
 #include <htool/hmatrix/interfaces/virtual_generator.hpp>         // for Generat...
-#include <htool/hmatrix/tree_builder/task_based_tree_builder.hpp> // for enumerate_dependence...
+#include <htool/hmatrix/tree_builder/task_based_tree_builder.hpp> // for enumerate_dependence, find_l0...
 #include <htool/hmatrix/tree_builder/tree_builder.hpp>            // for HMatrix...
 #include <htool/matrix/matrix.hpp>                                // for Matrix
 #include <htool/misc/misc.hpp>                                    // for underly...
@@ -70,7 +70,7 @@ bool test_hmatrix_task_based(int nr, int nc, char Symmetry, char UPLO, htool::un
     // print_hmatrix_information(root_hmatrix, std::cout);
     save_leaves_with_rank(root_hmatrix, "root_hmatrix_facto");
 
-    // Basic tree
+    // Basic sub tree
     HMatrix<T> &child1        = *root_hmatrix.get_children()[0].get();
     HMatrix<T> &child2        = *root_hmatrix.get_children()[1].get();
     HMatrix<T> &child1_child1 = *root_hmatrix.get_children()[0].get()->get_children()[0].get();
@@ -140,6 +140,28 @@ bool test_hmatrix_task_based(int nr, int nc, char Symmetry, char UPLO, htool::un
         // std::cout << "L0.size() = " << L0.size() << std::endl;
         std::ofstream dotfile("dotfile.dot");
         view_block_tree(root_hmatrix, L0, dotfile);
+    }
+
+    // Tests for task_based_compute_blocks
+    {
+        // build
+        auto hmatrix            = hmatrix_tree_builder.build(generator);
+        auto task_based_hmatrix = hmatrix_tree_builder.build(generator, true);
+
+        // densification
+        Matrix<T> densified_hmatrix(nr, nc), densified_hmatrix_task_based(nr, nc);
+        copy_to_dense(hmatrix, densified_hmatrix.data());
+        copy_to_dense(task_based_hmatrix, densified_hmatrix_task_based.data());
+
+        // compare
+        is_error = is_error || (normFrob(densified_hmatrix - densified_hmatrix_task_based) > 1e-10);
+
+        // check durations
+        std::chrono::duration<double> classic_duration    = hmatrix.get_hmatrix_tree_data()->m_timings["Blocks_computation_walltime"];
+        std::chrono::duration<double> task_based_duration = task_based_hmatrix.get_hmatrix_tree_data()->m_timings["Blocks_computation_walltime"];
+        if (task_based_duration > classic_duration) {
+            std::cerr << "Error: task_based_duration: " << task_based_duration.count() << " > classic_duration: " << classic_duration.count() << "." << std::endl;
+        }
     }
 
     if (is_error) {
