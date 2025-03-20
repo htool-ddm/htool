@@ -8,8 +8,7 @@
 using namespace std;
 using namespace htool;
 
-int main(int argc, char *argv[]) {
-    MPI_Init(&argc, &argv);
+int main(int, char *[]) {
 
     bool is_error = false;
 
@@ -29,8 +28,6 @@ int main(int argc, char *argv[]) {
             }
         }
     }
-
-    MPI_Finalize();
 
     if (is_error) {
         return 1;
