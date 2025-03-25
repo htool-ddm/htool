@@ -66,6 +66,7 @@ class HMatrixTreeBuilder {
     void reset_root_of_block_tree(HMatrixType &) const;
     void compute_blocks(const VirtualInternalGenerator<CoefficientPrecision> &generator) const;
     void task_based_compute_blocks(const VirtualInternalGenerator<CoefficientPrecision> &generator) const;
+    void task_based_compute_blocks(const VirtualInternalGenerator<CoefficientPrecision> &generator, const std::vector<const HMatrix<CoefficientPrecision, CoordinatePrecision> *> &L0) const;
 
     // Tests
     bool is_target_cluster_in_target_partition(const ClusterType &cluster) const {
@@ -126,6 +127,34 @@ class HMatrixTreeBuilder {
                 }
             });
         }
+    }
+
+    std::pair<std::vector<const HMatrix<CoefficientPrecision, CoordinatePrecision> *>, std::vector<const HMatrix<CoefficientPrecision, CoordinatePrecision> *>> get_leaves_from(const HMatrix<CoefficientPrecision, CoordinatePrecision> &hmatrix) const {
+        std::pair<std::vector<const HMatrix<CoefficientPrecision, CoordinatePrecision> *>, std::vector<const HMatrix<CoefficientPrecision, CoordinatePrecision> *>> result;
+        auto &leaves              = result.first;
+        auto &leaves_for_symmetry = result.second;
+        std::stack<std::pair<const HMatrix<CoefficientPrecision, CoordinatePrecision> *, bool>> hmatrix_stack;
+        hmatrix_stack.push(std::pair<const HMatrix<CoefficientPrecision, CoordinatePrecision> *, bool>(&hmatrix, hmatrix.get_symmetry() != 'N'));
+
+        while (!hmatrix_stack.empty()) {
+            auto &current_element = hmatrix_stack.top();
+            hmatrix_stack.pop();
+            const HMatrix<CoefficientPrecision, CoordinatePrecision> *current_hmatrix = current_element.first;
+            bool has_symmetric_ancestor                                               = current_element.second;
+
+            if (current_hmatrix->is_leaf()) {
+                leaves.push_back(current_hmatrix);
+
+                if (has_symmetric_ancestor && current_hmatrix->get_target_cluster().get_offset() != current_hmatrix->get_source_cluster().get_offset()) {
+                    leaves_for_symmetry.push_back(current_hmatrix);
+                }
+            }
+
+            for (const auto &child : current_hmatrix->get_children()) {
+                hmatrix_stack.push(std::pair<const HMatrix<CoefficientPrecision, CoordinatePrecision> *, bool>(child.get(), current_hmatrix->get_symmetry() != 'N' || has_symmetric_ancestor));
+            }
+        }
+        return result;
     }
 
   public:
@@ -205,8 +234,11 @@ HMatrix<CoefficientPrecision, CoordinatePrecision> HMatrixTreeBuilder<Coefficien
 
     // Compute leave's data
     if (is_task_based) {
+        // call find_l0
+        m_L0  = find_l0(root_hmatrix, 64); // TODO: make this parameterizable ?
         start = std::chrono::steady_clock::now();
-        task_based_compute_blocks(generator);
+        // task_based_compute_blocks(generator);
+        task_based_compute_blocks(generator, m_L0);
         end = std::chrono::steady_clock::now();
     } else {
         start = std::chrono::steady_clock::now();
@@ -214,9 +246,6 @@ HMatrix<CoefficientPrecision, CoordinatePrecision> HMatrixTreeBuilder<Coefficien
         end = std::chrono::steady_clock::now();
     }
     std::chrono::duration<double> block_comptations_duration = end - start;
-
-    // call find_l0
-    m_L0 = find_l0(root_hmatrix, 64); // TODO: make this parameterizable ?
 
     //
     set_symmetry_for_leaves(root_hmatrix);
@@ -251,10 +280,8 @@ void HMatrixTreeBuilder<CoefficientPrecision, CoordinatePrecision>::build_block_
 
     if (is_admissible && is_target_cluster_in_target_partition(target_cluster) && !is_removed_by_symmetry(target_cluster, source_cluster) && target_cluster.get_depth() >= m_mintargetdepth && source_cluster.get_depth() >= m_minsourcedepth && target_cluster.get_rank() >= 0 && (!m_is_block_tree_consistent || source_cluster.get_rank() >= 0)) {
         m_admissible_tasks.push_back(current_hmatrix);
-        current_hmatrix->m_block_type = HMatrixType::BlockType::ADMISSIBLE;
     } else if (source_cluster.is_leaf() and target_cluster.is_leaf()) {
         m_dense_tasks.push_back(current_hmatrix);
-        current_hmatrix->m_block_type = HMatrixType::BlockType::DENSE;
     } else if (source_cluster.is_leaf() and not target_cluster.is_leaf()) {
         HMatrixType *hmatrix_child = nullptr;
         for (const auto &target_child : target_children) {
@@ -478,7 +505,6 @@ void HMatrixTreeBuilder<CoefficientPrecision, CoordinatePrecision>::compute_bloc
 // template <typename CoefficientPrecision, typename CoordinatesPrecision, typename PreOrderFunction>
 // void block_tree_preorder_traversal(const BlockTree<CoefficientPrecision, CoordinatesPrecision> &block_tree, PreOrderFunction pre_order_visitor) {
 //     std::stack<const HMatrix<CoefficientPrecision, CoordinatesPrecision> *> hmatrix_stack{std::deque<const HMatrix<CoefficientPrecision, CoordinatesPrecision> *>{block_tree.get_root_hmatrix()}};
-
 //     while (!hmatrix_stack.empty()) {
 //         const HMatrix<CoefficientPrecision, CoordinatesPrecision> *current_hmatrix = hmatrix_stack.top();
 //         hmatrix_stack.pop();
@@ -492,8 +518,8 @@ void HMatrixTreeBuilder<CoefficientPrecision, CoordinatePrecision>::compute_bloc
 
 template <typename CoefficientPrecision, typename CoordinatePrecision>
 void HMatrixTreeBuilder<CoefficientPrecision, CoordinatePrecision>::task_based_compute_blocks(const VirtualInternalGenerator<CoefficientPrecision> &generator) const {
-    // std::cout << "Calling task_based_compute_blocks" << std::endl;
-// Todo : use BlockType instead of m_admissible_tasks and m_dense_tasks
+    // std::cout << "Calling task_based_compute_blocks_v0" << std::endl;
+
 #if defined(_OPENMP) && !defined(HTOOL_WITH_PYTHON_INTERFACE)
 #    pragma omp parallel
 #    pragma omp single nowait
@@ -519,7 +545,7 @@ void HMatrixTreeBuilder<CoefficientPrecision, CoordinatePrecision>::task_based_c
 #if defined(_OPENMP) && !defined(HTOOL_WITH_PYTHON_INTERFACE)
 #    pragma omp atomic
 #endif
-                    m_false_positive++;
+                    m_false_positive += 1;
                 }
             }
         }
@@ -533,6 +559,51 @@ void HMatrixTreeBuilder<CoefficientPrecision, CoordinatePrecision>::task_based_c
         depend(inout : *m_dense_tasks[p])
 #endif
                 m_dense_tasks[p]->compute_dense_data(generator);
+            }
+        }
+    }
+}
+
+template <typename CoefficientPrecision, typename CoordinatePrecision>
+void HMatrixTreeBuilder<CoefficientPrecision, CoordinatePrecision>::task_based_compute_blocks(const VirtualInternalGenerator<CoefficientPrecision> &generator, const std::vector<const HMatrix<CoefficientPrecision, CoordinatePrecision> *> &L0) const {
+    // std::cout << "Calling task_based_compute_blocks_v1" << std::endl;
+
+#if defined(_OPENMP) && !defined(HTOOL_WITH_PYTHON_INTERFACE)
+#    pragma omp parallel
+#    pragma omp single nowait
+#endif
+    {
+
+        for (int p = 0; p < L0.size(); p++) {
+
+#if defined(_OPENMP) && !defined(HTOOL_WITH_PYTHON_INTERFACE)
+#    pragma omp task default(none)                                                          \
+        firstprivate(p)                                                                     \
+        shared(generator, m_low_rank_generator, m_reqrank, m_epsilon, m_false_positive, L0) \
+        depend(inout : *L0[p])
+#endif
+            {
+                std::vector<const HMatrix<CoefficientPrecision, CoordinatePrecision> *> leaves;
+                std::vector<const HMatrix<CoefficientPrecision, CoordinatePrecision> *> leaves_for_symmetry;
+                std::tie(leaves, leaves_for_symmetry) = get_leaves_from(*L0[p]); // C++17 structured binding
+
+                for (auto leaf : leaves) {
+                    if (leaf->is_dense()) {
+                        // leaf->compute_dense_data(generator);
+                        const_cast<htool::HMatrix<CoefficientPrecision, CoordinatePrecision> *>(leaf)->compute_dense_data(generator);
+                    } else {
+                        const_cast<htool::HMatrix<CoefficientPrecision, CoordinatePrecision> *>(leaf)->compute_low_rank_data(generator, *m_low_rank_generator, m_reqrank, m_epsilon);
+                        if (leaf->get_low_rank_data()->get_U().nb_rows() != leaf->get_target_cluster().get_size() || leaf->get_low_rank_data()->get_V().nb_cols() != leaf->get_source_cluster().get_size()) {
+                            const_cast<htool::HMatrix<CoefficientPrecision, CoordinatePrecision> *>(leaf)->clear_low_rank_data();
+                            const_cast<htool::HMatrix<CoefficientPrecision, CoordinatePrecision> *>(leaf)->compute_dense_data(generator);
+
+#if defined(_OPENMP) && !defined(HTOOL_WITH_PYTHON_INTERFACE)
+#    pragma omp atomic
+#endif
+                            m_false_positive += 1;
+                        }
+                    }
+                }
             }
         }
     }
