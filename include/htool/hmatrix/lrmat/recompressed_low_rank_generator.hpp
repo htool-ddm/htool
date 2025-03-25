@@ -7,6 +7,8 @@
 
 namespace htool {
 
+/// @brief It provides low-rank approximation using a given compression method with a QR-SVD recompression.
+/// @tparam CoefficientPrecision
 template <typename CoefficientPrecision>
 class RecompressedLowRankGenerator final : public VirtualInternalLowRankGenerator<CoefficientPrecision> {
     const VirtualInternalLowRankGenerator<CoefficientPrecision> &m_low_rank_generator;

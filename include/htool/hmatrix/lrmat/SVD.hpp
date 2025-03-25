@@ -12,6 +12,8 @@
 
 namespace htool {
 
+/// @brief It provides low-rank approximation using truncated Singular Value Decomposition (SVD).
+/// @tparam CoefficientPrecision
 template <typename CoefficientPrecision>
 class SVD final : public VirtualInternalLowRankGenerator<CoefficientPrecision> {
 

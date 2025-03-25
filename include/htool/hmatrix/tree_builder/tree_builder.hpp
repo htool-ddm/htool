@@ -21,6 +21,9 @@
 
 namespace htool {
 
+/// @brief a HMatrixTreeBuilder object encapsulates the parameters and strategies to create HMatrix objects.
+/// @tparam CoefficientPrecision
+/// @tparam CoordinatePrecision
 template <typename CoefficientPrecision, typename CoordinatePrecision = underlying_type<CoefficientPrecision>>
 class HMatrixTreeBuilder {
   private:

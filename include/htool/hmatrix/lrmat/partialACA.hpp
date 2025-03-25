@@ -17,6 +17,7 @@
 
 namespace htool {
 
+/// @brief It provides low-rank approximation using the partial Adaptive Cross Approximation (ACA).
 template <typename CoefficientPrecision>
 class partialACA final : public VirtualInternalLowRankGenerator<CoefficientPrecision> {
 

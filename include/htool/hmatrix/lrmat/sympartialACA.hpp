@@ -17,6 +17,7 @@
 
 namespace htool {
 
+/// @brief It provides low-rank approximation using a symmetric version of the partial Adaptive Cross Approximation (ACA).
 template <typename CoefficientPrecision>
 class sympartialACA final : public VirtualInternalLowRankGenerator<CoefficientPrecision> {
     const VirtualInternalGenerator<CoefficientPrecision> &m_A;

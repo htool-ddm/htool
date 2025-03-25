@@ -19,6 +19,8 @@
 
 namespace htool {
 
+/// @brief a ClusterTreeBuilder object encapsulates the parameters and strategies to create Cluster objects.
+/// @tparam T
 template <typename T>
 class ClusterTreeBuilder {
 
@@ -39,10 +41,35 @@ class ClusterTreeBuilder {
     void set_is_complete(bool is_complete) { m_is_complete = is_complete; }
     void set_partitioning_strategy(std::shared_ptr<VirtualPartitioning<T>> partitioning_strategy) { m_partitioning_strategy = partitioning_strategy; }
 
+    /// @brief It performs a hierarchical partitioning of the geometry defined with \p coordinates using the VirtualPartitioning strategy contained in the ClusterTreeBuilder object. Each geometric point is associated with a weight and a radius, which are used to compute the radius and center of each cluster node. A special level of the cluster tree, called level of partition, can be customized, either by its size or its content.
+    /// @param[in] number_of_points
+    /// @param[in] spatial_dimension
+    /// @param[in] coordinates is a column-major \p T array of dimension \p spatial_dimension x \p number_of_points,  corresponding to the geometric points.
+    /// @param[in] radii is a \p T array of dimension \p number_of_points
+    /// @param[in] weights is a \p T array of dimension \p number_of_points
+    /// @param[in] number_of_children specifies the number of children in the cluster tree, except for the parent of the level of partition.
+    /// @param[in] size_of_partition specifies the number of cluster node on the level of partition.
+    /// @param[in] partition is an integer array of size 2 x \p size_of_partition. Pairs of (offset,size) for each cluster node on the level of partition.
+    /// @return Cluster root of the cluster tree
     Cluster<T> create_cluster_tree(int number_of_points, int spatial_dimension, const T *coordinates, const T *radii, const T *weights, int number_of_children, int size_of_partition, const int *partition) const;
 
+    /// @brief Same as \ref create_cluster_tree(int number_of_points, int spatial_dimension, const T *coordinates, const T *radii, const T *weights, int number_of_children, int size_of_partition, const int *partition) const "main constructor" but defaults weights and radiis and defines the partition automatically using the contained VirtualPartitioning strategy.
+    /// @param number_of_points
+    /// @param spatial_dimension
+    /// @param coordinates
+    /// @param number_of_children
+    /// @param size_of_partition
+    /// @return Cluster root of the cluster tree
     Cluster<T> create_cluster_tree(int number_of_points, int spatial_dimension, const T *coordinates, int number_of_children, int size_of_partition) const { return create_cluster_tree(number_of_points, spatial_dimension, coordinates, nullptr, nullptr, number_of_children, size_of_partition, nullptr); }
 
+    /// @brief Same as \ref create_cluster_tree(int number_of_points, int spatial_dimension, const T *coordinates, const T *radii, const T *weights, int number_of_children, int size_of_partition, const int *partition) const "main constructor" but defaults weights and radiis.
+    /// @param number_of_points
+    /// @param spatial_dimension
+    /// @param coordinates
+    /// @param number_of_children
+    /// @param size_of_partition
+    /// @param partition
+    /// @return Cluster root of the cluster tree
     Cluster<T> create_cluster_tree(int number_of_points, int spatial_dimension, const T *coordinates, int number_of_children, int size_of_partition, const int *partition) const { return create_cluster_tree(number_of_points, spatial_dimension, coordinates, nullptr, nullptr, number_of_children, size_of_partition, partition); }
 };
 

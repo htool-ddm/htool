@@ -8,9 +8,21 @@
 #include <tuple>
 namespace htool {
 
+/// @brief Strategy to define a new splitting for a given cluster. It is based on \p ComputationDirectionPolicy which defines a strategy to compute the main directions of a given cluster, and \p SplittingPolicy which defines a strategy to split the cluster using these directions.
+/// @tparam CoordinatePrecision
+/// @tparam ComputationDirectionPolicy
+/// @tparam SplittingPolicy
 template <typename CoordinatePrecision, typename ComputationDirectionPolicy, typename SplittingPolicy>
 class Partitioning : public VirtualPartitioning<CoordinatePrecision> {
   public:
+    /// @brief It returns \p number_of_partitions pairs of (offset,size) defining a new splitting of the current cluster, and it updates the permutation stored in \p current_cluster to make this new splitting contiguous. If \p number_of_partitions is equal to two to the \p spatial_dimension power, it will split in two using \p SplittingPolicy along the main directions computed with \p ComputationDirectionPolicy. Otherwise, it will only split \p number_of_partition along the main direction.
+    /// @param current_cluster
+    /// @param spatial_dimension
+    /// @param coordinates
+    /// @param radii
+    /// @param weights
+    /// @param number_of_partitions
+    /// @return
     std::vector<std::pair<int, int>> compute_partitioning(Cluster<CoordinatePrecision> &current_cluster, int spatial_dimension, const CoordinatePrecision *coordinates, const CoordinatePrecision *const radii, const CoordinatePrecision *const weights, int number_of_partitions) override {
 
         std::vector<int> &permutation = current_cluster.get_permutation();
@@ -73,6 +85,8 @@ class Partitioning : public VirtualPartitioning<CoordinatePrecision> {
     }
 };
 
+/// @brief It computes the main directions of a cluster by computing the eigenvectors of the covariance matrix.
+/// @tparam T
 template <typename T>
 class ComputeLargestExtent {
   public:
@@ -106,6 +120,8 @@ class ComputeLargestExtent {
     }
 };
 
+/// @brief It computes the main directions of a cluster by choosing the x/y/z axis containing its largest extent in descreasing order.
+/// @tparam T
 template <typename T>
 class ComputeBoundingBox {
   public:
@@ -141,6 +157,8 @@ class ComputeBoundingBox {
     }
 };
 
+/// @brief It splits in a given number of partitions of near-equal number of elements.
+/// @tparam T
 template <typename T>
 class RegularSplitting {
   public:
@@ -160,6 +178,8 @@ class RegularSplitting {
     }
 };
 
+/// @brief It splits in a given number of partitions of near-equal geometric size along a specific direction.
+/// @tparam T
 template <typename T>
 class GeometricSplitting {
   public:
