@@ -1,3 +1,4 @@
+#include <htool/clustering/implementations/partitioning.hpp>
 #include <htool/htool.hpp>
 #include <htool/testing/geometry.hpp>
 
@@ -28,7 +29,7 @@ int main(int argc, char *argv[]) {
     Cluster<double> cluster = recursive_build_strategy.create_cluster_tree(size, spatial_dimension, p.data(), 2, 2);
 
     // Output
-    save_clustered_geometry(cluster, 3, p.data(), outputname + "/clustering_output", {1, 2, 3});
+    save_clustered_geometry(cluster, spatial_dimension, p.data(), outputname + "/clustering_output", {1, 2, 3});
 
     return 0;
 }
