@@ -85,16 +85,16 @@ template <typename CoefficientPrecision, typename CoordinatePrecision = underlyi
 std::map<std::string, std::string> get_tree_parameters(const HMatrix<CoefficientPrecision, CoordinatePrecision> &hmatrix) {
     const HMatrixTreeData<CoefficientPrecision, CoordinatePrecision> *hmatrix_tree_data = hmatrix.get_hmatrix_tree_data();
     std::map<std::string, std::string> tree_parameters;
-    tree_parameters["Eta"]                   = std::to_string(hmatrix_tree_data->m_eta);
-    tree_parameters["Epsilon"]               = std::to_string(hmatrix_tree_data->m_epsilon);
-    tree_parameters["MinTargetDepth"]        = std::to_string(hmatrix_tree_data->m_minimal_target_depth);
-    tree_parameters["MinClusterSizeTarget"]  = std::to_string(hmatrix.get_target_cluster().get_minclustersize());
-    tree_parameters["MaxClusterDepthTarget"] = std::to_string(hmatrix.get_target_cluster().get_maximal_depth());
-    tree_parameters["MinClusterDepthTarget"] = std::to_string(hmatrix.get_target_cluster().get_minimal_depth());
-    tree_parameters["MinSourceDepth"]        = std::to_string(hmatrix_tree_data->m_minimal_source_depth);
-    tree_parameters["MinClusterSizeSource"]  = std::to_string(hmatrix.get_source_cluster().get_minclustersize());
-    tree_parameters["MaxClusterDepthSource"] = std::to_string(hmatrix.get_source_cluster().get_maximal_depth());
-    tree_parameters["MinClusterDepthSource"] = std::to_string(hmatrix.get_source_cluster().get_minimal_depth());
+    tree_parameters["Eta"]                      = std::to_string(hmatrix_tree_data->m_eta);
+    tree_parameters["Epsilon"]                  = std::to_string(hmatrix_tree_data->m_epsilon);
+    tree_parameters["MinTargetDepth"]           = std::to_string(hmatrix_tree_data->m_minimal_target_depth);
+    tree_parameters["MaxClusterLeafSizeTarget"] = std::to_string(hmatrix.get_target_cluster().get_maximal_leaf_size());
+    tree_parameters["MaxClusterDepthTarget"]    = std::to_string(hmatrix.get_target_cluster().get_maximal_depth());
+    tree_parameters["MinClusterDepthTarget"]    = std::to_string(hmatrix.get_target_cluster().get_minimal_depth());
+    tree_parameters["MinSourceDepth"]           = std::to_string(hmatrix_tree_data->m_minimal_source_depth);
+    tree_parameters["MaxClusterLeafSizeSource"] = std::to_string(hmatrix.get_source_cluster().get_maximal_leaf_size());
+    tree_parameters["MaxClusterDepthSource"]    = std::to_string(hmatrix.get_source_cluster().get_maximal_depth());
+    tree_parameters["MinClusterDepthSource"]    = std::to_string(hmatrix.get_source_cluster().get_minimal_depth());
     return tree_parameters;
 }
 

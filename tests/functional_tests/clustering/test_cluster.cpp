@@ -1,7 +1,6 @@
 #include "test_cluster.hpp"
 #include <cmath> // for pow
-#include <htool/clustering/tree_builder/direction_computation.hpp>
-#include <htool/clustering/tree_builder/splitting.hpp>
+#include <htool/clustering/implementations/partitioning.hpp>
 
 using namespace std;
 using namespace htool;

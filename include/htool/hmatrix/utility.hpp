@@ -2,7 +2,7 @@
 #define HTOOL_HMATRIX_BUILDER_HPP
 
 #include "../clustering/cluster_node.hpp"
-#include "../clustering/tree_builder/recursive_build.hpp"
+#include "../clustering/tree_builder/tree_builder.hpp"
 #include "hmatrix.hpp"
 #include "tree_builder/tree_builder.hpp"
 

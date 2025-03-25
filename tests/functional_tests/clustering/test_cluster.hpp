@@ -1,7 +1,8 @@
 #include <algorithm>                                         // for equal
 #include <htool/clustering/cluster_node.hpp>                 // for cluster...
 #include <htool/clustering/cluster_output.hpp>               // for save_cl...
-#include <htool/clustering/tree_builder/recursive_build.hpp> // for Cluster...
+#include <htool/clustering/implementations/partitioning.hpp> // for Partitioning...
+#include <htool/clustering/tree_builder/tree_builder.hpp>    // for Cluster...
 #include <htool/misc/user.hpp>                               // for NbrToStr
 #include <htool/testing/generator_input.hpp>                 // for generat...
 #include <htool/testing/geometry.hpp>                        // for create_...
@@ -45,12 +46,9 @@ bool test_cluster(int size, bool use_given_partition) {
         }
 
         ClusterTreeBuilder<T> recursive_build_strategy;
-        recursive_build_strategy.set_direction_computation_strategy(std::make_shared<DirectionComputetationStrategy>());
-        recursive_build_strategy.set_splitting_strategy(std::make_shared<SplittingStrategy>());
-        // if (use_given_partition) {
-        //     recursive_build_strategy.set_partition(partition);
-        // }
-        recursive_build_strategy.set_minclustersize(1);
+        recursive_build_strategy.set_partitioning_strategy(std::make_shared<Partitioning<T, DirectionComputetationStrategy, SplittingStrategy>>());
+
+        recursive_build_strategy.set_maximal_leaf_size(10);
         Cluster<T> root_cluster = recursive_build_strategy.create_cluster_tree(size, dim, coordinates.data(), nb_sons, sizeWorld, (use_given_partition) ? partition.data() : nullptr);
         is_error                = is_error || !(root_cluster.is_root());
 
@@ -107,7 +105,7 @@ bool test_cluster(int size, bool use_given_partition) {
         Cluster<T> copied_cluster = read_cluster_tree<T>("test_save_" + NbrToStr(rankWorld) + "_" + NbrToStr(sizeWorld) + "_cluster_tree_properties.csv", "test_save_" + NbrToStr(rankWorld) + "_" + NbrToStr(sizeWorld) + "_cluster_tree.csv");
         save_cluster_tree(copied_cluster, "test_save_2_" + NbrToStr(rankWorld) + "_" + NbrToStr(sizeWorld));
 
-        is_error = is_error || !(root_cluster.get_minclustersize() == copied_cluster.get_minclustersize());
+        is_error = is_error || !(root_cluster.get_maximal_leaf_size() == copied_cluster.get_maximal_leaf_size());
         is_error = is_error || !(root_cluster.get_maximal_depth() == copied_cluster.get_maximal_depth());
         is_error = is_error || !(root_cluster.get_minimal_depth() == copied_cluster.get_minimal_depth());
         is_error = is_error || !(root_cluster.get_permutation() == copied_cluster.get_permutation());

@@ -34,7 +34,7 @@ void save_cluster_tree(const Cluster<CoordinatesPrecision> &cluster, std::string
     // Cluster tree properties
     std::ofstream output_permutation(filename + "_cluster_tree_properties.csv");
 
-    output_permutation << "minclustersize: " << cluster.get_minclustersize() << "\n";
+    output_permutation << "maximal leaf size: " << cluster.get_maximal_leaf_size() << "\n";
     output_permutation << "maximal depth: " << cluster.get_maximal_depth() << "\n";
     output_permutation << "minimal depth: " << cluster.get_minimal_depth() << "\n";
     output_permutation << "permutation: ";
@@ -128,7 +128,7 @@ Cluster<CoordinatesPrecision> read_cluster_tree(std::string file_cluster_tree_pr
 
     std::getline(input_permutation, line);
     splitted_string = split(line, " ");
-    root_cluster.set_minclustersize(std::stoul(splitted_string.back()));
+    root_cluster.set_maximal_leaf_size(std::stoul(splitted_string.back()));
     std::getline(input_permutation, line);
     splitted_string = split(line, " ");
     root_cluster.set_maximal_depth(std::stoi(splitted_string.back()));

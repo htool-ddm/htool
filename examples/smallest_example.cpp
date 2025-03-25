@@ -91,7 +91,7 @@ int main(int argc, char *argv[]) {
     // Distributed operator
     char symmetry = 'S';
     char UPLO     = 'U';
-    DefaultApproximationBuilder<double, double> default_approximation_builder(A, cluster, cluster, epsilon, eta, symmetry, UPLO, MPI_COMM_WORLD);
+    DefaultApproximationBuilder<double, double> default_approximation_builder(A, cluster, cluster, HMatrixTreeBuilder<double, double>(epsilon, eta, symmetry, UPLO), MPI_COMM_WORLD);
     DistributedOperator<double> &distributed_operator = default_approximation_builder.distributed_operator;
 
     // Matrix vector product
