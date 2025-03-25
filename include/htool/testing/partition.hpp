@@ -13,7 +13,7 @@ namespace htool {
 template <typename CoordinatePrecision>
 void test_partition(int spatial_dimension, int number_of_points, std::vector<CoordinatePrecision> &coordinates, int partition_size, std::vector<int> &partition) {
     // Compute largest extent
-    std::vector<CoordinatePrecision> direction(spatial_dimension, 0);
+    Matrix<CoordinatePrecision> direction(spatial_dimension, spatial_dimension);
     Matrix<CoordinatePrecision> cov(spatial_dimension, spatial_dimension);
     std::vector<int> permutation(number_of_points, 0);
     std::iota(permutation.begin(), permutation.end(), int(0));

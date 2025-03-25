@@ -13,7 +13,7 @@ class Cluster;
 template <typename CoordinatePrecision>
 struct ClusterTreeData {
     // Parameters
-    unsigned int m_minclustersize{10}; // minimal number of geometric point in a cluster
+    unsigned int m_maximal_leaf_size{10}; // minimal number of geometric point in a cluster
 
     // Information
     unsigned int m_max_depth{std::numeric_limits<unsigned int>::min()}; // maximum depth of the tree

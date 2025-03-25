@@ -62,7 +62,7 @@ class Cluster : public TreeNode<Cluster<CoordinatesPrecision>, ClusterTreeData<C
     // Cluster tree getters
     unsigned int get_maximal_depth() const { return this->m_tree_data->m_max_depth; }
     unsigned int get_minimal_depth() const { return this->m_tree_data->m_min_depth; }
-    unsigned int get_minclustersize() const { return this->m_tree_data->m_minclustersize; }
+    unsigned int get_maximal_leaf_size() const { return this->m_tree_data->m_maximal_leaf_size; }
     const std::vector<const Cluster<CoordinatesPrecision> *> &get_clusters_on_partition() const { return this->m_tree_data->m_clusters_on_partition; }
     const Cluster<CoordinatesPrecision> &get_cluster_on_partition(size_t index) const {
         return *this->m_tree_data->m_clusters_on_partition[index];
@@ -75,7 +75,7 @@ class Cluster : public TreeNode<Cluster<CoordinatesPrecision>, ClusterTreeData<C
     void set_is_permutation_local(bool is_permutation_local) { this->m_tree_data->m_is_permutation_local = is_permutation_local; }
     void set_minimal_depth(unsigned int minimal_depth) { this->m_tree_data->m_min_depth = minimal_depth; }
     void set_maximal_depth(unsigned int maximal_depth) { this->m_tree_data->m_max_depth = maximal_depth; }
-    void set_minclustersize(unsigned int minclustersize) { this->m_tree_data->m_minclustersize = minclustersize; }
+    void set_maximal_leaf_size(unsigned int maximal_leaf_size) { this->m_tree_data->m_maximal_leaf_size = maximal_leaf_size; }
 
     // Operator overloading
     bool operator==(const Cluster<CoordinatesPrecision> &rhs) const { return this->get_offset() == rhs.get_offset() && this->get_size() == rhs.get_size() && this->m_tree_data == rhs.m_tree_data && this->get_depth() == rhs.get_depth() && this->get_counter() == rhs.get_counter(); }
