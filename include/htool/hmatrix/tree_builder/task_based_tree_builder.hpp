@@ -36,17 +36,17 @@ std::size_t cost_function(const HMatrix<CoefficientPrecision, CoordinatePrecisio
  * total cost of their leaves is less than or equal to nb_nodes_max.
  */
 template <typename CoefficientPrecision, typename CoordinatePrecision = underlying_type<CoefficientPrecision>>
-std::vector<const HMatrix<CoefficientPrecision, CoordinatePrecision> *> find_l0(const HMatrix<CoefficientPrecision, CoordinatePrecision> &root_hmatrix, const size_t nb_nodes_max) {
+std::vector<HMatrix<CoefficientPrecision, CoordinatePrecision> *> find_l0(HMatrix<CoefficientPrecision, CoordinatePrecision> &root_hmatrix, const size_t nb_nodes_max) {
     // Initialize criterion with the cost of the root node
     double criterion = cost_function(root_hmatrix);
 
     // Find initial nodes that meet the criterion
-    std::vector<const HMatrix<CoefficientPrecision, CoordinatePrecision> *> old_result, result = count_nodes(root_hmatrix, criterion);
+    std::vector<HMatrix<CoefficientPrecision, CoordinatePrecision> *> old_result, result = count_nodes(root_hmatrix, criterion);
 
     // Check if the initial result exceeds the maximum allowed nodes
     if (result.size() > nb_nodes_max) {
         std::cerr << "Error: no L0 can be defined." << std::endl;
-        return std::vector<const HMatrix<CoefficientPrecision, CoordinatePrecision> *>();
+        return std::vector<HMatrix<CoefficientPrecision, CoordinatePrecision> *>();
     } else {
         // Perform a dichotomy search to find the optimal criterion
         do {
@@ -54,7 +54,7 @@ std::vector<const HMatrix<CoefficientPrecision, CoordinatePrecision> *> find_l0(
             old_result = result;
 
             // If all nodes are leaves, return the result as it cannot be further divided
-            if (std::all_of(result.begin(), result.end(), [](const HMatrix<CoefficientPrecision, CoordinatePrecision> *hmatrix) {
+            if (std::all_of(result.begin(), result.end(), [](HMatrix<CoefficientPrecision, CoordinatePrecision> *hmatrix) {
                     return hmatrix->is_leaf();
                 })) {
                 return result;
@@ -86,15 +86,15 @@ std::vector<const HMatrix<CoefficientPrecision, CoordinatePrecision> *> find_l0(
  * @return A vector of pointers to the nodes of the group tree that have a cost less than criterion.
  */
 template <typename CoefficientPrecision, typename CoordinatePrecision = underlying_type<CoefficientPrecision>>
-std::vector<const HMatrix<CoefficientPrecision, CoordinatePrecision> *> count_nodes(const HMatrix<CoefficientPrecision, CoordinatePrecision> &hmatrix, double criterion) {
-    std::vector<const HMatrix<CoefficientPrecision, CoordinatePrecision> *> result;
+std::vector<HMatrix<CoefficientPrecision, CoordinatePrecision> *> count_nodes(HMatrix<CoefficientPrecision, CoordinatePrecision> &hmatrix, double criterion) {
+    std::vector<HMatrix<CoefficientPrecision, CoordinatePrecision> *> result;
 
     if (cost_function(hmatrix) <= criterion || hmatrix.is_leaf()) {
         // if the node is a leaf or its cost is less than criterion, add it to the result
         result.push_back(&hmatrix);
     } else {
         // if the node is not a leaf, traverse its children
-        for (const auto &child : hmatrix.get_children()) {
+        for (auto &child : hmatrix.get_children()) {
             // perform a postorder tree traversal of the subtree rooted at child
             auto local_result = count_nodes(*child.get(), criterion);
             // add the result of the subtree traversal to the result

@@ -136,7 +136,7 @@ bool test_hmatrix_task_based(int nr, int nc, char Symmetry, char UPLO, htool::un
 
     // Tests for find_l0. Visual verification of the block tree in dotfile.dot
     {
-        std::vector<const HMatrix<T> *> L0 = find_l0(root_hmatrix, 256);
+        std::vector<HMatrix<T> *> L0 = find_l0(root_hmatrix, 256);
         // std::cout << "L0.size() = " << L0.size() << std::endl;
         std::ofstream dotfile("dotfile.dot");
         view_block_tree(root_hmatrix, L0, dotfile);
