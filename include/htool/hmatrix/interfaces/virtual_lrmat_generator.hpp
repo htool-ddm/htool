@@ -1,5 +1,5 @@
-#ifndef HTOOL_VIRTUAL_LRMAT_GENERATOR_HPP
-#define HTOOL_VIRTUAL_LRMAT_GENERATOR_HPP
+#ifndef HTOOL_HMATRIX_VIRTUAL_LRMAT_GENERATOR_HPP
+#define HTOOL_HMATRIX_VIRTUAL_LRMAT_GENERATOR_HPP
 
 #include "../../clustering/cluster_node.hpp" // for Cluster
 #include "../../hmatrix/lrmat/lrmat.hpp"     // for LowRankMatrix

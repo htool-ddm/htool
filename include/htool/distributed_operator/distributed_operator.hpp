@@ -1,18 +1,18 @@
 #ifndef HTOOL_DISTRIBUTED_OPERATOR_HPP
 #define HTOOL_DISTRIBUTED_OPERATOR_HPP
 
-#include "../local_operators/virtual_local_operator.hpp" // for VirtualLocalOperator
-#include "../misc/logger.hpp"                            // for Logger, LogLevel
-#include "../misc/misc.hpp"                              // for conj_if_complex
-#include "../misc/user.hpp"                              // for NbrToStr, StrToNbr
-#include "../wrappers/wrapper_mpi.hpp"                   // for wrapper_mpi
-#include "interfaces/partition.hpp"                      // for IPartition
-#include <algorithm>                                     // for fill, copy_n, fill_n, transform
-#include <functional>                                    // for plus
-#include <map>                                           // for map
-#include <mpi.h>                                         // for MPI_Comm_rank, MPI_Comm_size
-#include <string>                                        // for basic_string, operator<, string
-#include <vector>                                        // for vector
+#include "../misc/logger.hpp"                    // for Logger, LogLevel
+#include "../misc/misc.hpp"                      // for conj_if_complex
+#include "../misc/user.hpp"                      // for NbrToStr, StrToNbr
+#include "../wrappers/wrapper_mpi.hpp"           // for wrapper_mpi
+#include "interfaces/virtual_local_operator.hpp" // for VirtualLocalOperator
+#include "interfaces/virtual_partition.hpp"      // for IPartition
+#include <algorithm>                             // for fill, copy_n, fill_n, transform
+#include <functional>                            // for plus
+#include <map>                                   // for map
+#include <mpi.h>                                 // for MPI_Comm_rank, MPI_Comm_size
+#include <string>                                // for basic_string, operator<, string
+#include <vector>                                // for vector
 
 namespace htool {
 template <typename CoefficientPrecision>
@@ -20,8 +20,8 @@ class DistributedOperator {
 
   private:
     //
-    const IPartition<CoefficientPrecision> &m_target_partition;
-    const IPartition<CoefficientPrecision> &m_source_partition;
+    const VirtualPartition<CoefficientPrecision> &m_target_partition;
+    const VirtualPartition<CoefficientPrecision> &m_source_partition;
 
     // Local operators
     std::vector<const VirtualLocalOperator<CoefficientPrecision> *> m_local_operators = {};
@@ -44,7 +44,7 @@ class DistributedOperator {
     virtual ~DistributedOperator()                                         = default;
 
     // Constructor
-    explicit DistributedOperator(const IPartition<CoefficientPrecision> &target_partition, const IPartition<CoefficientPrecision> &source_partition, char symmetry, char UPLO, MPI_Comm comm) : m_target_partition(target_partition), m_source_partition(source_partition), m_symmetry(symmetry), m_UPLO(UPLO), m_comm(comm) {}
+    explicit DistributedOperator(const VirtualPartition<CoefficientPrecision> &target_partition, const VirtualPartition<CoefficientPrecision> &source_partition, char symmetry, char UPLO, MPI_Comm comm) : m_target_partition(target_partition), m_source_partition(source_partition), m_symmetry(symmetry), m_UPLO(UPLO), m_comm(comm) {}
 
     void add_local_operator(const VirtualLocalOperator<CoefficientPrecision> *local_operator) {
         m_local_operators.push_back(local_operator);
@@ -85,8 +85,8 @@ class DistributedOperator {
     char get_symmetry_type() const { return m_symmetry; }
     char get_storage_type() const { return m_UPLO; }
     MPI_Comm get_comm() const { return m_comm; }
-    const IPartition<CoefficientPrecision> &get_target_partition() const { return m_target_partition; }
-    const IPartition<CoefficientPrecision> &get_source_partition() const { return m_source_partition; }
+    const VirtualPartition<CoefficientPrecision> &get_target_partition() const { return m_target_partition; }
+    const VirtualPartition<CoefficientPrecision> &get_source_partition() const { return m_source_partition; }
 };
 
 template <typename CoefficientPrecision>

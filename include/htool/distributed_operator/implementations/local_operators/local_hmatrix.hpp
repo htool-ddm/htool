@@ -1,12 +1,12 @@
 
-#ifndef HTOOL_TESTING_LOCAL_HMATRIX_HPP
-#define HTOOL_TESTING_LOCAL_HMATRIX_HPP
+#ifndef HTOOL_DISTRIBUTED_OPERATOR_LOCAL_HMATRIX_HPP
+#define HTOOL_DISTRIBUTED_OPERATOR_LOCAL_HMATRIX_HPP
 
-#include "../clustering/cluster_node.hpp" // for Cluster
-#include "../hmatrix/hmatrix.hpp"
-#include "../hmatrix/linalg/add_hmatrix_matrix_product_row_major.hpp"
-#include "../hmatrix/linalg/add_hmatrix_vector_product.hpp"
-#include "htool/misc/misc.hpp"
+#include "../../../clustering/cluster_node.hpp" // for Cluster
+#include "../../../hmatrix/hmatrix.hpp"
+#include "../../../hmatrix/linalg/add_hmatrix_matrix_product_row_major.hpp"
+#include "../../../hmatrix/linalg/add_hmatrix_vector_product.hpp"
+#include "../../../misc/misc.hpp"
 #include "local_operator.hpp"
 
 namespace htool {

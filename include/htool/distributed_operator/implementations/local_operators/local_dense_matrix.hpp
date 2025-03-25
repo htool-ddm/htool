@@ -1,10 +1,10 @@
 
-#ifndef HTOOL_TESTING_LOCAL_DENSE_MATRIX_HPP
-#define HTOOL_TESTING_LOCAL_DENSE_MATRIX_HPP
+#ifndef HTOOL_DISTRIBUTED_OPERATOR_LOCAL_DENSE_MATRIX_HPP
+#define HTOOL_DISTRIBUTED_OPERATOR_LOCAL_DENSE_MATRIX_HPP
 
-#include "../clustering/cluster_node.hpp" // for Cluster
-#include "../matrix/matrix.hpp"           // for Matrix
-#include "local_operator.hpp"             // for LocalOperator
+#include "../../../clustering/cluster_node.hpp" // for Cluster
+#include "../../../matrix/matrix.hpp"           // for Matrix
+#include "local_operator.hpp"                   // for LocalOperator
 
 namespace htool {
 

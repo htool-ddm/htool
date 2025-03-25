@@ -1,5 +1,5 @@
-#ifndef HTOOL_BLOCKS_ADMISSIBILITY_CONDITIONS_HPP
-#define HTOOL_BLOCKS_ADMISSIBILITY_CONDITIONS_HPP
+#ifndef HTOOL_HMATRIX_VIRTUAL_BLOCKS_ADMISSIBILITY_CONDITIONS_HPP
+#define HTOOL_HMATRIX_VIRTUAL_BLOCKS_ADMISSIBILITY_CONDITIONS_HPP
 
 #include "../../basic_types/vector.hpp"      // for norm2
 #include "../../clustering/cluster_node.hpp" // for Cluster
