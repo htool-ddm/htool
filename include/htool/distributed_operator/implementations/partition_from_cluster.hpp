@@ -1,14 +1,14 @@
 #ifndef HTOOL_DISTRIBUTED_OPERATOR_PARTITION_FROM_CLUSTER_HPP
 #define HTOOL_DISTRIBUTED_OPERATOR_PARTITION_FROM_CLUSTER_HPP
 
-#include "../../clustering/cluster_node.hpp" // for global_to_root_cluster
-#include "../../misc/misc.hpp"               // for underlying_type
-#include "../interfaces/partition.hpp"       // for IPartition
+#include "../../clustering/cluster_node.hpp"   // for global_to_root_cluster
+#include "../../misc/misc.hpp"                 // for underlying_type
+#include "../interfaces/virtual_partition.hpp" // for IPartition
 
 namespace htool {
 
 template <typename CoefficientPrecision, typename CoordinatePrecision = underlying_type<CoefficientPrecision>>
-class PartitionFromCluster final : public IPartition<CoefficientPrecision> {
+class PartitionFromCluster final : public VirtualPartition<CoefficientPrecision> {
     const Cluster<CoordinatePrecision> &m_root_cluster;
 
   public:
