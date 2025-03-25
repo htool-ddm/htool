@@ -38,6 +38,9 @@ All notable changes to this project will be documented in this file.
 
 - `VirtualInternalLowRankGenerator` and `VirtualLowRankGenerator`'s `copy_low_rank_approximation` function takes a `LowRankMatrix` as input to populate it and returns a boolean. The return value is true if the compression succeded, false otherwise.
 - `LowRankMatrix` constructors changed. It only takes sizes and an epsilon or a required rank. Then, it is expected to call a `VirtualInternalLowRankGenerator` to populate it.
+- `ClusterTreeBuilder` has now one strategy as `VirtualPartitioning`. Usual implementations are still available, for example using `Partitioning<double,ComputeLargestExtent,RegularSplitting>`.
+- When using `ClusterTreeBuilder` with `number_of_children=2^spatial_dimension`, it will do a binary/quad/octo-tree instead of `number_of_children` cut along the main direction.
+- `ClusterTreeBuilder` parameter `minclustersize` was removed, and a parameter `maximal_leaf_size` has been added.
 
 ### Fixed
 
