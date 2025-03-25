@@ -64,7 +64,7 @@ class DDM {
 
     void facto_one_level() {
         double time = MPI_Wtime();
-        double mytime, maxtime;
+        double mytime(0), maxtime(0);
         m_hpddm_op->callNumfact();
         mytime = MPI_Wtime() - time;
 
@@ -388,7 +388,7 @@ DDM<CoefficientPrecision, HPDDM::LapackTRSub> make_DDM_solver(const DistributedO
     int n = local_dense_matrix.nb_rows();
 
     // Timing
-    double mytime, maxtime;
+    double mytime(0), maxtime(0);
     double time = MPI_Wtime();
 
     // Symmetry and storage
@@ -459,7 +459,7 @@ DDM<CoefficientPrecision, HPDDMCustomLocalSolver> make_DDM_solver_w_custom_local
     int n = local_hmatrix.get_target_cluster().get_size();
 
     // Timing
-    double mytime, maxtime;
+    double mytime(0), maxtime(0);
     double time = MPI_Wtime();
 
     // Symmetry and storage
@@ -490,7 +490,7 @@ DDM<CoefficientPrecision, HPDDMCustomLocalSolver> make_DDM_solver_w_custom_local
     int n = local_hmatrix.get_target_cluster().get_size() + D.nb_rows();
 
     // Timing
-    double mytime, maxtime;
+    double mytime(0), maxtime(0);
     double time = MPI_Wtime();
 
     // Symmetry and storage

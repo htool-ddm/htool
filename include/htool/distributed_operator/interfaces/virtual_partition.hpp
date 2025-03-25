@@ -1,10 +1,10 @@
-#ifndef HTOOL_DISTIRBUTED_OPERATOR_PARTITION_HPP
-#define HTOOL_DISTIRBUTED_OPERATOR_PARTITION_HPP
+#ifndef HTOOL_DISTIRBUTED_OPERATOR_VIRTUAL_PARTITION_HPP
+#define HTOOL_DISTIRBUTED_OPERATOR_VIRTUAL_PARTITION_HPP
 
 namespace htool {
 
 template <typename CoefficientPrecision>
-class IPartition {
+class VirtualPartition {
   public:
     virtual int get_size_of_partition(int subdomain_number) const   = 0;
     virtual int get_offset_of_partition(int subdomain_number) const = 0;
@@ -18,15 +18,15 @@ class IPartition {
     virtual void local_partition_to_local_numbering(int subdomain_number, const CoefficientPrecision *const in, CoefficientPrecision *const out) const = 0;
 
     virtual bool is_renumbering_local() const = 0;
-    virtual ~IPartition()                     = default;
+    virtual ~VirtualPartition()               = default;
 
   protected:
     // no copy
-    IPartition()                                            = default;
-    IPartition(const IPartition &)                          = default;
-    IPartition &operator=(const IPartition &)               = default;
-    IPartition(IPartition &&IPartition) noexcept            = default;
-    IPartition &operator=(IPartition &&IPartition) noexcept = default;
+    VirtualPartition()                                                  = default;
+    VirtualPartition(const VirtualPartition &)                          = default;
+    VirtualPartition &operator=(const VirtualPartition &)               = default;
+    VirtualPartition(VirtualPartition &&IPartition) noexcept            = default;
+    VirtualPartition &operator=(VirtualPartition &&IPartition) noexcept = default;
 };
 
 } // namespace htool
