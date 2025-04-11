@@ -1,18 +1,21 @@
-#include <cmath>                                                  // for pow, sqrt
-#include <cstddef>                                                // for size_t
-#include <htool/basic_types/vector.hpp>                           // for norm2
-#include <htool/clustering/cluster_node.hpp>                      // for Cluster...
-#include <htool/clustering/tree_builder/recursive_build.hpp>      // for Cluster...
-#include <htool/hmatrix/hmatrix.hpp>                              // for copy_di...
-#include <htool/hmatrix/hmatrix_distributed_output.hpp>           // for print_d...
-#include <htool/hmatrix/hmatrix_output.hpp>                       // for print_h...
-#include <htool/hmatrix/hmatrix_output_dot.hpp>                   // for view_block_tree...
-#include <htool/hmatrix/interfaces/virtual_generator.hpp>         // for Generat...
-#include <htool/hmatrix/tree_builder/task_based_tree_builder.hpp> // for enumerate_dependence, find_l0...
-#include <htool/hmatrix/tree_builder/tree_builder.hpp>            // for HMatrix...
-#include <htool/matrix/matrix.hpp>                                // for Matrix
-#include <htool/misc/misc.hpp>                                    // for underly...
-#include <htool/misc/user.hpp>                                    // for NbrToStr
+#include <cmath>                             // for pow, sqrt
+#include <cstddef>                           // for size_t
+#include <htool/basic_types/vector.hpp>      // for norm2
+#include <htool/clustering/cluster_node.hpp> // for Cluster...
+#include <htool/clustering/cluster_output.hpp>
+#include <htool/clustering/tree_builder/recursive_build.hpp> // for Cluster...
+#include <htool/hmatrix/hmatrix.hpp>                         // for copy_di...
+#include <htool/hmatrix/hmatrix_distributed_output.hpp>      // for print_d...
+#include <htool/hmatrix/hmatrix_output.hpp>                  // for print_h...
+#include <htool/hmatrix/hmatrix_output_dot.hpp>              // for view_block_tree...
+#include <htool/hmatrix/interfaces/virtual_generator.hpp>    // for Generat...
+#include <htool/hmatrix/linalg/add_hmatrix_vector_product.hpp>
+#include <htool/hmatrix/linalg/task_based_add_hmatrix_vector_product.hpp> // for task_bas...
+#include <htool/hmatrix/tree_builder/task_based_tree_builder.hpp>         // for enumerate_dependence, find_l0...
+#include <htool/hmatrix/tree_builder/tree_builder.hpp>                    // for HMatrix...
+#include <htool/matrix/matrix.hpp>                                        // for Matrix
+#include <htool/misc/misc.hpp>                                            // for underly...
+#include <htool/misc/user.hpp>                                            // for NbrToStr
 #include <htool/testing/dense_blocks_generator_test.hpp>
 #include <htool/testing/geometry.hpp>  // for create_...
 #include <htool/testing/partition.hpp> // for test_pa...
@@ -90,7 +93,8 @@ bool test_hmatrix_task_based(int nr, int nc, char Symmetry, char UPLO, htool::un
 
     // Tests for enumerate_dependences
     {
-        std::vector<const HMatrix<T> *> L0, dependences;
+        std::vector<HMatrix<T> *> L0;
+        std::vector<const HMatrix<T> *> dependences;
 
         // Test case 1: hmatrix is in L0
         {
@@ -138,7 +142,7 @@ bool test_hmatrix_task_based(int nr, int nc, char Symmetry, char UPLO, htool::un
     {
         std::vector<HMatrix<T> *> L0 = find_l0(root_hmatrix, 256);
         // std::cout << "L0.size() = " << L0.size() << std::endl;
-        std::ofstream dotfile("dotfile.dot");
+        std::ofstream dotfile("test_find_l0.dot");
         view_block_tree(root_hmatrix, L0, dotfile);
     }
 
@@ -160,14 +164,51 @@ bool test_hmatrix_task_based(int nr, int nc, char Symmetry, char UPLO, htool::un
         std::chrono::duration<double> classic_duration    = hmatrix.get_hmatrix_tree_data()->m_timings["Blocks_computation_walltime"];
         std::chrono::duration<double> task_based_duration = task_based_hmatrix.get_hmatrix_tree_data()->m_timings["Blocks_computation_walltime"];
         if (task_based_duration > classic_duration) {
-            std::cerr << "Error: task_based_duration: " << task_based_duration.count() << " > classic_duration: " << classic_duration.count() << "." << std::endl;
+            std::cerr << "Warning: task_based_duration: " << task_based_duration.count() << " > classic_duration: " << classic_duration.count() << "." << std::endl;
         }
+    }
+
+    // Tests for task_based_internal_add_hmatrix_vector_product
+    {
+        // build
+        auto root_hmatrix_classic    = hmatrix_tree_builder.build(generator);
+        auto root_hmatrix_task_based = hmatrix_tree_builder.build(generator);
+        // print_hmatrix_information(root_hmatrix_task_based, std::cout);
+
+        // Create a vector for the input and output
+        std::vector<T> in(nc), out(nr, 11), out_task(nr, 11);
+        for (int i = 0; i < nc; i++) {
+            in[i] = i * i;
+        }
+
+        // Create a vector for the expected output
+        openmp_internal_add_hmatrix_vector_product('N', T(3), root_hmatrix_classic, in.data(), T(3), out.data());
+
+        // L0 definitions
+        std::vector<HMatrix<T> *> L0           = find_l0(root_hmatrix_classic, 256);
+        std::vector<const Cluster<T> *> in_L0  = find_l0(hmatrix_tree_builder.get_source_cluster(), 64);
+        std::vector<const Cluster<T> *> out_L0 = find_l0(hmatrix_tree_builder.get_target_cluster(), 64);
+        std::mutex cout_mutex; // mutex to protect cout
+
+#if defined(_OPENMP) && !defined(HTOOL_WITH_PYTHON_INTERFACE)
+#    pragma omp parallel
+#    pragma omp single nowait
+#endif
+        {
+            // Perform the task-based internal add H-matrix vector product
+            task_based_internal_add_hmatrix_vector_product('N', T(3), root_hmatrix_task_based, in.data(), T(3), out_task.data(), L0, in_L0, out_L0, &cout_mutex);
+        }
+
+        // Compare the results
+        is_error = is_error || (norm2(out - out_task) / norm2(out) > 1e-15);
+        std::cout << "norm2(out ) = " << norm2(out) << std::endl;
+        std::cout << "norm2(out - out_task)/norm2(out) = " << norm2(out - out_task) / norm2(out) << std::endl;
     }
 
     if (is_error) {
         std::cerr << "Error: test_hmatrix_task_based failed." << std::endl;
     } else {
-        std::cout << "Passed: test_hmatrix_task_based passed." << std::endl;
+        std::cout << "Passed: test_hmatrix_task_based passed." << "\n--------------------------------" << std::endl;
     }
     return is_error;
 }
