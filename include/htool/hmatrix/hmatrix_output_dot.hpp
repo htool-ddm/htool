@@ -31,7 +31,7 @@ struct TreeCounts {
  * @param dotFile The output stream to write the DOT file to.
  */
 template <typename CoefficientPrecision, typename CoordinatePrecision = underlying_type<CoefficientPrecision>>
-void view_block_tree(const HMatrix<CoefficientPrecision, CoordinatePrecision> &hmatrix, std::vector<HMatrix<CoefficientPrecision, CoordinatePrecision> *> &subhmatrices_to_color, std::ostream &dotFile) {
+void view_block_tree(HMatrix<CoefficientPrecision, CoordinatePrecision> &hmatrix, std::vector<HMatrix<CoefficientPrecision, CoordinatePrecision> *> &subhmatrices_to_color, std::ostream &dotFile) {
     // Start the DOT file content
     dotFile << "digraph {\n";
 
@@ -81,13 +81,13 @@ std::string get_hmatrix_id(const HMatrix<CoefficientPrecision, CoordinatePrecisi
  * @param subhmatrices_to_color A vector of nodes to be highlighted.
  */
 template <typename CoefficientPrecision, typename CoordinatePrecision = underlying_type<CoefficientPrecision>>
-void add_node_to_block_tree(const HMatrix<CoefficientPrecision, CoordinatePrecision> &hmatrix, std::ostream &dotFile, TreeCounts &counts, std::vector<HMatrix<CoefficientPrecision, CoordinatePrecision> *> &subhmatrices_to_color) {
+void add_node_to_block_tree(HMatrix<CoefficientPrecision, CoordinatePrecision> &hmatrix, std::ostream &dotFile, TreeCounts &counts, std::vector<HMatrix<CoefficientPrecision, CoordinatePrecision> *> &subhmatrices_to_color) {
     // Define node
     dotFile << "    H_" << get_hmatrix_id(hmatrix) << " [tooltip=\"Node information: \\n";
 
     // Add the node information in a tooltip.
     auto hmatrix_info = get_hmatrix_information(hmatrix);
-    for (const auto &info : hmatrix_info) {
+    for (auto &info : hmatrix_info) {
         dotFile << info.first << ": " << info.second << "\\n";
     }
 
@@ -119,7 +119,7 @@ void add_node_to_block_tree(const HMatrix<CoefficientPrecision, CoordinatePrecis
  * @param subhmatrices_to_color A vector of pointers to HMatrix nodes, representing an initial set of nodes.
  */
 template <typename CoefficientPrecision, typename CoordinatePrecision = underlying_type<CoefficientPrecision>>
-void create_block_tree(const HMatrix<CoefficientPrecision, CoordinatePrecision> &hmatrix, std::ostream &dotFile, TreeCounts &counts, std::vector<HMatrix<CoefficientPrecision, CoordinatePrecision> *> &subhmatrices_to_color) {
+void create_block_tree(HMatrix<CoefficientPrecision, CoordinatePrecision> &hmatrix, std::ostream &dotFile, TreeCounts &counts, std::vector<HMatrix<CoefficientPrecision, CoordinatePrecision> *> &subhmatrices_to_color) {
     // Increment the call count
     counts.call_count++;
 
