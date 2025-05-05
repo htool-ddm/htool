@@ -193,9 +193,11 @@ std::vector<const HMatrix<CoefficientPrecision, CoordinatePrecision> *> enumerat
     }
 
     // Case 3 : hmatrix is below L0. Find the unique ancestor of hmatrix in L0
-    const auto it = std::find_if(L0.begin(), L0.end(), [hmatrix](HMatrix<CoefficientPrecision, CoordinatePrecision> *hmatrix_in_L0) {
+
+    const auto it = std::find_if(L0.begin(), L0.end(), [&hmatrix](HMatrix<CoefficientPrecision, CoordinatePrecision> *hmatrix_in_L0) {
         return left_hmatrix_descendant_of_right_hmatrix(hmatrix, *hmatrix_in_L0);
     });
+
     if (it != L0.end()) {
         return {*it};
     }
