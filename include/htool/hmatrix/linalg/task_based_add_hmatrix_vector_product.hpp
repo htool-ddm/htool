@@ -44,14 +44,20 @@ namespace htool {
 template <typename CoefficientPrecision, typename CoordinatePrecision = CoefficientPrecision>
 void task_based_internal_add_hmatrix_vector_product(char trans, CoefficientPrecision alpha, const HMatrix<CoefficientPrecision, CoordinatePrecision> &A, const CoefficientPrecision *in, CoefficientPrecision beta, CoefficientPrecision *out, const std::vector<HMatrix<CoefficientPrecision, CoordinatePrecision> *> &L0, const std::vector<const Cluster<CoordinatePrecision> *> &in_L0, const std::vector<const Cluster<CoordinatePrecision> *> &out_L0, std::mutex *cout_mutex = nullptr) {
 
-    const auto &target_cluster = A.get_target_cluster();
-    const auto &source_cluster = A.get_source_cluster();
-    int local_output_size(target_cluster.get_size());
-    int local_input_size(source_cluster.get_size());
+    // Todo : maybe its not efficient because of the recursive call
     auto get_output_cluster{&HMatrix<CoefficientPrecision, CoordinatePrecision>::get_target_cluster};
     auto get_input_cluster{&HMatrix<CoefficientPrecision, CoordinatePrecision>::get_source_cluster};
-    int local_input_offset  = source_cluster.get_offset();
-    int local_output_offset = target_cluster.get_offset();
+    if (trans != 'N') {
+        get_input_cluster  = &HMatrix<CoefficientPrecision, CoordinatePrecision>::get_target_cluster;
+        get_output_cluster = &HMatrix<CoefficientPrecision, CoordinatePrecision>::get_source_cluster;
+    }
+
+    const auto &target_cluster = (A.*get_output_cluster)();
+    const auto &source_cluster = (A.*get_input_cluster)();
+    int local_input_offset     = source_cluster.get_offset();
+    int local_input_size       = source_cluster.get_size();
+    int local_output_offset    = target_cluster.get_offset();
+    int local_output_size      = target_cluster.get_size();
 
     int max_prio = omp_get_max_task_priority(); // == 0 if not specified by user at runtime with : OMP_MAX_TASK_PRIORITY=<value> ./program
 
@@ -62,14 +68,14 @@ void task_based_internal_add_hmatrix_vector_product(char trans, CoefficientPreci
             int out_L0_nodes_size   = out_L0_nodes->get_size();
 
 #if defined(_OPENMP) && !defined(HTOOL_WITH_PYTHON_INTERFACE)
-#    pragma omp task default(none)                                                                                   \
-        firstprivate(out_L0_nodes_offset, out_L0_nodes_size, beta, out, local_output_size, out_L0_nodes, cout_mutex) \
-        shared(std::cout)                                                                                            \
-        depend(inout : *out_L0_nodes)                                                                                \
+#    pragma omp task default(none)                                            \
+        firstprivate(out_L0_nodes_offset, out_L0_nodes_size, out, cout_mutex) \
+        shared(beta, local_output_size, out_L0_nodes, std::cout)              \
+        depend(inout : *out_L0_nodes)                                         \
         priority(std::max(0, max_prio - 1))
 #endif
             {
-                {
+                if (cout_mutex != nullptr) {
                     std::lock_guard<std::mutex> lock(*cout_mutex);
                     std::cout << "Scaling : out[" << out_L0_nodes_offset << " : " << out_L0_nodes_offset + out_L0_nodes_size << "], thread " << omp_get_thread_num() << "\n";
                     // std::cout << "out_L0_nodes = " << out_L0_nodes << "\n";
@@ -101,16 +107,15 @@ void task_based_internal_add_hmatrix_vector_product(char trans, CoefficientPreci
         auto read_deps_cluster_size = read_dependences_cluster.size();
 
 #if defined(_OPENMP) && !defined(HTOOL_WITH_PYTHON_INTERFACE)
-#    pragma omp task default(none)                                                                                                                                                                                                                                               \
-        firstprivate(trans, alpha, in, A, local_output_offset, local_output_size, local_input_offset, local_input_size, out, write_dependences, write_deps_size, read_deps_hmatrix_size, read_dependences_hmatrix, read_deps_cluster_size, read_dependences_cluster, cout_mutex) \
-        shared(std::cout)                                                                                                                                                                                                                                                        \
-        depend(iterator(it = 0 : write_deps_size), inout : *write_dependences[it])                                                                                                                                                                                               \
+#    pragma omp task default(none)                                                                                                                                                                                                                                                    \
+        shared(A, alpha, in, local_output_offset, local_output_size, local_input_offset, local_input_size, trans, out, write_dependences, write_deps_size, read_deps_hmatrix_size, read_dependences_hmatrix, read_deps_cluster_size, read_dependences_cluster, cout_mutex, std::cout) \
+        depend(iterator(it = 0 : write_deps_size), inout : *write_dependences[it])                                                                                                                                                                                                    \
         priority(std::max(0, max_prio))
         // depend(iterator(it = 0 : read_deps_cluster_size), in : *read_dependences_cluster[it]) // Same as Scaling dependences, hence introduce a superfluous dependence. Todo : find a better way => change enumerate_dependences to return a pair of (vector<const Hmatrix/Cluster *>, vector<const Cluster<T> *>)
         // depend(iterator(it = 0 : read_deps_hmatrix_size), in : *read_dependences_hmatrix[it]) // Same issue but between two product tasks.
 #endif
         {
-            {
+            if (cout_mutex != nullptr) {
                 std::lock_guard<std::mutex> lock(*cout_mutex);
                 std::cout << " Product write in : out[" << local_output_offset << " : " << local_output_offset + local_output_size << "] and read in : in[" << local_input_offset << " : " << local_input_offset + local_input_size << "], thread " << omp_get_thread_num() << "\n";
                 // for (int i = 0; i < read_deps_cluster_size; i++) {
