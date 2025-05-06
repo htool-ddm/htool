@@ -15,6 +15,7 @@
 #include <algorithm>                                              // for fill_n
 #include <chrono>                                                 // for dura...
 #include <htool/hmatrix/tree_builder/task_based_tree_builder.hpp> // for enumerate_dependence, find_l0...
+#include <list>                                                   // for list
 #include <memory>                                                 // for shar...
 #include <stack>                                                  // for stack
 #include <string>                                                 // for basi...
@@ -54,6 +55,9 @@ class HMatrixTreeBuilder {
 
     // Information
     mutable int m_false_positive{0};
+
+    // Internal storage for adapting user generator
+    mutable std::list<InternalGeneratorWithPermutation<CoefficientPrecision>> m_internal_generators; // using list to get pointer stability
 
     // Strategies
     std::shared_ptr<VirtualLowRankGenerator<CoefficientPrecision, CoordinatePrecision>> m_low_rank_generator;
@@ -184,7 +188,14 @@ class HMatrixTreeBuilder {
     // Build
     HMatrixType build(const VirtualInternalGenerator<CoefficientPrecision> &generator, bool is_task_based = false) const;
     HMatrixType build(const VirtualGenerator<CoefficientPrecision> &generator, bool is_task_based = false) const {
-        return this->build(InternalGeneratorWithPermutation<CoefficientPrecision>(generator, m_target_root_cluster.get_permutation().data(), m_source_root_cluster.get_permutation().data()), is_task_based);
+        m_internal_generators.emplace_back(generator, m_target_root_cluster.get_permutation().data(), m_source_root_cluster.get_permutation().data());
+        return this->build(m_internal_generators.back(), is_task_based);
+    }
+
+    HMatrixType build_test(const VirtualInternalGenerator<CoefficientPrecision> &generator, std::vector<HMatrix<CoefficientPrecision, CoordinatePrecision> *> L0, bool is_task_based = false) const;
+    HMatrixType build_test(const VirtualGenerator<CoefficientPrecision> &generator, std::vector<HMatrix<CoefficientPrecision, CoordinatePrecision> *> L0, bool is_task_based = false) const {
+        m_internal_generators.emplace_back(generator, m_target_root_cluster.get_permutation().data(), m_source_root_cluster.get_permutation().data());
+        return this->build_test(m_internal_generators.back(), L0, is_task_based);
     }
 
     // Setters
@@ -238,10 +249,8 @@ HMatrix<CoefficientPrecision, CoordinatePrecision> HMatrixTreeBuilder<Coefficien
     // Compute leave's data
     if (is_task_based) {
         std::vector<HMatrix<CoefficientPrecision, CoordinatePrecision> *> L0;
-        L0 = find_l0(root_hmatrix, 64); // TODO: make this parameterizable ?);
-
+        L0    = find_l0(root_hmatrix, 64); // TODO: make this parameterizable ?);
         start = std::chrono::steady_clock::now();
-        // task_based_compute_blocks(generator);
         task_based_compute_blocks(generator, L0);
         end = std::chrono::steady_clock::now();
     } else {
@@ -259,6 +268,57 @@ HMatrix<CoefficientPrecision, CoordinatePrecision> HMatrixTreeBuilder<Coefficien
     root_hmatrix.get_hmatrix_tree_data()->m_timings["Block_tree_walltime"]          = block_tree_build_duration;
     root_hmatrix.get_hmatrix_tree_data()->m_timings["Blocks_computation_walltime"]  = block_comptations_duration;
 
+    // #pragma omp taskwait
+    return root_hmatrix;
+}
+
+template <typename CoefficientPrecision, typename CoordinatePrecision>
+HMatrix<CoefficientPrecision, CoordinatePrecision> HMatrixTreeBuilder<CoefficientPrecision, CoordinatePrecision>::build_test(const VirtualInternalGenerator<CoefficientPrecision> &generator, std::vector<HMatrix<CoefficientPrecision, CoordinatePrecision> *> L0, bool is_task_based) const {
+    // Clear HMatrix tree data
+    m_admissible_tasks.clear();
+    m_dense_tasks.clear();
+    m_false_positive = 0;
+
+    // Create root hmatrix
+    HMatrixType root_hmatrix(m_target_root_cluster, m_source_root_cluster);
+    root_hmatrix.set_admissibility_condition(m_admissibility_condition);
+    root_hmatrix.set_low_rank_generator(m_low_rank_generator);
+    root_hmatrix.set_eta(m_eta);
+    root_hmatrix.set_epsilon(m_epsilon);
+    root_hmatrix.set_minimal_target_depth(m_mintargetdepth);
+    root_hmatrix.set_minimal_source_depth(m_minsourcedepth);
+    root_hmatrix.set_block_tree_consistency(m_is_block_tree_consistent);
+
+    // Build hierarchical block structure
+    std::chrono::steady_clock::time_point start, end;
+
+    start = std::chrono::steady_clock::now();
+    build_block_tree(&root_hmatrix);
+    reset_root_of_block_tree(root_hmatrix);
+    set_hmatrix_symmetry(root_hmatrix);
+    end = std::chrono::steady_clock::now();
+
+    std::chrono::duration<double> block_tree_build_duration = end - start;
+
+    // Compute leave's data
+    if (is_task_based) {
+        start = std::chrono::steady_clock::now();
+        task_based_compute_blocks(generator, L0);
+        end = std::chrono::steady_clock::now();
+    } else {
+        start = std::chrono::steady_clock::now();
+        compute_blocks(generator);
+        end = std::chrono::steady_clock::now();
+    }
+    std::chrono::duration<double> block_comptations_duration = end - start;
+    set_symmetry_for_leaves(root_hmatrix);
+
+    // Set information
+    root_hmatrix.get_hmatrix_tree_data()->m_information["Number_of_false_positive"] = NbrToStr(m_false_positive);
+    root_hmatrix.get_hmatrix_tree_data()->m_timings["Block_tree_walltime"]          = block_tree_build_duration;
+    root_hmatrix.get_hmatrix_tree_data()->m_timings["Blocks_computation_walltime"]  = block_comptations_duration;
+
+    // #pragma omp taskwait
     return root_hmatrix;
 }
 
@@ -522,45 +582,37 @@ void HMatrixTreeBuilder<CoefficientPrecision, CoordinatePrecision>::compute_bloc
 
 template <typename CoefficientPrecision, typename CoordinatePrecision>
 void HMatrixTreeBuilder<CoefficientPrecision, CoordinatePrecision>::task_based_compute_blocks(const VirtualInternalGenerator<CoefficientPrecision> &generator, const std::vector<HMatrix<CoefficientPrecision, CoordinatePrecision> *> &L0) const {
-    // std::cout << "Calling task_based_compute_blocks_v1" << std::endl;
+
+    for (int p = 0; p < L0.size(); p++) {
 
 #if defined(_OPENMP) && !defined(HTOOL_WITH_PYTHON_INTERFACE)
-#    pragma omp parallel
-#    pragma omp single nowait
+#    pragma omp task default(none)                                                      \
+        firstprivate(p, L0)                                                             \
+        shared(generator, m_false_positive, m_reqrank, m_epsilon, m_low_rank_generator) \
+        depend(out : *L0[p])
 #endif
-    {
-
-        for (int p = 0; p < L0.size(); p++) {
-
-#if defined(_OPENMP) && !defined(HTOOL_WITH_PYTHON_INTERFACE)
-#    pragma omp task default(none)                                                          \
-        firstprivate(p)                                                                     \
-        shared(generator, m_low_rank_generator, m_reqrank, m_epsilon, m_false_positive, L0) \
-        depend(inout : *L0[p])
-#endif
-            {
-                std::vector<HMatrix<CoefficientPrecision, CoordinatePrecision> *> leaves;
-                std::vector<HMatrix<CoefficientPrecision, CoordinatePrecision> *> leaves_for_symmetry;
-                std::tie(leaves, leaves_for_symmetry) = get_leaves_from(*L0[p]); // C++17 structured binding
-
-                for (auto leaf : leaves) {
-                    if (leaf->is_dense()) {
+        {
+            std::vector<HMatrix<CoefficientPrecision, CoordinatePrecision> *> leaves;
+            std::vector<HMatrix<CoefficientPrecision, CoordinatePrecision> *> leaves_for_symmetry;
+            std::tie(leaves, leaves_for_symmetry) = get_leaves_from(*L0[p]); // C++17 structured binding
+            for (auto leaf : leaves) {
+                if (leaf->is_dense()) {
+                    leaf->compute_dense_data(generator);
+                } else {
+                    leaf->compute_low_rank_data(generator, *m_low_rank_generator, m_reqrank, m_epsilon);
+                    if (leaf->get_low_rank_data()->get_U().nb_rows() != leaf->get_target_cluster().get_size() || leaf->get_low_rank_data()->get_V().nb_cols() != leaf->get_source_cluster().get_size()) {
+                        leaf->clear_low_rank_data();
                         leaf->compute_dense_data(generator);
-                    } else {
-                        leaf->compute_low_rank_data(generator, *m_low_rank_generator, m_reqrank, m_epsilon);
-                        if (leaf->get_low_rank_data()->get_U().nb_rows() != leaf->get_target_cluster().get_size() || leaf->get_low_rank_data()->get_V().nb_cols() != leaf->get_source_cluster().get_size()) {
-                            leaf->clear_low_rank_data();
-                            leaf->compute_dense_data(generator);
 
 #if defined(_OPENMP) && !defined(HTOOL_WITH_PYTHON_INTERFACE)
 #    pragma omp atomic
 #endif
-                            m_false_positive += 1;
-                        }
+                        m_false_positive += 1;
                     }
                 }
             }
         }
+        // #pragma omp taskwait
     }
 }
 
