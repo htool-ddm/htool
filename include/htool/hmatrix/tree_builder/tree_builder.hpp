@@ -51,10 +51,11 @@ class HMatrixTreeBuilder {
     // Views
     mutable std::vector<HMatrixType *> m_admissible_tasks{};
     mutable std::vector<HMatrixType *> m_dense_tasks{};
-    mutable std::vector<const HMatrixType *> m_L0;
+    mutable std::vector<HMatrixType *> m_L0;
 
     // Information
     mutable int m_false_positive{0};
+    mutable std::vector<HMatrix<CoefficientPrecision, CoordinatePrecision> *> L0;
 
     // Internal storage for adapting user generator
     mutable std::list<InternalGeneratorWithPermutation<CoefficientPrecision>> m_internal_generators; // using list to get pointer stability
@@ -210,6 +211,7 @@ class HMatrixTreeBuilder {
     char get_UPLO() const { return m_UPLO_type; }
     const Cluster<CoordinatePrecision> &get_target_cluster() const { return m_target_root_cluster; }
     const Cluster<CoordinatePrecision> &get_source_cluster() const { return m_source_root_cluster; }
+    std::vector<HMatrixType *> get_L0() const { return m_L0; }
 };
 
 template <typename CoefficientPrecision, typename CoordinatePrecision>
@@ -218,6 +220,7 @@ HMatrix<CoefficientPrecision, CoordinatePrecision> HMatrixTreeBuilder<Coefficien
     m_admissible_tasks.clear();
     m_dense_tasks.clear();
     m_false_positive = 0;
+    m_L0.clear();
 
     // Create root hmatrix
     HMatrixType root_hmatrix(m_target_root_cluster, m_source_root_cluster);
@@ -242,10 +245,10 @@ HMatrix<CoefficientPrecision, CoordinatePrecision> HMatrixTreeBuilder<Coefficien
 
     // Compute leave's data
     if (is_task_based) {
-        std::vector<HMatrix<CoefficientPrecision, CoordinatePrecision> *> L0;
-        L0    = find_l0(root_hmatrix, 64); // TODO: make this parameterizable ?);
+        // std::vector<HMatrix<CoefficientPrecision, CoordinatePrecision> *> L0;
+        m_L0  = find_l0(root_hmatrix, 64); // TODO: make this parameterizable ?);
         start = std::chrono::steady_clock::now();
-        task_based_compute_blocks(generator, L0);
+        task_based_compute_blocks(generator, m_L0);
         end = std::chrono::steady_clock::now();
     } else {
         start = std::chrono::steady_clock::now();
