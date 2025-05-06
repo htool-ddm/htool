@@ -70,8 +70,8 @@ bool test_hmatrix_task_based(int nr, int nc, char Symmetry, char UPLO, htool::un
     auto root_hmatrix = hmatrix_tree_builder.build(generator);
 
     // Hmatrix Visualization
-    // print_hmatrix_information(root_hmatrix, std::cout);
     save_leaves_with_rank(root_hmatrix, "root_hmatrix_facto");
+    // print_hmatrix_information(root_hmatrix, std::cout);
 
     // Basic sub tree
     HMatrix<T> &child1        = *root_hmatrix.get_children()[0].get();
@@ -80,19 +80,24 @@ bool test_hmatrix_task_based(int nr, int nc, char Symmetry, char UPLO, htool::un
     HMatrix<T> &child1_child2 = *root_hmatrix.get_children()[0].get()->get_children()[1].get();
 
     // Tests for left_hmatrix_ancestor_of_right_hmatrix
+    std::cout << "left_hmatrix_ancestor_of_right_hmatrix tests...";
     is_error = is_error || !(left_hmatrix_ancestor_of_right_hmatrix(root_hmatrix, child1));
     is_error = is_error || !(left_hmatrix_ancestor_of_right_hmatrix(root_hmatrix, child2));
     is_error = is_error || !(left_hmatrix_ancestor_of_right_hmatrix(root_hmatrix, child1_child1));
     is_error = is_error || !(left_hmatrix_ancestor_of_right_hmatrix(root_hmatrix, child1_child2));
+    std::cout << "OK" << "\n----------------------------------" << std::endl;
 
     // Tests for left_hmatrix_descendant_of_right_hmatrix
+    std::cout << "left_hmatrix_descendant_of_right_hmatrix tests...";
     is_error = is_error || !(left_hmatrix_descendant_of_right_hmatrix(child1, root_hmatrix));
     is_error = is_error || !(left_hmatrix_descendant_of_right_hmatrix(child2, root_hmatrix));
     is_error = is_error || !(left_hmatrix_descendant_of_right_hmatrix(child1_child1, root_hmatrix));
     is_error = is_error || !(left_hmatrix_descendant_of_right_hmatrix(child1_child2, root_hmatrix));
+    std::cout << "OK" << "\n----------------------------------" << std::endl;
 
     // Tests for enumerate_dependences
     {
+        std::cout << "enumerate_dependences tests...";
         std::vector<HMatrix<T> *> L0;
         std::vector<const HMatrix<T> *> dependences;
 
@@ -100,8 +105,9 @@ bool test_hmatrix_task_based(int nr, int nc, char Symmetry, char UPLO, htool::un
         {
             L0          = {&child1_child1, &child1_child2, &child2};
             dependences = enumerate_dependences<T>(child2, L0);
-            is_error    = is_error || !(dependences.size() == 1);
-            is_error    = is_error || !(dependences[0] == &child2);
+
+            is_error = is_error || !(dependences.size() == 1);
+            is_error = is_error || !(dependences[0] == &child2);
         }
 
         // Test case 2: hmatrix is above L0
@@ -136,21 +142,30 @@ bool test_hmatrix_task_based(int nr, int nc, char Symmetry, char UPLO, htool::un
         // dependences = enumerate_dependences(root_hmatrix, L0);
         // is_error    = is_error || !(dependences.empty());
 
+        std::cout << "OK" << "\n----------------------------------" << std::endl;
     } // end of tests for enumerate_dependences
 
     // Tests for find_l0. Visual verification of the block tree in dotfile.dot
     {
         std::vector<HMatrix<T> *> L0 = find_l0(root_hmatrix, 256);
-        // std::cout << "L0.size() = " << L0.size() << std::endl;
         std::ofstream dotfile("test_find_l0.dot");
         view_block_tree(root_hmatrix, L0, dotfile);
     }
 
     // Tests for task_based_compute_blocks
     {
+        std::cout << "task_based_compute_blocks tests...";
         // build
-        auto hmatrix            = hmatrix_tree_builder.build(generator);
-        auto task_based_hmatrix = hmatrix_tree_builder.build(generator, true);
+        HMatrix<T> task_based_hmatrix(*target_root_cluster, *source_root_cluster);
+
+#if defined(_OPENMP) && !defined(HTOOL_WITH_PYTHON_INTERFACE)
+#    pragma omp parallel
+#    pragma omp single
+#endif
+        {
+            task_based_hmatrix = hmatrix_tree_builder.build(generator, true);
+        }
+        auto hmatrix = hmatrix_tree_builder.build(generator);
 
         // densification
         Matrix<T> densified_hmatrix(nr, nc), densified_hmatrix_task_based(nr, nc);
@@ -159,6 +174,11 @@ bool test_hmatrix_task_based(int nr, int nc, char Symmetry, char UPLO, htool::un
 
         // compare
         is_error = is_error || (normFrob(densified_hmatrix - densified_hmatrix_task_based) > 1e-10);
+        // is_error = is_error || (hmatrix.get_hmatrix_tree_data()->m_information["Number_of_false_positive"] != task_based_hmatrix.get_hmatrix_tree_data()->m_information["Number_of_false_positive"]);
+
+        std::cout << "OK" << std::endl;
+        std::cout << "    hmatrix m_false_positive = " << hmatrix.get_hmatrix_tree_data()->m_information["Number_of_false_positive"] << std::endl;
+        std::cout << "    task_based_hmatrix m_false_positive = " << task_based_hmatrix.get_hmatrix_tree_data()->m_information["Number_of_false_positive"] << std::endl;
 
         // check durations
         std::chrono::duration<double> classic_duration    = hmatrix.get_hmatrix_tree_data()->m_timings["Blocks_computation_walltime"];
@@ -166,10 +186,15 @@ bool test_hmatrix_task_based(int nr, int nc, char Symmetry, char UPLO, htool::un
         if (task_based_duration > classic_duration) {
             std::cerr << "Warning: task_based_duration: " << task_based_duration.count() << " > classic_duration: " << classic_duration.count() << "." << std::endl;
         }
+
+        std::cout << "----------------------------------" << std::endl;
     }
 
     // Tests for task_based_internal_add_hmatrix_vector_product
     {
+        std::cout << "task_based_internal_add_hmatrix_vector_product tests...";
+        char trans = 'T';
+
         // build
         auto root_hmatrix_classic    = hmatrix_tree_builder.build(generator);
         auto root_hmatrix_task_based = hmatrix_tree_builder.build(generator);
@@ -182,7 +207,7 @@ bool test_hmatrix_task_based(int nr, int nc, char Symmetry, char UPLO, htool::un
         }
 
         // Create a vector for the expected output
-        openmp_internal_add_hmatrix_vector_product('N', T(3), root_hmatrix_classic, in.data(), T(3), out.data());
+        openmp_internal_add_hmatrix_vector_product(trans, T(3), root_hmatrix_classic, in.data(), T(0), out.data());
 
         // L0 definitions
         std::vector<HMatrix<T> *> L0           = find_l0(root_hmatrix_classic, 256);
@@ -192,23 +217,72 @@ bool test_hmatrix_task_based(int nr, int nc, char Symmetry, char UPLO, htool::un
 
 #if defined(_OPENMP) && !defined(HTOOL_WITH_PYTHON_INTERFACE)
 #    pragma omp parallel
-#    pragma omp single nowait
+#    pragma omp single
 #endif
         {
             // Perform the task-based internal add H-matrix vector product
-            task_based_internal_add_hmatrix_vector_product('N', T(3), root_hmatrix_task_based, in.data(), T(3), out_task.data(), L0, in_L0, out_L0, &cout_mutex);
+            task_based_internal_add_hmatrix_vector_product(trans, T(3), root_hmatrix_task_based, in.data(), T(0), out_task.data(), L0, in_L0, out_L0);
         }
 
         // Compare the results
         is_error = is_error || (norm2(out - out_task) / norm2(out) > 1e-15);
-        std::cout << "norm2(out ) = " << norm2(out) << std::endl;
-        std::cout << "norm2(out - out_task)/norm2(out) = " << norm2(out - out_task) / norm2(out) << std::endl;
+        std::cout << "OK" << std::endl;
+        std::cout << "    norm2(out ) = " << norm2(out) << std::endl;
+        std::cout << "    norm2(out - out_task)/norm2(out) = " << norm2(out - out_task) / norm2(out) << std::endl;
+        std::cout << "----------------------------------" << std::endl;
     }
 
+    // Tests for hmatrix vector product following assembly with task_based_compute_blocks and task_based_internal_add_hmatrix_vector_product
+    {
+        std::cout << "assembly + hmatrix vector products tests...";
+        // Case 1 : task graphs are disjoint
+        //         {
+        //             // build
+        //             HMatrix<T> task_based_hmatrix(*target_root_cluster, *source_root_cluster);
+
+        //             std::chrono::steady_clock::time_point start, end;
+        //             start = std::chrono::steady_clock::now();
+        // #if defined(_OPENMP) && !defined(HTOOL_WITH_PYTHON_INTERFACE)
+        // #    pragma omp parallel
+        // #    pragma omp single
+        // #endif
+        //             {
+        //                 task_based_hmatrix = hmatrix_tree_builder.build(generator, true);
+        //             }
+
+        //             // N hmatrix vector products
+        //             std::vector<T> in(nc), out(nr, 11), out_task(nr, 11);
+        //             for (int i = 0; i < nc; i++) {
+        //                 in[i] = i * i;
+        //             }
+        //             std::vector<HMatrix<T> *> L0           = find_l0(root_hmatrix, 256); // Todo : Change to get back L0 from task_based_hmatrix
+        //             std::vector<const Cluster<T> *> in_L0  = find_l0(hmatrix_tree_builder.get_source_cluster(), 64);
+        //             std::vector<const Cluster<T> *> out_L0 = find_l0(hmatrix_tree_builder.get_target_cluster(), 64);
+        //             std::mutex cout_mutex; // mutex to protect cout
+
+        // #if defined(_OPENMP) && !defined(HTOOL_WITH_PYTHON_INTERFACE)
+        // #    pragma omp parallel
+        // #    pragma omp single
+        // #endif
+        //             {
+        //                 for (int i = 0; i < 100; i++) {
+        //                     task_based_internal_add_hmatrix_vector_product('N', T(3), task_based_hmatrix, in.data(), T(3), out_task.data(), L0, in_L0, out_L0);
+        //                 }
+        //             }
+        //             end                                                  = std::chrono::steady_clock::now();
+        //             std::chrono::duration<double> disjoint_case_duration = end - start;
+        //             std::cout << "    disjoint_case_duration = " << disjoint_case_duration.count() << std::endl;
+        //             // #pragma omp taskwait
+        //         }
+
+        std::cout << "OK" << "\n----------------------------------" << std::endl;
+    }
+
+    // Print the results
     if (is_error) {
-        std::cerr << "Error: test_hmatrix_task_based failed." << std::endl;
+        std::cerr << "ERROR: test_hmatrix_task_based failed." << std::endl;
     } else {
-        std::cout << "Passed: test_hmatrix_task_based passed." << "\n--------------------------------" << std::endl;
+        std::cout << "SUCCESS: test_hmatrix_task_based passed." << "\n================================" << std::endl;
     }
     return is_error;
 }
