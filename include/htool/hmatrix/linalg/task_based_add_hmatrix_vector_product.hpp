@@ -44,7 +44,6 @@ namespace htool {
 template <typename CoefficientPrecision, typename CoordinatePrecision = CoefficientPrecision>
 void task_based_internal_add_hmatrix_vector_product(char trans, CoefficientPrecision alpha, const HMatrix<CoefficientPrecision, CoordinatePrecision> &A, const CoefficientPrecision *in, CoefficientPrecision beta, CoefficientPrecision *out, const std::vector<HMatrix<CoefficientPrecision, CoordinatePrecision> *> &L0, const std::vector<const Cluster<CoordinatePrecision> *> &in_L0, const std::vector<const Cluster<CoordinatePrecision> *> &out_L0, std::mutex *cout_mutex = nullptr) {
 
-    // Todo : maybe its not efficient because of the recursive call
     auto get_output_cluster{&HMatrix<CoefficientPrecision, CoordinatePrecision>::get_target_cluster};
     auto get_input_cluster{&HMatrix<CoefficientPrecision, CoordinatePrecision>::get_source_cluster};
     if (trans != 'N') {
@@ -110,9 +109,9 @@ void task_based_internal_add_hmatrix_vector_product(char trans, CoefficientPreci
 #    pragma omp task default(none)                                                                                                                                                                                                                                                    \
         shared(A, alpha, in, local_output_offset, local_output_size, local_input_offset, local_input_size, trans, out, write_dependences, write_deps_size, read_deps_hmatrix_size, read_dependences_hmatrix, read_deps_cluster_size, read_dependences_cluster, cout_mutex, std::cout) \
         depend(iterator(it = 0 : write_deps_size), inout : *write_dependences[it])                                                                                                                                                                                                    \
-        priority(std::max(0, max_prio))
-        // depend(iterator(it = 0 : read_deps_cluster_size), in : *read_dependences_cluster[it]) // Same as Scaling dependences, hence introduce a superfluous dependence. Todo : find a better way => change enumerate_dependences to return a pair of (vector<const Hmatrix/Cluster *>, vector<const Cluster<T> *>)
-        // depend(iterator(it = 0 : read_deps_hmatrix_size), in : *read_dependences_hmatrix[it]) // Same issue but between two product tasks.
+        priority(std::max(0, max_prio))                                                                                                                                                                                                                                               \
+        depend(iterator(it = 0 : read_deps_cluster_size), in : *read_dependences_cluster[it])                                                                                                                                                                                         \
+        depend(iterator(it = 0 : read_deps_hmatrix_size), in : *read_dependences_hmatrix[it])
 #endif
         {
             if (cout_mutex != nullptr) {
