@@ -192,12 +192,6 @@ class HMatrixTreeBuilder {
         return this->build(m_internal_generators.back(), is_task_based);
     }
 
-    HMatrixType build_test(const VirtualInternalGenerator<CoefficientPrecision> &generator, std::vector<HMatrix<CoefficientPrecision, CoordinatePrecision> *> L0, bool is_task_based = false) const;
-    HMatrixType build_test(const VirtualGenerator<CoefficientPrecision> &generator, std::vector<HMatrix<CoefficientPrecision, CoordinatePrecision> *> L0, bool is_task_based = false) const {
-        m_internal_generators.emplace_back(generator, m_target_root_cluster.get_permutation().data(), m_source_root_cluster.get_permutation().data());
-        return this->build_test(m_internal_generators.back(), L0, is_task_based);
-    }
-
     // Setters
     void set_low_rank_generator(std::shared_ptr<VirtualLowRankGenerator<CoefficientPrecision, CoordinatePrecision>> ptr) { m_low_rank_generator = ptr; }
     void set_admissibility_condition(std::shared_ptr<VirtualAdmissibilityCondition<CoordinatePrecision>> ptr) { m_admissibility_condition = ptr; }
@@ -261,56 +255,6 @@ HMatrix<CoefficientPrecision, CoordinatePrecision> HMatrixTreeBuilder<Coefficien
     std::chrono::duration<double> block_comptations_duration = end - start;
 
     //
-    set_symmetry_for_leaves(root_hmatrix);
-
-    // Set information
-    root_hmatrix.get_hmatrix_tree_data()->m_information["Number_of_false_positive"] = NbrToStr(m_false_positive);
-    root_hmatrix.get_hmatrix_tree_data()->m_timings["Block_tree_walltime"]          = block_tree_build_duration;
-    root_hmatrix.get_hmatrix_tree_data()->m_timings["Blocks_computation_walltime"]  = block_comptations_duration;
-
-    // #pragma omp taskwait
-    return root_hmatrix;
-}
-
-template <typename CoefficientPrecision, typename CoordinatePrecision>
-HMatrix<CoefficientPrecision, CoordinatePrecision> HMatrixTreeBuilder<CoefficientPrecision, CoordinatePrecision>::build_test(const VirtualInternalGenerator<CoefficientPrecision> &generator, std::vector<HMatrix<CoefficientPrecision, CoordinatePrecision> *> L0, bool is_task_based) const {
-    // Clear HMatrix tree data
-    m_admissible_tasks.clear();
-    m_dense_tasks.clear();
-    m_false_positive = 0;
-
-    // Create root hmatrix
-    HMatrixType root_hmatrix(m_target_root_cluster, m_source_root_cluster);
-    root_hmatrix.set_admissibility_condition(m_admissibility_condition);
-    root_hmatrix.set_low_rank_generator(m_low_rank_generator);
-    root_hmatrix.set_eta(m_eta);
-    root_hmatrix.set_epsilon(m_epsilon);
-    root_hmatrix.set_minimal_target_depth(m_mintargetdepth);
-    root_hmatrix.set_minimal_source_depth(m_minsourcedepth);
-    root_hmatrix.set_block_tree_consistency(m_is_block_tree_consistent);
-
-    // Build hierarchical block structure
-    std::chrono::steady_clock::time_point start, end;
-
-    start = std::chrono::steady_clock::now();
-    build_block_tree(&root_hmatrix);
-    reset_root_of_block_tree(root_hmatrix);
-    set_hmatrix_symmetry(root_hmatrix);
-    end = std::chrono::steady_clock::now();
-
-    std::chrono::duration<double> block_tree_build_duration = end - start;
-
-    // Compute leave's data
-    if (is_task_based) {
-        start = std::chrono::steady_clock::now();
-        task_based_compute_blocks(generator, L0);
-        end = std::chrono::steady_clock::now();
-    } else {
-        start = std::chrono::steady_clock::now();
-        compute_blocks(generator);
-        end = std::chrono::steady_clock::now();
-    }
-    std::chrono::duration<double> block_comptations_duration = end - start;
     set_symmetry_for_leaves(root_hmatrix);
 
     // Set information
@@ -612,7 +556,6 @@ void HMatrixTreeBuilder<CoefficientPrecision, CoordinatePrecision>::task_based_c
                 }
             }
         }
-        // #pragma omp taskwait
     }
 }
 
