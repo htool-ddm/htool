@@ -11,63 +11,56 @@
 #include <htool/hmatrix/interfaces/virtual_generator.hpp>    // for Generat...
 #include <htool/hmatrix/linalg/add_hmatrix_vector_product.hpp>
 #include <htool/hmatrix/linalg/task_based_add_hmatrix_vector_product.hpp> // for task_bas...
-#include <htool/hmatrix/tree_builder/task_based_tree_builder.hpp>         // for enumerate_dependence, find_l0...
-#include <htool/hmatrix/tree_builder/tree_builder.hpp>                    // for HMatrix...
-#include <htool/matrix/matrix.hpp>                                        // for Matrix
-#include <htool/misc/misc.hpp>                                            // for underly...
-#include <htool/misc/user.hpp>                                            // for NbrToStr
+#include <htool/hmatrix/lrmat/SVD.hpp>
+#include <htool/hmatrix/tree_builder/task_based_tree_builder.hpp> // for enumerate_dependence, find_l0...
+#include <htool/hmatrix/tree_builder/tree_builder.hpp>            // for HMatrix...
+#include <htool/matrix/matrix.hpp>                                // for Matrix
+#include <htool/misc/misc.hpp>                                    // for underly...
+#include <htool/misc/user.hpp>                                    // for NbrToStr
 #include <htool/testing/dense_blocks_generator_test.hpp>
-#include <htool/testing/geometry.hpp>  // for create_...
-#include <htool/testing/partition.hpp> // for test_pa...
-#include <iostream>                    // for operator<<
-#include <memory>                      // for make_sh...
-#include <string>                      // for operator+
-#include <vector>                      // for vector
+#include <htool/testing/generate_test_case.hpp> // for TestCaseSymmetricPro...
+#include <htool/testing/geometry.hpp>           // for create_...
+#include <htool/testing/partition.hpp>          // for test_pa...
+#include <iostream>                             // for operator<<
+#include <memory>                               // for make_sh...
+#include <string>                               // for operator+
+#include <vector>                               // for vector
 
 using namespace std;
 using namespace htool;
 
-template <typename T, typename GeneratorTestTypeInUserNumbering>
-bool test_hmatrix_task_based(int nr, int nc, char Symmetry, char UPLO, htool::underlying_type<T> epsilon) {
+// template <typename T, typename GeneratorTestTypeInUserNumbering>
+// bool test_hmatrix_task_based(int nr, int nc, char Symmetry, char UPLO, htool::underlying_type<T> epsilon) {
+
+template <typename T, typename GeneratorTestType>
+bool test_hmatrix_task_based(char transa, int n1, int n2, htool::underlying_type<T> epsilon) {
     bool is_error = false;
+    int rankWorld = 0;
+    double eta    = 10;
 
-    // Geometry
-    double z1 = 1;
-    vector<double> p1(3 * nr), p1_permuted, off_diagonal_p1;
-    vector<double> p2(Symmetry == 'N' ? 3 * nc : 1), p2_permuted, off_diagonal_p2;
-    create_disk(3, z1, nr, p1.data());
+    TestCaseProduct<T, GeneratorTestType> test_case(transa, 'N', n1, n2, 1, 1, 2, 0);
+    const Cluster<htool::underlying_type<T>> *root_cluster_A_output, *root_cluster_A_input;
 
-    // Clustering
-    ClusterTreeBuilder<htool::underlying_type<T>> cluster_tree_builder;
-    // cluster_tree_builder.set_minclustersize(2);
+    root_cluster_A_output = test_case.root_cluster_A_output;
+    root_cluster_A_input  = test_case.root_cluster_A_input;
+    int ni_A              = test_case.ni_A;
+    int no_A              = test_case.no_A;
+    // int ni_B              = test_case.ni_B;
+    int no_B = test_case.no_B;
+    // int ni_C              = test_case.ni_C;
+    int no_C = test_case.no_C;
 
-    std::shared_ptr<const Cluster<htool::underlying_type<T>>> source_root_cluster;
-    std::shared_ptr<const Cluster<htool::underlying_type<T>>> target_root_cluster = make_shared<const Cluster<htool::underlying_type<T>>>(cluster_tree_builder.create_cluster_tree(nr, 3, p1.data(), 2, 2));
-
-    if (Symmetry == 'N' && nr != nc) {
-        // Geometry
-        double z2 = 1 + 0.1;
-        create_disk(3, z2, nc, p2.data());
-
-        // Clustering
-        // source_recursive_build_strategy.set_minclustersize(2);
-
-        source_root_cluster = make_shared<const Cluster<htool::underlying_type<T>>>(cluster_tree_builder.create_cluster_tree(nc, 3, p2.data(), 2, 2));
-    } else {
-        source_root_cluster = target_root_cluster;
-        p2                  = p1;
+    // Tree builder
+    HMatrixTreeBuilder<T, htool::underlying_type<T>> hmatrix_tree_builder(*root_cluster_A_output, *root_cluster_A_input, epsilon, eta, 'N', 'N', -1, -1, rankWorld);
+    hmatrix_tree_builder.set_low_rank_generator(std::make_shared<SVD<T>>());
+    auto *source_cluster = &hmatrix_tree_builder.get_source_cluster();
+    auto *target_cluster = &hmatrix_tree_builder.get_target_cluster();
+    if (transa != 'N') {
+        std::swap(source_cluster, target_cluster);
     }
 
-    GeneratorTestTypeInUserNumbering generator(3, p1, p2);
-    InternalGeneratorWithPermutation<T> generator_with_permutation(generator, target_root_cluster->get_permutation().data(), source_root_cluster->get_permutation().data());
-
-    // HMatrix
-    double eta = 10;
-
-    HMatrixTreeBuilder<T, htool::underlying_type<T>> hmatrix_tree_builder(*target_root_cluster, *source_root_cluster, epsilon, eta, Symmetry, UPLO, -1, -1, -1);
-
     // build
-    auto root_hmatrix = hmatrix_tree_builder.build(generator);
+    HMatrix<T, htool::underlying_type<T>> root_hmatrix = hmatrix_tree_builder.build(*test_case.operator_A);
 
     // Hmatrix Visualization
     save_leaves_with_rank(root_hmatrix, "root_hmatrix_facto");
@@ -156,19 +149,19 @@ bool test_hmatrix_task_based(int nr, int nc, char Symmetry, char UPLO, htool::un
     {
         std::cout << "task_based_compute_blocks tests...";
         // build
-        HMatrix<T> task_based_hmatrix(*target_root_cluster, *source_root_cluster);
+        HMatrix<T> task_based_hmatrix(*root_cluster_A_output, *root_cluster_A_input);
 
 #if defined(_OPENMP) && !defined(HTOOL_WITH_PYTHON_INTERFACE)
 #    pragma omp parallel
 #    pragma omp single
 #endif
         {
-            task_based_hmatrix = hmatrix_tree_builder.build(generator, true);
+            task_based_hmatrix = hmatrix_tree_builder.build(*test_case.operator_A, true);
         }
-        auto hmatrix = hmatrix_tree_builder.build(generator);
+        auto hmatrix = hmatrix_tree_builder.build(*test_case.operator_A);
 
         // densification
-        Matrix<T> densified_hmatrix(nr, nc), densified_hmatrix_task_based(nr, nc);
+        Matrix<T> densified_hmatrix(no_A, ni_A), densified_hmatrix_task_based(no_A, ni_A);
         copy_to_dense(hmatrix, densified_hmatrix.data());
         copy_to_dense(task_based_hmatrix, densified_hmatrix_task_based.data());
 
@@ -183,7 +176,7 @@ bool test_hmatrix_task_based(int nr, int nc, char Symmetry, char UPLO, htool::un
         // check durations
         std::chrono::duration<double> classic_duration    = hmatrix.get_hmatrix_tree_data()->m_timings["Blocks_computation_walltime"];
         std::chrono::duration<double> task_based_duration = task_based_hmatrix.get_hmatrix_tree_data()->m_timings["Blocks_computation_walltime"];
-        if (task_based_duration > classic_duration) {
+        if (task_based_duration.count() > classic_duration.count()) {
             std::cerr << "Warning: task_based_duration: " << task_based_duration.count() << " > classic_duration: " << classic_duration.count() << "." << std::endl;
         }
 
@@ -193,26 +186,28 @@ bool test_hmatrix_task_based(int nr, int nc, char Symmetry, char UPLO, htool::un
     // Tests for task_based_internal_add_hmatrix_vector_product
     {
         std::cout << "task_based_internal_add_hmatrix_vector_product tests...";
-        char trans = 'T';
 
         // build
-        auto root_hmatrix_classic    = hmatrix_tree_builder.build(generator);
-        auto root_hmatrix_task_based = hmatrix_tree_builder.build(generator);
+        auto root_hmatrix_classic    = hmatrix_tree_builder.build(*test_case.operator_A);
+        auto root_hmatrix_task_based = hmatrix_tree_builder.build(*test_case.operator_A, true);
         // print_hmatrix_information(root_hmatrix_task_based, std::cout);
 
         // Create a vector for the input and output
-        std::vector<T> in(nc), out(nr, 11), out_task(nr, 11);
-        for (int i = 0; i < nc; i++) {
+        std::vector<T> in(no_B), out(no_C, 11), out_task(no_C, 11);
+        for (int i = 0; i < no_B; i++) {
             in[i] = i * i;
         }
 
         // Create a vector for the expected output
-        openmp_internal_add_hmatrix_vector_product(trans, T(3), root_hmatrix_classic, in.data(), T(0), out.data());
+        auto alpha = T(3);
+        auto beta  = T(2);
+        openmp_internal_add_hmatrix_vector_product(transa, alpha, root_hmatrix_classic, in.data(), beta, out.data());
 
         // L0 definitions
-        std::vector<HMatrix<T> *> L0           = find_l0(root_hmatrix_classic, 256);
-        std::vector<const Cluster<T> *> in_L0  = find_l0(hmatrix_tree_builder.get_source_cluster(), 64);
-        std::vector<const Cluster<T> *> out_L0 = find_l0(hmatrix_tree_builder.get_target_cluster(), 64);
+        std::vector<HMatrix<T> *> L0           = hmatrix_tree_builder.get_L0();
+        std::vector<const Cluster<T> *> in_L0  = find_l0(*source_cluster, 64);
+        std::vector<const Cluster<T> *> out_L0 = find_l0(*target_cluster, 64);
+
         std::mutex cout_mutex; // mutex to protect cout
 
 #if defined(_OPENMP) && !defined(HTOOL_WITH_PYTHON_INTERFACE)
@@ -221,7 +216,7 @@ bool test_hmatrix_task_based(int nr, int nc, char Symmetry, char UPLO, htool::un
 #endif
         {
             // Perform the task-based internal add H-matrix vector product
-            task_based_internal_add_hmatrix_vector_product(trans, T(3), root_hmatrix_task_based, in.data(), T(0), out_task.data(), L0, in_L0, out_L0);
+            task_based_internal_add_hmatrix_vector_product(transa, alpha, root_hmatrix_task_based, in.data(), beta, out_task.data(), L0, in_L0, out_L0);
         }
 
         // Compare the results
@@ -232,57 +227,104 @@ bool test_hmatrix_task_based(int nr, int nc, char Symmetry, char UPLO, htool::un
         std::cout << "----------------------------------" << std::endl;
     }
 
+    // WIP + to be tested (check if the task graph is disjoint and if we use the same L0 all the time)
     // Tests for hmatrix vector product following assembly with task_based_compute_blocks and task_based_internal_add_hmatrix_vector_product
     {
         std::cout << "assembly + hmatrix vector products tests...";
+        std::chrono::duration<double> disjoint_case_duration, conjoint_case_duration;
         // Case 1 : task graphs are disjoint
-        //         {
-        //             // build
-        //             HMatrix<T> task_based_hmatrix(*target_root_cluster, *source_root_cluster);
+        {
+            auto alpha = T(3);
+            auto beta  = T(2);
+            std::vector<T> in(no_B), out(no_C, 11), out_task(no_C, 11);
+            for (int i = 0; i < no_B; i++) {
+                in[i] = i * i;
+            }
+            std::mutex cout_mutex; // mutex to protect cout
 
-        //             std::chrono::steady_clock::time_point start, end;
-        //             start = std::chrono::steady_clock::now();
-        // #if defined(_OPENMP) && !defined(HTOOL_WITH_PYTHON_INTERFACE)
-        // #    pragma omp parallel
-        // #    pragma omp single
-        // #endif
-        //             {
-        //                 task_based_hmatrix = hmatrix_tree_builder.build(generator, true);
-        //             }
+            // build
+            HMatrix<T> task_based_hmatrix(*root_cluster_A_output, *root_cluster_A_input);
 
-        //             // N hmatrix vector products
-        //             std::vector<T> in(nc), out(nr, 11), out_task(nr, 11);
-        //             for (int i = 0; i < nc; i++) {
-        //                 in[i] = i * i;
-        //             }
-        //             std::vector<HMatrix<T> *> L0           = find_l0(root_hmatrix, 256); // Todo : Change to get back L0 from task_based_hmatrix
-        //             std::vector<const Cluster<T> *> in_L0  = find_l0(hmatrix_tree_builder.get_source_cluster(), 64);
-        //             std::vector<const Cluster<T> *> out_L0 = find_l0(hmatrix_tree_builder.get_target_cluster(), 64);
-        //             std::mutex cout_mutex; // mutex to protect cout
+            std::chrono::steady_clock::time_point start, end;
+            start = std::chrono::steady_clock::now();
+#if defined(_OPENMP) && !defined(HTOOL_WITH_PYTHON_INTERFACE)
+#    pragma omp parallel
+#    pragma omp single
+#endif
+            {
+                task_based_hmatrix = hmatrix_tree_builder.build(*test_case.operator_A, true);
+            }
 
-        // #if defined(_OPENMP) && !defined(HTOOL_WITH_PYTHON_INTERFACE)
-        // #    pragma omp parallel
-        // #    pragma omp single
-        // #endif
-        //             {
-        //                 for (int i = 0; i < 100; i++) {
-        //                     task_based_internal_add_hmatrix_vector_product('N', T(3), task_based_hmatrix, in.data(), T(3), out_task.data(), L0, in_L0, out_L0);
-        //                 }
-        //             }
-        //             end                                                  = std::chrono::steady_clock::now();
-        //             std::chrono::duration<double> disjoint_case_duration = end - start;
-        //             std::cout << "    disjoint_case_duration = " << disjoint_case_duration.count() << std::endl;
-        //             // #pragma omp taskwait
-        //         }
+            // N hmatrix vector products
+            std::vector<HMatrix<T> *> L0           = hmatrix_tree_builder.get_L0();
+            std::vector<const Cluster<T> *> in_L0  = find_l0(*source_cluster, 64);
+            std::vector<const Cluster<T> *> out_L0 = find_l0(*target_cluster, 64);
 
-        std::cout << "OK" << "\n----------------------------------" << std::endl;
+#if defined(_OPENMP) && !defined(HTOOL_WITH_PYTHON_INTERFACE)
+#    pragma omp parallel
+#    pragma omp single
+#endif
+            {
+                for (int i = 0; i < 100; i++) {
+                    task_based_internal_add_hmatrix_vector_product(transa, alpha, task_based_hmatrix, in.data(), beta, out_task.data(), L0, in_L0, out_L0);
+                }
+            }
+            end                    = std::chrono::steady_clock::now();
+            disjoint_case_duration = end - start;
+            std::cout << "\n    disjoint_case_duration = " << disjoint_case_duration.count() << std::endl;
+        } // end of case 1
+
+        // Case 2 : task graphs are not conjoint
+        {
+            auto alpha = T(3);
+            auto beta  = T(2);
+            std::vector<T> in(no_B), out(no_C, 11), out_task(no_C, 11);
+            for (int i = 0; i < no_B; i++) {
+                in[i] = i * i;
+            }
+            std::mutex cout_mutex; // mutex to protect cout
+
+            // build
+            HMatrix<T> task_based_hmatrix(*root_cluster_A_output, *root_cluster_A_input);
+
+            std::chrono::steady_clock::time_point start, end;
+            start = std::chrono::steady_clock::now();
+#if defined(_OPENMP) && !defined(HTOOL_WITH_PYTHON_INTERFACE)
+#    pragma omp parallel
+#    pragma omp single
+#endif
+            {
+                task_based_hmatrix = hmatrix_tree_builder.build(*test_case.operator_A, true);
+
+                // N hmatrix vector products
+                std::vector<HMatrix<T> *> L0           = hmatrix_tree_builder.get_L0();
+                std::vector<const Cluster<T> *> in_L0  = find_l0(*source_cluster, 64);
+                std::vector<const Cluster<T> *> out_L0 = find_l0(*target_cluster, 64);
+
+                for (int i = 0; i < 100; i++) {
+                    task_based_internal_add_hmatrix_vector_product(transa, alpha, task_based_hmatrix, in.data(), beta, out_task.data(), L0, in_L0, out_L0);
+                }
+
+                end                    = std::chrono::steady_clock::now();
+                conjoint_case_duration = end - start;
+                std::cout << "    conjoint_case_duration = " << conjoint_case_duration.count() << std::endl;
+            }
+        } // end of case 2
+
+        if (disjoint_case_duration.count() < conjoint_case_duration.count()) {
+            std::cerr << "Warning: disjoint_case_duration: " << disjoint_case_duration.count() << " < conjoint_case_duration: " << conjoint_case_duration.count() << "." << std::endl;
+        }
+
+        std::cout << "----------------------------------" << std::endl;
     }
 
     // Print the results
     if (is_error) {
-        std::cerr << "ERROR: test_hmatrix_task_based failed." << std::endl;
+        std::cerr << "ERROR: test_hmatrix_task_based current case failed." << std::endl;
     } else {
-        std::cout << "SUCCESS: test_hmatrix_task_based passed." << "\n================================" << std::endl;
+        std::cout << "SUCCESS: test_hmatrix_task_based current case passed." << std::endl;
+        std::cout << "===============================================================\n"
+                  << std::endl;
     }
     return is_error;
 }
