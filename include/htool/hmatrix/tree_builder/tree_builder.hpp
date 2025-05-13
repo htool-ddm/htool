@@ -51,11 +51,10 @@ class HMatrixTreeBuilder {
     // Views
     mutable std::vector<HMatrixType *> m_admissible_tasks{};
     mutable std::vector<HMatrixType *> m_dense_tasks{};
-    mutable std::vector<HMatrixType *> m_L0;
 
     // Information
     mutable int m_false_positive{0};
-    mutable std::vector<HMatrix<CoefficientPrecision, CoordinatePrecision> *> L0;
+    mutable std::vector<HMatrixType *> m_L0;
 
     // Internal storage for adapting user generator
     mutable std::list<InternalGeneratorWithPermutation<CoefficientPrecision>> m_internal_generators; // using list to get pointer stability
