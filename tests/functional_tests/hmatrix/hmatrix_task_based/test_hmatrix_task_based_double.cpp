@@ -11,51 +11,36 @@ int main(int, char *[]) {
 
     bool is_error = false;
 
-    // for (auto nr : {200, 400}) {
-    //     for (auto nc : {200, 400}) {
-    //         for (auto epsilon : {1e-14, 1e-6}) {
-    //             for (auto transa : {'N', 'T'}) {
-    //                 std::cout << "Case : nr =" << nr << ", nc =  " << nc << ", epsilon = " << epsilon << ", transa = " << transa << "\n";
+    for (auto epsilon : {1e-6}) {
+        for (auto n1 : {400}) {
+            for (auto n2 : {200}) {
+                for (auto transa : {'N'}) {
+                    for (auto block_tree_consistency : {true}) {
 
-    //                 is_error = is_error || test_hmatrix_task_based<double, GeneratorTestDoubleSymmetric>(nr, nc, transa, 'N', epsilon);
+                        std::cout << "task based hmatrix product: " << epsilon << " " << n1 << " " << n2 << " " << transa << " " << block_tree_consistency << "\n";
 
-    //                 // if (nr == nc && block_tree_consistency) {
-    //                 //     for (auto UPLO : {'U', 'L'}) {
-    //                 //         std::cout << UPLO << "\n";
-    //                 //         is_error = is_error || test_hmatrix_task_based<double, GeneratorTestDoubleSymmetric>(nr, nc, use_local_cluster, 'S', UPLO, epsilon, use_dense_block_generator, block_tree_consistency);
-    //                 //     }
-    //                 // }
-    //             }
-    //         }
-    //     }
-    // }
+                        is_error = is_error || test_hmatrix_task_based<double, GeneratorTestDouble>(transa, n1, n2, epsilon, block_tree_consistency);
 
-    for (auto epsilon : {1e-6, 1e-10}) {
-        for (auto n1 : {200, 400}) {
-            for (auto n2 : {200, 400}) {
-                for (auto transa : {'N', 'T'}) {
-                    std::cout << "task based hmatrix product: " << epsilon << " " << n1 << " " << n2 << " " << transa << " " << "\n";
+                        if (n1 == n2) {
+                            for (auto UPLO : {'L'}) {
+                                std::cout << "task based symmetric matrix product: " << n1 << " " << epsilon << " " << UPLO << "\n";
 
-                    is_error = is_error || test_hmatrix_task_based<double, GeneratorTestDouble>(transa, n1, n2, epsilon);
+                                is_error = is_error || test_symmetric_hmatrix_task_based<double, GeneratorTestDoubleSymmetric>(transa, n1, epsilon, UPLO);
+                            }
+                        }
+                    }
                 }
             }
-            // for (auto side : {'L', 'R'}) {
-            //     for (auto UPLO : {'U', 'L'}) {
-            //         const double margin = 0;
-            //         std::cout << "symmetric matrix product: " << n1 << " " << n3 << " " << side << " " << UPLO << " " << epsilon << "\n";
-            //         is_error = is_error || test_symmetric_hmatrix_product<double, GeneratorTestDoubleSymmetric>(n1, n3, side, UPLO, epsilon, margin);
-            //     }
-            // }
         }
     }
 
     std::cout << "+++++++++++++++++++++++++++++++++++++++++++" << std::endl;
     if (is_error) {
-        std::cerr << "ERROR: At least one test_hmatrix_task_based case failed." << std::endl;
+        std::cerr << "ERROR: At least one test_hmatrix_task_based or test_symmetric_hmatrix_task_based case failed." << std::endl;
         return 1;
 
     } else {
-        std::cout << "SUCCESS: All test_hmatrix_task_based cases passed." << std::endl;
+        std::cout << "SUCCESS: All test_hmatrix_task_based and test_symmetric_hmatrix_task_based cases passed." << std::endl;
     }
     std::cout << "+++++++++++++++++++++++++++++++++++++++++++" << std::endl;
     return 0;

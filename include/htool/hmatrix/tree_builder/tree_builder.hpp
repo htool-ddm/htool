@@ -261,10 +261,10 @@ HMatrix<CoefficientPrecision, CoordinatePrecision> HMatrixTreeBuilder<Coefficien
 
     // Set information
     root_hmatrix.get_hmatrix_tree_data()->m_information["Number_of_false_positive"] = NbrToStr(m_false_positive);
-    root_hmatrix.get_hmatrix_tree_data()->m_timings["Block_tree_walltime"]          = block_tree_build_duration;
-    root_hmatrix.get_hmatrix_tree_data()->m_timings["Blocks_computation_walltime"]  = block_comptations_duration;
-
     // #pragma omp taskwait
+    root_hmatrix.get_hmatrix_tree_data()->m_timings["Block_tree_walltime"]         = block_tree_build_duration;
+    root_hmatrix.get_hmatrix_tree_data()->m_timings["Blocks_computation_walltime"] = block_comptations_duration;
+
     return root_hmatrix;
 }
 
@@ -532,9 +532,9 @@ void HMatrixTreeBuilder<CoefficientPrecision, CoordinatePrecision>::task_based_c
     for (int p = 0; p < L0.size(); p++) {
 
 #if defined(_OPENMP) && !defined(HTOOL_WITH_PYTHON_INTERFACE)
-#    pragma omp task default(none)                                                      \
-        firstprivate(p, L0)                                                             \
-        shared(generator, m_false_positive, m_reqrank, m_epsilon, m_low_rank_generator) \
+#    pragma omp task default(none)                                                                 \
+        firstprivate(p, L0)                                                                        \
+        shared(generator, m_false_positive, m_reqrank, m_epsilon, m_low_rank_generator, std::cout) \
         depend(out : *L0[p])
 #endif
         {
@@ -550,10 +550,30 @@ void HMatrixTreeBuilder<CoefficientPrecision, CoordinatePrecision>::task_based_c
                         leaf->clear_low_rank_data();
                         leaf->compute_dense_data(generator);
 
+                        // #if defined(_OPENMP) && !defined(HTOOL_WITH_PYTHON_INTERFACE)
+                        // #    pragma omp atomic
+                        // #endif
+                        // std::cout << "False positive in task " << std::endl;
+                        m_false_positive += 1;
+                    }
+                }
+            }
+            // Symmetry part of the diagonal part
+            if (m_symmetry_type != 'N') {
+                for (auto leaf : leaves_for_symmetry) {
+                    if (leaf->is_dense()) {
+                        leaf->compute_dense_data(generator);
+                    } else {
+                        leaf->compute_low_rank_data(generator, *m_low_rank_generator, m_reqrank, m_epsilon);
+                        if (leaf->get_low_rank_data()->get_U().nb_rows() != leaf->get_target_cluster().get_size() || leaf->get_low_rank_data()->get_V().nb_cols() != leaf->get_source_cluster().get_size()) {
+                            leaf->clear_low_rank_data();
+                            leaf->compute_dense_data(generator);
+
 #if defined(_OPENMP) && !defined(HTOOL_WITH_PYTHON_INTERFACE)
 #    pragma omp atomic
 #endif
-                        m_false_positive += 1;
+                            m_false_positive += 1;
+                        }
                     }
                 }
             }

@@ -46,9 +46,11 @@ void task_based_internal_add_hmatrix_vector_product(char trans, CoefficientPreci
 
     auto get_output_cluster{&HMatrix<CoefficientPrecision, CoordinatePrecision>::get_target_cluster};
     auto get_input_cluster{&HMatrix<CoefficientPrecision, CoordinatePrecision>::get_source_cluster};
+    char trans_sym = (A.get_symmetry_for_leaves() == 'S') ? 'T' : 'C';
     if (trans != 'N') {
         get_input_cluster  = &HMatrix<CoefficientPrecision, CoordinatePrecision>::get_target_cluster;
         get_output_cluster = &HMatrix<CoefficientPrecision, CoordinatePrecision>::get_source_cluster;
+        trans_sym          = 'N';
     }
 
     const auto &target_cluster = (A.*get_output_cluster)();
@@ -131,6 +133,11 @@ void task_based_internal_add_hmatrix_vector_product(char trans, CoefficientPreci
             int output_offset = (child.get()->*get_output_cluster)().get_offset();
 
             task_based_internal_add_hmatrix_vector_product(trans, alpha, *child.get(), in + input_offset - local_input_offset, CoefficientPrecision(1), out + output_offset - local_output_offset, L0, in_L0, out_L0, cout_mutex);
+
+            // smthg like : if(child in leaves_for_symmetry(A))
+            if (A.get_symmetry_for_leaves() != 'N' && input_offset != output_offset) {
+                task_based_internal_add_hmatrix_vector_product(trans_sym, alpha, *child.get(), in + output_offset - local_input_offset, CoefficientPrecision(1), out + input_offset - local_output_offset, L0, in_L0, out_L0, cout_mutex);
+            }
         }
     } // end of if (is_local_out_in_L0 || A.is_leaf())
 
