@@ -69,10 +69,10 @@ void task_based_internal_add_hmatrix_vector_product(char trans, CoefficientPreci
             int out_L0_nodes_size   = out_L0_nodes->get_size();
 
 #if defined(_OPENMP) && !defined(HTOOL_WITH_PYTHON_INTERFACE)
-#    pragma omp task default(none)                                            \
-        firstprivate(out_L0_nodes_offset, out_L0_nodes_size, out, cout_mutex) \
-        shared(beta, local_output_size, out_L0_nodes, std::cout)              \
-        depend(inout : *out_L0_nodes)                                         \
+#    pragma omp task default(none)                                                  \
+        firstprivate(out_L0_nodes_offset, out_L0_nodes_size, out, beta, cout_mutex) \
+        shared(local_output_size, out_L0_nodes, std::cout)                          \
+        depend(inout : *out_L0_nodes)                                               \
         priority(std::max(0, max_prio - 1))
 #endif
             {
