@@ -12,16 +12,16 @@ int main(int, char *[]) {
     bool is_error = false;
 
     for (auto epsilon : {1e-6}) {
-        for (auto n1 : {400}) {
-            for (auto n2 : {200}) {
-                for (auto transa : {'N'}) {
-                    for (auto block_tree_consistency : {true}) {
+        for (auto n1 : {200, 400}) {
+            for (auto n2 : {200, 400}) {
+                for (auto transa : {'N', 'T'}) {
+                    for (auto block_tree_consistency : {false}) {
 
                         std::cout << "task based hmatrix product: " << epsilon << " " << n1 << " " << n2 << " " << transa << " " << block_tree_consistency << "\n";
 
                         is_error = is_error || test_hmatrix_task_based<double, GeneratorTestDouble>(transa, n1, n2, epsilon, block_tree_consistency);
 
-                        if (n1 == n2) {
+                        if (n1 == n2 && block_tree_consistency) {
                             for (auto UPLO : {'L'}) {
                                 std::cout << "task based symmetric matrix product: " << n1 << " " << epsilon << " " << UPLO << "\n";
 

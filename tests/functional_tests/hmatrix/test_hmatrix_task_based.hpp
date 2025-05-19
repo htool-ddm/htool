@@ -35,7 +35,7 @@ bool test_hmatrix_task_based(char transa, int n1, int n2, htool::underlying_type
     int rankWorld = 0;
     double eta    = 10;
 
-    TestCaseProduct<T, GeneratorTestType> test_case(transa, 'N', n1, n2, 1, 1, 2, 0);
+    TestCaseProduct<T, GeneratorTestType> test_case(transa, 'N', n1, n2, 1, 1, 2);
     const Cluster<htool::underlying_type<T>> *root_cluster_A_output, *root_cluster_A_input;
 
     root_cluster_A_output = test_case.root_cluster_A_output;
@@ -76,7 +76,12 @@ bool test_hmatrix_task_based(char transa, int n1, int n2, htool::underlying_type
     is_error = is_error || !(left_hmatrix_ancestor_of_right_hmatrix(root_hmatrix, child2));
     is_error = is_error || !(left_hmatrix_ancestor_of_right_hmatrix(root_hmatrix, child1_child1));
     is_error = is_error || !(left_hmatrix_ancestor_of_right_hmatrix(root_hmatrix, child1_child2));
-    std::cout << "OK" << "\n----------------------------------" << std::endl;
+    if (is_error) {
+        std::cout << "ERROR" << std::endl;
+    } else {
+        std::cout << "SUCCESS" << std::endl;
+    }
+    std::cout << "----------------------------------" << std::endl;
 
     // Tests for left_hmatrix_descendant_of_right_hmatrix
     std::cout << "left_hmatrix_descendant_of_right_hmatrix tests...";
@@ -84,7 +89,12 @@ bool test_hmatrix_task_based(char transa, int n1, int n2, htool::underlying_type
     is_error = is_error || !(left_hmatrix_descendant_of_right_hmatrix(child2, root_hmatrix));
     is_error = is_error || !(left_hmatrix_descendant_of_right_hmatrix(child1_child1, root_hmatrix));
     is_error = is_error || !(left_hmatrix_descendant_of_right_hmatrix(child1_child2, root_hmatrix));
-    std::cout << "OK" << "\n----------------------------------" << std::endl;
+    if (is_error) {
+        std::cout << "ERROR" << std::endl;
+    } else {
+        std::cout << "SUCCESS" << std::endl;
+    }
+    std::cout << "----------------------------------" << std::endl;
 
     // Tests for enumerate_dependences
     {
@@ -133,7 +143,12 @@ bool test_hmatrix_task_based(char transa, int n1, int n2, htool::underlying_type
         // dependences = enumerate_dependences(root_hmatrix, L0);
         // is_error    = is_error || !(dependences.empty());
 
-        std::cout << "OK" << "\n----------------------------------" << std::endl;
+        if (is_error) {
+            std::cout << "ERROR" << std::endl;
+        } else {
+            std::cout << "SUCCESS" << std::endl;
+        }
+        std::cout << "----------------------------------" << std::endl;
     } // end of tests for enumerate_dependences
 
     // Tests for find_l0. Visual verification of the block tree in dotfile.dot
@@ -156,8 +171,9 @@ bool test_hmatrix_task_based(char transa, int n1, int n2, htool::underlying_type
         {
             task_based_hmatrix = hmatrix_tree_builder.build(*test_case.operator_A, true);
         }
+        task_based_hmatrix.get_hmatrix_tree_data()->m_information["Number_of_false_positive"] = NbrToStr(hmatrix_tree_builder.get_false_positive()); // when task_based_compute_blocks is used in build, the number of false positives is not set in the hmatrix tree data because the tasks need to finish before we can know the number of false positive
 
-        auto hmatrix = hmatrix_tree_builder.build(*test_case.operator_A);
+        auto hmatrix = hmatrix_tree_builder.build(*test_case.operator_A); // when compute_blocks is used in build, the number of false positives is set in the hmatrix tree data
 
         // densification
         Matrix<T> densified_hmatrix(no_A, ni_A), densified_hmatrix_task_based(no_A, ni_A);
@@ -168,7 +184,11 @@ bool test_hmatrix_task_based(char transa, int n1, int n2, htool::underlying_type
         is_error = is_error || (normFrob(densified_hmatrix - densified_hmatrix_task_based) > 1e-10);
         // is_error = is_error || (hmatrix.get_hmatrix_tree_data()->m_information["Number_of_false_positive"] != task_based_hmatrix.get_hmatrix_tree_data()->m_information["Number_of_false_positive"]);
 
-        std::cout << "OK" << std::endl;
+        if (is_error) {
+            std::cout << "ERROR" << std::endl;
+        } else {
+            std::cout << "SUCCESS" << std::endl;
+        }
         std::cout << "    hmatrix m_false_positive = " << hmatrix.get_hmatrix_tree_data()->m_information["Number_of_false_positive"] << std::endl;
         std::cout << "    task_based_hmatrix m_false_positive = " << task_based_hmatrix.get_hmatrix_tree_data()->m_information["Number_of_false_positive"] << std::endl;
 
@@ -220,7 +240,11 @@ bool test_hmatrix_task_based(char transa, int n1, int n2, htool::underlying_type
 
         // Compare the results
         is_error = is_error || (norm2(out - out_task) / norm2(out) > 1e-15);
-        std::cout << "OK" << std::endl;
+        if (is_error) {
+            std::cout << "ERROR" << std::endl;
+        } else {
+            std::cout << "SUCCESS" << std::endl;
+        }
         std::cout << "    norm2(out ) = " << norm2(out) << std::endl;
         std::cout << "    norm2(out - out_task)/norm2(out) = " << norm2(out - out_task) / norm2(out) << std::endl;
         std::cout << "----------------------------------" << std::endl;
@@ -333,7 +357,7 @@ bool test_symmetric_hmatrix_task_based(char transa, int n1, htool::underlying_ty
     int rankWorld = 0;
     double eta    = 10;
 
-    TestCaseSymmetricProduct<T, GeneratorTestType> test_case(n1, 1, 2, 'L', 'S', UPLO, 0);
+    TestCaseSymmetricProduct<T, GeneratorTestType> test_case(n1, 1, 2, 'L', 'S', UPLO);
     const Cluster<htool::underlying_type<T>> *root_cluster_A_output, *root_cluster_A_input;
 
     root_cluster_A_output = test_case.root_cluster_A_output;
@@ -367,6 +391,8 @@ bool test_symmetric_hmatrix_task_based(char transa, int n1, htool::underlying_ty
         {
             task_based_hmatrix = hmatrix_tree_builder.build(*test_case.operator_A, true);
         }
+        task_based_hmatrix.get_hmatrix_tree_data()->m_information["Number_of_false_positive"] = NbrToStr(hmatrix_tree_builder.get_false_positive()); // when task_based_compute_blocks is used in build, the number of false positives is not set in the hmatrix tree data because the tasks need to finish before we can know the number of false positive
+
         auto hmatrix = hmatrix_tree_builder.build(*test_case.operator_A);
 
         // densification
@@ -374,11 +400,19 @@ bool test_symmetric_hmatrix_task_based(char transa, int n1, htool::underlying_ty
         copy_to_dense(hmatrix, densified_hmatrix.data());
         copy_to_dense(task_based_hmatrix, densified_hmatrix_task_based.data());
 
+        // visualization
+        std::ofstream build_file("test_build");
+        densified_hmatrix_task_based.print(build_file, ",");
+
         // compare
         is_error = is_error || (normFrob(densified_hmatrix - densified_hmatrix_task_based) > 1e-10);
         // is_error = is_error || (hmatrix.get_hmatrix_tree_data()->m_information["Number_of_false_positive"] != task_based_hmatrix.get_hmatrix_tree_data()->m_information["Number_of_false_positive"]);
 
-        std::cout << "OK" << std::endl;
+        if (is_error) {
+            std::cout << "ERROR" << std::endl;
+        } else {
+            std::cout << "SUCCESS" << std::endl;
+        }
         std::cout << "    hmatrix m_false_positive = " << hmatrix.get_hmatrix_tree_data()->m_information["Number_of_false_positive"] << std::endl;
         std::cout << "    task_based_hmatrix m_false_positive = " << task_based_hmatrix.get_hmatrix_tree_data()->m_information["Number_of_false_positive"] << std::endl;
 
@@ -430,7 +464,11 @@ bool test_symmetric_hmatrix_task_based(char transa, int n1, htool::underlying_ty
 
         // Compare the results
         is_error = is_error || (norm2(out - out_task) / norm2(out) > 1e-15);
-        std::cout << "OK" << std::endl;
+        if (is_error) {
+            std::cout << "ERROR" << std::endl;
+        } else {
+            std::cout << "SUCCESS" << std::endl;
+        }
         std::cout << "    norm2(out ) = " << norm2(out) << std::endl;
         std::cout << "    norm2(out - out_task)/norm2(out) = " << norm2(out - out_task) / norm2(out) << std::endl;
         std::cout << "----------------------------------" << std::endl;

@@ -206,6 +206,7 @@ class HMatrixTreeBuilder {
     }
 
     // Getters
+    int get_false_positive() const { return m_false_positive; }
     char get_symmetry() const { return m_symmetry_type; }
     char get_UPLO() const { return m_UPLO_type; }
     const Cluster<CoordinatePrecision> &get_target_cluster() const { return m_target_root_cluster; }
@@ -245,25 +246,21 @@ HMatrix<CoefficientPrecision, CoordinatePrecision> HMatrixTreeBuilder<Coefficien
     // Compute leave's data
     if (is_task_based) {
         // std::vector<HMatrix<CoefficientPrecision, CoordinatePrecision> *> L0;
-        m_L0  = find_l0(root_hmatrix, 64); // TODO: make this parameterizable ?);
-        start = std::chrono::steady_clock::now();
+        m_L0 = find_l0(root_hmatrix, 64); // TODO: make this parameterizable ?);
         task_based_compute_blocks(generator, m_L0);
-        end = std::chrono::steady_clock::now();
     } else {
         start = std::chrono::steady_clock::now();
         compute_blocks(generator);
         end = std::chrono::steady_clock::now();
+
+        // Set information
+        std::chrono::duration<double> block_comptations_duration                        = end - start;
+        root_hmatrix.get_hmatrix_tree_data()->m_information["Number_of_false_positive"] = NbrToStr(m_false_positive);
+        root_hmatrix.get_hmatrix_tree_data()->m_timings["Blocks_computation_walltime"]  = block_comptations_duration;
     }
-    std::chrono::duration<double> block_comptations_duration = end - start;
+    root_hmatrix.get_hmatrix_tree_data()->m_timings["Block_tree_walltime"] = block_tree_build_duration;
 
-    //
     set_symmetry_for_leaves(root_hmatrix);
-
-    // Set information
-    root_hmatrix.get_hmatrix_tree_data()->m_information["Number_of_false_positive"] = NbrToStr(m_false_positive);
-    // #pragma omp taskwait
-    root_hmatrix.get_hmatrix_tree_data()->m_timings["Block_tree_walltime"]         = block_tree_build_duration;
-    root_hmatrix.get_hmatrix_tree_data()->m_timings["Blocks_computation_walltime"] = block_comptations_duration;
 
     return root_hmatrix;
 }
@@ -532,9 +529,9 @@ void HMatrixTreeBuilder<CoefficientPrecision, CoordinatePrecision>::task_based_c
     for (int p = 0; p < L0.size(); p++) {
 
 #if defined(_OPENMP) && !defined(HTOOL_WITH_PYTHON_INTERFACE)
-#    pragma omp task default(none)                                                                 \
-        firstprivate(p, L0)                                                                        \
-        shared(generator, m_false_positive, m_reqrank, m_epsilon, m_low_rank_generator, std::cout) \
+#    pragma omp task default(none)                                                      \
+        firstprivate(p, L0)                                                             \
+        shared(generator, m_false_positive, m_reqrank, m_epsilon, m_low_rank_generator) \
         depend(out : *L0[p])
 #endif
         {
@@ -542,25 +539,7 @@ void HMatrixTreeBuilder<CoefficientPrecision, CoordinatePrecision>::task_based_c
             std::vector<HMatrix<CoefficientPrecision, CoordinatePrecision> *> leaves_for_symmetry;
             std::tie(leaves, leaves_for_symmetry) = get_leaves_from(*L0[p]); // C++17 structured binding
             for (auto leaf : leaves) {
-                if (leaf->is_dense()) {
-                    leaf->compute_dense_data(generator);
-                } else {
-                    leaf->compute_low_rank_data(generator, *m_low_rank_generator, m_reqrank, m_epsilon);
-                    if (leaf->get_low_rank_data()->get_U().nb_rows() != leaf->get_target_cluster().get_size() || leaf->get_low_rank_data()->get_V().nb_cols() != leaf->get_source_cluster().get_size()) {
-                        leaf->clear_low_rank_data();
-                        leaf->compute_dense_data(generator);
-
-                        // #if defined(_OPENMP) && !defined(HTOOL_WITH_PYTHON_INTERFACE)
-                        // #    pragma omp atomic
-                        // #endif
-                        // std::cout << "False positive in task " << std::endl;
-                        m_false_positive += 1;
-                    }
-                }
-            }
-            // Symmetry part of the diagonal part
-            if (m_symmetry_type != 'N') {
-                for (auto leaf : leaves_for_symmetry) {
+                if (!is_removed_by_symmetry(leaf->get_target_cluster(), leaf->get_source_cluster())) {
                     if (leaf->is_dense()) {
                         leaf->compute_dense_data(generator);
                     } else {
@@ -569,14 +548,12 @@ void HMatrixTreeBuilder<CoefficientPrecision, CoordinatePrecision>::task_based_c
                             leaf->clear_low_rank_data();
                             leaf->compute_dense_data(generator);
 
-#if defined(_OPENMP) && !defined(HTOOL_WITH_PYTHON_INTERFACE)
-#    pragma omp atomic
-#endif
                             m_false_positive += 1;
                         }
                     }
                 }
             }
+            // Todo m_dense_blocks_generator
         }
     }
 }
