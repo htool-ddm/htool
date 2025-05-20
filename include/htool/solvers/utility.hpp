@@ -227,7 +227,8 @@ class DDMSolverBuilder {
         if (!sym or block_diagonal_hmatrix0.get_UPLO() == 'U') {
             B.resize(local_size_without_overlap, local_size_with_overlap - local_size_without_overlap);
             generator0.copy_submatrix(local_size_without_overlap, local_size_with_overlap - local_size_without_overlap, inside_num.data(), overlap_num.data(), B.data());
-        } else if (!sym or block_diagonal_hmatrix0.get_UPLO() == 'L') {
+        }  
+        if (!sym or block_diagonal_hmatrix0.get_UPLO() == 'L') {
             C.resize(local_size_with_overlap - local_size_without_overlap, local_size_without_overlap);
 
             generator0.copy_submatrix(local_size_with_overlap - local_size_without_overlap, local_size_without_overlap, overlap_num.data(), inside_num.data(), C.data());

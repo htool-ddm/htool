@@ -99,7 +99,7 @@ class LocalHMatrixPlusOverlapSolver : public VirtualLocalSolver<CoefficientPreci
 
             if (m_C.nb_rows() > 0) {
                 add_matrix_matrix_product('N', 'N', CoefficientPrecision(-1), m_C, b1, CoefficientPrecision(1), b2);
-                triangular_matrix_matrix_solve('L', 'L', 'N', 'U', CoefficientPrecision(1), m_D, b2);
+                triangular_matrix_matrix_solve('L', 'L', 'N', 'N', CoefficientPrecision(1), m_D, b2);
                 triangular_matrix_matrix_solve('L', 'L', is_complex<CoefficientPrecision>() ? 'C' : 'T', 'N', CoefficientPrecision(1), m_D, b2);
                 add_matrix_matrix_product(is_complex<CoefficientPrecision>() ? 'C' : 'T', 'N', CoefficientPrecision(-1), m_C, b2, CoefficientPrecision(1), b1);
             }
@@ -109,7 +109,8 @@ class LocalHMatrixPlusOverlapSolver : public VirtualLocalSolver<CoefficientPreci
 
             if (m_B.nb_cols() > 0) {
                 add_matrix_matrix_product(is_complex<CoefficientPrecision>() ? 'C' : 'T', 'N', CoefficientPrecision(-1), m_B, b1, CoefficientPrecision(1), b2);
-                triangular_matrix_matrix_solve('L', 'U', 'N', 'U', CoefficientPrecision(1), m_D, b2);
+                triangular_matrix_matrix_solve('L', 'U', is_complex<CoefficientPrecision>() ? 'C' : 'T', 'N', CoefficientPrecision(1), m_D, b2);
+                triangular_matrix_matrix_solve('L', 'U', 'N', 'N', CoefficientPrecision(1), m_D, b2);
                 add_matrix_matrix_product('N', 'N', CoefficientPrecision(-1), m_B, b2, CoefficientPrecision(1), b1);
             }
 
