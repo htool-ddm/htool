@@ -93,7 +93,7 @@ class DDM {
         // int rankWorld;
         // MPI_Comm_rank(MPI_COMM_WORLD, &rankWorld);
         // Z.csv_save("test_" + NbrToStr(rankWorld));
-        CoefficientPrecision **Z_ptr_ptr = new CoefficientPrecision *[nevi];
+        CoefficientPrecision **Z_ptr_ptr = nevi ? new CoefficientPrecision *[nevi] : nullptr;
         CoefficientPrecision *Z_ptr      = Z.release();
         for (int i = 0; i < nevi; i++) {
             Z_ptr_ptr[i] = Z_ptr + i * m_size_w_overlap;
