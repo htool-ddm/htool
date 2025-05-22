@@ -11,28 +11,38 @@
 #    define HTOOL_BLAS_F77(func) func##_
 #endif
 
-#define HTOOL_GENERATE_EXTERN_BLAS(C, T)                                                                                                                                                                  \
-    void HTOOL_BLAS_F77(C##axpy)(const int *, const T *, const T *, const int *, T *, const int *);                                                                                                       \
-    void HTOOL_BLAS_F77(C##scal)(const int *, const T *, T *, const int *);                                                                                                                               \
-    void HTOOL_BLAS_F77(C##gemv)(const char *, const int *, const int *, const T *, const T *, const int *, const T *, const int *, const T *, T *, const int *);                                         \
-    void HTOOL_BLAS_F77(C##gemm)(const char *, const char *, const int *, const int *, const int *, const T *, const T *, const int *, const T *, const int *, const T *, T *, const int *);              \
-    void HTOOL_BLAS_F77(C##symv)(const char *, const int *, const T *, const T *, const int *, const T *, const int *, const T *, T *, const int *);                                                      \
-    void HTOOL_BLAS_F77(C##symm)(const char *, const char *, const int *, const int *, const T *, const T *, const int *, const T *, const int *, const T *, T *, const int *);                           \
-    void HTOOL_BLAS_F77(C##syrk)(const char *const, const char *const, const int *const, const int *const, const T *const, const T *const, const int *const, const T *const, T *const, const int *const); \
-    void HTOOL_BLAS_F77(C##trsm)(const char *, const char *, const char *, const char *, const int *, const int *, const T *, const T *, const int *, T *, const int *);                                  \
-    void HTOOL_BLAS_F77(C##laswp)(const int *, T *, const int *, const int *, const int *, const int *, const int *);
-#define HTOOL_GENERATE_EXTERN_BLAS_COMPLEX(C, T, B, U)                                                                                                                                                    \
-    HTOOL_GENERATE_EXTERN_BLAS(B, U)                                                                                                                                                                      \
-    HTOOL_GENERATE_EXTERN_BLAS(C, T)                                                                                                                                                                      \
-    void HTOOL_BLAS_F77(C##hemv)(const char *, const int *, const T *, const T *, const int *, const T *, const int *, const T *, T *, const int *);                                                      \
-    void HTOOL_BLAS_F77(C##hemm)(const char *, const char *, const int *, const int *, const T *, const T *, const int *, const T *, const int *, const T *, T *, const int *);                           \
-    void HTOOL_BLAS_F77(C##herk)(const char *const, const char *const, const int *const, const int *const, const U *const, const T *const, const int *const, const U *const, T *const, const int *const); \
-    U HTOOL_BLAS_F77(B##nrm2)(const int *, const U *, const int *);                                                                                                                                       \
-    U HTOOL_BLAS_F77(B##C##nrm2)(const int *, const T *, const int *);
+#if HTOOL_MKL
+#    if defined(__cplusplus) && (!defined(INTEL_MKL_VERSION) || INTEL_MKL_VERSION >= 20200004)
+#        define HTOOL_NOEXCEPT noexcept
+#    endif
+#endif
+
+#if !HTOOL_MKL || !defined(__cplusplus) || (defined(INTEL_MKL_VERSION) && INTEL_MKL_VERSION < 20200004)
+#    define HTOOL_NOEXCEPT
+#endif
+
+#define HTOOL_GENERATE_EXTERN_BLAS(C, T)                                                                                                                                                                                 \
+    void HTOOL_BLAS_F77(C##axpy)(const int *, const T *, const T *, const int *, T *, const int *) HTOOL_NOEXCEPT;                                                                                                       \
+    void HTOOL_BLAS_F77(C##scal)(const int *, const T *, T *, const int *) HTOOL_NOEXCEPT;                                                                                                                               \
+    void HTOOL_BLAS_F77(C##gemv)(const char *, const int *, const int *, const T *, const T *, const int *, const T *, const int *, const T *, T *, const int *) HTOOL_NOEXCEPT;                                         \
+    void HTOOL_BLAS_F77(C##gemm)(const char *, const char *, const int *, const int *, const int *, const T *, const T *, const int *, const T *, const int *, const T *, T *, const int *) HTOOL_NOEXCEPT;              \
+    void HTOOL_BLAS_F77(C##symv)(const char *, const int *, const T *, const T *, const int *, const T *, const int *, const T *, T *, const int *) HTOOL_NOEXCEPT;                                                      \
+    void HTOOL_BLAS_F77(C##symm)(const char *, const char *, const int *, const int *, const T *, const T *, const int *, const T *, const int *, const T *, T *, const int *) HTOOL_NOEXCEPT;                           \
+    void HTOOL_BLAS_F77(C##syrk)(const char *const, const char *const, const int *const, const int *const, const T *const, const T *const, const int *const, const T *const, T *const, const int *const) HTOOL_NOEXCEPT; \
+    void HTOOL_BLAS_F77(C##trsm)(const char *, const char *, const char *, const char *, const int *, const int *, const T *, const T *, const int *, T *, const int *) HTOOL_NOEXCEPT;                                  \
+    void HTOOL_BLAS_F77(C##laswp)(const int *, T *, const int *, const int *, const int *, const int *, const int *) HTOOL_NOEXCEPT;
+#define HTOOL_GENERATE_EXTERN_BLAS_COMPLEX(C, T, B, U)                                                                                                                                                                   \
+    HTOOL_GENERATE_EXTERN_BLAS(B, U)                                                                                                                                                                                     \
+    HTOOL_GENERATE_EXTERN_BLAS(C, T)                                                                                                                                                                                     \
+    void HTOOL_BLAS_F77(C##hemv)(const char *, const int *, const T *, const T *, const int *, const T *, const int *, const T *, T *, const int *) HTOOL_NOEXCEPT;                                                      \
+    void HTOOL_BLAS_F77(C##hemm)(const char *, const char *, const int *, const int *, const T *, const T *, const int *, const T *, const int *, const T *, T *, const int *) HTOOL_NOEXCEPT;                           \
+    void HTOOL_BLAS_F77(C##herk)(const char *const, const char *const, const int *const, const int *const, const U *const, const T *const, const int *const, const U *const, T *const, const int *const) HTOOL_NOEXCEPT; \
+    U HTOOL_BLAS_F77(B##nrm2)(const int *, const U *, const int *) HTOOL_NOEXCEPT;                                                                                                                                       \
+    U HTOOL_BLAS_F77(B##C##nrm2)(const int *, const T *, const int *) HTOOL_NOEXCEPT;
 
 #if HTOOL_MKL
 #    define HTOOL_GENERATE_EXTERN_GEMM3M(C, T) \
-        void HTOOL_BLAS_F77(C##gemm3m)(const char *, const char *, const int *, const int *, const int *, const T *, const T *, const int *, const T *, const int *, const T *, T *, const int *);
+        void HTOOL_BLAS_F77(C##gemm3m)(const char *, const char *, const int *, const int *, const int *, const T *, const T *, const int *, const T *, const int *, const T *, T *, const int *) HTOOL_NOEXCEPT;
 #    define HTOOL_GENERATE_EXTERN_MKL_EXTENSIONS(C, T, B, U) \
         HTOOL_GENERATE_EXTERN_GEMM3M(C, T)
 #endif

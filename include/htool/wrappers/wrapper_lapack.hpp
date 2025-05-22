@@ -10,26 +10,36 @@
 #    define HTOOL_LAPACK_F77(func) func##_
 #endif
 
-#define HTOOL_GENERATE_EXTERN_LAPACK(C, T)                                                                                                 \
-    void HTOOL_LAPACK_F77(C##geqrf)(const int *, const int *, T *, const int *, T *, T *, const int *, int *);                             \
-    void HTOOL_LAPACK_F77(C##gelqf)(const int *, const int *, T *, const int *, T *, T *, const int *, int *);                             \
-    void HTOOL_LAPACK_F77(C##getrf)(const int *, const int *, T *, const int *, int *, int *);                                             \
-    void HTOOL_LAPACK_F77(C##getrs)(const char *, const int *, const int *, const T *, const int *, const int *, T *, const int *, int *); \
-    void HTOOL_LAPACK_F77(C##potrf)(const char *, const int *, T *, const int *, int *);                                                   \
-    void HTOOL_LAPACK_F77(C##potrs)(const char *, const int *, const int *, const T *, const int *, T *, const int *, int *);
-#define HTOOL_GENERATE_EXTERN_LAPACK_COMPLEX(C, T, B, U)                                                                                                                                     \
-    HTOOL_GENERATE_EXTERN_LAPACK(B, U)                                                                                                                                                       \
-    HTOOL_GENERATE_EXTERN_LAPACK(C, T)                                                                                                                                                       \
-    void HTOOL_LAPACK_F77(B##gesvd)(const char *, const char *, const int *, const int *, U *, const int *, U *, U *, const int *, U *, const int *, U *, const int *, int *);               \
-    void HTOOL_LAPACK_F77(C##gesvd)(const char *, const char *, const int *, const int *, T *, const int *, U *, T *, const int *, T *, const int *, T *, const int *, U *, int *);          \
-    void HTOOL_LAPACK_F77(B##ggev)(const char *, const char *, const int *, U *, const int *, U *, const int *, U *, U *, U *, U *, const int *, U *, const int *, U *, const int *, int *); \
-    void HTOOL_LAPACK_F77(C##ggev)(const char *, const char *, const int *, T *, const int *, T *, const int *, T *, T *, T *, const int *, T *, const int *, T *, const int *, U *, int *); \
-    void HTOOL_LAPACK_F77(B##sygv)(const int *, const char *, const char *, const int *, U *, const int *, U *, const int *, U *, U *, const int *, int *);                                  \
-    void HTOOL_LAPACK_F77(C##hegv)(const int *, const char *, const char *, const int *, T *, const int *, T *, const int *, U *, T *, const int *, U *, int *);                             \
-    void HTOOL_LAPACK_F77(B##ormlq)(const char *, const char *, const int *, const int *, const int *, const U *, const int *, const U *, U *, const int *, U *, const int *, int *);        \
-    void HTOOL_LAPACK_F77(C##unmlq)(const char *, const char *, const int *, const int *, const int *, const T *, const int *, const T *, T *, const int *, T *, const int *, int *);        \
-    void HTOOL_LAPACK_F77(B##ormqr)(const char *, const char *, const int *, const int *, const int *, const U *, const int *, const U *, U *, const int *, U *, const int *, int *);        \
-    void HTOOL_LAPACK_F77(C##unmqr)(const char *, const char *, const int *, const int *, const int *, const T *, const int *, const T *, T *, const int *, T *, const int *, int *);
+#if HTOOL_MKL
+#    if defined(__cplusplus) && (!defined(INTEL_MKL_VERSION) || INTEL_MKL_VERSION >= 20200004)
+#        define HTOOL_NOEXCEPT noexcept
+#    endif
+#endif
+
+#if !HTOOL_MKL || !defined(__cplusplus) || (defined(INTEL_MKL_VERSION) && INTEL_MKL_VERSION < 20200004)
+#    define HTOOL_NOEXCEPT
+#endif
+
+#define HTOOL_GENERATE_EXTERN_LAPACK(C, T)                                                                                                                \
+    void HTOOL_LAPACK_F77(C##geqrf)(const int *, const int *, T *, const int *, T *, T *, const int *, int *) HTOOL_NOEXCEPT;                             \
+    void HTOOL_LAPACK_F77(C##gelqf)(const int *, const int *, T *, const int *, T *, T *, const int *, int *) HTOOL_NOEXCEPT;                             \
+    void HTOOL_LAPACK_F77(C##getrf)(const int *, const int *, T *, const int *, int *, int *) HTOOL_NOEXCEPT;                                             \
+    void HTOOL_LAPACK_F77(C##getrs)(const char *, const int *, const int *, const T *, const int *, const int *, T *, const int *, int *) HTOOL_NOEXCEPT; \
+    void HTOOL_LAPACK_F77(C##potrf)(const char *, const int *, T *, const int *, int *) HTOOL_NOEXCEPT;                                                   \
+    void HTOOL_LAPACK_F77(C##potrs)(const char *, const int *, const int *, const T *, const int *, T *, const int *, int *) HTOOL_NOEXCEPT;
+#define HTOOL_GENERATE_EXTERN_LAPACK_COMPLEX(C, T, B, U)                                                                                                                                                    \
+    HTOOL_GENERATE_EXTERN_LAPACK(B, U)                                                                                                                                                                      \
+    HTOOL_GENERATE_EXTERN_LAPACK(C, T)                                                                                                                                                                      \
+    void HTOOL_LAPACK_F77(B##gesvd)(const char *, const char *, const int *, const int *, U *, const int *, U *, U *, const int *, U *, const int *, U *, const int *, int *) HTOOL_NOEXCEPT;               \
+    void HTOOL_LAPACK_F77(C##gesvd)(const char *, const char *, const int *, const int *, T *, const int *, U *, T *, const int *, T *, const int *, T *, const int *, U *, int *) HTOOL_NOEXCEPT;          \
+    void HTOOL_LAPACK_F77(B##ggev)(const char *, const char *, const int *, U *, const int *, U *, const int *, U *, U *, U *, U *, const int *, U *, const int *, U *, const int *, int *) HTOOL_NOEXCEPT; \
+    void HTOOL_LAPACK_F77(C##ggev)(const char *, const char *, const int *, T *, const int *, T *, const int *, T *, T *, T *, const int *, T *, const int *, T *, const int *, U *, int *) HTOOL_NOEXCEPT; \
+    void HTOOL_LAPACK_F77(B##sygv)(const int *, const char *, const char *, const int *, U *, const int *, U *, const int *, U *, U *, const int *, int *) HTOOL_NOEXCEPT;                                  \
+    void HTOOL_LAPACK_F77(C##hegv)(const int *, const char *, const char *, const int *, T *, const int *, T *, const int *, U *, T *, const int *, U *, int *) HTOOL_NOEXCEPT;                             \
+    void HTOOL_LAPACK_F77(B##ormlq)(const char *, const char *, const int *, const int *, const int *, const U *, const int *, const U *, U *, const int *, U *, const int *, int *) HTOOL_NOEXCEPT;        \
+    void HTOOL_LAPACK_F77(C##unmlq)(const char *, const char *, const int *, const int *, const int *, const T *, const int *, const T *, T *, const int *, T *, const int *, int *) HTOOL_NOEXCEPT;        \
+    void HTOOL_LAPACK_F77(B##ormqr)(const char *, const char *, const int *, const int *, const int *, const U *, const int *, const U *, U *, const int *, U *, const int *, int *) HTOOL_NOEXCEPT;        \
+    void HTOOL_LAPACK_F77(C##unmqr)(const char *, const char *, const int *, const int *, const int *, const T *, const int *, const T *, T *, const int *, T *, const int *, int *) HTOOL_NOEXCEPT;
 
 #if !defined(PETSC_HAVE_BLASLAPACK)
 #    ifndef _MKL_H_
