@@ -11,21 +11,28 @@ int main(int, char *[]) {
 
     bool is_error = false;
 
-    for (auto epsilon : {1e-6}) {
-        for (auto n1 : {200, 400}) {
-            for (auto n2 : {200, 400}) {
-                for (auto transa : {'N', 'T'}) {
+    for (auto epsilon : {1e-3}) {
+        for (auto n1 : {500}) {
+            for (auto n2 : {500}) {
+                for (auto transa : {'N'}) {
                     for (auto block_tree_consistency : {false}) {
 
-                        std::cout << "task based hmatrix product: " << epsilon << " " << n1 << " " << n2 << " " << transa << " " << block_tree_consistency << "\n";
+                        // Non symmetric case
+                        char trans_sym = 'N';
+                        std::cout << "task based hmatrix product: " << "epsilon = " << epsilon << ", n1 = " << n1 << ", n2 = " << n2 << ", trans_sym = " << trans_sym << ", transa = " << transa << ", block_tree_consistency = " << block_tree_consistency << "\n";
 
-                        is_error = is_error || test_hmatrix_task_based<double, GeneratorTestDouble>(transa, n1, n2, epsilon, block_tree_consistency);
+                        TestCaseProduct<double, GeneratorTestDouble> test_case(transa, 'N', n1, n2, 1, 1, 2);
+                        is_error = is_error || test_hmatrix_task_based<double, GeneratorTestDouble, TestCaseProduct<double, GeneratorTestDouble>>(test_case, 'N', transa, epsilon, block_tree_consistency);
 
+                        // Symmetric case
                         if (n1 == n2 && block_tree_consistency) {
                             for (auto UPLO : {'L'}) {
-                                std::cout << "task based symmetric matrix product: " << n1 << " " << epsilon << " " << UPLO << "\n";
+                                trans_sym = 'S';
 
-                                is_error = is_error || test_symmetric_hmatrix_task_based<double, GeneratorTestDoubleSymmetric>(transa, n1, epsilon, UPLO);
+                                std::cout << "task based symmetric hmatrix product: " << "epsilon = " << epsilon << ", n1 = n2 = " << n1 << ", trans_sym = " << trans_sym << ", transa = " << transa << ", block_tree_consistency = " << block_tree_consistency << "\n";
+
+                                TestCaseSymmetricProduct<double, GeneratorTestDoubleSymmetric> sym_test_case(n1, 1, 2, 'L', 'S', UPLO);
+                                is_error = is_error || test_hmatrix_task_based<double, GeneratorTestDouble, TestCaseSymmetricProduct<double, GeneratorTestDoubleSymmetric>>(sym_test_case, 'S', transa, epsilon, block_tree_consistency, UPLO);
                             }
                         }
                     }

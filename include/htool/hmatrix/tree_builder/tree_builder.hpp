@@ -246,7 +246,7 @@ HMatrix<CoefficientPrecision, CoordinatePrecision> HMatrixTreeBuilder<Coefficien
     // Compute leave's data
     if (is_task_based) {
         // std::vector<HMatrix<CoefficientPrecision, CoordinatePrecision> *> L0;
-        m_L0 = find_l0(root_hmatrix, 64); // TODO: make this parameterizable ?);
+        m_L0 = find_l0(root_hmatrix, 64); // TODO: make this parameterizable
         task_based_compute_blocks(generator, m_L0);
     } else {
         start = std::chrono::steady_clock::now();
@@ -529,9 +529,9 @@ void HMatrixTreeBuilder<CoefficientPrecision, CoordinatePrecision>::task_based_c
     for (int p = 0; p < L0.size(); p++) {
 
 #if defined(_OPENMP) && !defined(HTOOL_WITH_PYTHON_INTERFACE)
-#    pragma omp task default(none)                                                      \
-        firstprivate(p, L0)                                                             \
-        shared(generator, m_false_positive, m_reqrank, m_epsilon, m_low_rank_generator) \
+#    pragma omp task default(none)                                                                                           \
+        firstprivate(p, L0, m_false_positive, m_reqrank, m_epsilon, m_low_rank_generator, m_admissible_tasks, m_dense_tasks) \
+        shared(generator)                                                                                                    \
         depend(out : *L0[p])
 #endif
         {
@@ -539,10 +539,12 @@ void HMatrixTreeBuilder<CoefficientPrecision, CoordinatePrecision>::task_based_c
             std::vector<HMatrix<CoefficientPrecision, CoordinatePrecision> *> leaves_for_symmetry;
             std::tie(leaves, leaves_for_symmetry) = get_leaves_from(*L0[p]); // C++17 structured binding
             for (auto leaf : leaves) {
+                // check if leaf is removed by symmetry
                 if (!is_removed_by_symmetry(leaf->get_target_cluster(), leaf->get_source_cluster())) {
-                    if (leaf->is_dense()) {
-                        leaf->compute_dense_data(generator);
-                    } else {
+
+                    // check if leaf is in m_admissible_tasks
+                    auto it_admissible = std::find(m_admissible_tasks.begin(), m_admissible_tasks.end(), leaf);
+                    if (it_admissible != m_admissible_tasks.end()) {
                         leaf->compute_low_rank_data(generator, *m_low_rank_generator, m_reqrank, m_epsilon);
                         if (leaf->get_low_rank_data()->get_U().nb_rows() != leaf->get_target_cluster().get_size() || leaf->get_low_rank_data()->get_V().nb_cols() != leaf->get_source_cluster().get_size()) {
                             leaf->clear_low_rank_data();
@@ -550,6 +552,12 @@ void HMatrixTreeBuilder<CoefficientPrecision, CoordinatePrecision>::task_based_c
 
                             m_false_positive += 1;
                         }
+                    }
+
+                    // check if leaf is in m_dense_tasks
+                    auto it_dense = std::find(m_dense_tasks.begin(), m_dense_tasks.end(), leaf);
+                    if (it_dense != m_dense_tasks.end()) {
+                        leaf->compute_dense_data(generator);
                     }
                 }
             }
