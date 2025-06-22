@@ -253,7 +253,7 @@ int test_solver_ddm_adding_overlap(int argc, char *argv[], int mu, char data_sym
         auto &ddm_with_non_uniform_coarse_space = default_ddm_solver_non_uniform_coarse_space.solver;
 
         Ki.bytes_to_matrix(datapath + "/Ki_" + NbrToStr(size) + "_" + NbrToStr(rank) + ".bin");
-        auto non_uniform_geneo_coarse_space_dense_builder = GeneoCoarseSpaceDenseBuilder<std::complex<double>>::GeneoWithNu(local_size_wo_overlap, local_size_with_overlap, default_ddm_solver.block_diagonal_dense_matrix, Ki, symmetric, UPLO, rank==0 ? 0 : 2);
+        auto non_uniform_geneo_coarse_space_dense_builder = GeneoCoarseSpaceDenseBuilder<std::complex<double>>::GeneoWithNu(local_size_wo_overlap, local_size_with_overlap, default_ddm_solver.block_diagonal_dense_matrix, Ki, symmetric, UPLO, rank == 0 ? 0 : 2);
         // geneo_coarse_space_dense_builder.set_geneo_threshold(100);
         ddm_with_non_uniform_coarse_space.build_coarse_space(non_uniform_geneo_coarse_space_dense_builder, geneo_coarse_operator_builder);
         ddm_with_non_uniform_coarse_space.facto_one_level();

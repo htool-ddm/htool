@@ -32,7 +32,7 @@ int main(int argc, char *argv[]) {
                 symmetries.push_back('S');
             }
             for (auto symmetry : symmetries) {
-                std::cout <<nb_rhs<<" "<<data_symmetry<<" "<<symmetry<<"\n";
+                std::cout << nb_rhs << " " << data_symmetry << " " << symmetry << "\n";
 
                 is_error = is_error || test_solver_wo_overlap<DDMSolverWithDenseLocalSolver<complex<double>, double>>(argc, argv, nb_rhs, symmetry, symmetry == 'N' ? 'N' : 'L', datapath_final);
                 is_error = is_error || test_solver_ddm_adding_overlap<DDMSolverWithDenseLocalSolver<std::complex<double>>>(argc, argv, nb_rhs, data_symmetry, symmetry, datapath_final);
