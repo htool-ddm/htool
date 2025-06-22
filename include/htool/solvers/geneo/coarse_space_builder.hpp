@@ -91,6 +91,10 @@ class GeneoCoarseSpaceDenseBuilder : public VirtualCoarseSpaceBuilder<Coefficien
             work.resize(lwork);
             Lapack<CoefficientPrecision>::gv(&itype, "V", &m_uplo, &n, m_DAiD.data(), &lda, m_Bi.data(), &ldb, w.data(), work.data(), &lwork, rwork.data(), &info);
 
+            if (info != 0) {
+                htool::Logger::get_instance().log(LogLevel::ERROR, "Local eigensolver failed with info=" + std::to_string(info)+"."); // LCOV_EXCL_LINE
+            }
+
             // std::cout << "OUAAAAH 2\n";
             std::sort(index.begin(), index.end(), [&](const int &a, const int &b) {
                 return (std::abs(w[a]) > std::abs(w[b]));
@@ -182,23 +186,21 @@ class GeneoCoarseSpaceDenseBuilder : public VirtualCoarseSpaceBuilder<Coefficien
 
 template <typename CoefficientPrecision, typename CoordinatePrecision = underlying_type<CoefficientPrecision>>
 class VirtualGeneoCoarseSpaceBuilder : public VirtualCoarseSpaceBuilder<CoefficientPrecision> {
-    protected:
+  protected:
     int m_size_wo_overlap;
     int m_size_with_overlap;
-    const HMatrix<CoefficientPrecision,CoordinatePrecision>& m_local_hmatrix;
+    const HMatrix<CoefficientPrecision, CoordinatePrecision> &m_local_hmatrix;
     char m_symmetry                                                = 'N';
     char m_uplo                                                    = 'N';
     int m_geneo_nu                                                 = 2;
     htool::underlying_type<CoefficientPrecision> m_geneo_threshold = -1.;
 
-    explicit VirtualGeneoCoarseSpaceBuilder(int size_wo_overlap, int size_with_overlap, const HMatrix<CoefficientPrecision,CoordinatePrecision>&Ai, char symmetry, char uplo, int geneo_nu, htool::underlying_type<CoefficientPrecision> geneo_threshold) : m_size_wo_overlap(size_wo_overlap), m_size_with_overlap(size_with_overlap), m_local_hmatrix(Ai), m_symmetry(symmetry), m_uplo(uplo), m_geneo_nu(geneo_nu), m_geneo_threshold(geneo_threshold) {}
+    explicit VirtualGeneoCoarseSpaceBuilder(int size_wo_overlap, int size_with_overlap, const HMatrix<CoefficientPrecision, CoordinatePrecision> &Ai, char symmetry, char uplo, int geneo_nu, htool::underlying_type<CoefficientPrecision> geneo_threshold) : m_size_wo_overlap(size_wo_overlap), m_size_with_overlap(size_with_overlap), m_local_hmatrix(Ai), m_symmetry(symmetry), m_uplo(uplo), m_geneo_nu(geneo_nu), m_geneo_threshold(geneo_threshold) {}
 
-    public:
-
+  public:
     // static VirtualGeneoCoarseSpaceBuilder GeneoWithNu(int size_wo_overlap, int size_with_overlap, const HMatrix<CoefficientPrecision,CoordinatePrecision> &Ai, char symmetry, char uplo, int geneo_nu) { return VirtualGeneoCoarseSpaceBuilder{size_wo_overlap, size_with_overlap, Ai, symmetry, uplo, geneo_nu, -1}; }
 
     // static VirtualGeneoCoarseSpaceBuilder GeneoWithThreshold(int size_wo_overlap, int size_with_overlap, const HMatrix<CoefficientPrecision,CoordinatePrecision> &Ai, char symmetry, char uplo, htool::underlying_type<CoefficientPrecision> geneo_threshold) { return VirtualGeneoCoarseSpaceBuilder{size_wo_overlap, size_with_overlap, Ai, symmetry, uplo, 0, geneo_threshold}; }
-
 };
 
 } // namespace htool
