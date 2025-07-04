@@ -53,7 +53,7 @@ void sequential_scale(CoefficientPrecision da, HMatrix<CoefficientPrecision, Coo
 
 template <typename CoefficientPrecision, typename CoordinatePrecision = underlying_type<CoefficientPrecision>>
 void scale(CoefficientPrecision da, HMatrix<CoefficientPrecision, CoordinatePrecision> &A) {
-    openmp_scale(da, A);
+    sequential_scale(da, A);
 }
 
 } // namespace htool
