@@ -33,6 +33,7 @@ All notable changes to this project will be documented in this file.
 - Checks about `UPLO` for hmatrix factorization.
 - `HMatrixBuilder` for easier `HMatrix` creation (especially when using only the hmatrix part of Htool-DDM).
 - `add_hmatrix_vector_product` and `add_hmatrix_matrix_product` for working in user numbering. For C++17 and onward, these functions have preliminary support for execution policies with default being sequential execution. This tries to some extent to follow `<linalg>` API.
+- Customisation point `VirtualGeneoCoarseSpaceBuilder` for building geneo coarse space.
 
 ### Changed
 
