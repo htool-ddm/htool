@@ -29,13 +29,13 @@ class Matrix {
   public:
     Matrix() : m_number_of_rows(0), m_number_of_cols(0), m_data(nullptr), m_is_owning_data(true), m_pivots(0) {}
     Matrix(int nbr, int nbc, T value = 0) : m_number_of_rows(nbr), m_number_of_cols(nbc), m_is_owning_data(true), m_pivots(0) {
-        // std::cout << std::numeric_limits<int>::max() << " " << nbr * nbc << " " << std::size_t(nbr) * std::size_t(nbc) << std::endl;
         std::size_t size = std::size_t(nbr) * std::size_t(nbc);
-        m_data           = new T[size];
+        m_data           = size != 0 ? new T[size] : nullptr;
         std::fill_n(m_data, std::size_t(nbr) * std::size_t(nbc), value);
     }
     Matrix(const Matrix &rhs) : m_number_of_rows(rhs.m_number_of_rows), m_number_of_cols(rhs.m_number_of_cols), m_is_owning_data(true), m_pivots(rhs.m_pivots) {
-        m_data = new T[rhs.m_number_of_rows * rhs.m_number_of_cols]();
+        std::size_t size = std::size_t(rhs.m_number_of_rows) * std::size_t(rhs.m_number_of_cols);
+        m_data           = size != 0 ? new T[rhs.m_number_of_rows * rhs.m_number_of_cols]() : nullptr;
 
         std::copy_n(rhs.m_data, rhs.m_number_of_rows * rhs.m_number_of_cols, m_data);
     }
@@ -43,17 +43,18 @@ class Matrix {
         if (&rhs == this) {
             return *this;
         }
-        if (m_number_of_rows * m_number_of_cols == rhs.m_number_of_cols * rhs.m_number_of_rows) {
+        std::size_t size     = std::size_t(m_number_of_rows) * std::size_t(m_number_of_cols);
+        std::size_t size_rhs = std::size_t(rhs.m_number_of_rows) * std::size_t(rhs.m_number_of_cols);
+        if (size == size_rhs) {
             std::copy_n(rhs.m_data, m_number_of_rows * m_number_of_cols, m_data);
             m_number_of_rows = rhs.m_number_of_rows;
             m_number_of_cols = rhs.m_number_of_cols;
-            // m_is_owning_data = true;
         } else {
             m_number_of_rows = rhs.m_number_of_rows;
             m_number_of_cols = rhs.m_number_of_cols;
             if (m_is_owning_data)
                 delete[] m_data;
-            m_data = new T[m_number_of_rows * m_number_of_cols]();
+            m_data = size_rhs != 0 ? new T[m_number_of_rows * m_number_of_cols]() : nullptr;
             std::copy_n(rhs.m_data, m_number_of_rows * m_number_of_cols, m_data);
             m_is_owning_data = true;
         }

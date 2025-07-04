@@ -113,12 +113,17 @@ void add_symmetric_matrix_matrix_product(char side, char UPLO, T alpha, const Ma
 
 template <typename T>
 void add_hermitian_matrix_matrix_product(char side, char UPLO, T alpha, const Matrix<T> &A, const Matrix<T> &B, T beta, Matrix<T> &C) {
+    add_symmetric_matrix_matrix_product(side, UPLO, alpha, A, B, beta, C);
+}
+
+template <typename T>
+void add_hermitian_matrix_matrix_product(char side, char UPLO, std::complex<T> alpha, const Matrix<std::complex<T>> &A, const Matrix<std::complex<T>> &B, std::complex<T> beta, Matrix<std::complex<T>> &C) {
     int M   = C.nb_rows();
     int N   = C.nb_cols();
     int lda = (side == 'L') ? M : N;
     int ldb = M;
     int ldc = M;
-    Blas<T>::hemm(&side, &UPLO, &M, &N, &alpha, A.data(), &lda, B.data(), &ldb, &beta, C.data(), &ldc);
+    Blas<std::complex<T>>::hemm(&side, &UPLO, &M, &N, &alpha, A.data(), &lda, B.data(), &ldb, &beta, C.data(), &ldc);
 }
 
 } // namespace htool

@@ -134,7 +134,7 @@ jobs:
       - name: Checkout hpddm
         run: |
           git clone https://github.com/hpddm/hpddm.git hpddm
-          cd hpddm && git checkout 5890d5addf3962d539dc25c441ec3ff4af93b3ab
+          cd hpddm && git checkout 24aed69dbde7ef1526ae87ccf4f39ceb840bccea
         # uses: actions/checkout@v3
         # with:
         #   path: "hpddm"
@@ -216,9 +216,9 @@ jobs:
           fetch-depth: 0
       - uses: actions/download-artifact@v4
       - name: Upload coverage report
-        uses: codecov/codecov-action@v4
+        uses: codecov/codecov-action@v5
         with:
           fail_ci_if_error: true
-          file: ./coverage.info
+          files: ./coverage.info
           token: ${{ secrets.CODECOV_TOKEN }}
           verbose: true

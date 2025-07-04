@@ -21,7 +21,7 @@ using namespace std;
 using namespace htool;
 
 template <typename T, typename GeneratorTestType>
-bool test_hmatrix_triangular_solve(char side, char transa, int n1, int n2, htool::underlying_type<T> epsilon, htool::underlying_type<T> margin) {
+bool test_hmatrix_triangular_solve(char side, char transa, char diag, int n1, int n2, htool::underlying_type<T> epsilon, htool::underlying_type<T> margin) {
     bool is_error = false;
     double eta    = 10;
     htool::underlying_type<T> error;
@@ -51,12 +51,20 @@ bool test_hmatrix_triangular_solve(char side, char transa, int n1, int n2, htool
     compressor.copy_low_rank_approximation(test_case.root_cluster_X_output->get_size(), test_case.root_cluster_X_input->get_size(), test_case.root_cluster_X_output->get_offset(), test_case.root_cluster_X_input->get_offset(), X_lrmat);
 
     // Triangular hmatrices
+    if (diag == 'U') {
+        std::vector<T> diagonal(A.nb_cols());
+        copy_diagonal(A, diagonal.data());
+        scale(1. / (*std::max_element(diagonal.begin(), diagonal.end(), [](T a, T b) { return (std::abs(a) < std::abs(b)); })), A);
+    }
     HMatrix<T, htool::underlying_type<T>> LA(A);
     HMatrix<T, htool::underlying_type<T>> UA(A);
-    preorder_tree_traversal(LA, [](HMatrix<T, htool::underlying_type<T>> &hmatrix) {
+    preorder_tree_traversal(LA, [&diag](HMatrix<T, htool::underlying_type<T>> &hmatrix) {
         if (hmatrix.is_leaf() and hmatrix.get_target_cluster() == hmatrix.get_source_cluster()) {
             Matrix<T> &dense_data = *hmatrix.get_dense_data();
             for (int i = 0; i < dense_data.nb_rows(); i++) {
+                if (diag == 'U') {
+                    dense_data(i, i) = 1;
+                }
                 for (int j = i + 1; j < dense_data.nb_cols(); j++) {
                     dense_data(i, j) = 0;
                 }
@@ -75,10 +83,13 @@ bool test_hmatrix_triangular_solve(char side, char transa, int n1, int n2, htool
         }
     });
 
-    preorder_tree_traversal(UA, [](HMatrix<T, htool::underlying_type<T>> &hmatrix) {
+    preorder_tree_traversal(UA, [&diag](HMatrix<T, htool::underlying_type<T>> &hmatrix) {
         if (hmatrix.is_leaf() and hmatrix.get_target_cluster() == hmatrix.get_source_cluster()) {
             Matrix<T> &dense_data = *hmatrix.get_dense_data();
             for (int j = 0; j < dense_data.nb_cols(); j++) {
+                if (diag == 'U') {
+                    dense_data(j, j) = 1;
+                }
                 for (int i = j + 1; i < dense_data.nb_rows(); i++) {
                     dense_data(i, j) = 0;
                 }
@@ -107,10 +118,21 @@ bool test_hmatrix_triangular_solve(char side, char transa, int n1, int n2, htool
     test_case.operator_X->copy_submatrix(no_X, ni_X, test_case.root_cluster_X_output->get_offset(), test_case.root_cluster_X_input->get_offset(), X_dense.data());
     dense_X_lrmat.resize(X_lrmat.nb_rows(), X_lrmat.nb_cols());
     X_lrmat.copy_to_dense(dense_X_lrmat.data());
+    if (diag == 'U') {
+        T max = 0;
+        for (int i = 0; i < A_dense.nb_cols(); i++) {
+            max = std::max(std::abs(max), std::abs(A_dense(i, i)));
+        }
+        scale(1. / max, A_dense);
+    }
 
     // Triangular matrices
     Matrix<T> LA_dense(A_dense), UA_dense(A_dense), LB_dense(B.nb_rows(), B.nb_cols()), UB_dense(B.nb_rows(), B.nb_cols());
     for (int i = 0; i < A.nb_rows(); i++) {
+        if (diag == 'U') {
+            UA_dense(i, i) = 1;
+            LA_dense(i, i) = 1;
+        }
         for (int j = 0; j < A.nb_cols(); j++) {
             if (i > j) {
                 UA_dense(i, j) = 0;
@@ -154,19 +176,19 @@ bool test_hmatrix_triangular_solve(char side, char transa, int n1, int n2, htool
 
     // triangular_matrix_matrix_solve
     matrix_test = LB_dense;
-    internal_triangular_hmatrix_matrix_solve(side, 'L', transa, 'N', alpha, LA, matrix_test);
+    internal_triangular_hmatrix_matrix_solve(side, 'L', transa, diag, alpha, LA, matrix_test);
     error    = normFrob(X_dense - matrix_test) / normFrob(X_dense);
     is_error = is_error || !(error < epsilon * margin);
     cout << "> Errors on lower triangular hmatrix matrix solve: " << error << endl;
 
     matrix_test = UB_dense;
-    internal_triangular_hmatrix_matrix_solve(side, 'U', transa, 'N', alpha, UA, matrix_test);
+    internal_triangular_hmatrix_matrix_solve(side, 'U', transa, diag, alpha, UA, matrix_test);
     error    = normFrob(X_dense - matrix_test) / normFrob(X_dense);
     is_error = is_error || !(error < epsilon * margin);
     cout << "> Errors on upper triangular hmatrix matrix solve: " << error << endl;
 
     lrmat_test = LB_lrmat;
-    internal_triangular_hmatrix_lrmat_solve(side, 'L', transa, 'N', alpha, LA, lrmat_test);
+    internal_triangular_hmatrix_lrmat_solve(side, 'L', transa, diag, alpha, LA, lrmat_test);
     dense_lrmat_test.resize(lrmat_test.get_U().nb_rows(), lrmat_test.get_V().nb_cols());
     lrmat_test.copy_to_dense(dense_lrmat_test.data());
     error    = normFrob(dense_X_lrmat - dense_lrmat_test) / normFrob(dense_X_lrmat);
@@ -174,7 +196,7 @@ bool test_hmatrix_triangular_solve(char side, char transa, int n1, int n2, htool
     cout << "> Errors on lower triangular hmatrix lrmat solve: " << error << endl;
 
     lrmat_test = UB_lrmat;
-    internal_triangular_hmatrix_lrmat_solve(side, 'U', transa, 'N', alpha, UA, lrmat_test);
+    internal_triangular_hmatrix_lrmat_solve(side, 'U', transa, diag, alpha, UA, lrmat_test);
     dense_lrmat_test.resize(lrmat_test.get_U().nb_rows(), lrmat_test.get_V().nb_cols());
     lrmat_test.copy_to_dense(dense_lrmat_test.data());
     error    = normFrob(dense_X_lrmat - dense_lrmat_test) / normFrob(dense_X_lrmat);
@@ -182,14 +204,14 @@ bool test_hmatrix_triangular_solve(char side, char transa, int n1, int n2, htool
     cout << "> Errors on upper triangular hmatrix lrmat solve: " << error << endl;
 
     hmatrix_test = LB;
-    internal_triangular_hmatrix_hmatrix_solve(side, 'L', transa, 'N', alpha, LA, hmatrix_test);
+    internal_triangular_hmatrix_hmatrix_solve(side, 'L', transa, diag, alpha, LA, hmatrix_test);
     copy_to_dense(hmatrix_test, densified_hmatrix_test.data());
     error    = normFrob(X_dense - densified_hmatrix_test) / normFrob(X_dense);
     is_error = is_error || !(error < epsilon * margin);
     cout << "> Errors on lower triangular hmatrix hmatrix solve: " << error << endl;
 
     hmatrix_test = UB;
-    internal_triangular_hmatrix_hmatrix_solve(side, 'U', transa, 'N', alpha, UA, hmatrix_test);
+    internal_triangular_hmatrix_hmatrix_solve(side, 'U', transa, diag, alpha, UA, hmatrix_test);
     copy_to_dense(hmatrix_test, densified_hmatrix_test.data());
     error    = normFrob(X_dense - densified_hmatrix_test) / normFrob(X_dense);
     is_error = is_error || !(error < epsilon * margin);

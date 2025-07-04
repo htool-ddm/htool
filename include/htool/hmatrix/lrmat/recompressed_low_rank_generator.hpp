@@ -4,6 +4,7 @@
 #include "../../hmatrix/interfaces/virtual_lrmat_generator.hpp" // for Virt...
 #include "../../misc/misc.hpp"                                  // for unde...
 #include "../lrmat/utils/SVD_recompression.hpp"
+#include <functional>
 
 namespace htool {
 
