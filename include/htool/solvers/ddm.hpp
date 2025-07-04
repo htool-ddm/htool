@@ -47,10 +47,9 @@ class DDM {
 
   public:
     // no copy
-    DDM(const DDM &)            = delete;
-    DDM &operator=(const DDM &) = delete;
-    DDM(DDM &&cluster)
-    noexcept                               = default;
+    DDM(const DDM &)                       = delete;
+    DDM &operator=(const DDM &)            = delete;
+    DDM(DDM &&cluster) noexcept            = default;
     DDM &operator=(DDM &&cluster) noexcept = default;
     virtual ~DDM()                         = default;
     void clean() {

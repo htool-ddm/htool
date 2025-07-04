@@ -9,7 +9,7 @@ using namespace std;
 using namespace htool;
 
 template <typename T>
-bool test_matrix_triangular_solve(int n, int nrhs, char side, char transa) {
+bool test_matrix_triangular_solve(int n, int nrhs, char side, char transa, char diag) {
 
     bool is_error = false;
 
@@ -33,10 +33,20 @@ bool test_matrix_triangular_solve(int n, int nrhs, char side, char transa) {
         }
         A(i, i) = sum;
     }
-
+    if (diag == 'U') {
+        T max = 0;
+        for (int i = 0; i < n; i++) {
+            max = std::max(std::abs(max), std::abs(A(i, i)));
+        }
+        scale(1. / max, A);
+    }
     // Triangular setup
     Matrix<T> LA(A), UA(A), LB(B.nb_rows(), B.nb_cols()), permuted_LB(B.nb_rows(), B.nb_cols()), UB(B.nb_rows(), B.nb_cols());
     for (int i = 0; i < A.nb_rows(); i++) {
+        if (diag == 'U') {
+            UA(i, i) = 1;
+            LA(i, i) = 1;
+        }
         for (int j = 0; j < A.nb_cols(); j++) {
             if (i > j) {
                 UA(i, j) = 0;
@@ -109,22 +119,28 @@ bool test_matrix_triangular_solve(int n, int nrhs, char side, char transa) {
     // triangular_matrix_matrix_solve
     test_factorization = LA;
     test_solve         = LB;
-    triangular_matrix_matrix_solve(side, 'L', transa, 'N', alpha, test_factorization, test_solve);
+    triangular_matrix_matrix_solve(side, 'L', transa, diag, alpha, test_factorization, test_solve);
+    // test_solve.print(std::cout, ",");
     error    = normFrob(result - test_solve) / normFrob(result);
     is_error = is_error || !(error < 1e-9);
     cout << "> Errors on lower triangular matrix matrix solve: " << error << endl;
 
     test_factorization              = LA;
     test_factorization.get_pivots() = ipiv;
-    test_solve                      = permuted_LB;
-    triangular_matrix_matrix_solve(side, 'L', transa, 'N', alpha, test_factorization, test_solve);
+    // std::cout << ipiv.size() << "\n";
+    // for (auto elt : ipiv) {
+    //     std::cout << elt << " ";
+    // }
+    // std::cout << "\n";
+    test_solve = permuted_LB;
+    triangular_matrix_matrix_solve(side, 'L', transa, diag, alpha, test_factorization, test_solve);
     error    = normFrob(result - test_solve) / normFrob(result);
     is_error = is_error || !(error < 1e-9);
     cout << "> Errors on lower triangular matrix matrix solve with permutation: " << error << endl;
 
     test_factorization = UA;
     test_solve         = UB;
-    triangular_matrix_matrix_solve(side, 'U', transa, 'N', alpha, test_factorization, test_solve);
+    triangular_matrix_matrix_solve(side, 'U', transa, diag, alpha, test_factorization, test_solve);
     error    = normFrob(result - test_solve) / normFrob(result);
     is_error = is_error || !(error < 1e-9);
     cout << "> Errors on upper triangular matrix matrix solve: " << error << endl;
