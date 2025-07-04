@@ -289,33 +289,34 @@ class DDMSolverBuilder {
 
             LocalLowRankGenerator(std::shared_ptr<VirtualLowRankGenerator<CoefficientPrecision, CoordinatePrecision>> low_rank_generator, const Cluster<CoordinatePrecision> &local_target_cluster, const Cluster<CoordinatePrecision> &local_source_cluster, const std::vector<int> &target_local_to_global_numbering, const std::vector<int> &source_local_to_global_numbering) : m_local_target_cluster(local_target_cluster), m_local_source_cluster(local_source_cluster), m_target_local_to_global_numbering(target_local_to_global_numbering), m_source_local_to_global_numbering(source_local_to_global_numbering), m_low_rank_generator(low_rank_generator) {}
 
-            bool copy_low_rank_approximation(int M, int N, int row_offset, int col_offset, LowRankMatrix<CoefficientPrecision> &lrmat) const override {
+            std::pair<std::vector<int>, std::vector<int>> renumber(int M, int N, int row_offset, int col_offset) const {
 
                 const int *rows = m_local_target_cluster.get_permutation().data() + row_offset;
                 const int *cols = m_local_source_cluster.get_permutation().data() + col_offset;
-                std::vector<int> new_rows(M), new_cols(N);
+                std::pair<std::vector<int>, std::vector<int>> result;
+                result.first.resize(M);
+                result.second.resize(N);
+
                 for (int i = 0; i < M; i++) {
-                    new_rows[i] = m_target_local_to_global_numbering[rows[i]];
+                    result.first[i] = m_target_local_to_global_numbering[rows[i]];
                 }
                 for (int j = 0; j < N; j++) {
-                    new_cols[j] = m_source_local_to_global_numbering[cols[j]];
+                    result.second[j] = m_source_local_to_global_numbering[cols[j]];
                 }
+                return result;
+            }
 
-                return m_low_rank_generator->copy_low_rank_approximation(M, N, new_rows.data(), new_cols.data(), lrmat);
+            bool copy_low_rank_approximation(int M, int N, int row_offset, int col_offset, LowRankMatrix<CoefficientPrecision> &lrmat) const override {
+
+                auto new_numbering = renumber(M, N, row_offset, col_offset);
+
+                return m_low_rank_generator->copy_low_rank_approximation(M, N, new_numbering.first.data(), new_numbering.second.data(), lrmat);
             }
             bool copy_low_rank_approximation(int M, int N, int row_offset, int col_offset, int reqrank, LowRankMatrix<CoefficientPrecision> &lrmat) const override {
 
-                const int *rows = m_local_target_cluster.get_permutation().data() + row_offset;
-                const int *cols = m_local_source_cluster.get_permutation().data() + col_offset;
-                std::vector<int> new_rows(M), new_cols(N);
-                for (int i = 0; i < M; i++) {
-                    new_rows[i] = m_target_local_to_global_numbering[rows[i]];
-                }
-                for (int j = 0; j < N; j++) {
-                    new_cols[j] = m_source_local_to_global_numbering[cols[j]];
-                }
+                auto new_numbering = renumber(M, N, row_offset, col_offset);
 
-                return m_low_rank_generator->copy_low_rank_approximation(M, N, new_rows.data(), new_cols.data(), reqrank, lrmat);
+                return m_low_rank_generator->copy_low_rank_approximation(M, N, new_numbering.first.data(), new_numbering.second.data(), reqrank, lrmat);
             }
         };
 

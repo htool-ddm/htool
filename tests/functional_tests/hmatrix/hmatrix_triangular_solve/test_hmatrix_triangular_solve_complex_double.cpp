@@ -17,8 +17,10 @@ int main(int, char *[]) {
         for (auto epsilon : {1e-6, 1e-10}) {
             for (auto side : {'L', 'R'}) {
                 for (auto operation : {'N', 'T', 'C'}) {
-                    std::cout << epsilon << " " << number_of_rhs << " " << side << " " << operation << "\n";
-                    is_error = is_error || test_hmatrix_triangular_solve<std::complex<double>, GeneratorTestComplexHermitian>(side, operation, n1, number_of_rhs, epsilon, margin);
+                    for (auto diag : {'N', 'U'}) {
+                        std::cout << epsilon << " " << number_of_rhs << " " << side << " " << operation << " " << diag << "\n";
+                        is_error = is_error || test_hmatrix_triangular_solve<std::complex<double>, GeneratorTestComplexHermitian>(side, operation, diag, n1, number_of_rhs, epsilon, margin);
+                    }
                 }
             }
         }

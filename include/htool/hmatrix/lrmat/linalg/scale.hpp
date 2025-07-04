@@ -7,7 +7,7 @@ namespace htool {
 
 template <typename CoefficientPrecision>
 void scale(CoefficientPrecision da, LowRankMatrix<CoefficientPrecision> &lrmat) {
-    if (lrmat.get_U().nb_rows() > lrmat.get_U().nb_cols()) {
+    if (lrmat.get_U().nb_rows() <= lrmat.get_V().nb_cols()) {
         scale(da, lrmat.get_U());
     } else {
         scale(da, lrmat.get_V());

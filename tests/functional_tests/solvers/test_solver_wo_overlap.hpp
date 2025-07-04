@@ -25,7 +25,7 @@ class DistributedOperator;
 using namespace std;
 using namespace htool;
 
-template <typename solver_builder>
+template <typename CoefficientPrecision, typename CoordinatePrecision, typename solver_builder>
 int test_solver_wo_overlap(int argc, char *argv[], int mu, char symmetric, char UPLO, std::string datapath) {
 
     // Get the number of processes
@@ -42,53 +42,77 @@ int test_solver_wo_overlap(int argc, char *argv[], int mu, char symmetric, char 
     // HPDDM verbosity
     HPDDM::Option &opt = *HPDDM::Option::get();
     opt.parse(argc, argv, rank == 0);
-    double tol = opt.val("tol", 1e-6);
+    CoordinatePrecision tol = opt.val("tol", 1e-6);
     if (rank != 0)
         opt.remove("verbosity");
     opt.parse("-hpddm_max_it 200");
 
     // HTOOL
-    double epsilon = tol;
-    double eta     = 10;
+    CoordinatePrecision epsilon = tol;
+    CoordinatePrecision eta     = 10;
 
     // Clustering
     if (rank == 0)
         std::cout << "Creating cluster tree" << std::endl;
-    Cluster<double> target_cluster = read_cluster_tree<double>(datapath + "/cluster_" + NbrToStr(size) + "_cluster_tree_properties.csv", datapath + "/cluster_" + NbrToStr(size) + "_cluster_tree.csv");
+    Cluster<CoordinatePrecision> target_cluster = read_cluster_tree<double>(datapath + "/cluster_" + NbrToStr(size) + "_cluster_tree_properties.csv", datapath + "/cluster_" + NbrToStr(size) + "_cluster_tree.csv");
 
     // Matrix
     if (rank == 0)
         std::cout << "Creating generators" << std::endl;
-    Matrix<complex<double>> A;
-    A.bytes_to_matrix(datapath + "/matrix.bin");
-    GeneratorInUserNumberingFromMatrix<std::complex<double>> Generator(A);
+    std::unique_ptr<VirtualGenerator<CoefficientPrecision>> generator;
+    Matrix<CoefficientPrecision> A;
+    Matrix<std::complex<double>> A_original;
+    A_original.bytes_to_matrix(datapath + "/matrix.bin");
+    if constexpr (htool::is_complex<CoefficientPrecision>()) {
+        generator = std::make_unique<GeneratorInUserNumberingFromMatrix<std::complex<double>>>(A_original);
+        A         = A_original;
+    } else {
+        generator = std::make_unique<GeneratorInUserNumberingFromMatrixToReal<double>>(A_original);
+        A.resize(A_original.nb_rows(), A_original.nb_cols());
+        for (int i = 0; i < A_original.nb_rows(); i++) {
+            for (int j = 0; j < A_original.nb_cols(); j++) {
+                A(i, j) = A_original(i, j).real();
+            }
+        }
+    }
     int n = A.nb_rows();
 
     // Right-hand side
     if (rank == 0)
         std::cout << "Building rhs" << std::endl;
-    Matrix<complex<double>> f_global(n, mu);
+    Matrix<CoefficientPrecision> f_global(n, mu);
     std::vector<complex<double>> temp(n);
     bytes_to_vector(temp, datapath + "/rhs.bin");
     for (int i = 0; i < mu; i++) {
-        f_global.set_col(i, temp);
+        if constexpr (htool::is_complex<CoefficientPrecision>()) {
+            f_global.set_col(i, temp);
+        } else {
+            for (int j = 0; j < f_global.nb_rows(); j++) {
+                f_global(j, i) = temp[j].real();
+            }
+        }
     }
 
     // Hmatrix
     if (rank == 0)
         std::cout << "Creating HMatrix" << std::endl;
 
-    DefaultApproximationBuilder<Cplx, htool::underlying_type<Cplx>> default_build(Generator, target_cluster, target_cluster, HMatrixTreeBuilder<std::complex<double>>(epsilon, eta, symmetric, UPLO), MPI_COMM_WORLD);
+    DefaultApproximationBuilder<CoefficientPrecision, htool::underlying_type<CoefficientPrecision>> default_build(*generator, target_cluster, target_cluster, HMatrixTreeBuilder<CoefficientPrecision>(epsilon, eta, symmetric, UPLO), MPI_COMM_WORLD);
 
-    DistributedOperator<Cplx> &Operator        = default_build.distributed_operator;
-    HMatrix<Cplx> local_block_diagonal_hmatrix = *default_build.block_diagonal_hmatrix;
+    DistributedOperator<CoefficientPrecision> &Operator        = default_build.distributed_operator;
+    HMatrix<CoefficientPrecision> local_block_diagonal_hmatrix = *default_build.block_diagonal_hmatrix;
 
     // Global vectors
-    Matrix<complex<double>>
-        x_global(n, mu), x_ref(n, mu), test_global(n, mu);
+    Matrix<CoefficientPrecision> x_global(n, mu), x_ref(n, mu), test_global(n, mu);
     bytes_to_vector(temp, datapath + "sol.bin");
     for (int i = 0; i < mu; i++) {
-        x_ref.set_col(i, temp);
+        if constexpr (htool::is_complex<CoefficientPrecision>()) {
+            x_ref.set_col(i, temp);
+        } else {
+            for (int j = 0; j < x_ref.nb_rows(); j++) {
+                x_ref(j, i) = temp[j].real();
+            }
+        }
     }
 
     // Partition
