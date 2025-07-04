@@ -26,7 +26,10 @@
     void HTOOL_LAPACK_F77(C##getrf)(const int *, const int *, T *, const int *, int *, int *) HTOOL_NOEXCEPT;                                             \
     void HTOOL_LAPACK_F77(C##getrs)(const char *, const int *, const int *, const T *, const int *, const int *, T *, const int *, int *) HTOOL_NOEXCEPT; \
     void HTOOL_LAPACK_F77(C##potrf)(const char *, const int *, T *, const int *, int *) HTOOL_NOEXCEPT;                                                   \
-    void HTOOL_LAPACK_F77(C##potrs)(const char *, const int *, const int *, const T *, const int *, T *, const int *, int *) HTOOL_NOEXCEPT;
+    void HTOOL_LAPACK_F77(C##potrs)(const char *, const int *, const int *, const T *, const int *, T *, const int *, int *) HTOOL_NOEXCEPT;              \
+    void HTOOL_LAPACK_F77(C##sytrf)(const char *, const int *, T *, const int *, int *, T *, const int *, int *) HTOOL_NOEXCEPT;                          \
+    void HTOOL_LAPACK_F77(C##sytrs)(const char *, const int *, const int *, const T *, const int *, const int *, T *, const int *, int *) HTOOL_NOEXCEPT; \
+    void HTOOL_LAPACK_F77(C##laswp)(const int *, T *, const int *, const int *, const int *, const int *, const int *) HTOOL_NOEXCEPT;
 #define HTOOL_GENERATE_EXTERN_LAPACK_COMPLEX(C, T, B, U)                                                                                                                                                    \
     HTOOL_GENERATE_EXTERN_LAPACK(B, U)                                                                                                                                                                      \
     HTOOL_GENERATE_EXTERN_LAPACK(C, T)                                                                                                                                                                      \
@@ -39,7 +42,9 @@
     void HTOOL_LAPACK_F77(B##ormlq)(const char *, const char *, const int *, const int *, const int *, const U *, const int *, const U *, U *, const int *, U *, const int *, int *) HTOOL_NOEXCEPT;        \
     void HTOOL_LAPACK_F77(C##unmlq)(const char *, const char *, const int *, const int *, const int *, const T *, const int *, const T *, T *, const int *, T *, const int *, int *) HTOOL_NOEXCEPT;        \
     void HTOOL_LAPACK_F77(B##ormqr)(const char *, const char *, const int *, const int *, const int *, const U *, const int *, const U *, U *, const int *, U *, const int *, int *) HTOOL_NOEXCEPT;        \
-    void HTOOL_LAPACK_F77(C##unmqr)(const char *, const char *, const int *, const int *, const int *, const T *, const int *, const T *, T *, const int *, T *, const int *, int *) HTOOL_NOEXCEPT;
+    void HTOOL_LAPACK_F77(C##unmqr)(const char *, const char *, const int *, const int *, const int *, const T *, const int *, const T *, T *, const int *, T *, const int *, int *) HTOOL_NOEXCEPT;        \
+    void HTOOL_LAPACK_F77(C##hetrf)(const char *, const int *, T *, const int *, int *, T *, const int *, int *) HTOOL_NOEXCEPT;                                                                            \
+    void HTOOL_LAPACK_F77(C##hetrs)(const char *, const int *, const int *, const T *, const int *, const int *, T *, const int *, int *) HTOOL_NOEXCEPT;
 
 #if !defined(PETSC_HAVE_BLASLAPACK)
 #    ifndef _MKL_H_
@@ -98,6 +103,21 @@ struct Lapack {
     /* Function: gv
      *  Computes the eigenvalues and (optionally) the eigenvectors of a hermitian/symetric generalized eigenvalue problem. */
     static void gv(const int *, const char *, const char *, const int *, K *, const int *, K *, const int *, underlying_type<K> *, K *, const int *, underlying_type<K> *, int *);
+    /* Function: sytrf
+     *  Computes the Bunch--Kaufman factorization of a symmetric matrix. */
+    static void sytrf(const char *, const int *, K *, const int *, int *, K *, int *, int *);
+    /* Function: sytrs
+     *  Solves a system of linear equations with an LDLT-factored matrix. */
+    static void sytrs(const char *, const int *, const int *, const K *, const int *, const int *, K *, const int *, int *);
+    /* Function: hetrf
+     *  Computes the Bunch--Kaufman factorization of a hermintian matrix. */
+    static void hetrf(const char *, const int *, K *, const int *, int *, K *, int *, int *);
+    /* Function: hetrs
+     *  Solves a system of linear equations with an LDL*-factored matrix. */
+    static void hetrs(const char *, const int *, const int *, const K *, const int *, const int *, K *, const int *, int *);
+    /* Function:
+     *  Performs a series of row interchanges on the matrix A */
+    static void laswp(const int *, K *, const int *, const int *, const int *, const int *, const int *);
 };
 
 #    define HTOOL_GENERATE_LAPACK(C, T)                                                                                                                                \
@@ -130,6 +150,21 @@ struct Lapack {
         inline void Lapack<T>::potrs(const char *uplo, const int *n, const int *nrhs, const T *a, const int *lda, T *b, const int *ldb, int *info) {                   \
             HTOOL_LAPACK_F77(C##potrs)                                                                                                                                 \
             (uplo, n, nrhs, a, lda, b, ldb, info);                                                                                                                     \
+        }                                                                                                                                                              \
+        template <>                                                                                                                                                    \
+        inline void Lapack<T>::sytrf(const char *uplo, const int *n, T *a, const int *lda, int *ipiv, T *work, int *lwork, int *info) {                                \
+            HTOOL_LAPACK_F77(C##sytrf)                                                                                                                                 \
+            (uplo, n, a, lda, ipiv, work, lwork, info);                                                                                                                \
+        }                                                                                                                                                              \
+        template <>                                                                                                                                                    \
+        inline void Lapack<T>::sytrs(const char *uplo, const int *n, const int *nrhs, const T *a, const int *lda, const int *ipiv, T *b, const int *ldb, int *info) {  \
+            HTOOL_LAPACK_F77(C##sytrs)                                                                                                                                 \
+            (uplo, n, nrhs, a, lda, ipiv, b, ldb, info);                                                                                                               \
+        }                                                                                                                                                              \
+        template <>                                                                                                                                                    \
+        inline void Lapack<T>::laswp(const int *N, T *A, const int *lda, const int *K1, const int *K2, const int *ipiv, const int *incx) {                             \
+            HTOOL_LAPACK_F77(C##laswp)                                                                                                                                 \
+            (N, A, lda, K1, K2, ipiv, incx);                                                                                                                           \
         }
 
 #    define HTOOL_GENERATE_LAPACK_COMPLEX(C, T, B, U)                                                                                                                                                                                                           \
@@ -184,6 +219,16 @@ struct Lapack {
         inline void Lapack<T>::gv(const int *itype, const char *jobz, const char *uplo, const int *n, T *a, const int *lda, T *b, const int *ldb, U *w, T *work, const int *lwork, U *rwork, int *info) {                                                       \
             HTOOL_LAPACK_F77(C##hegv)                                                                                                                                                                                                                           \
             (itype, jobz, uplo, n, a, lda, b, ldb, w, work, lwork, rwork, info);                                                                                                                                                                                \
+        }                                                                                                                                                                                                                                                       \
+        template <>                                                                                                                                                                                                                                             \
+        inline void Lapack<T>::hetrf(const char *uplo, const int *n, T *a, const int *lda, int *ipiv, T *work, int *lwork, int *info) {                                                                                                                         \
+            HTOOL_LAPACK_F77(C##hetrf)                                                                                                                                                                                                                          \
+            (uplo, n, a, lda, ipiv, work, lwork, info);                                                                                                                                                                                                         \
+        }                                                                                                                                                                                                                                                       \
+        template <>                                                                                                                                                                                                                                             \
+        inline void Lapack<T>::hetrs(const char *uplo, const int *n, const int *nrhs, const T *a, const int *lda, const int *ipiv, T *b, const int *ldb, int *info) {                                                                                           \
+            HTOOL_LAPACK_F77(C##hetrs)                                                                                                                                                                                                                          \
+            (uplo, n, nrhs, a, lda, ipiv, b, ldb, info);                                                                                                                                                                                                        \
         }
 
 HTOOL_GENERATE_LAPACK_COMPLEX(c, std::complex<float>, s, float)
