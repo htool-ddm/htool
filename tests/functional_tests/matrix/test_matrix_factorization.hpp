@@ -76,3 +76,71 @@ bool test_matrix_cholesky(char trans, int n, int nrhs, char symmetry, char UPLO)
 
     return is_error;
 }
+
+template <typename T>
+bool test_matrix_symmetric_ldlt(char trans, int n, int nrhs, char UPLO) {
+
+    bool is_error = false;
+
+    // Generate random matrix
+    htool::underlying_type<T> error;
+    Matrix<T> result(n, nrhs), B(n, nrhs);
+    generate_random_array(result.data(), result.nb_rows() * result.nb_cols());
+
+    Matrix<T> A(n, n), test_factorization, test_solve;
+    Matrix<T> random_matrix(n, n);
+    generate_random_array(random_matrix.data(), random_matrix.nb_rows() * random_matrix.nb_cols());
+    char op = 'T';
+    add_matrix_matrix_product(op, 'N', T(1), random_matrix, random_matrix, T(1), A);
+    T eps = *std::max_element(random_matrix.data(), random_matrix.data() + random_matrix.nb_cols() * random_matrix.nb_rows(), [](const T &lhs, const T &rhs) { return std::abs(lhs) < std::abs(rhs); });
+    for (int i = 0; i < n; i++) {
+        A(i, i) += std::abs(eps);
+    }
+
+    add_matrix_matrix_product(trans, 'N', T(1), A, result, T(1), B);
+
+    // LU factorization
+    test_factorization = A;
+    test_solve         = B;
+    symmetric_ldlt_factorization(UPLO, test_factorization);
+    symmetric_ldlt_solve(UPLO, test_factorization, test_solve);
+    error    = normFrob(result - test_solve) / normFrob(result);
+    is_error = is_error || !(error < 1e-9);
+    cout << "> Errors on matrix symmetric LDLt solve: " << error << endl;
+
+    return is_error;
+}
+
+template <typename T>
+bool test_matrix_hermitian_ldlt(char trans, int n, int nrhs, char UPLO) {
+
+    bool is_error = false;
+
+    // Generate random matrix
+    htool::underlying_type<T> error;
+    Matrix<T> result(n, nrhs), B(n, nrhs);
+    generate_random_array(result.data(), result.nb_rows() * result.nb_cols());
+
+    Matrix<T> A(n, n), test_factorization, test_solve;
+    Matrix<T> random_matrix(n, n);
+    generate_random_array(random_matrix.data(), random_matrix.nb_rows() * random_matrix.nb_cols());
+    char op = 'C';
+    add_matrix_matrix_product(op, 'N', T(1), random_matrix, random_matrix, T(1), A);
+    T eps = *std::max_element(random_matrix.data(), random_matrix.data() + random_matrix.nb_cols() * random_matrix.nb_rows(), [](const T &lhs, const T &rhs) { return std::abs(lhs) < std::abs(rhs); });
+    for (int i = 0; i < n; i++) {
+        A(i, i) += std::abs(eps);
+    }
+
+    add_matrix_matrix_product(trans, 'N', T(1), A, result, T(1), B);
+
+    // LU factorization
+    test_factorization = A;
+    test_solve         = B;
+    hermitian_ldlt_factorization(UPLO, test_factorization);
+    hermitian_ldlt_solve(UPLO, test_factorization, test_solve);
+    error    = normFrob(result - test_solve) / normFrob(result);
+    is_error = is_error || !(error < 1e-9);
+    cout << "> Errors on matrix hermitian LDLt solve: " << error << endl;
+
+    return is_error;
+}

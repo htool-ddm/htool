@@ -16,6 +16,8 @@ int main(int, char *[]) {
         }
         is_error = is_error || test_matrix_cholesky<double>('N', number_of_rows, number_of_rhs, 'S', 'U');
         is_error = is_error || test_matrix_cholesky<double>('N', number_of_rows, number_of_rhs, 'S', 'L');
+        is_error = is_error || test_matrix_symmetric_ldlt<double>('N', number_of_rows, number_of_rhs, 'U');
+        is_error = is_error || test_matrix_symmetric_ldlt<double>('N', number_of_rows, number_of_rhs, 'L');
     }
 
     if (is_error) {

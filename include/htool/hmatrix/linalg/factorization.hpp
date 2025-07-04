@@ -177,6 +177,79 @@ void internal_cholesky_solve(char UPLO, const HMatrix<CoefficientPrecision, Coor
 }
 
 template <typename CoefficientPrecision, typename CoordinatePrecision = underlying_type<CoefficientPrecision>>
+void symmetric_ldlt_factorization(char UPLO, HMatrix<CoefficientPrecision, CoordinatePrecision> &hmatrix) {
+    if (!hmatrix.is_block_tree_consistent()) {
+        htool::Logger::get_instance().log(LogLevel::ERROR, "symmetric_ldlt_factorization is only implemented for consistent block tree."); // LCOV_EXCL_LINE
+    }
+
+    if (hmatrix.is_hierarchical()) {
+
+        bool block_tree_not_consistent = (hmatrix.get_target_cluster().get_rank() < 0 || hmatrix.get_source_cluster().get_rank() < 0);
+        std::vector<const Cluster<CoordinatePrecision> *> clusters;
+        const Cluster<CoordinatePrecision> &cluster = hmatrix.get_target_cluster();
+
+        if (cluster.is_leaf() || (block_tree_not_consistent and cluster.get_rank() >= 0)) {
+            clusters.push_back(&cluster);
+        } else if (block_tree_not_consistent) {
+            for (auto &output_cluster_child : cluster.get_clusters_on_partition()) {
+                clusters.push_back(output_cluster_child);
+            }
+        } else {
+            for (auto &output_cluster_child : cluster.get_children()) {
+                clusters.push_back(output_cluster_child.get());
+            }
+        }
+
+        for (auto &cluster_child : clusters) {
+            HMatrix<CoefficientPrecision, CoordinatePrecision> *pivot = hmatrix.get_sub_hmatrix(*cluster_child, *cluster_child);
+            // Compute pivot block
+            symmetric_ldlt_factorization(UPLO, *pivot);
+
+            // Apply pivot block to row and column
+            for (auto &other_cluster_child : clusters) {
+                if (other_cluster_child->get_offset() > cluster_child->get_offset()) {
+                    if (UPLO == 'L') {
+                        HMatrix<CoefficientPrecision, CoordinatePrecision> *L = hmatrix.get_sub_hmatrix(*other_cluster_child, *cluster_child);
+                        internal_triangular_hmatrix_hmatrix_solve('R', UPLO, is_complex<CoefficientPrecision>() ? 'C' : 'T', 'N', CoefficientPrecision(1), *pivot, *L);
+                    } else {
+                        HMatrix<CoefficientPrecision, CoordinatePrecision> *U = hmatrix.get_sub_hmatrix(*cluster_child, *other_cluster_child);
+                        internal_triangular_hmatrix_hmatrix_solve('L', UPLO, is_complex<CoefficientPrecision>() ? 'C' : 'T', 'N', CoefficientPrecision(1), *pivot, *U);
+                    }
+                }
+            }
+
+            // Update Schur complement
+            for (auto &output_cluster_child : clusters) {
+                for (auto &input_cluster_child : clusters) {
+                    if (UPLO == 'L' && output_cluster_child->get_offset() > cluster_child->get_offset() && input_cluster_child->get_offset() > cluster_child->get_offset() && output_cluster_child->get_offset() >= input_cluster_child->get_offset()) {
+                        HMatrix<CoefficientPrecision, CoordinatePrecision> *A_child = hmatrix.get_sub_hmatrix(*output_cluster_child, *input_cluster_child);
+                        const HMatrix<CoefficientPrecision, CoordinatePrecision> *L = hmatrix.get_sub_hmatrix(*output_cluster_child, *cluster_child);
+
+                        // if (*output_cluster_child == *input_cluster_child) {
+                        //     symmetric_rank_k_update(UPLO, 'N', CoefficientPrecision(-1), *L, CoefficientPrecision(1), *A_child);
+                        // } else {
+                        internal_add_hmatrix_hmatrix_product('N', is_complex<CoefficientPrecision>() ? 'C' : 'T', CoefficientPrecision(-1), *L, *L, CoefficientPrecision(1), *A_child);
+                        // }
+                    } else if (UPLO == 'U' && output_cluster_child->get_offset() > cluster_child->get_offset() && input_cluster_child->get_offset() > cluster_child->get_offset() && input_cluster_child->get_offset() >= output_cluster_child->get_offset()) {
+                        HMatrix<CoefficientPrecision, CoordinatePrecision> *A_child = hmatrix.get_sub_hmatrix(*output_cluster_child, *input_cluster_child);
+                        const HMatrix<CoefficientPrecision, CoordinatePrecision> *U = hmatrix.get_sub_hmatrix(*cluster_child, *input_cluster_child);
+                        // if (*output_cluster_child == *input_cluster_child) {
+                        //     symmetric_rank_k_update(UPLO, 'C', CoefficientPrecision(-1), *U, CoefficientPrecision(1), *A_child);
+                        // } else {
+                        internal_add_hmatrix_hmatrix_product(is_complex<CoefficientPrecision>() ? 'C' : 'T', 'N', CoefficientPrecision(-1), *U, *U, CoefficientPrecision(1), *A_child);
+                        // }
+                    }
+                }
+            }
+        }
+    } else if (hmatrix.is_dense()) {
+        symmetric_ldlt_factorization(UPLO, *hmatrix.get_dense_data());
+    } else {
+        htool::Logger::get_instance().log(LogLevel::ERROR, "Operation is not implemented for symmetric_ldlt_factorization (hmatrix is low-rank)"); // LCOV_EXCL_LINE
+    }
+}
+
+template <typename CoefficientPrecision, typename CoordinatePrecision = underlying_type<CoefficientPrecision>>
 void lu_solve(char trans, const HMatrix<CoefficientPrecision, CoordinatePrecision> &A, Matrix<CoefficientPrecision> &X) {
 
     Matrix<CoefficientPrecision> permuted_X(X.nb_rows(), X.nb_cols());

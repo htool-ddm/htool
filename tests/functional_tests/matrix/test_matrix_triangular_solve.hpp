@@ -131,3 +131,83 @@ bool test_matrix_triangular_solve(int n, int nrhs, char side, char transa) {
 
     return is_error;
 }
+
+template <typename T>
+bool test_symmetric_matrix_triangular_solve(int n, int nrhs, char side) {
+
+    bool is_error = false;
+
+    // Generate random matrix
+    htool::underlying_type<T> error;
+    T alpha;
+    Matrix<T> result(n, nrhs), B(n, nrhs);
+    if (side == 'R') {
+        result.resize(nrhs, n);
+        B.resize(nrhs, n);
+    }
+    generate_random_array(result.data(), result.nb_rows() * result.nb_cols());
+    generate_random_scalar(alpha);
+
+    Matrix<T> A(n, n), LDLtA, UDUtA, LLtA, UtUA, test_factorization, test_solve;
+    Matrix<T> random_matrix(n, n);
+    generate_random_array(random_matrix.data(), random_matrix.nb_rows() * random_matrix.nb_cols());
+
+    add_matrix_matrix_product('T', 'N', T(1), random_matrix, random_matrix, T(1), A);
+    T eps = *std::max_element(random_matrix.data(), random_matrix.data() + random_matrix.nb_cols() * random_matrix.nb_rows(), [](const T &lhs, const T &rhs) { return std::abs(lhs) < std::abs(rhs); });
+    for (int i = 0; i < n; i++) {
+        A(i, i) += std::abs(eps);
+    }
+    LDLtA = A;
+    UDUtA = A;
+    LLtA  = A;
+    UtUA  = A;
+
+    if (side == 'L') {
+        add_matrix_matrix_product('N', 'N', T(1), A, result, T(0), B);
+    } else {
+        add_matrix_matrix_product('N', 'N', T(1), result, A, T(0), B);
+    }
+
+    symmetric_ldlt_factorization('L', LDLtA);
+    symmetric_ldlt_factorization('U', UDUtA);
+    cholesky_factorization('L', LLtA);
+    cholesky_factorization('U', UtUA);
+
+    // Solve
+    test_factorization = LLtA;
+    test_solve         = B;
+    triangular_matrix_matrix_solve(side, 'L', side == 'L' ? 'N' : 'T', 'N', 1., test_factorization, test_solve);
+    triangular_matrix_matrix_solve(side, 'L', side == 'L' ? 'T' : 'N', 'N', 1., test_factorization, test_solve);
+    error    = normFrob(result - test_solve) / normFrob(result);
+    is_error = is_error || !(error < 1e-9);
+    cout << "> Errors on lower cholesky matrix matrix solve: " << error << endl;
+
+    test_factorization = UtUA;
+    test_solve         = B;
+    triangular_matrix_matrix_solve(side, 'U', side == 'L' ? 'T' : 'N', 'N', 1., test_factorization, test_solve);
+    triangular_matrix_matrix_solve(side, 'U', side == 'L' ? 'N' : 'T', 'N', 1., test_factorization, test_solve);
+    error    = normFrob(result - test_solve) / normFrob(result);
+    is_error = is_error || !(error < 1e-9);
+    cout << "> Errors on upper cholesky matrix matrix solve: " << error << endl;
+
+    test_factorization = LDLtA;
+    test_solve         = B;
+    triangular_ldlt_matrix_matrix_solve(side, 'L', side == 'L' ? 'N' : 'T', 'N', 1., test_factorization, test_solve);
+    triangular_ldlt_matrix_matrix_solve(side, 'L', side == 'L' ? 'T' : 'N', 'N', 1., test_factorization, test_solve);
+    // test_solve.print(std::cout, ",");
+    // (result - test_solve).print(std::cout, ",");
+    std::cout << normFrob(result - test_solve) << " " << normFrob(result) << " " << normFrob(test_solve) << "\n";
+    error    = normFrob(result - test_solve) / normFrob(result);
+    is_error = is_error || !(error < 1e-9);
+    cout << "> Errors on lower triangular ldlt matrix matrix solve: " << error << endl;
+
+    test_factorization = UDUtA;
+    test_solve         = B;
+    triangular_ldlt_matrix_matrix_solve(side, 'U', 'N', 'N', 1., test_factorization, test_solve);
+    triangular_ldlt_matrix_matrix_solve(side, 'U', 'T', 'N', 1., test_factorization, test_solve);
+    error    = normFrob(result - test_solve) / normFrob(result);
+    is_error = is_error || !(error < 1e-9);
+    cout << "> Errors on upper triangular ldlt matrix matrix solve: " << error << endl;
+
+    return is_error;
+}
