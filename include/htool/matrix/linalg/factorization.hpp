@@ -42,13 +42,12 @@ void triangular_matrix_matrix_solve(char side, char UPLO, char transa, char diag
             int K1   = 1;
             int K2   = m;
             int incx = 1;
-            Blas<T>::laswp(&n, B.data(), &ldb, &K1, &K2, ipiv.data(), &incx);
+            Lapack<T>::laswp(&n, B.data(), &ldb, &K1, &K2, ipiv.data(), &incx);
         } else if (side == 'R' and transa != 'N') {
-            // C++17 std::swap_ranges
-            for (int i = 0; i < B.nb_rows(); i++) {
-                for (int j = 0; j < B.nb_cols(); j++) {
-                    std::swap(B(i, ipiv[j] - 1), B(i, j));
-                }
+            int incx = 1;
+            int incy = 1;
+            for (int j = 0; j < B.nb_cols(); j++) {
+                Blas<T>::swap(&m, &B(0, ipiv[j] - 1), &incx, &B(0, j), &incy);
             }
         }
     }
@@ -60,13 +59,12 @@ void triangular_matrix_matrix_solve(char side, char UPLO, char transa, char diag
             int K1   = 1;
             int K2   = m;
             int incx = -1;
-            Blas<T>::laswp(&n, B.data(), &ldb, &K1, &K2, ipiv.data(), &incx);
+            Lapack<T>::laswp(&n, B.data(), &ldb, &K1, &K2, ipiv.data(), &incx);
         } else if (side == 'R' and transa == 'N') {
-            // C++17 std::swap_ranges
-            for (int i = 0; i < B.nb_rows(); i++) {
-                for (int j = B.nb_cols() - 1; j >= 0; j--) {
-                    std::swap(B(i, ipiv[j] - 1), B(i, j));
-                }
+            int incx = 1;
+            int incy = 1;
+            for (int j = B.nb_cols() - 1; j >= 0; j--) {
+                Blas<T>::swap(&m, &B(0, ipiv[j] - 1), &incx, &B(0, j), &incy);
             }
         }
     }
