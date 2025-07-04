@@ -48,7 +48,7 @@ int main(int, char *[]) {
 
         // sympartialACA fixed rank
         int reqrank_max = 10;
-        sympartialACA<double> compressor(A);
+        sympartialACA<double> compressor(A_in_user_numbering, t.get_permutation().data(), s.get_permutation().data());
 
         LowRankMatrix<double> A_sympartialACA_fixed(t.get_size(), s.get_size(), reqrank_max, epsilon);
         compressor.copy_low_rank_approximation(t.get_size(), s.get_size(), t.get_offset(), s.get_offset(), reqrank_max, A_sympartialACA_fixed);
