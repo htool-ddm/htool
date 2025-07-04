@@ -51,7 +51,7 @@ int main(int, char *[]) {
 
         // SVD fixed rank
         int reqrank_max = 10;
-        SVD<double> compressor_SVD(A);
+        SVD<double> compressor_SVD(A_in_user_numbering, t.get_permutation().data(), s.get_permutation().data());
 
         LowRankMatrix<double> A_SVD_fixed(t.get_size(), s.get_size(), reqrank_max, epsilon);
         compressor_SVD.copy_low_rank_approximation(t.get_size(), s.get_size(), t.get_offset(), s.get_offset(), reqrank_max, A_SVD_fixed);
