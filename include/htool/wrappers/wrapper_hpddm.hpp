@@ -75,13 +75,13 @@ class HPDDMCustomLocalSolver {
 };
 
 template <typename CoefficientPrecision, template <class> class LocalSolver>
-class HPDDMOperator final : public HPDDM::Dense<LocalSolver, HPDDM::LapackTR, 'G', CoefficientPrecision> {
+class HPDDMOperator final : public HPDDM::Dense<LocalSolver, HPDDM::LapackTR, 'S', CoefficientPrecision> { // 'S' means the coarse space is symmetric
   protected:
     const DistributedOperator<CoefficientPrecision> *HA;
     std::vector<CoefficientPrecision> *in_global, *buffer;
 
   public:
-    typedef HPDDM::Dense<LocalSolver, HPDDM::LapackTR, 'G', CoefficientPrecision> super;
+    typedef HPDDM::Dense<LocalSolver, HPDDM::LapackTR, 'S', CoefficientPrecision> super;
 
     HPDDMOperator(const DistributedOperator<CoefficientPrecision> *A) : HA(A) {
         in_global = new std::vector<CoefficientPrecision>;
