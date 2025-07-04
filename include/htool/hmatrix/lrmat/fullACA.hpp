@@ -16,13 +16,14 @@ namespace htool {
 template <typename CoefficientPrecision>
 class fullACA final : public VirtualInternalLowRankGenerator<CoefficientPrecision> {
 
+    std::unique_ptr<InternalGeneratorWithPermutation<CoefficientPrecision>> internal_generator_w_permutation;
     const VirtualInternalGenerator<CoefficientPrecision> &m_A;
 
   public:
     using VirtualInternalLowRankGenerator<CoefficientPrecision>::VirtualInternalLowRankGenerator;
 
     fullACA(const VirtualInternalGenerator<CoefficientPrecision> &A) : m_A(A) {}
-    fullACA(const VirtualGenerator<CoefficientPrecision> &A) : m_A(InternalGeneratorWithPermutation<CoefficientPrecision>(A)) {}
+    fullACA(const VirtualGenerator<CoefficientPrecision> &A, const int *target_permutation, const int *source_permutation) : internal_generator_w_permutation(std::make_unique<InternalGeneratorWithPermutation<CoefficientPrecision>>(A, target_permutation, source_permutation)), m_A(*internal_generator_w_permutation) {}
 
     bool copy_low_rank_approximation(int M, int N, int row_offset, int col_offset, LowRankMatrix<CoefficientPrecision> &lrmat) const override {
         int reqrank = -1;
@@ -35,7 +36,6 @@ class fullACA final : public VirtualInternalLowRankGenerator<CoefficientPrecisio
 
   private:
     bool copy_low_rank_approximation(int M, int N, int row_offset, int col_offset, underlying_type<CoefficientPrecision> epsilon, int &rank, LowRankMatrix<CoefficientPrecision> &lrmat) const {
-
         // Matrix assembling
         Matrix<CoefficientPrecision> mat(M, N);
         m_A.copy_submatrix(M, N, row_offset, col_offset, mat.data());
