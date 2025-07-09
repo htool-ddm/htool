@@ -5,7 +5,8 @@
 #include "misc/define.hpp"
 
 #include "basic_types/vector.hpp"
-#include "clustering/clustering.hpp"
+#include "clustering/cluster_output.hpp"
+#include "clustering/tree_builder/tree_builder.hpp"
 #include "distributed_operator/distributed_operator.hpp"
 #include "distributed_operator/utility.hpp"
 #include "hmatrix/hmatrix.hpp"
