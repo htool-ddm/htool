@@ -92,7 +92,7 @@ class GeneoCoarseSpaceDenseBuilder : public VirtualCoarseSpaceBuilder<Coefficien
             Lapack<CoefficientPrecision>::gv(&itype, "V", &m_uplo, &n, m_DAiD.data(), &lda, m_Bi.data(), &ldb, w.data(), work.data(), &lwork, rwork.data(), &info);
 
             if (info != 0) {
-                htool::Logger::get_instance().log(LogLevel::ERROR, "Local eigensolver failed with info=" + std::to_string(info)+"."); // LCOV_EXCL_LINE
+                htool::Logger::get_instance().log(LogLevel::ERROR, "Local eigensolver failed with info=" + std::to_string(info) + "."); // LCOV_EXCL_LINE
             }
 
             // std::cout << "OUAAAAH 2\n";

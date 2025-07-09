@@ -22,21 +22,18 @@ int main(int argc, char *argv[]) {
     }
     string datapath = argv[1];
 
-    bool is_error = false;
+    bool is_error              = false;
+    std::string datapath_final = datapath + "/output_sym/";
 
     for (auto nb_rhs : {1, 5}) {
         for (auto data_symmetry : {'N', 'S'}) {
-            std::string datapath_final   = data_symmetry == 'S' ? datapath + "/output_sym/" : datapath + "/output_non_sym/";
-            std::vector<char> symmetries = {'N'};
-            if (data_symmetry == 'S') {
-                symmetries.push_back('S');
-            }
+            std::vector<char> symmetries = {'N', 'S'};
             for (auto symmetry : symmetries) {
                 std::cout << nb_rhs << " " << data_symmetry << " " << symmetry << "\n";
 
-                is_error = is_error || test_solver_wo_overlap<DDMSolverWithDenseLocalSolver<complex<double>, double>>(argc, argv, nb_rhs, symmetry, symmetry == 'N' ? 'N' : 'L', datapath_final);
-                is_error = is_error || test_solver_ddm_adding_overlap<DDMSolverWithDenseLocalSolver<std::complex<double>>>(argc, argv, nb_rhs, data_symmetry, symmetry, datapath_final);
-                is_error = is_error || test_solver_ddm<DDMSolverWithDenseLocalSolver<complex<double>>>(argc, argv, nb_rhs, data_symmetry, symmetry, symmetry == 'N' ? 'N' : 'L', datapath_final);
+                is_error = is_error || test_solver_wo_overlap<double, double, DDMSolverWithDenseLocalSolver<double, double>>(argc, argv, nb_rhs, symmetry, symmetry == 'N' ? 'N' : 'L', datapath_final);
+                is_error = is_error || test_solver_ddm_adding_overlap<double, double, DDMSolverWithDenseLocalSolver<double, double>>(argc, argv, nb_rhs, data_symmetry, symmetry, symmetry == 'N' ? 'N' : 'L', datapath_final);
+                is_error = is_error || test_solver_ddm<double, double, DDMSolverWithDenseLocalSolver<double, double>>(argc, argv, nb_rhs, data_symmetry, symmetry, symmetry == 'N' ? 'N' : 'L', datapath_final);
 
                 std::vector<char> storage;
                 if (symmetry == 'N') {
@@ -46,9 +43,9 @@ int main(int argc, char *argv[]) {
                     storage.push_back('L');
                 }
                 for (auto UPLO : storage) {
-                    is_error = is_error || test_solver_wo_overlap<DDMSolverBuilder<complex<double>, double>>(argc, argv, nb_rhs, symmetry, UPLO, datapath_final);
-                    test_solver_ddm_adding_overlap(argc, argv, nb_rhs, data_symmetry, symmetry, UPLO, datapath_final);
-                    is_error = is_error || test_solver_ddm<DDMSolverBuilder<complex<double>>>(argc, argv, nb_rhs, data_symmetry, symmetry, UPLO, datapath_final);
+                    is_error = is_error || test_solver_wo_overlap<double, double, DDMSolverBuilder<double, double>>(argc, argv, nb_rhs, symmetry, UPLO, datapath_final);
+                    test_solver_ddm_adding_overlap<double, double, DDMSolverBuilder<double, double>>(argc, argv, nb_rhs, data_symmetry, symmetry, UPLO, datapath_final);
+                    is_error = is_error || test_solver_ddm<double, double, DDMSolverBuilder<double, double>>(argc, argv, nb_rhs, data_symmetry, symmetry, UPLO, datapath_final);
                 }
             }
         }

@@ -220,6 +220,22 @@ class GeneratorInUserNumberingFromMatrix : public VirtualGenerator<T> {
     }
 };
 
+template <typename T>
+class GeneratorInUserNumberingFromMatrixToReal : public VirtualGenerator<T> {
+  public:
+    const Matrix<std::complex<T>> &A;
+
+    GeneratorInUserNumberingFromMatrixToReal(const Matrix<std::complex<T>> &A0) : A(A0) {}
+
+    virtual void copy_submatrix(int M, int N, const int *rows, const int *cols, T *ptr) const override {
+        for (int i = 0; i < M; i++) {
+            for (int j = 0; j < N; j++) {
+                ptr[i + M * j] = A(rows[i], cols[j]).real();
+            }
+        }
+    }
+};
+
 // class GeneratorFromMatrix : public InternalGeneratorWithPermutation<T> {
 
 //   public:
