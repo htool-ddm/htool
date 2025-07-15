@@ -44,7 +44,7 @@ int main(int argc, char *argv[]) {
                 }
                 for (auto UPLO : storage) {
                     is_error = is_error || test_solver_wo_overlap<double, double, DDMSolverBuilder<double, double>>(argc, argv, nb_rhs, symmetry, UPLO, datapath_final);
-                    test_solver_ddm_adding_overlap<double, double, DDMSolverBuilder<double, double>>(argc, argv, nb_rhs, data_symmetry, symmetry, UPLO, datapath_final);
+                    is_error = is_error || test_solver_ddm_adding_overlap<double, double, DDMSolverBuilder<double, double>>(argc, argv, nb_rhs, data_symmetry, symmetry, UPLO, datapath_final);
                     is_error = is_error || test_solver_ddm<double, double, DDMSolverBuilder<double, double>>(argc, argv, nb_rhs, data_symmetry, symmetry, UPLO, datapath_final);
                 }
             }
