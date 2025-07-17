@@ -23,6 +23,80 @@
 using namespace std;
 using namespace htool;
 
+template <typename CoefficientPrecision>
+class CustomSVD final : public VirtualLowRankGenerator<CoefficientPrecision> {
+    const VirtualGenerator<CoefficientPrecision> &m_A;
+
+  public:
+    CustomSVD(const VirtualGenerator<CoefficientPrecision> &A) : m_A(A) {}
+
+    // C style
+    virtual bool copy_low_rank_approximation(int M, int N, const int *rows, const int *cols, LowRankMatrix<CoefficientPrecision> &lrmat) const override {
+        Matrix<CoefficientPrecision> mat(M, N);
+        m_A.copy_submatrix(M, N, rows, cols, mat.data());
+
+        //// SVD
+        std::vector<htool::underlying_type<CoefficientPrecision>> singular_values(std::min(M, N));
+        Matrix<CoefficientPrecision> u(M, M);
+        Matrix<CoefficientPrecision> vt(N, N);
+
+        int truncated_rank = SVD_truncation(mat, lrmat.get_epsilon(), u, vt, singular_values);
+
+        if (truncated_rank * (M + N) > (M * N)) {
+            return false;
+        }
+
+        if (truncated_rank > 0) {
+            auto &U = lrmat.get_U();
+            auto &V = lrmat.get_V();
+            U.resize(M, truncated_rank);
+            V.resize(truncated_rank, N);
+            for (int i = 0; i < M; i++) {
+                for (int j = 0; j < truncated_rank; j++) {
+                    U(i, j) = u(i, j) * singular_values[j];
+                }
+            }
+            for (int i = 0; i < truncated_rank; i++) {
+                for (int j = 0; j < N; j++) {
+                    V(i, j) = vt(i, j);
+                }
+            }
+            return true;
+        }
+        return false;
+    }
+
+    virtual bool copy_low_rank_approximation(int M, int N, const int *rows, const int *cols, int rank, LowRankMatrix<CoefficientPrecision> &lrmat) const override {
+        //// Matrix assembling
+        Matrix<CoefficientPrecision> mat(M, N);
+        m_A.copy_submatrix(M, N, rows, cols, mat.data());
+
+        //// SVD
+        std::vector<htool::underlying_type<CoefficientPrecision>> singular_values(std::min(M, N));
+        Matrix<CoefficientPrecision> u(M, M);
+        Matrix<CoefficientPrecision> vt(N, N);
+
+        int truncated_rank = SVD_truncation(mat, lrmat.get_epsilon(), u, vt, singular_values);
+        truncated_rank     = std::min(rank, std::min(M, N));
+
+        auto &U = lrmat.get_U();
+        auto &V = lrmat.get_V();
+        U.resize(M, truncated_rank);
+        V.resize(truncated_rank, N);
+        for (int i = 0; i < M; i++) {
+            for (int j = 0; j < truncated_rank; j++) {
+                U(i, j) = u(i, j) * singular_values[j];
+            }
+        }
+        for (int i = 0; i < truncated_rank; i++) {
+            for (int j = 0; j < N; j++) {
+                V(i, j) = vt(i, j);
+            }
+        }
+        return true;
+    }
+};
+
 template <typename CoefficientPrecision, typename CoordinatePrecision, typename solver_builder>
 int test_solver_ddm(int argc, char *argv[], int mu, char data_symmetry, char symmetric, char UPLO, std::string datapath) {
 
@@ -95,8 +169,9 @@ int test_solver_ddm(int argc, char *argv[], int mu, char data_symmetry, char sym
     // Hmatrix
     if (rank == 0)
         std::cout << "Creating HMatrix" << std::endl;
-
-    DefaultApproximationBuilder<CoefficientPrecision, htool::underlying_type<CoefficientPrecision>> default_build(*generator, target_cluster, target_cluster, HMatrixTreeBuilder<CoefficientPrecision>(epsilon, eta, symmetric, UPLO), MPI_COMM_WORLD);
+    HMatrixTreeBuilder<CoefficientPrecision> hmatrix_builder(epsilon, eta, symmetric, UPLO);
+    hmatrix_builder.set_low_rank_generator(std::make_shared<CustomSVD<CoefficientPrecision>>(*generator));
+    DefaultApproximationBuilder<CoefficientPrecision, htool::underlying_type<CoefficientPrecision>> default_build(*generator, target_cluster, target_cluster, hmatrix_builder, MPI_COMM_WORLD);
 
     DistributedOperator<CoefficientPrecision> &Operator = default_build.distributed_operator;
 
@@ -139,7 +214,7 @@ int test_solver_ddm(int argc, char *argv[], int mu, char data_symmetry, char sym
     if constexpr (std::is_same_v<solver_builder, DDMSolverWithDenseLocalSolver<CoefficientPrecision, CoordinatePrecision>>) {
         default_ddm_solver_ptr = std::make_unique<solver_builder>(Operator, ovr_subdomain_to_global, cluster_to_ovr_subdomain, neighbors, intersections, *generator, 3, geometry.data(), epsilon, eta);
     } else {
-        default_ddm_solver_ptr = std::make_unique<solver_builder>(Operator, ovr_subdomain_to_global, cluster_to_ovr_subdomain, neighbors, intersections, *generator, 3, geometry.data(), ClusterTreeBuilder<CoordinatePrecision>(), HMatrixTreeBuilder<CoefficientPrecision>(epsilon, eta, symmetric, UPLO));
+        default_ddm_solver_ptr = std::make_unique<solver_builder>(Operator, ovr_subdomain_to_global, cluster_to_ovr_subdomain, neighbors, intersections, *generator, 3, geometry.data(), ClusterTreeBuilder<CoordinatePrecision>(), hmatrix_builder);
     }
     auto &default_ddm_solver = *default_ddm_solver_ptr;
     auto &ddm_with_overlap   = default_ddm_solver.solver;
