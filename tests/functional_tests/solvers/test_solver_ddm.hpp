@@ -27,11 +27,8 @@ template <typename CoefficientPrecision>
 class CustomSVD final : public VirtualLowRankGenerator<CoefficientPrecision> {
     const VirtualGenerator<CoefficientPrecision> &m_A;
 
-  public:
-    CustomSVD(const VirtualGenerator<CoefficientPrecision> &A) : m_A(A) {}
-
-    // C style
-    virtual bool copy_low_rank_approximation(int M, int N, const int *rows, const int *cols, LowRankMatrix<CoefficientPrecision> &lrmat) const override {
+  private:
+    bool copy_low_rank_approximation_impl(int M, int N, const int *rows, const int *cols, LowRankMatrix<CoefficientPrecision> &lrmat, int rank) const {
         Matrix<CoefficientPrecision> mat(M, N);
         m_A.copy_submatrix(M, N, rows, cols, mat.data());
 
@@ -41,6 +38,7 @@ class CustomSVD final : public VirtualLowRankGenerator<CoefficientPrecision> {
         Matrix<CoefficientPrecision> vt(N, N);
 
         int truncated_rank = SVD_truncation(mat, lrmat.get_epsilon(), u, vt, singular_values);
+        truncated_rank     = rank > 0 ? std::min(rank, std::min(M, N)) : truncated_rank;
 
         if (truncated_rank * (M + N) > (M * N)) {
             return false;
@@ -66,34 +64,16 @@ class CustomSVD final : public VirtualLowRankGenerator<CoefficientPrecision> {
         return false;
     }
 
+  public:
+    CustomSVD(const VirtualGenerator<CoefficientPrecision> &A) : m_A(A) {}
+
+    // C style
+    virtual bool copy_low_rank_approximation(int M, int N, const int *rows, const int *cols, LowRankMatrix<CoefficientPrecision> &lrmat) const override {
+        return copy_low_rank_approximation_impl(M, N, rows, cols, lrmat, -1);
+    }
+
     virtual bool copy_low_rank_approximation(int M, int N, const int *rows, const int *cols, int rank, LowRankMatrix<CoefficientPrecision> &lrmat) const override {
-        //// Matrix assembling
-        Matrix<CoefficientPrecision> mat(M, N);
-        m_A.copy_submatrix(M, N, rows, cols, mat.data());
-
-        //// SVD
-        std::vector<htool::underlying_type<CoefficientPrecision>> singular_values(std::min(M, N));
-        Matrix<CoefficientPrecision> u(M, M);
-        Matrix<CoefficientPrecision> vt(N, N);
-
-        int truncated_rank = SVD_truncation(mat, lrmat.get_epsilon(), u, vt, singular_values);
-        truncated_rank     = std::min(rank, std::min(M, N));
-
-        auto &U = lrmat.get_U();
-        auto &V = lrmat.get_V();
-        U.resize(M, truncated_rank);
-        V.resize(truncated_rank, N);
-        for (int i = 0; i < M; i++) {
-            for (int j = 0; j < truncated_rank; j++) {
-                U(i, j) = u(i, j) * singular_values[j];
-            }
-        }
-        for (int i = 0; i < truncated_rank; i++) {
-            for (int j = 0; j < N; j++) {
-                V(i, j) = vt(i, j);
-            }
-        }
-        return true;
+        return copy_low_rank_approximation_impl(M, N, rows, cols, lrmat, rank);
     }
 };
 
