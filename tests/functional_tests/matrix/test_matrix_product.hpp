@@ -159,6 +159,14 @@ bool test_matrix_symmetric_product(int n1, int n2, char side, char UPLO) {
         error    = normFrob(matrix_result_w_matrix_sum - C) / normFrob(matrix_result_w_matrix_sum);
         is_error = is_error || !(error < 1e-14);
         cout << "> Errors on a symmetry matrix vector product: " << error << endl;
+
+        if constexpr (!is_complex<T>()) {
+            C = Y;
+            add_hermitian_matrix_vector_product(UPLO, alpha, A, B.data(), beta, C.data());
+            error    = normFrob(matrix_result_w_matrix_sum - C) / normFrob(matrix_result_w_matrix_sum);
+            is_error = is_error || !(error < 1e-14);
+            cout << "> Errors on a hermitian matrix vector product: " << error << endl;
+        }
     }
     C = Y;
     add_symmetric_matrix_matrix_product(side, UPLO, alpha, A, B, beta, C);
@@ -171,6 +179,20 @@ bool test_matrix_symmetric_product(int n1, int n2, char side, char UPLO) {
     error    = normFrob(transposed_matrix_result_w_matrix_sum - C) / normFrob(transposed_matrix_result_w_matrix_sum);
     is_error = is_error || !(error < 1e-14);
     cout << "> Errors on a symmetric matrix matrix product with row major input: " << error << endl;
+
+    if constexpr (!is_complex<T>()) {
+        C = Y;
+        add_hermitian_matrix_matrix_product(side, UPLO, alpha, A, B, beta, C);
+        error    = normFrob(matrix_result_w_matrix_sum - C) / normFrob(matrix_result_w_matrix_sum);
+        is_error = is_error || !(error < 1e-14);
+        cout << "> Errors on a hermitian matrix matrix product: " << error << endl;
+
+        C = Yt;
+        add_hermitian_matrix_matrix_product_row_major(side, UPLO, alpha, A, Bt.data(), beta, C.data(), n2);
+        error    = normFrob(transposed_matrix_result_w_matrix_sum - C) / normFrob(transposed_matrix_result_w_matrix_sum);
+        is_error = is_error || !(error < 1e-14);
+        cout << "> Errors on a hermitian matrix matrix product with row major input: " << error << endl;
+    }
 
     return is_error;
 }
