@@ -295,7 +295,7 @@ class DDMSolverBuilder {
                 const int *cols = m_local_source_cluster.get_permutation().data() + col_offset;
                 std::pair<std::vector<int>, std::vector<int>> result;
                 result.first.resize(M);
-                result.second.resize(M);
+                result.second.resize(N);
 
                 for (int i = 0; i < M; i++) {
                     result.first[i] = m_target_local_to_global_numbering[rows[i]];
