@@ -169,10 +169,13 @@ jobs:
           make doc
 
       - name: Check c++ format
-        run: |
-          cd htool/build
-          clang-format -dump-config
-          make format
+        uses: DoozyX/clang-format-lint-action@v0.20
+        with:
+          source: 'htool/include htool/tests'
+          # exclude: './third_party ./external'
+          extensions: 'hpp,cpp'
+          clangFormatVersion: 20
+          style: file
 
       - name: Check cmake format
         run: |
