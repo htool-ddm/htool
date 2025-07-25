@@ -259,7 +259,6 @@ bool test_task_based_hmatrix_vector_product(const TestCaseType &test_case, char 
     if (hmatrix_vector_product_tests || all_tests) {
         std::cout << "task_based_internal_add_hmatrix_vector_product tests...";
         std::chrono::steady_clock::time_point start, end;
-        std::mutex cout_mutex; // mutex to protect cout
 
         // build
         auto hmatrix_classic    = hmatrix_tree_builder->build(*test_case.operator_A, *root_cluster_A_output, *root_cluster_A_input, -1, -1, false, 64);
@@ -370,7 +369,6 @@ bool test_task_based_hmatrix_vector_product(const TestCaseType &test_case, char 
         T beta          = T(2);
         std::chrono::duration<double> disjoint_case_duration, conjoint_case_duration;
         std::chrono::steady_clock::time_point start, end;
-        std::mutex cout_mutex; // mutex to protect cout
         HMatrix<T> task_based_hmatrix(*root_cluster_A_output, *root_cluster_A_input);
 
         std::vector<const Cluster<htool::underlying_type<T>> *> in_L0  = find_l0(*input_cluster, 64);
