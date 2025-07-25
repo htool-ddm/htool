@@ -14,6 +14,13 @@
 #include <string>
 #include <vector>
 
+// to remove warning from depend(iterator(it = 0 : read_deps_size), in : *read_deps[it])
+#if defined(__clang__)
+#elif defined(__GNUC__) || defined(__GNUG__)
+#    pragma GCC diagnostic push
+#    pragma GCC diagnostic ignored "-Wuseless-cast"
+#endif
+
 namespace htool {
 /**
  * @brief Solves a triangular linear system of equation of the form \f$Ax = B\f$ where \f$A\f$ is a triangular HMatrix and \f$B\f$ is an HMatrix. The solve is done in a task-based manner
@@ -194,4 +201,9 @@ void task_based_internal_triangular_hmatrix_hmatrix_solve(char side, char UPLO, 
     }
 }
 } // namespace htool
+
+#if defined(__clang__)
+#elif defined(__GNUC__) || defined(__GNUG__)
+#    pragma GCC diagnostic pop
+#endif
 #endif

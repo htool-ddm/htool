@@ -14,6 +14,13 @@
 #include <unistd.h>
 #include <vector> // for vector
 
+// to remove warning from depend(iterator(it = 0 : read_deps_size), in : *read_deps[it])
+#if defined(__clang__)
+#elif defined(__GNUC__) || defined(__GNUG__)
+#    pragma GCC diagnostic push
+#    pragma GCC diagnostic ignored "-Wuseless-cast"
+#endif
+
 namespace htool {
 
 /**
@@ -185,5 +192,9 @@ void fill_clusters(const Cluster<CoordinatePrecision> &cluster, bool block_tree_
 }
 
 } // namespace htool
+#if defined(__clang__)
+#elif defined(__GNUC__) || defined(__GNUG__)
+#    pragma GCC diagnostic pop
+#endif
 
 #endif

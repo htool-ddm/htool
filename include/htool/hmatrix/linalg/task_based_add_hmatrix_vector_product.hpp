@@ -14,6 +14,13 @@
 
 #include <unistd.h>
 
+// to remove warning from depend(iterator(it = 0 : read_deps_size), in : *read_deps[it])
+#if defined(__clang__)
+#elif defined(__GNUC__) || defined(__GNUG__)
+#    pragma GCC diagnostic push
+#    pragma GCC diagnostic ignored "-Wuseless-cast"
+#endif
+
 namespace htool {
 
 /**
@@ -103,4 +110,8 @@ void task_based_internal_add_hmatrix_vector_product(char trans, CoefficientPreci
 
 } // namespace htool
 
+#if defined(__clang__)
+#elif defined(__GNUC__) || defined(__GNUG__)
+#    pragma GCC diagnostic pop
+#endif
 #endif
