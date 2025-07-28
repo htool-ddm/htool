@@ -104,14 +104,14 @@ bool test_task_based_lu_factorization(char trans, int n1, int n2, htool::underly
     cout << ">   task_based error = " << error << endl;
     cout << "    task_based_duration = " << task_based_duration.count() << std::endl;
     if (task_based_duration.count() > classic_duration.count()) {
-        std::cerr << "Careful: task_based_duration > classic_duration. Ratio TB/Classic = " << task_based_duration.count() / classic_duration.count() << std::endl;
+        htool::Logger::get_instance().log(LogLevel::ERROR, "Careful: task_based_duration > classic_duration. Ratio TB/Classic = " + std::to_string(task_based_duration.count() / classic_duration.count()) + "."); // LCOV_EXCL_LINE
     }
 
     // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
     // Print the results
     // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
     if (is_error) {
-        std::cerr << "ERROR: test_task_based_lu_factorization current case failed." << std::endl;
+        htool::Logger::get_instance().log(LogLevel::ERROR, "test_task_based_lu_factorization current case failed."); // LCOV_EXCL_LINE
     } else {
         std::cout << "SUCCESS: test_task_based_lu_factorization current case passed." << std::endl;
         std::cout << "===============================================================\n"
@@ -185,14 +185,14 @@ bool test_task_based_cholesky_factorization(char UPLO, int n1, int n2, htool::un
     cout << ">   task_based error = " << error << endl;
     cout << "    task_based_duration = " << task_based_duration.count() << std::endl;
     if (task_based_duration.count() > classic_duration.count()) {
-        std::cerr << "Careful: task_based_duration > classic_duration. Ratio TB/Classic = " << task_based_duration.count() / classic_duration.count() << std::endl;
+        htool::Logger::get_instance().log(LogLevel::ERROR, "Careful: task_based_duration > classic_duration. Ratio TB/Classic = " + std::to_string(task_based_duration.count() / classic_duration.count()) + "."); // LCOV_EXCL_LINE
     }
 
     // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
     // Print the results
     // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
     if (is_error) {
-        std::cerr << "ERROR: test_task_based_cholesky_factorization current case failed." << std::endl;
+        htool::Logger::get_instance().log(LogLevel::ERROR, "test_task_based_cholesky_factorization current case failed."); // LCOV_EXCL_LINE
     } else {
         std::cout << "SUCCESS: test_task_based_cholesky_factorization current case passed." << std::endl;
         std::cout << "===============================================================\n"
@@ -266,14 +266,14 @@ bool test_task_based_cholesky_factorization(char UPLO, int n1, int n2, htool::un
     cout << ">   task_based error = " << error << endl;
     cout << "    task_based_duration = " << task_based_duration.count() << std::endl;
     if (task_based_duration.count() > classic_duration.count()) {
-        std::cerr << "Careful: task_based_duration > classic_duration. Ratio TB/Classic = " << task_based_duration.count() / classic_duration.count() << std::endl;
+        htool::Logger::get_instance().log(LogLevel::ERROR, "Careful: task_based_duration > classic_duration. Ratio TB/Classic = " + std::to_string(task_based_duration.count() / classic_duration.count()) + "."); // LCOV_EXCL_LINE
     }
 
     // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
     // Print the results
     // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
     if (is_error) {
-        std::cerr << "ERROR: test_task_based_cholesky_factorization current case failed." << std::endl;
+        htool::Logger::get_instance().log(LogLevel::ERROR, "test_task_based_cholesky_factorization current case failed."); // LCOV_EXCL_LINE
     } else {
         std::cout << "SUCCESS: test_task_based_cholesky_factorization current case passed." << std::endl;
         std::cout << "===============================================================\n"

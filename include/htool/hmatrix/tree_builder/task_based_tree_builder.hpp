@@ -50,7 +50,7 @@ std::vector<HMatrix<CoefficientPrecision, CoordinatePrecision> *> find_l0(HMatri
     std::vector<HMatrix<CoefficientPrecision, CoordinatePrecision> *> old_result, result = count_nodes(root_hmatrix, criterion);
     // Check if the initial result exceeds the maximum allowed nodes
     if (result.size() > nb_nodes_max) {
-        std::cerr << "Error: no L0 can be defined." << std::endl;
+        htool::Logger::get_instance().log(LogLevel::ERROR, "Error: no L0 can be defined."); // LCOV_EXCL_LINE
         return std::vector<HMatrix<CoefficientPrecision, CoordinatePrecision> *>();
     } else {
         // Perform a dichotomy search to find the optimal criterion
@@ -88,7 +88,7 @@ std::vector<const Cluster<CoordinatePrecision> *> find_l0(const Cluster<Coordina
 
     // Check if the initial result exceeds the maximum allowed nodes
     if (result.size() > nb_nodes_max) {
-        std::cerr << "Error: no L0 can be defined." << std::endl;
+        htool::Logger::get_instance().log(LogLevel::ERROR, "Error: no L0 can be defined."); // LCOV_EXCL_LINE
         return std::vector<const Cluster<CoordinatePrecision> *>();
     } else {
         // Perform a dichotomy search to find the optimal criterion

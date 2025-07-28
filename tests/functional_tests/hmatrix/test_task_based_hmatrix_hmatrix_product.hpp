@@ -170,7 +170,7 @@ bool test_task_based_hmatrix_hmatrix_product(const TestCaseType &test_case, char
 
     // check durations
     if (task_based_duration.count() > classic_duration.count()) {
-        std::cerr << "Careful: task_based_duration > classic_duration. Ratio TB/Classic = " << task_based_duration.count() / classic_duration.count() << std::endl;
+        htool::Logger::get_instance().log(LogLevel::ERROR, "Careful: task_based_duration > classic_duration. Ratio TB/Classic = " + std::to_string(task_based_duration.count() / classic_duration.count()) + "."); // LCOV_EXCL_LINE
     }
     std::cout << "----------------------------------" << std::endl;
 
@@ -178,7 +178,7 @@ bool test_task_based_hmatrix_hmatrix_product(const TestCaseType &test_case, char
     // Print the results
     // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
     if (is_error) {
-        std::cerr << "ERROR: test_task_based_hmatrix_hmatrix_product current case failed." << std::endl;
+        htool::Logger::get_instance().log(LogLevel::ERROR, "test_task_based_hmatrix_hmatrix_product current case failed."); // LCOV_EXCL_LINE
     } else {
         std::cout << "SUCCESS: test_task_based_hmatrix_hmatrix_product current case passed." << std::endl;
         std::cout << "===============================================================\n"

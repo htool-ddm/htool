@@ -182,7 +182,7 @@ bool test_task_based_hmatrix_triangular_solve(const TestCaseType &test_case, cha
     cout << ">   task_based errors = " << error << endl;
     cout << "    task_based_duration = " << task_based_duration.count() << endl;
     if (task_based_duration.count() > classic_duration.count()) {
-        std::cerr << "Careful: task_based_duration > classic_duration. Ratio TB/Classic = " << task_based_duration.count() / classic_duration.count() << std::endl;
+        htool::Logger::get_instance().log(LogLevel::ERROR, "Careful: task_based_duration > classic_duration. Ratio TB/Classic = " + std::to_string(task_based_duration.count() / classic_duration.count()) + "."); // LCOV_EXCL_LINE
     }
 
     // internal_triangular_hmatrix_hmatrix_solve Upper
@@ -218,14 +218,14 @@ bool test_task_based_hmatrix_triangular_solve(const TestCaseType &test_case, cha
     cout << ">   task_based errors = " << error << endl;
     cout << "    task_based_duration = " << task_based_duration.count() << endl;
     if (task_based_duration.count() > classic_duration.count()) {
-        std::cerr << "Careful: task_based_duration > classic_duration. Ratio TB/Classic = " << task_based_duration.count() / classic_duration.count() << std::endl;
+        htool::Logger::get_instance().log(LogLevel::ERROR, "Careful: task_based_duration > classic_duration. Ratio TB/Classic = " + std::to_string(task_based_duration.count() / classic_duration.count()) + "."); // LCOV_EXCL_LINE
     }
 
     // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
     // Print the results
     // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
     if (is_error) {
-        std::cerr << "ERROR: test_task_based_hmatrix_triangular_solve current case failed." << std::endl;
+        htool::Logger::get_instance().log(LogLevel::ERROR, "test_task_based_hmatrix_triangular_solve current case failed."); // LCOV_EXCL_LINE
     } else {
         std::cout << "SUCCESS: test_task_based_hmatrix_triangular_solve current case passed." << std::endl;
         std::cout << "===============================================================\n"

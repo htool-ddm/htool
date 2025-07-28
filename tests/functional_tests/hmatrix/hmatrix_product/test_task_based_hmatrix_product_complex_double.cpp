@@ -48,7 +48,7 @@ int main(int, char *[]) {
     }
     std::cout << "+++++++++++++++++++++++++++++++++++++++++++" << std::endl;
     if (is_error) {
-        std::cerr << "ERROR: At least one test_task_based_hmatrix_vector_product case failed." << std::endl;
+        htool::Logger::get_instance().log(LogLevel::ERROR, "At least one test_task_based_hmatrix_vector_product case failed."); // LCOV_EXCL_LINE
         return 1;
 
     } else {
@@ -94,7 +94,7 @@ int main(int, char *[]) {
 
     std::cout << "+++++++++++++++++++++++++++++++++++++++++++" << std::endl;
     if (is_error) {
-        std::cerr << "ERROR: At least one test_task_based_hmatrix_hmatrix_product case failed." << std::endl;
+        htool::Logger::get_instance().log(LogLevel::ERROR, "At least one test_task_based_hmatrix_hmatrix_product case failed."); // LCOV_EXCL_LINE
         return 1;
 
     } else {
