@@ -253,10 +253,10 @@ std::pair<std::vector<const HMatrix<CoefficientPrecision, CoordinatePrecision> *
     hmatrix_stack.push(std::pair<const HMatrix<CoefficientPrecision, CoordinatePrecision> *, bool>(&hmatrix, hmatrix.get_symmetry() != 'N'));
 
     while (!hmatrix_stack.empty()) {
-        auto &current_element = hmatrix_stack.top();
-        hmatrix_stack.pop();
+        auto &current_element                                                     = hmatrix_stack.top();
         const HMatrix<CoefficientPrecision, CoordinatePrecision> *current_hmatrix = current_element.first;
         bool has_symmetric_ancestor                                               = current_element.second;
+        hmatrix_stack.pop();
 
         if (current_hmatrix->is_leaf()) {
             leaves.push_back(current_hmatrix);

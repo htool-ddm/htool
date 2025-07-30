@@ -32,11 +32,11 @@ int main(int argc, char *argv[]) {
                 std::cout << nb_rhs << " " << data_symmetry << " " << symmetry << "\n";
 
                 is_error = is_error || test_solver_wo_overlap<std::complex<double>, double, DDMSolverWithDenseLocalSolver<std::complex<double>, double>>(argc, argv, nb_rhs, symmetry, symmetry == 'N' ? 'N' : 'L', datapath_final);
-                is_error = is_error || test_solver_ddm_adding_overlap<std::complex<double>, double, DDMSolverWithDenseLocalSolver<std::complex<double>>>(argc, argv, nb_rhs, data_symmetry, symmetry, symmetry == 'N' ? 'N' : 'L', datapath_final);
+                is_error = is_error || test_solver_ddm_adding_overlap<std::complex<double>, double, DDMSolverWithDenseLocalSolver<std::complex<double>>, DefaultApproximationBuilder<std::complex<double>, double>>(argc, argv, nb_rhs, data_symmetry, symmetry, symmetry == 'N' ? 'N' : 'L', datapath_final);
                 is_error = is_error || test_solver_ddm<std::complex<double>, double, DDMSolverWithDenseLocalSolver<complex<double>>>(argc, argv, nb_rhs, data_symmetry, symmetry, symmetry == 'N' ? 'N' : 'L', datapath_final);
 
                 is_error = is_error || test_solver_wo_overlap<std::complex<double>, double, DDMSolverBuilder<std::complex<double>, double>>(argc, argv, nb_rhs, symmetry, 'N', datapath_final);
-                test_solver_ddm_adding_overlap<std::complex<double>, double, DDMSolverBuilder<std::complex<double>, double>>(argc, argv, nb_rhs, data_symmetry, symmetry, 'N', datapath_final);
+                is_error = is_error || test_solver_ddm_adding_overlap<std::complex<double>, double, DDMSolverBuilder<std::complex<double>, double>, DefaultLocalApproximationBuilder<std::complex<double>, double>>(argc, argv, nb_rhs, data_symmetry, symmetry, 'N', datapath_final);
                 is_error = is_error || test_solver_ddm<std::complex<double>, double, DDMSolverBuilder<complex<double>>>(argc, argv, nb_rhs, data_symmetry, symmetry, 'N', datapath_final);
             }
         }

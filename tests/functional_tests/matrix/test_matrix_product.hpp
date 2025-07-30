@@ -1,10 +1,8 @@
 #include <complex>
-#include <htool/matrix/linalg/add_matrix_matrix_product.hpp>
-#include <htool/matrix/linalg/add_matrix_matrix_product_row_major.hpp>
-#include <htool/matrix/linalg/add_matrix_vector_product.hpp>
-#include <htool/matrix/linalg/scale.hpp>
-#include <htool/matrix/linalg/transpose.hpp>
+#include <htool/matrix/linalg.hpp>
 #include <htool/matrix/matrix.hpp>
+#include <htool/matrix/matrix_view.hpp>
+#include <htool/matrix/utils.hpp>
 #include <htool/misc/misc.hpp>
 #include <htool/testing/generator_input.hpp>
 #include <iostream>

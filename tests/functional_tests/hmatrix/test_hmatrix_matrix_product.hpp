@@ -101,8 +101,8 @@ bool test_hmatrix_matrix_product(const TestCaseProduct<T, GeneratorTestType> &te
 
     // Random Input matrix
     std::vector<T> B_vec, C_vec, test_vec;
-    B_vec = B_dense.get_col(0);
-    C_vec = C_dense.get_col(0);
+    B_vec = get_col(B_dense, 0);
+    C_vec = get_col(C_dense, 0);
     T alpha(0), beta(0), scaling_coefficient;
     htool::underlying_type<T> error;
     generate_random_scalar(alpha);
@@ -125,13 +125,13 @@ bool test_hmatrix_matrix_product(const TestCaseProduct<T, GeneratorTestType> &te
     if (transb == 'N') {
         test_vec = C_vec;
         internal_add_hmatrix_vector_product(transa, alpha, root_hmatrix, B_vec.data(), beta, test_vec.data());
-        error    = norm2(matrix_result_w_matrix_sum.get_col(0) - test_vec) / norm2(matrix_result_w_matrix_sum.get_col(0));
+        error    = norm2(get_col(matrix_result_w_matrix_sum, 0) - test_vec) / norm2(get_col(matrix_result_w_matrix_sum, 0));
         is_error = is_error || !(error < epsilon);
         cout << "> Errors on a hmatrix vector product: " << error << endl;
 
         test_vec = C_vec;
         openmp_internal_add_hmatrix_vector_product(transa, alpha, root_hmatrix, B_vec.data(), beta, test_vec.data());
-        error    = norm2(matrix_result_w_matrix_sum.get_col(0) - test_vec) / norm2(matrix_result_w_matrix_sum.get_col(0));
+        error    = norm2(get_col(matrix_result_w_matrix_sum, 0) - test_vec) / norm2(get_col(matrix_result_w_matrix_sum, 0));
         is_error = is_error || !(error < epsilon);
         cout << "> Errors on a openmp hmatrix vector product: " << error << endl;
     }
@@ -233,8 +233,8 @@ bool test_symmetric_hmatrix_matrix_product(const TestCaseSymmetricProduct<T, Gen
 
     // Random Input matrix
     std::vector<T> B_vec, C_vec, test_vec;
-    B_vec = B_dense.get_col(0);
-    C_vec = C_dense.get_col(0);
+    B_vec = get_col(B_dense, 0);
+    C_vec = get_col(C_dense, 0);
     T alpha(0), beta(0), scaling_coefficient;
     htool::underlying_type<T> error;
     generate_random_scalar(alpha);
@@ -345,8 +345,8 @@ bool test_hermitian_hmatrix_matrix_product(const TestCaseSymmetricProduct<T, Gen
 
     // Random Input matrix
     std::vector<T> B_vec, C_vec, test_vec;
-    B_vec = B_dense.get_col(0);
-    C_vec = C_dense.get_col(0);
+    B_vec = get_col(B_dense, 0);
+    C_vec = get_col(C_dense, 0);
     T alpha(0), beta(0), scaling_coefficient;
     htool::underlying_type<T> error;
     generate_random_scalar(alpha);

@@ -32,7 +32,11 @@ int main(int argc, char *argv[]) {
                 std::cout << nb_rhs << " " << data_symmetry << " " << symmetry << "\n";
 
                 is_error = is_error || test_solver_wo_overlap<double, double, DDMSolverWithDenseLocalSolver<double, double>>(argc, argv, nb_rhs, symmetry, symmetry == 'N' ? 'N' : 'L', datapath_final);
-                is_error = is_error || test_solver_ddm_adding_overlap<double, double, DDMSolverWithDenseLocalSolver<double, double>>(argc, argv, nb_rhs, data_symmetry, symmetry, symmetry == 'N' ? 'N' : 'L', datapath_final);
+                is_error = is_error || test_solver_ddm_adding_overlap<double, double, DDMSolverWithDenseLocalSolver<double, double>, DefaultApproximationBuilder<double, double>>(argc, argv, nb_rhs, data_symmetry, symmetry, symmetry == 'N' ? 'N' : 'L', datapath_final);
+
+                if (data_symmetry == 'S') // to check add_sub_matrix_product_to_local for LocalToLocalHMatrix
+                    is_error = is_error || test_solver_ddm_adding_overlap<double, double, DDMSolverWithDenseLocalSolver<double, double>, DefaultLocalApproximationBuilder<double, double>>(argc, argv, nb_rhs, data_symmetry, symmetry, symmetry == 'N' ? 'N' : 'L', datapath_final);
+
                 is_error = is_error || test_solver_ddm<double, double, DDMSolverWithDenseLocalSolver<double, double>>(argc, argv, nb_rhs, data_symmetry, symmetry, symmetry == 'N' ? 'N' : 'L', datapath_final);
 
                 std::vector<char> storage;
@@ -44,7 +48,9 @@ int main(int argc, char *argv[]) {
                 }
                 for (auto UPLO : storage) {
                     is_error = is_error || test_solver_wo_overlap<double, double, DDMSolverBuilder<double, double>>(argc, argv, nb_rhs, symmetry, UPLO, datapath_final);
-                    is_error = is_error || test_solver_ddm_adding_overlap<double, double, DDMSolverBuilder<double, double>>(argc, argv, nb_rhs, data_symmetry, symmetry, UPLO, datapath_final);
+                    is_error = is_error || test_solver_ddm_adding_overlap<double, double, DDMSolverBuilder<double, double>, DefaultApproximationBuilder<double, double>>(argc, argv, nb_rhs, data_symmetry, symmetry, UPLO, datapath_final);
+                    if (data_symmetry == 'S') // to check add_sub_matrix_product_to_local for LocalToLocalHMatrix
+                        is_error = is_error || test_solver_ddm_adding_overlap<double, double, DDMSolverBuilder<double, double>, DefaultLocalApproximationBuilder<double, double>>(argc, argv, nb_rhs, data_symmetry, symmetry, UPLO, datapath_final);
                     is_error = is_error || test_solver_ddm<double, double, DDMSolverBuilder<double, double>>(argc, argv, nb_rhs, data_symmetry, symmetry, UPLO, datapath_final);
                 }
             }

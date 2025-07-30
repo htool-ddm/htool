@@ -1,31 +1,32 @@
-#include <algorithm>                                           // for max
-#include <complex>                                             // for complex
-#include <htool/basic_types/vector.hpp>                        // for bytes...
-#include <htool/clustering/cluster_node.hpp>                   // for Cluster
-#include <htool/clustering/cluster_output.hpp>                 // for read_...
-#include <htool/distributed_operator/distributed_operator.hpp> // for Distr...
-#include <htool/distributed_operator/utility.hpp>              // for Defau...
-#include <htool/hmatrix/hmatrix.hpp>                           // for HMatrix
-#include <htool/matrix/matrix.hpp>                             // for Matrix
-#include <htool/misc/misc.hpp>                                 // for under...
-#include <htool/misc/user.hpp>                                 // for NbrToStr
-#include <htool/solvers/ddm.hpp>                               // for DDM
-#include <htool/solvers/geneo/coarse_operator_builder.hpp>     // for Geneo...
-#include <htool/solvers/geneo/coarse_space_builder.hpp>        // for Geneo...
-#include <htool/solvers/utility.hpp>                           // for DDMSo...
-#include <htool/testing/generator_test.hpp>                    // for Gener...
-#include <htool/testing/point.hpp>                             // for Cplx
-#include <initializer_list>                                    // for initi...
-#include <iostream>                                            // for basic...
-#include <memory>                                              // for alloc...
-#include <mpi.h>                                               // for MPI_B...
-#include <string>                                              // for opera...
-#include <vector>                                              // for vector
+#include <algorithm>                                                                             // for max
+#include <complex>                                                                               // for complex
+#include <htool/basic_types/vector.hpp>                                                          // for bytes...
+#include <htool/clustering/cluster_node.hpp>                                                     // for Cluster
+#include <htool/clustering/cluster_output.hpp>                                                   // for read_...
+#include <htool/distributed_operator/distributed_operator.hpp>                                   // for Distr...
+#include <htool/distributed_operator/implementations/global_to_local_operators/dense_matrix.hpp> // for Defau...
+#include <htool/distributed_operator/utility.hpp>                                                // for Defau...
+#include <htool/hmatrix/hmatrix.hpp>                                                             // for HMatrix
+#include <htool/matrix/matrix.hpp>                                                               // for Matrix
+#include <htool/misc/misc.hpp>                                                                   // for under...
+#include <htool/misc/user.hpp>                                                                   // for NbrToStr
+#include <htool/solvers/ddm.hpp>                                                                 // for DDM
+#include <htool/solvers/geneo/coarse_operator_builder.hpp>                                       // for Geneo...
+#include <htool/solvers/geneo/coarse_space_builder.hpp>                                          // for Geneo...
+#include <htool/solvers/utility.hpp>                                                             // for DDMSo...
+#include <htool/testing/generator_test.hpp>                                                      // for Gener...
+#include <htool/testing/point.hpp>                                                               // for Cplx
+#include <initializer_list>                                                                      // for initi...
+#include <iostream>                                                                              // for basic...
+#include <memory>                                                                                // for alloc...
+#include <mpi.h>                                                                                 // for MPI_B...
+#include <string>                                                                                // for opera...
+#include <vector>                                                                                // for vector
 
 using namespace std;
 using namespace htool;
 
-template <typename CoefficientPrecision, typename CoordinatePrecision, typename solver_builder>
+template <typename CoefficientPrecision, typename CoordinatePrecision, typename solver_builder, typename approximation_type>
 int test_solver_ddm_adding_overlap(int argc, char *argv[], int mu, char data_symmetry, char symmetric, char UPLO, std::string datapath) {
 
     // Get the number of processes
@@ -62,7 +63,7 @@ int test_solver_ddm_adding_overlap(int argc, char *argv[], int mu, char data_sym
     std::unique_ptr<VirtualGenerator<CoefficientPrecision>> generator;
     Matrix<CoefficientPrecision> A;
     Matrix<std::complex<double>> A_original;
-    A_original.bytes_to_matrix(datapath + "/matrix.bin");
+    bytes_to_matrix(datapath + "/matrix.bin", A_original);
     if constexpr (htool::is_complex<CoefficientPrecision>()) {
         generator = std::make_unique<GeneratorInUserNumberingFromMatrix<std::complex<double>>>(A_original);
         A         = A_original;
@@ -85,7 +86,7 @@ int test_solver_ddm_adding_overlap(int argc, char *argv[], int mu, char data_sym
     bytes_to_vector(temp, datapath + "/rhs.bin");
     for (int i = 0; i < mu; i++) {
         if constexpr (htool::is_complex<CoefficientPrecision>()) {
-            f_global.set_col(i, temp);
+            set_col(f_global, i, temp);
         } else {
             for (int j = 0; j < f_global.nb_rows(); j++) {
                 f_global(j, i) = temp[j].real();
@@ -95,11 +96,35 @@ int test_solver_ddm_adding_overlap(int argc, char *argv[], int mu, char data_sym
 
     // Hmatrix
     if (rank == 0)
-        std::cout << "Creating HMatrix" << std::endl;
+        std::cout << "Creating Distributed Operator" << std::endl;
+    approximation_type default_build(*generator, target_cluster, target_cluster, HMatrixTreeBuilder<CoefficientPrecision>(epsilon, eta, symmetric, UPLO), MPI_COMM_WORLD);
+    DistributedOperator<CoefficientPrecision> &Operator = default_build.distributed_operator;
+    std::unique_ptr<Matrix<CoefficientPrecision>> off_diagonal_matrix_1;
+    std::unique_ptr<Matrix<CoefficientPrecision>> off_diagonal_matrix_2;
+    std::unique_ptr<RestrictedGlobalToLocalDenseMatrix<CoefficientPrecision>> off_diagonal_operator_1;
+    std::unique_ptr<RestrictedGlobalToLocalDenseMatrix<CoefficientPrecision>> off_diagonal_operator_2;
+    if constexpr (!std::is_same_v<approximation_type, DefaultApproximationBuilder<CoefficientPrecision, htool::underlying_type<CoefficientPrecision>>>) {
+        const Cluster<CoordinatePrecision> &local_cluster = target_cluster.get_cluster_on_partition(rank);
 
-    DefaultApproximationBuilder<CoefficientPrecision, htool::underlying_type<CoefficientPrecision>> default_build(*generator, target_cluster, target_cluster, HMatrixTreeBuilder<CoefficientPrecision>(epsilon, eta, symmetric, UPLO), MPI_COMM_WORLD);
+        std::make_unique<approximation_type>(*generator, target_cluster, target_cluster, HMatrixTreeBuilder<CoefficientPrecision>(epsilon, eta, symmetric, UPLO), MPI_COMM_WORLD);
 
-    DistributedOperator<CoefficientPrecision> &Operator            = default_build.distributed_operator;
+        off_diagonal_matrix_1 = std::make_unique<Matrix<CoefficientPrecision>>(local_cluster.get_size(), local_cluster.get_offset());
+        off_diagonal_matrix_2 = std::make_unique<Matrix<CoefficientPrecision>>(local_cluster.get_size(), target_cluster.get_size() - local_cluster.get_size() - local_cluster.get_offset());
+
+        generator->copy_submatrix(off_diagonal_matrix_1->nb_rows(), off_diagonal_matrix_1->nb_cols(), local_cluster.get_permutation().data() + local_cluster.get_offset(), target_cluster.get_permutation().data(), off_diagonal_matrix_1->data());
+
+        generator->copy_submatrix(off_diagonal_matrix_2->nb_rows(), off_diagonal_matrix_2->nb_cols(), local_cluster.get_permutation().data() + local_cluster.get_offset(), target_cluster.get_permutation().data() + local_cluster.get_offset() + local_cluster.get_size(), off_diagonal_matrix_2->data());
+
+        if (local_cluster.get_offset() > 0) {
+            off_diagonal_operator_1 = make_unique<RestrictedGlobalToLocalDenseMatrix<CoefficientPrecision>>(*off_diagonal_matrix_1, local_cluster, LocalRenumbering(0, local_cluster.get_offset(), target_cluster.get_permutation().size(), target_cluster.get_permutation().data()), 'N', 'N', false, false);
+            Operator.add_global_to_local_operator(off_diagonal_operator_1.get());
+        }
+        if (target_cluster.get_size() - local_cluster.get_size() - local_cluster.get_offset() > 0) {
+            off_diagonal_operator_2 = make_unique<RestrictedGlobalToLocalDenseMatrix<CoefficientPrecision>>(*off_diagonal_matrix_2, local_cluster, LocalRenumbering(local_cluster.get_size() + local_cluster.get_offset(), target_cluster.get_size() - local_cluster.get_size() - local_cluster.get_offset(), target_cluster.get_permutation().size(), target_cluster.get_permutation().data()), 'N', 'N', false, false);
+            Operator.add_global_to_local_operator(off_diagonal_operator_2.get());
+        }
+    }
+
     HMatrix<CoefficientPrecision> local_block_diagonal_hmatrix     = *default_build.block_diagonal_hmatrix;
     HMatrix<CoefficientPrecision> local_block_diagonal_hmatrix_bis = *default_build.block_diagonal_hmatrix;
     HMatrix<CoefficientPrecision> local_block_diagonal_hmatrix_ter = *default_build.block_diagonal_hmatrix;
@@ -110,7 +135,7 @@ int test_solver_ddm_adding_overlap(int argc, char *argv[], int mu, char data_sym
     bytes_to_vector(temp, datapath + "sol.bin");
     for (int i = 0; i < mu; i++) {
         if constexpr (htool::is_complex<CoefficientPrecision>()) {
-            x_ref.set_col(i, temp);
+            set_col(x_ref, i, temp);
         } else {
             for (int j = 0; j < x_ref.nb_rows(); j++) {
                 x_ref(j, i) = temp[j].real();
@@ -169,7 +194,7 @@ int test_solver_ddm_adding_overlap(int argc, char *argv[], int mu, char data_sym
             opt.remove("geneo_threshold");
             opt.parse("-hpddm_geneo_nu 2");
             Matrix<std::complex<double>> tmp;
-            tmp.bytes_to_matrix(datapath + "/Ki_" + NbrToStr(size) + "_" + NbrToStr(rank) + ".bin");
+            bytes_to_matrix(datapath + "/Ki_" + NbrToStr(size) + "_" + NbrToStr(rank) + ".bin", tmp);
             if constexpr (htool::is_complex<CoefficientPrecision>()) {
                 Ki = tmp;
             } else {
@@ -266,7 +291,7 @@ int test_solver_ddm_adding_overlap(int argc, char *argv[], int mu, char data_sym
             auto &ddm_with_overlap_threshold = default_ddm_solver_with_threshold.solver;
 
             Matrix<std::complex<double>> tmp;
-            tmp.bytes_to_matrix(datapath + "/Ki_" + NbrToStr(size) + "_" + NbrToStr(rank) + ".bin");
+            bytes_to_matrix(datapath + "/Ki_" + NbrToStr(size) + "_" + NbrToStr(rank) + ".bin", tmp);
             if constexpr (htool::is_complex<CoefficientPrecision>()) {
                 Ki = tmp;
             } else {
@@ -309,7 +334,7 @@ int test_solver_ddm_adding_overlap(int argc, char *argv[], int mu, char data_sym
             solver_builder default_ddm_solver_non_uniform_coarse_space(Operator, local_block_diagonal_hmatrix_ter, *generator, ovr_subdomain_to_global, cluster_to_ovr_subdomain, neighbors, intersections);
             auto &ddm_with_non_uniform_coarse_space = default_ddm_solver_non_uniform_coarse_space.solver;
 
-            tmp.bytes_to_matrix(datapath + "/Ki_" + NbrToStr(size) + "_" + NbrToStr(rank) + ".bin");
+            bytes_to_matrix(datapath + "/Ki_" + NbrToStr(size) + "_" + NbrToStr(rank) + ".bin", tmp);
             if constexpr (htool::is_complex<CoefficientPrecision>()) {
                 Ki = tmp;
             } else {

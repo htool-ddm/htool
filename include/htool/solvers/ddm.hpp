@@ -382,7 +382,7 @@ class DDM {
 };
 
 template <typename CoefficientPrecision>
-DDM<CoefficientPrecision, HPDDM::LapackTRSub> make_DDM_solver(const DistributedOperator<CoefficientPrecision> &distributed_operator, Matrix<CoefficientPrecision> &local_dense_matrix, const std::vector<int> &neighbors, const std::vector<std::vector<int>> &intersections) {
+DDM<CoefficientPrecision, HPDDM::LapackTRSub> make_DDM_solver(const DistributedOperator<CoefficientPrecision> &distributed_operator, Matrix<CoefficientPrecision> &local_dense_matrix, char symmetry, char UPLO, const std::vector<int> &neighbors, const std::vector<std::vector<int>> &intersections) {
     int rankWorld;
     MPI_Comm_rank(distributed_operator.get_comm(), &rankWorld);
     int n = local_dense_matrix.nb_rows();
@@ -393,14 +393,14 @@ DDM<CoefficientPrecision, HPDDM::LapackTRSub> make_DDM_solver(const DistributedO
 
     // Symmetry and storage
     bool sym = false;
-    if (distributed_operator.get_symmetry_type() == 'S' || (distributed_operator.get_symmetry_type() == 'H' && is_complex<CoefficientPrecision>())) {
+    if (symmetry == 'S' || (symmetry == 'H' && is_complex<CoefficientPrecision>())) {
         sym = true;
 
-        if (distributed_operator.get_storage_type() == 'U') {
+        if (UPLO == 'U') {
             htool::Logger::get_instance().log(LogLevel::ERROR, "HPDDM takes lower symmetric/hermitian matrices or regular matrices"); // LCOV_EXCL_LINE
             // throw std::invalid_argument("[Htool error] HPDDM takes lower symmetric/hermitian matrices or regular matrices");                  // LCOV_EXCL_LINE
         }
-        if (distributed_operator.get_symmetry_type() == 'S' && is_complex<CoefficientPrecision>()) {
+        if (symmetry == 'S' && is_complex<CoefficientPrecision>()) {
             htool::Logger::get_instance().log(LogLevel::WARNING, "A symmetric matrix with UPLO='L' has been given to DDM solver. It will be considered hermitian by the solver"); // LCOV_EXCL_LINE
             // std::cout << "[Htool warning] A symmetric matrix with UPLO='L' has been given to DDM solver. It will be considered hermitian by the solver." << std::endl;
         }
@@ -464,7 +464,7 @@ DDM<CoefficientPrecision, HPDDMCustomLocalSolver> make_DDM_solver_w_custom_local
 
     // Symmetry and storage
     bool sym = false;
-    if (distributed_operator.get_symmetry_type() == 'S' || (distributed_operator.get_symmetry_type() == 'H' && is_complex<CoefficientPrecision>())) {
+    if (local_hmatrix.get_symmetry() == 'S' || (local_hmatrix.get_symmetry() == 'H' && is_complex<CoefficientPrecision>())) {
         sym = true;
     }
 
@@ -495,7 +495,7 @@ DDM<CoefficientPrecision, HPDDMCustomLocalSolver> make_DDM_solver_w_custom_local
 
     // Symmetry and storage
     bool sym = false;
-    if (distributed_operator.get_symmetry_type() == 'S' || (distributed_operator.get_symmetry_type() == 'H' && is_complex<CoefficientPrecision>())) {
+    if (local_hmatrix.get_symmetry() == 'S' || (local_hmatrix.get_symmetry() == 'H' && is_complex<CoefficientPrecision>())) {
         sym = true;
     }
 
