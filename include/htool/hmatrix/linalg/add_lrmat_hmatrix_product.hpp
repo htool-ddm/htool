@@ -22,12 +22,12 @@ void internal_add_lrmat_hmatrix_product(char transa, char transb, CoefficientPre
         auto &V = A.get_V();
         if (transa == 'N') {
             Matrix<CoefficientPrecision> VB(V.nb_rows(), transb == 'N' ? B.nb_cols() : B.nb_rows());
-            internal_add_matrix_hmatrix_product<CoefficientPrecision>(transa, transb, CoefficientPrecision(1), V, B, CoefficientPrecision(0), VB);
-            add_matrix_matrix_product<CoefficientPrecision>(transa, 'N', alpha, U, VB, beta, C);
+            internal_add_matrix_hmatrix_product(transa, transb, CoefficientPrecision(1), V, B, CoefficientPrecision(0), VB);
+            add_matrix_matrix_product(transa, 'N', alpha, U, VB, beta, C);
         } else {
             Matrix<CoefficientPrecision> UtB(V.nb_rows(), transb == 'N' ? B.nb_cols() : B.nb_rows());
-            internal_add_matrix_hmatrix_product<CoefficientPrecision>(transa, transb, CoefficientPrecision(1), U, B, CoefficientPrecision(0), UtB);
-            add_matrix_matrix_product<CoefficientPrecision>(transa, 'N', alpha, V, UtB, beta, C);
+            internal_add_matrix_hmatrix_product(transa, transb, CoefficientPrecision(1), U, B, CoefficientPrecision(0), UtB);
+            add_matrix_matrix_product(transa, 'N', alpha, V, UtB, beta, C);
         }
     }
 }
@@ -44,7 +44,7 @@ void internal_add_lrmat_hmatrix_product(char transa, char transb, CoefficientPre
             if (transa == 'N') {
                 V_C.resize(V_A.nb_rows(), transb == 'N' ? B.nb_cols() : B.nb_rows());
                 U_C = U_A;
-                internal_add_matrix_hmatrix_product<CoefficientPrecision>(transa, transb, alpha, V_A, B, 0, V_C);
+                internal_add_matrix_hmatrix_product(transa, transb, alpha, V_A, B, CoefficientPrecision(0), V_C);
             } else {
                 V_C.resize(U_A.nb_cols(), transb == 'N' ? B.nb_cols() : B.nb_rows());
                 U_C.resize(V_A.nb_cols(), V_A.nb_rows());
@@ -52,7 +52,7 @@ void internal_add_lrmat_hmatrix_product(char transa, char transb, CoefficientPre
                 if (transa == 'C') {
                     conj_if_complex(U_C.data(), U_C.nb_rows() * U_C.nb_cols());
                 }
-                internal_add_matrix_hmatrix_product<CoefficientPrecision>(transa, transb, alpha, U_A, B, 0, V_C);
+                internal_add_matrix_hmatrix_product(transa, transb, alpha, U_A, B, CoefficientPrecision(0), V_C);
             }
         } else {
             Matrix<CoefficientPrecision> VB;
@@ -65,7 +65,7 @@ void internal_add_lrmat_hmatrix_product(char transa, char transb, CoefficientPre
 
                 // Compute VB=V_B*B
                 VB.resize(V_A.nb_rows(), transb == 'N' ? B.nb_cols() : B.nb_rows());
-                internal_add_matrix_hmatrix_product<CoefficientPrecision>(transa, transb, alpha, V_A, B, 0, VB);
+                internal_add_matrix_hmatrix_product(transa, transb, alpha, V_A, B, CoefficientPrecision(0), VB);
             } else {
                 // Concatenate V_At and U_C
                 new_U.resize(V_A.nb_cols(), U_A.nb_cols() + U_C.nb_cols());
@@ -86,7 +86,7 @@ void internal_add_lrmat_hmatrix_product(char transa, char transb, CoefficientPre
 
                 // Compute VB=V_B*B
                 VB.resize(V_A.nb_rows(), transb == 'N' ? B.nb_cols() : B.nb_rows());
-                internal_add_matrix_hmatrix_product<CoefficientPrecision>(transa, transb, alpha, U_A, B, 0, VB);
+                internal_add_matrix_hmatrix_product(transa, transb, alpha, U_A, B, CoefficientPrecision(0), VB);
             }
 
             // Concatenate VB and V_C

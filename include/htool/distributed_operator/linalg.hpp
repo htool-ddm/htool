@@ -1,0 +1,7 @@
+#ifndef HTOOL_DISTRIBUTED_OPERATOR_LINALG_HPP
+#define HTOOL_DISTRIBUTED_OPERATOR_LINALG_HPP
+
+#include "linalg/add_distributed_operator_matrix_product_global_to_global.hpp"
+#include "linalg/add_distributed_operator_vector_product_global_to_global.hpp"
+
+#endif

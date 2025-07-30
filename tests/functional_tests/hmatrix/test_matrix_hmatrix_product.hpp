@@ -88,8 +88,8 @@ bool test_matrix_hmatrix_product(const TestCaseProduct<T, GeneratorTestType> &te
 
     // Random Input matrix
     std::vector<T> B_vec, C_vec, test_vec;
-    B_vec = B_dense.get_col(0);
-    C_vec = C_dense.get_col(0);
+    B_vec = get_col(B_dense, 0);
+    C_vec = get_col(C_dense, 0);
     T alpha(1), beta(1), scaling_coefficient;
     htool::underlying_type<T> error;
     generate_random_scalar(alpha);

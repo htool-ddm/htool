@@ -3,6 +3,7 @@
 
 #include "../../basic_types/vector.hpp"           // for Matrix
 #include "../../matrix/matrix.hpp"                // for vector operations
+#include "../../matrix/utils.hpp"                 // for get_col
 #include "../../misc/evp.hpp"                     // for solve_EVP_2, solve_EVP_3
 #include "../interfaces/virtual_partitioning.hpp" // for VirtualPartitioning
 #include <tuple>
@@ -35,7 +36,7 @@ class Partitioning : public VirtualPartitioning<CoordinatePrecision> {
                 auto tmp_size      = std::get<1>(tmp_partition);
                 auto tmp_dimension = std::get<2>(tmp_partition);
 
-                std::vector<CoordinatePrecision> direction = directions.get_col(tmp_dimension);
+                std::vector<CoordinatePrecision> direction = get_col(directions, tmp_dimension);
 
                 std::sort(permutation.begin() + tmp_offset, permutation.begin() + tmp_offset + tmp_size, [&](int a, int b) {
                     CoordinatePrecision c = std::inner_product(coordinates + spatial_dimension * a, coordinates + spatial_dimension * (1 + a), direction.data(), CoordinatePrecision(0));
@@ -69,7 +70,7 @@ class Partitioning : public VirtualPartitioning<CoordinatePrecision> {
         });
 
         // Split along main direction
-        return SplittingPolicy::splitting(current_cluster.get_offset(), current_cluster.get_size(), spatial_dimension, coordinates, current_cluster.get_permutation(), directions.get_col(0), number_of_partitions);
+        return SplittingPolicy::splitting(current_cluster.get_offset(), current_cluster.get_size(), spatial_dimension, coordinates, current_cluster.get_permutation(), get_col(directions, 0), number_of_partitions);
     }
 };
 

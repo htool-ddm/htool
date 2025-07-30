@@ -96,7 +96,8 @@ int main(int argc, char *argv[]) {
 
     // Matrix vector product
     std::vector<double> x(size, 1), result(size, 0), ref(size, 0);
-    distributed_operator.matrix_product_global_to_global(x.data(), result.data(), 1);
+    double *work = nullptr;
+    add_distributed_operator_vector_product_global_to_global('N', double(1), distributed_operator, x.data(), double(0), result.data(), work);
     ref = A * x;
     if (rankWorld == 0) {
         std::cout << "relative error on matrix vector product : ";

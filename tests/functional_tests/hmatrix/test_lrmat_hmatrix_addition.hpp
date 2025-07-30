@@ -47,9 +47,9 @@ bool test_lrmat_hmatrix_addition(int n1, int n2, htool::underlying_type<T> epsil
     cout << "> Errors on a lrmat hmatrix addition: " << error << endl;
 
     std::ofstream densified_hmatrix_test_file("densified_hmatrix_test");
-    densified_hmatrix_test.print(densified_hmatrix_test_file, ",");
+    print(densified_hmatrix_test, densified_hmatrix_test_file, ",");
 
     std::ofstream result_file("result");
-    result.print(result_file, ",");
+    print(result, result_file, ",");
     return is_error;
 }

@@ -37,13 +37,16 @@
 #    pragma GCC diagnostic pop
 #endif
 
-#include "../distributed_operator/distributed_operator.hpp" // for DistributedOperator
-#include "../misc/misc.hpp"                                 // for conj_if_co...
-#include "../solvers/interfaces/virtual_local_solver.hpp"
-#include <algorithm> // for fill
-#include <memory>    // for unique_ptr
-#include <mpi.h>     // for MPI_Comm_rank
-#include <vector>    // for vector
+#include "../distributed_operator/distributed_operator.hpp"                                                    // for DistributedOperator
+#include "../distributed_operator/linalg/add_distributed_operator_matrix_product_row_major_local_to_local.hpp" // for add_distributed_operator...
+#include "../distributed_operator/linalg/add_distributed_operator_vector_product_local_to_local.hpp"           // for add_distributed_operator...
+#include "../matrix/matrix_view.hpp"                                                                           // for MatrixView
+#include "../misc/misc.hpp"                                                                                    // for conj_if_co...
+#include "../solvers/interfaces/virtual_local_solver.hpp"                                                      // for VirtualLocalOperator
+#include <algorithm>                                                                                           // for fill
+#include <memory>                                                                                              // for unique_ptr
+#include <mpi.h>                                                                                               // for MPI_Comm_rank
+#include <vector>                                                                                              // for vector
 
 namespace htool {
 
@@ -79,6 +82,8 @@ class HPDDMOperator final : public HPDDM::Dense<LocalSolver, HPDDM::LapackTR, 'S
   protected:
     const DistributedOperator<CoefficientPrecision> *HA;
     std::vector<CoefficientPrecision> *in_global, *buffer;
+    mutable MatrixView<const CoefficientPrecision> input;
+    mutable MatrixView<CoefficientPrecision> output; // views
 
   public:
     typedef HPDDM::Dense<LocalSolver, HPDDM::LapackTR, 'S', CoefficientPrecision> super;
@@ -106,23 +111,22 @@ class HPDDMOperator final : public HPDDM::Dense<LocalSolver, HPDDM::LapackTR, 'S
                     (*buffer)[i + j * mu] = in[i * this->getDof() + j];
                 }
             }
-            if (HA->get_symmetry_type() == 'H') {
-                conj_if_complex(buffer->data(), local_size * mu);
-            }
+            this->input.assign(mu, local_size, buffer->data());
+            this->output.assign(mu, local_size, buffer->data() + local_size * mu);
         }
-
         // All gather
         if (mu == 1) {
-            HA->internal_vector_product_local_to_local(in, out, in_global->data());
+            std::fill_n(out, local_size, CoefficientPrecision(0));
+            internal_add_distributed_operator_vector_product_local_to_local('N', CoefficientPrecision(1), *HA, in, CoefficientPrecision(0), out, in_global->data());
+            // HA->internal_vector_product_local_to_local(in, out, in_global->data());
         } else {
-            HA->internal_matrix_product_local_to_local(buffer->data(), buffer->data() + local_size * mu, mu, in_global->data());
+            output = CoefficientPrecision(0);
+            internal_add_distributed_operator_matrix_product_row_major_local_to_local('N', CoefficientPrecision(1), *HA, this->input, CoefficientPrecision(0), this->output, in_global->data());
+            // HA->internal_matrix_product_local_to_local(buffer->data(), buffer->data() + local_size * mu, mu, in_global->data());
         }
 
         // Tranpose
         if (mu != 1) {
-            if (HA->get_symmetry_type() == 'H') {
-                conj_if_complex(buffer->data() + local_size * mu, local_size * mu);
-            }
             for (int i = 0; i < mu; i++) {
                 for (int j = 0; j < local_size; j++) {
                     out[i * this->getDof() + j] = (*buffer)[i + j * mu + local_size * mu];
