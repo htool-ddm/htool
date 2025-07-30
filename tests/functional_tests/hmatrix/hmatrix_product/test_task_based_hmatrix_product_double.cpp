@@ -14,7 +14,7 @@ int main(int, char *[]) {
     bool is_error = false;
 
     char sym = 'N';
-    for (auto epsilon : {1e-4}) {
+    for (auto epsilon : {1e-4, 1e-8}) {
         for (auto n1 : {1000}) {
             for (auto n2 : {1000, 1100}) {
                 for (auto transa : {'N', 'T'}) {
@@ -23,7 +23,7 @@ int main(int, char *[]) {
                         // Non symmetric case
                         sym = 'N';
 
-                        std::cout << "task based hmatrix test case: " << "epsilon = " << epsilon << ", n1 = " << n1 << ", n2 = " << n2 << ", sym = " << sym << ", transa = " << transa << ", block_tree_consistency = " << block_tree_consistency << "\n";
+                        std::cout << "task based hmatrix vector product test case: " << "epsilon = " << epsilon << ", n1 = " << n1 << ", n2 = " << n2 << ", sym = " << sym << ", transa = " << transa << ", block_tree_consistency = " << block_tree_consistency << "\n";
 
                         TestCaseProduct<double, GeneratorTestDouble> test_case(transa, 'N', n1, n2, 1, 1, 2);
 
@@ -34,7 +34,7 @@ int main(int, char *[]) {
                             for (auto UPLO : {'L'}) {
                                 sym = 'S';
 
-                                std::cout << "task based symmetric hmatrix test case: " << "epsilon = " << epsilon << ", n1 = n2 = " << n1 << ", sym = " << sym << ", transa = " << transa << ", UPLO = " << UPLO << ", block_tree_consistency = " << block_tree_consistency << "\n";
+                                std::cout << "task based symmetric hmatrix vector product test case: " << "epsilon = " << epsilon << ", n1 = n2 = " << n1 << ", sym = " << sym << ", transa = " << transa << ", UPLO = " << UPLO << ", block_tree_consistency = " << block_tree_consistency << "\n";
 
                                 TestCaseSymmetricProduct<double, GeneratorTestDoubleSymmetric> sym_test_case(n1, n2, 2, 'L', sym, UPLO);
 
@@ -50,15 +50,16 @@ int main(int, char *[]) {
     }
     std::cout << "+++++++++++++++++++++++++++++++++++++++++++" << std::endl;
     if (is_error) {
-        std::cerr << "ERROR: At least one test_task_based_hmatrix_vector_product case failed." << std::endl;
+        htool::Logger::get_instance().log(LogLevel::ERROR, "At least one test_task_based_hmatrix_vector_product case failed."); // LCOV_EXCL_LINE
         return 1;
 
     } else {
         std::cout << "SUCCESS: All test_task_based_hmatrix_vector_product cases passed." << std::endl;
     }
-    std::cout << "+++++++++++++++++++++++++++++++++++++++++++" << std::endl;
+    std::cout << "+++++++++++++++++++++++++++++++++++++++++++\n"
+              << std::endl;
 
-    for (auto epsilon : {1e-6}) {
+    for (auto epsilon : {1e-4, 1e-8}) {
         for (auto n1 : {1000}) {
             for (auto n3 : {800}) {
                 for (auto transa : {'N', 'T'}) {
@@ -66,7 +67,7 @@ int main(int, char *[]) {
                         for (auto n2 : {900}) {
 
                             // Non symmetric case
-                            std::cout << "task based hmatrix test case: " << "epsilon = " << epsilon << ", n1 = " << n1 << ", n2 = " << n2 << ", n3 = " << n3 << ", sym = " << 'N' << ", transa = " << transa << ", transb = " << transb << "\n";
+                            std::cout << "task based hmatrix hmatrix product test case: " << "epsilon = " << epsilon << ", n1 = " << n1 << ", n2 = " << n2 << ", n3 = " << n3 << ", sym = " << 'N' << ", transa = " << transa << ", transb = " << transb << "\n";
 
                             TestCaseProduct<double, GeneratorTestDoubleSymmetric> test_case(transa, transb, n1, n2, n3, 1, 1);
 
@@ -75,10 +76,10 @@ int main(int, char *[]) {
                     }
                 }
 
-                // Symmetric case WIP ToDO: fix the test case side = 'R'
+                // Symmetric case. ToDo: fix the test case side = 'R'
                 for (auto side : {'L', 'R'}) {
                     for (auto UPLO : {'U', 'L'}) {
-                        std::cout << "task based symmetric hmatrix test case: " << "epsilon = " << epsilon << ", n1 = " << n1 << ", n3 = " << n3 << ", sym = " << 'S' << ", side = " << side << ", UPLO = " << UPLO << "\n";
+                        std::cout << "task based symmetric hmatrix hmatrix product test case: " << "epsilon = " << epsilon << ", n1 = " << n1 << ", n3 = " << n3 << ", sym = " << 'S' << ", side = " << side << ", UPLO = " << UPLO << "\n";
 
                         TestCaseSymmetricProduct<double, GeneratorTestDoubleSymmetric> test_case(n1, n3, 2, side, 'S', UPLO);
 
@@ -91,7 +92,7 @@ int main(int, char *[]) {
 
     std::cout << "+++++++++++++++++++++++++++++++++++++++++++" << std::endl;
     if (is_error) {
-        std::cerr << "ERROR: At least one test_task_based_hmatrix_hmatrix_product case failed." << std::endl;
+        htool::Logger::get_instance().log(LogLevel::ERROR, "At least one test_task_based_hmatrix_hmatrix_product case failed."); // LCOV_EXCL_LINE
         return 1;
 
     } else {

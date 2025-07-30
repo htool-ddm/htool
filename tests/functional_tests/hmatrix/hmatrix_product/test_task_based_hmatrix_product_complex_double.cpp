@@ -17,13 +17,13 @@ int main(int, char *[]) {
     for (auto epsilon : {1e-4, 1e-8}) {
         for (auto n1 : {1000}) {
             for (auto n2 : {1000, 1100}) {
-                for (auto transa : {'N', 'T'}) {
+                for (auto transa : {'N', 'T', 'C'}) {
                     for (auto block_tree_consistency : {true}) {
 
                         // Non symmetric case
                         sym = 'N';
 
-                        std::cout << "task based hmatrix test case: " << "epsilon = " << epsilon << ", n1 = " << n1 << ", n2 = " << n2 << ", sym = " << sym << ", transa = " << transa << ", block_tree_consistency = " << block_tree_consistency << "\n";
+                        std::cout << "task based hmatrix vector product test case: " << "epsilon = " << epsilon << ", n1 = " << n1 << ", n2 = " << n2 << ", sym = " << sym << ", transa = " << transa << ", block_tree_consistency = " << block_tree_consistency << "\n";
 
                         TestCaseProduct<std::complex<double>, GeneratorTestComplexSymmetric> test_case(transa, 'N', n1, n2, 1, 1, 2);
 
@@ -34,7 +34,7 @@ int main(int, char *[]) {
                             for (auto UPLO : {'L'}) {
                                 sym = 'S';
 
-                                std::cout << "task based symmetric hmatrix test case: " << "epsilon = " << epsilon << ", n1 = n2 = " << n1 << ", sym = " << sym << ", transa = " << transa << ", UPLO = " << UPLO << ", block_tree_consistency = " << block_tree_consistency << "\n";
+                                std::cout << "task based symmetric hmatrix vector product test case: " << "epsilon = " << epsilon << ", n1 = n2 = " << n1 << ", sym = " << sym << ", transa = " << transa << ", UPLO = " << UPLO << ", block_tree_consistency = " << block_tree_consistency << "\n";
 
                                 TestCaseSymmetricProduct<std::complex<double>, GeneratorTestComplexSymmetric> sym_test_case(n1, n2, 2, 'L', sym, UPLO);
 
@@ -56,7 +56,7 @@ int main(int, char *[]) {
     }
     std::cout << "+++++++++++++++++++++++++++++++++++++++++++" << std::endl;
 
-    for (auto epsilon : {1e-6}) {
+    for (auto epsilon : {1e-4, 1e-8}) {
         for (auto n1 : {1000}) {
             for (auto n3 : {800}) {
                 for (auto transa : {'N', 'T', 'C'}) {
@@ -64,7 +64,7 @@ int main(int, char *[]) {
                         for (auto n2 : {900}) {
 
                             // Non symmetric case
-                            std::cout << "task based hmatrix test case: " << "epsilon = " << epsilon << ", n1 = " << n1 << ", n2 = " << n2 << ", n3 = " << n3 << ", sym = " << 'N' << ", transa = " << transa << ", transb = " << transb << "\n";
+                            std::cout << "task based hmatrix hmatrix product test case: " << "epsilon = " << epsilon << ", n1 = " << n1 << ", n2 = " << n2 << ", n3 = " << n3 << ", sym = " << 'N' << ", transa = " << transa << ", transb = " << transb << "\n";
 
                             TestCaseProduct<std::complex<double>, GeneratorTestComplexSymmetric> test_case(transa, transb, n1, n2, n3, 1, 1);
 
@@ -76,7 +76,7 @@ int main(int, char *[]) {
                 // Symmetric case WIP ToDO: fix the test case side = 'R'
                 for (auto side : {'L', 'R'}) {
                     for (auto UPLO : {'U', 'L'}) {
-                        std::cout << "task based symmetric hmatrix test case: " << "epsilon = " << epsilon << ", n1 = " << n1 << ", n3 = " << n3 << ", sym = " << 'S' << ", side = " << side << ", UPLO = " << UPLO << "\n";
+                        std::cout << "task based symmetric hmatrix hmatrix product test case: " << "epsilon = " << epsilon << ", n1 = " << n1 << ", n3 = " << n3 << ", sym = " << 'S' << ", side = " << side << ", UPLO = " << UPLO << "\n";
 
                         TestCaseSymmetricProduct<std::complex<double>, GeneratorTestComplexSymmetric> test_case(n1, n3, 2, side, 'S', UPLO);
 
