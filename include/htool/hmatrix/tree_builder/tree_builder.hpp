@@ -197,6 +197,13 @@ class HMatrixTreeBuilder {
         return this->build(m_internal_generators.back(), target_root_cluster_tree, source_root_cluster_tree, target_partition_number, partition_number_for_symmetry, is_task_based, nb_nodes_max);
     }
 
+    HMatrixType build_task_based(const VirtualInternalGenerator<CoefficientPrecision> &generator, const ClusterType &target_root_cluster_tree, const ClusterType &source_root_cluster_tree, std::vector<HMatrix<CoefficientPrecision, CoordinatePrecision> *> &L0, int target_partition_number = -1, int partition_number_for_symmetry = -1, const size_t nb_nodes_max = 0) const;
+
+    HMatrixType build_task_based(const VirtualGenerator<CoefficientPrecision> &generator, const ClusterType &target_root_cluster_tree, const ClusterType &source_root_cluster_tree, std::vector<HMatrix<CoefficientPrecision, CoordinatePrecision> *> &L0, int target_partition_number = -1, int partition_number_for_symmetry = -1, const size_t nb_nodes_max = 0) const {
+        m_internal_generators.emplace_back(generator, target_root_cluster_tree.get_permutation().data(), source_root_cluster_tree.get_permutation().data());
+        return this->build(m_internal_generators.back(), target_root_cluster_tree, source_root_cluster_tree, L0, target_partition_number, partition_number_for_symmetry, nb_nodes_max);
+    }
+
     // HMatrixType build(const VirtualInternalGenerator<CoefficientPrecision> &generator, const ClusterType &target_root_cluster_tree, const ClusterType &source_root_cluster_tree, int target_partition_number) const {
     //     return this->build(generator, target_root_cluster_tree, source_root_cluster_tree, target_partition_number, target_partition_number);
     // }
@@ -336,6 +343,65 @@ HMatrix<CoefficientPrecision, CoordinatePrecision> HMatrixTreeBuilder<Coefficien
         root_hmatrix.get_hmatrix_tree_data()->m_information["Number_of_false_positive"] = NbrToStr(m_false_positive);
         root_hmatrix.get_hmatrix_tree_data()->m_timings["Blocks_computation_walltime"]  = block_comptations_duration;
     }
+    root_hmatrix.get_hmatrix_tree_data()->m_timings["Block_tree_walltime"] = block_tree_build_duration;
+
+    set_symmetry_for_leaves(root_hmatrix);
+
+    return root_hmatrix;
+}
+
+template <typename CoefficientPrecision, typename CoordinatePrecision>
+HMatrix<CoefficientPrecision, CoordinatePrecision> HMatrixTreeBuilder<CoefficientPrecision, CoordinatePrecision>::build_task_based(const VirtualInternalGenerator<CoefficientPrecision> &generator, const ClusterType &root_target_cluster_tree, const ClusterType &root_source_cluster_tree, std::vector<HMatrix<CoefficientPrecision, CoordinatePrecision> *> &L0, int target_partition_number, int partition_number_for_symmetry, const size_t nb_nodes_max) const {
+
+    if (target_partition_number != -1 && target_partition_number >= root_target_cluster_tree.get_clusters_on_partition().size()) {
+        htool::Logger::get_instance().log(LogLevel::ERROR, "Target partition number cannot exceed number of partitions"); // LCOV_EXCL_LINE
+    }
+    if (partition_number_for_symmetry != -1 && partition_number_for_symmetry >= root_target_cluster_tree.get_clusters_on_partition().size()) {
+        htool::Logger::get_instance().log(LogLevel::ERROR, "Partition number for symmetry cannot exceed number of partitions"); // LCOV_EXCL_LINE
+    }
+
+    // Cached information
+    m_target_root_cluster           = &root_target_cluster_tree;
+    m_source_root_cluster           = &root_source_cluster_tree;
+    m_target_partition_number       = target_partition_number;
+    m_partition_number_for_symmetry = partition_number_for_symmetry;
+    if (!m_internal_low_rank_generator && !m_low_rank_generator) {
+        m_used_low_rank_generator = std::make_shared<sympartialACA<CoefficientPrecision>>(generator);
+    } else if (!m_internal_low_rank_generator) {
+        m_used_low_rank_generator = std::make_shared<InternalLowRankGenerator<CoefficientPrecision>>(*m_low_rank_generator, root_target_cluster_tree.get_permutation().data(), root_source_cluster_tree.get_permutation().data());
+    } else {
+        m_used_low_rank_generator = m_internal_low_rank_generator;
+    }
+    m_admissible_tasks.clear();
+    m_dense_tasks.clear();
+    m_false_positive = 0;
+    m_L0.clear();
+
+    // Create root hmatrix
+    HMatrixType root_hmatrix(root_target_cluster_tree, root_source_cluster_tree);
+    root_hmatrix.set_admissibility_condition(m_admissibility_condition);
+    root_hmatrix.set_low_rank_generator(m_used_low_rank_generator);
+    root_hmatrix.set_eta(m_eta);
+    root_hmatrix.set_epsilon(m_epsilon);
+    root_hmatrix.set_minimal_target_depth(m_mintargetdepth);
+    root_hmatrix.set_minimal_source_depth(m_minsourcedepth);
+    root_hmatrix.set_block_tree_consistency(m_is_block_tree_consistent);
+
+    // Build hierarchical block structure
+    std::chrono::steady_clock::time_point start, end;
+
+    start = std::chrono::steady_clock::now();
+    build_block_tree(&root_hmatrix);
+    reset_root_of_block_tree(root_hmatrix);
+    set_hmatrix_symmetry(root_hmatrix);
+    end = std::chrono::steady_clock::now();
+
+    std::chrono::duration<double> block_tree_build_duration = end - start;
+
+    // Compute leave's data
+    L0 = find_l0(root_hmatrix, nb_nodes_max); // TODO: make this parameterizable
+    task_based_compute_blocks(generator, L0);
+
     root_hmatrix.get_hmatrix_tree_data()->m_timings["Block_tree_walltime"] = block_tree_build_duration;
 
     set_symmetry_for_leaves(root_hmatrix);
@@ -606,18 +672,19 @@ void HMatrixTreeBuilder<CoefficientPrecision, CoordinatePrecision>::task_based_c
 
     // int max_prio = std::max(0, omp_get_max_task_priority());
     for (int p = 0; p < L0.size(); p++) {
+        auto local_hmatrix = L0[p];
 
 #if defined(_OPENMP) && !defined(HTOOL_WITH_PYTHON_INTERFACE)
-#    pragma omp task default(none)                                                                       \
-        firstprivate(p, m_reqrank, m_epsilon)                                                            \
-        shared(generator, m_false_positive, m_low_rank_generator, L0, m_admissible_tasks, m_dense_tasks) \
-        depend(out : *L0[p])
-        // priority(max_prio - 2)
+#    pragma omp task default(none)                                                              \
+        firstprivate(p, m_reqrank, m_epsilon, m_admissible_tasks, m_dense_tasks, local_hmatrix) \
+        shared(generator, m_false_positive)                                                     \
+        depend(out : *local_hmatrix)
+// priority(max_prio - 2)
 #endif
         {
             std::vector<HMatrix<CoefficientPrecision, CoordinatePrecision> *> leaves;
             std::vector<HMatrix<CoefficientPrecision, CoordinatePrecision> *> leaves_for_symmetry;
-            std::tie(leaves, leaves_for_symmetry) = get_leaves_from(*L0[p]); // C++17 structured binding
+            std::tie(leaves, leaves_for_symmetry) = get_leaves_from(*local_hmatrix); // C++17 structured binding
             for (auto leaf : leaves) {
                 // check if leaf is removed by symmetry
                 if (!is_removed_by_symmetry(leaf->get_target_cluster(), leaf->get_source_cluster())) {

@@ -54,18 +54,18 @@ void task_based_internal_add_hmatrix_vector_product(char trans, CoefficientPreci
 
     // Scale the output vector `out` with `beta` if `beta` is not equal to 1
     if (CoefficientPrecision(beta) != CoefficientPrecision(1)) {
-        for (auto &out_L0_node : out_L0) {
-            int out_L0_node_offset = out_L0_node->get_offset();
-            int out_L0_node_size   = out_L0_node->get_size();
+        for (auto out_L0_node : out_L0) {
 
 #if defined(_OPENMP) && !defined(HTOOL_WITH_PYTHON_INTERFACE)
-#    pragma omp task default(none)                                                \
-        firstprivate(out_L0_node_offset, out_L0_node_size, out, beta, cout_mutex) \
-        shared(out_L0_node, std::cout)                                            \
+#    pragma omp task default(none)                       \
+        firstprivate(out_L0_node, out, beta, cout_mutex) \
+        shared(std::cout)                                \
         depend(inout : *out_L0_node)
-            // priority(max_prio - 1)
+// priority(max_prio - 1)
 #endif // 'out' must be copied by the thread else stack-use-after-return error
             {
+                int out_L0_node_offset = out_L0_node->get_offset();
+                int out_L0_node_size   = out_L0_node->get_size();
                 if (cout_mutex != nullptr) {
                     std::lock_guard<std::mutex> lock(*cout_mutex);
                     std::cout << "Scaling : out[" << out_L0_node_offset << " : " << out_L0_node_offset + out_L0_node_size << "], thread " << omp_get_thread_num() << "\n";
@@ -76,7 +76,7 @@ void task_based_internal_add_hmatrix_vector_product(char trans, CoefficientPreci
         }
     }
 
-    for (auto &L0_node : L0) {
+    for (auto L0_node : L0) {
         int input_offset  = (*L0_node.*get_input_cluster)().get_offset();
         int output_offset = (*L0_node.*get_output_cluster)().get_offset();
 
@@ -87,17 +87,17 @@ void task_based_internal_add_hmatrix_vector_product(char trans, CoefficientPreci
         // concatenate write_cluster and read_cluster
         write_cluster.insert(write_cluster.end(), read_cluster.begin(), read_cluster.end());
 
-        auto write_deps_size = write_cluster.size();
-        // auto read_deps_cluster_size = read_cluster.size();
+        auto write_deps_size        = write_cluster.size();
+        auto read_deps_cluster_size = read_cluster.size();
 
 #if defined(_OPENMP) && !defined(HTOOL_WITH_PYTHON_INTERFACE)
-#    pragma omp task default(none)                                                                                                                                      \
-        firstprivate(sym, trans_sym, alpha, in, trans, out, write_deps_size, cout_mutex, input_offset, output_offset, local_input_offset, local_output_offset, L0_node) \
-        shared(std::cout, write_cluster, read_cluster)                                                                                                                  \
-        depend(iterator(it = 0 : write_deps_size), inout : *write_cluster[it])                                                                                          \
-        depend(in : *L0_node)
+#    pragma omp task default(none)                                                                                                                                                                   \
+        firstprivate(sym, trans_sym, alpha, in, trans, out, write_deps_size, cout_mutex, input_offset, output_offset, local_input_offset, local_output_offset, L0_node, write_cluster, read_cluster) \
+        shared(std::cout)                                                                                                                                                                            \
+        depend(iterator(it = 0 : write_deps_size), inout : *write_cluster[it])                                                                                                                       \
+        depend(in : *L0_node)                                                                                                                                                                        \
+        depend(iterator(it = 0 : read_deps_cluster_size), in : *read_cluster[it])
         // priority(max_prio)
-        // depend(iterator(it = 0 : read_deps_cluster_size), in : *read_cluster[it])
 #endif // L0_node must be copied by the thread else heap-use-after-free error
         {
             sequential_internal_add_hmatrix_vector_product(trans, alpha, *L0_node, in + input_offset - local_input_offset, CoefficientPrecision(1), out + output_offset - local_output_offset);

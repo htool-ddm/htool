@@ -55,7 +55,7 @@ void task_based_internal_add_hmatrix_hmatrix_product(char transa, char transb, C
 
     // Scale the output vector `out` with `beta` if `beta` is not equal to 1
     if (CoefficientPrecision(beta) != CoefficientPrecision(1)) {
-        for (auto &L0C_node : L0) {
+        for (auto L0C_node : L0) {
 
 #if defined(_OPENMP) && !defined(HTOOL_WITH_PYTHON_INTERFACE)
 #    pragma omp task default(none)   \
@@ -70,7 +70,7 @@ void task_based_internal_add_hmatrix_hmatrix_product(char transa, char transb, C
 
     // check if C is in L0.
     bool is_C_in_L0 = false;
-    for (auto &L0C_node : L0) {
+    for (auto L0C_node : L0) {
         if (L0C_node->get_target_cluster() == C.get_target_cluster() && L0C_node->get_source_cluster() == C.get_source_cluster()) {
             is_C_in_L0 = true;
             break;
@@ -127,10 +127,10 @@ void task_based_internal_add_hmatrix_hmatrix_product(char transa, char transb, C
             auto AB = std::make_shared<LowRankMatrix<CoefficientPrecision>>(A.nb_rows(), B.nb_cols(), C.get_epsilon());
 
 #if defined(_OPENMP) && !defined(HTOOL_WITH_PYTHON_INTERFACE)
-#    pragma omp task default(none)                              \
-        firstprivate(transa, transb, alpha, AB, read_deps_size) \
-        shared(A, B, read_deps)                                 \
-        depend(inout : *AB)                                     \
+#    pragma omp task default(none)                                         \
+        firstprivate(transa, transb, alpha, AB, read_deps_size, read_deps) \
+        shared(A, B)                                                       \
+        depend(inout : *AB)                                                \
         depend(iterator(it = 0 : read_deps_size), in : *read_deps[it])
 #endif
             {
