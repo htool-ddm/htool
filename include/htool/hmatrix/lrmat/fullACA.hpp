@@ -60,8 +60,8 @@ class fullACA final : public VirtualInternalLowRankGenerator<CoefficientPrecisio
                     q += -1;
                     break;
                 }
-                uu.push_back(mat.get_col(ind.second));
-                vv.push_back(mat.get_row(ind.first) / pivot);
+                uu.push_back(get_col(mat, ind.second));
+                vv.push_back(get_row(mat, ind.first) / pivot);
 
                 for (int i = 0; i < mat.nb_rows(); i++) {
                     for (int j = 0; j < mat.nb_cols(); j++) {

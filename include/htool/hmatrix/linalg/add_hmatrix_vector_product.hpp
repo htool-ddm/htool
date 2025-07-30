@@ -56,6 +56,11 @@ void internal_add_hmatrix_vector_product(char trans, std::complex<CoefficientPre
 template <typename CoefficientPrecision, typename CoordinatePrecision = underlying_type<CoefficientPrecision>>
 void sequential_internal_add_hmatrix_vector_product(char trans, CoefficientPrecision alpha, const HMatrix<CoefficientPrecision, CoordinatePrecision> &A, const CoefficientPrecision *in, CoefficientPrecision beta, CoefficientPrecision *out) {
 
+    if ((trans == 'T' && A.get_symmetry_for_leaves() == 'H')
+        || (trans == 'C' && A.get_symmetry_for_leaves() == 'S')) {
+        htool::Logger::get_instance().log(LogLevel::ERROR, "Operation is not supported (trans=" + std::string(1, trans) + " with " + A.get_symmetry_for_leaves() + ")"); // LCOV_EXCL_LINE
+    }
+
     int out_size(A.get_target_cluster().get_size());
     auto get_output_cluster{&HMatrix<CoefficientPrecision, CoordinatePrecision>::get_target_cluster};
     auto get_input_cluster{&HMatrix<CoefficientPrecision, CoordinatePrecision>::get_source_cluster};
@@ -102,6 +107,11 @@ void openmp_internal_add_hmatrix_vector_product(char trans, CoefficientPrecision
     std::vector<const HMatrix<CoefficientPrecision, CoordinatePrecision> *> leaves;
     std::vector<const HMatrix<CoefficientPrecision, CoordinatePrecision> *> leaves_for_symmetry;
     std::tie(leaves, leaves_for_symmetry) = get_leaves_from(A); // C++17 structured binding
+
+    if ((trans == 'T' && A.get_symmetry_for_leaves() == 'H')
+        || (trans == 'C' && A.get_symmetry_for_leaves() == 'S')) {
+        htool::Logger::get_instance().log(LogLevel::ERROR, "Operation is not supported (trans=" + std::string(1, trans) + " with " + A.get_symmetry_for_leaves() + ")"); // LCOV_EXCL_LINE
+    }
 
     int out_size(A.get_target_cluster().get_size());
     auto get_output_cluster{&HMatrix<CoefficientPrecision, CoordinatePrecision>::get_target_cluster};

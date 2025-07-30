@@ -27,8 +27,8 @@ bool test_lrmat_matrix_product(char transa, char transb, T alpha, T beta, T scal
     // Random Input
     htool::underlying_type<T> error;
     std::vector<T> B_vec, C_vec, test_vec;
-    B_vec = B_dense.get_col(0);
-    C_vec = C_dense.get_col(0);
+    B_vec = get_col(B_dense, 0);
+    C_vec = get_col(C_dense, 0);
 
     // Reference matrix
     Matrix<T> transposed_matrix_result_w_sum(transposed_C_dense);
@@ -40,7 +40,7 @@ bool test_lrmat_matrix_product(char transa, char transb, T alpha, T beta, T scal
     if (transb == 'N') {
         test_vec = C_vec;
         add_lrmat_vector_product(transa, alpha, A_auto_approximation, B_vec.data(), beta, test_vec.data());
-        error    = norm2(matrix_result_w_matrix_sum.get_col(0) - test_vec) / norm2(matrix_result_w_matrix_sum.get_col(0));
+        error    = norm2(get_col(matrix_result_w_matrix_sum, 0) - test_vec) / norm2(get_col(matrix_result_w_matrix_sum, 0));
         is_error = is_error || !(error < epsilon * (1 + additional_compression_tolerance));
         cout << "> Errors on a lrmat vector product with auto approximation: " << error << endl;
     }

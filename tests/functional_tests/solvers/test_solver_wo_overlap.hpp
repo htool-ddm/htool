@@ -62,7 +62,7 @@ int test_solver_wo_overlap(int argc, char *argv[], int mu, char symmetric, char 
     std::unique_ptr<VirtualGenerator<CoefficientPrecision>> generator;
     Matrix<CoefficientPrecision> A;
     Matrix<std::complex<double>> A_original;
-    A_original.bytes_to_matrix(datapath + "/matrix.bin");
+    bytes_to_matrix(datapath + "/matrix.bin", A_original);
     if constexpr (htool::is_complex<CoefficientPrecision>()) {
         generator = std::make_unique<GeneratorInUserNumberingFromMatrix<std::complex<double>>>(A_original);
         A         = A_original;
@@ -85,7 +85,7 @@ int test_solver_wo_overlap(int argc, char *argv[], int mu, char symmetric, char 
     bytes_to_vector(temp, datapath + "/rhs.bin");
     for (int i = 0; i < mu; i++) {
         if constexpr (htool::is_complex<CoefficientPrecision>()) {
-            f_global.set_col(i, temp);
+            set_col(f_global, i, temp);
         } else {
             for (int j = 0; j < f_global.nb_rows(); j++) {
                 f_global(j, i) = temp[j].real();
@@ -107,7 +107,7 @@ int test_solver_wo_overlap(int argc, char *argv[], int mu, char symmetric, char 
     bytes_to_vector(temp, datapath + "sol.bin");
     for (int i = 0; i < mu; i++) {
         if constexpr (htool::is_complex<CoefficientPrecision>()) {
-            x_ref.set_col(i, temp);
+            set_col(x_ref, i, temp);
         } else {
             for (int j = 0; j < x_ref.nb_rows(); j++) {
                 x_ref(j, i) = temp[j].real();

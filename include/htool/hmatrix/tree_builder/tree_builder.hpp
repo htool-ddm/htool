@@ -154,10 +154,10 @@ class HMatrixTreeBuilder {
         hmatrix_stack.push(std::pair<HMatrix<CoefficientPrecision, CoordinatePrecision> *, bool>(&hmatrix, hmatrix.get_symmetry() != 'N'));
 
         while (!hmatrix_stack.empty()) {
-            auto &current_element = hmatrix_stack.top();
-            hmatrix_stack.pop();
+            auto &current_element                                               = hmatrix_stack.top();
             HMatrix<CoefficientPrecision, CoordinatePrecision> *current_hmatrix = current_element.first;
             bool has_symmetric_ancestor                                         = current_element.second;
+            hmatrix_stack.pop();
 
             if (current_hmatrix->is_leaf()) {
                 leaves.push_back(current_hmatrix);
@@ -536,7 +536,7 @@ void HMatrixTreeBuilder<CoefficientPrecision, CoordinatePrecision>::reset_root_o
         std::vector<std::unique_ptr<HMatrixType>> new_root_children;
 
         while (!block_stack.empty()) {
-            auto &current_hmatrix = block_stack.top();
+            auto current_hmatrix = block_stack.top();
             block_stack.pop();
 
             for (auto &child : current_hmatrix->get_children_with_ownership()) {

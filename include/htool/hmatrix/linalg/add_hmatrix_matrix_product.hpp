@@ -17,8 +17,14 @@
 
 namespace htool {
 
-template <typename ExecutionPolicy, typename CoefficientPrecision, typename CoordinatePrecision = underlying_type<CoefficientPrecision>>
-void internal_add_hmatrix_matrix_product(ExecutionPolicy &&, char transa, char transb, CoefficientPrecision alpha, const HMatrix<CoefficientPrecision, CoordinatePrecision> &A, const Matrix<CoefficientPrecision> &B, CoefficientPrecision beta, Matrix<CoefficientPrecision> &C) {
+template <typename ExecutionPolicy,
+          typename MatB,
+          typename MatC,
+          typename CoordinatePrecision = underlying_type<typename MatB::value_type>,
+          typename                     = std::enable_if_t<
+                                  std::is_same<typename MatB::value_type, typename MatC::value_type>::value>>
+void internal_add_hmatrix_matrix_product(ExecutionPolicy &&, char transa, char transb, typename MatB::value_type alpha, const HMatrix<typename MatB::value_type, CoordinatePrecision> &A, const MatB &B, typename MatB::value_type beta, MatC &C) {
+    using CoefficientPrecision = typename MatB::value_type;
     if (transb == 'N') {
         Matrix<CoefficientPrecision> transposed_B(B.nb_cols(), B.nb_rows()), transposed_C(C.nb_cols(), C.nb_rows());
         transpose(B, transposed_B);
@@ -68,8 +74,12 @@ void internal_add_hmatrix_matrix_product(ExecutionPolicy &&, char transa, char t
     }
 }
 
-template <typename CoefficientPrecision, typename CoordinatePrecision = underlying_type<CoefficientPrecision>>
-void internal_add_hmatrix_matrix_product(char transa, char transb, CoefficientPrecision alpha, const HMatrix<CoefficientPrecision, CoordinatePrecision> &A, const Matrix<CoefficientPrecision> &B, CoefficientPrecision beta, Matrix<CoefficientPrecision> &C) {
+template <typename MatB,
+          typename MatC,
+          typename CoordinatePrecision = underlying_type<typename MatB::value_type>,
+          typename                     = std::enable_if_t<
+                                  std::is_same<typename MatB::value_type, typename MatC::value_type>::value>>
+void internal_add_hmatrix_matrix_product(char transa, char transb, typename MatB::value_type alpha, const HMatrix<typename MatB::value_type, CoordinatePrecision> &A, const MatB &B, typename MatB::value_type beta, MatC &C) {
 #if defined(__cpp_lib_execution) && __cplusplus >= 201703L
     internal_add_hmatrix_matrix_product(std::execution::seq, transa, transb, alpha, A, B, beta, C);
 #else
@@ -164,10 +174,16 @@ void internal_add_hmatrix_matrix_product(char transa, char transb, CoefficientPr
 #        pragma GCC diagnostic ignored "-Wunused-parameter"
 #    endif
 #endif
-template <typename ExecutionPolicy, typename CoefficientPrecision, typename CoordinatePrecision = underlying_type<CoefficientPrecision>>
-void add_hmatrix_matrix_product(ExecutionPolicy &&execution_policy, char transa, char transb, CoefficientPrecision alpha, const HMatrix<CoefficientPrecision, CoordinatePrecision> &A, const Matrix<CoefficientPrecision> &B, CoefficientPrecision beta, Matrix<CoefficientPrecision> &C, CoefficientPrecision *buffer = nullptr) {
-    auto &target_cluster = A.get_target_cluster();
-    auto &source_cluster = A.get_source_cluster();
+template <typename ExecutionPolicy,
+          typename MatB,
+          typename MatC,
+          typename CoordinatePrecision = underlying_type<typename MatB::value_type>,
+          typename                     = std::enable_if_t<
+                                  std::is_same<typename MatB::value_type, typename MatC::value_type>::value>>
+void add_hmatrix_matrix_product(ExecutionPolicy &&execution_policy, char transa, char transb, typename MatB::value_type alpha, const HMatrix<typename MatB::value_type, CoordinatePrecision> &A, const MatB &B, typename MatB::value_type beta, MatC &C, typename MatB::value_type *buffer = nullptr) {
+    using CoefficientPrecision = typename MatB::value_type;
+    auto &target_cluster       = A.get_target_cluster();
+    auto &source_cluster       = A.get_source_cluster();
 
     std::vector<CoefficientPrecision> tmp(buffer == nullptr ? (target_cluster.get_size() + source_cluster.get_size()) * B.nb_cols() : 0, 0);
 
@@ -200,8 +216,8 @@ void add_hmatrix_matrix_product(ExecutionPolicy &&execution_policy, char transa,
 #    endif
 #endif
 
-template <typename CoefficientPrecision, typename CoordinatePrecision = underlying_type<CoefficientPrecision>>
-void add_hmatrix_matrix_product(char transa, char transb, CoefficientPrecision alpha, const HMatrix<CoefficientPrecision, CoordinatePrecision> &A, const Matrix<CoefficientPrecision> &B, CoefficientPrecision beta, Matrix<CoefficientPrecision> &C, CoefficientPrecision *buffer = nullptr) {
+template <typename Mat, typename CoordinatePrecision = underlying_type<typename Mat::value_type>>
+void add_hmatrix_matrix_product(char transa, char transb, typename Mat::value_type alpha, const HMatrix<typename Mat::value_type, CoordinatePrecision> &A, const Mat &B, typename Mat::value_type beta, Mat &C, typename Mat::value_type *buffer = nullptr) {
 #if defined(__cpp_lib_execution) && __cplusplus >= 201703L
     add_hmatrix_matrix_product(std::execution::seq, transa, transb, alpha, A, B, beta, C, buffer);
 #else
