@@ -1,5 +1,7 @@
 #include <htool/basic_types/vector.hpp>
 #include <htool/matrix/matrix.hpp>
+#include <htool/matrix/matrix_view.hpp>
+#include <htool/matrix/utils.hpp>
 
 using namespace std;
 using namespace htool;
@@ -29,24 +31,24 @@ int main(int, char const *[]) {
 
     // Getters for strides
     vector<double> diff = {1, 2, 3, 4, 5};
-    error               = norm2(Md.get_row(1) - diff);
+    error               = norm2(get_row(Md, 1) - diff);
     test                = test || !(error < 1e-16);
     cout << "Error on row getter : " << error << endl;
     diff  = {3, 4, 5, 6, 7, 8, 9, 10, 11, 12};
-    error = norm2(Md.get_col(3) - diff);
+    error = norm2(get_col(Md, 3) - diff);
     test  = test || !(error < 1e-16);
     cout << "Error on col getter : : " << error << endl;
 
     // Setters for strides
     std::vector<double> rowd(5, 2);
     std::vector<double> cold(10, 2);
-    Md.set_row(1, rowd);
+    set_row(Md, 1, rowd);
     diff  = {2, 2, 2, 2, 2};
-    error = norm2(Md.get_row(1) - diff);
+    error = norm2(get_row(Md, 1) - diff);
     test  = test || !(error < 1e-16);
-    Md.set_col(4, cold);
+    set_col(Md, 4, cold);
     diff  = {2, 2, 2, 2, 2, 2, 2, 2, 2, 2};
-    error = norm2(Md.get_col(4) - diff);
+    error = norm2(get_col(Md, 4) - diff);
     test  = test || !(error < 1e-16);
     cout << "Error on row and col setters : " << error << endl;
 
@@ -93,6 +95,15 @@ int main(int, char const *[]) {
     cout << "Md's argmax : " << argmax(Md).first << " " << argmax(Md).second << endl;
     cout << "Expected Argmax : (9,3)" << endl;
 
+    // Matrix view
+    MatrixView<const double> Md_view(Md);
+    test = test || !(argmax(Md).first - argmax(Md_view).first == 0);
+    test = test || !(argmax(Md).second - argmax(Md_view).second == 0);
+    test = test || !(normFrob(Md) - normFrob(Md_view) == 0);
+    cout << "Md's argmax : " << argmax(Md).first << " " << argmax(Md).second << endl;
+    cout << "Md_view's argmax : " << argmax(Md_view).first << " " << argmax(Md_view).second << endl;
+    cout << "Expected Argmax : (9,3)" << endl;
+
     //// Matrix - complex double
     // Constructor
     Matrix<complex<double>> Mcd(10, 5);
@@ -114,24 +125,24 @@ int main(int, char const *[]) {
 
     // Getters for strides
     vector<complex<double>> diffc = {1, 2, 3, 4, 5};
-    error                         = norm2(Mcd.get_row(1) - diffc);
+    error                         = norm2(get_row(Mcd, 1) - diffc);
     test                          = test || !(error < 1e-16);
     cout << "Error on row getter : " << error << endl;
     diffc = {3, 4, 5, 6, 7, 8, 9, 10, 11, 12};
-    error = norm2(Mcd.get_col(3) - diffc);
+    error = norm2(get_col(Mcd, 3) - diffc);
     test  = test || !(error < 1e-16);
     cout << "Error on col getter : " << error << endl;
 
     // Setters for strides
     std::vector<std::complex<double>> rowcd(5, 2);
     std::vector<std::complex<double>> colcd(10, 2);
-    Mcd.set_row(1, rowcd);
+    set_row(Mcd, 1, rowcd);
     diffc = {2, 2, 2, 2, 2};
-    error = norm2(Mcd.get_row(1) - diffc);
+    error = norm2(get_row(Mcd, 1) - diffc);
     test  = test || !(error < 1e-16);
-    Mcd.set_col(4, colcd);
+    set_col(Mcd, 4, colcd);
     diffc = {2, 2, 2, 2, 2, 2, 2, 2, 2, 2};
-    error = norm2(Mcd.get_col(4) - diffc);
+    error = norm2(get_col(Mcd, 4) - diffc);
     test  = test || !(error < 1e-16);
     cout << "Error on row and col setters : " << error << endl;
 

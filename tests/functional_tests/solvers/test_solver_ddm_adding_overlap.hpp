@@ -62,7 +62,7 @@ int test_solver_ddm_adding_overlap(int argc, char *argv[], int mu, char data_sym
     std::unique_ptr<VirtualGenerator<CoefficientPrecision>> generator;
     Matrix<CoefficientPrecision> A;
     Matrix<std::complex<double>> A_original;
-    A_original.bytes_to_matrix(datapath + "/matrix.bin");
+    bytes_to_matrix(datapath + "/matrix.bin", A_original);
     if constexpr (htool::is_complex<CoefficientPrecision>()) {
         generator = std::make_unique<GeneratorInUserNumberingFromMatrix<std::complex<double>>>(A_original);
         A         = A_original;
@@ -85,7 +85,7 @@ int test_solver_ddm_adding_overlap(int argc, char *argv[], int mu, char data_sym
     bytes_to_vector(temp, datapath + "/rhs.bin");
     for (int i = 0; i < mu; i++) {
         if constexpr (htool::is_complex<CoefficientPrecision>()) {
-            f_global.set_col(i, temp);
+            set_col(f_global, i, temp);
         } else {
             for (int j = 0; j < f_global.nb_rows(); j++) {
                 f_global(j, i) = temp[j].real();
@@ -110,7 +110,7 @@ int test_solver_ddm_adding_overlap(int argc, char *argv[], int mu, char data_sym
     bytes_to_vector(temp, datapath + "sol.bin");
     for (int i = 0; i < mu; i++) {
         if constexpr (htool::is_complex<CoefficientPrecision>()) {
-            x_ref.set_col(i, temp);
+            set_col(x_ref, i, temp);
         } else {
             for (int j = 0; j < x_ref.nb_rows(); j++) {
                 x_ref(j, i) = temp[j].real();
@@ -169,7 +169,7 @@ int test_solver_ddm_adding_overlap(int argc, char *argv[], int mu, char data_sym
             opt.remove("geneo_threshold");
             opt.parse("-hpddm_geneo_nu 2");
             Matrix<std::complex<double>> tmp;
-            tmp.bytes_to_matrix(datapath + "/Ki_" + NbrToStr(size) + "_" + NbrToStr(rank) + ".bin");
+            bytes_to_matrix(datapath + "/Ki_" + NbrToStr(size) + "_" + NbrToStr(rank) + ".bin", tmp);
             if constexpr (htool::is_complex<CoefficientPrecision>()) {
                 Ki = tmp;
             } else {
@@ -266,7 +266,7 @@ int test_solver_ddm_adding_overlap(int argc, char *argv[], int mu, char data_sym
             auto &ddm_with_overlap_threshold = default_ddm_solver_with_threshold.solver;
 
             Matrix<std::complex<double>> tmp;
-            tmp.bytes_to_matrix(datapath + "/Ki_" + NbrToStr(size) + "_" + NbrToStr(rank) + ".bin");
+            bytes_to_matrix(datapath + "/Ki_" + NbrToStr(size) + "_" + NbrToStr(rank) + ".bin", tmp);
             if constexpr (htool::is_complex<CoefficientPrecision>()) {
                 Ki = tmp;
             } else {
@@ -309,7 +309,7 @@ int test_solver_ddm_adding_overlap(int argc, char *argv[], int mu, char data_sym
             solver_builder default_ddm_solver_non_uniform_coarse_space(Operator, local_block_diagonal_hmatrix_ter, *generator, ovr_subdomain_to_global, cluster_to_ovr_subdomain, neighbors, intersections);
             auto &ddm_with_non_uniform_coarse_space = default_ddm_solver_non_uniform_coarse_space.solver;
 
-            tmp.bytes_to_matrix(datapath + "/Ki_" + NbrToStr(size) + "_" + NbrToStr(rank) + ".bin");
+            bytes_to_matrix(datapath + "/Ki_" + NbrToStr(size) + "_" + NbrToStr(rank) + ".bin", tmp);
             if constexpr (htool::is_complex<CoefficientPrecision>()) {
                 Ki = tmp;
             } else {

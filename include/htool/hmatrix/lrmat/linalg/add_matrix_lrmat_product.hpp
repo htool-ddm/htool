@@ -26,11 +26,11 @@ void add_matrix_lrmat_product(char transa, char transb, CoefficientPrecision alp
             AU.resize(A.nb_cols(), transb == 'N' ? U.nb_cols() : V.nb_rows());
         }
         if (transb == 'N') {
-            add_matrix_matrix_product<CoefficientPrecision>(transa, 'N', 1, A, U, 0, AU);
-            add_matrix_matrix_product<CoefficientPrecision>('N', 'N', alpha, AU, V, beta, C);
+            add_matrix_matrix_product(transa, 'N', CoefficientPrecision(1), A, U, CoefficientPrecision(0), AU);
+            add_matrix_matrix_product('N', 'N', alpha, AU, V, beta, C);
         } else {
-            add_matrix_matrix_product<CoefficientPrecision>(transa, transb, 1, A, V, 0, AU);
-            add_matrix_matrix_product<CoefficientPrecision>('N', transb, alpha, AU, U, beta, C);
+            add_matrix_matrix_product(transa, transb, CoefficientPrecision(1), A, V, CoefficientPrecision(0), AU);
+            add_matrix_matrix_product('N', transb, alpha, AU, U, beta, C);
         }
     }
 }
@@ -51,14 +51,14 @@ void add_matrix_lrmat_product(char transa, char transb, CoefficientPrecision alp
             }
             if (transb == 'N') {
                 V_C = V_B;
-                add_matrix_matrix_product<CoefficientPrecision>(transa, transb, alpha, A, U_B, 0, U_C);
+                add_matrix_matrix_product(transa, transb, alpha, A, U_B, CoefficientPrecision(0), U_C);
             } else {
                 V_C.resize(U_B.nb_cols(), U_B.nb_rows());
                 transpose(U_B, V_C);
                 if (transb == 'C') {
                     conj_if_complex(V_C.data(), V_C.nb_rows() * V_C.nb_cols());
                 }
-                add_matrix_matrix_product<CoefficientPrecision>(transa, transb, alpha, A, V_B, 0, U_C);
+                add_matrix_matrix_product(transa, transb, alpha, A, V_B, CoefficientPrecision(0), U_C);
             }
         } else {
 
@@ -92,9 +92,9 @@ void add_matrix_lrmat_product(char transa, char transb, CoefficientPrecision alp
                 AU.resize(A.nb_cols(), transb == 'N' ? U_B.nb_cols() : V_B.nb_rows());
             }
             if (transb == 'N') {
-                add_matrix_matrix_product<CoefficientPrecision>(transa, 'N', alpha, A, U_B, 0, AU);
+                add_matrix_matrix_product(transa, 'N', alpha, A, U_B, CoefficientPrecision(0), AU);
             } else {
-                add_matrix_matrix_product<CoefficientPrecision>(transa, transb, alpha, A, V_B, 0, AU);
+                add_matrix_matrix_product(transa, transb, alpha, A, V_B, CoefficientPrecision(0), AU);
             }
 
             // Concatenate U_A and U_C

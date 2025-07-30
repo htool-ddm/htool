@@ -13,12 +13,12 @@ void add_lrmat_vector_product(char trans, CoefficientPrecision alpha, const LowR
         auto &V = A.get_V();
         if (trans == 'N') {
             std::vector<CoefficientPrecision> a(rank);
-            add_matrix_vector_product<CoefficientPrecision>(trans, CoefficientPrecision(1.), V, in, 0, a.data());
-            add_matrix_vector_product<CoefficientPrecision>(trans, alpha, U, a.data(), beta, out);
+            add_matrix_vector_product(trans, CoefficientPrecision(1.), V, in, CoefficientPrecision(0), a.data());
+            add_matrix_vector_product(trans, alpha, U, a.data(), beta, out);
         } else {
             std::vector<CoefficientPrecision> a(rank);
-            add_matrix_vector_product<CoefficientPrecision>(trans, CoefficientPrecision(1.), U, in, 0, a.data());
-            add_matrix_vector_product<CoefficientPrecision>(trans, alpha, V, a.data(), beta, out);
+            add_matrix_vector_product(trans, CoefficientPrecision(1.), U, in, CoefficientPrecision(0), a.data());
+            add_matrix_vector_product(trans, alpha, V, a.data(), beta, out);
         }
     }
 }

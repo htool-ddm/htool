@@ -1,7 +1,9 @@
-#include <complex>                 // for complex
-#include <htool/matrix/matrix.hpp> // for Matrix, normFrob
-#include <iostream>                // for basic_ostream, operator<<, cout
-#include <string>                  // for basic_string, char_traits
+#include <complex>                      // for complex
+#include <htool/matrix/matrix.hpp>      // for Matrix
+#include <htool/matrix/matrix_view.hpp> // for MatrixView
+#include <htool/matrix/utils.hpp>       // for normFrob
+#include <iostream>                     // for basic_ostream, operator<<, cout
+#include <string>                       // for basic_string, char_traits
 
 using namespace std;
 using namespace htool;
@@ -16,8 +18,15 @@ int main(int, char const *[]) {
             Md(i, j) = i + j;
         }
     }
-    test = test || (Md.matrix_to_bytes("Md"));
-    test = test || (Pd.bytes_to_matrix("Md"));
+    matrix_to_bytes(Md, "Md");
+    bytes_to_matrix("Md", Pd);
+    test = test || !(normFrob(Md - Pd) < 1e-16);
+    cout << "diff : " << normFrob(Md - Pd) << endl;
+
+    //// Matrix view - double
+    MatrixView<const double> Md_view(Md);
+    matrix_to_bytes(Md_view, "Md_view");
+    bytes_to_matrix("Md_view", Pd);
     test = test || !(normFrob(Md - Pd) < 1e-16);
     cout << "diff : " << normFrob(Md - Pd) << endl;
 
@@ -30,8 +39,8 @@ int main(int, char const *[]) {
             Mcd(i, j) = complex<double>(i + j, 1);
         }
     }
-    test = test || (Mcd.matrix_to_bytes("Mcd"));
-    test = test || (Pcd.bytes_to_matrix("Mcd"));
+    matrix_to_bytes(Mcd, "Mcd");
+    bytes_to_matrix("Mcd", Pcd);
     test = test || !(normFrob(Mcd - Pcd) < 1e-16);
     cout << "diff : " << normFrob(Mcd - Pcd) << endl;
 

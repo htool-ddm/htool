@@ -76,9 +76,9 @@ void lu_factorization(HMatrix<CoefficientPrecision, CoordinatePrecision> &hmatri
     }
 }
 
-template <typename CoefficientPrecision, typename CoordinatePrecision = underlying_type<CoefficientPrecision>>
-void internal_lu_solve(char trans, const HMatrix<CoefficientPrecision, CoordinatePrecision> &A, Matrix<CoefficientPrecision> &X) {
-
+template <typename Mat, typename CoordinatePrecision = underlying_type<typename Mat::value_type>>
+void internal_lu_solve(char trans, const HMatrix<typename Mat::value_type, CoordinatePrecision> &A, Mat &X) {
+    using CoefficientPrecision = typename Mat::value_type;
     if (trans == 'N') {
         internal_triangular_hmatrix_matrix_solve('L', 'L', 'N', 'U', CoefficientPrecision(1), A, X);
         internal_triangular_hmatrix_matrix_solve('L', 'U', 'N', 'N', CoefficientPrecision(1), A, X);
@@ -176,9 +176,9 @@ void internal_cholesky_solve(char UPLO, const HMatrix<CoefficientPrecision, Coor
     }
 }
 
-template <typename CoefficientPrecision, typename CoordinatePrecision = underlying_type<CoefficientPrecision>>
-void lu_solve(char trans, const HMatrix<CoefficientPrecision, CoordinatePrecision> &A, Matrix<CoefficientPrecision> &X) {
-
+template <typename Mat, typename CoordinatePrecision = underlying_type<typename Mat::value_type>>
+void lu_solve(char trans, const HMatrix<typename Mat::value_type, CoordinatePrecision> &A, Mat &X) {
+    using CoefficientPrecision = typename Mat::value_type;
     Matrix<CoefficientPrecision> permuted_X(X.nb_rows(), X.nb_cols());
     auto &source_cluster = A.get_source_cluster();
     for (int i = 0; i < X.nb_cols(); i++) {
@@ -193,9 +193,9 @@ void lu_solve(char trans, const HMatrix<CoefficientPrecision, CoordinatePrecisio
     }
 }
 
-template <typename CoefficientPrecision, typename CoordinatePrecision = underlying_type<CoefficientPrecision>>
-void cholesky_solve(char UPLO, const HMatrix<CoefficientPrecision, CoordinatePrecision> &A, Matrix<CoefficientPrecision> &X) {
-
+template <typename Mat, typename CoordinatePrecision = underlying_type<typename Mat::value_type>>
+void cholesky_solve(char UPLO, const HMatrix<typename Mat::value_type, CoordinatePrecision> &A, Mat &X) {
+    using CoefficientPrecision = typename Mat::value_type;
     Matrix<CoefficientPrecision> permuted_X(X.nb_rows(), X.nb_cols());
     auto &source_cluster = A.get_source_cluster();
     for (int i = 0; i < X.nb_cols(); i++) {

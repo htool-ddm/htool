@@ -1,16 +1,17 @@
 #ifndef HTOOL_GENEO_COARSE_OPERATOR_BUILDER_HPP
 #define HTOOL_GENEO_COARSE_OPERATOR_BUILDER_HPP
 
-#include "../../distributed_operator/distributed_operator.hpp" // for DistributedOperator
-#include "../../matrix/matrix.hpp"                             // for Matrix
-#include "../../misc/misc.hpp"                                 // for conj_if...
-#include "../../wrappers/wrapper_mpi.hpp"                      // for wrapper...
-#include "../interfaces/virtual_coarse_operator_builder.hpp"   // for Virtual...
-#include <algorithm>                                           // for max_ele...
-#include <functional>                                          // for plus
-#include <mpi.h>                                               // for MPI_Com...
-#include <numeric>                                             // for accumulate
-#include <vector>                                              // for vector
+#include "../../distributed_operator/distributed_operator.hpp"                                               // for DistributedOperator
+#include "../../distributed_operator/linalg/add_distributed_operator_vector_sub_product_global_to_local.hpp" // for add_distributed_operator_vector...
+#include "../../matrix/matrix.hpp"                                                                           // for Matrix
+#include "../../misc/misc.hpp"                                                                               // for conj_if...
+#include "../../wrappers/wrapper_mpi.hpp"                                                                    // for wrapper...
+#include "../interfaces/virtual_coarse_operator_builder.hpp"                                                 // for Virtual...
+#include <algorithm>                                                                                         // for max_ele...
+#include <functional>                                                                                        // for plus
+#include <mpi.h>                                                                                             // for MPI_Com...
+#include <numeric>                                                                                           // for accumulate
+#include <vector>                                                                                            // for vector
 
 namespace htool {
 
@@ -95,10 +96,7 @@ void build_geneo_coarse_operator(const DistributedOperator<CoefficientPrecision>
         //     std::cout << buffer << "\n";
         // }
         MPI_Bcast(buffer.data() + margin * recvcounts[i], HA.get_target_partition().get_size_of_partition(i) * recvcounts[i], wrapper_mpi<CoefficientPrecision>::mpi_type(), i, HA.get_comm());
-        if (HA.get_symmetry_type() == 'H') {
-            conj_if_complex(buffer.data(), buffer.size());
-        }
-        HA.internal_sub_matrix_product_to_local(buffer.data(), AZ.data(), recvcounts[i], HA.get_target_partition().get_offset_of_partition(i), HA.get_target_partition().get_size_of_partition(i));
+        internal_add_distributed_operator_vector_sub_product_global_to_local(HA, buffer.data(), AZ.data(), recvcounts[i], HA.get_target_partition().get_offset_of_partition(i), HA.get_target_partition().get_size_of_partition(i));
 
         // if (rankWorld == 0) {
         //     std::cout << "AZ " << i << "\n";
