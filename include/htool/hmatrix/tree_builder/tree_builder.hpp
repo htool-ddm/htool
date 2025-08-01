@@ -672,19 +672,18 @@ void HMatrixTreeBuilder<CoefficientPrecision, CoordinatePrecision>::task_based_c
 
     // int max_prio = std::max(0, omp_get_max_task_priority());
     for (int p = 0; p < L0.size(); p++) {
-        HMatrix<CoefficientPrecision, CoordinatePrecision> *local_hmatrix = L0[p];
 
 #if defined(_OPENMP) && !defined(HTOOL_WITH_PYTHON_INTERFACE)
-#    pragma omp task default(none)                                                              \
-        firstprivate(p, m_reqrank, m_epsilon, m_admissible_tasks, m_dense_tasks, local_hmatrix) \
-        shared(generator, m_false_positive)                                                     \
-        depend(out : *local_hmatrix)
+#    pragma omp task default(none)                                                                       \
+        firstprivate(p, m_reqrank, m_epsilon)                                                            \
+        shared(generator, m_false_positive, m_low_rank_generator, L0, m_admissible_tasks, m_dense_tasks) \
+        depend(out : *L0[p])
 // priority(max_prio - 2)
 #endif
         {
             std::vector<HMatrix<CoefficientPrecision, CoordinatePrecision> *> leaves;
             std::vector<HMatrix<CoefficientPrecision, CoordinatePrecision> *> leaves_for_symmetry;
-            std::tie(leaves, leaves_for_symmetry) = get_leaves_from(*local_hmatrix); // C++17 structured binding
+            std::tie(leaves, leaves_for_symmetry) = get_leaves_from(*L0[p]); // C++17 structured binding
             for (auto leaf : leaves) {
                 // check if leaf is removed by symmetry
                 if (!is_removed_by_symmetry(leaf->get_target_cluster(), leaf->get_source_cluster())) {
