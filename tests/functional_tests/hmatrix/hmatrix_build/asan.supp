@@ -1,0 +1,4 @@
+# Suppress expected memory operations in libgomp (OpenMP runtime)
+fun:_gomp_task*
+fun:__kmpc_*
+fun:malloc
