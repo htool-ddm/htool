@@ -672,7 +672,7 @@ void HMatrixTreeBuilder<CoefficientPrecision, CoordinatePrecision>::task_based_c
 
     // int max_prio = std::max(0, omp_get_max_task_priority());
     for (int p = 0; p < L0.size(); p++) {
-        auto local_hmatrix = L0[p];
+        HMatrix<CoefficientPrecision, CoordinatePrecision> *local_hmatrix = L0[p];
 
 #if defined(_OPENMP) && !defined(HTOOL_WITH_PYTHON_INTERFACE)
 #    pragma omp task default(none)                                                              \
