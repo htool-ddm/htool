@@ -24,14 +24,26 @@
 namespace htool {
 
 /**
- * @brief Task-based internal add hmatrix vector product, i.e., C = beta*C + alpha*A*x, where A is a HMatrix, x is a vector, and C is a vector.
+ * @brief Performs a task-based parallel addition of HMatrix-vector products to an output vector.
  *
- * @details
- * The function returns the result in the vector C.
- * The function takes as input the HMatrix A, the vector x, the scalar alpha, and the scalar beta.
- * The function also takes as input the vector L0, which is a vector of pointers to nodes of the tree of A, and the vectors in_L0 and out_L0, which are vectors of pointers to the cluster nodes of the input and output vectors x and C, respectively.
- * The function also takes as input a pointer to a mutex, which is used to synchronize the output of the tasks.
- * If the mutex is nullptr, the function does not use any synchronization.
+ * This function computes the product of a hierarchical matrix (HMatrix) and an input vector,
+ * scales the output vector by a given factor, and adds the result to the output vector.
+ * The computation is performed in parallel using OpenMP tasks, with dependencies managed
+ * to ensure correct updates to the output vector. The function supports symmetric matrices
+ * and transposed operations.
+ *
+ * @tparam CoefficientPrecision Type used for matrix coefficients and vector elements.
+ * @tparam CoordinatePrecision Type used for cluster coordinates.
+ * @param trans Character specifying the operation: 'N' for normal, other values for transpose/conjugate.
+ * @param alpha Scalar multiplier for the matrix-vector product.
+ * @param A The hierarchical matrix (HMatrix) to be multiplied.
+ * @param in Pointer to the input vector.
+ * @param beta Scalar multiplier for the output vector.
+ * @param out Pointer to the output vector to which the result is added.
+ * @param L0 Vector of pointers to HMatrix nodes for task scheduling.
+ * @param in_L0 Vector of pointers to input clusters corresponding to L0 nodes.
+ * @param out_L0 Vector of pointers to output clusters corresponding to L0 nodes.
+ * @param cout_mutex Optional pointer to a mutex for synchronized console output (for debugging).
  */
 template <typename CoefficientPrecision, typename CoordinatePrecision = CoefficientPrecision>
 void task_based_internal_add_hmatrix_vector_product(char trans, CoefficientPrecision alpha, const HMatrix<CoefficientPrecision, CoordinatePrecision> &A, const CoefficientPrecision *in, CoefficientPrecision beta, CoefficientPrecision *out, const std::vector<HMatrix<CoefficientPrecision, CoordinatePrecision> *> &L0, const std::vector<const Cluster<CoordinatePrecision> *> &in_L0, const std::vector<const Cluster<CoordinatePrecision> *> &out_L0, std::mutex *cout_mutex = nullptr) {
@@ -84,8 +96,11 @@ void task_based_internal_add_hmatrix_vector_product(char trans, CoefficientPreci
         write_cluster = enumerate_dependences((*L0_node.*get_output_cluster)(), out_L0);
         read_cluster  = enumerate_dependences((*L0_node.*get_input_cluster)(), in_L0);
 
-        // concatenate write_cluster and read_cluster
-        write_cluster.insert(write_cluster.end(), read_cluster.begin(), read_cluster.end());
+        // concatenate write_cluster and read_cluster for the symetric case
+        if (sym != 'N') {
+            write_cluster.insert(write_cluster.end(), read_cluster.begin(), read_cluster.end());
+            read_cluster.clear();
+        }
 
         auto write_deps_size        = write_cluster.size();
         auto read_deps_cluster_size = read_cluster.size();
@@ -95,8 +110,8 @@ void task_based_internal_add_hmatrix_vector_product(char trans, CoefficientPreci
         firstprivate(sym, trans_sym, alpha, in, trans, out, write_deps_size, cout_mutex, input_offset, output_offset, local_input_offset, local_output_offset, L0_node, write_cluster, read_cluster) \
         shared(std::cout)                                                                                                                                                                            \
         depend(iterator(it = 0 : write_deps_size), inout : *write_cluster[it])                                                                                                                       \
-        depend(in : *L0_node)                                                                                                                                                                        \
-        depend(iterator(it = 0 : read_deps_cluster_size), in : *read_cluster[it])
+        depend(iterator(it = 0 : read_deps_cluster_size), in : *read_cluster[it])                                                                                                                    \
+        depend(in : *L0_node)
         // priority(max_prio)
 #endif // L0_node must be copied by the thread else heap-use-after-free error
         {
