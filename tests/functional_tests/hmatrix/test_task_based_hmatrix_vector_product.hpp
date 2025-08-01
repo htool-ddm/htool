@@ -88,8 +88,8 @@ bool test_task_based_hmatrix_vector_product(const TestCaseType &test_case, char 
 
     // L0 definitions
     std::vector<HMatrix<T> *> L0                                   = hmatrix_tree_builder->get_L0();
-    std::vector<const Cluster<htool::underlying_type<T>> *> in_L0  = find_l0(*input_cluster, 64);
-    std::vector<const Cluster<htool::underlying_type<T>> *> out_L0 = find_l0(*output_cluster, 64);
+    std::vector<const Cluster<htool::underlying_type<T>> *> in_L0  = find_l0(*input_cluster, 8);
+    std::vector<const Cluster<htool::underlying_type<T>> *> out_L0 = find_l0(*output_cluster, 8);
 
     // Create a vector for the input and output
     std::vector<T> in(no_B), out(no_C, 11), out_task(no_C, 11);
@@ -142,7 +142,7 @@ bool test_task_based_hmatrix_vector_product(const TestCaseType &test_case, char 
 
     // check durations
     if (task_based_duration.count() > classic_duration.count()) {
-        htool::Logger::get_instance().log(LogLevel::ERROR, "Careful: task_based_duration > classic_duration. Ratio TB/Classic = " + std::to_string(task_based_duration.count() / classic_duration.count()) + "."); // LCOV_EXCL_LINE
+        htool::Logger::get_instance().log(LogLevel::WARNING, "Careful: task_based_duration > classic_duration. Ratio TB/Classic = " + std::to_string(task_based_duration.count() / classic_duration.count()) + "."); // LCOV_EXCL_LINE
     }
     std::cout << "----------------------------------" << std::endl;
 

@@ -243,7 +243,7 @@ bool test_task_based_hmatrix_build(const TestCaseType &test_case, char sym, char
 
         // check durations
         if (task_based_duration.count() > classic_duration.count()) {
-            htool::Logger::get_instance().log(LogLevel::ERROR, "Careful: task_based_duration > classic_duration. Ratio TB/Classic = " + std::to_string(task_based_duration.count() / classic_duration.count()) + "."); // LCOV_EXCL_LINE
+            htool::Logger::get_instance().log(LogLevel::WARNING, "Careful: task_based_duration > classic_duration. Ratio TB/Classic = " + std::to_string(task_based_duration.count() / classic_duration.count()) + "."); // LCOV_EXCL_LINE
         }
 
         std::cout << "----------------------------------" << std::endl;

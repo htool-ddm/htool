@@ -176,6 +176,13 @@ void task_based_internal_add_hmatrix_hmatrix_product(char transa, char transb, C
     } // end of if (!is_C_in_L0 && A.is_leaf() && B.is_leaf() && C.is_leaf())
 } // end of task_based_internal_add_hmatrix_hmatrix_product
 
+/**
+ * @brief Fill a vector of clusters with the leaves of a given cluster tree, either following the hierarchical structure of the tree or the partitioning of the tree.
+ *
+ * @param[in] cluster the cluster tree to traverse
+ * @param[in] block_tree_not_consistent whether to follow the hierarchical structure of the tree or the partitioning of the tree
+ * @param[out] clusters the vector of clusters to fill
+ */
 template <typename CoordinatePrecision>
 void fill_clusters(const Cluster<CoordinatePrecision> &cluster, bool block_tree_not_consistent, std::vector<const Cluster<CoordinatePrecision> *> &clusters) {
     if (cluster.is_leaf() || (block_tree_not_consistent && cluster.get_rank() >= 0)) {

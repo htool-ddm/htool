@@ -182,7 +182,7 @@ bool test_task_based_hmatrix_triangular_solve(const TestCaseType &test_case, cha
     cout << ">   task_based errors = " << error << endl;
     cout << "    task_based_duration = " << task_based_duration.count() << endl;
     if (task_based_duration.count() > classic_duration.count()) {
-        htool::Logger::get_instance().log(LogLevel::ERROR, "Careful: task_based_duration > classic_duration. Ratio TB/Classic = " + std::to_string(task_based_duration.count() / classic_duration.count()) + "."); // LCOV_EXCL_LINE
+        htool::Logger::get_instance().log(LogLevel::WARNING, "Careful: task_based_duration > classic_duration. Ratio TB/Classic = " + std::to_string(task_based_duration.count() / classic_duration.count()) + "."); // LCOV_EXCL_LINE
     }
 
     // internal_triangular_hmatrix_hmatrix_solve Upper
@@ -218,7 +218,7 @@ bool test_task_based_hmatrix_triangular_solve(const TestCaseType &test_case, cha
     cout << ">   task_based errors = " << error << endl;
     cout << "    task_based_duration = " << task_based_duration.count() << endl;
     if (task_based_duration.count() > classic_duration.count()) {
-        htool::Logger::get_instance().log(LogLevel::ERROR, "Careful: task_based_duration > classic_duration. Ratio TB/Classic = " + std::to_string(task_based_duration.count() / classic_duration.count()) + "."); // LCOV_EXCL_LINE
+        htool::Logger::get_instance().log(LogLevel::WARNING, "Careful: task_based_duration > classic_duration. Ratio TB/Classic = " + std::to_string(task_based_duration.count() / classic_duration.count()) + "."); // LCOV_EXCL_LINE
     }
 
     // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++

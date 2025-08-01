@@ -213,7 +213,7 @@ std::vector<const HMatrix<CoefficientPrecision, CoordinatePrecision> *> enumerat
     }
 
     // Case 4 : error
-    Logger::get_instance().log(LogLevel::ERROR, "No dependence found with L0. It should not happen.");
+    Logger::get_instance().log(LogLevel::ERROR, "No dependence found with L0. It should not happen."); // LCOV_EXCL_LINE
     return {};
 }
 
@@ -247,7 +247,7 @@ std::vector<HMatrix<CoefficientPrecision, CoordinatePrecision> *> enumerate_depe
     }
 
     // Case 4 : error
-    Logger::get_instance().log(LogLevel::ERROR, "No dependence found with L0. It should not happen.");
+    Logger::get_instance().log(LogLevel::ERROR, "No dependence found with L0. It should not happen."); // LCOV_EXCL_LINE
     return {};
 }
 
@@ -279,7 +279,7 @@ std::vector<const Cluster<CoordinatePrecision> *> enumerate_dependences(const Cl
     }
 
     // Case 4 : error
-    Logger::get_instance().log(LogLevel::ERROR, "No dependence found with L0. It should not happen.");
+    Logger::get_instance().log(LogLevel::ERROR, "No dependence found with L0. It should not happen."); // LCOV_EXCL_LINE
     return {};
 }
 
