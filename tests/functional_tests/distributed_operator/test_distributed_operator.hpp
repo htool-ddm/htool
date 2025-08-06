@@ -349,13 +349,13 @@ int test_vector_product(GeneratorTestType generator, const DistributedOperator<T
     }
 
     C_local = Y_local_perm;
-    internal_add_distributed_operator_matrix_product_local_to_local(op, alpha, distributed_operator, B_local_perm, beta, C_local, buffer_ptr);
+    internal_add_distributed_operator_matrix_product_local_to_local(op, alpha, distributed_operator, B_local_perm.data(), beta, C_local.data(), mu, buffer_ptr);
     local_error = normFrob(ref_local_perm_w_sum - C_local) / local_norm_ref;
     is_error    = is_error || !(local_error < epsilon);
     cout << "> Errors on a local to local internal distributed operator matrix product with sum: " << local_error << endl;
 
     C_local = Y_local_perm;
-    internal_add_distributed_operator_matrix_product_local_to_local(op, alpha, distributed_operator, B_local_perm, T(0), C_local, buffer_ptr);
+    internal_add_distributed_operator_matrix_product_local_to_local(op, alpha, distributed_operator, B_local_perm.data(), T(0), C_local.data(), mu, buffer_ptr);
     local_error = normFrob(ref_local_perm_wo_sum - C_local) / local_norm_ref;
     is_error    = is_error || !(local_error < epsilon);
     cout << "> Errors on a local to local internal distributed operator matrix product without sum: " << local_error << endl;

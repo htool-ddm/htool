@@ -22,7 +22,7 @@ class LocalHMatrixPlusOverlapSolver : public VirtualLocalSolver<CoefficientPreci
     LocalHMatrixPlusOverlapSolver(HMatrix<CoefficientPrecision> &local_hmatrix, Matrix<CoefficientPrecision> &B, Matrix<CoefficientPrecision> &C, Matrix<CoefficientPrecision> &D) : m_local_hmatrix(local_hmatrix), m_B(B), m_C(C), m_D(D) {}
     void numfact(HPDDM::MatrixCSR<CoefficientPrecision> *const &, bool = false, CoefficientPrecision *const & = nullptr) {
         if (m_local_hmatrix.get_symmetry() == 'N') {
-            lu_factorization(m_local_hmatrix);
+            sequential_lu_factorization(m_local_hmatrix);
             if (m_C.nb_rows() > 0) {
                 internal_triangular_hmatrix_matrix_solve('L', 'L', 'N', 'U', CoefficientPrecision(1), m_local_hmatrix, m_B);
                 internal_triangular_hmatrix_matrix_solve('R', 'U', 'N', 'N', CoefficientPrecision(1), m_local_hmatrix, m_C);
@@ -31,7 +31,7 @@ class LocalHMatrixPlusOverlapSolver : public VirtualLocalSolver<CoefficientPreci
             }
 
         } else if (m_local_hmatrix.get_symmetry() == 'S' || m_local_hmatrix.get_symmetry() == 'H') {
-            cholesky_factorization(m_local_hmatrix.get_UPLO(), m_local_hmatrix);
+            sequential_cholesky_factorization(m_local_hmatrix.get_UPLO(), m_local_hmatrix);
             if (m_local_hmatrix.get_UPLO() == 'L' && m_C.nb_rows() > 0) {
                 internal_triangular_hmatrix_matrix_solve('R', m_local_hmatrix.get_UPLO(), is_complex<CoefficientPrecision>() ? 'C' : 'T', 'N', CoefficientPrecision(1), m_local_hmatrix, m_C);
                 add_matrix_matrix_product('N', is_complex<CoefficientPrecision>() ? 'C' : 'T', CoefficientPrecision(-1), m_C, m_C, CoefficientPrecision(1), m_D);

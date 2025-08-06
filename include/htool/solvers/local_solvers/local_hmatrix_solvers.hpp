@@ -22,9 +22,9 @@ class LocalHMatrixSolver : public VirtualLocalSolver<CoefficientPrecision> {
     LocalHMatrixSolver(HMatrix<CoefficientPrecision> &local_hmatrix, bool is_using_permutation) : m_local_hmatrix(local_hmatrix), m_is_using_permutation(is_using_permutation) {}
     void numfact(HPDDM::MatrixCSR<CoefficientPrecision> *const &, bool = false, CoefficientPrecision *const & = nullptr) {
         if (m_local_hmatrix.get_symmetry() == 'N') {
-            lu_factorization(m_local_hmatrix);
+            sequential_lu_factorization(m_local_hmatrix);
         } else if (m_local_hmatrix.get_symmetry() == 'S' || m_local_hmatrix.get_symmetry() == 'H') {
-            cholesky_factorization(m_local_hmatrix.get_UPLO(), m_local_hmatrix);
+            sequential_cholesky_factorization(m_local_hmatrix.get_UPLO(), m_local_hmatrix);
         }
     }
     void solve(CoefficientPrecision *const b, const unsigned short &mu = 1) const {

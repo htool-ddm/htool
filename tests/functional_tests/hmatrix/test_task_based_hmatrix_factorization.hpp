@@ -154,7 +154,7 @@ bool test_task_based_cholesky_factorization(char UPLO, int n1, int n2, htool::un
     //// Classic Cholesky factorization
     matrix_test = B_dense;
     start       = std::chrono::steady_clock::now();
-    cholesky_factorization(UPLO, HA);
+    sequential_cholesky_factorization(UPLO, HA);
     end = std::chrono::steady_clock::now();
     cholesky_solve(UPLO, HA, matrix_test);
 
@@ -235,7 +235,7 @@ bool test_task_based_cholesky_factorization(char UPLO, int n1, int n2, htool::un
     //// Classic Cholesky factorization
     matrix_test = B_dense;
     start       = std::chrono::steady_clock::now();
-    cholesky_factorization(UPLO, HA);
+    sequential_cholesky_factorization(UPLO, HA);
     end = std::chrono::steady_clock::now();
     cholesky_solve(UPLO, HA, matrix_test);
     std::chrono::duration<double> classic_duration = end - start;

@@ -105,11 +105,13 @@ void task_based_internal_add_hmatrix_hmatrix_product(char transa, char transb, C
             }
         }
     } else { // if (is_C_in_L0 || A.is_leaf() || B.is_leaf() ||C.is_leaf())
+#if defined(_OPENMP) && !defined(HTOOL_WITH_PYTHON_INTERFACE)
         std::vector<const HMatrix<CoefficientPrecision, CoordinatePrecision> *> read_deps, temp;
         read_deps = enumerate_dependences(A, L0_A);
         temp      = enumerate_dependences(B, L0_B);
         read_deps.insert(read_deps.end(), temp.begin(), temp.end()); // concatenating the two vectors
         auto read_deps_size = read_deps.size();
+#endif
 
         if (is_C_in_L0) {
 #if defined(_OPENMP) && !defined(HTOOL_WITH_PYTHON_INTERFACE)
