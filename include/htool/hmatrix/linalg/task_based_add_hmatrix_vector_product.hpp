@@ -43,10 +43,9 @@ namespace htool {
  * @param L0 Vector of pointers to HMatrix nodes for task scheduling.
  * @param in_L0 Vector of pointers to input clusters corresponding to L0 nodes.
  * @param out_L0 Vector of pointers to output clusters corresponding to L0 nodes.
- * @param cout_mutex Optional pointer to a mutex for synchronized console output (for debugging).
  */
 template <typename CoefficientPrecision, typename CoordinatePrecision = CoefficientPrecision>
-void task_based_internal_add_hmatrix_vector_product(char trans, CoefficientPrecision alpha, const HMatrix<CoefficientPrecision, CoordinatePrecision> &A, const CoefficientPrecision *in, CoefficientPrecision beta, CoefficientPrecision *out, const std::vector<HMatrix<CoefficientPrecision, CoordinatePrecision> *> &L0, const std::vector<const Cluster<CoordinatePrecision> *> &in_L0, const std::vector<const Cluster<CoordinatePrecision> *> &out_L0, std::mutex *cout_mutex = nullptr) {
+void task_based_internal_add_hmatrix_vector_product(char trans, CoefficientPrecision alpha, const HMatrix<CoefficientPrecision, CoordinatePrecision> &A, const CoefficientPrecision *in, CoefficientPrecision beta, CoefficientPrecision *out, const std::vector<HMatrix<CoefficientPrecision, CoordinatePrecision> *> &L0, const std::vector<const Cluster<CoordinatePrecision> *> &in_L0, const std::vector<const Cluster<CoordinatePrecision> *> &out_L0) {
 
     auto get_output_cluster{&HMatrix<CoefficientPrecision, CoordinatePrecision>::get_target_cluster};
     auto get_input_cluster{&HMatrix<CoefficientPrecision, CoordinatePrecision>::get_source_cluster};
@@ -69,19 +68,14 @@ void task_based_internal_add_hmatrix_vector_product(char trans, CoefficientPreci
         for (auto out_L0_node : out_L0) {
 
 #if defined(_OPENMP) && !defined(HTOOL_WITH_PYTHON_INTERFACE)
-#    pragma omp task default(none)                       \
-        firstprivate(out_L0_node, out, beta, cout_mutex) \
-        shared(std::cout)                                \
+#    pragma omp task default(none)           \
+        firstprivate(out_L0_node, out, beta) \
         depend(inout : *out_L0_node)
 // priority(max_prio - 1)
 #endif // 'out' must be copied by the thread else stack-use-after-return error
             {
                 int out_L0_node_offset = out_L0_node->get_offset();
                 int out_L0_node_size   = out_L0_node->get_size();
-                if (cout_mutex != nullptr) {
-                    std::lock_guard<std::mutex> lock(*cout_mutex);
-                    std::cout << "Scaling : out[" << out_L0_node_offset << " : " << out_L0_node_offset + out_L0_node_size << "], thread " << omp_get_thread_num() << "\n";
-                }
                 int incx(1);
                 Blas<CoefficientPrecision>::scal(&out_L0_node_size, &beta, out + out_L0_node_offset, &incx);
             }
@@ -92,6 +86,7 @@ void task_based_internal_add_hmatrix_vector_product(char trans, CoefficientPreci
         int input_offset  = (*L0_node.*get_input_cluster)().get_offset();
         int output_offset = (*L0_node.*get_output_cluster)().get_offset();
 
+#if defined(_OPENMP) && !defined(HTOOL_WITH_PYTHON_INTERFACE)
         std::vector<const Cluster<CoordinatePrecision> *> write_cluster, read_cluster;
         write_cluster = enumerate_dependences((*L0_node.*get_output_cluster)(), out_L0);
         read_cluster  = enumerate_dependences((*L0_node.*get_input_cluster)(), in_L0);
@@ -101,16 +96,13 @@ void task_based_internal_add_hmatrix_vector_product(char trans, CoefficientPreci
             write_cluster.insert(write_cluster.end(), read_cluster.begin(), read_cluster.end());
             read_cluster.clear();
         }
-
         auto write_deps_size        = write_cluster.size();
         auto read_deps_cluster_size = read_cluster.size();
-
-#if defined(_OPENMP) && !defined(HTOOL_WITH_PYTHON_INTERFACE)
-#    pragma omp task default(none)                                                                                                                                                                   \
-        firstprivate(sym, trans_sym, alpha, in, trans, out, write_deps_size, cout_mutex, input_offset, output_offset, local_input_offset, local_output_offset, L0_node, write_cluster, read_cluster) \
-        shared(std::cout)                                                                                                                                                                            \
-        depend(iterator(it = 0 : write_deps_size), inout : *write_cluster[it])                                                                                                                       \
-        depend(iterator(it = 0 : read_deps_cluster_size), in : *read_cluster[it])                                                                                                                    \
+#    pragma omp task default(none)                                                                                                                                                       \
+        firstprivate(sym, trans_sym, alpha, in, trans, out, write_deps_size, input_offset, output_offset, local_input_offset, local_output_offset, L0_node, write_cluster, read_cluster) \
+        shared(std::cout)                                                                                                                                                                \
+        depend(iterator(it = 0 : write_deps_size), inout : *write_cluster[it])                                                                                                           \
+        depend(iterator(it = 0 : read_deps_cluster_size), in : *read_cluster[it])                                                                                                        \
         depend(in : *L0_node)
         // priority(max_prio)
 #endif // L0_node must be copied by the thread else heap-use-after-free error

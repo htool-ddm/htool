@@ -39,7 +39,7 @@ bool test_hmatrix_lu(char trans, int n1, int n2, htool::underlying_type<T> epsil
 
     // LU factorization
     matrix_test = B_dense;
-    lu_factorization(A);
+    sequential_lu_factorization(A);
     lu_solve(trans, A, matrix_test);
     error    = normFrob(X_dense - matrix_test) / normFrob(X_dense);
     is_error = is_error || !(error < epsilon * margin);
@@ -76,7 +76,7 @@ bool test_hmatrix_cholesky(char UPLO, int n1, int n2, htool::underlying_type<T> 
 
     // Cholesky factorization
     matrix_test = B_dense;
-    cholesky_factorization(UPLO, HA);
+    sequential_cholesky_factorization(UPLO, HA);
     cholesky_solve(UPLO, HA, matrix_test);
     error    = normFrob(X_dense - matrix_test) / normFrob(X_dense);
     is_error = is_error || !(error < epsilon * margin);
@@ -113,7 +113,7 @@ bool test_hmatrix_cholesky(char UPLO, int n1, int n2, htool::underlying_type<T> 
 
     // Cholesky factorization
     matrix_test = B_dense;
-    cholesky_factorization(UPLO, HA);
+    sequential_cholesky_factorization(UPLO, HA);
     cholesky_solve(UPLO, HA, matrix_test);
     error    = normFrob(X_dense - matrix_test) / normFrob(X_dense);
     is_error = is_error || !(error < epsilon * margin);

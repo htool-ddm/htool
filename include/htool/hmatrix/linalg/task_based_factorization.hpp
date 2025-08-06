@@ -53,7 +53,7 @@ void task_based_lu_factorization(HMatrix<CoefficientPrecision, CoordinatePrecisi
 
 #endif
             {
-                lu_factorization(hmatrix);
+                sequential_lu_factorization(hmatrix);
             }
         } else {
 
@@ -139,7 +139,7 @@ void task_based_cholesky_factorization(char UPLO, HMatrix<CoefficientPrecision, 
         depend(inout : hmatrix)
 #endif
             {
-                cholesky_factorization(UPLO, hmatrix);
+                sequential_cholesky_factorization(UPLO, hmatrix);
             }
         } else {
 
