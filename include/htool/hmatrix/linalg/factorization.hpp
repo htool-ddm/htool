@@ -9,13 +9,14 @@
 #include "../linalg/triangular_hmatrix_hmatrix_solve.hpp"       // for tria...
 #include "../linalg/triangular_hmatrix_matrix_solve.hpp"        // for tria...
 #include "htool/hmatrix/linalg/add_hmatrix_hmatrix_product.hpp" // for add_...
+#include "task_based_factorization.hpp"                         // for task...
 #include <string>                                               // for basi...
 #include <vector>                                               // for vector
 
 namespace htool {
 
 template <typename CoefficientPrecision, typename CoordinatePrecision = underlying_type<CoefficientPrecision>>
-void lu_factorization(HMatrix<CoefficientPrecision, CoordinatePrecision> &hmatrix) {
+void sequential_lu_factorization(HMatrix<CoefficientPrecision, CoordinatePrecision> &hmatrix) {
     if (!hmatrix.is_block_tree_consistent()) {
         htool::Logger::get_instance().log(LogLevel::ERROR, "lu_factorization is only implemented for consistent block tree."); // LCOV_EXCL_LINE
     }
@@ -76,6 +77,43 @@ void lu_factorization(HMatrix<CoefficientPrecision, CoordinatePrecision> &hmatri
     }
 }
 
+template <typename ExecutionPolicy, typename CoefficientPrecision, typename CoordinatePrecision = underlying_type<CoefficientPrecision>>
+void lu_factorization(ExecutionPolicy &&, HMatrix<CoefficientPrecision, CoordinatePrecision> &hmatrix) {
+
+#if defined(__cpp_lib_execution) && __cplusplus >= 201703L
+    if constexpr (std::is_execution_policy_v<std::decay_t<ExecutionPolicy>>) {
+        if constexpr (std::is_same_v<std::decay_t<ExecutionPolicy>, std::execution::parallel_policy>) {
+            int max_nb_nodes                                = 64; // TODO:add better default value
+            std::vector<HMatrix<CoefficientPrecision> *> L0 = find_l0(hmatrix, max_nb_nodes);
+#    if defined(_OPENMP) && !defined(HTOOL_WITH_PYTHON_INTERFACE)
+#        pragma omp parallel
+#        pragma omp single
+#    endif
+            {
+                task_based_lu_factorization(hmatrix, L0);
+            }
+        } else if constexpr (std::is_same_v<std::decay_t<ExecutionPolicy>, std::execution::sequenced_policy>) {
+            sequential_lu_factorization(hmatrix);
+        } else {
+            static_assert(std::is_same_v<std::decay_t<ExecutionPolicy>, std::execution::sequenced_policy> || std::is_same_v<std::decay_t<ExecutionPolicy>, std::execution::parallel_policy>, "Invalid execution policy for factorization.");
+        }
+    } else {
+        static_assert(std::is_execution_policy_v<std::decay_t<ExecutionPolicy>>, "Invalid execution policy for factorization.");
+    }
+#else
+    sequential_lu_factorization(hmatrix);
+#endif
+}
+
+template <typename CoefficientPrecision, typename CoordinatePrecision = underlying_type<CoefficientPrecision>>
+void lu_factorization(HMatrix<CoefficientPrecision, CoordinatePrecision> &hmatrix) {
+#if defined(__cpp_lib_execution) && __cplusplus >= 201703L
+    lu_factorization(std::execution::seq, hmatrix);
+#else
+    lu_factorization(nullptr, hmatrix);
+#endif
+}
+
 template <typename Mat, typename CoordinatePrecision = underlying_type<typename Mat::value_type>>
 void internal_lu_solve(char trans, const HMatrix<typename Mat::value_type, CoordinatePrecision> &A, Mat &X) {
     using CoefficientPrecision = typename Mat::value_type;
@@ -89,7 +127,7 @@ void internal_lu_solve(char trans, const HMatrix<typename Mat::value_type, Coord
 }
 
 template <typename CoefficientPrecision, typename CoordinatePrecision = underlying_type<CoefficientPrecision>>
-void cholesky_factorization(char UPLO, HMatrix<CoefficientPrecision, CoordinatePrecision> &hmatrix) {
+void sequential_cholesky_factorization(char UPLO, HMatrix<CoefficientPrecision, CoordinatePrecision> &hmatrix) {
     if (!hmatrix.is_block_tree_consistent()) {
         htool::Logger::get_instance().log(LogLevel::ERROR, "cholesky_factorization is only implemented for consistent block tree."); // LCOV_EXCL_LINE
     }
@@ -119,7 +157,7 @@ void cholesky_factorization(char UPLO, HMatrix<CoefficientPrecision, CoordinateP
         for (auto &cluster_child : clusters) {
             HMatrix<CoefficientPrecision, CoordinatePrecision> *pivot = hmatrix.get_sub_hmatrix(*cluster_child, *cluster_child);
             // Compute pivot block
-            cholesky_factorization(UPLO, *pivot);
+            sequential_cholesky_factorization(UPLO, *pivot);
 
             // Apply pivot block to row and column
             for (auto &other_cluster_child : clusters) {
@@ -163,6 +201,43 @@ void cholesky_factorization(char UPLO, HMatrix<CoefficientPrecision, CoordinateP
     } else {
         htool::Logger::get_instance().log(LogLevel::ERROR, "Operation is not implemented for cholesky_factorization (hmatrix is low-rank)"); // LCOV_EXCL_LINE
     }
+}
+
+template <typename ExecutionPolicy, typename CoefficientPrecision, typename CoordinatePrecision = underlying_type<CoefficientPrecision>>
+void cholesky_factorization(ExecutionPolicy &&, char UPLO, HMatrix<CoefficientPrecision, CoordinatePrecision> &hmatrix) {
+
+#if defined(__cpp_lib_execution) && __cplusplus >= 201703L
+    if constexpr (std::is_execution_policy_v<std::decay_t<ExecutionPolicy>>) {
+        if constexpr (std::is_same_v<std::decay_t<ExecutionPolicy>, std::execution::parallel_policy>) {
+            int max_nb_nodes                                = 64; // TODO:add better default value
+            std::vector<HMatrix<CoefficientPrecision> *> L0 = find_l0(hmatrix, max_nb_nodes);
+#    if defined(_OPENMP) && !defined(HTOOL_WITH_PYTHON_INTERFACE)
+#        pragma omp parallel
+#        pragma omp single
+#    endif
+            {
+                task_based_cholesky_factorization(UPLO, hmatrix, L0);
+            }
+        } else if constexpr (std::is_same_v<std::decay_t<ExecutionPolicy>, std::execution::sequenced_policy>) {
+            sequential_cholesky_factorization(UPLO, hmatrix);
+        } else {
+            static_assert(std::is_same_v<std::decay_t<ExecutionPolicy>, std::execution::sequenced_policy> || std::is_same_v<std::decay_t<ExecutionPolicy>, std::execution::parallel_policy>, "Invalid execution policy for factorization.");
+        }
+    } else {
+        static_assert(std::is_execution_policy_v<std::decay_t<ExecutionPolicy>>, "Invalid execution policy for factorization.");
+    }
+#else
+    sequential_cholesky_factorization(UPLO, hmatrix);
+#endif
+}
+
+template <typename CoefficientPrecision, typename CoordinatePrecision = underlying_type<CoefficientPrecision>>
+void cholesky_factorization(char UPLO, HMatrix<CoefficientPrecision, CoordinatePrecision> &hmatrix) {
+#if defined(__cpp_lib_execution) && __cplusplus >= 201703L
+    cholesky_factorization(std::execution::seq, UPLO, hmatrix);
+#else
+    cholesky_factorization(nullptr, UPLO, hmatrix);
+#endif
 }
 
 template <typename CoefficientPrecision, typename CoordinatePrecision = underlying_type<CoefficientPrecision>>

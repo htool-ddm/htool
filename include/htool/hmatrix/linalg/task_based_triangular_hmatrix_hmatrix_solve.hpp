@@ -67,9 +67,9 @@ void task_based_internal_triangular_hmatrix_hmatrix_solve(char side, char UPLO, 
     }
 
     if (is_B_in_L0_B) {
+#if defined(_OPENMP) && !defined(HTOOL_WITH_PYTHON_INTERFACE)
         std::vector<const HMatrix<CoefficientPrecision, CoordinatePrecision> *> read_deps = enumerate_dependences(A, L0_A);
         int read_deps_size                                                                = read_deps.size();
-#if defined(_OPENMP) && !defined(HTOOL_WITH_PYTHON_INTERFACE)
 #    pragma omp task default(none)                    \
         firstprivate(side, UPLO, transa, alpha, diag) \
         shared(A, B, read_deps)                       \

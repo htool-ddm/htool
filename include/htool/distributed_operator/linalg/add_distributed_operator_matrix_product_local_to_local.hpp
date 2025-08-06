@@ -117,6 +117,20 @@ void add_distributed_operator_matrix_product_local_to_local(char trans, typename
         output_partition.local_partition_to_local_numbering(rankWorld, output_buffer_transpose_ptr, out.data() + j * out.nb_rows());
     }
 }
+
+template <typename CoefficientPrecision>
+void internal_add_distributed_operator_matrix_product_local_to_local(char trans, CoefficientPrecision alpha, const DistributedOperator<CoefficientPrecision> &A, const CoefficientPrecision *in, CoefficientPrecision beta, CoefficientPrecision *out, int mu, CoefficientPrecision *work) {
+    int rankWorld;
+    MPI_Comm_rank(A.get_comm(), &rankWorld);
+    auto &input_partition  = trans == 'N' ? A.get_source_partition() : A.get_target_partition();
+    auto &output_partition = trans == 'N' ? A.get_target_partition() : A.get_source_partition();
+    int ni                 = input_partition.get_size_of_partition(rankWorld);
+    int no                 = output_partition.get_size_of_partition(rankWorld);
+    MatrixView<const CoefficientPrecision> input(ni, mu, in);
+    MatrixView<CoefficientPrecision> output(no, mu, out);
+    internal_add_distributed_operator_matrix_product_local_to_local(trans, alpha, A, input, beta, output, work);
+}
+
 template <typename CoefficientPrecision>
 void add_distributed_operator_matrix_product_local_to_local(char trans, CoefficientPrecision alpha, const DistributedOperator<CoefficientPrecision> &A, const CoefficientPrecision *in, CoefficientPrecision beta, CoefficientPrecision *out, int mu, CoefficientPrecision *work) {
     int rankWorld;
