@@ -101,7 +101,7 @@ std::map<std::string, std::string> get_tree_parameters(const HMatrix<Coefficient
 template <typename CoefficientPrecision, typename CoordinatePrecision = underlying_type<CoefficientPrecision>>
 void print_tree_parameters(const HMatrix<CoefficientPrecision, CoordinatePrecision> &hmatrix, std::ostream &os) {
     auto tree_parameters = get_tree_parameters(hmatrix);
-    int output_size      = 23;
+    int output_size      = 25;
 
     // save default formatting
     std::ios init(nullptr);
