@@ -15,7 +15,6 @@ namespace htool {
 template <typename CoefficientPrecision, typename CoordinatePrecision = underlying_type<CoefficientPrecision>>
 struct HMatrixTreeData {
     // Parameters
-    std::shared_ptr<const Cluster<CoordinatePrecision>> m_target_cluster_tree, m_source_cluster_tree; // root clusters
     underlying_type<CoefficientPrecision> m_epsilon{1e-6};
     CoordinatePrecision m_eta{10};
     unsigned int m_minimal_source_depth{0};

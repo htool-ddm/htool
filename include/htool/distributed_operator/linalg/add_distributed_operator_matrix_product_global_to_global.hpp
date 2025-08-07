@@ -1,8 +1,8 @@
 #ifndef HTOOL_DISTRIBUTED_OPERATOR_LINALG_ADD_DISTRIBUTED_OPERATOR_MATRIX_PRODUCT_GLOBAL_TO_GLOBAL_HPP
 #define HTOOL_DISTRIBUTED_OPERATOR_LINALG_ADD_DISTRIBUTED_OPERATOR_MATRIX_PRODUCT_GLOBAL_TO_GLOBAL_HPP
 
+#include "../../matrix/matrix.hpp"
 #include "../distributed_operator.hpp"
-
 namespace htool {
 
 /// @brief
