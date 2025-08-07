@@ -8,7 +8,7 @@
 using namespace std;
 using namespace htool;
 
-class MyMatrix : public VirtualInternalGenerator<double> {
+class UserOperator : public VirtualInternalGenerator<double> {
     const vector<int> &m_target_permutation;
     const vector<int> &m_source_permutation;
     const vector<double> &m_target_coordinates;
@@ -19,7 +19,7 @@ class MyMatrix : public VirtualInternalGenerator<double> {
 
   public:
     // Constructor
-    MyMatrix(int spatial_dimension, const vector<int> &target_permutation, const vector<int> &source_permutation, const vector<double> &target_coordinates, const vector<double> &source_coordinates) : m_target_permutation(target_permutation), m_source_permutation(source_permutation), m_target_coordinates(target_coordinates), m_source_coordinates(source_coordinates), m_space_dim(spatial_dimension), m_nr(target_permutation.size()), m_nc(source_permutation.size()) {}
+    UserOperator(int spatial_dimension, const vector<int> &target_permutation, const vector<int> &source_permutation, const vector<double> &target_coordinates, const vector<double> &source_coordinates) : m_target_permutation(target_permutation), m_source_permutation(source_permutation), m_target_coordinates(target_coordinates), m_source_coordinates(source_coordinates), m_space_dim(spatial_dimension), m_nr(target_permutation.size()), m_nc(source_permutation.size()) {}
 
     // Virtual function to overload, necessary
     void copy_submatrix(int M, int N, int row_offset, int col_offset, double *ptr) const override {
@@ -94,7 +94,7 @@ int main(int argc, char *argv[]) {
     Cluster<double> target_cluster = recursive_build_strategy.create_cluster_tree(nr, spatial_dimension, target_coordinates.data(), 2, 1);
     Cluster<double> source_cluster = recursive_build_strategy.create_cluster_tree(nc, spatial_dimension, source_coordinates.data(), 2, 1);
 
-    MyMatrix A(spatial_dimension, target_cluster.get_permutation(), source_cluster.get_permutation(), target_coordinates, source_coordinates);
+    UserOperator A(spatial_dimension, target_cluster.get_permutation(), source_cluster.get_permutation(), target_coordinates, source_coordinates);
     double norm_A = A.normFrob();
 
     // SVD
