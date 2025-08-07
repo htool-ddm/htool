@@ -243,6 +243,31 @@ int test_solver_ddm_adding_overlap(int argc, char *argv[], int mu, char data_sym
         test = test || !(error2 < tol);
 
         x_global = 0;
+
+        // DDM solver with non uniform coarse space
+        if (rank == 0)
+            std::cout << "RAS two level with overlap and threshold:" << std::endl;
+        opt.parse("-hpddm_schwarz_method ras -hpddm_schwarz_coarse_correction additive");
+        // DDM<complex<double>> ddm_with_overlap_threshold(Generator, &Operator, ovr_subdomain_to_global, cluster_to_ovr_subdomain, neighbors, intersections);
+        solver_builder default_ddm_solver_non_uniform_coarse_space(Operator, local_block_diagonal_hmatrix, Generator, ovr_subdomain_to_global, cluster_to_ovr_subdomain, neighbors, intersections);
+        auto &ddm_with_non_uniform_coarse_space = default_ddm_solver_non_uniform_coarse_space.solver;
+
+        Ki.bytes_to_matrix(datapath + "/Ki_" + NbrToStr(size) + "_" + NbrToStr(rank) + ".bin");
+        auto non_uniform_geneo_coarse_space_dense_builder = GeneoCoarseSpaceDenseBuilder<std::complex<double>>::GeneoWithNu(local_size_wo_overlap, local_size_with_overlap, default_ddm_solver.block_diagonal_dense_matrix, Ki, symmetric, UPLO, rank == 0 ? 0 : 2);
+        // geneo_coarse_space_dense_builder.set_geneo_threshold(100);
+        ddm_with_non_uniform_coarse_space.build_coarse_space(non_uniform_geneo_coarse_space_dense_builder, geneo_coarse_operator_builder);
+        ddm_with_non_uniform_coarse_space.facto_one_level();
+        ddm_with_non_uniform_coarse_space.solve(f_global.data(), x_global.data(), mu);
+        ddm_with_non_uniform_coarse_space.print_infos();
+        ddm_with_non_uniform_coarse_space.clean();
+        error2 = normFrob(f_global - A * x_global) / normFrob(f_global);
+        if (rank == 0) {
+            cout << "error: " << error2 << endl;
+        }
+
+        test = test || !(error2 < tol);
+
+        x_global = 0;
     }
 
     return test;
