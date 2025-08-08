@@ -70,6 +70,9 @@ int main(int argc, char *argv[]) {
 
     std::string outputpath = argv[1];
 
+    // Execution policy
+    auto &policy = exec_compat::par;
+
     // Geometry
     const int number_points     = 10000;
     const int spatial_dimension = 3;
@@ -81,8 +84,8 @@ int main(int argc, char *argv[]) {
     recursive_build_strategy.set_maximal_leaf_size(500);
 
     // HMatrix parameters
-    const double epsilon = 0.001;
-    const double eta     = 100;
+    const double epsilon = 0.01;
+    const double eta     = 10;
     char symmetry        = 'S';
     char UPLO            = 'L';
 
@@ -91,7 +94,7 @@ int main(int argc, char *argv[]) {
 
     // HMatrix
     HMatrixBuilder<double> hmatrix_builder(number_points, spatial_dimension, coordinates.data(), &recursive_build_strategy);
-    HMatrix<double> hmatrix = hmatrix_builder.build(A, htool::HMatrixTreeBuilder<double>(epsilon, eta, symmetry, UPLO));
+    HMatrix<double> hmatrix = hmatrix_builder.build(policy, A, htool::HMatrixTreeBuilder<double>(epsilon, eta, symmetry, UPLO));
 
     // Output
     // save_leaves_with_rank(hmatrix, outputpath + "hmatrix");
@@ -100,7 +103,7 @@ int main(int argc, char *argv[]) {
 
     // sequential y= A*x
     std::vector<double> x(number_points, 1), y(number_points, 0), ref(number_points, 0);
-    add_hmatrix_vector_product('N', double(1), hmatrix, x.data(), double(0), y.data());
+    add_hmatrix_vector_product(policy, 'N', double(1), hmatrix, x.data(), double(0), y.data());
     ref = A * x;
     std::cout << "relative error on matrix vector product : ";
     std::cout << norm2(ref - y) / norm2(ref) << "\n";
@@ -109,7 +112,7 @@ int main(int argc, char *argv[]) {
     std::vector<double> z(number_points, 0);
     z = y;
     MatrixView<double> z_view(number_points, 1, z.data());
-    cholesky_factorization(UPLO, hmatrix);
+    cholesky_factorization(policy, UPLO, hmatrix);
     cholesky_solve(UPLO, hmatrix, z_view);
     std::cout << "relative error on cholesky solve : ";
     std::cout << norm2(z - x) / norm2(x) << "\n";

@@ -1,7 +1,7 @@
-#ifndef HTOOL_HMATRIX_TASK_BASED_TREE_BUILDER_HPP
-#define HTOOL_HMATRIX_TASK_BASED_TREE_BUILDER_HPP
+#ifndef HTOOL_HMATRIX_TASK_DEPENDENCIES_HPP
+#define HTOOL_HMATRIX_TASK_DEPENDENCIES_HPP
 
-#include "../hmatrix.hpp"
+#include "hmatrix.hpp"
 namespace htool {
 
 /**

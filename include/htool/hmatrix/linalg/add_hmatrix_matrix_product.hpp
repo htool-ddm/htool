@@ -1,19 +1,19 @@
 #ifndef HTOOL_HMATRIX_LINALG_ADD_HMATRIX_MATRIX_PRODUCT_HPP
 #define HTOOL_HMATRIX_LINALG_ADD_HMATRIX_MATRIX_PRODUCT_HPP
 
-#include "../../matrix/linalg/scale.hpp"            // for scale
-#include "../../matrix/linalg/transpose.hpp"        // for transpose
-#include "../../matrix/matrix.hpp"                  // for Matrix
-#include "../../matrix/utils/SVD_truncation.hpp"    // for SVD_truncation
-#include "../../misc/misc.hpp"                      // for underlying_type
-#include "../../wrappers/wrapper_blas.hpp"          // for Blas
+#include "../../matrix/linalg/scale.hpp"         // for scale
+#include "../../matrix/linalg/transpose.hpp"     // for transpose
+#include "../../matrix/matrix.hpp"               // for Matrix
+#include "../../matrix/utils/SVD_truncation.hpp" // for SVD_truncation
+#include "../../misc/misc.hpp"                   // for underlying_type
+#include "../../wrappers/wrapper_blas.hpp"       // for Blas
+#include "../execution_policies.hpp"
 #include "../hmatrix.hpp"                           // for HMatrix
 #include "../lrmat/lrmat.hpp"                       // for LowRankMatrix
 #include "../lrmat/utils/SVD_recompression.hpp"     // for recompression
 #include "add_hmatrix_matrix_product_row_major.hpp" // for sequential_ad...
-#include "execution_policies.hpp"
-#include <algorithm> // for copy_n, min
-#include <vector>    // for vector
+#include <algorithm>                                // for copy_n, min
+#include <vector>                                   // for vector
 
 namespace htool {
 
@@ -29,17 +29,18 @@ void internal_add_hmatrix_matrix_product(ExecutionPolicy &&, char transa, char t
         Matrix<CoefficientPrecision> transposed_B(B.nb_cols(), B.nb_rows()), transposed_C(C.nb_cols(), C.nb_rows());
         transpose(B, transposed_B);
         transpose(C, transposed_C);
-#if defined(__cpp_lib_execution) && __cplusplus >= 201703L
-        if constexpr (std::is_execution_policy_v<std::decay_t<ExecutionPolicy>>) {
-            if constexpr (std::is_same_v<std::decay_t<ExecutionPolicy>, std::execution::parallel_policy>) {
+#if __cplusplus >= 201703L
+        if constexpr (is_execution_policy_v<std::decay_t<ExecutionPolicy>>) {
+            if constexpr (std::is_same_v<std::decay_t<ExecutionPolicy>, exec_compat::parallel_policy>) {
                 openmp_internal_add_hmatrix_matrix_product_row_major(transa, transb, alpha, A, transposed_B.data(), beta, transposed_C.data(), transposed_C.nb_rows());
-            } else if constexpr (std::is_same_v<std::decay_t<ExecutionPolicy>, std::execution::sequenced_policy>) {
+            } else if constexpr (std::is_same_v<std::decay_t<ExecutionPolicy>, exec_compat::sequenced_policy>) {
                 sequential_internal_add_hmatrix_matrix_product_row_major(transa, transb, alpha, A, transposed_B.data(), beta, transposed_C.data(), transposed_C.nb_rows());
+                // } else if constexpr (std::is_same_v<std::decay_t<ExecutionPolicy>, omp_task_policy<CoefficientPrecision, CoordinatePrecision>>) {
             } else {
-                static_assert(std::is_same_v<std::decay_t<ExecutionPolicy>, std::execution::sequenced_policy> || std::is_same_v<std::decay_t<ExecutionPolicy>, std::execution::parallel_policy>, "Invalid execution policy for add_hmatrix_vector_product.");
+                static_assert(std::is_same_v<std::decay_t<ExecutionPolicy>, exec_compat::sequenced_policy> || std::is_same_v<std::decay_t<ExecutionPolicy>, exec_compat::parallel_policy>, "Invalid execution policy for add_hmatrix_vector_product.");
             }
         } else {
-            static_assert(std::is_execution_policy_v<std::decay_t<ExecutionPolicy>>, "Invalid execution policy for add_hmatrix_vector_product.");
+            static_assert(is_execution_policy_v<std::decay_t<ExecutionPolicy>>, "Invalid execution policy for add_hmatrix_vector_product.");
         }
 #else
         sequential_internal_add_hmatrix_matrix_product_row_major(transa, transb, alpha, A, transposed_B.data(), beta, transposed_C.data(), transposed_C.nb_rows());
@@ -55,17 +56,18 @@ void internal_add_hmatrix_matrix_product(ExecutionPolicy &&, char transa, char t
             conj_if_complex(buffer_B.data(), buffer_B.size());
         }
 
-#if defined(__cpp_lib_execution) && __cplusplus >= 201703L
-        if constexpr (std::is_execution_policy_v<std::decay_t<ExecutionPolicy>>) {
-            if constexpr (std::is_same_v<std::decay_t<ExecutionPolicy>, std::execution::parallel_policy>) {
+#if __cplusplus >= 201703L
+        if constexpr (is_execution_policy_v<std::decay_t<ExecutionPolicy>>) {
+            if constexpr (std::is_same_v<std::decay_t<ExecutionPolicy>, exec_compat::parallel_policy>) {
                 openmp_internal_add_hmatrix_matrix_product_row_major(transa, 'N', alpha, A, transb == 'C' ? buffer_B.data() : B.data(), beta, transposed_C.data(), transposed_C.nb_rows());
-            } else if constexpr (std::is_same_v<std::decay_t<ExecutionPolicy>, std::execution::sequenced_policy>) {
+            } else if constexpr (std::is_same_v<std::decay_t<ExecutionPolicy>, exec_compat::sequenced_policy>) {
                 sequential_internal_add_hmatrix_matrix_product_row_major(transa, 'N', alpha, A, transb == 'C' ? buffer_B.data() : B.data(), beta, transposed_C.data(), transposed_C.nb_rows());
+                // } else if constexpr (std::is_same_v<std::decay_t<ExecutionPolicy>, omp_task_policy<CoefficientPrecision, CoordinatePrecision>>) {
             } else {
-                static_assert(!std::is_same_v<std::decay_t<ExecutionPolicy>, std::execution::sequenced_policy> && !std::is_same_v<std::decay_t<ExecutionPolicy>, std::execution::parallel_policy>, "Invalid execution policy for add_hmatrix_vector_product.");
+                static_assert(std::is_same_v<std::decay_t<ExecutionPolicy>, exec_compat::sequenced_policy> || std::is_same_v<std::decay_t<ExecutionPolicy>, exec_compat::parallel_policy>, "Invalid execution policy for add_hmatrix_vector_product.");
             }
         } else {
-            static_assert(!std::is_execution_policy_v<std::decay_t<ExecutionPolicy>>, "Invalid execution policy for add_hmatrix_vector_product.");
+            static_assert(is_execution_policy_v<std::decay_t<ExecutionPolicy>>, "Invalid execution policy for add_hmatrix_vector_product.");
         }
 #else
         sequential_internal_add_hmatrix_matrix_product_row_major(transa, 'N', alpha, A, transb == 'C' ? buffer_B.data() : B.data(), beta, transposed_C.data(), transposed_C.nb_rows());
@@ -80,8 +82,8 @@ template <typename MatB,
           typename                     = std::enable_if_t<
                                   std::is_same<typename MatB::value_type, typename MatC::value_type>::value>>
 void internal_add_hmatrix_matrix_product(char transa, char transb, typename MatB::value_type alpha, const HMatrix<typename MatB::value_type, CoordinatePrecision> &A, const MatB &B, typename MatB::value_type beta, MatC &C) {
-#if defined(__cpp_lib_execution) && __cplusplus >= 201703L
-    internal_add_hmatrix_matrix_product(std::execution::seq, transa, transb, alpha, A, B, beta, C);
+#if __cplusplus >= 201703L
+    internal_add_hmatrix_matrix_product(exec_compat::seq, transa, transb, alpha, A, B, beta, C);
 #else
     internal_add_hmatrix_matrix_product(nullptr, transa, transb, alpha, A, B, beta, C);
 #endif
@@ -165,15 +167,6 @@ void internal_add_hmatrix_matrix_product(char transa, char transb, CoefficientPr
     SVD_recompression(C);
 }
 
-#if !defined(__cpp_lib_execution) || __cplusplus < 201703L
-#    if defined(__clang__)
-#        pragma clang diagnostic push
-#        pragma clang diagnostic ignored "-Wunused-parameter"
-#    elif defined(__GNUC__) || defined(__GNUG__)
-#        pragma GCC diagnostic push
-#        pragma GCC diagnostic ignored "-Wunused-parameter"
-#    endif
-#endif
 template <typename ExecutionPolicy,
           typename MatB,
           typename MatC,
@@ -181,6 +174,8 @@ template <typename ExecutionPolicy,
           typename                     = std::enable_if_t<
                                   std::is_same<typename MatB::value_type, typename MatC::value_type>::value>>
 void add_hmatrix_matrix_product(ExecutionPolicy &&execution_policy, char transa, char transb, typename MatB::value_type alpha, const HMatrix<typename MatB::value_type, CoordinatePrecision> &A, const MatB &B, typename MatB::value_type beta, MatC &C, typename MatB::value_type *buffer = nullptr) {
+    (void)execution_policy; // trick to avoid triggering unused parameter. C++17 -> use [[maybe_unused]] attribute
+
     using CoefficientPrecision = typename MatB::value_type;
     auto &target_cluster       = A.get_target_cluster();
     auto &source_cluster       = A.get_source_cluster();
@@ -199,7 +194,7 @@ void add_hmatrix_matrix_product(ExecutionPolicy &&execution_policy, char transa,
         user_to_cluster(target_cluster, C.data() + target_cluster.get_size() * i, permuted_C.data() + target_cluster.get_size() * i);
     }
 
-#if defined(__cpp_lib_execution) && __cplusplus >= 201703L
+#if __cplusplus >= 201703L
     internal_add_hmatrix_matrix_product(execution_policy, transa, transb, alpha, A, permuted_B, beta, permuted_C);
 #else
     internal_add_hmatrix_matrix_product(transa, transb, alpha, A, permuted_B, beta, permuted_C);
@@ -208,18 +203,11 @@ void add_hmatrix_matrix_product(ExecutionPolicy &&execution_policy, char transa,
         cluster_to_user(target_cluster, permuted_C.data() + target_cluster.get_size() * i, C.data() + target_cluster.get_size() * i);
     }
 }
-#if !defined(__cpp_lib_execution) || __cplusplus < 201703L
-#    if defined(__clang__)
-#        pragma clang diagnostic pop
-#    elif defined(__GNUC__) || defined(__GNUG__)
-#        pragma GCC diagnostic pop
-#    endif
-#endif
 
 template <typename Mat, typename CoordinatePrecision = underlying_type<typename Mat::value_type>>
 void add_hmatrix_matrix_product(char transa, char transb, typename Mat::value_type alpha, const HMatrix<typename Mat::value_type, CoordinatePrecision> &A, const Mat &B, typename Mat::value_type beta, Mat &C, typename Mat::value_type *buffer = nullptr) {
-#if defined(__cpp_lib_execution) && __cplusplus >= 201703L
-    add_hmatrix_matrix_product(std::execution::seq, transa, transb, alpha, A, B, beta, C, buffer);
+#if __cplusplus >= 201703L
+    add_hmatrix_matrix_product(exec_compat::seq, transa, transb, alpha, A, B, beta, C, buffer);
 #else
     add_hmatrix_matrix_product(nullptr, transa, transb, alpha, A, B, beta, C, buffer);
 #endif

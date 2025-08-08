@@ -19,11 +19,11 @@
 #include <htool/hmatrix/linalg/triangular_hmatrix_hmatrix_solve.hpp>            // for triangular_hmatrix_hmatrix_solve
 
 #include <htool/hmatrix/lrmat/SVD.hpp>
-#include <htool/hmatrix/tree_builder/task_based_tree_builder.hpp> // for enumerate_dependence, find_l0...
-#include <htool/hmatrix/tree_builder/tree_builder.hpp>            // for HMatrix...
-#include <htool/matrix/matrix.hpp>                                // for Matrix
-#include <htool/misc/misc.hpp>                                    // for underly...
-#include <htool/misc/user.hpp>                                    // for NbrToStr
+#include <htool/hmatrix/task_dependencies.hpp>         // for enumerate_dependence, find_l0...
+#include <htool/hmatrix/tree_builder/tree_builder.hpp> // for HMatrix...
+#include <htool/matrix/matrix.hpp>                     // for Matrix
+#include <htool/misc/misc.hpp>                         // for underly...
+#include <htool/misc/user.hpp>                         // for NbrToStr
 #include <htool/testing/dense_blocks_generator_test.hpp>
 #include <htool/testing/generate_test_case.hpp> // for TestCaseSymmetricPro...
 #include <htool/testing/generator_input.hpp>
@@ -54,8 +54,8 @@ bool test_task_based_hmatrix_triangular_solve(const TestCaseType &test_case, cha
     HMatrixTreeBuilder<T, htool::underlying_type<T>> hmatrix_tree_builder_A(epsilon, eta, 'N', 'N');
     HMatrixTreeBuilder<T, htool::underlying_type<T>> hmatrix_tree_builder_X(epsilon, eta, 'N', 'N');
 
-    HMatrix<T, htool::underlying_type<T>> A = hmatrix_tree_builder_A.build(*test_case.operator_A, *test_case.root_cluster_A_output, *test_case.root_cluster_A_input, -1, -1, true, 64);
-    HMatrix<T, htool::underlying_type<T>> X = hmatrix_tree_builder_X.build(*test_case.operator_X, *test_case.root_cluster_X_output, *test_case.root_cluster_X_input, -1, -1, true, 64);
+    HMatrix<T, htool::underlying_type<T>> A = hmatrix_tree_builder_A.build(*test_case.operator_A, *test_case.root_cluster_A_output, *test_case.root_cluster_A_input);
+    HMatrix<T, htool::underlying_type<T>> X = hmatrix_tree_builder_X.build(*test_case.operator_X, *test_case.root_cluster_X_output, *test_case.root_cluster_X_input);
     HMatrix<T, htool::underlying_type<T>> B(X), UB(X), LB(X);
     HMatrix<T, htool::underlying_type<T>> hmatrix_test(B);
 
@@ -147,7 +147,6 @@ bool test_task_based_hmatrix_triangular_solve(const TestCaseType &test_case, cha
     int max_nb_nodes                = 32;
     std::vector<HMatrix<T> *> L0_LA = find_l0(LA, max_nb_nodes);
     std::vector<HMatrix<T> *> L0_UA = find_l0(UA, max_nb_nodes);
-    std::vector<HMatrix<T> *> L0_test;
 
     //// internal_triangular_hmatrix_hmatrix_solve Lower
     ////// Classic
@@ -164,9 +163,9 @@ bool test_task_based_hmatrix_triangular_solve(const TestCaseType &test_case, cha
     cout << "    classic_duration = " << classic_duration.count() << std::endl;
 
     ////// Task-based
-    hmatrix_test = LB;
-    L0_test      = find_l0(hmatrix_test, max_nb_nodes);
-    start        = std::chrono::steady_clock::now();
+    hmatrix_test                      = LB;
+    std::vector<HMatrix<T> *> L0_test = find_l0(hmatrix_test, max_nb_nodes);
+    start                             = std::chrono::steady_clock::now();
 #if defined(_OPENMP) && !defined(HTOOL_WITH_PYTHON_INTERFACE)
 #    pragma omp parallel
 #    pragma omp single
