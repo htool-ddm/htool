@@ -167,6 +167,43 @@ void internal_add_hmatrix_matrix_product(char transa, char transb, CoefficientPr
     SVD_recompression(C);
 }
 
+/// @anchor add_hmatrix_matrix_product_full
+/// @brief It performs one of the \f$\mathcal{H}\f$ matrix-matrix operations
+/// \f[
+///     C:= \alpha*\operatorname{op}(A)*\operatorname{op}(B)+\beta*C
+/// \f]
+/// where \f$\operatorname{op}(X)\f$ is one of
+/// \f[
+///     \operatorname{op}(X) = X, \quad \text{or} \quad \operatorname{op}(X) = X^T, \quad \text{or} \quad  \operatorname{op}(X) = X^H,
+/// \f]
+/// \f$\alpha\f$ and \f$\beta\f$ are scalars, x and y are vectors, \f$\operatorname{op}(A)\f$ is a \f$m\f$ by \f$k\f$ \f$\mathcal{H}\f$-matrix, \f$\operatorname{op}(B)\f$ is a \f$k\f$ by \f$n\f$  matrix and C is a \f$m\f$ by \f$n\f$ matrix.
+/// @tparam ExecutionPolicy
+/// @tparam MatB
+/// @tparam MatC
+/// @tparam CoordinatePrecision
+/// @param[in] execution_policy
+/// @param[in] transa is a character. It specifies the form of \f$\operatorname{op}(A)\f$ as follows:
+/// \f[
+/// \begin{array}{rlrl}
+///     \text{trans}=&\text{'N'},\quad &\operatorname{op}(A)=&A\\ 
+///     \text{trans}=&\text{'T'},\quad &\operatorname{op}(A)=&A^T\\ 
+///     \text{trans}=&\text{'C'},\quad &\operatorname{op}(A)=&A^H.
+/// \end{array}
+/// \f]
+/// @param[in] transb is a character. It specifies the form of \f$\operatorname{op}(B)\f$ as follows:
+/// \f[
+/// \begin{array}{rlrl}
+///     \text{trans}=&\text{'N'},\quad &\operatorname{op}(B)=&B\\ 
+///     \text{trans}=&\text{'T'},\quad &\operatorname{op}(B)=&B^T\\ 
+///     \text{trans}=&\text{'C'},\quad &\operatorname{op}(B)=&B^H.
+/// \end{array}
+/// \f]
+/// @param[in] alpha is a \p T value specifying the scalar \f$\alpha\f$.
+/// @param[in] A is a \f$\mathcal{H}\f$ matrix of dimension \f$(m,k)\f$ when \p transa is 'N', \f$(k,n)\f$ otherwise.
+/// @param[in] B is a \p T array of dimension \f$(k,n)\f$ when \p transa is 'N', \f$(n,k)\f$ otherwise.
+/// @param[in] beta is a \p T value specifying the scalar \f$\beta\f$.
+/// @param[inout] C is a \p T array of dimension \f$(m,n)\f$.
+/// @param[in] buffer is a \p T array. It defaults to nullptr, and it needs to be of dimension \f$(m+n)*k\f$ to avoid internal allocation.
 template <typename ExecutionPolicy,
           typename MatB,
           typename MatC,

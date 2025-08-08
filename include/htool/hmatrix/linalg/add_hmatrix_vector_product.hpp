@@ -169,14 +169,42 @@ void openmp_internal_add_hmatrix_vector_product(char trans, CoefficientPrecision
     }
 }
 
+/// @anchor add_hmatrix_vector_product_full
+/// @brief It performs one of the \f$\mathcal{H}\f$ matrix-vector operations
+/// \f[
+/// \begin{array}{rl}
+///     y:=& \alpha*A*x+\beta*y, \\ 
+///     y:=& \alpha*A^T*x+\beta*y, \\ 
+///     y:=& \alpha*A^H*x+\beta*y,
+/// \end{array}
+/// \f]
+/// where \f$\alpha\f$ and \f$\beta\f$ are scalars, x and y are vectors and A \f$\mathcal{H}\f$ matrix of dimension \f$(m,n)\f$.
+/// @tparam ExecutionPolicy
+/// @tparam CoefficientPrecision
+/// @tparam CoordinatePrecision
+/// @param[in] execution_policy
+/// @param[in] trans is a character. It specifies the operation to be performed as follows:
+/// \f[
+/// \begin{array}{rl}
+///     \text{trans}=\text{'N'},\quad y:=& \alpha*A*x+\beta*y, \\ 
+///     \text{trans}=\text{'T'},\quad y:=& \alpha*A^T*x+\beta*y, \\ 
+///     \text{trans}=\text{'C'},\quad y:=& \alpha*A^H*x+\beta*y,
+/// \end{array}
+/// \f]
+/// @param[in] alpha is a \p T value specifying the scalar \f$\alpha\f$.
+/// @param[in] A is a \f$\mathcal{H}\f$ matrix of dimension \f$(m,n)\f$.
+/// @param[in] x is a \p T array of dimension \f$n\f$ when \p trans is 'N', and \f$m\f$ otherwise.
+/// @param[in] beta is a \p T value specifying the scalar \f$\beta\f$.
+/// @param[inout] y is a \p T array of dimension \f$m\f$ when \p trans is 'N', and \f$n\f$ otherwise.
+/// @param[in] buffer is a \p T array. It defaults to nullptr, and it needs to be of dimension \f$m+n\f$ to avoid internal allocation.
 template <typename ExecutionPolicy, typename CoefficientPrecision, typename CoordinatePrecision = underlying_type<CoefficientPrecision>>
-void add_hmatrix_vector_product(ExecutionPolicy &&, char trans, CoefficientPrecision alpha, const HMatrix<CoefficientPrecision, CoordinatePrecision> &A, const CoefficientPrecision *in, CoefficientPrecision beta, CoefficientPrecision *out, CoefficientPrecision *buffer = nullptr) {
+void add_hmatrix_vector_product(ExecutionPolicy &&, char trans, CoefficientPrecision alpha, const HMatrix<CoefficientPrecision, CoordinatePrecision> &A, const CoefficientPrecision *x, CoefficientPrecision beta, CoefficientPrecision *y, CoefficientPrecision *buffer = nullptr) {
     auto &source_cluster = A.get_source_cluster();
     auto &target_cluster = A.get_target_cluster();
     std::vector<CoefficientPrecision> tmp(buffer == nullptr ? target_cluster.get_size() + source_cluster.get_size() : 0, 0);
     CoefficientPrecision *buffer_ptr = buffer == nullptr ? tmp.data() : buffer;
-    user_to_cluster(source_cluster, in, buffer_ptr);
-    user_to_cluster(target_cluster, out, buffer_ptr + source_cluster.get_size());
+    user_to_cluster(source_cluster, x, buffer_ptr);
+    user_to_cluster(target_cluster, y, buffer_ptr + source_cluster.get_size());
 
 #if __cplusplus >= 201703L
     if constexpr (is_execution_policy_v<std::decay_t<ExecutionPolicy>>) {
@@ -193,9 +221,10 @@ void add_hmatrix_vector_product(ExecutionPolicy &&, char trans, CoefficientPreci
 #else
     sequential_internal_add_hmatrix_vector_product(trans, alpha, A, buffer_ptr, beta, buffer_ptr + source_cluster.get_size());
 #endif
-    cluster_to_user(target_cluster, buffer_ptr + source_cluster.get_size(), out);
+    cluster_to_user(target_cluster, buffer_ptr + source_cluster.get_size(), y);
 }
 
+/// @brief Same as @ref add_hmatrix_vector_product_full "add_hmatrix_vector_product" with default execution policy being sequential.
 template <typename CoefficientPrecision, typename CoordinatePrecision = underlying_type<CoefficientPrecision>>
 void add_hmatrix_vector_product(char trans, CoefficientPrecision alpha, const HMatrix<CoefficientPrecision, CoordinatePrecision> &A, const CoefficientPrecision *in, CoefficientPrecision beta, CoefficientPrecision *out, CoefficientPrecision *buffer = nullptr) {
 #if __cplusplus >= 201703L
