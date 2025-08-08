@@ -1,0 +1,4 @@
+add_executable(Test_task_based_hmatrix_dependencies test_task_based_hmatrix_dependencies.cpp)
+target_link_libraries(Test_task_based_hmatrix_dependencies htool)
+add_dependencies(build-tests-hmatrix Test_task_based_hmatrix_dependencies)
+add_test(Test_task_based_hmatrix_dependencies Test_task_based_hmatrix_dependencies)

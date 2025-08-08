@@ -19,11 +19,11 @@
 // #include <htool/hmatrix/linalg/triangular_hmatrix_hmatrix_solve.hpp>            // for triangular_hmatrix_hmatrix_solve
 
 #include <htool/hmatrix/lrmat/SVD.hpp>
-#include <htool/hmatrix/tree_builder/task_based_tree_builder.hpp> // for enumerate_dependence, find_l0...
-#include <htool/hmatrix/tree_builder/tree_builder.hpp>            // for HMatrix...
-#include <htool/matrix/matrix.hpp>                                // for Matrix
-#include <htool/misc/misc.hpp>                                    // for underly...
-#include <htool/misc/user.hpp>                                    // for NbrToStr
+#include <htool/hmatrix/task_dependencies.hpp>         // for enumerate_dependence, find_l0...
+#include <htool/hmatrix/tree_builder/tree_builder.hpp> // for HMatrix...
+#include <htool/matrix/matrix.hpp>                     // for Matrix
+#include <htool/misc/misc.hpp>                         // for underly...
+#include <htool/misc/user.hpp>                         // for NbrToStr
 #include <htool/testing/dense_blocks_generator_test.hpp>
 #include <htool/testing/generate_test_case.hpp> // for TestCaseSymmetricPro...
 #include <htool/testing/generator_input.hpp>
@@ -75,19 +75,10 @@ bool test_task_based_hmatrix_vector_product(const TestCaseType &test_case, char 
     std::chrono::steady_clock::time_point start, end;
 
     // build
-    auto hmatrix_classic    = hmatrix_tree_builder->build(*test_case.operator_A, *root_cluster_A_output, *root_cluster_A_input, -1, -1, false, 64);
-    auto hmatrix_task_based = hmatrix_tree_builder->build(*test_case.operator_A, *root_cluster_A_output, *root_cluster_A_input, -1, -1, true, 64); // not in parallel area because it is not the focus of the test, but should nevertheless be called with the flag true in order to build m_L0 needed later when : hmatrix_tree_builder->get_L0();
-
-    // visu
-    // std::cout << "hmatrix_classic:" << std::endl;
-    // print_hmatrix_information(hmatrix_classic, std::cout);
-    // std::cout << "hmatrix_task_based:" << std::endl;
-    // print_hmatrix_information(hmatrix_task_based, std::cout);
-    save_leaves_with_rank(hmatrix_task_based, "TB_hmatrix_prod");
-    save_leaves_with_rank(hmatrix_classic, "hmatrix_prod");
+    auto hmatrix                 = hmatrix_tree_builder->build(*test_case.operator_A, *root_cluster_A_output, *root_cluster_A_input);
+    std::vector<HMatrix<T> *> L0 = find_l0(hmatrix, 64);
 
     // L0 definitions
-    std::vector<HMatrix<T> *> L0                                   = hmatrix_tree_builder->get_L0();
     std::vector<const Cluster<htool::underlying_type<T>> *> in_L0  = find_l0(*input_cluster, 8);
     std::vector<const Cluster<htool::underlying_type<T>> *> out_L0 = find_l0(*output_cluster, 8);
 
@@ -103,7 +94,7 @@ bool test_task_based_hmatrix_vector_product(const TestCaseType &test_case, char 
     // Perform the classic H-matrix vector product
     start = std::chrono::steady_clock::now();
     for (int i = 0; i < nb_products; i++) {
-        openmp_internal_add_hmatrix_vector_product(transa, alpha, hmatrix_classic, in.data(), beta, out.data());
+        openmp_internal_add_hmatrix_vector_product(transa, alpha, hmatrix, in.data(), beta, out.data());
     }
     end = std::chrono::steady_clock::now();
 
@@ -117,7 +108,7 @@ bool test_task_based_hmatrix_vector_product(const TestCaseType &test_case, char 
 #endif
     {
         for (int i = 0; i < nb_products; i++) {
-            task_based_internal_add_hmatrix_vector_product(transa, alpha, hmatrix_task_based, in.data(), beta, out_task.data(), L0, in_L0, out_L0);
+            task_based_internal_add_hmatrix_vector_product(transa, alpha, hmatrix, in.data(), beta, out_task.data(), L0, in_L0, out_L0);
         }
     }
     end = std::chrono::steady_clock::now();

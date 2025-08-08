@@ -3,6 +3,7 @@
 #include <htool/basic_types/vector.hpp>                   // for norm2
 #include <htool/clustering/cluster_node.hpp>              // for Cluster...
 #include <htool/clustering/tree_builder/tree_builder.hpp> // for Cluster...
+#include <htool/hmatrix/execution_policies.hpp>           // for executi...
 #include <htool/hmatrix/hmatrix.hpp>                      // for copy_di...
 #include <htool/hmatrix/hmatrix_distributed_output.hpp>   // for print_d...
 #include <htool/hmatrix/hmatrix_output.hpp>               // for print_h...
@@ -29,8 +30,8 @@ class VirtualDenseBlocksGenerator;
 using namespace std;
 using namespace htool;
 
-template <typename T, typename GeneratorTestTypeInUserNumbering>
-bool test_hmatrix_build(int nr, int nc, bool use_local_cluster, char Symmetry, char UPLO, htool::underlying_type<T> epsilon, bool use_dense_blocks_generator, bool block_tree_consistency) {
+template <typename ExecutionPolicy, typename T, typename GeneratorTestTypeInUserNumbering>
+bool test_hmatrix_build(ExecutionPolicy &&execution_policy, int nr, int nc, bool use_local_cluster, char Symmetry, char UPLO, htool::underlying_type<T> epsilon, bool use_dense_blocks_generator, bool block_tree_consistency) {
 
     // Get the number of processes
     int sizeWorld;
@@ -93,9 +94,9 @@ bool test_hmatrix_build(int nr, int nc, bool use_local_cluster, char Symmetry, c
     // build
     std::unique_ptr<HMatrix<T, htool::underlying_type<T>>> root_hmatrix_ptr;
     if (use_local_cluster) {
-        root_hmatrix_ptr = std::make_unique<HMatrix<T, htool::underlying_type<T>>>(hmatrix_tree_builder.build(generator, target_root_cluster->get_cluster_on_partition(rankWorld), source_root_cluster->get_cluster_on_partition(rankWorld), -1, -1));
+        root_hmatrix_ptr = std::make_unique<HMatrix<T, htool::underlying_type<T>>>(hmatrix_tree_builder.build(execution_policy, generator, target_root_cluster->get_cluster_on_partition(rankWorld), source_root_cluster->get_cluster_on_partition(rankWorld), -1, -1));
     } else {
-        root_hmatrix_ptr = std::make_unique<HMatrix<T, htool::underlying_type<T>>>(hmatrix_tree_builder.build(generator, *target_root_cluster, *source_root_cluster, rankWorld, rankWorld));
+        root_hmatrix_ptr = std::make_unique<HMatrix<T, htool::underlying_type<T>>>(hmatrix_tree_builder.build(execution_policy, generator, *target_root_cluster, *source_root_cluster, rankWorld, rankWorld));
     }
     auto &root_hmatrix = *root_hmatrix_ptr;
     recompression(root_hmatrix);
