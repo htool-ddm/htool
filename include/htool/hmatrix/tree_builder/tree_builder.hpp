@@ -70,7 +70,7 @@ class HMatrixTreeBuilder {
 
     // Internal methods
     void build_block_tree(HMatrixType *current_hmatrix) const;
-    HMatrixType setup_block_tree(const VirtualInternalGenerator<CoefficientPrecision> &generator, const ClusterType &root_target_cluster_tree, const ClusterType &root_source_cluster_tree, int target_partition_number, int partition_number_for_symmetry) const;
+    HMatrixType setup_block_tree(HMatrixType &root_hmatrix, const VirtualInternalGenerator<CoefficientPrecision> &generator, const ClusterType &root_target_cluster_tree, const ClusterType &root_source_cluster_tree, int target_partition_number, int partition_number_for_symmetry) const;
     void reset_root_of_block_tree(HMatrixType &) const;
     void sequential_compute_blocks(const VirtualInternalGenerator<CoefficientPrecision> &generator) const;
     void openmp_compute_blocks(const VirtualInternalGenerator<CoefficientPrecision> &generator) const;
@@ -301,8 +301,8 @@ HMatrix<CoefficientPrecision, CoordinatePrecision> HMatrixTreeBuilder<Coefficien
 
 template <typename CoefficientPrecision, typename CoordinatePrecision>
 HMatrix<CoefficientPrecision, CoordinatePrecision> HMatrixTreeBuilder<CoefficientPrecision, CoordinatePrecision>::sequential_build(const VirtualInternalGenerator<CoefficientPrecision> &generator, const ClusterType &root_target_cluster_tree, const ClusterType &root_source_cluster_tree, int target_partition_number, int partition_number_for_symmetry) const {
-
-    auto root_hmatrix = setup_block_tree(generator, root_target_cluster_tree, root_source_cluster_tree, target_partition_number, partition_number_for_symmetry);
+    HMatrixType root_hmatrix(root_target_cluster_tree, root_source_cluster_tree);
+    setup_block_tree(root_hmatrix, generator, root_target_cluster_tree, root_source_cluster_tree, target_partition_number, partition_number_for_symmetry);
 
     // Compute leave's data
     std::chrono::steady_clock::time_point start, end;
@@ -322,8 +322,8 @@ HMatrix<CoefficientPrecision, CoordinatePrecision> HMatrixTreeBuilder<Coefficien
 
 template <typename CoefficientPrecision, typename CoordinatePrecision>
 HMatrix<CoefficientPrecision, CoordinatePrecision> HMatrixTreeBuilder<CoefficientPrecision, CoordinatePrecision>::openmp_build(const VirtualInternalGenerator<CoefficientPrecision> &generator, const ClusterType &root_target_cluster_tree, const ClusterType &root_source_cluster_tree, int target_partition_number, int partition_number_for_symmetry) const {
-
-    auto root_hmatrix = setup_block_tree(generator, root_target_cluster_tree, root_source_cluster_tree, target_partition_number, partition_number_for_symmetry);
+    HMatrixType root_hmatrix(root_target_cluster_tree, root_source_cluster_tree);
+    setup_block_tree(root_hmatrix, generator, root_target_cluster_tree, root_source_cluster_tree, target_partition_number, partition_number_for_symmetry);
 
     // Compute leave's data
     std::chrono::steady_clock::time_point start, end;
@@ -343,9 +343,10 @@ HMatrix<CoefficientPrecision, CoordinatePrecision> HMatrixTreeBuilder<Coefficien
 
 template <typename CoefficientPrecision, typename CoordinatePrecision>
 HMatrix<CoefficientPrecision, CoordinatePrecision> HMatrixTreeBuilder<CoefficientPrecision, CoordinatePrecision>::task_based_build(const VirtualInternalGenerator<CoefficientPrecision> &generator, const ClusterType &root_target_cluster_tree, const ClusterType &root_source_cluster_tree, std::vector<HMatrixType *> &L0, int max_nb_nodes, int target_partition_number, int partition_number_for_symmetry) const {
+    HMatrixType root_hmatrix(root_target_cluster_tree, root_source_cluster_tree);
+    setup_block_tree(root_hmatrix, generator, root_target_cluster_tree, root_source_cluster_tree, target_partition_number, partition_number_for_symmetry);
 
-    auto root_hmatrix = setup_block_tree(generator, root_target_cluster_tree, root_source_cluster_tree, target_partition_number, partition_number_for_symmetry);
-    L0                = find_l0(root_hmatrix, max_nb_nodes);
+    L0 = find_l0(root_hmatrix, max_nb_nodes);
 
     // Compute leave's data
     if (need_to_create_parallel_region()) {
@@ -366,7 +367,7 @@ HMatrix<CoefficientPrecision, CoordinatePrecision> HMatrixTreeBuilder<Coefficien
 }
 
 template <typename CoefficientPrecision, typename CoordinatePrecision>
-HMatrix<CoefficientPrecision, CoordinatePrecision> HMatrixTreeBuilder<CoefficientPrecision, CoordinatePrecision>::setup_block_tree(const VirtualInternalGenerator<CoefficientPrecision> &generator, const ClusterType &root_target_cluster_tree, const ClusterType &root_source_cluster_tree, int target_partition_number, int partition_number_for_symmetry) const {
+HMatrix<CoefficientPrecision, CoordinatePrecision> HMatrixTreeBuilder<CoefficientPrecision, CoordinatePrecision>::setup_block_tree(HMatrixType &root_hmatrix, const VirtualInternalGenerator<CoefficientPrecision> &generator, const ClusterType &root_target_cluster_tree, const ClusterType &root_source_cluster_tree, int target_partition_number, int partition_number_for_symmetry) const {
 
     if (target_partition_number != -1 && target_partition_number >= root_target_cluster_tree.get_clusters_on_partition().size()) {
         htool::Logger::get_instance().log(LogLevel::ERROR, "Target partition number cannot exceed number of partitions"); // LCOV_EXCL_LINE
@@ -392,7 +393,6 @@ HMatrix<CoefficientPrecision, CoordinatePrecision> HMatrixTreeBuilder<Coefficien
     m_false_positive = 0;
 
     // Create root hmatrix
-    HMatrixType root_hmatrix(root_target_cluster_tree, root_source_cluster_tree);
     root_hmatrix.set_admissibility_condition(m_admissibility_condition);
     root_hmatrix.set_low_rank_generator(m_used_low_rank_generator);
     root_hmatrix.set_eta(m_eta);

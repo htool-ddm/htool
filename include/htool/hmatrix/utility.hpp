@@ -27,6 +27,10 @@ class HMatrixBuilder {
     HMatrix<CoefficientsPrecision, CoordinatesPrecision> build(ExecutionPolicy &&execution_policy, const VirtualGenerator<CoefficientsPrecision> &generator, const HMatrixTreeBuilder<CoefficientsPrecision, CoordinatesPrecision> &hmatrix_tree_builder) {
         return hmatrix_tree_builder.build(execution_policy, generator, target_cluster, source_cluster_ptr == nullptr ? target_cluster : *source_cluster_ptr);
     }
+
+    HMatrix<CoefficientsPrecision, CoordinatesPrecision> build(const VirtualGenerator<CoefficientsPrecision> &generator, const HMatrixTreeBuilder<CoefficientsPrecision, CoordinatesPrecision> &hmatrix_tree_builder) {
+        return hmatrix_tree_builder.build(exec_compat::seq, generator, target_cluster, source_cluster_ptr == nullptr ? target_cluster : *source_cluster_ptr);
+    }
 };
 } // namespace htool
 #endif
