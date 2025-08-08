@@ -22,12 +22,24 @@ int main(int argc, char *argv[]) {
                         for (auto block_tree_consistency : {true, false}) {
                             std::cout << nr << " " << nc << " " << use_local_cluster << " " << epsilon << " " << use_dense_block_generator << " " << block_tree_consistency << "\n";
 
-                            is_error = is_error || test_hmatrix_build<std::complex<double>, GeneratorTestComplexSymmetric>(nr, nc, use_local_cluster, 'N', 'N', epsilon, use_dense_block_generator, block_tree_consistency);
+                            is_error = is_error || test_hmatrix_build<const exec_compat::sequenced_policy &, std::complex<double>, GeneratorTestComplexSymmetric>(exec_compat::seq, nr, nc, use_local_cluster, 'N', 'N', epsilon, use_dense_block_generator, block_tree_consistency);
+
+                            is_error = is_error || test_hmatrix_build<const exec_compat::parallel_policy &, std::complex<double>, GeneratorTestComplexSymmetric>(exec_compat::par, nr, nc, use_local_cluster, 'N', 'N', epsilon, use_dense_block_generator, block_tree_consistency);
+
+                            is_error = is_error || test_hmatrix_build<htool::omp_task_policy<std::complex<double>> &&, std::complex<double>, GeneratorTestComplexSymmetric>(omp_task_policy<std::complex<double>>{}, nr, nc, use_local_cluster, 'N', 'N', epsilon, use_dense_block_generator, block_tree_consistency);
                             if (nr == nc && block_tree_consistency) {
                                 for (auto UPLO : {'U', 'L'}) {
-                                    is_error = is_error || test_hmatrix_build<std::complex<double>, GeneratorTestComplexSymmetric>(nr, nr, use_local_cluster, 'S', UPLO, epsilon, use_dense_block_generator, block_tree_consistency);
+                                    is_error = is_error || test_hmatrix_build<const exec_compat::sequenced_policy &, std::complex<double>, GeneratorTestComplexSymmetric>(exec_compat::seq, nr, nr, use_local_cluster, 'S', UPLO, epsilon, use_dense_block_generator, block_tree_consistency);
 
-                                    is_error = is_error || test_hmatrix_build<std::complex<double>, GeneratorTestComplexHermitian>(nr, nr, use_local_cluster, 'H', UPLO, epsilon, use_dense_block_generator, block_tree_consistency);
+                                    is_error = is_error || test_hmatrix_build<const exec_compat::sequenced_policy &, std::complex<double>, GeneratorTestComplexHermitian>(exec_compat::seq, nr, nr, use_local_cluster, 'H', UPLO, epsilon, use_dense_block_generator, block_tree_consistency);
+
+                                    is_error = is_error || test_hmatrix_build<const exec_compat::parallel_policy &, std::complex<double>, GeneratorTestComplexSymmetric>(exec_compat::par, nr, nr, use_local_cluster, 'S', UPLO, epsilon, use_dense_block_generator, block_tree_consistency);
+
+                                    is_error = is_error || test_hmatrix_build<const exec_compat::parallel_policy &, std::complex<double>, GeneratorTestComplexHermitian>(exec_compat::par, nr, nr, use_local_cluster, 'H', UPLO, epsilon, use_dense_block_generator, block_tree_consistency);
+
+                                    is_error = is_error || test_hmatrix_build<htool::omp_task_policy<std::complex<double>> &&, std::complex<double>, GeneratorTestComplexSymmetric>(omp_task_policy<std::complex<double>>{}, nr, nr, use_local_cluster, 'S', UPLO, epsilon, use_dense_block_generator, block_tree_consistency);
+
+                                    is_error = is_error || test_hmatrix_build<htool::omp_task_policy<std::complex<double>> &&, std::complex<double>, GeneratorTestComplexHermitian>(omp_task_policy<std::complex<double>>{}, nr, nr, use_local_cluster, 'H', UPLO, epsilon, use_dense_block_generator, block_tree_consistency);
                                 }
                             }
                         }

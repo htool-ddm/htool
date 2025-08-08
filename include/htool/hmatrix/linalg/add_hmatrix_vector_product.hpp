@@ -4,12 +4,12 @@
 #include "../../matrix/linalg/add_matrix_vector_product.hpp" // for add_mat...
 #include "../../misc/misc.hpp"                               // for underly...
 #include "../../wrappers/wrapper_blas.hpp"                   // for Blas
-#include "../hmatrix.hpp"                                    // for HMatrix
-#include "../lrmat/linalg/add_lrmat_vector_product.hpp"      // for add_lrm...
-#include "execution_policies.hpp"
-#include <algorithm> // for transform
-#include <complex>   // for complex
-#include <vector>    // for vector
+#include "../execution_policies.hpp"
+#include "../hmatrix.hpp"                               // for HMatrix
+#include "../lrmat/linalg/add_lrmat_vector_product.hpp" // for add_lrm...
+#include <algorithm>                                    // for transform
+#include <complex>                                      // for complex
+#include <vector>                                       // for vector
 
 namespace htool {
 
@@ -178,17 +178,17 @@ void add_hmatrix_vector_product(ExecutionPolicy &&, char trans, CoefficientPreci
     user_to_cluster(source_cluster, in, buffer_ptr);
     user_to_cluster(target_cluster, out, buffer_ptr + source_cluster.get_size());
 
-#if defined(__cpp_lib_execution) && __cplusplus >= 201703L
-    if constexpr (std::is_execution_policy_v<std::decay_t<ExecutionPolicy>>) {
-        if constexpr (std::is_same_v<std::decay_t<ExecutionPolicy>, std::execution::parallel_policy>) {
+#if __cplusplus >= 201703L
+    if constexpr (is_execution_policy_v<std::decay_t<ExecutionPolicy>>) {
+        if constexpr (std::is_same_v<std::decay_t<ExecutionPolicy>, exec_compat::parallel_policy>) {
             openmp_internal_add_hmatrix_vector_product(trans, alpha, A, buffer_ptr, beta, buffer_ptr + source_cluster.get_size());
-        } else if constexpr (std::is_same_v<std::decay_t<ExecutionPolicy>, std::execution::sequenced_policy>) {
+        } else if constexpr (std::is_same_v<std::decay_t<ExecutionPolicy>, exec_compat::sequenced_policy>) {
             sequential_internal_add_hmatrix_vector_product(trans, alpha, A, buffer_ptr, beta, buffer_ptr + source_cluster.get_size());
         } else {
-            static_assert(std::is_same_v<std::decay_t<ExecutionPolicy>, std::execution::sequenced_policy> || std::is_same_v<std::decay_t<ExecutionPolicy>, std::execution::parallel_policy>, "Invalid execution policy for add_hmatrix_vector_product.");
+            static_assert(std::is_same_v<std::decay_t<ExecutionPolicy>, exec_compat::sequenced_policy> || std::is_same_v<std::decay_t<ExecutionPolicy>, exec_compat::parallel_policy>, "Invalid execution policy for add_hmatrix_vector_product.");
         }
     } else {
-        static_assert(std::is_execution_policy_v<std::decay_t<ExecutionPolicy>>, "Invalid execution policy for add_hmatrix_vector_product.");
+        static_assert(is_execution_policy_v<std::decay_t<ExecutionPolicy>>, "Invalid execution policy for add_hmatrix_vector_product.");
     }
 #else
     sequential_internal_add_hmatrix_vector_product(trans, alpha, A, buffer_ptr, beta, buffer_ptr + source_cluster.get_size());
@@ -198,8 +198,8 @@ void add_hmatrix_vector_product(ExecutionPolicy &&, char trans, CoefficientPreci
 
 template <typename CoefficientPrecision, typename CoordinatePrecision = underlying_type<CoefficientPrecision>>
 void add_hmatrix_vector_product(char trans, CoefficientPrecision alpha, const HMatrix<CoefficientPrecision, CoordinatePrecision> &A, const CoefficientPrecision *in, CoefficientPrecision beta, CoefficientPrecision *out, CoefficientPrecision *buffer = nullptr) {
-#if defined(__cpp_lib_execution) && __cplusplus >= 201703L
-    add_hmatrix_vector_product(std::execution::seq, trans, alpha, A, in, beta, out, buffer);
+#if __cplusplus >= 201703L
+    add_hmatrix_vector_product(exec_compat::seq, trans, alpha, A, in, beta, out, buffer);
 #else
     add_hmatrix_vector_product(nullptr, trans, alpha, A, in, beta, out, buffer);
 #endif

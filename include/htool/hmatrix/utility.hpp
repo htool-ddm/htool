@@ -23,8 +23,9 @@ class HMatrixBuilder {
     HMatrixBuilder(int number_of_points, int spatial_dimension, const CoordinatesPrecision *coordinates, const ClusterTreeBuilder<CoordinatesPrecision> *cluster_tree_builder = nullptr) : target_cluster(cluster_tree_builder == nullptr ? ClusterTreeBuilder<CoordinatesPrecision>().create_cluster_tree(number_of_points, spatial_dimension, coordinates, std::pow(2, spatial_dimension), std::pow(2, spatial_dimension)) : cluster_tree_builder->create_cluster_tree(number_of_points, spatial_dimension, coordinates, std::pow(2, spatial_dimension), std::pow(2, spatial_dimension))) {
     }
 
-    HMatrix<CoefficientsPrecision, CoordinatesPrecision> build(const VirtualGenerator<CoefficientsPrecision> &generator, const HMatrixTreeBuilder<CoefficientsPrecision, CoordinatesPrecision> &hmatrix_tree_builder) {
-        return hmatrix_tree_builder.build(generator, target_cluster, source_cluster_ptr == nullptr ? target_cluster : *source_cluster_ptr);
+    template <typename ExecutionPolicy>
+    HMatrix<CoefficientsPrecision, CoordinatesPrecision> build(ExecutionPolicy &&execution_policy, const VirtualGenerator<CoefficientsPrecision> &generator, const HMatrixTreeBuilder<CoefficientsPrecision, CoordinatesPrecision> &hmatrix_tree_builder) {
+        return hmatrix_tree_builder.build(execution_policy, generator, target_cluster, source_cluster_ptr == nullptr ? target_cluster : *source_cluster_ptr);
     }
 };
 } // namespace htool

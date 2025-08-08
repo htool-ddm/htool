@@ -32,18 +32,26 @@ All notable changes to this project will be documented in this file.
 - Generic recompressed low-rank compression with `RecompressedLowRankGenerator`.
 - Checks about `UPLO` for hmatrix factorization.
 - `HMatrixBuilder` for easier `HMatrix` creation (especially when using only the hmatrix part of Htool-DDM).
-- `add_hmatrix_vector_product` and `add_hmatrix_matrix_product` for working in user numbering. For C++17 and onward, these functions have preliminary support for execution policies with default being sequential execution. This tries to follow `<linalg>` API.
-- `task_based_tree_builder.hpp` for miscellaneous functions used for task based approach.
+- `add_hmatrix_vector_product` and `add_hmatrix_matrix_product` for working in user numbering.
+- For C++17 and onward, interfaces supporting execution policies (default being sequential execution) has been added for these functions:
+  - `HMatrixTreeBuilder::build`
+  - `add_hmatrix_matrix_product`
+  - `add_hmatrix_vector_product`
+  - `lu_factorization`
+  - `cholesky_factorization`
+- Mocking execution policies have been added when compiler does not define `std::execution`. See `exec_compat`.
+- `task_dependencies.hpp` for miscellaneous functions used for task based approach.
 - `hmatrix_output_dot.hpp` for L0 and block tree visualization.
-- `task_based_compute_blocks` for task based alternative to `compute_blocks`.
-- `task_based_internal_add_hmatrix_vector_product` for task based alternative to `internal_add_hmatrix_vector_product`.
-- `task_based_internal_add_hmatrix_hmatrix_product` for task based alternative to `internal_add_hmatrix_hmatrix_product`.
-- `task_based_internal_triangular_hmatrix_hmatrix_solve` for task based alternative to `internal_triangular_hmatrix_hmatrix_solve`.
-- `task_based_lu_factorization` and `task_based_cholesky_factorization` for task based alternatives to `lu_factorization` and `cholesky_factorization`.
-- `test_task_based_hmatrix_***.hpp` for testing various task based features.
+- Task based parallelism support has been added via
+  - `HMatrixTreeBuilder::task_based_build` for task based assembly.
+  - `task_based_internal_add_hmatrix_vector_product` for task based alternative to `{sequential,openmp}_internal_add_hmatrix_vector_product`.
+  - `task_based_internal_add_hmatrix_hmatrix_product` for task based alternative to `{sequential,openmp}_internal_add_hmatrix_hmatrix_product`.
+  - `task_based_internal_triangular_hmatrix_hmatrix_solve` for task based alternative to `internal_triangular_hmatrix_hmatrix_solve`.
+  - `task_based_lu_factorization` and `task_based_cholesky_factorization` for task based alternatives to `{sequential,openmp}_lu_factorization` and `{sequential,openmp}_cholesky_factorization`.
+  - `test_task_based_hmatrix_***.hpp` for testing various task based features.
 - `internal_add_lrmat_hmatrix` is now overloaded to handle the case where the HMatrix is larger than the LowRankMatrix.
 - `get_leaves_from` is overloaded to return non const arguments.
-- `get_false_positive` and `get_L0` in a tree builder.
+- `get_false_positive` in a tree builder.
 - `left_hmatrix_ancestor_of_right_hmatrix` and `left_hmatrix_descendant_of_right_hmatrix` for returning parent and children of a hmatrix.
 
 ### Changed
@@ -53,7 +61,6 @@ All notable changes to this project will be documented in this file.
 - `ClusterTreeBuilder` has now one strategy as `VirtualPartitioning`. Usual implementations are still available, for example using `Partitioning<double,ComputeLargestExtent,RegularSplitting>`.
 - When using `ClusterTreeBuilder` with `number_of_children=2^spatial_dimension`, it will do a binary/quad/octo-tree instead of `number_of_children` cut along the main direction.
 - `ClusterTreeBuilder` parameter `minclustersize` was removed, and a parameter `maximal_leaf_size` has been added.
-- `build` can now use `task_based_compute_blocks`
 - `DistributedOperator` supports now both "global-to-local" and "local-to-local" operators, using respectively `VirtualGlobalToLocalOperator` and `VirtualLocalToLocalOperator` interfaces. The linear algebra associated has been updated to follow a more Blas-like interface.
 - `MatrixView` has been added to ease the use of matrix product. Most public functions for matrix products are also new templated to accept, `Matrix`, `MatrixView` or any other type following the same interface.
 
