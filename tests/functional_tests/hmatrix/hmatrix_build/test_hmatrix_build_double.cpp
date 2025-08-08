@@ -25,16 +25,12 @@ int main(int argc, char *argv[]) {
 
                             is_error = is_error || test_hmatrix_build<const exec_compat::parallel_policy &, double, GeneratorTestDoubleSymmetric>(exec_compat::par, nr, nc, use_local_cluster, 'N', 'N', epsilon, use_dense_block_generator, block_tree_consistency);
 
-                            is_error = is_error || test_hmatrix_build<htool::omp_task_policy<double> &&, double, GeneratorTestDoubleSymmetric>(omp_task_policy<double>{}, nr, nc, use_local_cluster, 'N', 'N', epsilon, use_dense_block_generator, block_tree_consistency);
-
                             if (nr == nc && block_tree_consistency) {
                                 for (auto UPLO : {'U', 'L'}) {
                                     std::cout << UPLO << "\n";
                                     is_error = is_error || test_hmatrix_build<const exec_compat::sequenced_policy &, double, GeneratorTestDoubleSymmetric>(exec_compat::seq, nr, nc, use_local_cluster, 'S', UPLO, epsilon, use_dense_block_generator, block_tree_consistency);
 
                                     is_error = is_error || test_hmatrix_build<const exec_compat::parallel_policy &, double, GeneratorTestDoubleSymmetric>(exec_compat::par, nr, nc, use_local_cluster, 'S', UPLO, epsilon, use_dense_block_generator, block_tree_consistency);
-
-                                    is_error = is_error || test_hmatrix_build<htool::omp_task_policy<double> &&, double, GeneratorTestDoubleSymmetric>(omp_task_policy<double>{}, nr, nc, use_local_cluster, 'S', UPLO, epsilon, use_dense_block_generator, block_tree_consistency);
                                 }
                             }
                         }
