@@ -50,8 +50,7 @@ bool test_hmatrix_build(ExecutionPolicy &&execution_policy, int nr, int nc, bool
     create_disk(3, z1, nr, p1.data());
 
     // Partition
-    std::vector<int> partition{};
-    test_partition(3, nr, p1, sizeWorld, partition);
+    std::vector<int> partition = test_partition_with_renumbering(3, nr, p1, sizeWorld);
 
     // Clustering
     ClusterTreeBuilder<htool::underlying_type<T>> cluster_tree_builder;
@@ -67,7 +66,7 @@ bool test_hmatrix_build(ExecutionPolicy &&execution_policy, int nr, int nc, bool
         create_disk(3, z2, nc, p2.data());
 
         // partition
-        test_partition(3, nc, p2, sizeWorld, partition);
+        partition = test_partition_with_renumbering(3, nc, p2, sizeWorld);
 
         // Clustering
         // source_recursive_build_strategy.set_minclustersize(2);

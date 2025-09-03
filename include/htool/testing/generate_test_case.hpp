@@ -60,9 +60,8 @@ class TestCaseProduct {
         // First geometry
         create_disk(3, 0., n1, x1.data());
         if (number_of_partition > 0) {
-            std::vector<int> partition;
-            test_partition(3, n1, x1, number_of_partition, partition);
-            root_cluster_1 = std::make_shared<Cluster<underlying_type<T>>>(recursive_build_strategy.create_cluster_tree(n1, 3, x1.data(), 2, number_of_partition, partition.data()));
+            std::vector<int> partition = test_partition(3, n1, x1, number_of_partition);
+            root_cluster_1             = std::make_shared<Cluster<underlying_type<T>>>(recursive_build_strategy.create_cluster_tree(n1, 3, x1.data(), 2, number_of_partition, partition.data()));
         } else {
             root_cluster_1 = std::make_shared<Cluster<underlying_type<T>>>(recursive_build_strategy.create_cluster_tree(n1, 3, x1.data(), 2, 2));
         }
@@ -70,9 +69,8 @@ class TestCaseProduct {
         // Second geometry
         create_disk(3, z_distance_A, n2, x2.data());
         if (number_of_partition > 0) {
-            std::vector<int> partition;
-            test_partition(3, n2, x2, number_of_partition, partition);
-            root_cluster_2 = std::make_shared<Cluster<underlying_type<T>>>(recursive_build_strategy.create_cluster_tree(n2, 3, x2.data(), 2, number_of_partition, partition.data()));
+            std::vector<int> partition = test_partition(3, n2, x2, number_of_partition);
+            root_cluster_2             = std::make_shared<Cluster<underlying_type<T>>>(recursive_build_strategy.create_cluster_tree(n2, 3, x2.data(), 2, number_of_partition, partition.data()));
         } else {
 
             root_cluster_2 = std::make_shared<Cluster<underlying_type<T>>>(recursive_build_strategy.create_cluster_tree(n2, 3, x2.data(), 2, 2));
@@ -81,9 +79,8 @@ class TestCaseProduct {
         // Third geometry
         create_disk(3, z_distance_B, n3, x3.data());
         if (number_of_partition > 0) {
-            std::vector<int> partition;
-            test_partition(3, n3, x3, number_of_partition, partition);
-            root_cluster_3 = std::make_shared<Cluster<underlying_type<T>>>(recursive_build_strategy.create_cluster_tree(n3, 3, x3.data(), 2, number_of_partition, partition.data()));
+            std::vector<int> partition = test_partition(3, n3, x3, number_of_partition);
+            root_cluster_3             = std::make_shared<Cluster<underlying_type<T>>>(recursive_build_strategy.create_cluster_tree(n3, 3, x3.data(), 2, number_of_partition, partition.data()));
         } else {
             root_cluster_3 = std::make_shared<Cluster<underlying_type<T>>>(recursive_build_strategy.create_cluster_tree(n3, 3, x3.data(), 2, 2));
         }
@@ -162,9 +159,8 @@ class TestCaseSymmetricProduct {
         // First geometry
         create_disk(3, 0., n1, x1.data());
         if (number_of_partition > 0) {
-            std::vector<int> partition;
-            test_partition(3, n1, x1, number_of_partition, partition);
-            root_cluster_1 = std::make_shared<Cluster<underlying_type<T>>>(recursive_build_strategy.create_cluster_tree(n1, 3, x1.data(), 2, number_of_partition, partition.data()));
+            std::vector<int> partition = test_partition(3, n1, x1, number_of_partition);
+            root_cluster_1             = std::make_shared<Cluster<underlying_type<T>>>(recursive_build_strategy.create_cluster_tree(n1, 3, x1.data(), 2, number_of_partition, partition.data()));
         } else {
             root_cluster_1 = std::make_shared<Cluster<underlying_type<T>>>(recursive_build_strategy.create_cluster_tree(n1, 3, x1.data(), 2, 2));
         }
@@ -172,9 +168,8 @@ class TestCaseSymmetricProduct {
         // Second geometry
         create_disk(3, z_distance_A, n2, x2.data());
         if (number_of_partition > 0) {
-            std::vector<int> partition;
-            test_partition(3, n2, x2, number_of_partition, partition);
-            root_cluster_2 = std::make_shared<Cluster<underlying_type<T>>>(recursive_build_strategy.create_cluster_tree(n2, 3, x2.data(), 2, number_of_partition, partition.data()));
+            std::vector<int> partition = test_partition(3, n2, x2, number_of_partition);
+            root_cluster_2             = std::make_shared<Cluster<underlying_type<T>>>(recursive_build_strategy.create_cluster_tree(n2, 3, x2.data(), 2, number_of_partition, partition.data()));
         } else {
 
             root_cluster_2 = std::make_shared<Cluster<underlying_type<T>>>(recursive_build_strategy.create_cluster_tree(n2, 3, x2.data(), 2, 2));
@@ -242,9 +237,8 @@ class TestCaseSymmetricRankUpdate {
         // First geometry
         create_disk(3, 0., n1, x1.data());
         if (number_of_partition > 0) {
-            std::vector<int> partition;
-            test_partition(3, n1, x1, number_of_partition, partition);
-            root_cluster_1 = std::make_shared<Cluster<underlying_type<T>>>(recursive_build_strategy.create_cluster_tree(n1, 3, x1.data(), 2, number_of_partition, partition.data()));
+            std::vector<int> partition = test_partition(3, n1, x1, number_of_partition);
+            root_cluster_1             = std::make_shared<Cluster<underlying_type<T>>>(recursive_build_strategy.create_cluster_tree(n1, 3, x1.data(), 2, number_of_partition, partition.data()));
         } else {
             root_cluster_1 = std::make_shared<Cluster<underlying_type<T>>>(recursive_build_strategy.create_cluster_tree(n1, 3, x1.data(), 2, 2));
         }
@@ -252,9 +246,8 @@ class TestCaseSymmetricRankUpdate {
         // Second geometry
         create_disk(3, z_distance_A, n2, x2.data());
         if (number_of_partition > 0) {
-            std::vector<int> partition;
-            test_partition(3, n2, x2, number_of_partition, partition);
-            root_cluster_2 = std::make_shared<Cluster<underlying_type<T>>>(recursive_build_strategy.create_cluster_tree(n2, 3, x2.data(), 2, number_of_partition, partition.data()));
+            std::vector<int> partition = test_partition(3, n2, x2, number_of_partition);
+            root_cluster_2             = std::make_shared<Cluster<underlying_type<T>>>(recursive_build_strategy.create_cluster_tree(n2, 3, x2.data(), 2, number_of_partition, partition.data()));
         } else {
 
             root_cluster_2 = std::make_shared<Cluster<underlying_type<T>>>(recursive_build_strategy.create_cluster_tree(n2, 3, x2.data(), 2, 2));
@@ -313,9 +306,8 @@ class TestCaseSolve {
         // First geometry
         create_disk(3, 0., n1, x1.data());
         if (number_of_partition > 0) {
-            std::vector<int> partition;
-            test_partition(3, n1, x1, number_of_partition, partition);
-            root_cluster_1 = std::make_shared<Cluster<underlying_type<T>>>(recursive_build_strategy.create_cluster_tree(n1, 3, x1.data(), 2, number_of_partition, partition.data()));
+            std::vector<int> partition = test_partition(3, n1, x1, number_of_partition);
+            root_cluster_1             = std::make_shared<Cluster<underlying_type<T>>>(recursive_build_strategy.create_cluster_tree(n1, 3, x1.data(), 2, number_of_partition, partition.data()));
         } else {
             root_cluster_1 = std::make_shared<Cluster<underlying_type<T>>>(recursive_build_strategy.create_cluster_tree(n1, 3, x1.data(), 2, 2));
         }
@@ -323,9 +315,8 @@ class TestCaseSolve {
         // Second geometry
         create_disk(3, z_distance_A, n2, x2.data());
         if (number_of_partition > 0) {
-            std::vector<int> partition;
-            test_partition(3, n2, x2, number_of_partition, partition);
-            root_cluster_2 = std::make_shared<Cluster<underlying_type<T>>>(recursive_build_strategy.create_cluster_tree(n2, 3, x2.data(), 2, number_of_partition, partition.data()));
+            std::vector<int> partition = test_partition(3, n2, x2, number_of_partition);
+            root_cluster_2             = std::make_shared<Cluster<underlying_type<T>>>(recursive_build_strategy.create_cluster_tree(n2, 3, x2.data(), 2, number_of_partition, partition.data()));
         } else {
             root_cluster_2 = std::make_shared<Cluster<underlying_type<T>>>(recursive_build_strategy.create_cluster_tree(n2, 3, x2.data(), 2, 2));
         }
@@ -383,9 +374,8 @@ class TestCaseAddition {
         // First geometry
         create_disk(3, 0., n1, x1.data());
         if (number_of_partition > 0) {
-            std::vector<int> partition;
-            test_partition(3, n1, x1, number_of_partition, partition);
-            root_cluster_1 = std::make_shared<Cluster<underlying_type<T>>>(recursive_build_strategy.create_cluster_tree(n1, 3, x1.data(), 2, number_of_partition, partition.data()));
+            std::vector<int> partition = test_partition(3, n1, x1, number_of_partition);
+            root_cluster_1             = std::make_shared<Cluster<underlying_type<T>>>(recursive_build_strategy.create_cluster_tree(n1, 3, x1.data(), 2, number_of_partition, partition.data()));
         } else {
             root_cluster_1 = std::make_shared<Cluster<underlying_type<T>>>(recursive_build_strategy.create_cluster_tree(n1, 3, x1.data(), 2, 2));
         }
@@ -393,9 +383,8 @@ class TestCaseAddition {
         // Second geometry
         create_disk(3, z_distance_A, n2, x2.data());
         if (number_of_partition > 0) {
-            std::vector<int> partition;
-            test_partition(3, n2, x2, number_of_partition, partition);
-            root_cluster_2 = std::make_shared<Cluster<underlying_type<T>>>(recursive_build_strategy.create_cluster_tree(n2, 3, x2.data(), 2, number_of_partition, partition.data()));
+            std::vector<int> partition = test_partition(3, n2, x2, number_of_partition);
+            root_cluster_2             = std::make_shared<Cluster<underlying_type<T>>>(recursive_build_strategy.create_cluster_tree(n2, 3, x2.data(), 2, number_of_partition, partition.data()));
         } else {
 
             root_cluster_2 = std::make_shared<Cluster<underlying_type<T>>>(recursive_build_strategy.create_cluster_tree(n2, 3, x2.data(), 2, 2));

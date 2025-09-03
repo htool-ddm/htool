@@ -82,11 +82,30 @@ Cluster<T> ClusterTreeBuilder<T>::create_cluster_tree(int number_of_points, int 
         depth_of_partition = 1;
         cluster_stack.pop();
         bool is_child_on_partition = true;
-        root_cluster.set_is_permutation_local(true);
+        int cpt                    = 0;
+        std::vector<int> offsets(size_partition);
+        std::vector<int> sizes(size_partition);
+        bool is_permutation_local = true;
         for (int p = 0; p < size_partition; p++) {
-            center                           = compute_center(spatial_dimension, coordinates, weights, partition[2 * p], partition[2 * p + 1], permutation.data());
-            radius                           = compute_radius(spatial_dimension, coordinates, radii, center, partition[2 * p], partition[2 * p + 1], permutation.data());
-            Cluster<T> *cluster_on_partition = root_cluster.add_child(radius, center, p, partition[2 * p], partition[2 * p + 1], p, is_child_on_partition);
+            offsets[p]         = cpt;
+            sizes[p]           = 0;
+            int previous_index = -1;
+            for (int i = 0; i < number_of_points; i++) {
+                if (partition[i] == p) {
+                    permutation[cpt] = i;
+                    sizes[p]++;
+                    cpt++;
+                    is_permutation_local = is_permutation_local && (previous_index < 0 || (previous_index == i - 1));
+                    previous_index       = i;
+                }
+            }
+        }
+        root_cluster.set_is_permutation_local(is_permutation_local);
+
+        for (int p = 0; p < size_partition; p++) {
+            center                           = compute_center(spatial_dimension, coordinates, weights, offsets[p], sizes[p], permutation.data());
+            radius                           = compute_radius(spatial_dimension, coordinates, radii, center, offsets[p], sizes[p], permutation.data());
+            Cluster<T> *cluster_on_partition = root_cluster.add_child(radius, center, p, offsets[p], sizes[p], p, is_child_on_partition);
             cluster_stack.push(cluster_on_partition);
         }
     } else {

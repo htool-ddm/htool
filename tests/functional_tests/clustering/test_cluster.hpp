@@ -36,7 +36,7 @@ bool test_cluster(int size, bool use_given_partition) {
     std::vector<int> partition{};
 
     if (use_given_partition) {
-        test_partition(dim, size, coordinates, sizeWorld, partition);
+        partition = test_partition(dim, size, coordinates, sizeWorld);
     }
 
     std::vector<int> nb_sons_test{2, 3, 4};
@@ -90,15 +90,6 @@ bool test_cluster(int size, bool use_given_partition) {
 
         is_error = is_error || !(clusters_on_partition.size() == sizeWorld);
         is_error = is_error || !(summed_size_of_cluster_on_partition == size);
-
-        if (use_given_partition) {
-            int p = 0;
-            for (const auto &cluster_on_partition : clusters_on_partition) {
-                is_error = is_error || !(cluster_on_partition->get_size() == partition[2 * p + 1]);
-                is_error = is_error || !(cluster_on_partition->get_offset() == partition[2 * p]);
-                p++;
-            }
-        }
 
         // Testing save and read root cluster
         save_cluster_tree(root_cluster, "test_save_" + NbrToStr(rankWorld) + "_" + NbrToStr(sizeWorld));
