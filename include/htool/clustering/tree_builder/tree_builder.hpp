@@ -39,15 +39,17 @@ class ClusterTreeBuilder {
     void set_is_complete(bool is_complete) { m_is_complete = is_complete; }
     void set_partitioning_strategy(std::shared_ptr<VirtualPartitioning<T>> partitioning_strategy) { m_partitioning_strategy = partitioning_strategy; }
 
-    Cluster<T> create_cluster_tree(int number_of_points, int spatial_dimension, const T *coordinates, const T *radii, const T *weights, int number_of_children, int size_of_partition, const int *partition) const;
+    Cluster<T> create_cluster_tree(int number_of_points, int spatial_dimension, const T *coordinates, const T *radii, const T *weights, int number_of_children, int size_of_partition, const int *partition, bool is_given_partition_local) const;
 
-    Cluster<T> create_cluster_tree(int number_of_points, int spatial_dimension, const T *coordinates, int number_of_children, int size_of_partition) const { return create_cluster_tree(number_of_points, spatial_dimension, coordinates, nullptr, nullptr, number_of_children, size_of_partition, nullptr); }
+    Cluster<T> create_cluster_tree(int number_of_points, int spatial_dimension, const T *coordinates, int number_of_children, int size_of_partition) const { return create_cluster_tree(number_of_points, spatial_dimension, coordinates, nullptr, nullptr, number_of_children, size_of_partition, nullptr, false); }
 
-    Cluster<T> create_cluster_tree(int number_of_points, int spatial_dimension, const T *coordinates, int number_of_children, int size_of_partition, const int *partition) const { return create_cluster_tree(number_of_points, spatial_dimension, coordinates, nullptr, nullptr, number_of_children, size_of_partition, partition); }
+    Cluster<T> create_cluster_tree_from_global_partition(int number_of_points, int spatial_dimension, const T *coordinates, int number_of_children, int size_of_partition, const int *partition) const { return create_cluster_tree(number_of_points, spatial_dimension, coordinates, nullptr, nullptr, number_of_children, size_of_partition, partition, false); }
+
+    Cluster<T> create_cluster_tree_from_local_partition(int number_of_points, int spatial_dimension, const T *coordinates, int number_of_children, int size_of_partition, const int *partition) const { return create_cluster_tree(number_of_points, spatial_dimension, coordinates, nullptr, nullptr, number_of_children, size_of_partition, partition, true); }
 };
 
 template <typename T>
-Cluster<T> ClusterTreeBuilder<T>::create_cluster_tree(int number_of_points, int spatial_dimension, const T *coordinates, const T *radii, const T *weights, int number_of_children, int size_partition, const int *partition) const {
+Cluster<T> ClusterTreeBuilder<T>::create_cluster_tree(int number_of_points, int spatial_dimension, const T *coordinates, const T *radii, const T *weights, int number_of_children, int size_partition, const int *partition, bool is_given_partition_local) const {
 
     std::vector<std::pair<int, int>> m_partition{};
     PartitionType partition_type{Simple};
@@ -77,7 +79,7 @@ Cluster<T> ClusterTreeBuilder<T>::create_cluster_tree(int number_of_points, int 
     int depth_of_partition;
     int number_of_children_on_partition_level = size_partition;
     int additional_children_on_last_partition = 0;
-    if (partition != nullptr) {
+    if (partition != nullptr && is_given_partition_local) {
         partition_type     = Given;
         depth_of_partition = 1;
         cluster_stack.pop();
@@ -87,6 +89,37 @@ Cluster<T> ClusterTreeBuilder<T>::create_cluster_tree(int number_of_points, int 
             center                           = compute_center(spatial_dimension, coordinates, weights, partition[2 * p], partition[2 * p + 1], permutation.data());
             radius                           = compute_radius(spatial_dimension, coordinates, radii, center, partition[2 * p], partition[2 * p + 1], permutation.data());
             Cluster<T> *cluster_on_partition = root_cluster.add_child(radius, center, p, partition[2 * p], partition[2 * p + 1], p, is_child_on_partition);
+            cluster_stack.push(cluster_on_partition);
+        }
+    } else if (partition != nullptr && !is_given_partition_local) {
+        partition_type     = Given;
+        depth_of_partition = 1;
+        cluster_stack.pop();
+        bool is_child_on_partition = true;
+        int cpt                    = 0;
+        std::vector<int> offsets(size_partition);
+        std::vector<int> sizes(size_partition);
+        bool is_permutation_local = true;
+        for (int p = 0; p < size_partition; p++) {
+            offsets[p]         = cpt;
+            sizes[p]           = 0;
+            int previous_index = -1;
+            for (int i = 0; i < number_of_points; i++) {
+                if (partition[i] == p) {
+                    permutation[cpt] = i;
+                    sizes[p]++;
+                    cpt++;
+                    is_permutation_local = is_permutation_local && (previous_index < 0 || (previous_index == i - 1));
+                    previous_index       = i;
+                }
+            }
+        }
+        root_cluster.set_is_permutation_local(is_permutation_local);
+
+        for (int p = 0; p < size_partition; p++) {
+            center                           = compute_center(spatial_dimension, coordinates, weights, offsets[p], sizes[p], permutation.data());
+            radius                           = compute_radius(spatial_dimension, coordinates, radii, center, offsets[p], sizes[p], permutation.data());
+            Cluster<T> *cluster_on_partition = root_cluster.add_child(radius, center, p, offsets[p], sizes[p], p, is_child_on_partition);
             cluster_stack.push(cluster_on_partition);
         }
     } else {

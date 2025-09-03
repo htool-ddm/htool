@@ -26,7 +26,7 @@ int main(int argc, char *argv[]) {
                             tolerances.push_back(1e-3);
                         }
                         for (auto epsilon : tolerances) {
-                            std::cout << use_buffer << " " << epsilon << " " << number_of_right_hand_side << " " << operation << " " << epsilon << "\n";
+                            std::cout << use_buffer << " " << epsilon << " " << number_of_right_hand_side << " " << operation << " " << epsilon << " " << offdiagonal_approximation << "\n";
 
                             // Square matrix
                             is_error = is_error || test_distributed_operator<double, GeneratorTestDoubleSymmetric>(number_of_rows, number_of_columns, number_of_right_hand_side, use_buffer, 'N', 'N', operation, offdiagonal_approximation, data_type, epsilon);
