@@ -146,7 +146,7 @@ class DDMSolverWithDenseLocalSolver {
 
         // Local cluster
         ClusterTreeBuilder<double> recursive_build_strategy;
-        return recursive_build_strategy.create_cluster_tree(local_to_global_numbering.size(), spatial_dimension0, local_geometry.data(), 2, 2, nullptr);
+        return recursive_build_strategy.create_cluster_tree(local_to_global_numbering.size(), spatial_dimension0, local_geometry.data(), 2, 2);
     };
 
     std::unique_ptr<Cluster<CoordinatePrecision>> local_cluster;
@@ -261,7 +261,7 @@ class DDMSolverBuilder {
         }
 
         // Local cluster
-        return cluster_tree_builder.create_cluster_tree(local_to_global_numbering.size(), spatial_dimension0, local_geometry.data(), global_radii0 == nullptr ? nullptr : local_radii.data(), global_weights0 == nullptr ? nullptr : local_weights.data(), 2, 2, nullptr);
+        return cluster_tree_builder.create_cluster_tree(local_to_global_numbering.size(), spatial_dimension0, local_geometry.data(), global_radii0 == nullptr ? nullptr : local_radii.data(), global_weights0 == nullptr ? nullptr : local_weights.data(), 2, 2, nullptr, false);
     };
 
     std::unique_ptr<Cluster<CoordinatePrecision>> m_local_cluster;

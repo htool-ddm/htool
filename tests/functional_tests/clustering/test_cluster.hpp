@@ -18,8 +18,12 @@
 using namespace std;
 using namespace htool;
 
-template <typename T, int dim, class DirectionComputetationStrategy, class SplittingStrategy>
-bool test_cluster(int size, bool use_given_partition) {
+enum class PartitionType { None,
+                           Local,
+                           Global };
+
+template <typename T, class DirectionComputetationStrategy, class SplittingStrategy>
+bool test_cluster(int dim, int size, PartitionType partition_type) {
 
     int rankWorld, sizeWorld;
     MPI_Comm_size(MPI_COMM_WORLD, &sizeWorld);
@@ -35,8 +39,16 @@ bool test_cluster(int size, bool use_given_partition) {
 
     std::vector<int> partition{};
 
-    if (use_given_partition) {
-        test_partition(dim, size, coordinates, sizeWorld, partition);
+    if (partition_type == PartitionType::Local) {
+        partition = test_local_partition(dim, size, coordinates, sizeWorld);
+    }
+    for (auto elt : partition) {
+        std::cout << elt << " ";
+    }
+    std::cout << "\n";
+
+    if (partition_type == PartitionType::Global) {
+        partition = test_global_partition(dim, size, coordinates, sizeWorld);
     }
 
     std::vector<int> nb_sons_test{2, 3, 4};
@@ -49,8 +61,16 @@ bool test_cluster(int size, bool use_given_partition) {
         recursive_build_strategy.set_partitioning_strategy(std::make_shared<Partitioning<T, DirectionComputetationStrategy, SplittingStrategy>>());
 
         recursive_build_strategy.set_maximal_leaf_size(10);
-        Cluster<T> root_cluster = recursive_build_strategy.create_cluster_tree(size, dim, coordinates.data(), nb_sons, sizeWorld, (use_given_partition) ? partition.data() : nullptr);
-        is_error                = is_error || !(root_cluster.is_root());
+        std::unique_ptr<Cluster<T>> root_cluster_ptr;
+        if (partition_type == PartitionType::None) {
+            root_cluster_ptr = std::make_unique<Cluster<T>>(recursive_build_strategy.create_cluster_tree(size, dim, coordinates.data(), nb_sons, sizeWorld));
+        } else if (partition_type == PartitionType::Local) {
+            root_cluster_ptr = std::make_unique<Cluster<T>>(recursive_build_strategy.create_cluster_tree_from_local_partition(size, dim, coordinates.data(), nb_sons, sizeWorld, partition.data()));
+        } else if (partition_type == PartitionType::Global) {
+            root_cluster_ptr = std::make_unique<Cluster<T>>(recursive_build_strategy.create_cluster_tree_from_global_partition(size, dim, coordinates.data(), nb_sons, sizeWorld, partition.data()));
+        }
+        Cluster<T> &root_cluster = *root_cluster_ptr;
+        is_error                 = is_error || !(root_cluster.is_root());
 
         if (rankWorld == 0)
             print(root_cluster);
@@ -90,15 +110,6 @@ bool test_cluster(int size, bool use_given_partition) {
 
         is_error = is_error || !(clusters_on_partition.size() == sizeWorld);
         is_error = is_error || !(summed_size_of_cluster_on_partition == size);
-
-        if (use_given_partition) {
-            int p = 0;
-            for (const auto &cluster_on_partition : clusters_on_partition) {
-                is_error = is_error || !(cluster_on_partition->get_size() == partition[2 * p + 1]);
-                is_error = is_error || !(cluster_on_partition->get_offset() == partition[2 * p]);
-                p++;
-            }
-        }
 
         // Testing save and read root cluster
         save_cluster_tree(root_cluster, "test_save_" + NbrToStr(rankWorld) + "_" + NbrToStr(sizeWorld));

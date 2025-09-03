@@ -12,45 +12,19 @@ int main(int argc, char *argv[]) {
     bool is_error  = false;
     const int size = 200;
 
-    is_error = is_error || test_cluster<double, 2, htool::ComputeLargestExtent<double>, htool::RegularSplitting<double>>(size, false);
-    is_error = is_error || test_cluster<double, 2, htool::ComputeLargestExtent<double>, htool::GeometricSplitting<double>>(size, false);
-    is_error = is_error || test_cluster<double, 2, htool::ComputeBoundingBox<double>, htool::RegularSplitting<double>>(size, false);
-    is_error = is_error || test_cluster<double, 2, htool::ComputeBoundingBox<double>, htool::GeometricSplitting<double>>(size, false);
+    for (int dimension : {2, 3}) {
+        for (auto partition_type : {PartitionType::None, PartitionType::Local, PartitionType::Global}) {
+            is_error = is_error || test_cluster<double, htool::ComputeLargestExtent<double>, htool::RegularSplitting<double>>(dimension, size, partition_type);
+            is_error = is_error || test_cluster<double, htool::ComputeLargestExtent<double>, htool::GeometricSplitting<double>>(dimension, size, partition_type);
+            is_error = is_error || test_cluster<double, htool::ComputeBoundingBox<double>, htool::RegularSplitting<double>>(dimension, size, partition_type);
+            is_error = is_error || test_cluster<double, htool::ComputeBoundingBox<double>, htool::GeometricSplitting<double>>(dimension, size, partition_type);
 
-    is_error = is_error || test_cluster<double, 2, htool::ComputeLargestExtent<double>, htool::RegularSplitting<double>>(size, true);
-    is_error = is_error || test_cluster<double, 2, htool::ComputeLargestExtent<double>, htool::GeometricSplitting<double>>(size, true);
-    is_error = is_error || test_cluster<double, 2, htool::ComputeBoundingBox<double>, htool::RegularSplitting<double>>(size, true);
-    is_error = is_error || test_cluster<double, 2, htool::ComputeBoundingBox<double>, htool::GeometricSplitting<double>>(size, true);
-
-    is_error = is_error || test_cluster<double, 3, htool::ComputeLargestExtent<double>, htool::RegularSplitting<double>>(size, false);
-    is_error = is_error || test_cluster<double, 3, htool::ComputeLargestExtent<double>, htool::GeometricSplitting<double>>(size, false);
-    is_error = is_error || test_cluster<double, 3, htool::ComputeBoundingBox<double>, htool::RegularSplitting<double>>(size, false);
-    is_error = is_error || test_cluster<double, 3, htool::ComputeBoundingBox<double>, htool::GeometricSplitting<double>>(size, false);
-
-    is_error = is_error || test_cluster<double, 3, htool::ComputeLargestExtent<double>, htool::RegularSplitting<double>>(size, true);
-    is_error = is_error || test_cluster<double, 3, htool::ComputeLargestExtent<double>, htool::GeometricSplitting<double>>(size, true);
-    is_error = is_error || test_cluster<double, 3, htool::ComputeBoundingBox<double>, htool::RegularSplitting<double>>(size, true);
-    is_error = is_error || test_cluster<double, 3, htool::ComputeBoundingBox<double>, htool::GeometricSplitting<double>>(size, true);
-
-    is_error = is_error || test_cluster<float, 2, htool::ComputeLargestExtent<float>, htool::RegularSplitting<float>>(size, false);
-    is_error = is_error || test_cluster<float, 2, htool::ComputeLargestExtent<float>, htool::GeometricSplitting<float>>(size, false);
-    is_error = is_error || test_cluster<float, 2, htool::ComputeBoundingBox<float>, htool::RegularSplitting<float>>(size, false);
-    is_error = is_error || test_cluster<float, 2, htool::ComputeBoundingBox<float>, htool::GeometricSplitting<float>>(size, false);
-
-    is_error = is_error || test_cluster<float, 2, htool::ComputeLargestExtent<float>, htool::RegularSplitting<float>>(size, true);
-    is_error = is_error || test_cluster<float, 2, htool::ComputeLargestExtent<float>, htool::GeometricSplitting<float>>(size, true);
-    is_error = is_error || test_cluster<float, 2, htool::ComputeBoundingBox<float>, htool::RegularSplitting<float>>(size, true);
-    is_error = is_error || test_cluster<float, 2, htool::ComputeBoundingBox<float>, htool::GeometricSplitting<float>>(size, true);
-
-    is_error = is_error || test_cluster<float, 3, htool::ComputeLargestExtent<float>, htool::RegularSplitting<float>>(size, false);
-    is_error = is_error || test_cluster<float, 3, htool::ComputeLargestExtent<float>, htool::GeometricSplitting<float>>(size, false);
-    is_error = is_error || test_cluster<float, 3, htool::ComputeBoundingBox<float>, htool::RegularSplitting<float>>(size, false);
-    is_error = is_error || test_cluster<float, 3, htool::ComputeBoundingBox<float>, htool::GeometricSplitting<float>>(size, false);
-
-    is_error = is_error || test_cluster<float, 3, htool::ComputeLargestExtent<float>, htool::RegularSplitting<float>>(size, true);
-    is_error = is_error || test_cluster<float, 3, htool::ComputeLargestExtent<float>, htool::GeometricSplitting<float>>(size, true);
-    is_error = is_error || test_cluster<float, 3, htool::ComputeBoundingBox<float>, htool::RegularSplitting<float>>(size, true);
-    is_error = is_error || test_cluster<float, 3, htool::ComputeBoundingBox<float>, htool::GeometricSplitting<float>>(size, true);
+            is_error = is_error || test_cluster<float, htool::ComputeLargestExtent<float>, htool::RegularSplitting<float>>(dimension, size, partition_type);
+            is_error = is_error || test_cluster<float, htool::ComputeLargestExtent<float>, htool::GeometricSplitting<float>>(dimension, size, partition_type);
+            is_error = is_error || test_cluster<float, htool::ComputeBoundingBox<float>, htool::RegularSplitting<float>>(dimension, size, partition_type);
+            is_error = is_error || test_cluster<float, htool::ComputeBoundingBox<float>, htool::GeometricSplitting<float>>(dimension, size, partition_type);
+        }
+    }
 
     MPI_Finalize();
     if (is_error) {
