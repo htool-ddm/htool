@@ -11,7 +11,7 @@
 namespace htool {
 
 template <typename CoordinatePrecision>
-std::vector<int> test_partition(int spatial_dimension, int number_of_points, const std::vector<CoordinatePrecision> &coordinates, int partition_size) {
+std::vector<int> test_global_partition(int spatial_dimension, int number_of_points, const std::vector<CoordinatePrecision> &coordinates, int partition_size) {
     // Compute largest extent
     Matrix<CoordinatePrecision> direction(spatial_dimension, spatial_dimension);
     Matrix<CoordinatePrecision> cov(spatial_dimension, spatial_dimension);
@@ -56,31 +56,10 @@ std::vector<int> test_partition(int spatial_dimension, int number_of_points, con
         partition[permutation[i]] = partition_size - 1;
     }
     return partition;
-
-    // // permute
-    // std::vector<CoordinatePrecision> coordinates_perm(number_of_points * spatial_dimension, 0);
-    // for (int i = 0; i < permutation.size(); i++) {
-    //     for (int p = 0; p < spatial_dimension; p++) {
-    //         coordinates_perm[i * spatial_dimension + p] = coordinates[permutation[i] * spatial_dimension + p];
-    //     }
-    // }
-    // coordinates = coordinates_perm;
-
-    // // split
-    // std::vector<int> partition(number_of_points);
-    // int size_numbering = number_of_points / partition_size;
-    // int count_size     = 0;
-    // for (int p = 0; p < partition_size - 1; p++) {
-    //     partition.emplace_back(count_size);
-    //     partition.emplace_back(size_numbering);
-    //     count_size += size_numbering;
-    // }
-    // partition.emplace_back(count_size);
-    // partition.emplace_back(number_of_points - count_size);
 }
 
 template <typename CoordinatePrecision>
-std::vector<int> test_partition_with_renumbering(int spatial_dimension, int number_of_points, std::vector<CoordinatePrecision> &coordinates, int partition_size) {
+std::vector<int> test_local_partition(int spatial_dimension, int number_of_points, std::vector<CoordinatePrecision> &coordinates, int partition_size) {
     // Compute largest extent
     Matrix<CoordinatePrecision> direction(spatial_dimension, spatial_dimension);
     Matrix<CoordinatePrecision> cov(spatial_dimension, spatial_dimension);
@@ -122,14 +101,16 @@ std::vector<int> test_partition_with_renumbering(int spatial_dimension, int numb
     coordinates = coordinates_perm;
 
     // split
-    std::vector<int> partition(number_of_points);
+    std::vector<int> partition;
     int size_numbering = number_of_points / partition_size;
     int count_size     = 0;
     for (int p = 0; p < partition_size - 1; p++) {
-        std::fill_n(partition.begin() + count_size, size_numbering, p);
+        partition.emplace_back(count_size);
+        partition.emplace_back(size_numbering);
         count_size += size_numbering;
     }
-    std::fill_n(partition.begin() + count_size, number_of_points - count_size, partition_size - 1);
+    partition.emplace_back(count_size);
+    partition.emplace_back(number_of_points - count_size);
     return partition;
 }
 

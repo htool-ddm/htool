@@ -50,7 +50,7 @@ bool test_hmatrix_build(ExecutionPolicy &&execution_policy, int nr, int nc, bool
     create_disk(3, z1, nr, p1.data());
 
     // Partition
-    std::vector<int> partition = test_partition_with_renumbering(3, nr, p1, sizeWorld);
+    std::vector<int> partition = test_local_partition(3, nr, p1, sizeWorld);
 
     // Clustering
     ClusterTreeBuilder<htool::underlying_type<T>> cluster_tree_builder;
@@ -58,7 +58,7 @@ bool test_hmatrix_build(ExecutionPolicy &&execution_policy, int nr, int nc, bool
     // recursive_build_strategy.set_minclustersize(2);
 
     std::shared_ptr<const Cluster<htool::underlying_type<T>>> source_root_cluster;
-    std::shared_ptr<const Cluster<htool::underlying_type<T>>> target_root_cluster = make_shared<const Cluster<htool::underlying_type<T>>>(cluster_tree_builder.create_cluster_tree(nr, 3, p1.data(), 2, sizeWorld, partition.data()));
+    std::shared_ptr<const Cluster<htool::underlying_type<T>>> target_root_cluster = make_shared<const Cluster<htool::underlying_type<T>>>(cluster_tree_builder.create_cluster_tree_from_local_partition(nr, 3, p1.data(), 2, sizeWorld, partition.data()));
 
     if (Symmetry == 'N' && nr != nc) {
         // Geometry
@@ -66,12 +66,12 @@ bool test_hmatrix_build(ExecutionPolicy &&execution_policy, int nr, int nc, bool
         create_disk(3, z2, nc, p2.data());
 
         // partition
-        partition = test_partition_with_renumbering(3, nc, p2, sizeWorld);
+        partition = test_local_partition(3, nc, p2, sizeWorld);
 
         // Clustering
         // source_recursive_build_strategy.set_minclustersize(2);
 
-        source_root_cluster = make_shared<const Cluster<htool::underlying_type<T>>>(cluster_tree_builder.create_cluster_tree(nc, 3, p2.data(), 2, sizeWorld, partition.data()));
+        source_root_cluster = make_shared<const Cluster<htool::underlying_type<T>>>(cluster_tree_builder.create_cluster_tree_from_local_partition(nc, 3, p2.data(), 2, sizeWorld, partition.data()));
     } else {
         source_root_cluster = target_root_cluster;
         p2                  = p1;

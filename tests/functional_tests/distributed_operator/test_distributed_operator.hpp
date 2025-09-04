@@ -416,12 +416,17 @@ auto add_off_diagonal_operator(ClusterTreeBuilder<htool::underlying_type<T>> &re
                 p2_permuted[i * 3 + 1] = p2[source_permutation[i] * 3 + 1];
                 p2_permuted[i * 3 + 2] = p2[source_permutation[i] * 3 + 2];
             }
-            std::vector<int> off_diagonal_partition(nc);
-            std::fill_n(off_diagonal_partition.begin(), off_diagonal_nc_1, 0);
-            std::fill_n(off_diagonal_partition.begin() + off_diagonal_nc_1, nc_local, 1);
-            std::fill_n(off_diagonal_partition.begin() + off_diagonal_nc_1 + nc_local, off_diagonal_nc_2, 2);
 
-            off_diagonal_cluster   = make_unique<const Cluster<htool::underlying_type<T>>>(recursive_build.create_cluster_tree(nc, 3, p2_permuted.data(), 2, 3, off_diagonal_partition.data()));
+            std::vector<int> off_diagonal_partition;
+            off_diagonal_partition.push_back(0);
+            off_diagonal_partition.push_back(off_diagonal_nc_1);
+            // off_diagonal_partition.push_back(off_diagonal_nc_1);
+            // off_diagonal_partition.push_back(nr);
+            off_diagonal_partition.push_back(off_diagonal_nc_1 + nc_local);
+            off_diagonal_partition.push_back(off_diagonal_nc_2);
+
+            off_diagonal_cluster = make_unique<const Cluster<htool::underlying_type<T>>>(recursive_build.create_cluster_tree_from_local_partition(nc, 3, p2_permuted.data(), 2, 2, off_diagonal_partition.data()));
+
             generator_off_diagonal = std::make_unique<GeneratorTestType>(3, p1, p2_permuted);
 
             // // recursive_build.set_partition(2, off_diagonal_partition.data());
@@ -438,7 +443,7 @@ auto add_off_diagonal_operator(ClusterTreeBuilder<htool::underlying_type<T>> &re
 
             // Off diagonal LocalDenseMatrix
             const Cluster<htool::underlying_type<T>> *local_off_diagonal_cluster_tree_1 = &off_diagonal_cluster->get_cluster_on_partition(0);
-            const Cluster<htool::underlying_type<T>> *local_off_diagonal_cluster_tree_2 = &off_diagonal_cluster->get_cluster_on_partition(2);
+            const Cluster<htool::underlying_type<T>> *local_off_diagonal_cluster_tree_2 = &off_diagonal_cluster->get_cluster_on_partition(1);
 
             if (data_type == DataType::Matrix) {
                 GeneratorTestType generator(3, p1, p2);
@@ -471,7 +476,7 @@ auto add_off_diagonal_operator(ClusterTreeBuilder<htool::underlying_type<T>> &re
     Holder holder(recursive_build, target_root_cluster, p1, source_root_cluster, p2, data_type, epsilon, eta);
     if (holder.off_diagonal_cluster->get_cluster_on_partition(0).get_size() > 0)
         distributed_operator.add_global_to_local_operator(holder.local_off_diagonal_operator_1.get());
-    if (holder.off_diagonal_cluster->get_cluster_on_partition(2).get_size() > 0)
+    if (holder.off_diagonal_cluster->get_cluster_on_partition(1).get_size() > 0)
         distributed_operator.add_global_to_local_operator(holder.local_off_diagonal_operator_2.get());
     return holder;
 }
@@ -499,14 +504,11 @@ bool test_default_distributed_operator(int nr, int nc, int mu, bool use_buffer, 
     int size_numbering = nr / (sizeWorld);
     int count_size     = 0;
     std::vector<int> MasterOffset_target, MasterOffset_source;
-    std::vector<int> target_partition(nr);
     for (int p = 0; p < sizeWorld - 1; p++) {
         MasterOffset_target.push_back(count_size);
         MasterOffset_target.push_back(size_numbering);
-        std::fill_n(std::begin(target_partition) + count_size, size_numbering, p);
         count_size += size_numbering;
     }
-    std::fill_n(std::begin(target_partition) + count_size, nr - count_size, sizeWorld - 1);
     MasterOffset_target.push_back(count_size);
     MasterOffset_target.push_back(nr - count_size);
 
@@ -515,27 +517,24 @@ bool test_default_distributed_operator(int nr, int nc, int mu, bool use_buffer, 
 
     ClusterTreeBuilder<htool::underlying_type<T>> recursive_build;
     std::shared_ptr<const Cluster<htool::underlying_type<T>>> source_root_cluster;
-    std::shared_ptr<const Cluster<htool::underlying_type<T>>> target_root_cluster = make_shared<const Cluster<htool::underlying_type<T>>>(recursive_build.create_cluster_tree(nr, 3, p1.data(), 2, sizeWorld, target_partition.data()));
+    std::shared_ptr<const Cluster<htool::underlying_type<T>>> target_root_cluster = make_shared<const Cluster<htool::underlying_type<T>>>(recursive_build.create_cluster_tree_from_local_partition(nr, 3, p1.data(), 2, sizeWorld, MasterOffset_target.data()));
 
     if (Symmetry == 'N') {
         double z2 = 1 + 0.1;
         create_disk(3, z2, nc, p2.data());
-        std::vector<int> source_partition(nc);
 
         for (int p = 0; p < sizeWorld - 1; p++) {
             MasterOffset_source.push_back(count_size);
             MasterOffset_source.push_back(size_numbering);
-            std::fill_n(std::begin(source_partition) + count_size, size_numbering, p);
 
             count_size += size_numbering;
         }
-        std::fill_n(std::begin(source_partition) + count_size, nc - count_size, sizeWorld - 1);
         MasterOffset_source.push_back(count_size);
         MasterOffset_source.push_back(nc - count_size);
 
         // recursive_build.set_partition(sizeWorld, MasterOffset_source.data());
 
-        source_root_cluster = make_shared<const Cluster<htool::underlying_type<T>>>(recursive_build.create_cluster_tree(nc, 3, p2.data(), 2, sizeWorld, source_partition.data()));
+        source_root_cluster = make_shared<const Cluster<htool::underlying_type<T>>>(recursive_build.create_cluster_tree_from_local_partition(nc, 3, p2.data(), 2, sizeWorld, MasterOffset_source.data()));
 
     } else {
 
