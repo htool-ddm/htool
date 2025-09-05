@@ -18,7 +18,9 @@ class RecompressedLowRankGenerator final : public VirtualInternalLowRankGenerato
 
     virtual bool copy_low_rank_approximation(int M, int N, int row_offset, int col_offset, LowRankMatrix<CoefficientPrecision> &lrmat) const {
         bool info = m_low_rank_generator.copy_low_rank_approximation(M, N, row_offset, col_offset, lrmat);
-        m_recompression(lrmat);
+        if (info) {
+            m_recompression(lrmat);
+        }
         return info;
     }
 
