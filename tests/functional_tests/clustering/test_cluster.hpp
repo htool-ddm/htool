@@ -22,7 +22,7 @@ enum class PartitionType { None,
                            Local,
                            Global };
 
-template <typename T, class DirectionComputetationStrategy, class SplittingStrategy>
+template <typename T, class PartitionStrategy>
 bool test_cluster(int dim, int size, PartitionType partition_type) {
 
     int rankWorld, sizeWorld;
@@ -58,7 +58,7 @@ bool test_cluster(int dim, int size, PartitionType partition_type) {
         }
 
         ClusterTreeBuilder<T> recursive_build_strategy;
-        recursive_build_strategy.set_partitioning_strategy(std::make_shared<Partitioning<T, DirectionComputetationStrategy, SplittingStrategy>>());
+        recursive_build_strategy.set_partitioning_strategy(std::make_shared<PartitionStrategy>());
 
         recursive_build_strategy.set_maximal_leaf_size(10);
         std::unique_ptr<Cluster<T>> root_cluster_ptr;

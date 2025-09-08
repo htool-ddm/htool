@@ -10,7 +10,7 @@
 namespace htool {
 
 template <typename T>
-Matrix<T> solve_EVP_2(const Matrix<T> &cov) {
+std::pair<Matrix<T>, std::vector<T>> solve_EVP_2(const Matrix<T> &cov) {
     std::vector<T> dir(2, 0);
     std::vector<T> eigs(2);
     Matrix<T> I(2, 2);
@@ -45,11 +45,11 @@ Matrix<T> solve_EVP_2(const Matrix<T> &cov) {
         result(0, 0) = 1;
         result(1, 1) = 1;
     }
-    return result;
+    return std::make_pair(result, eigs);
 }
 
 template <typename T>
-Matrix<T> solve_EVP_3(const Matrix<T> &cov) {
+std::pair<Matrix<T>, std::vector<T>> solve_EVP_3(const Matrix<T> &cov) {
     Matrix<T> result(3, 3);
     T p1 = std::pow(cov(0, 1), 2) + std::pow(cov(0, 2), 2) + std::pow(cov(1, 2), 2);
     std::vector<T> eigs(3);
@@ -150,7 +150,7 @@ Matrix<T> solve_EVP_3(const Matrix<T> &cov) {
             result(2, 2) = 1;
         }
     }
-    return result;
+    return std::make_pair(result, eigs);
 }
 } // namespace htool
 #endif

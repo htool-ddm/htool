@@ -8,23 +8,38 @@
 namespace htool {
 
 template <typename T>
-void create_disk(int space_dim, T z, int nr, T *const xt) {
-
+void create_rotated_ellipse(int space_dim, T a, T b, T alpha, T z, int nr, T *const xt) {
     std::mt19937 mersenne_engine(0);
     std::uniform_real_distribution<T> dist(0, 1);
     auto gen = [&dist, &mersenne_engine]() {
         return dist(mersenne_engine);
     };
-    T z1 = z;
+
+    T cos_alpha = std::cos(alpha);
+    T sin_alpha = std::sin(alpha);
+
     for (int j = 0; j < nr; j++) {
-        T rho                 = gen(); // (T) otherwise integer division!
-        T theta               = gen();
-        xt[space_dim * j + 0] = std::sqrt(rho) * std::cos(2 * static_cast<T>(M_PI) * theta);
-        xt[space_dim * j + 1] = std::sqrt(rho) * std::sin(2 * static_cast<T>(M_PI) * theta);
+        T rho   = gen();
+        T theta = gen();
+        T r     = std::sqrt(rho);
+        T phi   = 2 * static_cast<T>(M_PI) * theta;
+
+        // Axis-aligned ellipse coordinates
+        T x_prime = a * r * std::cos(phi);
+        T y_prime = b * r * std::sin(phi);
+
+        // Apply rotation
+        xt[space_dim * j + 0] = cos_alpha * x_prime - sin_alpha * y_prime;
+        xt[space_dim * j + 1] = sin_alpha * x_prime + cos_alpha * y_prime;
+
         if (space_dim == 3)
-            xt[space_dim * j + 2] = z1;
-        // sqrt(rho) otherwise the points would be concentrated in the center of the disk
+            xt[space_dim * j + 2] = z;
     }
+}
+
+template <typename T>
+void create_disk(int space_dim, T z, int nr, T *const xt) {
+    create_rotated_ellipse(space_dim, T(1.), T(1.), T(0.), z, nr, xt);
 }
 
 template <typename T>

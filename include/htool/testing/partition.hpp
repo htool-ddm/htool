@@ -14,6 +14,7 @@ template <typename CoordinatePrecision>
 std::vector<int> test_global_partition(int spatial_dimension, int number_of_points, const std::vector<CoordinatePrecision> &coordinates, int partition_size) {
     // Compute largest extent
     Matrix<CoordinatePrecision> direction(spatial_dimension, spatial_dimension);
+    std::vector<CoordinatePrecision> weigths;
     Matrix<CoordinatePrecision> cov(spatial_dimension, spatial_dimension);
     std::vector<int> permutation(number_of_points, 0);
     std::iota(permutation.begin(), permutation.end(), int(0));
@@ -31,9 +32,9 @@ std::vector<int> test_global_partition(int spatial_dimension, int number_of_poin
         }
     }
     if (spatial_dimension == 2) {
-        direction = solve_EVP_2(cov);
+        std::tie(direction, weigths) = solve_EVP_2(cov);
     } else if (spatial_dimension == 3) {
-        direction = solve_EVP_3(cov);
+        std::tie(direction, weigths) = solve_EVP_3(cov);
     }
 
     // sort
@@ -62,6 +63,7 @@ template <typename CoordinatePrecision>
 std::vector<int> test_local_partition(int spatial_dimension, int number_of_points, std::vector<CoordinatePrecision> &coordinates, int partition_size) {
     // Compute largest extent
     Matrix<CoordinatePrecision> direction(spatial_dimension, spatial_dimension);
+    std::vector<CoordinatePrecision> weigths;
     Matrix<CoordinatePrecision> cov(spatial_dimension, spatial_dimension);
     std::vector<int> permutation(number_of_points, 0);
     std::iota(permutation.begin(), permutation.end(), int(0));
@@ -79,9 +81,9 @@ std::vector<int> test_local_partition(int spatial_dimension, int number_of_point
         }
     }
     if (spatial_dimension == 2) {
-        direction = solve_EVP_2(cov);
+        std::tie(direction, weigths) = solve_EVP_2(cov);
     } else if (spatial_dimension == 3) {
-        direction = solve_EVP_3(cov);
+        std::tie(direction, weigths) = solve_EVP_3(cov);
     }
 
     // sort
