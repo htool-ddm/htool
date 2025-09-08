@@ -48,18 +48,18 @@ All notable changes to this project will be documented in this file.
   - `task_based_internal_add_hmatrix_hmatrix_product` for task based alternative to `{sequential,openmp}_internal_add_hmatrix_hmatrix_product`.
   - `task_based_internal_triangular_hmatrix_hmatrix_solve` for task based alternative to `internal_triangular_hmatrix_hmatrix_solve`.
   - `task_based_lu_factorization` and `task_based_cholesky_factorization` for task based alternatives to `{sequential,openmp}_lu_factorization` and `{sequential,openmp}_cholesky_factorization`.
-  - `test_task_based_hmatrix_***.hpp` for testing various task based features.
+  - `test_task_based_hmatrix_*.hpp` for testing various task based features.
 - `internal_add_lrmat_hmatrix` is now overloaded to handle the case where the HMatrix is larger than the LowRankMatrix.
 - `get_leaves_from` is overloaded to return non const arguments.
 - `get_false_positive` in a tree builder.
 - `left_hmatrix_ancestor_of_right_hmatrix` and `left_hmatrix_descendant_of_right_hmatrix` for returning parent and children of a hmatrix.
+- `Partition_N` is an alternative to `Partition` for defining the partition of a cluster. The latter only splits along the principal axis of the cluster, while the former tries to be smarter.
 
 ### Changed
 
 - `VirtualInternalLowRankGenerator` and `VirtualLowRankGenerator`'s `copy_low_rank_approximation` function takes a `LowRankMatrix` as input to populate it and returns a boolean. The return value is true if the compression succeded, false otherwise.
 - `LowRankMatrix` constructors changed. It only takes sizes and an epsilon or a required rank. Then, it is expected to call a `VirtualInternalLowRankGenerator` to populate it.
 - `ClusterTreeBuilder` has now one strategy as `VirtualPartitioning`. Usual implementations are still available, for example using `Partitioning<double,ComputeLargestExtent,RegularSplitting>`.
-- When using `ClusterTreeBuilder` with `number_of_children=2^spatial_dimension`, it will do a binary/quad/octo-tree instead of `number_of_children` cut along the main direction.
 - `ClusterTreeBuilder` parameter `minclustersize` was removed, and a parameter `maximal_leaf_size` has been added.
 - `DistributedOperator` supports now both "global-to-local" and "local-to-local" operators, using respectively `VirtualGlobalToLocalOperator` and `VirtualLocalToLocalOperator` interfaces. The linear algebra associated has been updated to follow a more Blas-like interface.
 - `MatrixView` has been added to ease the use of matrix product. Most public functions for matrix products are also new templated to accept, `Matrix`, `MatrixView` or any other type following the same interface.

@@ -24,17 +24,19 @@ data.columns = header
 
 
 # Create Color Map
-colormap = plt.get_cmap("Dark2")
+colormap = plt.get_cmap("tab10")
 norm = colors.Normalize(vmin=min(data[str(depth)]), vmax=max(data[str(depth)]))
 
 # Figure
 fig = plt.figure()
-ax = fig.add_subplot(111, projection='3d')
+
 
 if "x_2" in data.columns:
+    ax = fig.add_subplot(111, projection='3d')
     ax.scatter(data["x_0"].tolist(), data["x_1"].tolist(), data["x_2"].tolist(
     ), c=colormap(norm(data[str(depth)].tolist())), marker='o')
 else:
+    ax = fig.add_subplot(111)
     ax.scatter(data["x_0"].tolist(), data["x_1"].tolist(),
                c=colormap(norm(data[str(depth)].tolist())), marker='o')
 
