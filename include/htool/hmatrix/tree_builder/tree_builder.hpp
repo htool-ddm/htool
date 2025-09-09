@@ -70,7 +70,7 @@ class HMatrixTreeBuilder {
 
     // Internal methods
     void build_block_tree(HMatrixType *current_hmatrix) const;
-    HMatrixType setup_block_tree(HMatrixType &root_hmatrix, const VirtualInternalGenerator<CoefficientPrecision> &generator, const ClusterType &root_target_cluster_tree, const ClusterType &root_source_cluster_tree, int target_partition_number, int partition_number_for_symmetry) const;
+    void setup_block_tree(HMatrixType &root_hmatrix, const VirtualInternalGenerator<CoefficientPrecision> &generator, const ClusterType &root_target_cluster_tree, const ClusterType &root_source_cluster_tree, int target_partition_number, int partition_number_for_symmetry) const;
     void reset_root_of_block_tree(HMatrixType &) const;
     void sequential_compute_blocks(const VirtualInternalGenerator<CoefficientPrecision> &generator) const;
     void openmp_compute_blocks(const VirtualInternalGenerator<CoefficientPrecision> &generator) const;
@@ -367,7 +367,7 @@ HMatrix<CoefficientPrecision, CoordinatePrecision> HMatrixTreeBuilder<Coefficien
 }
 
 template <typename CoefficientPrecision, typename CoordinatePrecision>
-HMatrix<CoefficientPrecision, CoordinatePrecision> HMatrixTreeBuilder<CoefficientPrecision, CoordinatePrecision>::setup_block_tree(HMatrixType &root_hmatrix, const VirtualInternalGenerator<CoefficientPrecision> &generator, const ClusterType &root_target_cluster_tree, const ClusterType &root_source_cluster_tree, int target_partition_number, int partition_number_for_symmetry) const {
+void HMatrixTreeBuilder<CoefficientPrecision, CoordinatePrecision>::setup_block_tree(HMatrixType &root_hmatrix, const VirtualInternalGenerator<CoefficientPrecision> &generator, const ClusterType &root_target_cluster_tree, const ClusterType &root_source_cluster_tree, int target_partition_number, int partition_number_for_symmetry) const {
 
     if (target_partition_number != -1 && target_partition_number >= root_target_cluster_tree.get_clusters_on_partition().size()) {
         htool::Logger::get_instance().log(LogLevel::ERROR, "Target partition number cannot exceed number of partitions"); // LCOV_EXCL_LINE
@@ -412,7 +412,6 @@ HMatrix<CoefficientPrecision, CoordinatePrecision> HMatrixTreeBuilder<Coefficien
 
     std::chrono::duration<double> block_tree_build_duration                = end - start;
     root_hmatrix.get_hmatrix_tree_data()->m_timings["Block_tree_walltime"] = block_tree_build_duration;
-    return root_hmatrix;
 }
 
 template <typename CoefficientPrecision, typename CoordinatePrecision>
