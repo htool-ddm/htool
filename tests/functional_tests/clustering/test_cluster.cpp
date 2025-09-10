@@ -13,7 +13,7 @@ int main(int argc, char *argv[]) {
     const int size = 200;
 
     for (int dimension : {2, 3}) {
-        for (auto partition_type : {PartitionType::None}) {
+        for (auto partition_type : {PartitionType::None, PartitionType::Local, PartitionType::Global}) {
             is_error = is_error || test_cluster<double, htool::Partitioning<double, htool::ComputeLargestExtent<double>, htool::RegularSplitting<double>>>(dimension, size, partition_type);
             is_error = is_error || test_cluster<double, htool::Partitioning<double, htool::ComputeLargestExtent<double>, htool::GeometricSplitting<double>>>(dimension, size, partition_type);
             is_error = is_error || test_cluster<double, htool::Partitioning<double, htool::ComputeBoundingBox<double>, htool::RegularSplitting<double>>>(dimension, size, partition_type);
