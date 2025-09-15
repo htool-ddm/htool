@@ -41,18 +41,19 @@ class LocalToLocalHMatrix final : public VirtualLocalToLocalOperator<Coefficient
         bool is_output_null = temp_end - temp_offset <= 0 ? true : false;
         if (offset == source_offset && temp_end == source_end) {
             add_matrix_product_row_major('N', 1, in, 1, out, mu);
-        } else {
+        } else if (!is_output_null) {
+            std::vector<CoefficientPrecision> extension_by_zero(source_size * mu, 0);
             const CoefficientPrecision *const temp_in = in + temp_offset - offset;
             int temp_size                             = temp_end - temp_offset;
-            std::vector<CoefficientPrecision> extension_by_zero(source_size * mu, 0);
-            if (!is_output_null) {
-                std::copy_n(temp_in, temp_size * mu, extension_by_zero.data() + (offset - source_offset) * mu);
-            }
+            std::copy_n(temp_in, temp_size * mu, extension_by_zero.data() + (temp_offset - source_offset) * mu);
             add_matrix_product_row_major('N', 1, extension_by_zero.data(), 1, out, mu);
         }
     }
 
-    const HMatrix<CoefficientPrecision, CoordinatePrecision> &get_hmatrix() const { return *m_data.get(); }
+    const HMatrix<CoefficientPrecision, CoordinatePrecision> &
+    get_hmatrix() const {
+        return *m_data.get();
+    }
 };
 } // namespace htool
 #endif
