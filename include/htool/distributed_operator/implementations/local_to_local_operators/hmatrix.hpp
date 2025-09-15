@@ -34,19 +34,21 @@ class LocalToLocalHMatrix final : public VirtualLocalToLocalOperator<Coefficient
     void add_sub_matrix_product_to_local(const CoefficientPrecision *const in, CoefficientPrecision *const out, int mu, int offset, int size) const override {
         int source_offset   = m_data.get_source_cluster().get_offset();
         int source_size     = m_data.get_source_cluster().get_size();
-        bool is_output_null = ((offset + size) < source_offset) || (source_offset + source_size < offset);
-        if (!is_output_null) {
-            int temp_offset                           = std::max(offset, source_offset);
-            const CoefficientPrecision *const temp_in = (offset < source_offset) ? in + source_offset - offset : in;
-            int temp_size                             = (size + offset <= source_size + source_offset) ? size - std::max(source_offset - offset, 0) : size - std::max(source_offset - offset, 0) - (size + offset - source_offset - source_size);
-
-            if (temp_offset == source_offset && temp_size == source_size)
-                add_matrix_product_row_major('N', 1, temp_in, 1, out, mu);
-            else {
-                std::vector<CoefficientPrecision> extension_by_zero(source_size * mu);
-                std::copy_n(temp_in, temp_size * mu, extension_by_zero.data());
-                add_matrix_product_row_major('N', 1, extension_by_zero.data(), 1, out, mu);
+        int source_end      = source_size + source_offset;
+        int end             = size + offset;
+        int temp_offset     = std::max(offset, source_offset);
+        int temp_end        = std::min(source_end, end);
+        bool is_output_null = temp_end - temp_offset <= 0 ? true : false;
+        if (offset == source_offset && temp_end == source_end) {
+            add_matrix_product_row_major('N', 1, in, 1, out, mu);
+        } else {
+            const CoefficientPrecision *const temp_in = in + temp_offset - offset;
+            int temp_size                             = temp_end - temp_offset;
+            std::vector<CoefficientPrecision> extension_by_zero(source_size * mu, 0);
+            if (!is_output_null) {
+                std::copy_n(temp_in, temp_size * mu, extension_by_zero.data() + (offset - source_offset) * mu);
             }
+            add_matrix_product_row_major('N', 1, extension_by_zero.data(), 1, out, mu);
         }
     }
 
