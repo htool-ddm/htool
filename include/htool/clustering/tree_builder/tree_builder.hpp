@@ -136,6 +136,10 @@ Cluster<T> ClusterTreeBuilder<T>::create_cluster_tree(int number_of_points, int 
         }
     }
 
+    if (size_partition == 1) {
+        root_cluster.set_is_permutation_local(true);
+    }
+
     // Recursive build
     std::vector<std::pair<int, int>> current_splitting(number_of_children);
 
