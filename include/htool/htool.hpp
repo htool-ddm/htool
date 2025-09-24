@@ -19,9 +19,11 @@
 #include "hmatrix/lrmat/linalg.hpp"
 #include "hmatrix/lrmat/lrmat.hpp"
 #include "hmatrix/lrmat/partialACA.hpp"
+#include "hmatrix/lrmat/recompressed_low_rank_generator.hpp"
 #include "hmatrix/lrmat/sympartialACA.hpp"
 #include "matrix/linalg.hpp"
 #include "matrix/matrix.hpp"
+#include "matrix/matrix_view.hpp"
 #include "misc/misc.hpp"
 #include "misc/user.hpp"
 

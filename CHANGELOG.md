@@ -28,10 +28,18 @@ All notable changes to this project will be documented in this file.
 
 ### Added
 
+### Changed
+
+### Fixed
+
+## [1.0.0] - 2027-09-24
+
+### Added
+
 - `HMatrix` recompression with SVD.
 - Generic recompressed low-rank compression with `RecompressedLowRankGenerator`.
 - Checks about `UPLO` for hmatrix factorization.
-- `HMatrixBuilder` for easier `HMatrix` creation (especially when using only the hmatrix part of Htool-DDM).
+- `HMatrixBuilder` for easier `HMatrix` creation (especially when using only the `HMatrix` component of Htool-DDM).
 - `add_hmatrix_vector_product` and `add_hmatrix_matrix_product` for working in user numbering.
 - For C++17 and onward, interfaces supporting execution policies (default being sequential execution) has been added for these functions:
   - `HMatrixTreeBuilder::build`
@@ -62,7 +70,7 @@ All notable changes to this project will be documented in this file.
 - `ClusterTreeBuilder` has now one strategy as `VirtualPartitioning`. Usual implementations are still available, for example using `Partitioning<double,ComputeLargestExtent,RegularSplitting>`.
 - `ClusterTreeBuilder` parameter `minclustersize` was removed, and a parameter `maximal_leaf_size` has been added.
 - `DistributedOperator` supports now both "global-to-local" and "local-to-local" operators, using respectively `VirtualGlobalToLocalOperator` and `VirtualLocalToLocalOperator` interfaces. The linear algebra associated has been updated to follow a more Blas-like interface.
-- `MatrixView` has been added to ease the use of matrix product. Most public functions for matrix products are also new templated to accept, `Matrix`, `MatrixView` or any other type following the same interface.
+- `MatrixView` has been added to ease the use of matrix product. Most public functions for matrix products have also new template arguments to accept, `Matrix`, `MatrixView` or any other type following the same interface.
 
 ### Fixed
 
@@ -80,7 +88,7 @@ All notable changes to this project will be documented in this file.
     - `VirtualLocalOperator` which is the interface local operators must satisfy,
     - `LocalDenseMatrix` is an example of local operator consisting of a dense matrix `Matrix`,
     - and `LocalHMatrix` is an example of local operator consisting of a hierarchical matrix based on `HMatrix` (different from the previous `HMatrix`, see below).
-- Utility classes that help build `DistributedOperator` and `DDM` objects are available, for example: `DefaultApproximationBuilder` and `DDMSolverBuilder`. They do all the wiring between the inner interfaces between Htool-DDM's objects, see `include/htool/istributed_operator/utility.hpp` and `include/htool/solvers/utility.hpp`.
+- Utility classes that help build `DistributedOperator` and `DDM` objects are available, for example: `DefaultApproximationBuilder` and `DDMSolverBuilder`. They do all the wiring between the inner interfaces between Htool-DDM's objects, see `include/htool/distributed_operator/utility.hpp` and `include/htool/solvers/utility.hpp`.
 - Formatter has been added, see `.clang_format`.
 - A logger has been added with `Logger`. Its output can be customizerd via `IObjectWriter`.
 
