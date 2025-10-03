@@ -32,8 +32,8 @@ bibliography: paper.bib
 
 Compressible dense linear systems arise in many applications such as:
 
-- discretization of boundary integral equations [@Boerm2003],
-- solving Lyapunov and Riccati equations [@Boerm2003],
+- discretization of boundary integral equations [@BoermGrasedyckEtAl2003IHM],
+- solving Lyapunov and Riccati equations [@BoermGrasedyckEtAl2003IHM],
 - discretization of the integral Fractional Laplacian [@Ainsworth2018],
 - kernel-based scattered data interpolation [@Iske2017].
 
@@ -43,7 +43,7 @@ $$
 $$
 where $\alpha,\beta \in \mathbb{N}_0^d$, with $\alpha+\beta\neq 0$ and $C_{\mathrm{as}},s\in \mathbb{R}$ are constants.
 
-This mathematical property implies that the interaction between two distant clusters can be represented by a low-rank matrix. Multiple compression techniques have been developed to take advantage of this low-rank structure and provide an approximated representation of the a priori dense linear systems, for example, $\mathcal{H}$-matrix and $\mathcal{H}^2$-matrix [@Hackbusch2016; @Bebendorf2008; @Borm2010ENM] and FMM [@GreengardRokhlin1987FAP]. The advantages are usually:
+This mathematical property implies that the interaction between two distant clusters can be represented by a low-rank matrix. Multiple compression techniques have been developed to take advantage of this low-rank structure and provide an approximated representation of the a priori dense linear systems, for example, $\mathcal{H}$-matrix and $\mathcal{H}^2$-matrix [@Hackbusch2015HMA; @Bebendorf2008HMM; @Borm2010ENM] and FMM [@GreengardRokhlin1987FAP]. The advantages are usually:
 
 - to avoid the assembly of the full dense linear system,
 - to provide a compressed/approximated version of all or part of the usual dense linear algebra.
