@@ -8,12 +8,17 @@ namespace htool {
 
 template <typename T>
 void add_matrix_vector_product(char trans, T alpha, const Matrix<T> &A, const T *in, T beta, T *out) {
-    int nr   = A.nb_rows();
-    int nc   = A.nb_cols();
-    int lda  = nr;
-    int incx = 1;
-    int incy = 1;
-    Blas<T>::gemv(&trans, &nr, &nc, &alpha, A.data(), &lda, in, &incx, &beta, out, &incy);
+    int nr  = A.nb_rows();
+    int nc  = A.nb_cols();
+    int lda = nr;
+
+    if (nr && nc) {
+        int incx = 1;
+        int incy = 1;
+        Blas<T>::gemv(&trans, &nr, &nc, &alpha, A.data(), &lda, in, &incx, &beta, out, &incy);
+    } else if (nr) {
+        std::transform(out, out + nr, out, [&beta](T &c) { return c * beta; }); // LCOV_EXCL_LINE
+    }
 }
 
 template <typename T>

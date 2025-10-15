@@ -32,6 +32,8 @@ All notable changes to this project will be documented in this file.
 
 ### Fixed
 
+- Avoid empty-sized gemv, PR #64 from @prj-
+
 ## [1.0.0] - 2027-09-24
 
 ### Added
