@@ -81,7 +81,8 @@ void sequential_internal_add_hmatrix_vector_product(char trans, CoefficientPreci
     }
 
     if (CoefficientPrecision(beta) != CoefficientPrecision(1)) {
-        std::transform(out, out + out_size, out, [&beta](CoefficientPrecision &c) { return c * beta; });
+        int incx = 1;
+        Blas<CoefficientPrecision>::scal(&out_size, &beta, out, &incx);
     }
 
     // Contribution champ lointain
@@ -131,8 +132,7 @@ void openmp_internal_add_hmatrix_vector_product(char trans, CoefficientPrecision
 
     int incx(1), incy(1);
     if (CoefficientPrecision(beta) != CoefficientPrecision(1)) {
-        // TODO: use blas
-        std::transform(out, out + out_size, out, [&beta](CoefficientPrecision &c) { return c * beta; });
+        Blas<CoefficientPrecision>::scal(&out_size, &beta, out, &incx);
     }
 
 // Contribution champ lointain

@@ -16,8 +16,9 @@ void add_matrix_vector_product(char trans, T alpha, const Matrix<T> &A, const T 
         int incx = 1;
         int incy = 1;
         Blas<T>::gemv(&trans, &nr, &nc, &alpha, A.data(), &lda, in, &incx, &beta, out, &incy);
-    } else if (nr) {
-        std::transform(out, out + nr, out, [&beta](T &c) { return c * beta; }); // LCOV_EXCL_LINE
+    } else if (nr) {                           // LCOV_EXCL_LINE
+        int incx = 1;                          // LCOV_EXCL_LINE
+        Blas<T>::scal(&nr, &beta, out, &incx); // LCOV_EXCL_LINE
     }
 }
 
