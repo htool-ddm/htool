@@ -86,8 +86,7 @@ void sequential_internal_add_hmatrix_matrix_product_row_major(char transa, char 
 
     int incx(1), incy(1);
     if (CoefficientPrecision(beta) != CoefficientPrecision(1)) {
-        // TODO: use blas
-        std::transform(C, C + out_size, C, [&beta](CoefficientPrecision &c) { return c * beta; });
+        Blas<CoefficientPrecision>::scal(&out_size, &beta, C, &incx);
     }
 
     // Contribution champ lointain
@@ -141,8 +140,7 @@ void openmp_internal_add_hmatrix_matrix_product_row_major(char transa, char tran
 
     int incx(1), incy(1);
     if (CoefficientPrecision(beta) != CoefficientPrecision(1)) {
-        // TODO: use blas
-        std::transform(C, C + out_size, C, [&beta](CoefficientPrecision &c) { return c * beta; });
+        Blas<CoefficientPrecision>::scal(&out_size, &beta, C, &incx);
     }
 
     // Contribution champ lointain
