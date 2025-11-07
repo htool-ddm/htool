@@ -34,8 +34,8 @@ Compressible dense linear systems arise in many applications such as:
 
 - discretization of boundary integral equations [@BoermGrasedyckEtAl2003IHM],
 - solving Lyapunov and Riccati equations [@BoermGrasedyckEtAl2003IHM],
-- discretization of the integral Fractional Laplacian [@Ainsworth2018],
-- kernel-based scattered data interpolation [@Iske2017].
+- discretization of the integral Fractional Laplacian [@AinsworthGlusa2018TEF],
+- kernel-based scattered data interpolation [@IskeLeBorneEtAl2017HMA].
 
 They are often derived from a discretization of asymptotically smooth kernels $\kappa(\mathbf{x},\mathbf{y})$, i.e., for $\mathbf{x}\neq\mathbf{y}$
 $$
@@ -54,7 +54,7 @@ Beside compression, another technique to accelerate iterative linear solvers is 
 
 A class of preconditioners stemming from domain decomposition methods (DDM) are *Schwarz preconditioners*. They rely on a decomposition with overlap of the initial domain. $\mathbf{P}$ is constructed by solving well-chosen problems within each subdomain, together with a small global problem, called coarse space, that provides the necessary global information for the method to retain robustness as the number of subdomains increases. Such preconditioners have been introduced for boundary integral equations in [@Hebeker1990PSA] and analyzed in [@StephanTran1998DDA; @Heuer1996EA].
 
-One goal of `Htool-DDM` is to provide black-box DDM solvers using an adaptive coarse space called GenEO for "Generalized Eigenvalue problem in the Overlap" [@SpillaneDoleanEtAl2014ARC]. It has been adapted for specific boundary integral problems in [@MarchandClaeysEtAl2020TLP; @Marchand2020SMB]. The library also includes a default black-box matrix compression via in-house $\mathcal{H}$-matrix implementation. `Htool-DDM` is a flexible platform to use and develop new DDM preconditioners and explore compression techniques via its multiple customization points.
+One goal of `Htool-DDM` is to provide black-box DDM solvers using an adaptive coarse space called GenEO for "Generalized Eigenvalue problem in the Overlap" [@SpillaneDoleanEtAl2013ARC]. It has been adapted for specific boundary integral problems in [@MarchandClaeysEtAl2020TLP; @Marchand2020SMB]. The library also includes a default black-box matrix compression via in-house $\mathcal{H}$-matrix implementation. `Htool-DDM` is a flexible platform to use and develop new DDM preconditioners and explore compression techniques via its multiple customization points.
 
 # Statement of need
 
@@ -82,9 +82,9 @@ The library has four main components:
 
 
 
-Examples of libraries related to compression are `H2lib` [@h2lib], `hmat-oss` [@hmat_oss], `HODLRlib` [@Ambikasaran2019], and H2Opus [@ZampiniBoukaramEtAl2022HDM]. One major distinction of `Htool-DDM` with these libraries is its focus on DDM preconditioners, where the in-house compression is only one component that can actually be replaced, or used in conjunction with, such external libraries. It should also be noted these libraries often provide the discretization of the problem at hand directly (typically a finite element method for boundary integral equations). This is not the case of `Htool-DDM` where the interface is kept algebraic.
+Examples of libraries related to compression are `H2lib` [@h2lib], `hmat-oss` [@hmat_oss], `HODLRlib` [@AmbikasaranSinghEtAl2019HLH], and H2Opus [@ZampiniBoukaramEtAl2022HDM]. One major distinction of `Htool-DDM` with these libraries is its focus on DDM preconditioners, where the in-house compression is only one component that can actually be replaced, or used in conjunction with, such external libraries. It should also be noted these libraries often provide the discretization of the problem at hand directly (typically a finite element method for boundary integral equations). This is not the case of `Htool-DDM` where the interface is kept algebraic.
 
-The library has been used for the numerical experiments in [@MarchandClaeysEtAl2020TLP; @Marchand2020SMB]. It has been included in FreeFEM ([@Hecht2012NDF], version $\geq$ 4.5) to support boundary integral equations, and in PETSc ([@petsc-user-ref], version $\geq$ 3.16) for black-box compression and DDM solvers using the [MatHtool](https://petsc.org/main/manualpages/Mat/MATHTOOL/) PETSc matrix type and seamless integration into PCHPDDM [@JolivetRomanEtAl2021KPE]. It also has its own [Python interface](https://github.com/htool-ddm/htool_python).
+The library has been used for the numerical experiments in [@MarchandClaeysEtAl2020TLP; @Marchand2020SMB]. It has been included in FreeFEM ([@Hecht2012NDF], version $\geq$ 4.5) to support boundary integral equations, and in PETSc ([@BalayAbhyankarEtAl2020PUM], version $\geq$ 3.16) for black-box compression and DDM solvers using the [MatHtool](https://petsc.org/main/manualpages/Mat/MATHTOOL/) PETSc matrix type and seamless integration into PCHPDDM [@JolivetRomanEtAl2021KPE]. It also has its own [Python interface](https://github.com/htool-ddm/htool_python).
 
 We refer to the [documentation](https://htool-ddm.pages.math.cnrs.fr) for more details.
 
