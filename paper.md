@@ -19,7 +19,7 @@ authors:
 affiliations:
  - name: POEMS, CNRS, Inria, ENSTA, Institut Polytechnique de Paris, 91120 Palaiseau, France
    index: 1
- - name: Sorbonne Université, Université Paris Cité, CNRS, INRIA, Laboratoire Jacques-Louis Lions, LJLL, EPC ALPINES, 4 place Jussieu, Paris F-75005, France
+ - name: Sorbonne Université, Université Paris Cité, CNRS, Inria, Laboratoire Jacques-Louis Lions, LJLL, EPC ALPINES, 4 place Jussieu, Paris F-75005, France
    index: 2
  - name: Sorbonne Université, CNRS, LIP6, 75252 Paris, France
    index: 3
@@ -54,13 +54,13 @@ Beside compression, another technique to accelerate iterative linear solvers is 
 
 A class of preconditioners stemming from domain decomposition methods (DDM) are *Schwarz preconditioners*. They rely on a decomposition with overlap of the initial domain. $\mathbf{P}$ is constructed by solving well-chosen problems within each subdomain, together with a small global problem, called coarse space, that provides the necessary global information for the method to retain robustness as the number of subdomains increases. Such preconditioners have been introduced for boundary integral equations in [@Hebeker1990PSA] and analyzed in [@StephanTran1998DDA; @Heuer1996EA].
 
-One goal of `Htool-DDM` is to provide black-box DDM solvers using an adaptive coarse space called GenEO for "Generalized Eigenvalue problem in the Overlap" [@SpillaneDoleanEtAl2013ARC]. It has been adapted for specific boundary integral problems in [@MarchandClaeysEtAl2020TLP; @Marchand2020SMB]. The library also includes a default black-box matrix compression via in-house $\mathcal{H}$-matrix implementation. `Htool-DDM` is a flexible platform to use and develop new DDM preconditioners and explore compression techniques via its multiple customization points.
+One goal of `Htool-DDM` is to provide black-box DDM solvers using an adaptive coarse space called GenEO for "Generalized Eigenproblems problem in the Overlap" [@SpillaneDoleanEtAl2013ARC]. It has been adapted for specific boundary integral problems in [@MarchandClaeysEtAl2020TLP; @Marchand2020SMB]. The library also includes a default black-box matrix compression via an in-house $\mathcal{H}$-matrix implementation. `Htool-DDM` is a flexible platform to use and develop new DDM preconditioners and explore compression techniques via its multiple customization points.
 
 # Statement of need
 
-`Htool-DDM` is a lightweight C++ library that provides an easy-to-use interface for distributed iterative solvers and standard black-box matrix compression techniques via in-house $\mathcal{H}$-matrix implementation. Its goal is to provide DDM preconditioners for dense/compressed linear systems.
+`Htool-DDM` is a lightweight C++ library that provides an easy-to-use interface for distributed iterative solvers and standard black-box matrix compression techniques via an in-house $\mathcal{H}$-matrix implementation. Its goal is to provide DDM preconditioners for dense/compressed linear systems.
 
-It has many customization points to support research on efficient DDM preconditioners and compression techniques. For example, one can provide its own compression algorithm, or customize the default hierarchical compression. Via its interface with HPDDM from [@JolivetHechtEtAl2013SDD], it is also a flexible tool to test various iterative solvers and preconditioners, where local and/or global problems associated with DDM preconditioners can be tailored to the problem at hand.
+It has many customization points to support research on efficient DDM preconditioners and compression techniques. For example, the user can provide their own compression algorithm, or customize the default hierarchical compression. Via its interface with HPDDM from [@JolivetHechtEtAl2013SDD], it is also a flexible tool to test various iterative solvers and preconditioners, where local and/or global problems associated with DDM preconditioners can be tailored to the problem at hand.
 
 The library has four main components:
 
@@ -69,7 +69,7 @@ The library has four main components:
 ![Level 2 of cluster (quad)tree for rotated ellipse.](Figure_1.png){#fig:cluster_tree width="70%"}
 
 - `HMatrix` represents a compressed kernel using $\mathcal{H}$-matrix based on:
-    - a user-defined function that takes rows and columns indexes and generates the associated subblock of the matrix to be compressed;
+    - a user-defined function that takes row and column indexes and generates the associated subblock of the matrix to be compressed;
     - cluster trees contained in `Cluster` objects and representing the hierarchical partition of the underlying geometry on which the kernel is applied.
 
   Most linear algebra is supported with shared-memory parallelism and an interface inspired by [BLAS](https://www.netlib.org/blas/)/[LAPACK](https://www.netlib.org/lapack/) and [std::linalg](https://en.cppreference.com/w/cpp/numeric/linalg.html). Basic compression and recompression techniques are available, and users can also provide their own. See Figure \ref{fig:hmatrix} and [examples/use_hmatrix.cpp](https://github.com/htool-ddm/htool/blob/d7c0fa8b42c461446b92a4891dea78532eeea6b5/examples/use_hmatrix.cpp).
@@ -82,7 +82,7 @@ The library has four main components:
 
 
 
-Examples of libraries related to compression are `H2lib` [@h2lib], `hmat-oss` [@hmat_oss], `HODLRlib` [@AmbikasaranSinghEtAl2019HLH], and H2Opus [@ZampiniBoukaramEtAl2022HDM]. One major distinction of `Htool-DDM` with these libraries is its focus on DDM preconditioners, where the in-house compression is only one component that can actually be replaced, or used in conjunction with, such external libraries. It should also be noted these libraries often provide the discretization of the problem at hand directly (typically a finite element method for boundary integral equations). This is not the case of `Htool-DDM` where the interface is kept algebraic.
+Examples of libraries related to compression are `H2lib` [@h2lib], `hmat-oss` [@hmat_oss], `HODLRlib` [@AmbikasaranSinghEtAl2019HLH], and H2Opus [@ZampiniBoukaramEtAl2022HDM]. One major distinction of `Htool-DDM` with these libraries is its focus on DDM preconditioners, where the in-house compression is only one component that can actually be replaced or used in conjunction with such external libraries. It should also be noted that these libraries often provide the discretization of the problem at hand directly (typically a finite element method for boundary integral equations). This is not the case of `Htool-DDM` where the interface is kept algebraic.
 
 The library has been used for the numerical experiments in [@MarchandClaeysEtAl2020TLP; @Marchand2020SMB]. It has been included in FreeFEM ([@Hecht2012NDF], version $\geq$ 4.5) to support boundary integral equations, and in PETSc ([@BalayAbhyankarEtAl2020PUM], version $\geq$ 3.16) for black-box compression and DDM solvers using the [MatHtool](https://petsc.org/main/manualpages/Mat/MATHTOOL/) PETSc matrix type and seamless integration into PCHPDDM [@JolivetRomanEtAl2021KPE]. It also has its own [Python interface](https://github.com/htool-ddm/htool_python).
 
