@@ -63,7 +63,7 @@ int main(int argc, char *argv[]) {
     MPI_Init(&argc, &argv);
 
     // Check the number of parameters
-    if (argc < 3) {
+    if (argc != 4) {
         // Tell the user how to run the program
         cerr << "Usage: " << argv[0] << " distance \b outputfile \b outputpath" << endl;
         /* "Usage messages" are a conventional way of telling the user

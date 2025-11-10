@@ -9,7 +9,7 @@ using namespace htool;
 int main(int argc, char *argv[]) {
 
     // Check the number of parameters
-    if (argc < 1) {
+    if (argc != 2) {
         // Tell the user how to run the program
         cerr << "Usage: " << argv[0] << "  outputname" << endl;
         /* "Usage messages" are a conventional way of telling the user

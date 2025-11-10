@@ -64,7 +64,7 @@ int main(int argc, char *argv[]) {
     MPI_Comm_size(MPI_COMM_WORLD, &sizeWorld);
 
     // Check the number of parameters
-    if (argc < 1) {
+    if (argc != 2) {
         // Tell the user how to run the program
         cerr << "Usage: " << argv[0] << " outputpath" << endl;
         /* "Usage messages" are a conventional way of telling the user
