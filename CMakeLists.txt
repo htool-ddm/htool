@@ -96,6 +96,26 @@ find_package(OpenMP)
 find_package(BLAS REQUIRED)
 message(STATUS "Blas implementation:" "${BLAS_LIBRARIES}")
 
+set(BLAS_VENDOR "Unknown")
+foreach(lib ${BLAS_LIBRARIES})
+    if(lib MATCHES "mkl")
+        set(BLAS_VENDOR "Intel MKL")
+    elseif(lib MATCHES "openblas")
+        set(BLAS_VENDOR "OpenBLAS")
+    elseif(lib MATCHES "atlas")
+        set(BLAS_VENDOR "ATLAS")
+    elseif(lib MATCHES "vecLib" OR lib MATCHES "Accelerate")
+        set(BLAS_VENDOR "Apple Accelerate")
+    elseif(lib MATCHES "blas")
+        set(BLAS_VENDOR "Netlib BLAS")
+    endif()
+endforeach()
+message(STATUS "Detected BLAS vendor: ${BLAS_VENDOR}")
+set(IS_INTEL_MKL FALSE)
+if("${BLAS_VENDOR}" STREQUAL "Intel MKL")
+    set(IS_INTEL_MKL TRUE)
+endif()
+
 # LAPACK
 find_package(LAPACK)
 message(STATUS "Lapack implementation:" "${LAPACK_LIBRARIES}")
@@ -122,6 +142,10 @@ if("${BLA_VENDOR}" STREQUAL "Intel10_32"
    OR "${BLA_VENDOR}" STREQUAL "Intel10_64ilp_seq"
    OR "${BLA_VENDOR}" STREQUAL "Intel10_64_dyn")
     target_compile_definitions(htool INTERFACE "-DHPDDM_MKL -DHTOOL_MKL")
+endif()
+
+if(IS_INTEL_MKL)
+    target_link_libraries(htool INTERFACE "-ltbb")
 endif()
 
 # For headers to show in IDE
