@@ -59,16 +59,16 @@ class UserOperator : public VirtualGenerator<double> {
 int main(int argc, char *argv[]) {
 
     // Check the number of parameters
-    if (argc != 2) {
+    if (argc > 2) {
         // Tell the user how to run the program
-        cerr << "Usage: " << argv[0] << " outputpath" << endl;
+        cerr << "Usage: " << argv[0] << " output_folder" << endl;
         /* "Usage messages" are a conventional way of telling the user
          * how to run a program if they enter the command incorrectly.
          */
         return 1;
     }
 
-    std::string outputpath = argv[1];
+    std::string output_folder = argc == 2 ? argv[1] : "./";
 
     // Execution policy
     auto &policy = exec_compat::par;
@@ -77,15 +77,16 @@ int main(int argc, char *argv[]) {
     const int number_points     = 10000;
     const int spatial_dimension = 3;
     vector<double> coordinates(spatial_dimension * number_points);
-    create_sphere(number_points, coordinates.data());
+    create_rotated_ellipse(3, 4., 1., 0., 0., number_points, coordinates.data()); // 2d ellipse in 3d
 
     // Cluster tree builder
     ClusterTreeBuilder<double> recursive_build_strategy;
     recursive_build_strategy.set_maximal_leaf_size(500);
+    recursive_build_strategy.set_partitioning_strategy(std::make_shared<Partitioning_N<double, ComputeLargestExtent<double>, RegularSplitting<double>>>());
 
     // HMatrix parameters
     const double epsilon = 0.01;
-    const double eta     = 10;
+    const double eta     = 200;
     char symmetry        = 'S';
     char UPLO            = 'L';
 
@@ -97,18 +98,18 @@ int main(int argc, char *argv[]) {
     HMatrix<double> hmatrix = hmatrix_builder.build(policy, A, htool::HMatrixTreeBuilder<double>(epsilon, eta, symmetry, UPLO));
 
     // Output
-    // save_leaves_with_rank(hmatrix, outputpath + "hmatrix");
+    save_leaves_with_rank(hmatrix, output_folder + "/hmatrix");
     print_tree_parameters(hmatrix, std::cout);
     print_hmatrix_information(hmatrix, std::cout);
 
-    // sequential y= A*x
+    // y= A*x
     std::vector<double> x(number_points, 1), y(number_points, 0), ref(number_points, 0);
     add_hmatrix_vector_product(policy, 'N', double(1), hmatrix, x.data(), double(0), y.data());
     ref = A * x;
     std::cout << "relative error on matrix vector product : ";
     std::cout << norm2(ref - y) / norm2(ref) << "\n";
 
-    // sequential z = A^-1 y
+    // z = A^-1 y
     std::vector<double> z(number_points, 0);
     z = y;
     MatrixView<double> z_view(number_points, 1, z.data());

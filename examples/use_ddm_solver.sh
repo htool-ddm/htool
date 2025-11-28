@@ -10,8 +10,5 @@ cmake ../
 make Use_ddm_solver
 mkdir -p ../output/examples/use_ddm_solver
 
-# Arguments
-outputpath=../output/examples/use_ddm_solver/
-
 # Run
-mpirun -np 4 ./examples/Use_ddm_solver ${outputpath}
+mpirun -np 4 ./examples/Use_ddm_solver
