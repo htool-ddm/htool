@@ -11,10 +11,10 @@ make Use_hmatrix
 mkdir -p ../output/examples/use_hmatrix
 
 # Arguments
-outputpath=../output/examples/use_hmatrix/
+outputfolder=../output/examples/use_hmatrix/
 
 # Run
-./examples/Use_hmatrix ${outputpath}
+./examples/Use_hmatrix ${outputfolder}
 
 # Display output
 python3 ../tools/plot_hmatrix.py --inputfile ../output/examples/use_hmatrix/hmatrix.csv

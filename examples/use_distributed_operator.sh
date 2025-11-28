@@ -11,10 +11,10 @@ make Use_distributed_operator
 mkdir -p ../output/examples/use_distributed_operator
 
 # Arguments
-outputpath=../output/examples/use_distributed_operator/
+outputfolder=../output/examples/use_distributed_operator/
 
 # Run
-mpirun -np 4 ./examples/Use_distributed_operator ${outputpath}
+mpirun -np 4 ./examples/Use_distributed_operator ${outputfolder}
 
 # Display output
 python3 ../tools/plot_hmatrix.py --inputfile ../output/examples/use_distributed_operator/local_hmatrix_0.csv
