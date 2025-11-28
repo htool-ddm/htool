@@ -9,15 +9,15 @@ using namespace htool;
 int main(int argc, char *argv[]) {
 
     // Check the number of parameters
-    if (argc != 2) {
+    if (argc > 2) {
         // Tell the user how to run the program
-        cerr << "Usage: " << argv[0] << "  outputname" << endl;
+        cerr << "Usage: " << argv[0] << "  output_folder" << endl;
         /* "Usage messages" are a conventional way of telling the user
          * how to run a program if they enter the command incorrectly.
          */
         return 1;
     }
-    std::string outputname = argv[1];
+    std::string output_folder = argc == 2 ? argv[1] : "./";
 
     // Geometry
     const int number_points        = 10000;
@@ -30,13 +30,13 @@ int main(int argc, char *argv[]) {
     // Cluster tree builder with customization
     ClusterTreeBuilder<double> recursive_build_strategy;
     recursive_build_strategy.set_maximal_leaf_size(10);
-    recursive_build_strategy.set_partitioning_strategy(std::make_shared<Partitioning<double, ComputeLargestExtent<double>, RegularSplitting<double>>>()); // this is actually the default choice
+    recursive_build_strategy.set_partitioning_strategy(std::make_shared<Partitioning_N<double, ComputeLargestExtent<double>, RegularSplitting<double>>>());
 
     // Clustering
     Cluster<double> cluster = recursive_build_strategy.create_cluster_tree(number_points, spatial_dimension, coordinates.data(), number_of_children, number_of_partitions);
 
     // Output
-    save_clustered_geometry(cluster, spatial_dimension, coordinates.data(), outputname + "/clustering_output", {1, 2, 3});
+    save_clustered_geometry(cluster, spatial_dimension, coordinates.data(), output_folder + "/clustering_output", {1, 2, 3});
 
     return 0;
 }

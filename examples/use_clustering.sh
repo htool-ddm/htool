@@ -11,10 +11,10 @@ make Use_clustering
 mkdir -p ../output/examples/use_clustering
 
 # Arguments
-outputpath=../output/examples/use_clustering/
+outputfolder=../output/examples/use_clustering/
 
 # Run
-./examples/Use_clustering ${outputpath}
+./examples/Use_clustering ${outputfolder}
 
 # Display output
 python3 ../tools/plot_cluster.py --inputfile ../output/examples/use_clustering/clustering_output.csv --depth 2
