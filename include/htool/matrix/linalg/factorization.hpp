@@ -32,7 +32,7 @@ void triangular_matrix_matrix_solve(char side, char UPLO, char transa, char diag
     if (ipiv.size() > 0) {
         int index = 0;
         while (index < ipiv.size() and not is_pivoted) {
-            is_pivoted = (ipiv[index] == index + 1);
+            is_pivoted = !(ipiv[index] == index + 1);
             index += 1;
         }
     }
@@ -53,7 +53,7 @@ void triangular_matrix_matrix_solve(char side, char UPLO, char transa, char diag
     }
 
     Blas<T>::trsm(&side, &UPLO, &transa, &diag, &m, &n, &alpha, A.data(), &lda, B.data(), &ldb);
-    // std::cout <<"TEST "<<ipiv<<" "<<is_pivoted<<"\n";
+
     if (is_pivoted and UPLO == 'L') {
         if (side == 'L' and transa != 'N') {
             int K1   = 1;
