@@ -1,0 +1,35 @@
+name: Create Release
+
+on:
+  push:
+    tags:
+      - 'v*'  # triggers on any tag starting with 'v'
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Extract release notes
+        id: extract_notes
+        run: |
+            TAG="${GITHUB_REF_NAME#v}"   # remove leading 'v' if your tag is 'v1.0.0'
+            awk -v tag="$TAG" '
+                /^## \[.*\]/ {in_section=0}               # Reset at every header
+                $0 ~ "^## \\[" tag "\\]" {in_section=1; next}  # Start when we find the tag
+                in_section {print}
+            ' CHANGELOG.md > RELEASE_NOTES.md
+            
+            # Just in case, trim trailing empty lines
+            sed -i '/^[[:space:]]*$/d' RELEASE_NOTES.md
+
+      - name: Create GitHub Release
+        run: |
+          gh release create "${GITHUB_REF_NAME}" \
+            --title "Release ${GITHUB_REF_NAME}" \
+            --notes-file RELEASE_NOTES.md
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
