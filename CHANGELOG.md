@@ -32,10 +32,14 @@ All notable changes to this project will be documented in this file.
 
 ### Fixed
 
+## [1.0.1] - 2026-01-02
+
+### Fixed
+
 - Fix wrong boolean tests in triangular_matrix_matrix_solve, PR #75 from @ABoisneault
 - Avoid empty-sized gemv, PR #64 from @prj-
-
-## [1.0.0] - 2027-09-24
+  
+## [1.0.0] - 2025-09-24
 
 ### Added
 
