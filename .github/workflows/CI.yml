@@ -155,8 +155,9 @@ jobs:
       - name: Run tests
         run: |
           cd htool/build
-          export OMP_NUM_THREADS=2
-          ${{ matrix.ASAN_OPTIONS }} ctest -j 4 --output-on-failure
+          # export OMP_NUM_THREADS=2
+          ${{ matrix.ASAN_OPTIONS }} ctest -j 4 -LE "mpi" --output-on-failure
+          ${{ matrix.ASAN_OPTIONS }} ctest -L "mpi" --output-on-failure
 
       - name: Build examples
         run: |
