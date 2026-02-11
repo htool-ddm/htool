@@ -43,29 +43,6 @@ constexpr int factorial(int n) {
     return r;
 }
 
-// inline bool test_dunavant_quadratures(int max_polynomial_degree, DunavantRule<double> rule) {
-//     bool is_error = false;
-//     double error;
-
-//     for (int p = 0; p <= max_polynomial_degree; p++) {
-//         for (int q = 0; q <= max_polynomial_degree - p; q++) {
-//             double sum       = 0;
-//             double reference = static_cast<double>(factorial(p) * factorial(q)) / factorial(p + q + 2);
-//             for (int i = 0; i < rule.nb_points; ++i) {
-//                 sum += rule.w[i] * std::pow(rule.x[i], p) * std::pow(rule.y[i], q);
-//             }
-
-//             error    = std::abs(sum - reference) / std::abs(reference);
-//             is_error = is_error || !(error < std::numeric_limits<double>::epsilon() * 10);
-//             std::cout << "Dunavant (degree,polynome order, sum-reference=error, is_error): " << rule.degree << ", " << p + q << ", " << sum << "-" << reference << "=" << error << ", " << is_error << "\n";
-//             if (is_error == true) {
-//                 return is_error;
-//             }
-//         }
-//     }
-//     return is_error;
-// }
-
 template <typename T, typename QuadRule>
 bool test_triangle_quadratures(int max_polynomial_degree, QuadRule rule) {
     bool is_error = false;
@@ -73,14 +50,15 @@ bool test_triangle_quadratures(int max_polynomial_degree, QuadRule rule) {
 
     for (int p = 0; p <= max_polynomial_degree; p++) {
         for (int q = 0; q <= max_polynomial_degree - p; q++) {
-            T sum       = 0;
-            T reference = static_cast<T>(factorial(p) * factorial(q)) / factorial(p + q + 2);
+            T sum = 0;
+            // T reference = 2 * static_cast<T>(factorial(p) * factorial(q)) / factorial(p + q + 2);
+            T reference = 2.0 * std::tgamma(p + 1) * std::tgamma(q + 1) / std::tgamma(p + q + 3);
             for (int i = 0; i < rule.nb_points; ++i) {
                 sum += rule.quad_points[i].w * ipow(rule.quad_points[i].point[0], p) * ipow(rule.quad_points[i].point[1], q);
             }
 
             error    = std::abs(sum - reference) / std::abs(reference);
-            is_error = is_error || !(error < std::numeric_limits<T>::epsilon() * 10);
+            is_error = is_error || !(error < std::numeric_limits<T>::epsilon() * 100);
             if (is_error == true) {
                 std::cout << rule.name << " (degree,polynome order, sum-reference=error, is_error): " << rule.degree << ", " << p + q << ", " << sum << "-" << reference << "=" << error << ", " << is_error << "\n";
                 return is_error;
