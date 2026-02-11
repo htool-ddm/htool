@@ -32,6 +32,8 @@ All notable changes to this project will be documented in this file.
 
 ### Fixed
 
+- Fix wrong ordering of eigenvalues in solve_EVP_3 in some specific cases, PR #76
+
 ## [1.0.1] - 2026-01-02
 
 ### Fixed
