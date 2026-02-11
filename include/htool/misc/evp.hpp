@@ -68,6 +68,11 @@ std::pair<Matrix<T>, std::vector<T>> solve_EVP_3(const Matrix<T> &cov) {
         result(indexes[2], 0) = 1;
         result(indexes[1], 1) = 1;
         result(indexes[0], 2) = 1;
+        std::vector<T> new_eigs(3);
+        new_eigs[0] = eigs[indexes[2]];
+        new_eigs[1] = eigs[indexes[1]];
+        new_eigs[2] = eigs[indexes[0]];
+        eigs        = new_eigs;
     } else {
         T q  = (cov(0, 0) + cov(1, 1) + cov(2, 2)) / static_cast<T>(3.);
         T p2 = static_cast<T>(std::pow(cov(0, 0) - q, 2)) + static_cast<T>(std::pow(cov(1, 1) - q, 2)) + static_cast<T>(std::pow(cov(2, 2) - q, 2)) + static_cast<T>(2.) * p1;
