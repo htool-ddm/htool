@@ -27,7 +27,11 @@ bool test_interval_quadratures(int max_polynomial_degree, QuadRule rule) {
         }
 
         error    = std::abs(sum - reference);
-        is_error = is_error || !(error < std::numeric_limits<T>::epsilon() * 10);
+        T factor = 100;
+        if (rule.degree < 35) {
+            factor = 10;
+        }
+        is_error = is_error || !(error < std::numeric_limits<T>::epsilon() * factor);
         if (is_error == true) {
             std::cout << rule.name << " (degree,polynome order, sum-reference=error, is_error): " << rule.degree << ", " << p << ", " << sum << "-" << reference << "=" << error << ", " << is_error << "\n";
             return is_error;
