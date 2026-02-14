@@ -32,6 +32,10 @@ All notable changes to this project will be documented in this file.
 
 ### Fixed
 
+## [1.0.2] - 2026-02-14
+
+### Fixed
+
 - Fix execution header include, PR #77
 - Fix wrong ordering of eigenvalues in solve_EVP_3 in some specific cases, PR #76
 
