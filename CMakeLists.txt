@@ -134,7 +134,7 @@ target_link_libraries(htool INTERFACE MPI::MPI_CXX BLAS::BLAS LAPACK::LAPACK)
 if(OpenMP_CXX_FOUND)
     target_link_libraries(htool INTERFACE OpenMP::OpenMP_CXX)
 endif()
-target_compile_features(htool INTERFACE cxx_std_14)
+target_compile_features(htool INTERFACE cxx_std_17)
 
 if("${BLA_VENDOR}" STREQUAL "Intel10_32"
    OR "${BLA_VENDOR}" STREQUAL "Intel10_64lp"
