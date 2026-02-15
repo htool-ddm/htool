@@ -3,10 +3,12 @@
 
 #include "hmatrix.hpp"
 #include <vector>
-#if __has_include(<execution>)
-#    include <execution>
+#if defined(HTOOL_WITH_STD_EXECUTION_API) && HTOOL_WITH_STD_EXECUTION_API
+#    if __has_include(<execution>)
+#        include <execution>
+#    endif
 #endif
-#if defined(__cpp_lib_execution) && __cplusplus >= 201703L
+#if defined(__cpp_lib_execution) && __cplusplus >= 201703L && HTOOL_WITH_STD_EXECUTION_API
 namespace exec_compat {
 using parallel_policy     = std::execution::parallel_policy;
 inline constexpr auto par = std::execution::par;
