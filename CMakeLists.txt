@@ -78,6 +78,7 @@ endif()
 option(HTOOL_WITH_EXAMPLES "Build htool examples ?" ON)
 option(HTOOL_WITH_DOC "Build documentation" ON)
 option(HTOOL_WITH_STRICT_TESTS "Add -Werror to the tests" OFF)
+option(HTOOL_WITH_STD_EXECUTION_API "Use std::execution API" OFF)
 
 #=============================================================================#
 #========================== External Libraries ===============================#
@@ -142,6 +143,10 @@ if("${BLA_VENDOR}" STREQUAL "Intel10_32"
    OR "${BLA_VENDOR}" STREQUAL "Intel10_64ilp_seq"
    OR "${BLA_VENDOR}" STREQUAL "Intel10_64_dyn")
     target_compile_definitions(htool INTERFACE "-DHPDDM_MKL -DHTOOL_MKL")
+endif()
+
+if(HTOOL_WITH_STD_EXECUTION_API)
+    target_compile_definitions(htool INTERFACE "-DHTOOL_WITH_STD_EXECUTION_API")
 endif()
 
 if(IS_INTEL_MKL)
