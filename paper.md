@@ -1,5 +1,5 @@
 ---
-title: 'Htool-DDM: A C++ library for parallel solvers and compressed linear systems.'
+title: 'Htool-DDM: A C++ library for parallel solvers and compressed linear systems'
 tags:
   - C++
   - DDM preconditioners
