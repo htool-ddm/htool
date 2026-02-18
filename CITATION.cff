@@ -2,7 +2,7 @@ cff-version: 1.2.0
 title: "Htool-DDM: A C++ library for parallel solvers and compressed linear systems."
 license: "MIT"
 type: software
-message: "If you use this software, please cite it as below."
+message: If you use this software, please cite our article in the Journal of Open Source Software.
 authors:
   - given-names: Pierre
     family-names: Marchand
@@ -26,3 +26,30 @@ keywords:
 repository-code: https://github.com/htool-ddm/htool
 abstract: >
   Htool-DDM is a lightweight header-only C++ library that provides an easy-to-use interface for parallel iterative solvers and a default matrix compression via in-house hierarchical matrix implementation. Its goal is to provide modern iterative solvers for dense/compressed linear systems.
+preferred-citation:
+  authors:
+    - given-names: Pierre
+      family-names: Marchand
+      affiliation: POEMS, CNRS, Inria, ENSTA, Institut Polytechnique de Paris, 91120 Palaiseau, France
+      orcid: "https://orcid.org/0000-0002-2522-6837"
+    - given-names: Pierre-Henri
+      family-names: Tournier
+      affiliation: Sorbonne Université, Université Paris Cité, CNRS, Inria, Laboratoire Jacques-Louis Lions, LJLL, EPC ALPINES, 4 place Jussieu, Paris F-75005, France
+      orcid: "https://orcid.org/0000-0002-7406-108X"
+    - given-names: Pierre
+      family-names: Jolivet
+      affiliation: Sorbonne Université, CNRS, LIP6, 75252 Paris, France
+      orcid: "https://orcid.org/0009-0000-3410-0884"
+  date-published: 2026-02-17
+  doi: 10.21105/joss.09279
+  issn: 2475-9066
+  issue: 118
+  journal: Journal of Open Source Software
+  publisher:
+    name: Open Journals
+  start: 9279
+  title: "Htool-DDM: A C++ library for parallel solvers and compressed
+    linear systems."
+  type: article
+  url: "https://joss.theoj.org/papers/10.21105/joss.09279"
+  volume: 11

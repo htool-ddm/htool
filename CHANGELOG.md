@@ -28,6 +28,8 @@ All notable changes to this project will be documented in this file.
 
 ### Added
 
+- JOSS badge and update `CITATION.cff`.
+
 ### Changed
 
 - Make std::execution optional via `HTOOL_WITH_STD_EXECUTION_API` macro to avoid linking with TBB. Default to false.
