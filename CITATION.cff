@@ -1,5 +1,5 @@
 cff-version: 1.2.0
-title: "Htool-DDM: A C++ library for parallel solvers and compressed linear systems."
+title: "Htool-DDM: A C++ library for parallel solvers and compressed linear systems"
 license: "MIT"
 type: software
 message: If you use this software, please cite our article in the Journal of Open Source Software.
@@ -48,8 +48,7 @@ preferred-citation:
   publisher:
     name: Open Journals
   start: 9279
-  title: "Htool-DDM: A C++ library for parallel solvers and compressed
-    linear systems."
+  title: "Htool-DDM: A C++ library for parallel solvers and compressed linear systems"
   type: article
   url: "https://joss.theoj.org/papers/10.21105/joss.09279"
   volume: 11
