@@ -30,8 +30,8 @@ int main(int, char *[]) {
     int nc = 100;
     std::vector<double> xt(3 * nr);
     std::vector<double> xs(3 * nc);
-    std::vector<int> tabt(500);
-    std::vector<int> tabs(100);
+    std::vector<int> tabt(nr);
+    std::vector<int> tabs(nc);
     bool test = 0;
     for (int idist = 0; idist < ndistance; idist++) {
 
@@ -43,7 +43,7 @@ int main(int, char *[]) {
         ClusterTreeBuilder<double> recursive_build_strategy;
 
         Cluster<double> t = recursive_build_strategy.create_cluster_tree(nr, 3, xt.data(), 2, 2);
-        Cluster<double> s = recursive_build_strategy.create_cluster_tree(nc, 3, xt.data(), 2, 2);
+        Cluster<double> s = recursive_build_strategy.create_cluster_tree(nc, 3, xs.data(), 2, 2);
 
         GeneratorTestDouble A_in_user_numbering(3, xt, xs);
         InternalGeneratorWithPermutation<double> A(A_in_user_numbering, t.get_permutation().data(), s.get_permutation().data());
@@ -51,17 +51,17 @@ int main(int, char *[]) {
         auto kernel = std::function([](std::array<double, 3> *target_points, int Nx, std::array<double, 3> *source_points, int Ny, double *mat) {
             for (int i = 0; i < Nx; i++) {
                 for (int j = 0; j < Ny; j++) {
-                    mat[i + j * Nx] = 1. / (4 * M_PI * std::sqrt(std::inner_product(target_points[i].begin(), target_points[i].end(), source_points[i].begin(), double(0), std::plus<double>(), [](double u, double v) { return (u - v) * (u - v); })));
+                    mat[i + j * Nx] = 1. / (4 * M_PI * std::sqrt(std::inner_product(target_points[i].begin(), target_points[i].end(), source_points[j].begin(), double(0), std::plus<double>(), [](double u, double v) { return (u - v) * (u - v); })));
                 }
             }
         });
 
         // partialACA fixed rank
         int reqrank_max = 10;
-        HCA<double, double, 3> compressor(kernel, xt.data(), xt.size(), t.get_permutation().data(), xs.data(), xt.size(), s.get_permutation().data());
+        HCA<double, double, 3> compressor(kernel, xt.data(), xt.size(), t.get_permutation().data(), xs.data(), xs.size(), s.get_permutation().data());
 
         LowRankMatrix<double> A_partialACA_fixed(t.get_size(), s.get_size(), reqrank_max, epsilon);
-        compressor.copy_low_rank_approximation(t.get_size(), s.get_size(), t.get_offset(), s.get_offset(), reqrank_max, A_partialACA_fixed);
+        // compressor.copy_low_rank_approximation(t.get_size(), s.get_size(), t.get_offset(), s.get_offset(), reqrank_max, A_partialACA_fixed);
 
         // ACA automatic building
         LowRankMatrix<double> A_partialACA(t.get_size(), s.get_size(), epsilon);
