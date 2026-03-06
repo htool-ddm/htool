@@ -35,8 +35,10 @@ int main(int, char *[]) {
     bool test = 0;
     for (int idist = 0; idist < ndistance; idist++) {
 
-        create_disk(3, 0., nr, xt.data());
-        create_disk(3, distance[idist], nc, xs.data());
+        // create_disk(3, 0., nr, xt.data());
+        // create_disk(3, distance[idist], nc, xs.data());
+        create_sphere(nr, xt.data());
+        create_sphere(nc, xs.data(), {0, 0, distance[idist]});
 
         ClusterTreeBuilder<double> recursive_build_strategy;
 
