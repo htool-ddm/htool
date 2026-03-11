@@ -70,7 +70,7 @@ class Partitioning_N : public VirtualPartitioning<CoordinatePrecision> {
         // Pick best decomposition for aspect ratio
         CoordinatePrecision cost = std::numeric_limits<CoordinatePrecision>::max();
         int index                = 0;
-        int result_index;
+        int result_index         = 0;
         std::vector<CoordinatePrecision> aspect_ratios(number_of_dimension);
         for (auto &integer_decomposition : integer_decompositions) {
             std::transform(integer_decomposition.cbegin(), integer_decomposition.cend(), weights.cbegin(), aspect_ratios.begin(), [](const CoordinatePrecision &p, const CoordinatePrecision &a) { return a / p; });
@@ -103,6 +103,7 @@ class Partitioning_N : public VirtualPartitioning<CoordinatePrecision> {
                 number_of_relevant_directions += 1;
             }
         }
+        number_of_relevant_directions = std ::max(1, number_of_relevant_directions);
 
         std::vector<int> number_of_splittings_by_direction = distributed_splittings(number_of_relevant_directions, number_of_partitions, directions_weights);
         number_of_relevant_directions                      = number_of_splittings_by_direction.size();
