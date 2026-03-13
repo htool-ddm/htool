@@ -33,8 +33,11 @@ All notable changes to this project will be documented in this file.
 ### Changed
 
 - Make std::execution optional via `HTOOL_WITH_STD_EXECUTION_API` macro to avoid linking with TBB. Default to false.
+- Improve `HMatrixBuilder` interface.
 
 ### Fixed
+
+- Fix uninitialized values in `Partitioning_N`.
 
 ## [1.0.2] - 2026-02-14
 
