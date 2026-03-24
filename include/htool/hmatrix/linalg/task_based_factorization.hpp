@@ -93,7 +93,15 @@ void task_based_lu_factorization(HMatrix<CoefficientPrecision, CoordinatePrecisi
             }
         }
     } else if (hmatrix.is_dense()) {
-        lu_factorization(*hmatrix.get_dense_data());
+#if defined(_OPENMP) && !defined(HTOOL_WITH_PYTHON_INTERFACE)
+#    pragma omp task default(none) \
+        shared(hmatrix)            \
+        depend(inout : hmatrix)
+
+#endif
+        {
+            lu_factorization(*hmatrix.get_dense_data());
+        }
     } else {
         htool::Logger::get_instance().log(LogLevel::ERROR, "Operation is not implemented for task_based_lu_factorization (hmatrix is low-rank)"); // LCOV_EXCL_LINE
     }
@@ -185,7 +193,16 @@ void task_based_cholesky_factorization(char UPLO, HMatrix<CoefficientPrecision, 
             }
         }
     } else if (hmatrix.is_dense()) {
-        cholesky_factorization(UPLO, *hmatrix.get_dense_data());
+#if defined(_OPENMP) && !defined(HTOOL_WITH_PYTHON_INTERFACE)
+#    pragma omp task default(none) \
+        firstprivate(UPLO)         \
+        shared(hmatrix)            \
+        depend(inout : hmatrix)
+
+#endif
+        {
+            cholesky_factorization(UPLO, *hmatrix.get_dense_data());
+        }
     } else {
         htool::Logger::get_instance().log(LogLevel::ERROR, "Operation is not implemented for task_based_cholesky_factorization (hmatrix is low-rank)"); // LCOV_EXCL_LINE
     }
