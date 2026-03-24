@@ -11,21 +11,21 @@ int main(int, char *[]) {
 
     bool is_error = false;
 
-    const int n1 = 1100;
     const int n2 = 1000;
+    for (auto n1 : {10, 1100}) { // 10 to deal with trival case
+        for (auto epsilon : {1e-4, 1e-8}) {
+            for (auto trans : {'N', 'T'}) {
 
-    for (auto epsilon : {1e-4, 1e-8}) {
-        for (auto trans : {'N', 'T'}) {
+                std::cout << "task based LU factorization test case: " << "epsilon = " << epsilon << ", n1 = " << n1 << ", n2 = " << n2 << ", trans = " << trans << "\n";
 
-            std::cout << "task based LU factorization test case: " << "epsilon = " << epsilon << ", n1 = " << n1 << ", n2 = " << n2 << ", trans = " << trans << "\n";
+                is_error = is_error || test_task_based_lu_factorization<double, GeneratorTestDoubleSymmetric>(trans, n1, n2, epsilon);
+            }
 
-            is_error = is_error || test_task_based_lu_factorization<double, GeneratorTestDoubleSymmetric>(trans, n1, n2, epsilon);
-        }
+            for (auto UPLO : {'L', 'U'}) {
+                std::cout << "task based Cholesky factorization test case: " << "epsilon = " << epsilon << ", n1 = " << n1 << ", n2 = " << n2 << ", UPLO = " << UPLO << "\n";
 
-        for (auto UPLO : {'L', 'U'}) {
-            std::cout << "task based Cholesky factorization test case: " << "epsilon = " << epsilon << ", n1 = " << n1 << ", n2 = " << n2 << ", UPLO = " << UPLO << "\n";
-
-            is_error = is_error || test_task_based_cholesky_factorization<double, GeneratorTestDoubleSymmetric>(UPLO, n1, n2, epsilon);
+                is_error = is_error || test_task_based_cholesky_factorization<double, GeneratorTestDoubleSymmetric>(UPLO, n1, n2, epsilon);
+            }
         }
     }
 
