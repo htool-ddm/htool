@@ -204,8 +204,12 @@ void add_hmatrix_matrix_product(ExecutionPolicy &&execution_policy, char transa,
     }
 }
 
-template <typename Mat, typename CoordinatePrecision = underlying_type<typename Mat::value_type>>
-void add_hmatrix_matrix_product(char transa, char transb, typename Mat::value_type alpha, const HMatrix<typename Mat::value_type, CoordinatePrecision> &A, const Mat &B, typename Mat::value_type beta, Mat &C, typename Mat::value_type *buffer = nullptr) {
+template <typename MatB,
+          typename MatC,
+          typename CoordinatePrecision = underlying_type<typename MatB::value_type>,
+          typename                     = std::enable_if_t<
+                                  std::is_same<typename MatB::value_type, typename MatC::value_type>::value>>
+void add_hmatrix_matrix_product(char transa, char transb, typename MatB::value_type alpha, const HMatrix<typename MatB::value_type, CoordinatePrecision> &A, const MatB &B, typename MatB::value_type beta, MatC &C, typename MatB::value_type *buffer = nullptr) {
 #if __cplusplus >= 201703L
     add_hmatrix_matrix_product(exec_compat::seq, transa, transb, alpha, A, B, beta, C, buffer);
 #else
