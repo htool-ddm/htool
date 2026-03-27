@@ -46,7 +46,7 @@ void sequential_lu_factorization(HMatrix<CoefficientPrecision, CoordinatePrecisi
         for (auto &cluster_child : clusters) {
             HMatrix<CoefficientPrecision, CoordinatePrecision> *pivot = hmatrix.get_sub_hmatrix(*cluster_child, *cluster_child);
             // Compute pivot block
-            lu_factorization(*pivot);
+            sequential_lu_factorization(*pivot);
 
             // Apply pivot block to row and column
             for (auto &other_cluster_child : clusters) {
