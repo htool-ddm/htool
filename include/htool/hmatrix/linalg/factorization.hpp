@@ -228,7 +228,7 @@ void cholesky_factorization(ExecutionPolicy &&execution_policy, char UPLO, HMatr
             HMatrixTaskDependencies<CoefficientPrecision, CoordinatePrecision> hmatrix_task_dependencies;
             hmatrix_task_dependencies.set_L0(hmatrix);
 
-#    if defined(_OPENMP) && !defined(HTOOL_WITH_PYTHON_INTERFACE)
+#    if defined(_OPENMP)
 #        pragma omp parallel
 #        pragma omp single
 #    endif

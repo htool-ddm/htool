@@ -166,7 +166,7 @@ bool test_task_based_hmatrix_triangular_solve(const TestCaseType &test_case, cha
     hmatrix_test                      = LB;
     std::vector<HMatrix<T> *> L0_test = find_l0(hmatrix_test, max_nb_nodes);
     start                             = std::chrono::steady_clock::now();
-#if defined(_OPENMP) && !defined(HTOOL_WITH_PYTHON_INTERFACE)
+#if defined(_OPENMP)
 #    pragma omp parallel
 #    pragma omp single
 #endif
@@ -202,7 +202,7 @@ bool test_task_based_hmatrix_triangular_solve(const TestCaseType &test_case, cha
     hmatrix_test = UB;
     L0_test      = find_l0(hmatrix_test, max_nb_nodes);
     start        = std::chrono::steady_clock::now();
-#if defined(_OPENMP) && !defined(HTOOL_WITH_PYTHON_INTERFACE)
+#if defined(_OPENMP)
 #    pragma omp parallel
 #    pragma omp single
 #endif
