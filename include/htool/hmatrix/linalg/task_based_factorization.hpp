@@ -42,7 +42,7 @@ void task_based_lu_factorization(HMatrix<CoefficientPrecision, CoordinatePrecisi
         }
 
         if (is_hmatrix_in_L0) {
-#if defined(_OPENMP) && !defined(HTOOL_WITH_PYTHON_INTERFACE)
+#if defined(_OPENMP)
 #    pragma omp task default(none) \
         shared(hmatrix)            \
         depend(inout : hmatrix)
@@ -89,7 +89,7 @@ void task_based_lu_factorization(HMatrix<CoefficientPrecision, CoordinatePrecisi
             }
         }
     } else if (hmatrix.is_dense()) {
-#if defined(_OPENMP) && !defined(HTOOL_WITH_PYTHON_INTERFACE)
+#if defined(_OPENMP)
 #    pragma omp task default(none) \
         shared(hmatrix)            \
         depend(inout : hmatrix)
@@ -128,7 +128,7 @@ void task_based_cholesky_factorization(char UPLO, HMatrix<CoefficientPrecision, 
         }
 
         if (is_hmatrix_in_L0) {
-#if defined(_OPENMP) && !defined(HTOOL_WITH_PYTHON_INTERFACE)
+#if defined(_OPENMP)
 #    pragma omp task default(none) \
         firstprivate(UPLO)         \
         shared(hmatrix)            \
@@ -181,7 +181,7 @@ void task_based_cholesky_factorization(char UPLO, HMatrix<CoefficientPrecision, 
             }
         }
     } else if (hmatrix.is_dense()) {
-#if defined(_OPENMP) && !defined(HTOOL_WITH_PYTHON_INTERFACE)
+#if defined(_OPENMP)
 #    pragma omp task default(none) \
         firstprivate(UPLO)         \
         shared(hmatrix)            \

@@ -103,7 +103,7 @@ void lu_factorization(ExecutionPolicy &&execution_policy, HMatrix<CoefficientPre
                 execution_policy.hmatrix_task_dependencies.set_L0(hmatrix);
 
             if (need_to_create_parallel_region()) {
-#    if defined(_OPENMP) && !defined(HTOOL_WITH_PYTHON_INTERFACE)
+#    if defined(_OPENMP)
 #        pragma omp parallel
 #        pragma omp single
 #    endif
@@ -233,7 +233,7 @@ void cholesky_factorization(ExecutionPolicy &&execution_policy, char UPLO, HMatr
             HMatrixTaskDependencies<CoefficientPrecision, CoordinatePrecision> hmatrix_task_dependencies;
             hmatrix_task_dependencies.set_L0(hmatrix);
 
-#    if defined(_OPENMP) && !defined(HTOOL_WITH_PYTHON_INTERFACE)
+#    if defined(_OPENMP)
 #        pragma omp parallel
 #        pragma omp single
 #    endif
@@ -247,7 +247,7 @@ void cholesky_factorization(ExecutionPolicy &&execution_policy, char UPLO, HMatr
                 execution_policy.hmatrix_task_dependencies.set_L0(hmatrix);
 
             if (need_to_create_parallel_region()) {
-#    if defined(_OPENMP) && !defined(HTOOL_WITH_PYTHON_INTERFACE)
+#    if defined(_OPENMP)
 #        pragma omp parallel
 #        pragma omp single
 #    endif
