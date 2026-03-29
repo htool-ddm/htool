@@ -46,7 +46,7 @@ void task_based_internal_triangular_hmatrix_hmatrix_solve(char side, char UPLO, 
     if (CoefficientPrecision(alpha) != CoefficientPrecision(1)) {
         for (auto &L0_node : L0_B) {
 
-#if defined(_OPENMP) && !defined(HTOOL_WITH_PYTHON_INTERFACE)
+#if defined(_OPENMP)
 #    pragma omp task default(none)   \
         firstprivate(L0_node, alpha) \
         depend(inout : *L0_node)
@@ -67,7 +67,7 @@ void task_based_internal_triangular_hmatrix_hmatrix_solve(char side, char UPLO, 
     }
 
     if (is_B_in_L0_B) {
-#if defined(_OPENMP) && !defined(HTOOL_WITH_PYTHON_INTERFACE)
+#if defined(_OPENMP)
         std::vector<const HMatrix<CoefficientPrecision, CoordinatePrecision> *> read_deps = enumerate_dependences(A, L0_A);
         int read_deps_size                                                                = read_deps.size();
 #    pragma omp task default(none)                    \

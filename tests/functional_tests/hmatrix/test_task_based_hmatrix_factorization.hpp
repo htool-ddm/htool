@@ -88,7 +88,7 @@ bool test_task_based_lu_factorization(char trans, int n1, int n2, htool::underly
     std::vector<HMatrix<T> *> L0_A = find_l0(A_task_based, max_nb_nodes);
     matrix_test                    = B_dense;
     start                          = std::chrono::steady_clock::now();
-#if defined(_OPENMP) && !defined(HTOOL_WITH_PYTHON_INTERFACE)
+#if defined(_OPENMP)
 #    pragma omp parallel
 #    pragma omp single
 #endif
@@ -169,7 +169,7 @@ bool test_task_based_cholesky_factorization(char UPLO, int n1, int n2, htool::un
     std::vector<HMatrix<T> *> L0_A = find_l0(task_based_HA, max_nb_nodes);
     matrix_test                    = B_dense;
     start                          = std::chrono::steady_clock::now();
-#if defined(_OPENMP) && !defined(HTOOL_WITH_PYTHON_INTERFACE)
+#if defined(_OPENMP)
 #    pragma omp parallel
 #    pragma omp single
 #endif
@@ -250,7 +250,7 @@ bool test_task_based_cholesky_factorization(char UPLO, int n1, int n2, htool::un
     std::vector<HMatrix<T> *> L0_A = find_l0(task_based_HA, max_nb_nodes);
     matrix_test                    = B_dense;
     start                          = std::chrono::steady_clock::now();
-#if defined(_OPENMP) && !defined(HTOOL_WITH_PYTHON_INTERFACE)
+#if defined(_OPENMP)
 #    pragma omp parallel
 #    pragma omp single
 #endif

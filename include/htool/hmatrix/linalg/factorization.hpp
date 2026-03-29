@@ -212,7 +212,7 @@ void cholesky_factorization(ExecutionPolicy &&, char UPLO, HMatrix<CoefficientPr
         if constexpr (std::is_same_v<std::decay_t<ExecutionPolicy>, exec_compat::parallel_policy>) {
             int max_nb_nodes                                = 64; // TODO:add better default value
             std::vector<HMatrix<CoefficientPrecision> *> L0 = find_l0(hmatrix, max_nb_nodes);
-#    if defined(_OPENMP) && !defined(HTOOL_WITH_PYTHON_INTERFACE)
+#    if defined(_OPENMP)
 #        pragma omp parallel
 #        pragma omp single
 #    endif
