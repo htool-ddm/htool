@@ -52,6 +52,7 @@ All notable changes to this project will be documented in this file.
 
 - Remove orphaned `local_operators` test and `proto_ddm`/`wrapper_proto_ddm`.
 - Remove dead `aspect_ratio` stub.
+- Remove `HTOOL_WITH_PYTHON_INTERFACE` macro to allow threading via python interface.
 
 ### Fixed
 
