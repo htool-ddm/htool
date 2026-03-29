@@ -37,6 +37,10 @@ All notable changes to this project will be documented in this file.
 - Improve `HMatrixBuilder` interface.
 - Refactor `omp_task_policy` extracting the part independent of OpenMP into `HMatrixTaskDependencies`.
 
+### Removed
+
+- Remove `HTOOL_WITH_PYTHON_INTERFACE` macro to allow threading via python interface.
+
 ### Fixed
 
 - Fix uninitialized values in `Partitioning_N`.
