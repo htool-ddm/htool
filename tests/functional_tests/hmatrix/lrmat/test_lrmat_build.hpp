@@ -17,12 +17,11 @@ using namespace std;
 using namespace htool;
 
 template <typename CoefficientPrecision>
-bool test_lrmat(const Cluster<double> &target_cluster, const Cluster<double> &source_cluster, const VirtualInternalGenerator<CoefficientPrecision> &A, const LowRankMatrix<CoefficientPrecision> &Fixed_approximation, const LowRankMatrix<CoefficientPrecision> &Auto_approximation, std::pair<double, double> fixed_compression_interval, std::pair<double, double> auto_compression_interval) {
+bool test_lrmat(const Cluster<double> &target_cluster, const Cluster<double> &source_cluster, const VirtualInternalGenerator<CoefficientPrecision> &A, const LowRankMatrix<CoefficientPrecision> &Fixed_approximation, const LowRankMatrix<CoefficientPrecision> &Auto_approximation, std::pair<double, double> fixed_compression_interval, std::pair<double, double> auto_compression_interval, int reqrank_max = 10) {
 
     bool test = 0;
 
     // ACA with fixed rank
-    int reqrank_max = 10;
     std::vector<double> fixed_errors;
     for (int k = 0; k < Fixed_approximation.rank_of() + 1; k++) {
         fixed_errors.push_back(Frobenius_absolute_error(target_cluster, source_cluster, Fixed_approximation, A, k));

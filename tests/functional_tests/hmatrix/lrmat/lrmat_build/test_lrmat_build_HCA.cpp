@@ -56,20 +56,21 @@ int main(int, char *[]) {
             }
         });
 
-        // partialACA fixed rank
-        int reqrank_max = 10;
+        // HCA fixed rank
+        int reqrank_max = 16;
         HCA<double, double, 3> compressor(kernel, xt.data(), xt.size(), t.get_permutation().data(), xs.data(), xs.size(), s.get_permutation().data());
 
-        LowRankMatrix<double> A_partialACA_fixed(t.get_size(), s.get_size(), reqrank_max, epsilon);
-        // compressor.copy_low_rank_approximation(t.get_size(), s.get_size(), t.get_offset(), s.get_offset(), reqrank_max, A_partialACA_fixed);
+        LowRankMatrix<double> A_HCA_fixed(t.get_size(), s.get_size(), reqrank_max, epsilon);
+        compressor.copy_low_rank_approximation(t.get_size(), s.get_size(), t.get_offset(), s.get_offset(), reqrank_max, A_HCA_fixed);
+        // print(A_HCA_fixed.get_(), std::cout, ",");
 
         // ACA automatic building
-        LowRankMatrix<double> A_partialACA(t.get_size(), s.get_size(), epsilon);
-        compressor.copy_low_rank_approximation(t.get_size(), s.get_size(), t.get_offset(), s.get_offset(), A_partialACA);
+        LowRankMatrix<double> A_HCA(t.get_size(), s.get_size(), epsilon);
+        compressor.copy_low_rank_approximation(t.get_size(), s.get_size(), t.get_offset(), s.get_offset(), A_HCA);
 
         std::pair<double, double> fixed_compression_interval(0.87, 0.89);
         std::pair<double, double> auto_compression_interval(0.93, 0.96);
-        test = test || (test_lrmat(t, s, A, A_partialACA_fixed, A_partialACA, fixed_compression_interval, auto_compression_interval));
+        test = test || (test_lrmat(t, s, A, A_HCA_fixed, A_HCA, fixed_compression_interval, auto_compression_interval, reqrank_max));
     }
 
     cout << "test : " << test << endl;
