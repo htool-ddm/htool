@@ -21,6 +21,8 @@ int main(int, char *[]) {
     std::vector<int> target_elements_to_points{0, 1, 2};
     std::map<int, std::vector<int>> target_dofs_to_elements;
     target_dofs_to_elements[0] = {0};
+    target_dofs_to_elements[1] = {0};
+    target_dofs_to_elements[2] = {0};
     std::vector<int> target_permutation(6);
     std::iota(target_permutation.begin(), target_permutation.end(), 0);
 
@@ -39,10 +41,15 @@ int main(int, char *[]) {
         std::vector<int> source_elements_to_points{0, 1, 2};
         std::map<int, std::vector<int>> source_dofs_to_elements;
         source_dofs_to_elements[0] = {0};
+        source_dofs_to_elements[1] = {0};
+        source_dofs_to_elements[2] = {0};
         std::vector<int> source_permutation(6);
         std::iota(source_permutation.begin(), source_permutation.end(), 0);
 
-        BEMHCA<double, double, 3> compressor(kernel, make_p0_basis_on_triangle<double, double, 3>(), target_dofs_to_elements, target_elements_to_points.data(), 3, target_points.data(), target_points.size(), target_permutation.data(), make_p0_basis_on_triangle<double, double, 3>(), source_dofs_to_elements, source_elements_to_points.data(), 3, source_points.data(), source_points.size(), source_permutation.data());
+        BEMHCA<double, double, 3> compressor(kernel, make_p1_basis_on_triangle<double, double, 3>(), target_dofs_to_elements, target_elements_to_points.data(), 3, target_points.data(), target_points.size(), target_permutation.data(), make_p1_basis_on_triangle<double, double, 3>(), source_dofs_to_elements, source_elements_to_points.data(), 3, source_points.data(), source_points.size(), source_permutation.data());
+
+        LowRankMatrix<double> A(3, 3, 3, epsilon);
+        compressor.copy_low_rank_approximation(3, 3, 0, 0, A);
     }
     cout << "test : " << test << endl;
 
