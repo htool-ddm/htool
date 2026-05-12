@@ -1,4 +1,5 @@
 #include <functional>
+#include <stdexcept>
 
 template <typename CoordinatePrecision, int dimension>
 using Point = std::array<CoordinatePrecision, dimension>;
