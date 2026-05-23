@@ -57,7 +57,7 @@ int main(int, char *[]) {
         });
 
         // HCA fixed rank
-        int reqrank_max = 16;
+        int reqrank_max = 10;
         HCA<double, double, 3> compressor(kernel, xt.data(), xt.size(), t.get_permutation().data(), xs.data(), xs.size(), s.get_permutation().data());
 
         LowRankMatrix<double> A_HCA_fixed(t.get_size(), s.get_size(), reqrank_max, epsilon);
@@ -70,7 +70,8 @@ int main(int, char *[]) {
 
         std::pair<double, double> fixed_compression_interval(0.87, 0.89);
         std::pair<double, double> auto_compression_interval(0.93, 0.96);
-        test = test || (test_lrmat(t, s, A, A_HCA_fixed, A_HCA, fixed_compression_interval, auto_compression_interval, reqrank_max));
+
+        test = test || (test_lrmat<double>(t, s, A, A_HCA_fixed, A_HCA, fixed_compression_interval, auto_compression_interval, reqrank_max, epsilon));
     }
 
     cout << "test : " << test << endl;

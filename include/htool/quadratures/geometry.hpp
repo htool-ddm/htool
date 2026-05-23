@@ -1,9 +1,49 @@
 #ifndef HTOOL_QUADRATURES_GEOMETRY_HPP
 #define HTOOL_QUADRATURES_GEOMETRY_HPP
+#include "gauss_legendre.hpp"
 #include "triangle.hpp"
 #include <array>
+#include <cmath>
 #include <vector>
 namespace htool {
+
+// segment
+template <typename CoordinatePrecision, std::size_t dimension>
+double segment_jacobian(
+    const std::array<CoordinatePrecision, dimension> &A,
+    const std::array<CoordinatePrecision, dimension> &B) {
+    std::array<CoordinatePrecision, dimension> e1;
+    double squared_norm = 0.0;
+    for (int dim = 0; dim < dimension; dim++) {
+        e1[dim] = B[dim] - A[dim];
+        squared_norm += e1[dim] * e1[dim];
+    }
+    return std::sqrt(squared_norm);
+}
+
+template <typename CoordinatePrecision, std::size_t dimension>
+std::vector<std::array<CoordinatePrecision, dimension>> map_reference_to_segment(
+    const std::array<CoordinatePrecision, dimension> &A,
+    const std::array<CoordinatePrecision, dimension> &B,
+    const GaussLegendreRule<CoordinatePrecision> &rule) {
+
+    std::vector<std::array<CoordinatePrecision, dimension>> result;
+    std::array<CoordinatePrecision, dimension> e1;
+    for (int dim = 0; dim < dimension; dim++) {
+        e1[dim] = B[dim] - A[dim];
+    }
+
+    result.reserve(rule.nb_points);
+    std::array<CoordinatePrecision, dimension> tmp;
+    for (int qp = 0; qp < rule.nb_points; qp++) {
+        for (int dim = 0; dim < dimension; dim++) {
+            tmp[dim] = A[dim] + (1. + rule.quad_points[qp].point[0]) * 0.5 * e1[dim];
+        }
+        result.push_back(tmp);
+    }
+
+    return result;
+}
 
 // 2D
 template <typename CoordinatePrecision>
@@ -11,7 +51,7 @@ double triangle_jacobian(
     const std::array<CoordinatePrecision, 2> &A,
     const std::array<CoordinatePrecision, 2> &B,
     const std::array<CoordinatePrecision, 2> &C) {
-    std::array<CoordinatePrecision, 3> e1, e2;
+    std::array<CoordinatePrecision, 2> e1, e2;
     for (int dim = 0; dim < 2; dim++) {
         e1[dim] = B[dim] - A[dim];
         e2[dim] = C[dim] - A[dim];
@@ -44,24 +84,25 @@ double triangle_jacobian(
 }
 
 template <typename CoordinatePrecision, std::size_t dimension>
-std::vector<std::array<CoordinatePrecision, dimension>> map_dunavant_to_triangle(
+std::vector<std::array<CoordinatePrecision, dimension>> map_reference_to_triangle(
     const std::array<CoordinatePrecision, dimension> &A,
     const std::array<CoordinatePrecision, dimension> &B,
     const std::array<CoordinatePrecision, dimension> &C,
     const TriangleRule<CoordinatePrecision> &rule) {
 
     std::vector<std::array<CoordinatePrecision, dimension>> result;
-    std::array<CoordinatePrecision, dimension> e1, e2;
-    for (int dim = 0; dim < dimension; dim++) {
-        e1[dim] = B[dim] - A[dim];
-        e2[dim] = C[dim] - A[dim];
-    }
+    // std::array<CoordinatePrecision, dimension> e1, e2;
+    // for (int dim = 0; dim < dimension; dim++) {
+    //     e1[dim] = B[dim] - A[dim];
+    //     e2[dim] = C[dim] - A[dim];
+    // }
 
     result.reserve(rule.nb_points);
     std::array<CoordinatePrecision, dimension> tmp;
     for (int qp = 0; qp < rule.nb_points; qp++) {
         for (int dim = 0; dim < dimension; dim++) {
-            tmp[dim] = A[dim] + rule.quad_points[qp].point[0] * e1[dim] + rule.quad_points[qp].point[1] * e2[dim];
+            // tmp[dim] = A[dim] + rule.quad_points[qp].point[0] * e1[dim] + rule.quad_points[qp].point[1] * e2[dim];
+            tmp[dim] = (1. - rule.quad_points[qp].point[0] - rule.quad_points[qp].point[1]) * A[dim] + rule.quad_points[qp].point[0] * B[dim] + rule.quad_points[qp].point[1] * C[dim];
         }
         result.push_back(tmp);
     }
