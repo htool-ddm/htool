@@ -72,11 +72,7 @@ std::map<std::string, std::string> get_distributed_hmatrix_information(const HMa
         maxinfos[0]          = std::max(maxinfos[0], block_size);
         mininfos[0]          = std::min(mininfos[0], block_size);
         meaninfos[0] += block_size;
-        if (dense_block->get_symmetry() != 'N') {
-            local_number_of_generated_coefficients += (block_number_of_rows * (block_number_of_cols + 1)) / 2.;
-        } else {
-            local_number_of_generated_coefficients += (block_number_of_rows * block_number_of_cols);
-        }
+        local_number_of_generated_coefficients += (block_number_of_rows * block_number_of_cols);
     }
 
     // 0: nb dense mat, 1 : nb lrmat, 2 total size, 3 nb generated coefficient
