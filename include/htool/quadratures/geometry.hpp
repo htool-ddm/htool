@@ -13,12 +13,12 @@ double segment_jacobian(
     const std::array<CoordinatePrecision, dimension> &A,
     const std::array<CoordinatePrecision, dimension> &B) {
     std::array<CoordinatePrecision, dimension> e1;
-    double squared_norm = 0.0;
+    CoordinatePrecision squared_norm = 0.0;
     for (int dim = 0; dim < dimension; dim++) {
         e1[dim] = B[dim] - A[dim];
         squared_norm += e1[dim] * e1[dim];
     }
-    return std::sqrt(squared_norm);
+    return std::sqrt(squared_norm) / CoordinatePrecision(2.); // weights sum is 2 for gauss legendre
 }
 
 template <typename CoordinatePrecision, std::size_t dimension>
@@ -57,8 +57,7 @@ double triangle_jacobian(
         e2[dim] = C[dim] - A[dim];
     }
 
-    return std::abs(
-        e1[0] * e2[1] - e1[1] * e2[0]);
+    return std::abs(e1[0] * e2[1] - e1[1] * e2[0]) / 2;
 }
 
 // 3D
@@ -80,7 +79,8 @@ double triangle_jacobian(
             e1[0] * e2[1] - e1[1] * e2[0]};
 
     return std::sqrt(
-        cross[0] * cross[0] + cross[1] * cross[1] + cross[2] * cross[2]);
+               cross[0] * cross[0] + cross[1] * cross[1] + cross[2] * cross[2])
+           / 2.;
 }
 
 template <typename CoordinatePrecision, std::size_t dimension>
@@ -91,11 +91,6 @@ std::vector<std::array<CoordinatePrecision, dimension>> map_reference_to_triangl
     const TriangleRule<CoordinatePrecision> &rule) {
 
     std::vector<std::array<CoordinatePrecision, dimension>> result;
-    // std::array<CoordinatePrecision, dimension> e1, e2;
-    // for (int dim = 0; dim < dimension; dim++) {
-    //     e1[dim] = B[dim] - A[dim];
-    //     e2[dim] = C[dim] - A[dim];
-    // }
 
     result.reserve(rule.nb_points);
     std::array<CoordinatePrecision, dimension> tmp;

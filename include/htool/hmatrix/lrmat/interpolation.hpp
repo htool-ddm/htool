@@ -153,11 +153,14 @@ template <typename CoefficientPrecision, typename CoordinatePrecision, int dimen
 class BEMHCA final : public VirtualInternalLowRankGenerator<CoefficientPrecision> {
   public:
     typedef const std::function<void(std::array<CoordinatePrecision, dimension> *, int, std::array<CoordinatePrecision, dimension> *, int, CoefficientPrecision *)> kernel_type;
-    typedef const std::function<CoefficientPrecision(const std::vector<std::array<CoordinatePrecision, dimension>> &, int, const std::array<CoordinatePrecision, dimension> &)> basis_function_type;
+    typedef std::function<CoefficientPrecision(int, int, const std::vector<CoordinatePrecision> &)> basis_function_type;
+
+    bool check_size = false;
 
   private:
+    typedef const basis_function_type const_basis_function_type;
     kernel_type m_kernel;
-    basis_function_type m_target_basis_function;
+    const_basis_function_type m_target_basis_function;
     std::map<int, std::vector<int>> m_target_dofs_to_elements;
     int m_target_number_of_dofs_per_element;
     const int *m_target_elements_to_points;
@@ -166,7 +169,7 @@ class BEMHCA final : public VirtualInternalLowRankGenerator<CoefficientPrecision
     int m_target_size;
     const int *m_target_permutation;
     int m_target_quadrature_order;
-    basis_function_type m_source_basis_function;
+    const_basis_function_type m_source_basis_function;
     std::map<int, std::vector<int>> m_source_dofs_to_elements;
     int m_source_number_of_dofs_per_element;
     const int *m_source_elements_to_points;
@@ -230,20 +233,48 @@ class BEMHCA final : public VirtualInternalLowRankGenerator<CoefficientPrecision
             }
         }
 
+        // Check box intersection
+        bool are_box_intersecting = true;
+        for (int dim = 0; dim < dimension; dim++) {
+            if (are_box_intersecting && (max_target_box[dim] < min_source_box[dim] || max_source_box[dim] < min_target_box[dim])) {
+                are_box_intersecting = false;
+            }
+        }
+        if (are_box_intersecting){
+            return false;
+        }
+
         // Check boxes
         for (int dim = 0; dim < dimension; dim++) {
+            //
+            max_source_box[dim] += 0.001;
+            min_source_box[dim] -= 0.001;
+            max_target_box[dim] += 0.001;
+            min_target_box[dim] -= 0.001;
             if (std ::abs(max_target_box[dim] - min_target_box[dim]) < std::numeric_limits<CoordinatePrecision>::epsilon() * 100) {
-                max_target_box[dim] += 1; // std::numeric_limits<CoordinatePrecision>::epsilon() * 10000;
-                min_target_box[dim] -= 1; // std::numeric_limits<CoordinatePrecision>::epsilon() * 10000;
+                max_target_box[dim] += 0.01; // std::numeric_limits<CoordinatePrecision>::epsilon() * 10000;
+                min_target_box[dim] -= 0.01; // std::numeric_limits<CoordinatePrecision>::epsilon() * 10000;
             }
 
             if (std ::abs(max_source_box[dim] - min_source_box[dim]) < std::numeric_limits<CoordinatePrecision>::epsilon() * 100) {
-                max_source_box[dim] += 1; // std::numeric_limits<CoordinatePrecision>::epsilon() * 10000;
-                min_source_box[dim] -= 1; // std::numeric_limits<CoordinatePrecision>::epsilon() * 10000;
+                max_source_box[dim] += 0.01; // std::numeric_limits<CoordinatePrecision>::epsilon() * 10000;
+                min_source_box[dim] -= 0.01; // std::numeric_limits<CoordinatePrecision>::epsilon() * 10000;
             }
         }
 
+        // Check box intersection
+        are_box_intersecting = true;
+        for (int dim = 0; dim < dimension; dim++) {
+            if (are_box_intersecting && (max_target_box[dim] < min_source_box[dim] || max_source_box[dim] < min_target_box[dim])) {
+                are_box_intersecting = false;
+            }
+        }
+        if (are_box_intersecting){
+            return false;
+        }
+
         // Compute target dof to interpolation matrix
+        std::vector<std::vector<double>> target_quad_points;
         std::vector<std::array<double, dimension>> local_target_quadrature_points;
         std::vector<std::array<double, dimension>> tmp_cell_points(m_target_number_of_points_per_element);
         for (auto target_element_index : target_element_indices) {
@@ -255,11 +286,17 @@ class BEMHCA final : public VirtualInternalLowRankGenerator<CoefficientPrecision
             }
             CoordinatePrecision jacobian = 0;
             std::vector<CoefficientPrecision> weights;
-            Matrix<CoefficientPrecision> tmp_mat(std::pow(L, dimension), m_target_number_of_points_per_element);
+            Matrix<CoefficientPrecision> tmp_mat(std::pow(L, dimension), m_target_number_of_dofs_per_element);
+
             if (m_target_number_of_points_per_element == 2) {
                 const auto &rule = find_best_rule(m_target_quadrature_order, gauss_legendre_rules<CoordinatePrecision>);
+                target_quad_points.resize(rule.nb_points);
                 weights.resize(rule.nb_points);
                 for (int i = 0; i < rule.nb_points; i++) {
+                    target_quad_points[i].resize(m_target_number_of_points_per_element - 1);
+                    for (int d = 0; d < m_target_number_of_points_per_element - 1; d++) {
+                        target_quad_points[i][d] = rule.quad_points[i].point[d];
+                    }
                     weights[i] = rule.quad_points[i].w;
                 }
                 jacobian                       = segment_jacobian(tmp_cell_points[0], tmp_cell_points[1]);
@@ -267,12 +304,18 @@ class BEMHCA final : public VirtualInternalLowRankGenerator<CoefficientPrecision
             } else if (m_target_number_of_points_per_element == 3) {
                 const auto &rule = find_best_rule(m_target_quadrature_order, triangle_rules<CoordinatePrecision>);
                 weights.resize(rule.nb_points);
+                target_quad_points.resize(rule.nb_points);
                 for (int i = 0; i < rule.nb_points; i++) {
+                    target_quad_points[i].resize(m_target_number_of_points_per_element - 1);
+                    for (int d = 0; d < m_target_number_of_points_per_element - 1; d++) {
+                        target_quad_points[i][d] = rule.quad_points[i].point[d];
+                    }
                     weights[i] = rule.quad_points[i].w;
                 }
                 jacobian                       = triangle_jacobian(tmp_cell_points[0], tmp_cell_points[1], tmp_cell_points[2]);
                 local_target_quadrature_points = map_reference_to_triangle(tmp_cell_points[0], tmp_cell_points[1], tmp_cell_points[2], rule);
             }
+
             CoefficientPrecision *S_data;
             theia::get_polynomials<dimension, CoordinatePrecision, CoefficientPrecision, 0>(L, S_data, min_target_box.data(), max_target_box.data(), local_target_quadrature_points.data(), local_target_quadrature_points.size());
             Matrix<CoefficientPrecision> S;
@@ -280,7 +323,7 @@ class BEMHCA final : public VirtualInternalLowRankGenerator<CoefficientPrecision
             Matrix<CoefficientPrecision> phi(local_target_quadrature_points.size(), m_target_number_of_dofs_per_element);
             for (int i = 0; i < phi.nb_rows(); i++) {
                 for (int j = 0; j < phi.nb_cols(); j++) {
-                    phi(i, j) = jacobian * weights[i] * m_target_basis_function(tmp_cell_points, j, local_target_quadrature_points[i]);
+                    phi(i, j) = jacobian * weights[i] * m_target_basis_function(target_element_index, j, target_quad_points[i]);
                 }
             }
             add_matrix_matrix_product('N', 'N', CoefficientPrecision(1), S, phi, CoefficientPrecision(0), tmp_mat);
@@ -292,6 +335,7 @@ class BEMHCA final : public VirtualInternalLowRankGenerator<CoefficientPrecision
         }
 
         // Compute source dof to interpolation matrix
+        std::vector<std::vector<double>> source_quad_points;
         std::vector<std::array<double, dimension>> local_source_quadrature_points;
         tmp_cell_points.resize(m_source_number_of_points_per_element);
         for (auto source_element_index : source_element_indices) {
@@ -303,11 +347,16 @@ class BEMHCA final : public VirtualInternalLowRankGenerator<CoefficientPrecision
             }
             CoordinatePrecision jacobian = 0;
             std::vector<CoefficientPrecision> weights;
-            Matrix<CoefficientPrecision> tmp_mat(std::pow(L, dimension), m_source_number_of_points_per_element);
+            Matrix<CoefficientPrecision> tmp_mat(std::pow(L, dimension), m_source_number_of_dofs_per_element);
             if (m_source_number_of_points_per_element == 3) {
                 const auto &rule = find_best_rule(m_source_quadrature_order, triangle_rules<CoordinatePrecision>);
+                source_quad_points.resize(rule.nb_points);
                 weights.resize(rule.nb_points);
                 for (int i = 0; i < rule.nb_points; i++) {
+                    source_quad_points[i].resize(m_source_number_of_points_per_element - 1);
+                    for (int d = 0; d < m_source_number_of_points_per_element - 1; d++) {
+                        source_quad_points[i][d] = rule.quad_points[i].point[d];
+                    }
                     weights[i] = rule.quad_points[i].w;
                 }
                 jacobian                       = triangle_jacobian(tmp_cell_points[0], tmp_cell_points[1], tmp_cell_points[2]);
@@ -315,8 +364,13 @@ class BEMHCA final : public VirtualInternalLowRankGenerator<CoefficientPrecision
 
             } else if (m_source_number_of_points_per_element == 2) {
                 const auto &rule = find_best_rule(m_source_quadrature_order, gauss_legendre_rules<CoordinatePrecision>);
+                source_quad_points.resize(rule.nb_points);
                 weights.resize(rule.nb_points);
                 for (int i = 0; i < rule.nb_points; i++) {
+                    source_quad_points[i].resize(m_source_number_of_points_per_element - 1);
+                    for (int d = 0; d < m_source_number_of_points_per_element - 1; d++) {
+                        source_quad_points[i][d] = rule.quad_points[i].point[d];
+                    }
                     weights[i] = rule.quad_points[i].w;
                 }
                 jacobian                       = segment_jacobian(tmp_cell_points[0], tmp_cell_points[1]);
@@ -329,7 +383,7 @@ class BEMHCA final : public VirtualInternalLowRankGenerator<CoefficientPrecision
             Matrix<CoefficientPrecision> phi(local_source_quadrature_points.size(), m_source_number_of_dofs_per_element);
             for (int i = 0; i < phi.nb_rows(); i++) {
                 for (int j = 0; j < phi.nb_cols(); j++) {
-                    phi(i, j) = jacobian * weights[i] * m_source_basis_function(tmp_cell_points, j, local_source_quadrature_points[i]);
+                    phi(i, j) = jacobian * weights[i] * m_source_basis_function(source_element_index, j, source_quad_points[i]);
                 }
             }
             add_matrix_matrix_product('N', 'N', CoefficientPrecision(1), S, phi, CoefficientPrecision(0), tmp_mat);
@@ -353,6 +407,9 @@ class BEMHCA final : public VirtualInternalLowRankGenerator<CoefficientPrecision
         int truncated_rank = SVD_truncation(K, epsilon, u, vt, singular_values);
         if (reqrank > 0)
             truncated_rank = std::min(reqrank, std::min(M, N));
+        if (check_size && (truncated_rank * (M + N) > (M * N))) {
+            return false;
+        }
         Matrix<CoefficientPrecision> truncated_u(std::pow(L, dimension), truncated_rank);
         Matrix<CoefficientPrecision> truncated_vt(truncated_rank, std::pow(L, dimension));
         for (int i = 0; i < std::pow(L, dimension); i++) {
@@ -373,7 +430,7 @@ class BEMHCA final : public VirtualInternalLowRankGenerator<CoefficientPrecision
         V.resize(truncated_rank, N);
         add_matrix_matrix_product('N', 'N', CoefficientPrecision(1), U_tilde, truncated_u, CoefficientPrecision(0), U);
         add_matrix_matrix_product('N', 'N', CoefficientPrecision(1), truncated_vt, V_tilde, CoefficientPrecision(0), V);
-
+        
         return true;
     }
 
