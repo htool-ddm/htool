@@ -171,11 +171,7 @@ std::map<std::string, std::string> get_hmatrix_information(const HMatrix<Coeffic
         maxinfos[0]          = std::max(maxinfos[0], local_size);
         mininfos[0]          = std::min(mininfos[0], local_size);
         meaninfos[0] += local_size;
-        if (dense_block->get_symmetry() != 'N') {
-            number_of_generated_coefficient += (local_number_of_rows * (local_number_of_cols + 1)) / 2.;
-        } else {
-            number_of_generated_coefficient += (local_number_of_rows * local_number_of_cols);
-        }
+        number_of_generated_coefficient += (local_number_of_rows * local_number_of_cols);
     }
 
     meaninfos[0] = (dense_blocks.size() == 0 ? 0 : meaninfos[0] / dense_blocks.size());

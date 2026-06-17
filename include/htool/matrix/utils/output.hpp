@@ -2,6 +2,7 @@
 #define HTOOL_MATRIX_UTILS_OUTPUT_HPP
 
 #include "../../misc/logger.hpp"
+#include "../matrix.hpp"
 #include "modifiers.hpp"
 #include <iostream>
 #include <string>

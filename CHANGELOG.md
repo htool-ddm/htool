@@ -39,6 +39,7 @@ All notable changes to this project will be documented in this file.
 
 - Fix uninitialized values in `Partitioning_N`.
 - Fix bug in task-based HLU, PR#81 thanks to @ABoisneault.
+- Fix `number_of_generated_coefficient` computation.
 
 ## [1.0.2] - 2026-02-14
 
