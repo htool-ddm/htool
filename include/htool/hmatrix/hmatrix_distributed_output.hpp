@@ -36,9 +36,9 @@ std::map<std::string, std::string> get_distributed_hmatrix_information(const HMa
 
     const HMatrixTreeData<CoefficientPrecision, CoordinatePrecision> *hmatrix_tree_data = hmatrix.get_hmatrix_tree_data();
 
-    unsigned int local_nb_rows = hmatrix.get_target_cluster().get_size();
-    unsigned int local_nb_cols = hmatrix.get_source_cluster().get_size();
-    std::size_t local_size     = local_nb_cols * local_nb_rows;
+    std::size_t local_nb_rows = hmatrix.get_target_cluster().get_size();
+    std::size_t local_nb_cols = hmatrix.get_source_cluster().get_size();
+    std::size_t local_size    = local_nb_cols * local_nb_rows;
 
     // 0 : dense mat size ; 1 : lr mat size ; 2 : rank ; 3 : nb_rows, 4: nb_cols
     std::array<std::size_t, 5> maxinfos = {0, 0, 0, local_nb_rows, local_nb_cols};
