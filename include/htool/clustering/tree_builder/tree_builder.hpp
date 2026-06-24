@@ -125,7 +125,12 @@ Cluster<T> ClusterTreeBuilder<T>::create_cluster_tree(int number_of_points, int 
     } else {
         partition_type = Simple;
         if (size_partition >= number_of_children) {
-            depth_of_partition                    = static_cast<int>(floor(log(size_partition) / log(number_of_children)));
+            depth_of_partition = 0;
+            int tmp            = size_partition;
+            while (tmp >= number_of_children) {
+                tmp /= number_of_children;
+                depth_of_partition++;
+            }
             number_of_children_on_partition_level = number_of_children;
             if (size_partition != std::pow(number_of_children, depth_of_partition)) {
                 Logger::get_instance().log(LogLevel::WARNING, "The given size for the partition is not a power of the number of children in the cluster tree.");

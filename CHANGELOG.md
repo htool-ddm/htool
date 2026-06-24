@@ -41,6 +41,7 @@ All notable changes to this project will be documented in this file.
 - Fix bug in task-based HLU, PR#81 thanks to @ABoisneault.
 - Fix `number_of_generated_coefficient` computation.
 - Fix overflow in `get_distributed_hmatrix_information`.
+- Fix float-point computation issue in `create_cluster_tree`.
 
 ## [1.0.2] - 2026-02-14
 
