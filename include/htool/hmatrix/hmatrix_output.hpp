@@ -55,6 +55,19 @@ void save_leaves_with_rank(const HMatrix<CoefficientPrecision, CoordinatePrecisi
 }
 
 template <typename CoefficientPrecision, typename CoordinatePrecision = underlying_type<CoefficientPrecision>>
+void save_sublocks_list(const HMatrix<CoefficientPrecision, CoordinatePrecision> &root_hmatrix, const std::vector<HMatrix<CoefficientPrecision, CoordinatePrecision> *> &hmatrix_list, std::string filename) {
+    std::ofstream output(filename + ".csv");
+    std::vector<DisplayBlock<int>> output_blocks{};
+
+    output << root_hmatrix.get_target_cluster().get_size() << ",";
+    output << root_hmatrix.get_source_cluster().get_size() << "\n";
+
+    for (auto &current_hmatrix : hmatrix_list) {
+        output << DisplayBlock<int>{current_hmatrix->get_target_cluster().get_offset() - root_hmatrix.get_target_cluster().get_offset(), current_hmatrix->get_source_cluster().get_offset() - root_hmatrix.get_source_cluster().get_offset(), current_hmatrix->get_target_cluster().get_size(), current_hmatrix->get_source_cluster().get_size(), current_hmatrix->get_rank()} << "\n";
+    }
+}
+
+template <typename CoefficientPrecision, typename CoordinatePrecision = underlying_type<CoefficientPrecision>>
 void save_levels(const HMatrix<CoefficientPrecision, CoordinatePrecision> &hmatrix, std::string filename, std::vector<int> depths) {
     std::vector<std::vector<DisplayBlock<int>>> output_blocks(depths.size());
 

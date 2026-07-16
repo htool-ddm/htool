@@ -4,6 +4,20 @@
 #include "hmatrix.hpp"
 namespace htool {
 
+template <typename CoefficientPrecision, typename CoordinatePrecision>
+std::size_t uniform_cost_function(const HMatrix<CoefficientPrecision, CoordinatePrecision> &hmatrix);
+
+template <typename CoefficientPrecision, typename CoordinatePrecision>
+struct HMatrixTaskDependencies {
+    int max_number_of_nodes                                                                              = 1000;
+    std::function<std::size_t(const HMatrix<CoefficientPrecision, CoordinatePrecision> &)> cost_function = &uniform_cost_function<CoefficientPrecision, CoordinatePrecision>;
+    std::vector<HMatrix<CoefficientPrecision, CoordinatePrecision> *> L0;
+
+    void set_L0(HMatrix<CoefficientPrecision, CoordinatePrecision> &hmatrix) {
+        L0 = find_l0(hmatrix, max_number_of_nodes, cost_function);
+    }
+};
+
 /**
  * @brief The cost_function associates with a node of the group tree a score
  * representing an estimate of the amount of work associated with this leaf.
@@ -16,7 +30,7 @@ namespace htool {
  * times the number of points in the source cluster.
  */
 template <typename CoefficientPrecision, typename CoordinatePrecision = underlying_type<CoefficientPrecision>>
-std::size_t cost_function(const HMatrix<CoefficientPrecision, CoordinatePrecision> &hmatrix) {
+std::size_t uniform_cost_function(const HMatrix<CoefficientPrecision, CoordinatePrecision> &hmatrix) {
     std::size_t nb_rows = hmatrix.get_target_cluster().get_size();
     std::size_t nb_cols = hmatrix.get_source_cluster().get_size();
     return std::size_t(nb_rows * nb_cols);
@@ -41,13 +55,13 @@ std::size_t cost_function(const Cluster<CoordinatePrecision> &cluster) {
  * @return A vector of pointers to the nodes of the group tree such that the
  * total cost of their leaves is less than or equal to nb_nodes_max.
  */
-template <typename CoefficientPrecision, typename CoordinatePrecision = underlying_type<CoefficientPrecision>>
-std::vector<HMatrix<CoefficientPrecision, CoordinatePrecision> *> find_l0(HMatrix<CoefficientPrecision, CoordinatePrecision> &root_hmatrix, const size_t nb_nodes_max) {
+template <typename CoefficientPrecision, typename CoordinatePrecision, typename CostFunction>
+std::vector<HMatrix<CoefficientPrecision, CoordinatePrecision> *> find_l0(HMatrix<CoefficientPrecision, CoordinatePrecision> &root_hmatrix, const size_t nb_nodes_max, CostFunction &&cost_function) {
     // Initialize criterion with the cost of the root node
     double criterion = cost_function(root_hmatrix);
 
     // Find initial nodes that meet the criterion
-    std::vector<HMatrix<CoefficientPrecision, CoordinatePrecision> *> old_result, result = count_nodes(root_hmatrix, criterion);
+    std::vector<HMatrix<CoefficientPrecision, CoordinatePrecision> *> old_result, result = count_nodes(root_hmatrix, criterion, cost_function);
     // Check if the initial result exceeds the maximum allowed nodes
     if (result.size() > nb_nodes_max) {
         htool::Logger::get_instance().log(LogLevel::ERROR, "Error: no L0 can be defined."); // LCOV_EXCL_LINE
@@ -69,12 +83,17 @@ std::vector<HMatrix<CoefficientPrecision, CoordinatePrecision> *> find_l0(HMatri
             criterion /= 2;
 
             // Update the result with the new criterion
-            result = count_nodes(root_hmatrix, criterion);
+            result = count_nodes(root_hmatrix, criterion, cost_function);
         } while (result.size() <= nb_nodes_max); // Loop until the result size exceeds nb_nodes_max
     }
 
     // Return the last valid result
     return old_result;
+}
+
+template <typename CoefficientPrecision, typename CoordinatePrecision>
+std::vector<HMatrix<CoefficientPrecision, CoordinatePrecision> *> find_l0(HMatrix<CoefficientPrecision, CoordinatePrecision> &root_hmatrix, const size_t nb_nodes_max) {
+    return find_l0(root_hmatrix, nb_nodes_max, &uniform_cost_function<CoefficientPrecision, CoordinatePrecision>);
 }
 
 // overload for const Cluster
@@ -128,8 +147,8 @@ std::vector<const Cluster<CoordinatePrecision> *> find_l0(const Cluster<Coordina
  * @param criterion The maximum cost of the nodes to be returned.
  * @return A vector of pointers to the nodes of the group tree that have a cost less than criterion.
  */
-template <typename CoefficientPrecision, typename CoordinatePrecision = underlying_type<CoefficientPrecision>>
-std::vector<HMatrix<CoefficientPrecision, CoordinatePrecision> *> count_nodes(HMatrix<CoefficientPrecision, CoordinatePrecision> &hmatrix, double criterion) {
+template <typename CoefficientPrecision, typename CoordinatePrecision, typename CostFunction>
+std::vector<HMatrix<CoefficientPrecision, CoordinatePrecision> *> count_nodes(HMatrix<CoefficientPrecision, CoordinatePrecision> &hmatrix, double criterion, CostFunction &&cost_function) {
     std::vector<HMatrix<CoefficientPrecision, CoordinatePrecision> *> result;
 
     if (cost_function(hmatrix) <= criterion || hmatrix.is_leaf()) {
@@ -139,7 +158,7 @@ std::vector<HMatrix<CoefficientPrecision, CoordinatePrecision> *> count_nodes(HM
         // if the node is not a leaf, traverse its children
         for (auto &child : hmatrix.get_children()) {
             // perform a postorder tree traversal of the subtree rooted at child
-            auto local_result = count_nodes(*child.get(), criterion);
+            auto local_result = count_nodes(*child.get(), criterion, cost_function);
             // add the result of the subtree traversal to the result
             result.insert(result.end(), local_result.begin(), local_result.end());
         }
