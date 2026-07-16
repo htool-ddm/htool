@@ -13,8 +13,8 @@
 using namespace std;
 using namespace htool;
 
-template <typename T, typename GeneratorTestType>
-bool test_hmatrix_lu(char trans, int n1, int n2, htool::underlying_type<T> epsilon, htool::underlying_type<T> margin) {
+template <typename ExecutionPolicy, typename T, typename GeneratorTestType>
+bool test_hmatrix_lu(ExecutionPolicy &&execution_policy, char trans, int n1, int n2, htool::underlying_type<T> epsilon, htool::underlying_type<T> margin) {
     bool is_error = false;
     double eta    = 100;
     htool::underlying_type<T> error;
@@ -40,7 +40,7 @@ bool test_hmatrix_lu(char trans, int n1, int n2, htool::underlying_type<T> epsil
 
     // LU factorization
     matrix_test = B_dense;
-    sequential_lu_factorization(A);
+    lu_factorization(execution_policy, A);
     lu_solve(trans, A, matrix_test);
     error    = normFrob(X_dense - matrix_test) / normFrob(X_dense);
     is_error = is_error || !(error < epsilon * margin);
@@ -50,8 +50,8 @@ bool test_hmatrix_lu(char trans, int n1, int n2, htool::underlying_type<T> epsil
     return is_error;
 }
 
-template <typename T, typename GeneratorTestType, std::enable_if_t<!is_complex_t<T>::value, bool> = true>
-bool test_hmatrix_cholesky(char UPLO, bool full_storage, int n1, int n2, htool::underlying_type<T> epsilon, htool::underlying_type<T> margin) {
+template <typename ExecutionPolicy, typename T, typename GeneratorTestType, std::enable_if_t<!is_complex_t<T>::value, bool> = true>
+bool test_hmatrix_cholesky(ExecutionPolicy &&execution_policy, char UPLO, bool full_storage, int n1, int n2, htool::underlying_type<T> epsilon, htool::underlying_type<T> margin) {
     bool is_error = false;
     double eta    = 100;
     htool::underlying_type<T> error;
@@ -77,7 +77,7 @@ bool test_hmatrix_cholesky(char UPLO, bool full_storage, int n1, int n2, htool::
 
     // Cholesky factorization
     matrix_test = B_dense;
-    sequential_cholesky_factorization(UPLO, HA);
+    cholesky_factorization(execution_policy, UPLO, HA);
     cholesky_solve(UPLO, HA, matrix_test);
     error    = normFrob(X_dense - matrix_test) / normFrob(X_dense);
     is_error = is_error || !(error < epsilon * margin);
@@ -87,8 +87,8 @@ bool test_hmatrix_cholesky(char UPLO, bool full_storage, int n1, int n2, htool::
     return is_error;
 }
 
-template <typename T, typename GeneratorTestType, std::enable_if_t<is_complex_t<T>::value, bool> = true>
-bool test_hmatrix_cholesky(char UPLO, bool full_storage, int n1, int n2, htool::underlying_type<T> epsilon, htool::underlying_type<T> margin) {
+template <typename ExecutionPolicy, typename T, typename GeneratorTestType, std::enable_if_t<is_complex_t<T>::value, bool> = true>
+bool test_hmatrix_cholesky(ExecutionPolicy &&execution_policy, char UPLO, bool full_storage, int n1, int n2, htool::underlying_type<T> epsilon, htool::underlying_type<T> margin) {
     bool is_error = false;
     double eta    = 100;
     htool::underlying_type<T> error;
@@ -114,7 +114,7 @@ bool test_hmatrix_cholesky(char UPLO, bool full_storage, int n1, int n2, htool::
 
     // Cholesky factorization
     matrix_test = B_dense;
-    sequential_cholesky_factorization(UPLO, HA);
+    cholesky_factorization(execution_policy, UPLO, HA);
     cholesky_solve(UPLO, HA, matrix_test);
     error    = normFrob(X_dense - matrix_test) / normFrob(X_dense);
     is_error = is_error || !(error < epsilon * margin);

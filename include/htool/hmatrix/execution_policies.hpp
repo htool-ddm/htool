@@ -2,6 +2,7 @@
 #define HTOOL_HMATRIX_EXECUTION_POLICIES_HPP
 
 #include "hmatrix.hpp"
+#include "htool/hmatrix/task_dependencies.hpp"
 #include <vector>
 #if defined(HTOOL_WITH_STD_EXECUTION_API) && HTOOL_WITH_STD_EXECUTION_API && __has_include(<execution>)
 #    include <execution>
@@ -42,8 +43,7 @@ struct is_execution_policy<exec_compat::parallel_policy> : std::true_type {};
 template <typename CoefficientPrecision, typename CoordinatePrecision = underlying_type<CoefficientPrecision>>
 struct omp_task_policy {
     // Shared state between tasks
-    std::vector<HMatrix<CoefficientPrecision, CoordinatePrecision> *> L0;
-    int max_nb_nodes = 64;
+    HMatrixTaskDependencies<CoefficientPrecision, CoordinatePrecision> hmatrix_task_dependencies;
 };
 
 template <typename CoefficientPrecision, typename CoordinatePrecision>

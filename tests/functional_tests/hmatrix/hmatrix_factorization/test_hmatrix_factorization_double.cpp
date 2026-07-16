@@ -1,4 +1,5 @@
 #include "../test_hmatrix_factorization.hpp"
+#include "htool/hmatrix/execution_policies.hpp"
 #include <htool/hmatrix/hmatrix.hpp>
 #include <htool/testing/generate_test_case.hpp>
 #include <htool/testing/generator_input.hpp>
@@ -16,11 +17,15 @@ int main(int, char *[]) {
 
     for (auto epsilon : {1e-3, 1e-6}) {
         for (auto trans : {'N', 'T'}) {
-            is_error = is_error || test_hmatrix_lu<double, GeneratorTestDoubleSymmetric>(trans, n1, n2, epsilon, margin);
+            is_error = is_error || test_hmatrix_lu<const exec_compat::sequenced_policy &, double, GeneratorTestDoubleSymmetric>(exec_compat::seq, trans, n1, n2, epsilon, margin);
+
+            is_error = is_error || test_hmatrix_lu<const exec_compat::parallel_policy &, double, GeneratorTestDoubleSymmetric>(exec_compat::par, trans, n1, n2, epsilon, margin);
         }
         for (auto UPLO : {'L', 'U'}) {
             for (bool full_storage : {false, true}) {
-                is_error = is_error || test_hmatrix_cholesky<double, GeneratorTestDoubleSymmetric>(UPLO, full_storage, n1, n2, epsilon, margin);
+                is_error = is_error || test_hmatrix_cholesky<const exec_compat::sequenced_policy &, double, GeneratorTestDoubleSymmetric>(exec_compat::seq, UPLO, full_storage, n1, n2, epsilon, margin);
+
+                is_error = is_error || test_hmatrix_cholesky<const exec_compat::parallel_policy &, double, GeneratorTestDoubleSymmetric>(exec_compat::par, UPLO, full_storage, n1, n2, epsilon, margin);
             }
             for (bool full_storage : {false, true}) {
                 is_error = is_error || test_hmatrix_ldlt<double, GeneratorTestDoubleSymmetric>(UPLO, 'S', full_storage, n1, n2, epsilon, margin);
