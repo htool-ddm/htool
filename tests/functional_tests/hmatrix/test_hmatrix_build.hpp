@@ -1,3 +1,4 @@
+#include "htool/hmatrix/task_dependencies.hpp"
 #include <cmath>                                          // for pow, sqrt
 #include <cstddef>                                        // for size_t
 #include <htool/basic_types/vector.hpp>                   // for norm2
@@ -103,6 +104,8 @@ bool test_hmatrix_build(ExecutionPolicy &&execution_policy, int nr, int nc, bool
 
     save_leaves_with_rank(root_hmatrix, "leaves_" + htool::NbrToStr(rankWorld));
     save_levels(root_hmatrix, "level_" + htool::NbrToStr(rankWorld) + "_", {0, 1, 2});
+    auto L0 = find_l0(root_hmatrix, 1000);
+    save_sublocks_list(root_hmatrix, L0, "L0");
     std::ofstream dotfile("dotfile.dot");
     view_block_tree(root_hmatrix, {}, dotfile);
 
