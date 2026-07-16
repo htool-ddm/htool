@@ -29,11 +29,13 @@ All notable changes to this project will be documented in this file.
 ### Added
 
 - JOSS badge and update `CITATION.cff`.
+- Add execution policy interface to hierarchical factorizations.
 
 ### Changed
 
 - Make std::execution optional via `HTOOL_WITH_STD_EXECUTION_API` macro to avoid linking with TBB. Default to false.
 - Improve `HMatrixBuilder` interface.
+- Refactor `omp_task_policy` extracting the part independent of OpenMP into `HMatrixTaskDependencies`.
 
 ### Fixed
 
