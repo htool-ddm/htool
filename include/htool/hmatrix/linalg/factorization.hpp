@@ -79,22 +79,37 @@ void sequential_lu_factorization(HMatrix<CoefficientPrecision, CoordinatePrecisi
 }
 
 template <typename ExecutionPolicy, typename CoefficientPrecision, typename CoordinatePrecision = underlying_type<CoefficientPrecision>>
-void lu_factorization(ExecutionPolicy &&, HMatrix<CoefficientPrecision, CoordinatePrecision> &hmatrix) {
+void lu_factorization(ExecutionPolicy &&execution_policy, HMatrix<CoefficientPrecision, CoordinatePrecision> &hmatrix) {
 
 #if __cplusplus >= 201703L
     if constexpr (is_execution_policy_v<std::decay_t<ExecutionPolicy>>) {
         if constexpr (std::is_same_v<std::decay_t<ExecutionPolicy>, exec_compat::parallel_policy>) {
-            int max_nb_nodes                                = 64; // TODO:add better default value
-            std::vector<HMatrix<CoefficientPrecision> *> L0 = find_l0(hmatrix, max_nb_nodes);
+            HMatrixTaskDependencies<CoefficientPrecision, CoordinatePrecision> hmatrix_task_dependencies;
+            hmatrix_task_dependencies.set_L0(hmatrix);
 #    if defined(_OPENMP)
 #        pragma omp parallel
 #        pragma omp single
 #    endif
             {
-                task_based_lu_factorization(hmatrix, L0);
+                task_based_lu_factorization(hmatrix, hmatrix_task_dependencies.L0);
             }
         } else if constexpr (std::is_same_v<std::decay_t<ExecutionPolicy>, exec_compat::sequenced_policy>) {
             sequential_lu_factorization(hmatrix);
+        } else if constexpr (std::is_same_v<std::decay_t<ExecutionPolicy>, omp_task_policy<CoefficientPrecision, CoordinatePrecision>>) {
+            if (execution_policy.hmatrix_task_dependencies.L0.empty())
+                execution_policy.hmatrix_task_dependencies.set_L0(hmatrix);
+
+            if (need_to_create_parallel_region()) {
+#    if defined(_OPENMP) && !defined(HTOOL_WITH_PYTHON_INTERFACE)
+#        pragma omp parallel
+#        pragma omp single
+#    endif
+                {
+                    task_based_lu_factorization(hmatrix, execution_policy.hmatrix_task_dependencies.L0);
+                }
+            } else {
+                task_based_lu_factorization(hmatrix, execution_policy.hmatrix_task_dependencies.L0);
+            }
         } else {
             static_assert(std::is_same_v<std::decay_t<ExecutionPolicy>, exec_compat::sequenced_policy> || std::is_same_v<std::decay_t<ExecutionPolicy>, exec_compat::parallel_policy>, "Invalid execution policy for factorization.");
         }
@@ -205,22 +220,38 @@ void sequential_cholesky_factorization(char UPLO, HMatrix<CoefficientPrecision, 
 }
 
 template <typename ExecutionPolicy, typename CoefficientPrecision, typename CoordinatePrecision = underlying_type<CoefficientPrecision>>
-void cholesky_factorization(ExecutionPolicy &&, char UPLO, HMatrix<CoefficientPrecision, CoordinatePrecision> &hmatrix) {
+void cholesky_factorization(ExecutionPolicy &&execution_policy, char UPLO, HMatrix<CoefficientPrecision, CoordinatePrecision> &hmatrix) {
 
 #if __cplusplus >= 201703L
     if constexpr (is_execution_policy_v<std::decay_t<ExecutionPolicy>>) {
         if constexpr (std::is_same_v<std::decay_t<ExecutionPolicy>, exec_compat::parallel_policy>) {
-            int max_nb_nodes                                = 64; // TODO:add better default value
-            std::vector<HMatrix<CoefficientPrecision> *> L0 = find_l0(hmatrix, max_nb_nodes);
-#    if defined(_OPENMP) && !defined(HTOOL_WITH_PYTHON_INTERFACE)
+            HMatrixTaskDependencies<CoefficientPrecision, CoordinatePrecision> hmatrix_task_dependencies;
+            hmatrix_task_dependencies.set_L0(hmatrix);
+
+#    if defined(_OPENMP)
 #        pragma omp parallel
 #        pragma omp single
 #    endif
             {
-                task_based_cholesky_factorization(UPLO, hmatrix, L0);
+                task_based_cholesky_factorization(UPLO, hmatrix, hmatrix_task_dependencies.L0);
             }
         } else if constexpr (std::is_same_v<std::decay_t<ExecutionPolicy>, exec_compat::sequenced_policy>) {
             sequential_cholesky_factorization(UPLO, hmatrix);
+        } else if constexpr (std::is_same_v<std::decay_t<ExecutionPolicy>, omp_task_policy<CoefficientPrecision, CoordinatePrecision>>) {
+            if (execution_policy.hmatrix_task_dependencies.L0.empty())
+                execution_policy.hmatrix_task_dependencies.set_L0(hmatrix);
+
+            if (need_to_create_parallel_region()) {
+#    if defined(_OPENMP) && !defined(HTOOL_WITH_PYTHON_INTERFACE)
+#        pragma omp parallel
+#        pragma omp single
+#    endif
+                {
+                    task_based_cholesky_factorization(UPLO, hmatrix, execution_policy.hmatrix_task_dependencies.L0);
+                }
+            } else {
+                task_based_cholesky_factorization(UPLO, hmatrix, execution_policy.hmatrix_task_dependencies.L0);
+            }
         } else {
             static_assert(std::is_same_v<std::decay_t<ExecutionPolicy>, exec_compat::sequenced_policy> || std::is_same_v<std::decay_t<ExecutionPolicy>, exec_compat::parallel_policy>, "Invalid execution policy for factorization.");
         }

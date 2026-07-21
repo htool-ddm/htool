@@ -102,7 +102,7 @@ bool test_task_based_hmatrix_vector_product(const TestCaseType &test_case, char 
 
     // Perform the task-based internal add H-matrix vector product
     start = std::chrono::steady_clock::now();
-#if defined(_OPENMP) && !defined(HTOOL_WITH_PYTHON_INTERFACE)
+#if defined(_OPENMP)
 #    pragma omp parallel
 #    pragma omp single
 #endif

@@ -57,7 +57,7 @@ void task_based_internal_add_hmatrix_hmatrix_product(char transa, char transb, C
     if (CoefficientPrecision(beta) != CoefficientPrecision(1)) {
         for (auto L0C_node : L0) {
 
-#if defined(_OPENMP) && !defined(HTOOL_WITH_PYTHON_INTERFACE)
+#if defined(_OPENMP)
 #    pragma omp task default(none)   \
         firstprivate(L0C_node, beta) \
         depend(inout : *L0C_node)
@@ -105,7 +105,7 @@ void task_based_internal_add_hmatrix_hmatrix_product(char transa, char transb, C
             }
         }
     } else { // if (is_C_in_L0 || A.is_leaf() || B.is_leaf() ||C.is_leaf())
-#if defined(_OPENMP) && !defined(HTOOL_WITH_PYTHON_INTERFACE)
+#if defined(_OPENMP)
         std::vector<const HMatrix<CoefficientPrecision, CoordinatePrecision> *> read_deps, temp;
         read_deps = enumerate_dependences(A, L0_A);
         temp      = enumerate_dependences(B, L0_B);
@@ -114,7 +114,7 @@ void task_based_internal_add_hmatrix_hmatrix_product(char transa, char transb, C
 #endif
 
         if (is_C_in_L0) {
-#if defined(_OPENMP) && !defined(HTOOL_WITH_PYTHON_INTERFACE)
+#if defined(_OPENMP)
 #    pragma omp task default(none)                                     \
         firstprivate(transa, transb, alpha, read_deps_size)            \
         shared(A, B, C, read_deps)                                     \
@@ -128,7 +128,7 @@ void task_based_internal_add_hmatrix_hmatrix_product(char transa, char transb, C
         } else {
             auto AB = std::make_shared<LowRankMatrix<CoefficientPrecision>>(A.nb_rows(), B.nb_cols(), C.get_epsilon());
 
-#if defined(_OPENMP) && !defined(HTOOL_WITH_PYTHON_INTERFACE)
+#if defined(_OPENMP)
 #    pragma omp task default(none)                                         \
         firstprivate(transa, transb, alpha, AB, read_deps_size, read_deps) \
         shared(A, B)                                                       \
@@ -164,7 +164,7 @@ void task_based_internal_add_hmatrix_hmatrix_product(char transa, char transb, C
             auto write_deps                                        = enumerate_dependences(C, L0);
 
             for (auto &C_node : write_deps) {
-#if defined(_OPENMP) && !defined(HTOOL_WITH_PYTHON_INTERFACE)
+#if defined(_OPENMP)
 #    pragma omp task default(none)                                                  \
         firstprivate(AB, C_node, output_cluster_ptr, input_cluster_ptr, write_deps) \
         depend(inout : *C_node)                                                     \

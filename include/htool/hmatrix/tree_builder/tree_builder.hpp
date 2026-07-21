@@ -228,11 +228,11 @@ class HMatrixTreeBuilder {
         return this->openmp_build(m_internal_generators.back(), target_root_cluster_tree, source_root_cluster_tree, target_partition_number, partition_number_for_symmetry);
     }
 
-    HMatrixType task_based_build(const VirtualInternalGenerator<CoefficientPrecision> &generator, const ClusterType &target_root_cluster_tree, const ClusterType &source_root_cluster_tree, std::vector<HMatrixType *> &L0, int max_nb_nodes, int target_partition_number = -1, int partition_number_for_symmetry = -1) const;
+    HMatrixType task_based_build(const VirtualInternalGenerator<CoefficientPrecision> &generator, const ClusterType &target_root_cluster_tree, const ClusterType &source_root_cluster_tree, HMatrixTaskDependencies<CoefficientPrecision, CoordinatePrecision> &hmatrix_task_dependencies, int target_partition_number = -1, int partition_number_for_symmetry = -1) const;
 
-    HMatrixType task_based_build(const VirtualGenerator<CoefficientPrecision> &generator, const ClusterType &target_root_cluster_tree, const ClusterType &source_root_cluster_tree, std::vector<HMatrixType *> &L0, int max_nb_nodes, int target_partition_number = -1, int partition_number_for_symmetry = -1) const {
+    HMatrixType task_based_build(const VirtualGenerator<CoefficientPrecision> &generator, const ClusterType &target_root_cluster_tree, const ClusterType &source_root_cluster_tree, HMatrixTaskDependencies<CoefficientPrecision, CoordinatePrecision> &hmatrix_task_dependencies, int target_partition_number = -1, int partition_number_for_symmetry = -1) const {
         m_internal_generators.emplace_back(generator, target_root_cluster_tree.get_permutation().data(), source_root_cluster_tree.get_permutation().data());
-        return this->task_based_build(m_internal_generators.back(), target_root_cluster_tree, source_root_cluster_tree, L0, max_nb_nodes, target_partition_number, partition_number_for_symmetry);
+        return this->task_based_build(m_internal_generators.back(), target_root_cluster_tree, source_root_cluster_tree, hmatrix_task_dependencies, target_partition_number, partition_number_for_symmetry);
     }
 
     // Setters
@@ -287,7 +287,7 @@ HMatrix<CoefficientPrecision, CoordinatePrecision> HMatrixTreeBuilder<Coefficien
         } else if constexpr (std::is_same_v<std::decay_t<ExecutionPolicy>, exec_compat::sequenced_policy>) {
             return sequential_build(generator, root_target_cluster_tree, root_source_cluster_tree, target_partition_number, partition_number_for_symmetry);
         } else if constexpr (std::is_same_v<std::decay_t<ExecutionPolicy>, omp_task_policy<CoefficientPrecision, CoordinatePrecision>>) {
-            return task_based_build(generator, root_target_cluster_tree, root_source_cluster_tree, execution_policy.L0, execution_policy.max_nb_nodes, target_partition_number, partition_number_for_symmetry);
+            return task_based_build(generator, root_target_cluster_tree, root_source_cluster_tree, execution_policy.hmatrix_task_dependencies, target_partition_number, partition_number_for_symmetry);
         } else {
             static_assert(std::is_same_v<std::decay_t<ExecutionPolicy>, exec_compat::sequenced_policy> || std::is_same_v<std::decay_t<ExecutionPolicy>, exec_compat::parallel_policy> || std::is_same_v<std::decay_t<ExecutionPolicy>, omp_task_policy<CoefficientPrecision, CoordinatePrecision>>, "Invalid execution policy for building hmatrix.");
         }
@@ -342,23 +342,23 @@ HMatrix<CoefficientPrecision, CoordinatePrecision> HMatrixTreeBuilder<Coefficien
 }
 
 template <typename CoefficientPrecision, typename CoordinatePrecision>
-HMatrix<CoefficientPrecision, CoordinatePrecision> HMatrixTreeBuilder<CoefficientPrecision, CoordinatePrecision>::task_based_build(const VirtualInternalGenerator<CoefficientPrecision> &generator, const ClusterType &root_target_cluster_tree, const ClusterType &root_source_cluster_tree, std::vector<HMatrixType *> &L0, int max_nb_nodes, int target_partition_number, int partition_number_for_symmetry) const {
+HMatrix<CoefficientPrecision, CoordinatePrecision> HMatrixTreeBuilder<CoefficientPrecision, CoordinatePrecision>::task_based_build(const VirtualInternalGenerator<CoefficientPrecision> &generator, const ClusterType &root_target_cluster_tree, const ClusterType &root_source_cluster_tree, HMatrixTaskDependencies<CoefficientPrecision, CoordinatePrecision> &hmatrix_task_dependencies, int target_partition_number, int partition_number_for_symmetry) const {
     HMatrixType root_hmatrix(root_target_cluster_tree, root_source_cluster_tree);
     setup_block_tree(root_hmatrix, generator, root_target_cluster_tree, root_source_cluster_tree, target_partition_number, partition_number_for_symmetry);
 
-    L0 = find_l0(root_hmatrix, max_nb_nodes);
+    hmatrix_task_dependencies.set_L0(root_hmatrix);
 
     // Compute leave's data
     if (need_to_create_parallel_region()) {
-#if defined(_OPENMP) && !defined(HTOOL_WITH_PYTHON_INTERFACE)
+#if defined(_OPENMP)
 #    pragma omp parallel
 #    pragma omp single
 #endif
         {
-            task_based_compute_blocks(generator, L0);
+            task_based_compute_blocks(generator, hmatrix_task_dependencies.L0);
         }
     } else {
-        task_based_compute_blocks(generator, L0);
+        task_based_compute_blocks(generator, hmatrix_task_dependencies.L0);
     }
 
     set_symmetry_for_leaves(root_hmatrix);
@@ -603,14 +603,14 @@ void HMatrixTreeBuilder<CoefficientPrecision, CoordinatePrecision>::sequential_c
 template <typename CoefficientPrecision, typename CoordinatePrecision>
 void HMatrixTreeBuilder<CoefficientPrecision, CoordinatePrecision>::openmp_compute_blocks(const VirtualInternalGenerator<CoefficientPrecision> &generator) const {
 
-#if defined(_OPENMP) && !defined(HTOOL_WITH_PYTHON_INTERFACE)
+#if defined(_OPENMP)
 #    pragma omp parallel
 #endif
     {
         // std::vector<HMatrixType *> local_dense_leaves{};
         // std::vector<HMatrixType *> local_low_rank_leaves{};
         int local_false_positive = 0;
-#if defined(_OPENMP) && !defined(HTOOL_WITH_PYTHON_INTERFACE)
+#if defined(_OPENMP)
 #    pragma omp for schedule(guided) nowait
 #endif
         for (int p = 0; p < m_admissible_tasks.size(); p++) {
@@ -627,7 +627,7 @@ void HMatrixTreeBuilder<CoefficientPrecision, CoordinatePrecision>::openmp_compu
             }
         }
         if (m_dense_blocks_generator.get() == nullptr) {
-#if defined(_OPENMP) && !defined(HTOOL_WITH_PYTHON_INTERFACE)
+#if defined(_OPENMP)
 #    pragma omp for schedule(guided) nowait
 #endif
             for (int p = 0; p < m_dense_tasks.size(); p++) {
@@ -635,7 +635,7 @@ void HMatrixTreeBuilder<CoefficientPrecision, CoordinatePrecision>::openmp_compu
             }
             // local_dense_leaves.emplace_back(m_dense_tasks[p]);
         }
-#if defined(_OPENMP) && !defined(HTOOL_WITH_PYTHON_INTERFACE)
+#if defined(_OPENMP)
 #    pragma omp critical
 #endif
         {
@@ -670,7 +670,7 @@ void HMatrixTreeBuilder<CoefficientPrecision, CoordinatePrecision>::task_based_c
     // int max_prio = std::max(0, omp_get_max_task_priority());
     for (int p = 0; p < L0.size(); p++) {
 
-#if defined(_OPENMP) && !defined(HTOOL_WITH_PYTHON_INTERFACE)
+#if defined(_OPENMP)
 #    pragma omp task default(none)                                                                       \
         firstprivate(p, m_reqrank, m_epsilon)                                                            \
         shared(generator, m_false_positive, m_low_rank_generator, L0, m_admissible_tasks, m_dense_tasks) \

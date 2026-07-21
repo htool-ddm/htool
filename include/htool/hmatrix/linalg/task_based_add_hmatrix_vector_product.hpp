@@ -67,7 +67,7 @@ void task_based_internal_add_hmatrix_vector_product(char trans, CoefficientPreci
     if (CoefficientPrecision(beta) != CoefficientPrecision(1)) {
         for (auto out_L0_node : out_L0) {
 
-#if defined(_OPENMP) && !defined(HTOOL_WITH_PYTHON_INTERFACE)
+#if defined(_OPENMP)
 #    pragma omp task default(none)           \
         firstprivate(out_L0_node, out, beta) \
         depend(inout : *out_L0_node)
@@ -86,7 +86,7 @@ void task_based_internal_add_hmatrix_vector_product(char trans, CoefficientPreci
         int input_offset  = (*L0_node.*get_input_cluster)().get_offset();
         int output_offset = (*L0_node.*get_output_cluster)().get_offset();
 
-#if defined(_OPENMP) && !defined(HTOOL_WITH_PYTHON_INTERFACE)
+#if defined(_OPENMP)
         std::vector<const Cluster<CoordinatePrecision> *> write_cluster, read_cluster;
         write_cluster = enumerate_dependences((*L0_node.*get_output_cluster)(), out_L0);
         read_cluster  = enumerate_dependences((*L0_node.*get_input_cluster)(), in_L0);

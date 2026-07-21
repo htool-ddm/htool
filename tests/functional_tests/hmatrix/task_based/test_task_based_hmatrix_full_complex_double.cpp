@@ -1,4 +1,4 @@
-#include "../test_hmatrix_factorization.hpp" // for test_hmatrix_cholesky
+#include "../test_task_based_hmatrix_full.hpp" // for test_hmatrix_cholesky
 #include "htool/hmatrix/execution_policies.hpp"
 #include <complex>                          // for complex, operator==
 #include <htool/testing/generator_test.hpp> // for GeneratorTestComplex...
@@ -16,10 +16,10 @@ int main(int, char *[]) {
 
     for (auto epsilon : {1e-3, 1e-6, 1e-10}) {
         for (auto trans : {'N', 'T'}) {
-            is_error = is_error || test_hmatrix_lu<htool::omp_task_policy<std::complex<double>> &&, std::complex<double>, GeneratorTestComplexHermitian>(omp_task_policy<std::complex<double>>{}, trans, n1, n2, epsilon, margin);
+            is_error = is_error || test_task_based_hmatrix_full_lu<std::complex<double>, GeneratorTestComplexHermitian>(trans, n1, n2, epsilon, margin);
         }
         for (auto UPLO : {'L', 'U'}) {
-            is_error = is_error || test_hmatrix_cholesky<htool::omp_task_policy<std::complex<double>> &&, std::complex<double>, GeneratorTestComplexHermitian>(omp_task_policy<std::complex<double>>{}, UPLO, n1, n2, epsilon, margin);
+            is_error = is_error || test_task_based_hmatrix_full_cholesky<std::complex<double>, GeneratorTestComplexHermitian>(UPLO, n1, n2, epsilon, margin);
         }
     }
 
