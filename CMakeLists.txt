@@ -57,6 +57,11 @@ if(CMAKE_PROJECT_NAME STREQUAL PROJECT_NAME)
     file(GLOB_RECURSE CMAKE_FILES ${PROJECT_SOURCE_DIR}/CMakeLists.txt)
     cmake_format(cmake_format ${CMAKE_FILES})
 
+    # Static analysis (opt-in, not part of ALL: `cmake --build <dir> --target tidy`)
+    include(cmake-scripts/clang_tidy.cmake)
+    file(GLOB_RECURSE TIDY_SOURCE_FILES ${PROJECT_SOURCE_DIR}/examples/*.cpp ${PROJECT_SOURCE_DIR}/tests/*.cpp)
+    clang_tidy(tidy_sources ${TIDY_SOURCE_FILES})
+
     # Files to do find_package for some module
     list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}/cmake_modules")
 

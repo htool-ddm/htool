@@ -1,0 +1,24 @@
+---
+# Starter configuration. Runs on demand via the `tidy` CMake target (not part
+# of the default build) -- see cmake-scripts/clang_tidy.cmake.
+#
+# Checks are scoped to bugprone-*/performance-*, which surface real
+# correctness/perf issues with low noise. A couple of checks are disabled
+# because they generate high-volume, low-signal findings for a numerical
+# library where same-typed adjacent parameters (M, N, i, j, alpha, beta...)
+# and deterministic RNG seeds (reproducible tests) are normal and intentional.
+Checks: >
+  -*,
+  bugprone-*,
+  performance-*,
+  -bugprone-easily-swappable-parameters,
+  -bugprone-random-generator-seed
+
+HeaderFilterRegex: 'include/htool/.*'
+# wrapper_blas.hpp/wrapper_lapack.hpp are macro-generated BLAS/LAPACK bindings
+# where the "macro argument" clang-tidy warns about is always a type name,
+# never an expression -- bugprone-macro-parentheses fires hundreds of times
+# there for no real risk. Requires clang-tidy >= 17.
+ExcludeHeaderFilterRegex: 'wrapper_blas\.hpp|wrapper_lapack\.hpp'
+FormatStyle: file
+WarningsAsErrors: ''
