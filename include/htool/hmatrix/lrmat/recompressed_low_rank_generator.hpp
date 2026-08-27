@@ -14,7 +14,7 @@ class RecompressedLowRankGenerator final : public VirtualInternalLowRankGenerato
     std::function<void(LowRankMatrix<CoefficientPrecision> &)> m_recompression;
 
   public:
-    RecompressedLowRankGenerator(const VirtualInternalLowRankGenerator<CoefficientPrecision> &low_rank_generator, std::function<void(LowRankMatrix<CoefficientPrecision> &)> recompression) : m_low_rank_generator(low_rank_generator), m_recompression(recompression) {}
+    RecompressedLowRankGenerator(const VirtualInternalLowRankGenerator<CoefficientPrecision> &low_rank_generator, std::function<void(LowRankMatrix<CoefficientPrecision> &)> recompression) : m_low_rank_generator(low_rank_generator), m_recompression(std::move(recompression)) {}
 
     virtual bool copy_low_rank_approximation(int M, int N, int row_offset, int col_offset, LowRankMatrix<CoefficientPrecision> &lrmat) const {
         bool info = m_low_rank_generator.copy_low_rank_approximation(M, N, row_offset, col_offset, lrmat);

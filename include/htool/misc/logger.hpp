@@ -52,7 +52,6 @@ class StandartOutputWriter : public IObjectWriter {
 
   public:
     void write(LogLevel log_level, const std::string &message) override {
-        std::string prefix;
         if (log_level <= m_current_log_level) {
             std::cout << logging_level_to_string(log_level) + message << "\n";
         }
@@ -69,9 +68,9 @@ class Logger {
         return instance;
     }
 
-    void set_current_writer(std::shared_ptr<IObjectWriter> writer) { m_writer = writer; }
+    void set_current_writer(std::shared_ptr<IObjectWriter> writer) { m_writer = std::move(writer); }
 
-    void log(LogLevel log_level, std::string message) {
+    void log(LogLevel log_level, const std::string &message) {
         m_writer->write(log_level, message);
     }
 
