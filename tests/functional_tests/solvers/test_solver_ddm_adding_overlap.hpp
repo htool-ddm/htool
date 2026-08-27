@@ -106,7 +106,7 @@ int test_solver_ddm_adding_overlap(int argc, char *argv[], int mu, char data_sym
     if constexpr (!std::is_same_v<approximation_type, DefaultApproximationBuilder<CoefficientPrecision, htool::underlying_type<CoefficientPrecision>>>) {
         const Cluster<CoordinatePrecision> &local_cluster = target_cluster.get_cluster_on_partition(rank);
 
-        std::make_unique<approximation_type>(*generator, target_cluster, target_cluster, HMatrixTreeBuilder<CoefficientPrecision>(epsilon, eta, symmetric, UPLO), MPI_COMM_WORLD);
+        // std::make_unique<approximation_type>(*generator, target_cluster, target_cluster, HMatrixTreeBuilder<CoefficientPrecision>(epsilon, eta, symmetric, UPLO), MPI_COMM_WORLD);
 
         off_diagonal_matrix_1 = std::make_unique<Matrix<CoefficientPrecision>>(local_cluster.get_size(), local_cluster.get_offset());
         off_diagonal_matrix_2 = std::make_unique<Matrix<CoefficientPrecision>>(local_cluster.get_size(), target_cluster.get_size() - local_cluster.get_size() - local_cluster.get_offset());
