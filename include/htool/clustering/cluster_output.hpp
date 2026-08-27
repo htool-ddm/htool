@@ -30,7 +30,7 @@ void print(const Cluster<CoordinatesPrecision> &cluster) {
 }
 
 template <typename CoordinatesPrecision>
-void save_cluster_tree(const Cluster<CoordinatesPrecision> &cluster, std::string filename) {
+void save_cluster_tree(const Cluster<CoordinatesPrecision> &cluster, const std::string &filename) {
     // Cluster tree properties
     std::ofstream output_permutation(filename + "_cluster_tree_properties.csv");
 
@@ -84,10 +84,9 @@ void save_cluster_tree(const Cluster<CoordinatesPrecision> &cluster, std::string
 }
 
 template <typename CoordinatesPrecision>
-Cluster<CoordinatesPrecision> read_cluster_tree(std::string file_cluster_tree_properties, std::string file_cluster_tree) {
+Cluster<CoordinatesPrecision> read_cluster_tree(const std::string &file_cluster_tree_properties, const std::string &file_cluster_tree) {
     std::string line{};
-    std::string delimiter     = ",";
-    std::string sub_delimiter = "|";
+    std::string delimiter = ",";
     std::vector<std::string> splitted_string{};
 
     // Clusters informtation
@@ -186,7 +185,7 @@ Cluster<CoordinatesPrecision> read_cluster_tree(std::string file_cluster_tree_pr
 }
 
 template <typename CoordinatesPrecision>
-void save_clustered_geometry(const Cluster<CoordinatesPrecision> &cluster_tree, int spatial_dimension, const CoordinatesPrecision *x0, std::string filename, const std::vector<int> &depths) {
+void save_clustered_geometry(const Cluster<CoordinatesPrecision> &cluster_tree, int spatial_dimension, const CoordinatesPrecision *x0, const std::string &filename, const std::vector<int> &depths) {
 
     std::ofstream output(filename + ".csv");
     const auto &permutation = cluster_tree.get_permutation();

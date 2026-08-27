@@ -37,7 +37,7 @@ class ClusterTreeBuilder {
 
     void set_maximal_leaf_size(int maximal_leaf_size) { m_maximal_leaf_size = maximal_leaf_size; }
     void set_is_complete(bool is_complete) { m_is_complete = is_complete; }
-    void set_partitioning_strategy(std::shared_ptr<VirtualPartitioning<T>> partitioning_strategy) { m_partitioning_strategy = partitioning_strategy; }
+    void set_partitioning_strategy(std::shared_ptr<VirtualPartitioning<T>> partitioning_strategy) { m_partitioning_strategy = std::move(partitioning_strategy); }
 
     Cluster<T> create_cluster_tree(int number_of_points, int spatial_dimension, const T *coordinates, const T *radii, const T *weights, int number_of_children, int size_of_partition, const int *partition, bool is_given_partition_local) const;
 

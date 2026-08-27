@@ -22,7 +22,7 @@ class RestrictedGlobalToLocalOperator : public VirtualGlobalToLocalOperator<Coef
     bool m_target_use_permutation_to_mvprod{false}; // Permutation used when add_mvprod, useful for offdiag
     bool m_source_use_permutation_to_mvprod{false}; // Permutation used when add_mvprod, useful for offdiag
 
-    RestrictedGlobalToLocalOperator(LocalRenumbering local_target_renumbering, LocalRenumbering local_source_renumbering, bool target_use_permutation_to_mvprod = false, bool source_use_permutation_to_mvprod = false) : m_local_target_renumbering(local_target_renumbering), m_local_source_renumbering(local_source_renumbering), m_target_use_permutation_to_mvprod(target_use_permutation_to_mvprod), m_source_use_permutation_to_mvprod(source_use_permutation_to_mvprod) {}
+    RestrictedGlobalToLocalOperator(LocalRenumbering local_target_renumbering, LocalRenumbering local_source_renumbering, bool target_use_permutation_to_mvprod = false, bool source_use_permutation_to_mvprod = false) : m_local_target_renumbering(std::move(local_target_renumbering)), m_local_source_renumbering(std::move(local_source_renumbering)), m_target_use_permutation_to_mvprod(target_use_permutation_to_mvprod), m_source_use_permutation_to_mvprod(source_use_permutation_to_mvprod) {}
 
     RestrictedGlobalToLocalOperator(const RestrictedGlobalToLocalOperator &)                             = default;
     RestrictedGlobalToLocalOperator &operator=(const RestrictedGlobalToLocalOperator &)                  = default;

@@ -177,11 +177,11 @@ class HMatrixTreeBuilder {
     }
 
   public:
-    explicit HMatrixTreeBuilder(underlying_type<CoefficientPrecision> epsilon, CoordinatePrecision eta, char symmetry, char UPLO, int reqrank, std::shared_ptr<VirtualInternalLowRankGenerator<CoefficientPrecision>> low_rank_strategy, std::shared_ptr<VirtualAdmissibilityCondition<CoordinatePrecision>> admissibility_condition_strategy = nullptr) : m_epsilon(epsilon), m_eta(eta), m_reqrank(reqrank), m_symmetry_type(symmetry), m_UPLO_type(UPLO), m_internal_low_rank_generator(low_rank_strategy), m_admissibility_condition(admissibility_condition_strategy ? admissibility_condition_strategy : std::make_shared<RjasanowSteinbach<CoordinatePrecision>>()) {
+    explicit HMatrixTreeBuilder(underlying_type<CoefficientPrecision> epsilon, CoordinatePrecision eta, char symmetry, char UPLO, int reqrank, std::shared_ptr<VirtualInternalLowRankGenerator<CoefficientPrecision>> low_rank_strategy, std::shared_ptr<VirtualAdmissibilityCondition<CoordinatePrecision>> admissibility_condition_strategy = nullptr) : m_epsilon(epsilon), m_eta(eta), m_reqrank(reqrank), m_symmetry_type(symmetry), m_UPLO_type(UPLO), m_internal_low_rank_generator(std::move(low_rank_strategy)), m_admissibility_condition(admissibility_condition_strategy ? std::move(admissibility_condition_strategy) : std::make_shared<RjasanowSteinbach<CoordinatePrecision>>()) {
         check_inputs();
     }
 
-    explicit HMatrixTreeBuilder(underlying_type<CoefficientPrecision> epsilon, CoordinatePrecision eta, char symmetry, char UPLO, int reqrank = -1, std::shared_ptr<VirtualLowRankGenerator<CoefficientPrecision>> low_rank_strategy = nullptr, std::shared_ptr<VirtualAdmissibilityCondition<CoordinatePrecision>> admissibility_condition_strategy = nullptr) : m_epsilon(epsilon), m_eta(eta), m_reqrank(reqrank), m_symmetry_type(symmetry), m_UPLO_type(UPLO), m_low_rank_generator(low_rank_strategy), m_admissibility_condition(admissibility_condition_strategy ? admissibility_condition_strategy : std::make_shared<RjasanowSteinbach<CoordinatePrecision>>()) {
+    explicit HMatrixTreeBuilder(underlying_type<CoefficientPrecision> epsilon, CoordinatePrecision eta, char symmetry, char UPLO, int reqrank = -1, std::shared_ptr<VirtualLowRankGenerator<CoefficientPrecision>> low_rank_strategy = nullptr, std::shared_ptr<VirtualAdmissibilityCondition<CoordinatePrecision>> admissibility_condition_strategy = nullptr) : m_epsilon(epsilon), m_eta(eta), m_reqrank(reqrank), m_symmetry_type(symmetry), m_UPLO_type(UPLO), m_low_rank_generator(std::move(low_rank_strategy)), m_admissibility_condition(admissibility_condition_strategy ? std::move(admissibility_condition_strategy) : std::make_shared<RjasanowSteinbach<CoordinatePrecision>>()) {
         check_inputs();
     }
 
@@ -246,16 +246,16 @@ class HMatrixTreeBuilder {
     }
     void set_low_rank_generator(std::shared_ptr<VirtualLowRankGenerator<CoefficientPrecision>> ptr) {
         m_internal_low_rank_generator.reset();
-        m_low_rank_generator = ptr;
+        m_low_rank_generator = std::move(ptr);
     }
     void set_low_rank_generator(std::shared_ptr<VirtualInternalLowRankGenerator<CoefficientPrecision>> ptr) {
         m_low_rank_generator.reset();
-        m_internal_low_rank_generator = ptr;
+        m_internal_low_rank_generator = std::move(ptr);
     }
-    void set_admissibility_condition(std::shared_ptr<VirtualAdmissibilityCondition<CoordinatePrecision>> ptr) { m_admissibility_condition = ptr; }
+    void set_admissibility_condition(std::shared_ptr<VirtualAdmissibilityCondition<CoordinatePrecision>> ptr) { m_admissibility_condition = std::move(ptr); }
     void set_minimal_source_depth(int minimal_source_depth) { m_minsourcedepth = minimal_source_depth; }
     void set_minimal_target_depth(int minimal_target_depth) { m_mintargetdepth = minimal_target_depth; }
-    void set_dense_blocks_generator(std::shared_ptr<VirtualDenseBlocksGenerator<CoefficientPrecision>> dense_blocks_generator) { m_dense_blocks_generator = dense_blocks_generator; }
+    void set_dense_blocks_generator(std::shared_ptr<VirtualDenseBlocksGenerator<CoefficientPrecision>> dense_blocks_generator) { m_dense_blocks_generator = std::move(dense_blocks_generator); }
     void set_block_tree_consistency(bool consistency) {
         if (m_symmetry_type != 'N' && consistency == false) {
             htool::Logger::get_instance().log(LogLevel::ERROR, "Block tree consistency cannot be set to false if symmetry is not N."); // LCOV_EXCL_LINE

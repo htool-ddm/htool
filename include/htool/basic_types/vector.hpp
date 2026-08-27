@@ -125,7 +125,7 @@ T mean(const std::vector<T> &u) {
 }
 
 template <typename T>
-int vector_to_bytes(const std::vector<T> vect, const std::string &file) {
+int vector_to_bytes(const std::vector<T> &vect, const std::string &file) {
     std::ofstream out(file, std::ios::out | std::ios::binary | std::ios::trunc);
 
     if (!out) {

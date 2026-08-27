@@ -36,7 +36,7 @@ std::ostream &operator<<(std::ostream &output_stream, const DisplayBlock<OutputV
 }
 
 template <typename CoefficientPrecision, typename CoordinatePrecision = underlying_type<CoefficientPrecision>>
-void save_leaves_with_rank(const HMatrix<CoefficientPrecision, CoordinatePrecision> &hmatrix, std::string filename) {
+void save_leaves_with_rank(const HMatrix<CoefficientPrecision, CoordinatePrecision> &hmatrix, const std::string &filename) {
     std::ofstream output(filename + ".csv");
     std::vector<DisplayBlock<int>> output_blocks{};
 
@@ -55,7 +55,7 @@ void save_leaves_with_rank(const HMatrix<CoefficientPrecision, CoordinatePrecisi
 }
 
 template <typename CoefficientPrecision, typename CoordinatePrecision = underlying_type<CoefficientPrecision>>
-void save_levels(const HMatrix<CoefficientPrecision, CoordinatePrecision> &hmatrix, std::string filename, std::vector<int> depths) {
+void save_levels(const HMatrix<CoefficientPrecision, CoordinatePrecision> &hmatrix, const std::string &filename, std::vector<int> depths) {
     std::vector<std::vector<DisplayBlock<int>>> output_blocks(depths.size());
 
     preorder_tree_traversal(

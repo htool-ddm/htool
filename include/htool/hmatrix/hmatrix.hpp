@@ -205,8 +205,8 @@ class HMatrix : public TreeNode<HMatrix<CoefficientPrecision, CoordinatePrecisio
     // HMatrix Tree setters
     void set_eta(CoordinatePrecision eta) { this->m_tree_data->m_eta = eta; }
     void set_epsilon(underlying_type<CoefficientPrecision> epsilon) { this->m_tree_data->m_epsilon = epsilon; }
-    void set_low_rank_generator(std::shared_ptr<VirtualInternalLowRankGenerator<CoefficientPrecision>> ptr) { this->m_tree_data->m_low_rank_generator = ptr; }
-    void set_admissibility_condition(std::shared_ptr<VirtualAdmissibilityCondition<CoordinatePrecision>> ptr) { this->m_tree_data->m_admissibility_condition = ptr; }
+    void set_low_rank_generator(std::shared_ptr<VirtualInternalLowRankGenerator<CoefficientPrecision>> ptr) { this->m_tree_data->m_low_rank_generator = std::move(ptr); }
+    void set_admissibility_condition(std::shared_ptr<VirtualAdmissibilityCondition<CoordinatePrecision>> ptr) { this->m_tree_data->m_admissibility_condition = std::move(ptr); }
     void set_minimal_target_depth(unsigned int minimal_target_depth) { this->m_tree_data->m_minimal_target_depth = minimal_target_depth; }
     void set_minimal_source_depth(unsigned int minimal_source_depth) { this->m_tree_data->m_minimal_source_depth = minimal_source_depth; }
     void set_block_tree_consistency(bool consistency) {
