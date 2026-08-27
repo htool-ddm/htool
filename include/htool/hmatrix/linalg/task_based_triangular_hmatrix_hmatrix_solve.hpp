@@ -104,7 +104,7 @@ void task_based_internal_triangular_hmatrix_hmatrix_solve(char side, char UPLO, 
 
         // Forward, compute each block rows one after the other
         if ((UPLO == 'L' && transa == 'N' && side == 'L') || (UPLO == 'U' && transa != 'N' && side == 'L')) {
-            // std::cout << "clusters' size: " << output_clusters.size() << ", " << middle_clusters.size() << ", " << input_clusters.size() << std::endl;
+            // std::cout << "clusters' size: " << output_clusters.size() << ", " << middle_clusters.size() << ", " << input_clusters.size() << '\n';
             for (auto &output_cluster_child : output_clusters) {
                 for (auto &input_cluster_child : input_clusters) {
                     HMatrix<CoefficientPrecision, CoordinatePrecision> *B_child_to_modify = B.get_sub_hmatrix(*output_cluster_child, *input_cluster_child);

@@ -77,7 +77,7 @@ class partialACA final : public VirtualInternalLowRankGenerator<CoefficientPreci
         // But to do that we need a least two iterations.
         while (((reqrank > 0) && (q < std::min(reqrank, std::min(target_size, source_size)))) || ((reqrank < 0) && (q == 0 || sqrt(aux / frob) > epsilon))) {
             // if (q != 0)
-            // std::cout << sqrt(aux / frob) << " " << this->epsilon << " " << (sqrt(aux / frob) > this->epsilon) << std::endl;
+            // std::cout << sqrt(aux / frob) << " " << this->epsilon << " " << (sqrt(aux / frob) > this->epsilon) << '\n';
             // Next current rank
             q += 1;
 
@@ -145,7 +145,7 @@ class partialACA final : public VirtualInternalLowRankGenerator<CoefficientPreci
                         }
                         // frob_aux: termes croises du developpement du carre' de la norme de Frobenius de la matrice low rank
                         frob += aux + 2 * std::real(frob_aux); // frob: Frobenius norm of the low rank matrix
-                        // std::cout << frob << " " << aux << " " << frob_aux << std::endl;
+                        // std::cout << frob << " " << aux << " " << frob_aux << '\n';
                         //==================//
                     }
                     // Matrix<CoefficientPrecision> M=A.get_submatrix(rows,cols);

@@ -43,7 +43,7 @@ bool test_task_based_lu_factorization(char trans, int n1, int n2, htool::underly
     bool is_error = false;
     double eta    = 100;
     htool::underlying_type<T> error;
-    std::cout << "eta = " << eta << std::endl;
+    std::cout << "eta = " << eta << '\n';
     std::cout << "task_based_lu_factorization tests...\n";
 
     // Setup test case
@@ -79,8 +79,8 @@ bool test_task_based_lu_factorization(char trans, int n1, int n2, htool::underly
     std::chrono::duration<double> classic_duration = end - start;
     error                                          = normFrob(X_dense - matrix_test) / normFrob(X_dense);
     is_error                                       = is_error || !(error < epsilon);
-    cout << ">   classic error = " << error << endl;
-    cout << "    classic_duration = " << classic_duration.count() << std::endl;
+    cout << ">   classic error = " << error << '\n';
+    cout << "    classic_duration = " << classic_duration.count() << '\n';
 
     //// Task-based LU factorization
     auto A_task_based              = A;
@@ -101,8 +101,8 @@ bool test_task_based_lu_factorization(char trans, int n1, int n2, htool::underly
     std::chrono::duration<double> task_based_duration = end - start;
     error                                             = normFrob(X_dense - matrix_test) / normFrob(X_dense);
     is_error                                          = is_error || !(error < epsilon);
-    cout << ">   task_based error = " << error << endl;
-    cout << "    task_based_duration = " << task_based_duration.count() << std::endl;
+    cout << ">   task_based error = " << error << '\n';
+    cout << "    task_based_duration = " << task_based_duration.count() << '\n';
     if (task_based_duration.count() > classic_duration.count()) {
         htool::Logger::get_instance().log(LogLevel::WARNING, "Careful: task_based_duration > classic_duration. Ratio TB/Classic = " + std::to_string(task_based_duration.count() / classic_duration.count()) + "."); // LCOV_EXCL_LINE
     }
@@ -113,9 +113,9 @@ bool test_task_based_lu_factorization(char trans, int n1, int n2, htool::underly
     if (is_error) {
         htool::Logger::get_instance().log(LogLevel::ERROR, "test_task_based_lu_factorization current case failed."); // LCOV_EXCL_LINE
     } else {
-        std::cout << "SUCCESS: test_task_based_lu_factorization current case passed." << std::endl;
+        std::cout << "SUCCESS: test_task_based_lu_factorization current case passed." << '\n';
         std::cout << "===============================================================\n"
-                  << std::endl;
+                  << '\n';
     }
     return is_error;
 }
@@ -125,7 +125,7 @@ bool test_task_based_cholesky_factorization(char UPLO, int n1, int n2, htool::un
     bool is_error = false;
     double eta    = 100;
     htool::underlying_type<T> error;
-    std::cout << "eta = " << eta << std::endl;
+    std::cout << "eta = " << eta << '\n';
     std::cout << "task_based_cholesky_factorization tests...\n";
 
     // Setup test case
@@ -161,8 +161,8 @@ bool test_task_based_cholesky_factorization(char UPLO, int n1, int n2, htool::un
     std::chrono::duration<double> classic_duration = end - start;
     error                                          = normFrob(X_dense - matrix_test) / normFrob(X_dense);
     is_error                                       = is_error || !(error < epsilon);
-    cout << ">   classic error = " << error << endl;
-    cout << "    classic_duration = " << classic_duration.count() << std::endl;
+    cout << ">   classic error = " << error << '\n';
+    cout << "    classic_duration = " << classic_duration.count() << '\n';
 
     //// Task-based Cholesky factorization
     int max_nb_nodes               = 64;
@@ -182,8 +182,8 @@ bool test_task_based_cholesky_factorization(char UPLO, int n1, int n2, htool::un
     std::chrono::duration<double> task_based_duration = end - start;
     error                                             = normFrob(X_dense - matrix_test) / normFrob(X_dense);
     is_error                                          = is_error || !(error < epsilon);
-    cout << ">   task_based error = " << error << endl;
-    cout << "    task_based_duration = " << task_based_duration.count() << std::endl;
+    cout << ">   task_based error = " << error << '\n';
+    cout << "    task_based_duration = " << task_based_duration.count() << '\n';
     if (task_based_duration.count() > classic_duration.count()) {
         htool::Logger::get_instance().log(LogLevel::WARNING, "Careful: task_based_duration > classic_duration. Ratio TB/Classic = " + std::to_string(task_based_duration.count() / classic_duration.count()) + "."); // LCOV_EXCL_LINE
     }
@@ -194,9 +194,9 @@ bool test_task_based_cholesky_factorization(char UPLO, int n1, int n2, htool::un
     if (is_error) {
         htool::Logger::get_instance().log(LogLevel::ERROR, "test_task_based_cholesky_factorization current case failed."); // LCOV_EXCL_LINE
     } else {
-        std::cout << "SUCCESS: test_task_based_cholesky_factorization current case passed." << std::endl;
+        std::cout << "SUCCESS: test_task_based_cholesky_factorization current case passed." << '\n';
         std::cout << "===============================================================\n"
-                  << std::endl;
+                  << '\n';
     }
     return is_error;
 } // end of test_task_based_cholesky_factorization
@@ -206,7 +206,7 @@ bool test_task_based_cholesky_factorization(char UPLO, int n1, int n2, htool::un
     bool is_error = false;
     double eta    = 100;
     htool::underlying_type<T> error;
-    std::cout << "eta = " << eta << std::endl;
+    std::cout << "eta = " << eta << '\n';
     std::cout << "task_based_cholesky_factorization tests...\n";
 
     // Setup test case
@@ -242,8 +242,8 @@ bool test_task_based_cholesky_factorization(char UPLO, int n1, int n2, htool::un
 
     error    = normFrob(X_dense - matrix_test) / normFrob(X_dense);
     is_error = is_error || !(error < epsilon);
-    cout << ">   classic error = " << error << endl;
-    cout << "    classic_duration = " << classic_duration.count() << std::endl;
+    cout << ">   classic error = " << error << '\n';
+    cout << "    classic_duration = " << classic_duration.count() << '\n';
 
     //// Task-based Cholesky factorization
     int max_nb_nodes               = 64;
@@ -263,8 +263,8 @@ bool test_task_based_cholesky_factorization(char UPLO, int n1, int n2, htool::un
     std::chrono::duration<double> task_based_duration = end - start;
     error                                             = normFrob(X_dense - matrix_test) / normFrob(X_dense);
     is_error                                          = is_error || !(error < epsilon);
-    cout << ">   task_based error = " << error << endl;
-    cout << "    task_based_duration = " << task_based_duration.count() << std::endl;
+    cout << ">   task_based error = " << error << '\n';
+    cout << "    task_based_duration = " << task_based_duration.count() << '\n';
     if (task_based_duration.count() > classic_duration.count()) {
         htool::Logger::get_instance().log(LogLevel::WARNING, "Careful: task_based_duration > classic_duration. Ratio TB/Classic = " + std::to_string(task_based_duration.count() / classic_duration.count()) + "."); // LCOV_EXCL_LINE
     }
@@ -275,9 +275,9 @@ bool test_task_based_cholesky_factorization(char UPLO, int n1, int n2, htool::un
     if (is_error) {
         htool::Logger::get_instance().log(LogLevel::ERROR, "test_task_based_cholesky_factorization current case failed."); // LCOV_EXCL_LINE
     } else {
-        std::cout << "SUCCESS: test_task_based_cholesky_factorization current case passed." << std::endl;
+        std::cout << "SUCCESS: test_task_based_cholesky_factorization current case passed." << '\n';
         std::cout << "===============================================================\n"
-                  << std::endl;
+                  << '\n';
     }
     return is_error;
 }

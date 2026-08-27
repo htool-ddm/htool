@@ -129,7 +129,7 @@ int test_vector_product(GeneratorTestType generator, const DistributedOperator<T
         add_distributed_operator_vector_product_global_to_global(op, alpha, distributed_operator, B.data(), beta, C.data(), buffer_ptr);
         global_error = normFrob(matrix_result_w_matrix_sum - C) / norm_ref;
         is_error     = is_error || !(global_error < epsilon);
-        cout << "> Errors on a global to global distributed operator vector product with sum: " << global_error << endl;
+        cout << "> Errors on a global to global distributed operator vector product with sum: " << global_error << '\n';
 
         if (use_buffer) {
             if (op != 'N') {
@@ -141,7 +141,7 @@ int test_vector_product(GeneratorTestType generator, const DistributedOperator<T
         add_distributed_operator_vector_product_global_to_global(op, alpha, distributed_operator, B.data(), T(0), C.data(), buffer_ptr);
         global_error = normFrob(matrix_result_wo_matrix_sum - C) / norm_ref;
         is_error     = is_error || !(global_error < epsilon);
-        cout << "> Errors on a global to global distributed operator vector product without sum: " << global_error << endl;
+        cout << "> Errors on a global to global distributed operator vector product without sum: " << global_error << '\n';
 
         C = Y_perm;
         if (use_buffer) {
@@ -155,7 +155,7 @@ int test_vector_product(GeneratorTestType generator, const DistributedOperator<T
         internal_add_distributed_operator_vector_product_global_to_global(op, alpha, distributed_operator, B_perm.data(), beta, C.data(), buffer_ptr);
         global_error = normFrob(matrix_result_w_matrix_sum_perm - C) / norm_ref;
         is_error     = is_error || !(global_error < epsilon);
-        cout << "> Errors on a global to global internal distributed operator vector product with sum: " << global_error << endl;
+        cout << "> Errors on a global to global internal distributed operator vector product with sum: " << global_error << '\n';
 
         C = Y_perm;
         if (use_buffer) {
@@ -167,7 +167,7 @@ int test_vector_product(GeneratorTestType generator, const DistributedOperator<T
         internal_add_distributed_operator_vector_product_global_to_global(op, alpha, distributed_operator, B_perm.data(), T(0), C.data(), buffer_ptr);
         global_error = normFrob(matrix_result_wo_matrix_sum_perm - C) / norm_ref;
         is_error     = is_error || !(global_error < epsilon);
-        cout << "> Errors on a global to global internal distributed operator vector product without sum: " << global_error << endl;
+        cout << "> Errors on a global to global internal distributed operator vector product without sum: " << global_error << '\n';
     }
 
     C = Y;
@@ -182,7 +182,7 @@ int test_vector_product(GeneratorTestType generator, const DistributedOperator<T
     add_distributed_operator_matrix_product_global_to_global(op, alpha, distributed_operator, B, beta, C, buffer_ptr);
     global_error = normFrob(matrix_result_w_matrix_sum - C) / norm_ref;
     is_error     = is_error || !(global_error < epsilon);
-    cout << "> Errors on a global to global distributed operator matrix product with sum: " << global_error << endl;
+    cout << "> Errors on a global to global distributed operator matrix product with sum: " << global_error << '\n';
 
     if (use_buffer) {
         if (op == 'N') {
@@ -195,7 +195,7 @@ int test_vector_product(GeneratorTestType generator, const DistributedOperator<T
     add_distributed_operator_matrix_product_global_to_global(op, alpha, distributed_operator, B, T(0), C, buffer_ptr);
     global_error = normFrob(matrix_result_wo_matrix_sum - C) / norm_ref;
     is_error     = is_error || !(global_error < epsilon);
-    cout << "> Errors on a global to global distributed operator matrix product without sum: " << global_error << endl;
+    cout << "> Errors on a global to global distributed operator matrix product without sum: " << global_error << '\n';
 
     C = Yt_perm;
     if (use_buffer) {
@@ -209,7 +209,7 @@ int test_vector_product(GeneratorTestType generator, const DistributedOperator<T
     internal_add_distributed_operator_matrix_product_row_major_global_to_global<T>(op, alpha, distributed_operator, Bt_perm, beta, C, buffer_ptr);
     global_error = normFrob(transposed_matrix_result_w_matrix_sum_perm - C) / norm_ref;
     is_error     = is_error || !(global_error < epsilon);
-    cout << "> Errors on a global to global internal distributed operator matrix product row major with sum: " << global_error << endl;
+    cout << "> Errors on a global to global internal distributed operator matrix product row major with sum: " << global_error << '\n';
 
     if (use_buffer) {
         if (op != 'N') {
@@ -220,7 +220,7 @@ int test_vector_product(GeneratorTestType generator, const DistributedOperator<T
     internal_add_distributed_operator_matrix_product_row_major_global_to_global(op, alpha, distributed_operator, Bt_perm, T(0), C, buffer_ptr);
     global_error = normFrob(transposed_matrix_result_wo_matrix_sum_perm - C) / norm_ref;
     is_error     = is_error || !(global_error < epsilon);
-    cout << "> Errors on a global to global internal distributed operator matrix product row major without sum: " << global_error << endl;
+    cout << "> Errors on a global to global internal distributed operator matrix product row major without sum: " << global_error << '\n';
 
     C = Y_perm;
     if (use_buffer) {
@@ -234,7 +234,7 @@ int test_vector_product(GeneratorTestType generator, const DistributedOperator<T
     internal_add_distributed_operator_matrix_product_global_to_global(op, alpha, distributed_operator, B_perm, beta, C, buffer_ptr);
     global_error = normFrob(matrix_result_w_matrix_sum_perm - C) / norm_ref;
     is_error     = is_error || !(global_error < epsilon);
-    cout << "> Errors on a global to global internal distributed operator matrix product with sum: " << global_error << endl;
+    cout << "> Errors on a global to global internal distributed operator matrix product with sum: " << global_error << '\n';
 
     if (use_buffer) {
         if (op != 'N') {
@@ -245,7 +245,7 @@ int test_vector_product(GeneratorTestType generator, const DistributedOperator<T
     internal_add_distributed_operator_matrix_product_global_to_global(op, alpha, distributed_operator, B_perm, T(0), C, buffer_ptr);
     global_error = normFrob(matrix_result_wo_matrix_sum_perm - C) / norm_ref;
     is_error     = is_error || !(global_error < epsilon);
-    cout << "> Errors on a global to global internal distributed operator matrix product without sum: " << global_error << endl;
+    cout << "> Errors on a global to global internal distributed operator matrix product without sum: " << global_error << '\n';
 
     // Local vectors
     Matrix<T> B_local(MasterOffset_input[2 * rankWorld + 1], mu), Y_local(MasterOffset_output[2 * rankWorld + 1], mu), B_local_perm(MasterOffset_input[2 * rankWorld + 1], mu), Y_local_perm(MasterOffset_output[2 * rankWorld + 1], mu), Yt_local_perm(mu, MasterOffset_output[2 * rankWorld + 1]), Bt_local_perm(mu, MasterOffset_input[2 * rankWorld + 1]);
@@ -292,12 +292,12 @@ int test_vector_product(GeneratorTestType generator, const DistributedOperator<T
         add_distributed_operator_vector_product_local_to_local(op, alpha, distributed_operator, B_local.data(), beta, C_local.data(), buffer_ptr);
         local_error = normFrob(ref_local_w_sum - C_local) / norm_ref;
         is_error    = is_error || !(local_error < epsilon);
-        cout << "> Errors on a local to local distributed operator vector product with sum: " << local_error << endl;
+        cout << "> Errors on a local to local distributed operator vector product with sum: " << local_error << '\n';
 
         add_distributed_operator_vector_product_local_to_local(op, alpha, distributed_operator, B_local.data(), T(0), C_local.data(), buffer_ptr);
         local_error = normFrob(ref_local_wo_sum - C_local) / norm_ref;
         is_error    = is_error || !(local_error < epsilon);
-        cout << "> Errors on a local to local distributed operator vector product without sum: " << local_error << endl;
+        cout << "> Errors on a local to local distributed operator vector product without sum: " << local_error << '\n';
 
         if (use_buffer) {
             if (op == 'N') {
@@ -311,12 +311,12 @@ int test_vector_product(GeneratorTestType generator, const DistributedOperator<T
         internal_add_distributed_operator_vector_product_local_to_local(op, alpha, distributed_operator, B_local_perm.data(), beta, C_local.data(), buffer_ptr);
         local_error = normFrob(ref_t_local_perm_w_sum - C_local) / local_norm_ref;
         is_error    = is_error || !(local_error < epsilon);
-        cout << "> Errors on a local to local internal distributed operator vector product with sum: " << local_error << endl;
+        cout << "> Errors on a local to local internal distributed operator vector product with sum: " << local_error << '\n';
 
         internal_add_distributed_operator_vector_product_local_to_local(op, alpha, distributed_operator, B_local_perm.data(), T(0), C_local.data(), buffer_ptr);
         local_error = normFrob(ref_t_local_perm_wo_sum - C_local) / local_norm_ref;
         is_error    = is_error || !(local_error < epsilon);
-        cout << "> Errors on a local to local internal distributed operator vector product without sum: " << local_error << endl;
+        cout << "> Errors on a local to local internal distributed operator vector product without sum: " << local_error << '\n';
     }
 
     if (use_buffer) {
@@ -331,13 +331,13 @@ int test_vector_product(GeneratorTestType generator, const DistributedOperator<T
     internal_add_distributed_operator_matrix_product_row_major_local_to_local(op, alpha, distributed_operator, Bt_local_perm, beta, C_local, buffer_ptr);
     local_error = normFrob(ref_t_local_perm_w_sum - C_local) / local_norm_ref;
     is_error    = is_error || !(local_error < epsilon);
-    cout << "> Errors on a local to local internal distributed operator matrix product row major with sum: " << local_error << endl;
+    cout << "> Errors on a local to local internal distributed operator matrix product row major with sum: " << local_error << '\n';
 
     C_local = Yt_local_perm;
     internal_add_distributed_operator_matrix_product_row_major_local_to_local(op, alpha, distributed_operator, Bt_local_perm, T(0), C_local, buffer_ptr);
     local_error = normFrob(ref_t_local_perm_wo_sum - C_local) / local_norm_ref;
     is_error    = is_error || !(local_error < epsilon);
-    cout << "> Errors on a local to local internal distributed operator matrix product row major without sum: " << local_error << endl;
+    cout << "> Errors on a local to local internal distributed operator matrix product row major without sum: " << local_error << '\n';
 
     if (use_buffer) {
         if (op == 'N') {
@@ -352,13 +352,13 @@ int test_vector_product(GeneratorTestType generator, const DistributedOperator<T
     internal_add_distributed_operator_matrix_product_local_to_local(op, alpha, distributed_operator, B_local_perm.data(), beta, C_local.data(), mu, buffer_ptr);
     local_error = normFrob(ref_local_perm_w_sum - C_local) / local_norm_ref;
     is_error    = is_error || !(local_error < epsilon);
-    cout << "> Errors on a local to local internal distributed operator matrix product with sum: " << local_error << endl;
+    cout << "> Errors on a local to local internal distributed operator matrix product with sum: " << local_error << '\n';
 
     C_local = Y_local_perm;
     internal_add_distributed_operator_matrix_product_local_to_local(op, alpha, distributed_operator, B_local_perm.data(), T(0), C_local.data(), mu, buffer_ptr);
     local_error = normFrob(ref_local_perm_wo_sum - C_local) / local_norm_ref;
     is_error    = is_error || !(local_error < epsilon);
-    cout << "> Errors on a local to local internal distributed operator matrix product without sum: " << local_error << endl;
+    cout << "> Errors on a local to local internal distributed operator matrix product without sum: " << local_error << '\n';
 
     if (use_buffer) {
         if (op == 'N') {
@@ -372,13 +372,13 @@ int test_vector_product(GeneratorTestType generator, const DistributedOperator<T
     add_distributed_operator_matrix_product_local_to_local(op, alpha, distributed_operator, B_local.data(), beta, C_local.data(), mu, buffer_ptr);
     local_error = normFrob(ref_local_w_sum - C_local) / local_norm_ref;
     is_error    = is_error || !(local_error < epsilon);
-    cout << "> Errors on a local to local distributed operator matrix product with sum: " << local_error << endl;
+    cout << "> Errors on a local to local distributed operator matrix product with sum: " << local_error << '\n';
 
     C_local = Y_local;
     add_distributed_operator_matrix_product_local_to_local(op, alpha, distributed_operator, B_local.data(), T(0), C_local.data(), mu, buffer_ptr);
     local_error = normFrob(ref_local_wo_sum - C_local) / local_norm_ref;
     is_error    = is_error || !(local_error < epsilon);
-    cout << "> Errors on a local to local distributed operator matrix product without sum: " << local_error << endl;
+    cout << "> Errors on a local to local distributed operator matrix product without sum: " << local_error << '\n';
 
     return is_error;
 }

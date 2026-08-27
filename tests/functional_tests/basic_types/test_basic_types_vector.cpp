@@ -36,31 +36,31 @@ int main(int, char const *[]) {
     imean /= ai.size();
     vector<int> bi = ai;
 
-    cout << "ai = " << ai << endl;
+    cout << "ai = " << ai << '\n';
     test = test || !(ai == bi);
-    cout << "bi = " << bi << endl;
+    cout << "bi = " << bi << '\n';
     test = test || !(ai + bi == aiplus);
-    cout << "ai+bi       = " << ai + bi << endl;
+    cout << "ai+bi       = " << ai + bi << '\n';
     test = test || !((ai - bi) == vector<int>(ai.size(), 0));
-    cout << "ai-bi       = " << ai - bi << endl;
+    cout << "ai-bi       = " << ai - bi << '\n';
     test = test || !(ai / 3 == aidiv);
-    cout << "ai/3        = " << ai / 3 << endl;
+    cout << "ai/3        = " << ai / 3 << '\n';
     test = test || !(iprod == dprod(ai, bi));
-    cout << "dprod(ai,bi)= " << dprod(ai, bi) << endl;
+    cout << "dprod(ai,bi)= " << dprod(ai, bi) << '\n';
     // test = test || !((inorm - norm2(ai)) < 1e-16);
-    // cout << "norm2(ai)   = " << norm2(ai) << endl;
+    // cout << "norm2(ai)   = " << norm2(ai) << '\n';
     test = test || !(argmax(ai) == ai.size() - 1);
-    cout << "argmax(ai)  = " << argmax(ai) << endl;
+    cout << "argmax(ai)  = " << argmax(ai) << '\n';
     test = test || !(abs(max(ai + bi) - aiplus[aiplus.size() - 1]) < 1e-16);
-    cout << "max(ai+bi)  = " << max(ai + bi) << endl;
+    cout << "max(ai+bi)  = " << max(ai + bi) << '\n';
     test = test || !(imean == mean(ai));
-    cout << "mean(ai)    = " << mean(ai) << endl;
+    cout << "mean(ai)    = " << mean(ai) << '\n';
     ai *= 3;
     test = test || !(ai == aimult3);
-    cout << "ai*=3    ai = " << ai << endl;
+    cout << "ai*=3    ai = " << ai << '\n';
     ai /= 3;
     test = test || !(ai == aidiv3);
-    cout << "ai/=3    ai = " << ai << endl;
+    cout << "ai/=3    ai = " << ai << '\n';
 
     // double
     vector<double> ad(10, 0);
@@ -85,30 +85,30 @@ int main(int, char const *[]) {
     dmean /= ad.size();
     vector<double> bd = ad;
 
-    cout << "bd = " << bd << endl;
+    cout << "bd = " << bd << '\n';
     test = test || !(norm2(ad + bd - adplus) < 1e-16);
-    cout << "ad+bd       = " << ad + bd << endl;
+    cout << "ad+bd       = " << ad + bd << '\n';
     test = test || !(norm2(ad - bd) < 1e-16);
-    cout << "ad-bd       = " << ad - bd << endl;
+    cout << "ad-bd       = " << ad - bd << '\n';
     test = test || !(norm2(ad / 3. - addiv) < 1e-16);
-    cout << norm2(ad / 3 - addiv) << endl;
-    cout << "ad/3        = " << ad / 3. << endl;
+    cout << norm2(ad / 3 - addiv) << '\n';
+    cout << "ad/3        = " << ad / 3. << '\n';
     test = test || !(abs(ddprod - dprod(ad, bd)) < 1e-16);
-    cout << "dprod(ad,bd)= " << dprod(ad, bd) << endl;
+    cout << "dprod(ad,bd)= " << dprod(ad, bd) << '\n';
     test = test || !((dnorm - norm2(ad)) < 1e-16);
-    cout << "norm2(ad)   = " << norm2(ad) << endl;
+    cout << "norm2(ad)   = " << norm2(ad) << '\n';
     test = test || !(argmax(ad) == ad.size() - 1);
-    cout << "argmax(ad)  = " << argmax(ad) << endl;
+    cout << "argmax(ad)  = " << argmax(ad) << '\n';
     test = test || !(abs(max(ad + bd) - adplus[adplus.size() - 1]) < 1e-16);
-    cout << "max(ad+bd)  = " << max(ad + bd) << endl;
+    cout << "max(ad+bd)  = " << max(ad + bd) << '\n';
     test = test || !(abs(dmean - mean(ad)) < 1e-16);
-    cout << "mean(ad)    = " << mean(ad) << endl;
+    cout << "mean(ad)    = " << mean(ad) << '\n';
     ad *= 3;
     test = test || !(norm2(ad - admult3) < 1e-16);
-    cout << "ad*=3    ad = " << ad << endl;
+    cout << "ad*=3    ad = " << ad << '\n';
     ad /= 3;
     test = test || !(norm2(ad - addiv3) < 1e-16);
-    cout << "ad/=3    ad = " << ad << endl;
+    cout << "ad/=3    ad = " << ad << '\n';
 
     // complex double
     vector<complex<double>> acd(10, 0);
@@ -133,29 +133,29 @@ int main(int, char const *[]) {
     cdmean /= acd.size();
     vector<complex<double>> bcd = acd;
 
-    cout << "bcd = " << bcd << endl;
+    cout << "bcd = " << bcd << '\n';
     test = test || !(norm2(acd + bcd - acdplus) < 1e-16);
-    cout << "acd+bcd       = " << acd + bcd << endl;
+    cout << "acd+bcd       = " << acd + bcd << '\n';
     test = test || !(norm2(acd - bcd) < 1e-16);
-    cout << "acd-bcd       = " << acd - bcd << endl;
+    cout << "acd-bcd       = " << acd - bcd << '\n';
     test = test || !(norm2(acd / 3. - acddiv) < 1e-16);
-    cout << "acd/3        = " << acd / 3. << endl;
+    cout << "acd/3        = " << acd / 3. << '\n';
     test = test || !(abs(cddprod - dprod(acd, bcd)) < 1e-16);
-    cout << "dprod(acd,bcd)= " << dprod(acd, bcd) << endl;
+    cout << "dprod(acd,bcd)= " << dprod(acd, bcd) << '\n';
     test = test || !((cdnorm - norm2(acd)) < 1e-16);
-    cout << "norm2(acd)   = " << norm2(acd) << endl;
+    cout << "norm2(acd)   = " << norm2(acd) << '\n';
     test = test || !(argmax(acd) == acd.size() - 1);
-    cout << "argmax(acd)  = " << argmax(acd) << endl;
+    cout << "argmax(acd)  = " << argmax(acd) << '\n';
     test = test || !(abs(max(acd + bcd) - acdplus[acdplus.size() - 1]) < 1e-16);
-    cout << "max(acd+bcd)  = " << max(acd + bcd) << endl;
+    cout << "max(acd+bcd)  = " << max(acd + bcd) << '\n';
     test = test || !(abs(cdmean - mean(acd)) < 1e-16);
-    cout << "mean(acd)    = " << mean(acd) << endl;
+    cout << "mean(acd)    = " << mean(acd) << '\n';
     acd *= 3.;
     test = test || !(norm2(acd - acdmult3) < 1e-16);
-    cout << "acd*=3    acd = " << acd << endl;
+    cout << "acd*=3    acd = " << acd << '\n';
     acd /= 3.;
     test = test || !(norm2(acd - acddiv3) < 1e-16);
-    cout << "acd/=3    acd = " << acd << endl;
+    cout << "acd/=3    acd = " << acd << '\n';
 
     return test;
 }

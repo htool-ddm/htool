@@ -57,28 +57,28 @@ bool test_lrmat_lrmat_addition(int n1, int n2, htool::underlying_type<T> epsilon
     lrmat_test.copy_to_dense(matrix_test.data());
     error    = normFrob(matrix_result_w_sum - matrix_test) / normFrob(matrix_result_w_sum);
     is_error = is_error || !(error < epsilon);
-    cout << "> Errors on a smaller lrmat addition to another lrmat and with sum: " << error << endl;
+    cout << "> Errors on a smaller lrmat addition to another lrmat and with sum: " << error << '\n';
 
     lrmat_test = zero_A_approximation;
     add_lrmat_lrmat(sub_A_approximation, *test_case.root_cluster_B_output, *test_case.root_cluster_B_input, lrmat_test, *test_case.root_cluster_A_output, *test_case.root_cluster_A_input);
     lrmat_test.copy_to_dense(matrix_test.data());
     error    = normFrob(matrix_result_wo_sum - matrix_test) / normFrob(matrix_result_wo_sum);
     is_error = is_error || !(error < epsilon);
-    cout << "> Errors on a smaller lrmat addition to another lrmat and without sum: " << error << endl;
+    cout << "> Errors on a smaller lrmat addition to another lrmat and without sum: " << error << '\n';
 
     lrmat_test = sub_A_approximation;
     add_lrmat_lrmat(A_approximation, *test_case.root_cluster_A_output, *test_case.root_cluster_A_input, lrmat_test, *test_case.root_cluster_B_output, *test_case.root_cluster_B_input);
     lrmat_test.copy_to_dense(sub_matrix_test.data());
     error    = normFrob(2 * sub_A_dense - sub_matrix_test) / normFrob(2 * sub_A_dense);
     is_error = is_error || !(error < epsilon * margin);
-    cout << "> Errors on a larger lrmat addition with another lrmat and with sum: " << error << endl;
+    cout << "> Errors on a larger lrmat addition with another lrmat and with sum: " << error << '\n';
 
     lrmat_test = sub_zero_A_approximation;
     add_lrmat_lrmat(A_approximation, *test_case.root_cluster_A_output, *test_case.root_cluster_A_input, lrmat_test, *test_case.root_cluster_B_output, *test_case.root_cluster_B_input);
     lrmat_test.copy_to_dense(sub_matrix_test.data());
     error    = normFrob(sub_A_dense - sub_matrix_test) / normFrob(sub_A_dense);
     is_error = is_error || !(error < epsilon * margin);
-    cout << "> Errors on a larger lrmat addition to another lrmat and without sum: " << error << endl;
+    cout << "> Errors on a larger lrmat addition to another lrmat and without sum: " << error << '\n';
 
     return is_error;
 }

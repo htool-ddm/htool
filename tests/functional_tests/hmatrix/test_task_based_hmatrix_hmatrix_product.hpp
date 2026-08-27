@@ -42,7 +42,7 @@ bool test_task_based_hmatrix_hmatrix_product(const TestCaseType &test_case, char
     bool is_error    = false;
     double eta       = 10;
     double error_tol = 1e-15;
-    std::cout << "eta = " << eta << std::endl;
+    std::cout << "eta = " << eta << '\n';
     std::cout << "task_based_internal_add_hmatrix_hmatrix_product tests...";
 
     // Get test case parameters
@@ -133,25 +133,25 @@ bool test_task_based_hmatrix_hmatrix_product(const TestCaseType &test_case, char
 
     // Print the results
     if (is_error) {
-        std::cout << "ERROR" << std::endl;
+        std::cout << "ERROR" << '\n';
     } else {
-        std::cout << "SUCCESS" << std::endl;
+        std::cout << "SUCCESS" << '\n';
     }
 
-    std::cout << "    normFrob(densified_hmatrix_classic_C) = " << normFrob(densified_hmatrix_classic_C) << std::endl;
-    std::cout << "    normFrob(densified_hmatrix_task_based_C) = " << normFrob(densified_hmatrix_task_based_C) << std::endl;
+    std::cout << "    normFrob(densified_hmatrix_classic_C) = " << normFrob(densified_hmatrix_classic_C) << '\n';
+    std::cout << "    normFrob(densified_hmatrix_task_based_C) = " << normFrob(densified_hmatrix_task_based_C) << '\n';
 
-    std::cout << "    normFrob(classic_C - task_based_C) / normFrob(classic_C) = " << normFrob(densified_hmatrix_classic_C - densified_hmatrix_task_based_C) / normFrob(densified_hmatrix_classic_C) << std::endl
-              << std::endl;
+    std::cout << "    normFrob(classic_C - task_based_C) / normFrob(classic_C) = " << normFrob(densified_hmatrix_classic_C - densified_hmatrix_task_based_C) / normFrob(densified_hmatrix_classic_C) << '\n'
+              << '\n';
 
-    std::cout << "    classic_duration = " << classic_duration.count() << std::endl;
-    std::cout << "    task_based_duration = " << task_based_duration.count() << std::endl;
+    std::cout << "    classic_duration = " << classic_duration.count() << '\n';
+    std::cout << "    task_based_duration = " << task_based_duration.count() << '\n';
 
     // check durations
     if (task_based_duration.count() > classic_duration.count()) {
         htool::Logger::get_instance().log(LogLevel::WARNING, "Careful: task_based_duration > classic_duration. Ratio TB/Classic = " + std::to_string(task_based_duration.count() / classic_duration.count()) + "."); // LCOV_EXCL_LINE
     }
-    std::cout << "----------------------------------" << std::endl;
+    std::cout << "----------------------------------" << '\n';
 
     // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
     // Print the results
@@ -159,9 +159,9 @@ bool test_task_based_hmatrix_hmatrix_product(const TestCaseType &test_case, char
     if (is_error) {
         htool::Logger::get_instance().log(LogLevel::ERROR, "test_task_based_hmatrix_hmatrix_product current case failed."); // LCOV_EXCL_LINE
     } else {
-        std::cout << "SUCCESS: test_task_based_hmatrix_hmatrix_product current case passed." << std::endl;
+        std::cout << "SUCCESS: test_task_based_hmatrix_hmatrix_product current case passed." << '\n';
         std::cout << "===============================================================\n"
-                  << std::endl;
+                  << '\n';
     }
     return is_error;
 }

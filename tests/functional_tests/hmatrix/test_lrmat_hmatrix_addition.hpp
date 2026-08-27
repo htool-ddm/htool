@@ -44,7 +44,7 @@ bool test_lrmat_hmatrix_addition(int n1, int n2, htool::underlying_type<T> epsil
     copy_to_dense(hmatrix_test, densified_hmatrix_test.data());
     error    = normFrob(result - densified_hmatrix_test) / normFrob(result);
     is_error = is_error || !(error < epsilon);
-    cout << "> Errors on a lrmat hmatrix addition: " << error << endl;
+    cout << "> Errors on a lrmat hmatrix addition: " << error << '\n';
 
     std::ofstream densified_hmatrix_test_file("densified_hmatrix_test");
     print(densified_hmatrix_test, densified_hmatrix_test_file, ",");

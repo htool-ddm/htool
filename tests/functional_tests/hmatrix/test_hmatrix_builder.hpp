@@ -74,7 +74,7 @@ bool test_hmatrix_builder(int nr, int nc, char Symmetry, char UPLO, double epsil
 
     error    = norm2(vec_result - vec_reference) / norm2(vec_reference);
     is_error = is_error || !(error < epsilon);
-    cout << "> Errors on a sequential hmatrix vector product wo buffer: " << error << endl;
+    cout << "> Errors on a sequential hmatrix vector product wo buffer: " << error << '\n';
 
     // Test parallel vector product without buffer
     vec_result = vec_out;
@@ -82,7 +82,7 @@ bool test_hmatrix_builder(int nr, int nc, char Symmetry, char UPLO, double epsil
 
     error    = norm2(vec_result - vec_reference) / norm2(vec_reference);
     is_error = is_error || !(error < epsilon);
-    cout << "> Errors on a parallel hmatrix vector product wo buffer: " << error << endl;
+    cout << "> Errors on a parallel hmatrix vector product wo buffer: " << error << '\n';
 
     // Test sequential vector product with buffer
     vec_result = vec_out;
@@ -90,7 +90,7 @@ bool test_hmatrix_builder(int nr, int nc, char Symmetry, char UPLO, double epsil
 
     error    = norm2(vec_result - vec_reference) / norm2(vec_reference);
     is_error = is_error || !(error < epsilon);
-    cout << "> Errors on a sequential hmatrix vector product with buffer: " << error << endl;
+    cout << "> Errors on a sequential hmatrix vector product with buffer: " << error << '\n';
 
     // Test parallel vector product with buffer
     vec_result = vec_out;
@@ -98,7 +98,7 @@ bool test_hmatrix_builder(int nr, int nc, char Symmetry, char UPLO, double epsil
 
     error    = norm2(vec_result - vec_reference) / norm2(vec_reference);
     is_error = is_error || !(error < epsilon);
-    cout << "> Errors on a paralel hmatrix vector product with buffer: " << error << endl;
+    cout << "> Errors on a paralel hmatrix vector product with buffer: " << error << '\n';
 
     // Test sequential matrix product without buffer
     mat_result = mat_out;
@@ -106,7 +106,7 @@ bool test_hmatrix_builder(int nr, int nc, char Symmetry, char UPLO, double epsil
 
     error    = normFrob(mat_result - mat_reference) / normFrob(mat_reference);
     is_error = is_error || !(error < epsilon);
-    cout << "> Errors on a sequential hmatrix matrix product wo buffer: " << error << endl;
+    cout << "> Errors on a sequential hmatrix matrix product wo buffer: " << error << '\n';
 
     // Test parallel matrix product without buffer
     mat_result = mat_out;
@@ -114,7 +114,7 @@ bool test_hmatrix_builder(int nr, int nc, char Symmetry, char UPLO, double epsil
 
     error    = normFrob(mat_result - mat_reference) / normFrob(mat_reference);
     is_error = is_error || !(error < epsilon);
-    cout << "> Errors on a parallel hmatrix matrix product wo buffer: " << error << endl;
+    cout << "> Errors on a parallel hmatrix matrix product wo buffer: " << error << '\n';
 
     // Test sequential matrix product with buffer
     mat_result = mat_out;
@@ -122,7 +122,7 @@ bool test_hmatrix_builder(int nr, int nc, char Symmetry, char UPLO, double epsil
 
     error    = normFrob(mat_result - mat_reference) / normFrob(mat_reference);
     is_error = is_error || !(error < epsilon);
-    cout << "> Errors on a sequential hmatrix vector product with buffer: " << error << endl;
+    cout << "> Errors on a sequential hmatrix vector product with buffer: " << error << '\n';
 
     // Test parallel matrix product with buffer
     mat_result = mat_out;
@@ -130,7 +130,7 @@ bool test_hmatrix_builder(int nr, int nc, char Symmetry, char UPLO, double epsil
 
     error    = normFrob(mat_result - mat_reference) / normFrob(mat_reference);
     is_error = is_error || !(error < epsilon);
-    cout << "> Errors on a paralel hmatrix matrix product with buffer: " << error << endl;
+    cout << "> Errors on a paralel hmatrix matrix product with buffer: " << error << '\n';
 
     return is_error;
 }

@@ -43,7 +43,7 @@ bool test_task_based_hmatrix_triangular_solve(const TestCaseType &test_case, cha
     bool is_error = false;
     double eta    = 10;
     htool::underlying_type<T> error;
-    std::cout << "eta = " << eta << std::endl;
+    std::cout << "eta = " << eta << '\n';
     std::cout << "task_based_internal_triangular_hmatrix_hmatrix_solve tests...\n";
 
     // Random input
@@ -158,9 +158,9 @@ bool test_task_based_hmatrix_triangular_solve(const TestCaseType &test_case, cha
     copy_to_dense(hmatrix_test, densified_hmatrix_test.data());
     error    = normFrob(X_dense - densified_hmatrix_test) / normFrob(X_dense);
     is_error = is_error || !(error < epsilon);
-    cout << ">> Lower case: " << endl;
-    cout << ">   classic errors = " << error << endl;
-    cout << "    classic_duration = " << classic_duration.count() << std::endl;
+    cout << ">> Lower case: " << '\n';
+    cout << ">   classic errors = " << error << '\n';
+    cout << "    classic_duration = " << classic_duration.count() << '\n';
 
     ////// Task-based
     hmatrix_test                      = LB;
@@ -178,8 +178,8 @@ bool test_task_based_hmatrix_triangular_solve(const TestCaseType &test_case, cha
     copy_to_dense(hmatrix_test, densified_hmatrix_test.data());
     error    = normFrob(X_dense - densified_hmatrix_test) / normFrob(X_dense);
     is_error = is_error || !(error < epsilon);
-    cout << ">   task_based errors = " << error << endl;
-    cout << "    task_based_duration = " << task_based_duration.count() << endl;
+    cout << ">   task_based errors = " << error << '\n';
+    cout << "    task_based_duration = " << task_based_duration.count() << '\n';
     if (task_based_duration.count() > classic_duration.count()) {
         htool::Logger::get_instance().log(LogLevel::WARNING, "Careful: task_based_duration > classic_duration. Ratio TB/Classic = " + std::to_string(task_based_duration.count() / classic_duration.count()) + "."); // LCOV_EXCL_LINE
     }
@@ -194,9 +194,9 @@ bool test_task_based_hmatrix_triangular_solve(const TestCaseType &test_case, cha
     copy_to_dense(hmatrix_test, densified_hmatrix_test.data());
     error    = normFrob(X_dense - densified_hmatrix_test) / normFrob(X_dense);
     is_error = is_error || !(error < epsilon);
-    cout << ">> Upper case: " << endl;
-    cout << ">   classic error = " << error << endl;
-    cout << "    classic_duration = " << classic_duration.count() << std::endl;
+    cout << ">> Upper case: " << '\n';
+    cout << ">   classic error = " << error << '\n';
+    cout << "    classic_duration = " << classic_duration.count() << '\n';
 
     //// Task-based
     hmatrix_test = UB;
@@ -214,8 +214,8 @@ bool test_task_based_hmatrix_triangular_solve(const TestCaseType &test_case, cha
     copy_to_dense(hmatrix_test, densified_hmatrix_test.data());
     error    = normFrob(X_dense - densified_hmatrix_test) / normFrob(X_dense);
     is_error = is_error || !(error < epsilon);
-    cout << ">   task_based errors = " << error << endl;
-    cout << "    task_based_duration = " << task_based_duration.count() << endl;
+    cout << ">   task_based errors = " << error << '\n';
+    cout << "    task_based_duration = " << task_based_duration.count() << '\n';
     if (task_based_duration.count() > classic_duration.count()) {
         htool::Logger::get_instance().log(LogLevel::WARNING, "Careful: task_based_duration > classic_duration. Ratio TB/Classic = " + std::to_string(task_based_duration.count() / classic_duration.count()) + "."); // LCOV_EXCL_LINE
     }
@@ -226,9 +226,9 @@ bool test_task_based_hmatrix_triangular_solve(const TestCaseType &test_case, cha
     if (is_error) {
         htool::Logger::get_instance().log(LogLevel::ERROR, "test_task_based_hmatrix_triangular_solve current case failed."); // LCOV_EXCL_LINE
     } else {
-        std::cout << "SUCCESS: test_task_based_hmatrix_triangular_solve current case passed." << std::endl;
+        std::cout << "SUCCESS: test_task_based_hmatrix_triangular_solve current case passed." << '\n';
         std::cout << "===============================================================\n"
-                  << std::endl;
+                  << '\n';
     }
     return is_error;
 } // end of test_task_based_hmatrix_triangular_solve

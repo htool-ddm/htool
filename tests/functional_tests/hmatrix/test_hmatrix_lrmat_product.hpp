@@ -118,7 +118,7 @@ bool test_hmatrix_lrmat_product(const TestCaseProduct<T, GeneratorTestType> &tes
     internal_add_hmatrix_lrmat_product(transa, transb, alpha, root_hmatrix, B_auto_approximation, beta, matrix_test);
     error    = normFrob(matrix_result_w_matrix_sum - matrix_test) / normFrob(matrix_result_w_matrix_sum);
     is_error = is_error || !(error < epsilon);
-    cout << "> Errors on a hmatrix lrmat product to matrix: " << error << endl;
+    cout << "> Errors on a hmatrix lrmat product to matrix: " << error << '\n';
 
     lrmat_test = C_auto_approximation;
     internal_add_hmatrix_lrmat_product(transa, transb, alpha, root_hmatrix, B_auto_approximation, T(0), lrmat_test);
@@ -126,7 +126,7 @@ bool test_hmatrix_lrmat_product(const TestCaseProduct<T, GeneratorTestType> &tes
     lrmat_test.copy_to_dense(dense_lrmat_test.data());
     error    = normFrob(matrix_result_wo_sum - dense_lrmat_test) / normFrob(matrix_result_wo_sum);
     is_error = is_error || !(error < epsilon);
-    cout << "> Errors on a hmatrix lrmat product to lrmat without lrmat sum: " << error << endl;
+    cout << "> Errors on a hmatrix lrmat product to lrmat without lrmat sum: " << error << '\n';
 
     lrmat_test = C_auto_approximation;
     internal_add_hmatrix_lrmat_product(transa, transb, alpha, root_hmatrix, B_auto_approximation, beta, lrmat_test);
@@ -134,14 +134,14 @@ bool test_hmatrix_lrmat_product(const TestCaseProduct<T, GeneratorTestType> &tes
     lrmat_test.copy_to_dense(dense_lrmat_test.data());
     error    = normFrob(matrix_result_w_lrmat_sum - dense_lrmat_test) / normFrob(matrix_result_w_lrmat_sum);
     is_error = is_error || !(error < std::max(epsilon, lrmat_tolerance) * (1 + additional_lrmat_sum_tolerance));
-    cout << "> Errors on a hmatrix lrmat product to lrmat with lrmat sum: " << error << endl;
+    cout << "> Errors on a hmatrix lrmat product to lrmat with lrmat sum: " << error << '\n';
 
     hmatrix_test = C;
     internal_add_hmatrix_lrmat_product(transa, transb, alpha, root_hmatrix, B_auto_approximation, T(0), hmatrix_test);
     copy_to_dense(hmatrix_test, densified_hmatrix_test.data());
     error    = normFrob(matrix_result_wo_sum - densified_hmatrix_test) / normFrob(matrix_result_wo_sum);
     is_error = is_error || !(error < epsilon);
-    cout << "> Errors on a hmatrix lrmat product to hmatrix without lrmat sum: " << error << endl;
+    cout << "> Errors on a hmatrix lrmat product to hmatrix without lrmat sum: " << error << '\n';
 
     hmatrix_test = C;
     save_leaves_with_rank(hmatrix_test, "hmatrix_test");
@@ -149,9 +149,9 @@ bool test_hmatrix_lrmat_product(const TestCaseProduct<T, GeneratorTestType> &tes
     copy_to_dense(hmatrix_test, densified_hmatrix_test.data());
     error    = normFrob(matrix_result_w_matrix_sum - densified_hmatrix_test) / normFrob(matrix_result_w_matrix_sum);
     is_error = is_error || !(error < std::max(epsilon, lrmat_tolerance) * (1 + additional_lrmat_sum_tolerance));
-    cout << "> Errors on a hmatrix lrmat product to hmatrix with lrmat sum: " << error << endl;
+    cout << "> Errors on a hmatrix lrmat product to hmatrix with lrmat sum: " << error << '\n';
 
-    cout << "> is_error: " << is_error << endl;
+    cout << "> is_error: " << is_error << '\n';
 
     return is_error;
 }

@@ -40,7 +40,7 @@ using namespace htool;
 template <typename T, typename GeneratorTestType, typename TestCaseType>
 bool test_task_based_hmatrix_vector_product(const TestCaseType &test_case, char sym, char transa, htool::underlying_type<T> epsilon, bool block_tree_consistency, char UPLO = 'L') {
     double eta = 10;
-    std::cout << "eta = " << eta << std::endl;
+    std::cout << "eta = " << eta << '\n';
     double error_tol = 1e-14;
     bool is_error    = false;
 
@@ -118,24 +118,24 @@ bool test_task_based_hmatrix_vector_product(const TestCaseType &test_case, char 
     // Compare the results
     is_error = is_error || (std::isnan(norm2(out - out_task) / norm2(out)) > nb_products * error_tol);
     if (is_error) {
-        std::cout << "ERROR" << std::endl;
+        std::cout << "ERROR" << '\n';
     } else {
-        std::cout << "SUCCESS" << std::endl;
+        std::cout << "SUCCESS" << '\n';
     }
-    // std::cout << "    norm2(out) = " << norm2(out) << std::endl;
+    // std::cout << "    norm2(out) = " << norm2(out) << '\n';
 
     std::cout
-        << "    norm2(out - out_task)/norm2(out) = " << norm2(out - out_task) / norm2(out) << std::endl
-        << std::endl;
+        << "    norm2(out - out_task)/norm2(out) = " << norm2(out - out_task) / norm2(out) << '\n'
+        << '\n';
 
-    std::cout << "    classic_duration = " << classic_duration.count() << std::endl;
-    std::cout << "    task_based_duration = " << task_based_duration.count() << std::endl;
+    std::cout << "    classic_duration = " << classic_duration.count() << '\n';
+    std::cout << "    task_based_duration = " << task_based_duration.count() << '\n';
 
     // check durations
     if (task_based_duration.count() > classic_duration.count()) {
         htool::Logger::get_instance().log(LogLevel::WARNING, "Careful: task_based_duration > classic_duration. Ratio TB/Classic = " + std::to_string(task_based_duration.count() / classic_duration.count()) + "."); // LCOV_EXCL_LINE
     }
-    std::cout << "----------------------------------" << std::endl;
+    std::cout << "----------------------------------" << '\n';
 
     // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
     // Print the results
@@ -143,9 +143,9 @@ bool test_task_based_hmatrix_vector_product(const TestCaseType &test_case, char 
     if (is_error) {
         htool::Logger::get_instance().log(LogLevel::ERROR, " test_task_based_hmatrix_vector_product current case failed."); // LCOV_EXCL_LINE
     } else {
-        std::cout << "SUCCESS: test_task_based_hmatrix_vector_product current case passed." << std::endl;
+        std::cout << "SUCCESS: test_task_based_hmatrix_vector_product current case passed." << '\n';
         std::cout << "===============================================================\n"
-                  << std::endl;
+                  << '\n';
     }
     return is_error;
 }

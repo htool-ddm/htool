@@ -21,14 +21,14 @@ int main(int, char const *[]) {
     matrix_to_bytes(Md, "Md");
     bytes_to_matrix("Md", Pd);
     test = test || !(normFrob(Md - Pd) < 1e-16);
-    cout << "diff : " << normFrob(Md - Pd) << endl;
+    cout << "diff : " << normFrob(Md - Pd) << '\n';
 
     //// Matrix view - double
     MatrixView<const double> Md_view(Md);
     matrix_to_bytes(Md_view, "Md_view");
     bytes_to_matrix("Md_view", Pd);
     test = test || !(normFrob(Md - Pd) < 1e-16);
-    cout << "diff : " << normFrob(Md - Pd) << endl;
+    cout << "diff : " << normFrob(Md - Pd) << '\n';
 
     //// Matrix - complex double
     Matrix<complex<double>> Mcd(10, 5);
@@ -42,7 +42,7 @@ int main(int, char const *[]) {
     matrix_to_bytes(Mcd, "Mcd");
     bytes_to_matrix("Mcd", Pcd);
     test = test || !(normFrob(Mcd - Pcd) < 1e-16);
-    cout << "diff : " << normFrob(Mcd - Pcd) << endl;
+    cout << "diff : " << normFrob(Mcd - Pcd) << '\n';
 
     return test;
 }

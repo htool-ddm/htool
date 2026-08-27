@@ -75,11 +75,11 @@ bool test_task_based_hmatrix_dependencies(const TestCaseType &test_case, char sy
     is_error = is_error || !(left_hmatrix_ancestor_of_right_hmatrix(root_hmatrix, child1_child2));
 
     if (is_error) {
-        std::cout << "ERROR" << std::endl;
+        std::cout << "ERROR" << '\n';
     } else {
-        std::cout << "SUCCESS" << std::endl;
+        std::cout << "SUCCESS" << '\n';
     }
-    std::cout << "----------------------------------" << std::endl;
+    std::cout << "----------------------------------" << '\n';
 
     // Tests for left_hmatrix_descendant_of_right_hmatrix
     std::cout << "left_hmatrix_descendant_of_right_hmatrix tests...";
@@ -88,11 +88,11 @@ bool test_task_based_hmatrix_dependencies(const TestCaseType &test_case, char sy
     is_error = is_error || !(left_hmatrix_descendant_of_right_hmatrix(child1_child1, root_hmatrix));
     is_error = is_error || !(left_hmatrix_descendant_of_right_hmatrix(child1_child2, root_hmatrix));
     if (is_error) {
-        std::cout << "ERROR" << std::endl;
+        std::cout << "ERROR" << '\n';
     } else {
-        std::cout << "SUCCESS" << std::endl;
+        std::cout << "SUCCESS" << '\n';
     }
-    std::cout << "----------------------------------" << std::endl;
+    std::cout << "----------------------------------" << '\n';
 
     // Tests for enumerate_dependences
     {
@@ -142,11 +142,11 @@ bool test_task_based_hmatrix_dependencies(const TestCaseType &test_case, char sy
         // is_error    = is_error || !(dependences.empty());
 
         if (is_error) {
-            std::cout << "ERROR" << std::endl;
+            std::cout << "ERROR" << '\n';
         } else {
-            std::cout << "SUCCESS" << std::endl;
+            std::cout << "SUCCESS" << '\n';
         }
-        std::cout << "----------------------------------" << std::endl;
+        std::cout << "----------------------------------" << '\n';
     } // end of tests for enumerate_dependences
 
     // Tests for find_l0. Visual verification of the block tree in dotfile.dot

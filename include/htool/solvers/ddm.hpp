@@ -329,9 +329,9 @@ class DDM {
         MPI_Comm_rank(m_hpddm_op->HA->get_comm(), &rankWorld);
         if (rankWorld == 0) {
             for (std::map<std::string, std::string>::const_iterator it = infos.begin(); it != infos.end(); ++it) {
-                std::cout << it->first << "\t" << it->second << std::endl;
+                std::cout << it->first << "\t" << it->second << '\n';
             }
-            std::cout << std::endl;
+            std::cout << '\n';
         }
     }
 
@@ -342,11 +342,11 @@ class DDM {
             std::ofstream outputfile(outputname, mode);
             if (outputfile) {
                 for (std::map<std::string, std::string>::const_iterator it = infos.begin(); it != infos.end(); ++it) {
-                    outputfile << it->first << sep << it->second << std::endl;
+                    outputfile << it->first << sep << it->second << '\n';
                 }
                 outputfile.close();
             } else {
-                std::cout << "Unable to create " << outputname << std::endl;
+                std::cout << "Unable to create " << outputname << '\n';
             }
         }
     }
@@ -402,7 +402,7 @@ DDM<CoefficientPrecision, HPDDM::LapackTRSub> make_DDM_solver(const DistributedO
         }
         if (symmetry == 'S' && is_complex<CoefficientPrecision>()) {
             htool::Logger::get_instance().log(LogLevel::WARNING, "A symmetric matrix with UPLO='L' has been given to DDM solver. It will be considered hermitian by the solver"); // LCOV_EXCL_LINE
-            // std::cout << "[Htool warning] A symmetric matrix with UPLO='L' has been given to DDM solver. It will be considered hermitian by the solver." << std::endl;
+            // std::cout << "[Htool warning] A symmetric matrix with UPLO='L' has been given to DDM solver. It will be considered hermitian by the solver." << '\n';
         }
     }
 

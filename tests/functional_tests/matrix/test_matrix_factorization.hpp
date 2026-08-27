@@ -38,7 +38,7 @@ bool test_matrix_lu(char trans, int n, int nrhs) {
     lu_solve(trans, test_factorization, test_solve);
     error    = normFrob(result - test_solve) / normFrob(result);
     is_error = is_error || !(error < 1e-9);
-    cout << "> Errors on matrix lu solve: " << error << endl;
+    cout << "> Errors on matrix lu solve: " << error << '\n';
 
     return is_error;
 }
@@ -72,7 +72,7 @@ bool test_matrix_cholesky(char trans, int n, int nrhs, char symmetry, char UPLO)
     cholesky_solve(UPLO, test_factorization, test_solve);
     error    = normFrob(result - test_solve) / normFrob(result);
     is_error = is_error || !(error < 1e-9);
-    cout << "> Errors on matrix cholesky solve: " << error << endl;
+    cout << "> Errors on matrix cholesky solve: " << error << '\n';
 
     return is_error;
 }

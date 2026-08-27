@@ -30,16 +30,16 @@ bool test_lrmat(const Cluster<double> &target_cluster, const Cluster<double> &so
 
     // Test rank
     test = test || !(Fixed_approximation.rank_of() == reqrank_max);
-    cout << "Compression with fixed rank" << endl;
-    cout << "> rank : " << Fixed_approximation.rank_of() << endl;
+    cout << "Compression with fixed rank" << '\n';
+    cout << "> rank : " << Fixed_approximation.rank_of() << '\n';
 
     // Test Frobenius errors
     test = test || !(fixed_errors.back() < 1e-8);
-    cout << "> Errors with Frobenius norm : " << fixed_errors << endl;
+    cout << "> Errors with Frobenius norm : " << fixed_errors << '\n';
 
     // Test compression
     test = test || !(fixed_compression_interval.first < Fixed_approximation.space_saving() && Fixed_approximation.space_saving() < fixed_compression_interval.second);
-    cout << "> Compression rate : " << Fixed_approximation.space_saving() << endl;
+    cout << "> Compression rate : " << Fixed_approximation.space_saving() << '\n';
 
     // Recompression with fixed rank
     LowRankMatrix<double> recompressed_fixed_approximation = Fixed_approximation;
@@ -50,17 +50,17 @@ bool test_lrmat(const Cluster<double> &target_cluster, const Cluster<double> &so
     }
 
     // Test rank
-    cout << "Recompression with fixed rank" << endl;
-    cout << "> rank : " << recompressed_fixed_approximation.rank_of() << endl;
+    cout << "Recompression with fixed rank" << '\n';
+    cout << "> rank : " << recompressed_fixed_approximation.rank_of() << '\n';
 
     // Test Frobenius errors
     test = test || !(fixed_errors_after_recompression.back() <= recompressed_fixed_approximation.get_epsilon());
-    cout << "> Errors with Frobenius norm : " << fixed_errors_after_recompression << endl;
+    cout << "> Errors with Frobenius norm : " << fixed_errors_after_recompression << '\n';
 
     // Test compression
     std::cout << Fixed_approximation.space_saving() << " " << recompressed_fixed_approximation.space_saving() << "\n";
     test = test || !(Fixed_approximation.space_saving() <= recompressed_fixed_approximation.space_saving());
-    cout << "> Compression rate : " << recompressed_fixed_approximation.space_saving() << endl;
+    cout << "> Compression rate : " << recompressed_fixed_approximation.space_saving() << '\n';
 
     // ACA automatic building
     std::vector<double> auto_errors;
@@ -68,14 +68,14 @@ bool test_lrmat(const Cluster<double> &target_cluster, const Cluster<double> &so
         auto_errors.push_back(Frobenius_absolute_error(target_cluster, source_cluster, Auto_approximation, A, k));
     }
 
-    cout << "Automatic compression" << endl;
+    cout << "Automatic compression" << '\n';
     // Test Frobenius error
     test = test || !(auto_errors[Auto_approximation.rank_of()] < Auto_approximation.get_epsilon());
-    cout << "> Errors with Frobenius norm: " << auto_errors << endl;
+    cout << "> Errors with Frobenius norm: " << auto_errors << '\n';
 
     // Test compression rate
     test = test || !(auto_compression_interval.first < Auto_approximation.space_saving() && Auto_approximation.space_saving() < auto_compression_interval.second);
-    cout << "> Compression rate : " << Auto_approximation.space_saving() << endl;
+    cout << "> Compression rate : " << Auto_approximation.space_saving() << '\n';
 
     // Recompression with automatic rank
     LowRankMatrix<double> recompressed_auto_approximation = Auto_approximation;
@@ -86,16 +86,16 @@ bool test_lrmat(const Cluster<double> &target_cluster, const Cluster<double> &so
     }
 
     // Test rank
-    cout << "Recompression with auto rank" << endl;
-    cout << "> rank : " << recompressed_auto_approximation.rank_of() << endl;
+    cout << "Recompression with auto rank" << '\n';
+    cout << "> rank : " << recompressed_auto_approximation.rank_of() << '\n';
 
     // Test Frobenius errors
     test = test || !(auto_errors_after_recompression.back() <= recompressed_auto_approximation.get_epsilon());
-    cout << "> Errors with Frobenius norm : " << auto_errors_after_recompression << endl;
+    cout << "> Errors with Frobenius norm : " << auto_errors_after_recompression << '\n';
 
     // Test compression
     test = test || !(Auto_approximation.space_saving() <= recompressed_auto_approximation.space_saving());
-    cout << "> Compression rate : " << recompressed_auto_approximation.space_saving() << endl;
+    cout << "> Compression rate : " << recompressed_auto_approximation.space_saving() << '\n';
 
     return test;
 }
