@@ -8,32 +8,34 @@
 
 namespace htool {
 
-// https://www.fluentcpp.com/2017/05/19/crtp-helper/
-// It could be removed with using deducing this feature from C++23
-template <typename T>
-struct CRTPHelper {
-    T &underlying() { return static_cast<T &>(*this); }
-    T const &underlying() const { return static_cast<T const &>(*this); }
-};
-
-// CRTP base class
+// CRTP base class (https://www.fluentcpp.com/2017/05/19/crtp-helper/, folded
+// into TreeNode itself rather than kept as a separate helper since it's the
+// only user -- could be removed with the deducing-this feature from C++23).
+// Constructors are private + friended to Derived only, so TreeNode<Derived,
+// TreeData> can't be constructed (directly, or via some unrelated subclass)
+// with a Derived that doesn't match the object's actual most-derived type,
+// which underlying()'s static_cast relies on.
 template <typename Derived, typename TreeData>
-class TreeNode : public CRTPHelper<Derived> {
+class TreeNode {
   protected:
     std::vector<std::unique_ptr<Derived>> m_children{};
     unsigned int m_depth{0};
     bool m_is_root{true};
     std::shared_ptr<TreeData> m_tree_data{std::make_shared<TreeData>()};
 
-  public:
+  private:
     TreeNode() = default;
-    // TreeNode(const TreeNode &)                = delete;
+    TreeNode(const TreeNode &rhs) : m_tree_data(rhs.m_tree_data) {}
+    TreeNode(TreeNode &&) noexcept = default;
+    friend Derived;
+
+  public:
     TreeNode &operator=(const TreeNode &)     = delete;
-    TreeNode(TreeNode &&) noexcept            = default;
     TreeNode &operator=(TreeNode &&) noexcept = default;
     virtual ~TreeNode()                       = default;
 
-    TreeNode(const TreeNode &rhs) : m_tree_data(rhs.m_tree_data) {}
+    Derived &underlying() { return static_cast<Derived &>(*this); }
+    Derived const &underlying() const { return static_cast<Derived const &>(*this); }
 
     template <typename... Args>
     Derived *add_child(Args &&...args) {
