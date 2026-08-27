@@ -63,11 +63,11 @@ class Matrix {
         m_pivots = rhs.m_pivots;
         return *this;
     }
-    Matrix(Matrix &&rhs) : m_number_of_rows(rhs.m_number_of_rows), m_number_of_cols(rhs.m_number_of_cols), m_data(rhs.m_data), m_is_owning_data(rhs.m_is_owning_data), m_pivots(rhs.m_pivots) {
+    Matrix(Matrix &&rhs) noexcept : m_number_of_rows(rhs.m_number_of_rows), m_number_of_cols(rhs.m_number_of_cols), m_data(rhs.m_data), m_is_owning_data(rhs.m_is_owning_data), m_pivots(std::move(rhs.m_pivots)) {
         rhs.m_data = nullptr;
     }
 
-    Matrix &operator=(Matrix &&rhs) {
+    Matrix &operator=(Matrix &&rhs) noexcept {
         if (this != &rhs) {
             if (m_is_owning_data)
                 delete[] m_data;
@@ -76,7 +76,7 @@ class Matrix {
             m_data           = rhs.m_data;
             m_is_owning_data = rhs.m_is_owning_data;
             rhs.m_data       = nullptr;
-            m_pivots         = rhs.m_pivots;
+            m_pivots         = std::move(rhs.m_pivots);
         }
         return *this;
     }
