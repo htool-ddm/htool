@@ -64,7 +64,7 @@ int main(int, char *[]) {
         test = test || (test_lrmat(t, s, A, A_partialACA_fixed, A_partialACA, fixed_compression_interval, auto_compression_interval));
     }
 
-    cout << "test : " << test << endl;
+    cout << "test : " << test << '\n';
 
     return test;
 }

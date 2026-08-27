@@ -120,20 +120,20 @@ bool test_hmatrix_hmatrix_product(const TestCaseProduct<T, GeneratorTestType> &t
     lrmat_test.copy_to_dense(dense_lrmat_test.data());
     error    = normFrob(matrix_result_w_lrmat_sum - dense_lrmat_test) / normFrob(matrix_result_w_lrmat_sum);
     is_error = is_error || !(error < std::max(epsilon, lrmat_tol) * margin);
-    cout << "> Errors on a hmatrix hmatrix product to lrmat: " << error << endl;
+    cout << "> Errors on a hmatrix hmatrix product to lrmat: " << error << '\n';
 
     matrix_test = C_dense;
     internal_add_hmatrix_hmatrix_product(transa, transb, alpha, A, B, beta, matrix_test);
     error    = normFrob(matrix_result_w_matrix_sum - matrix_test) / normFrob(matrix_result_w_matrix_sum);
     is_error = is_error || !(error < std::max(epsilon, lrmat_tol) * margin);
-    cout << "> Errors on a hmatrix hmatrix product to matrix: " << error << endl;
+    cout << "> Errors on a hmatrix hmatrix product to matrix: " << error << '\n';
 
     hmatrix_test = C;
     internal_add_hmatrix_hmatrix_product(transa, transb, alpha, A, B, beta, hmatrix_test);
     copy_to_dense(hmatrix_test, densified_hmatrix_test.data());
     error    = normFrob(matrix_result_w_matrix_sum - densified_hmatrix_test) / normFrob(matrix_result_w_matrix_sum);
     is_error = is_error || !(error < epsilon * margin);
-    cout << "> Errors on a hmatrix hmatrix product to hmatrix: " << error << endl;
+    cout << "> Errors on a hmatrix hmatrix product to hmatrix: " << error << '\n';
     cout << "> is_error: " << is_error << "\n";
     return is_error;
 }
@@ -235,20 +235,20 @@ bool test_symmetric_hmatrix_hmatrix_product(const TestCaseProduct<T, GeneratorTe
     lrmat_test.copy_to_dense(dense_lrmat_test.data());
     error    = normFrob(matrix_result_w_lrmat_sum - dense_lrmat_test) / normFrob(matrix_result_w_lrmat_sum);
     is_error = is_error || !(error < std::max(epsilon, lrmat_tol) * margin);
-    cout << "> Errors on a symmetric hmatrix hmatrix product to lrmat: " << error << endl;
+    cout << "> Errors on a symmetric hmatrix hmatrix product to lrmat: " << error << '\n';
 
     matrix_test = C_dense;
     internal_add_symmetric_hmatrix_hmatrix_product(side, UPLO, alpha, A, B, beta, matrix_test);
     error    = normFrob(matrix_result_w_matrix_sum - matrix_test) / normFrob(matrix_result_w_matrix_sum);
     is_error = is_error || !(error < std::max(epsilon, lrmat_tol) * margin);
-    cout << "> Errors on a symmetric hmatrix hmatrix product to matrix: " << error << endl;
+    cout << "> Errors on a symmetric hmatrix hmatrix product to matrix: " << error << '\n';
 
     hmatrix_test = C;
     internal_add_symmetric_hmatrix_hmatrix_product(side, UPLO, alpha, A, B, beta, hmatrix_test);
     copy_to_dense(hmatrix_test, densified_hmatrix_test.data());
     error    = normFrob(matrix_result_w_matrix_sum - densified_hmatrix_test) / normFrob(matrix_result_w_matrix_sum);
     is_error = is_error || !(error < epsilon * margin);
-    cout << "> Errors on a symmetric hmatrix hmatrix product to hmatrix: " << error << endl;
+    cout << "> Errors on a symmetric hmatrix hmatrix product to hmatrix: " << error << '\n';
 
     return is_error;
 }

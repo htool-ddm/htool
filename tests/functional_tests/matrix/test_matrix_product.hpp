@@ -76,20 +76,20 @@ bool test_matrix_product(int n1, int n2, int n3, char transa, char transb) {
         add_matrix_vector_product(transa, alpha, A, B.data(), beta, C.data());
         error    = normFrob(matrix_result_w_matrix_sum - C) / normFrob(matrix_result_w_matrix_sum);
         is_error = is_error || !(error < 1e-14);
-        cout << "> Errors on a matrix vector product: " << error << endl;
+        cout << "> Errors on a matrix vector product: " << error << '\n';
     }
 
     C = Y;
     add_matrix_matrix_product(transa, transb, alpha, A, B, beta, C);
     error    = normFrob(matrix_result_w_matrix_sum - C) / normFrob(matrix_result_w_matrix_sum);
     is_error = is_error || !(error < 1e-14);
-    cout << "> Errors on a matrix matrix product: " << error << endl;
+    cout << "> Errors on a matrix matrix product: " << error << '\n';
 
     C = Yt;
     add_matrix_matrix_product_row_major(transa, transb, alpha, A, Bt.data(), beta, C.data(), n3);
     error    = normFrob(transposed_matrix_result_w_matrix_sum - C) / normFrob(transposed_matrix_result_w_matrix_sum);
     is_error = is_error || !(error < 1e-14);
-    cout << "> Errors on a matrix matrix product with row major input: " << error << endl;
+    cout << "> Errors on a matrix matrix product with row major input: " << error << '\n';
 
     C                           = Y;
     T local_scaling_coefficient = scaling_coefficient;
@@ -100,7 +100,7 @@ bool test_matrix_product(int n1, int n2, int n3, char transa, char transb) {
     add_matrix_matrix_product(transa, transb, alpha, A, B, scaling_coefficient * beta, C);
     error    = normFrob(scaled_matrix_result_w_matrix_sum - C) / normFrob(scaled_matrix_result_w_matrix_sum);
     is_error = is_error || !(error < 1e-14);
-    cout << "> Errors on a scaled matrix matrix product: " << error << endl;
+    cout << "> Errors on a scaled matrix matrix product: " << error << '\n';
 
     return is_error;
 }
@@ -156,40 +156,40 @@ bool test_matrix_symmetric_product(int n1, int n2, char side, char UPLO) {
         add_symmetric_matrix_vector_product(UPLO, alpha, A, B.data(), beta, C.data());
         error    = normFrob(matrix_result_w_matrix_sum - C) / normFrob(matrix_result_w_matrix_sum);
         is_error = is_error || !(error < 1e-14);
-        cout << "> Errors on a symmetry matrix vector product: " << error << endl;
+        cout << "> Errors on a symmetry matrix vector product: " << error << '\n';
 
         if constexpr (!is_complex<T>()) {
             C = Y;
             add_hermitian_matrix_vector_product(UPLO, alpha, A, B.data(), beta, C.data());
             error    = normFrob(matrix_result_w_matrix_sum - C) / normFrob(matrix_result_w_matrix_sum);
             is_error = is_error || !(error < 1e-14);
-            cout << "> Errors on a hermitian matrix vector product: " << error << endl;
+            cout << "> Errors on a hermitian matrix vector product: " << error << '\n';
         }
     }
     C = Y;
     add_symmetric_matrix_matrix_product(side, UPLO, alpha, A, B, beta, C);
     error    = normFrob(matrix_result_w_matrix_sum - C) / normFrob(matrix_result_w_matrix_sum);
     is_error = is_error || !(error < 1e-14);
-    cout << "> Errors on a symmetric matrix matrix product: " << error << endl;
+    cout << "> Errors on a symmetric matrix matrix product: " << error << '\n';
 
     C = Yt;
     add_symmetric_matrix_matrix_product_row_major(side, UPLO, alpha, A, Bt.data(), beta, C.data(), n2);
     error    = normFrob(transposed_matrix_result_w_matrix_sum - C) / normFrob(transposed_matrix_result_w_matrix_sum);
     is_error = is_error || !(error < 1e-14);
-    cout << "> Errors on a symmetric matrix matrix product with row major input: " << error << endl;
+    cout << "> Errors on a symmetric matrix matrix product with row major input: " << error << '\n';
 
     if constexpr (!is_complex<T>()) {
         C = Y;
         add_hermitian_matrix_matrix_product(side, UPLO, alpha, A, B, beta, C);
         error    = normFrob(matrix_result_w_matrix_sum - C) / normFrob(matrix_result_w_matrix_sum);
         is_error = is_error || !(error < 1e-14);
-        cout << "> Errors on a hermitian matrix matrix product: " << error << endl;
+        cout << "> Errors on a hermitian matrix matrix product: " << error << '\n';
 
         C = Yt;
         add_hermitian_matrix_matrix_product_row_major(side, UPLO, alpha, A, Bt.data(), beta, C.data(), n2);
         error    = normFrob(transposed_matrix_result_w_matrix_sum - C) / normFrob(transposed_matrix_result_w_matrix_sum);
         is_error = is_error || !(error < 1e-14);
-        cout << "> Errors on a hermitian matrix matrix product with row major input: " << error << endl;
+        cout << "> Errors on a hermitian matrix matrix product with row major input: " << error << '\n';
     }
 
     return is_error;
@@ -247,20 +247,20 @@ bool test_matrix_hermitian_product(int n1, int n2, char side, char UPLO) {
         add_hermitian_matrix_vector_product(UPLO, alpha, A, B.data(), beta, C.data());
         error    = normFrob(matrix_result_w_matrix_sum - C) / normFrob(matrix_result_w_matrix_sum);
         is_error = is_error || !(error < 1e-14);
-        cout << "> Errors on a hermitian matrix vector product: " << error << endl;
+        cout << "> Errors on a hermitian matrix vector product: " << error << '\n';
     }
 
     C = Y;
     add_hermitian_matrix_matrix_product(side, UPLO, alpha, A, B, beta, C);
     error    = normFrob(matrix_result_w_matrix_sum - C) / normFrob(matrix_result_w_matrix_sum);
     is_error = is_error || !(error < 1e-14);
-    cout << "> Errors on a hermitian matrix matrix product: " << error << endl;
+    cout << "> Errors on a hermitian matrix matrix product: " << error << '\n';
 
     C = Yt;
     add_hermitian_matrix_matrix_product_row_major(side, UPLO, alpha, A, Bt.data(), beta, C.data(), n2);
     error    = normFrob(transposed_matrix_result_w_matrix_sum - C) / normFrob(transposed_matrix_result_w_matrix_sum);
     is_error = is_error || !(error < 1e-14);
-    cout << "> Errors on a hermitian matrix matrix product with row major input: " << error << endl;
+    cout << "> Errors on a hermitian matrix matrix product with row major input: " << error << '\n';
 
     return is_error;
 }

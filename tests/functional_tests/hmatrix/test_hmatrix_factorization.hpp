@@ -43,7 +43,7 @@ bool test_hmatrix_lu(char trans, int n1, int n2, htool::underlying_type<T> epsil
     lu_solve(trans, A, matrix_test);
     error    = normFrob(X_dense - matrix_test) / normFrob(X_dense);
     is_error = is_error || !(error < epsilon * margin);
-    cout << "> Errors on hmatrix lu solve: " << error << endl;
+    cout << "> Errors on hmatrix lu solve: " << error << '\n';
     cout << "> is_error: " << is_error << "\n";
 
     return is_error;
@@ -80,7 +80,7 @@ bool test_hmatrix_cholesky(char UPLO, int n1, int n2, htool::underlying_type<T> 
     cholesky_solve(UPLO, HA, matrix_test);
     error    = normFrob(X_dense - matrix_test) / normFrob(X_dense);
     is_error = is_error || !(error < epsilon * margin);
-    cout << "> Errors on hmatrix cholesky solve: " << error << endl;
+    cout << "> Errors on hmatrix cholesky solve: " << error << '\n';
     cout << "> is_error: " << is_error << "\n";
 
     return is_error;
@@ -117,7 +117,7 @@ bool test_hmatrix_cholesky(char UPLO, int n1, int n2, htool::underlying_type<T> 
     cholesky_solve(UPLO, HA, matrix_test);
     error    = normFrob(X_dense - matrix_test) / normFrob(X_dense);
     is_error = is_error || !(error < epsilon * margin);
-    cout << "> Errors on hmatrix cholesky solve: " << error << endl;
+    cout << "> Errors on hmatrix cholesky solve: " << error << '\n';
     cout << "> is_error: " << is_error << "\n";
 
     return is_error;

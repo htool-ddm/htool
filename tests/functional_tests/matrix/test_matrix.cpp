@@ -14,7 +14,7 @@ int main(int, char const *[]) {
     Matrix<double> Pd(5, 10);
     double error = normFrob(Md) + Md.nb_rows() - 10 + Md.nb_cols() - 5;
     test         = test || !(error < 1e-16);
-    cout << "Error in empty constructor = " << error << endl;
+    cout << "Error in empty constructor = " << error << '\n';
 
     // Access operator
     for (int i = 0; i < 10; i++) {
@@ -27,17 +27,17 @@ int main(int, char const *[]) {
     Matrix<double> Nd = Md;
     error             = normFrob(Nd - Md);
     test              = test || !(error < 1e-16);
-    cout << "Error on assignement operator : " << error << endl;
+    cout << "Error on assignement operator : " << error << '\n';
 
     // Getters for strides
     vector<double> diff = {1, 2, 3, 4, 5};
     error               = norm2(get_row(Md, 1) - diff);
     test                = test || !(error < 1e-16);
-    cout << "Error on row getter : " << error << endl;
+    cout << "Error on row getter : " << error << '\n';
     diff  = {3, 4, 5, 6, 7, 8, 9, 10, 11, 12};
     error = norm2(get_col(Md, 3) - diff);
     test  = test || !(error < 1e-16);
-    cout << "Error on col getter : : " << error << endl;
+    cout << "Error on col getter : : " << error << '\n';
 
     // Setters for strides
     std::vector<double> rowd(5, 2);
@@ -50,7 +50,7 @@ int main(int, char const *[]) {
     diff  = {2, 2, 2, 2, 2, 2, 2, 2, 2, 2};
     error = norm2(get_col(Md, 4) - diff);
     test  = test || !(error < 1e-16);
-    cout << "Error on row and col setters : " << error << endl;
+    cout << "Error on row and col setters : " << error << '\n';
 
     // Matrix scalar product
     Matrix<double> Md_test = 2 * Md;
@@ -62,17 +62,17 @@ int main(int, char const *[]) {
     }
     error = sqrt(error);
     test  = test || !(error < 1e-16);
-    cout << "Error on mat scal prod : " << error << endl;
+    cout << "Error on mat scal prod : " << error << '\n';
     error = normFrob(Md * 2 - 2 * Md);
     test  = test || !(error < 1e-16);
-    cout << "Error on mat scal prod associativity : " << error << endl;
+    cout << "Error on mat scal prod associativity : " << error << '\n';
 
     // // Matrix vector product
     // std::vector<double> md(5, 1);
     // diff  = {8, 10, 16, 20, 24, 28, 32, 36, 40, 44};
     // error = norm2(Md * md - diff);
     // test  = test || !(error < 1e-16);
-    // cout << "Error on mat vec prod : " << error << endl;
+    // cout << "Error on mat vec prod : " << error << '\n';
 
     // // Matrix matrix product
     // Matrix<double> MMd = Md * Pd;
@@ -87,22 +87,22 @@ int main(int, char const *[]) {
     // }
     // error = normFrob(MMd - MMd_test);
     // test  = test || !(error < 1e-16);
-    // cout << "Error on matrix matrix product : " << error << endl;
+    // cout << "Error on matrix matrix product : " << error << '\n';
 
     // Matrix argmax
     test = test || !(argmax(Md).first - 9 == 0);
     test = test || !(argmax(Md).second - 3 == 0);
-    cout << "Md's argmax : " << argmax(Md).first << " " << argmax(Md).second << endl;
-    cout << "Expected Argmax : (9,3)" << endl;
+    cout << "Md's argmax : " << argmax(Md).first << " " << argmax(Md).second << '\n';
+    cout << "Expected Argmax : (9,3)" << '\n';
 
     // Matrix view
     MatrixView<const double> Md_view(Md);
     test = test || !(argmax(Md).first - argmax(Md_view).first == 0);
     test = test || !(argmax(Md).second - argmax(Md_view).second == 0);
     test = test || !(normFrob(Md) - normFrob(Md_view) == 0);
-    cout << "Md's argmax : " << argmax(Md).first << " " << argmax(Md).second << endl;
-    cout << "Md_view's argmax : " << argmax(Md_view).first << " " << argmax(Md_view).second << endl;
-    cout << "Expected Argmax : (9,3)" << endl;
+    cout << "Md's argmax : " << argmax(Md).first << " " << argmax(Md).second << '\n';
+    cout << "Md_view's argmax : " << argmax(Md_view).first << " " << argmax(Md_view).second << '\n';
+    cout << "Expected Argmax : (9,3)" << '\n';
 
     //// Matrix - complex double
     // Constructor
@@ -110,7 +110,7 @@ int main(int, char const *[]) {
     Matrix<complex<double>> Pcd(5, 10);
     error = normFrob(Mcd) + Mcd.nb_rows() - 10 + Mcd.nb_cols() - 5;
     test  = test || !(error < 1e-16);
-    cout << "Error in empty constructor = " << error << endl;
+    cout << "Error in empty constructor = " << error << '\n';
     // Access operator
     for (int i = 0; i < 10; i++) {
         for (int j = 0; j < 5; j++) {
@@ -127,11 +127,11 @@ int main(int, char const *[]) {
     vector<complex<double>> diffc = {1, 2, 3, 4, 5};
     error                         = norm2(get_row(Mcd, 1) - diffc);
     test                          = test || !(error < 1e-16);
-    cout << "Error on row getter : " << error << endl;
+    cout << "Error on row getter : " << error << '\n';
     diffc = {3, 4, 5, 6, 7, 8, 9, 10, 11, 12};
     error = norm2(get_col(Mcd, 3) - diffc);
     test  = test || !(error < 1e-16);
-    cout << "Error on col getter : " << error << endl;
+    cout << "Error on col getter : " << error << '\n';
 
     // Setters for strides
     std::vector<std::complex<double>> rowcd(5, 2);
@@ -144,7 +144,7 @@ int main(int, char const *[]) {
     diffc = {2, 2, 2, 2, 2, 2, 2, 2, 2, 2};
     error = norm2(get_col(Mcd, 4) - diffc);
     test  = test || !(error < 1e-16);
-    cout << "Error on row and col setters : " << error << endl;
+    cout << "Error on row and col setters : " << error << '\n';
 
     // Matrix scalar product
     Matrix<std::complex<double>> Mcd_test = 2 * Mcd;
@@ -156,17 +156,17 @@ int main(int, char const *[]) {
     }
     error = sqrt(error);
     test  = test || !(error < 1e-16);
-    cout << "Error on mat scal prod : " << error << endl;
+    cout << "Error on mat scal prod : " << error << '\n';
     error = normFrob(Md * 2 - 2 * Md);
     test  = test || !(error < 1e-16);
-    cout << "Error on mat scal prod associativity : " << error << endl;
+    cout << "Error on mat scal prod associativity : " << error << '\n';
 
     // Matrix vector product
     std::vector<complex<double>> mcd(5, 1);
     diffc = {8, 10, 16, 20, 24, 28, 32, 36, 40, 44};
     error = norm2(Mcd * mcd - diffc);
     test  = test || !(error < 1e-16);
-    cout << "Error matrix vector product : " << error << endl;
+    cout << "Error matrix vector product : " << error << '\n';
 
     // Matrix matrix product
     Matrix<complex<double>> MMcd = Mcd * Pcd;
@@ -181,14 +181,14 @@ int main(int, char const *[]) {
     }
     error = normFrob(MMcd - MMcd_test);
     test  = test || !(error < 1e-16);
-    cout << "Error on matrix matrix product : " << error << endl;
+    cout << "Error on matrix matrix product : " << error << '\n';
 
     // Matrix argmax
     test = test || !(argmax(Mcd).first - 9 == 0);
     test = test || !(argmax(Mcd).second - 3 == 0);
-    cout << "Mcd's argmax : " << argmax(Mcd).first << " " << argmax(Mcd).second << endl;
-    cout << "Expected Argmax : (9,3)" << endl;
+    cout << "Mcd's argmax : " << argmax(Mcd).first << " " << argmax(Mcd).second << '\n';
+    cout << "Expected Argmax : (9,3)" << '\n';
 
-    cout << test << endl;
+    cout << test << '\n';
     return test;
 }

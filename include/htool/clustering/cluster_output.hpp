@@ -25,7 +25,7 @@ void print(const Cluster<CoordinatesPrecision> &cluster) {
             std::cout << '[';
             for (std::vector<int>::const_iterator i = permutation.cbegin() + current_cluster.get_offset(); i != permutation.cbegin() + current_cluster.get_offset() + current_cluster.get_size(); ++i)
                 std::cout << *i << ',';
-            std::cout << "\b]" << std::endl;
+            std::cout << "\b]" << '\n';
         });
 }
 

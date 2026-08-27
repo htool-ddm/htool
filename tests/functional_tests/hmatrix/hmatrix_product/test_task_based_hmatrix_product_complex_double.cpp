@@ -46,15 +46,15 @@ int main(int, char *[]) {
             }
         }
     }
-    std::cout << "+++++++++++++++++++++++++++++++++++++++++++" << std::endl;
+    std::cout << "+++++++++++++++++++++++++++++++++++++++++++" << '\n';
     if (is_error) {
         htool::Logger::get_instance().log(LogLevel::ERROR, "At least one test_task_based_hmatrix_vector_product case failed."); // LCOV_EXCL_LINE
         return 1;
 
     } else {
-        std::cout << "SUCCESS: All test_task_based_hmatrix_vector_product cases passed." << std::endl;
+        std::cout << "SUCCESS: All test_task_based_hmatrix_vector_product cases passed." << '\n';
     }
-    std::cout << "+++++++++++++++++++++++++++++++++++++++++++" << std::endl;
+    std::cout << "+++++++++++++++++++++++++++++++++++++++++++" << '\n';
 
     for (auto epsilon : {1e-4, 1e-8}) {
         for (auto n1 : {1000}) {
@@ -92,15 +92,15 @@ int main(int, char *[]) {
         }
     }
 
-    std::cout << "+++++++++++++++++++++++++++++++++++++++++++" << std::endl;
+    std::cout << "+++++++++++++++++++++++++++++++++++++++++++" << '\n';
     if (is_error) {
         htool::Logger::get_instance().log(LogLevel::ERROR, "At least one test_task_based_hmatrix_hmatrix_product case failed."); // LCOV_EXCL_LINE
         return 1;
 
     } else {
-        std::cout << "SUCCESS: All test_task_based_hmatrix_hmatrix_product cases passed." << std::endl;
+        std::cout << "SUCCESS: All test_task_based_hmatrix_hmatrix_product cases passed." << '\n';
     }
-    std::cout << "+++++++++++++++++++++++++++++++++++++++++++" << std::endl;
+    std::cout << "+++++++++++++++++++++++++++++++++++++++++++" << '\n';
 
     return 0;
 }

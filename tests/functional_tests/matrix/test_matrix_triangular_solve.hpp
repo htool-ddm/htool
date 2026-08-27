@@ -124,7 +124,7 @@ bool test_matrix_triangular_solve(int n, int nrhs, char side, char transa, char 
     // test_solve.print(std::cout, ",");
     error    = normFrob(result - test_solve) / normFrob(result);
     is_error = is_error || !(error < 1e-9);
-    cout << "> Errors on lower triangular matrix matrix solve: " << error << endl;
+    cout << "> Errors on lower triangular matrix matrix solve: " << error << '\n';
 
     test_factorization              = LA;
     test_factorization.get_pivots() = ipiv;
@@ -137,14 +137,14 @@ bool test_matrix_triangular_solve(int n, int nrhs, char side, char transa, char 
     triangular_matrix_matrix_solve(side, 'L', transa, diag, alpha, test_factorization, test_solve);
     error    = normFrob(result - test_solve) / normFrob(result);
     is_error = is_error || !(error < 1e-9);
-    cout << "> Errors on lower triangular matrix matrix solve with permutation: " << error << endl;
+    cout << "> Errors on lower triangular matrix matrix solve with permutation: " << error << '\n';
 
     test_factorization = UA;
     test_solve         = UB;
     triangular_matrix_matrix_solve(side, 'U', transa, diag, alpha, test_factorization, test_solve);
     error    = normFrob(result - test_solve) / normFrob(result);
     is_error = is_error || !(error < 1e-9);
-    cout << "> Errors on upper triangular matrix matrix solve: " << error << endl;
+    cout << "> Errors on upper triangular matrix matrix solve: " << error << '\n';
 
     return is_error;
 }

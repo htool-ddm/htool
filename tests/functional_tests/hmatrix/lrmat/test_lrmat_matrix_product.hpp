@@ -42,14 +42,14 @@ bool test_lrmat_matrix_product(char transa, char transb, T alpha, T beta, T scal
         add_lrmat_vector_product(transa, alpha, A_auto_approximation, B_vec.data(), beta, test_vec.data());
         error    = norm2(get_col(matrix_result_w_matrix_sum, 0) - test_vec) / norm2(get_col(matrix_result_w_matrix_sum, 0));
         is_error = is_error || !(error < epsilon * (1 + additional_compression_tolerance));
-        cout << "> Errors on a lrmat vector product with auto approximation: " << error << endl;
+        cout << "> Errors on a lrmat vector product with auto approximation: " << error << '\n';
     }
 
     matrix_test = C_dense;
     add_lrmat_matrix_product(transa, transb, alpha, A_auto_approximation, B_dense, beta, matrix_test);
     error    = normFrob(matrix_result_w_matrix_sum - matrix_test) / normFrob(matrix_result_w_matrix_sum);
     is_error = is_error || !(error < epsilon * (1 + additional_compression_tolerance));
-    cout << "> Errors on a lrmat matrix product to matrix with auto approximation: " << error << endl;
+    cout << "> Errors on a lrmat matrix product to matrix with auto approximation: " << error << '\n';
 
     lrmat_test = C_auto_approximation;
     add_lrmat_matrix_product(transa, transb, alpha, A_auto_approximation, B_dense, T(0), lrmat_test);
@@ -57,7 +57,7 @@ bool test_lrmat_matrix_product(char transa, char transb, T alpha, T beta, T scal
     lrmat_test.copy_to_dense(dense_lrmat_test.data());
     error    = normFrob(matrix_result_wo_sum - dense_lrmat_test) / normFrob(matrix_result_wo_sum);
     is_error = is_error || !(error < epsilon * (1 + additional_compression_tolerance));
-    cout << "> Errors on a lrmat matrix product to lrmat with auto approximation and without lrmat sum: " << error << endl;
+    cout << "> Errors on a lrmat matrix product to lrmat with auto approximation and without lrmat sum: " << error << '\n';
 
     lrmat_test = C_auto_approximation;
     add_lrmat_matrix_product(transa, transb, alpha, A_auto_approximation, B_dense, beta, lrmat_test);
@@ -65,13 +65,13 @@ bool test_lrmat_matrix_product(char transa, char transb, T alpha, T beta, T scal
     lrmat_test.copy_to_dense(dense_lrmat_test.data());
     error    = normFrob(matrix_result_w_lrmat_sum - dense_lrmat_test) / normFrob(matrix_result_w_lrmat_sum);
     is_error = is_error || !(error < epsilon * (1 + additional_compression_tolerance + additional_lrmat_sum_tolerance));
-    cout << "> Errors on a lrmat matrix product to lrmat with auto approximation and with lrmat sum: " << error << endl;
+    cout << "> Errors on a lrmat matrix product to lrmat with auto approximation and with lrmat sum: " << error << '\n';
 
     matrix_test = transposed_C_dense;
     add_lrmat_matrix_product_row_major(transa, transb, alpha, A_auto_approximation, transposed_B_dense.data(), beta, matrix_test.data(), C_dense.nb_cols());
     error    = normFrob(transposed_matrix_result_w_sum - matrix_test) / normFrob(transposed_matrix_result_w_sum);
     is_error = is_error || !(error < epsilon * (1 + additional_compression_tolerance));
-    cout << "> Errors on a lrmat matrix product to matrix with auto approximation and row major input: " << error << endl;
+    cout << "> Errors on a lrmat matrix product to matrix with auto approximation and row major input: " << error << '\n';
 
     matrix_test                                  = C_dense;
     LowRankMatrix<T> scaled_A_auto_approximation = A_auto_approximation;
@@ -79,9 +79,9 @@ bool test_lrmat_matrix_product(char transa, char transb, T alpha, T beta, T scal
     add_lrmat_matrix_product(transa, transb, alpha, scaled_A_auto_approximation, B_dense, scaling_coefficient * beta, matrix_test);
     error    = normFrob(scaled_matrix_result_w_matrix_sum - matrix_test) / normFrob(scaled_matrix_result_w_matrix_sum);
     is_error = is_error || !(error < epsilon * (1 + additional_compression_tolerance));
-    cout << "> Errors on a scaled lrmat matrix product with auto approximation: " << error << endl;
-    cout << "test : " << is_error << endl
-         << endl;
+    cout << "> Errors on a scaled lrmat matrix product with auto approximation: " << error << '\n';
+    cout << "test : " << is_error << '\n'
+         << '\n';
 
     return is_error;
 }

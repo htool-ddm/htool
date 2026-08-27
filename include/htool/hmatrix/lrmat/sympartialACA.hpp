@@ -181,7 +181,7 @@ class sympartialACA final : public VirtualInternalLowRankGenerator<CoefficientPr
                         q = -1;
                     }
                     htool::Logger::get_instance().log(LogLevel::WARNING, "ACA found a zero row in a " + std::to_string(M) + "x" + std::to_string(N) + " block. Final rank is " + std::to_string(q)); // LCOV_EXCL_LINE
-                    // std::cout << "[Htool warning] ACA found a zero row in a " + std::to_string(M) + "x" + std::to_string(N) + " block. Final rank is " + std::to_string(q) << std::endl;
+                    // std::cout << "[Htool warning] ACA found a zero row in a " + std::to_string(M) + "x" + std::to_string(N) + " block. Final rank is " + std::to_string(q) << '\n';
                     break;
                 }
             }

@@ -87,10 +87,10 @@ int main(int, char *[]) {
         }
 
         // Testing with Eckart–Young–Mirsky theorem for Frobenius norm
-        cout << "Testing with Eckart–Young–Mirsky theorem" << endl;
+        cout << "Testing with Eckart–Young–Mirsky theorem" << '\n';
         test = test || !(norm2(SVD_fixed_errors - SVD_errors_check) < 1e-10);
-        cout << "> Errors with Frobenius norm: " << SVD_fixed_errors << endl;
-        cout << "> Errors computed with the remaining eigenvalues : " << SVD_errors_check << endl;
+        cout << "> Errors with Frobenius norm: " << SVD_fixed_errors << '\n';
+        cout << "> Errors computed with the remaining eigenvalues : " << SVD_errors_check << '\n';
 
         // ACA automatic building
         LowRankMatrix<double> A_SVD(t.get_size(), s.get_size(), epsilon);
@@ -100,7 +100,7 @@ int main(int, char *[]) {
         std::pair<double, double> auto_compression_interval(0.95, 0.97);
         test = test || test_lrmat(t, s, A, A_SVD_fixed, A_SVD, fixed_compression_interval, auto_compression_interval);
     }
-    cout << "test : " << test << endl;
+    cout << "test : " << test << '\n';
 
     return test;
 }

@@ -65,7 +65,7 @@ int main(int argc, char *argv[]) {
     // Check the number of parameters
     if (argc != 4) {
         // Tell the user how to run the program
-        cerr << "Usage: " << argv[0] << " distance \b outputfile \b outputpath" << endl;
+        cerr << "Usage: " << argv[0] << " distance \b outputfile \b outputpath" << '\n';
         /* "Usage messages" are a conventional way of telling the user
          * how to run a program if they enter the command incorrectly.
          */
@@ -144,9 +144,9 @@ int main(int argc, char *argv[]) {
 
     // Output
     ofstream file_fixed((outputpath + "/" + outputfile).c_str());
-    file_fixed << "Rank,SVD,Full ACA,partial ACA,sym partial ACA,recompressed sym partial ACA" << endl;
+    file_fixed << "Rank,SVD,Full ACA,partial ACA,sym partial ACA,recompressed sym partial ACA" << '\n';
     for (int i = 0; i < reqrank_max; i++) {
-        file_fixed << i << "," << SVD_fixed_errors[i] << "," << fullACA_fixed_errors[i] << "," << partialACA_fixed_errors[i] << "," << sympartialACA_fixed_errors[i] << "," << recompressed_sympartialACA_fixed_errors[i] << endl;
+        file_fixed << i << "," << SVD_fixed_errors[i] << "," << fullACA_fixed_errors[i] << "," << partialACA_fixed_errors[i] << "," << sympartialACA_fixed_errors[i] << "," << recompressed_sympartialACA_fixed_errors[i] << '\n';
     }
 
     // Finalize the MPI environment.

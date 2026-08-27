@@ -66,7 +66,7 @@ int main(int argc, char *argv[]) {
     // Check the number of parameters
     if (argc > 2) {
         // Tell the user how to run the program
-        cerr << "Usage: " << argv[0] << " output_folder" << endl;
+        cerr << "Usage: " << argv[0] << " output_folder" << '\n';
         /* "Usage messages" are a conventional way of telling the user
          * how to run a program if they enter the command incorrectly.
          */

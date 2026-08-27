@@ -61,7 +61,7 @@ int main(int, char *[]) {
         std::pair<double, double> auto_compression_interval(0.93, 0.96);
         test = test || (test_lrmat(t, s, A, A_sympartialACA_fixed, A_sympartialACA, fixed_compression_interval, auto_compression_interval));
     }
-    cout << "test : " << test << endl;
+    cout << "test : " << test << '\n';
 
     return test;
 }

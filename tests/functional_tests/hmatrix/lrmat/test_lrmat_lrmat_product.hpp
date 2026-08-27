@@ -20,7 +20,7 @@ bool test_lrmat_lrmat_product(char transa, char transb, T alpha, T beta, const L
     add_lrmat_lrmat_product(transa, transb, alpha, A_auto_approximation, B_auto_approximation, beta, matrix_test);
     error    = normFrob(matrix_result_w_matrix_sum - matrix_test) / normFrob(matrix_result_w_matrix_sum);
     is_error = is_error || !(error < A_auto_approximation.get_epsilon() * (1 + additional_compression_tolerance));
-    cout << "> Errors on a lrmat lrmat product to matrix with auto approximation: " << error << endl;
+    cout << "> Errors on a lrmat lrmat product to matrix with auto approximation: " << error << '\n';
 
     lrmat_test = C_auto_approximation;
     add_lrmat_lrmat_product(transa, transb, alpha, A_auto_approximation, B_auto_approximation, T(0), lrmat_test);
@@ -28,7 +28,7 @@ bool test_lrmat_lrmat_product(char transa, char transb, T alpha, T beta, const L
     lrmat_test.copy_to_dense(dense_lrmat_test.data());
     error    = normFrob(matrix_result_wo_sum - dense_lrmat_test) / normFrob(matrix_result_wo_sum);
     is_error = is_error || !(error < A_auto_approximation.get_epsilon() * (1 + additional_compression_tolerance));
-    cout << "> Errors on a lrmat lrmat product to lrmat with auto approximation and without lrmat sum: " << error << endl;
+    cout << "> Errors on a lrmat lrmat product to lrmat with auto approximation and without lrmat sum: " << error << '\n';
 
     lrmat_test = C_auto_approximation;
     add_lrmat_lrmat_product(transa, transb, alpha, A_auto_approximation, B_auto_approximation, beta, lrmat_test);
@@ -36,10 +36,10 @@ bool test_lrmat_lrmat_product(char transa, char transb, T alpha, T beta, const L
     lrmat_test.copy_to_dense(dense_lrmat_test.data());
     error    = normFrob(matrix_result_w_lrmat_sum - dense_lrmat_test) / normFrob(matrix_result_w_lrmat_sum);
     is_error = is_error || !(error < A_auto_approximation.get_epsilon() * (1 + additional_compression_tolerance + additional_lrmat_sum_tolerance));
-    cout << "> Errors on a lrmat lrmat product to lrmat with auto approximation and with lrmat sum: " << error << endl;
+    cout << "> Errors on a lrmat lrmat product to lrmat with auto approximation and with lrmat sum: " << error << '\n';
 
-    cout << "test : " << is_error << endl
-         << endl;
+    cout << "test : " << is_error << '\n'
+         << '\n';
 
     return is_error;
 }

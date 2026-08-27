@@ -179,13 +179,13 @@ bool test_hmatrix_triangular_solve(char side, char transa, char diag, int n1, in
     internal_triangular_hmatrix_matrix_solve(side, 'L', transa, diag, alpha, LA, matrix_test);
     error    = normFrob(X_dense - matrix_test) / normFrob(X_dense);
     is_error = is_error || !(error < epsilon * margin);
-    cout << "> Errors on lower triangular hmatrix matrix solve: " << error << endl;
+    cout << "> Errors on lower triangular hmatrix matrix solve: " << error << '\n';
 
     matrix_test = UB_dense;
     internal_triangular_hmatrix_matrix_solve(side, 'U', transa, diag, alpha, UA, matrix_test);
     error    = normFrob(X_dense - matrix_test) / normFrob(X_dense);
     is_error = is_error || !(error < epsilon * margin);
-    cout << "> Errors on upper triangular hmatrix matrix solve: " << error << endl;
+    cout << "> Errors on upper triangular hmatrix matrix solve: " << error << '\n';
 
     lrmat_test = LB_lrmat;
     internal_triangular_hmatrix_lrmat_solve(side, 'L', transa, diag, alpha, LA, lrmat_test);
@@ -193,7 +193,7 @@ bool test_hmatrix_triangular_solve(char side, char transa, char diag, int n1, in
     lrmat_test.copy_to_dense(dense_lrmat_test.data());
     error    = normFrob(dense_X_lrmat - dense_lrmat_test) / normFrob(dense_X_lrmat);
     is_error = is_error || !(error < epsilon * margin);
-    cout << "> Errors on lower triangular hmatrix lrmat solve: " << error << endl;
+    cout << "> Errors on lower triangular hmatrix lrmat solve: " << error << '\n';
 
     lrmat_test = UB_lrmat;
     internal_triangular_hmatrix_lrmat_solve(side, 'U', transa, diag, alpha, UA, lrmat_test);
@@ -201,21 +201,21 @@ bool test_hmatrix_triangular_solve(char side, char transa, char diag, int n1, in
     lrmat_test.copy_to_dense(dense_lrmat_test.data());
     error    = normFrob(dense_X_lrmat - dense_lrmat_test) / normFrob(dense_X_lrmat);
     is_error = is_error || !(error < epsilon * margin);
-    cout << "> Errors on upper triangular hmatrix lrmat solve: " << error << endl;
+    cout << "> Errors on upper triangular hmatrix lrmat solve: " << error << '\n';
 
     hmatrix_test = LB;
     internal_triangular_hmatrix_hmatrix_solve(side, 'L', transa, diag, alpha, LA, hmatrix_test);
     copy_to_dense(hmatrix_test, densified_hmatrix_test.data());
     error    = normFrob(X_dense - densified_hmatrix_test) / normFrob(X_dense);
     is_error = is_error || !(error < epsilon * margin);
-    cout << "> Errors on lower triangular hmatrix hmatrix solve: " << error << endl;
+    cout << "> Errors on lower triangular hmatrix hmatrix solve: " << error << '\n';
 
     hmatrix_test = UB;
     internal_triangular_hmatrix_hmatrix_solve(side, 'U', transa, diag, alpha, UA, hmatrix_test);
     copy_to_dense(hmatrix_test, densified_hmatrix_test.data());
     error    = normFrob(X_dense - densified_hmatrix_test) / normFrob(X_dense);
     is_error = is_error || !(error < epsilon * margin);
-    cout << "> Errors on upper triangular hmatrix hmatrix solve: " << error << endl;
+    cout << "> Errors on upper triangular hmatrix hmatrix solve: " << error << '\n';
 
     return is_error;
 }

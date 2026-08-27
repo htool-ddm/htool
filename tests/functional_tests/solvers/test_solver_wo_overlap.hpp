@@ -53,12 +53,12 @@ int test_solver_wo_overlap(int argc, char *argv[], int mu, char symmetric, char 
 
     // Clustering
     if (rank == 0)
-        std::cout << "Creating cluster tree" << std::endl;
+        std::cout << "Creating cluster tree" << '\n';
     Cluster<CoordinatePrecision> target_cluster = read_cluster_tree<double>(datapath + "/cluster_" + NbrToStr(size) + "_cluster_tree_properties.csv", datapath + "/cluster_" + NbrToStr(size) + "_cluster_tree.csv");
 
     // Matrix
     if (rank == 0)
-        std::cout << "Creating generators" << std::endl;
+        std::cout << "Creating generators" << '\n';
     std::unique_ptr<VirtualGenerator<CoefficientPrecision>> generator;
     Matrix<CoefficientPrecision> A;
     Matrix<std::complex<double>> A_original;
@@ -79,7 +79,7 @@ int test_solver_wo_overlap(int argc, char *argv[], int mu, char symmetric, char 
 
     // Right-hand side
     if (rank == 0)
-        std::cout << "Building rhs" << std::endl;
+        std::cout << "Building rhs" << '\n';
     Matrix<CoefficientPrecision> f_global(n, mu);
     std::vector<complex<double>> temp(n);
     bytes_to_vector(temp, datapath + "/rhs.bin");
@@ -95,7 +95,7 @@ int test_solver_wo_overlap(int argc, char *argv[], int mu, char symmetric, char 
 
     // Hmatrix
     if (rank == 0)
-        std::cout << "Creating HMatrix" << std::endl;
+        std::cout << "Creating HMatrix" << '\n';
 
     DefaultApproximationBuilder<CoefficientPrecision, htool::underlying_type<CoefficientPrecision>> default_build(*generator, target_cluster, target_cluster, HMatrixTreeBuilder<CoefficientPrecision>(epsilon, eta, symmetric, UPLO), MPI_COMM_WORLD);
 
@@ -134,21 +134,21 @@ int test_solver_wo_overlap(int argc, char *argv[], int mu, char symmetric, char 
 
     // Solve
     if (rank == 0)
-        std::cout << "Creating Solver" << std::endl;
+        std::cout << "Creating Solver" << '\n';
     solver_builder default_solver(Operator, local_block_diagonal_hmatrix);
     auto &block_jacobi_solver = default_solver.solver;
 
     print_hmatrix_information(local_block_diagonal_hmatrix, std::cout);
     // No precond wo overlap
     if (rank == 0)
-        std::cout << "No precond without overlap:" << std::endl;
+        std::cout << "No precond without overlap:" << '\n';
 
     opt.parse("-hpddm_schwarz_method none");
     block_jacobi_solver.solve(f_global.data(), x_global.data(), mu);
     block_jacobi_solver.print_infos();
     error2 = normFrob(f_global - A * x_global) / normFrob(f_global);
     if (rank == 0) {
-        cout << "error: " << error2 << endl;
+        cout << "error: " << error2 << '\n';
     }
 
     test = test || !(error2 < tol);
@@ -157,7 +157,7 @@ int test_solver_wo_overlap(int argc, char *argv[], int mu, char symmetric, char 
 
     // DDM one level ASM wo overlap
     if (rank == 0)
-        std::cout << "ASM one level without overlap:" << std::endl;
+        std::cout << "ASM one level without overlap:" << '\n';
     MPI_Barrier(MPI_COMM_WORLD);
     opt.parse("-hpddm_schwarz_method asm ");
     block_jacobi_solver.facto_one_level();
@@ -166,7 +166,7 @@ int test_solver_wo_overlap(int argc, char *argv[], int mu, char symmetric, char 
     error2 = normFrob(f_global - A * x_global) / normFrob(f_global);
 
     if (rank == 0) {
-        cout << "error: " << error2 << endl;
+        cout << "error: " << error2 << '\n';
     }
 
     test = test || !(error2 < tol);
@@ -175,7 +175,7 @@ int test_solver_wo_overlap(int argc, char *argv[], int mu, char symmetric, char 
 
     // DDM one level RAS wo overlap
     if (rank == 0)
-        std::cout << "RAS one level without overlap:" << std::endl;
+        std::cout << "RAS one level without overlap:" << '\n';
     MPI_Barrier(MPI_COMM_WORLD);
     opt.parse("-hpddm_schwarz_method ras ");
     block_jacobi_solver.solve(f_global.data(), x_global.data(), mu);
@@ -183,7 +183,7 @@ int test_solver_wo_overlap(int argc, char *argv[], int mu, char symmetric, char 
     error2 = normFrob(f_global - A * x_global) / normFrob(f_global);
 
     if (rank == 0) {
-        cout << "error: " << error2 << endl;
+        cout << "error: " << error2 << '\n';
     }
 
     test = test || !(error2 < tol);

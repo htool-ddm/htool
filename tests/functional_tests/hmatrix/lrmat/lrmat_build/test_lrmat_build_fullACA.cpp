@@ -58,7 +58,7 @@ int main(int, char *[]) {
         std::pair<double, double> auto_compression_interval(0.95, 0.97);
         test = test || (test_lrmat(target_cluster, source_cluster, A, A_fullACA_fixed, A_fullACA, fixed_compression_interval, auto_compression_interval));
     }
-    cout << "test : " << test << endl;
+    cout << "test : " << test << '\n';
 
     return test;
 }

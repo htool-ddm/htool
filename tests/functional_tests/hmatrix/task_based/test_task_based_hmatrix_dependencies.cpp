@@ -40,16 +40,16 @@ int main(int, char *[]) {
             }
         }
     }
-    std::cout << "+++++++++++++++++++++++++++++++++++++++++++" << std::endl;
+    std::cout << "+++++++++++++++++++++++++++++++++++++++++++" << '\n';
     if (is_error) {
         htool::Logger::get_instance().log(LogLevel::ERROR, "At least one test_task_based_hmatrix_build case failed."); // LCOV_EXCL_LINE
         return 1;
 
     } else {
-        std::cout << "SUCCESS: All test_task_based_hmatrix_build cases passed." << std::endl;
+        std::cout << "SUCCESS: All test_task_based_hmatrix_build cases passed." << '\n';
     }
     std::cout << "+++++++++++++++++++++++++++++++++++++++++++\n"
-              << std::endl;
+              << '\n';
 
     return 0;
 }

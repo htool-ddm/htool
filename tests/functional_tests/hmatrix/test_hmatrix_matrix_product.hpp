@@ -127,33 +127,33 @@ bool test_hmatrix_matrix_product(const TestCaseProduct<T, GeneratorTestType> &te
         internal_add_hmatrix_vector_product(transa, alpha, root_hmatrix, B_vec.data(), beta, test_vec.data());
         error    = norm2(get_col(matrix_result_w_matrix_sum, 0) - test_vec) / norm2(get_col(matrix_result_w_matrix_sum, 0));
         is_error = is_error || !(error < epsilon);
-        cout << "> Errors on a hmatrix vector product: " << error << endl;
+        cout << "> Errors on a hmatrix vector product: " << error << '\n';
 
         test_vec = C_vec;
         openmp_internal_add_hmatrix_vector_product(transa, alpha, root_hmatrix, B_vec.data(), beta, test_vec.data());
         error    = norm2(get_col(matrix_result_w_matrix_sum, 0) - test_vec) / norm2(get_col(matrix_result_w_matrix_sum, 0));
         is_error = is_error || !(error < epsilon);
-        cout << "> Errors on a openmp hmatrix vector product: " << error << endl;
+        cout << "> Errors on a openmp hmatrix vector product: " << error << '\n';
     }
 
     matrix_test = C_dense;
     internal_add_hmatrix_matrix_product(transa, transb, alpha, root_hmatrix, B_dense, beta, matrix_test);
     error    = normFrob(matrix_result_w_matrix_sum - matrix_test) / normFrob(matrix_result_w_matrix_sum);
     is_error = is_error || !(error < epsilon);
-    cout << "> Errors on a hmatrix matrix product: " << error << endl;
+    cout << "> Errors on a hmatrix matrix product: " << error << '\n';
 
     if (transb == 'N') {
         matrix_test = transposed_C_dense;
         openmp_internal_add_hmatrix_matrix_product_row_major(transa, transb, alpha, root_hmatrix, transposed_B_dense.data(), beta, matrix_test.data(), C_dense.nb_cols());
         error    = normFrob(transposed_matrix_result_w_matrix_sum - matrix_test) / normFrob(transposed_matrix_result_w_matrix_sum);
         is_error = is_error || !(error < epsilon);
-        cout << "> Errors on a openmp hmatrix matrix product with row major input: " << error << endl;
+        cout << "> Errors on a openmp hmatrix matrix product with row major input: " << error << '\n';
 
         matrix_test = transposed_C_dense;
         sequential_internal_add_hmatrix_matrix_product_row_major(transa, transb, alpha, root_hmatrix, transposed_B_dense.data(), beta, matrix_test.data(), C_dense.nb_cols());
         error    = normFrob(transposed_matrix_result_w_matrix_sum - matrix_test) / normFrob(transposed_matrix_result_w_matrix_sum);
         is_error = is_error || !(error < epsilon);
-        cout << "> Errors on a sequential hmatrix matrix product with row major input: " << error << endl;
+        cout << "> Errors on a sequential hmatrix matrix product with row major input: " << error << '\n';
     }
 
     // Product
@@ -163,7 +163,7 @@ bool test_hmatrix_matrix_product(const TestCaseProduct<T, GeneratorTestType> &te
     lrmat_test.copy_to_dense(dense_lrmat_test.data());
     error    = normFrob(matrix_result_wo_sum - dense_lrmat_test) / normFrob(matrix_result_wo_sum);
     is_error = is_error || !(error < std::max(epsilon, lrmat_tolerance));
-    cout << "> Errors on a hmatrix matrix product to lrmat without sum: " << error << endl;
+    cout << "> Errors on a hmatrix matrix product to lrmat without sum: " << error << '\n';
 
     lrmat_test = C_auto_approximation;
     internal_add_hmatrix_matrix_product(transa, transb, alpha, root_hmatrix, B_dense, beta, lrmat_test);
@@ -171,14 +171,14 @@ bool test_hmatrix_matrix_product(const TestCaseProduct<T, GeneratorTestType> &te
     lrmat_test.copy_to_dense(dense_lrmat_test.data());
     error    = normFrob(matrix_result_w_lrmat_sum - dense_lrmat_test) / normFrob(matrix_result_w_lrmat_sum);
     is_error = is_error || !(error < std::max(epsilon, lrmat_tolerance) * (1 + additional_lrmat_sum_tolerance));
-    cout << "> Errors on a hmatrix matrix product to lrmat with sum: " << error << endl;
+    cout << "> Errors on a hmatrix matrix product to lrmat with sum: " << error << '\n';
 
     // matrix_test = C_dense;
     // scale(scaling_coefficient, root_hmatrix);
     // add_hmatrix_matrix_product(transa, transb, alpha, root_hmatrix, B_dense, scaling_coefficient * beta, matrix_test);
     // error    = normFrob(scaled_matrix_result_w_matrix_sum - matrix_test) / normFrob(scaled_matrix_result_w_matrix_sum);
     // is_error = is_error || !(error < epsilon);
-    // cout << "> Errors on a scaled hmatrix matrix product: " << error << endl;
+    // cout << "> Errors on a scaled hmatrix matrix product: " << error << '\n';
 
     return is_error;
 }
@@ -264,7 +264,7 @@ bool test_symmetric_hmatrix_matrix_product(const TestCaseSymmetricProduct<T, Gen
     //     add_symmetric_hmatrix_vector_product(side, alpha, root_hmatrix, B_vec.data(), beta, test_vec.data());
     //     error    = norm2(matrix_result_w_matrix_sum.get_col(0) - test_vec) / norm2(matrix_result_w_matrix_sum.get_col(0));
     //     is_error = is_error || !(error < epsilon);
-    //     cout << "> Errors on a symmetric hmatrix vector product: " << error << endl;
+    //     cout << "> Errors on a symmetric hmatrix vector product: " << error << '\n';
     // }
 
     if (side == 'L') {
@@ -272,25 +272,25 @@ bool test_symmetric_hmatrix_matrix_product(const TestCaseSymmetricProduct<T, Gen
         internal_add_hmatrix_matrix_product('N', 'N', alpha, root_hmatrix, B_dense, beta, matrix_test);
         error    = normFrob(matrix_result_w_matrix_sum - matrix_test) / normFrob(matrix_result_w_matrix_sum);
         is_error = is_error || !(error < epsilon);
-        cout << "> Errors on a symmetric hmatrix matrix product: " << error << endl;
+        cout << "> Errors on a symmetric hmatrix matrix product: " << error << '\n';
 
         matrix_test = transposed_C_dense;
         sequential_internal_add_hmatrix_matrix_product_row_major('N', 'N', alpha, root_hmatrix, transposed_B_dense.data(), beta, matrix_test.data(), C_dense.nb_cols());
         error    = normFrob(transposed_matrix_result_w_matrix_sum - matrix_test) / normFrob(transposed_matrix_result_w_matrix_sum);
         is_error = is_error || !(error < epsilon);
-        cout << "> Errors on a sequential symmetric hmatrix matrix product with row major input: " << error << endl;
+        cout << "> Errors on a sequential symmetric hmatrix matrix product with row major input: " << error << '\n';
 
         matrix_test = transposed_C_dense;
         openmp_internal_add_hmatrix_matrix_product_row_major('N', 'N', alpha, root_hmatrix, transposed_B_dense.data(), beta, matrix_test.data(), C_dense.nb_cols());
         error    = normFrob(transposed_matrix_result_w_matrix_sum - matrix_test) / normFrob(transposed_matrix_result_w_matrix_sum);
         is_error = is_error || !(error < epsilon);
-        cout << "> Errors on a openmp symmetric hmatrix matrix product with row major input: " << error << endl;
+        cout << "> Errors on a openmp symmetric hmatrix matrix product with row major input: " << error << '\n';
     } else {
         matrix_test = C_dense;
         internal_add_matrix_hmatrix_product('N', 'N', alpha, B_dense, root_hmatrix, beta, matrix_test);
         error    = normFrob(matrix_result_w_matrix_sum - matrix_test) / normFrob(matrix_result_w_matrix_sum);
         is_error = is_error || !(error < epsilon);
-        cout << "> Errors on a matrix symmetric hmatrix product: " << error << endl;
+        cout << "> Errors on a matrix symmetric hmatrix product: " << error << '\n';
     }
 
     return is_error;
@@ -376,7 +376,7 @@ bool test_hermitian_hmatrix_matrix_product(const TestCaseSymmetricProduct<T, Gen
     //     add_symmetric_hmatrix_vector_product(side, alpha, root_hmatrix, B_vec.data(), beta, test_vec.data());
     //     error    = norm2(matrix_result_w_matrix_sum.get_col(0) - test_vec) / norm2(matrix_result_w_matrix_sum.get_col(0));
     //     is_error = is_error || !(error < epsilon);
-    //     cout << "> Errors on a symmetric hmatrix vector product: " << error << endl;
+    //     cout << "> Errors on a symmetric hmatrix vector product: " << error << '\n';
     // }
 
     if (side == 'L') {
@@ -384,26 +384,26 @@ bool test_hermitian_hmatrix_matrix_product(const TestCaseSymmetricProduct<T, Gen
         internal_add_hmatrix_matrix_product('N', 'N', alpha, root_hmatrix, B_dense, beta, matrix_test);
         error    = normFrob(matrix_result_w_matrix_sum - matrix_test) / normFrob(matrix_result_w_matrix_sum);
         is_error = is_error || !(error < epsilon);
-        cout << "> Errors on a hermitian hmatrix matrix product: " << error << endl;
+        cout << "> Errors on a hermitian hmatrix matrix product: " << error << '\n';
 
         matrix_test = transposed_C_dense;
         sequential_internal_add_hmatrix_matrix_product_row_major('N', 'N', alpha, root_hmatrix, transposed_B_dense.data(), beta, matrix_test.data(), C_dense.nb_cols());
         error    = normFrob(transposed_matrix_result_w_matrix_sum - matrix_test) / normFrob(transposed_matrix_result_w_matrix_sum);
         is_error = is_error || !(error < epsilon);
-        cout << "> Errors on a sequential hermitian hmatrix matrix product with row major input: " << error << endl;
+        cout << "> Errors on a sequential hermitian hmatrix matrix product with row major input: " << error << '\n';
 
         matrix_test = transposed_C_dense;
         openmp_internal_add_hmatrix_matrix_product_row_major('N', 'N', alpha, root_hmatrix, transposed_B_dense.data(), beta, matrix_test.data(), C_dense.nb_cols());
         error    = normFrob(transposed_matrix_result_w_matrix_sum - matrix_test) / normFrob(transposed_matrix_result_w_matrix_sum);
         is_error = is_error || !(error < epsilon);
-        cout << "> Errors on a openmp hermitian hmatrix matrix product with row major input: " << error << endl;
+        cout << "> Errors on a openmp hermitian hmatrix matrix product with row major input: " << error << '\n';
     } else {
         matrix_test = C_dense;
         // std::cout << "??? " << root_hmatrix.get_symmetry_for_leaves() << "\n";
         internal_add_matrix_hmatrix_product('N', 'N', alpha, B_dense, root_hmatrix, beta, matrix_test);
         error    = normFrob(matrix_result_w_matrix_sum - matrix_test) / normFrob(matrix_result_w_matrix_sum);
         is_error = is_error || !(error < epsilon);
-        cout << "> Errors on a matrix hermitian hmatrix product: " << error << endl;
+        cout << "> Errors on a matrix hermitian hmatrix product: " << error << '\n';
     }
 
     return is_error;

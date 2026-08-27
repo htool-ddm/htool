@@ -54,7 +54,7 @@ bool test_cluster(int dim, int size, PartitionType partition_type) {
     std::vector<int> nb_sons_test{2, 3, 4};
     for (auto &nb_sons : nb_sons_test) {
         if (rankWorld == 0) {
-            cout << "Number of sons : " << nb_sons << endl;
+            cout << "Number of sons : " << nb_sons << '\n';
         }
 
         ClusterTreeBuilder<T> recursive_build_strategy;
@@ -242,7 +242,7 @@ bool test_cluster(int dim, int size, PartitionType partition_type) {
     // Permutation
 
     if (rankWorld == 0) {
-        std::cout << "test global " << is_error << std::endl;
+        std::cout << "test global " << is_error << '\n';
     }
 
     return is_error;

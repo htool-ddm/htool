@@ -91,7 +91,7 @@ void task_based_internal_add_hmatrix_hmatrix_product(char transa, char transb, C
 
     // C += alpha A * B
     if (!is_C_in_L0 && !A.is_leaf() && !B.is_leaf() && !C.is_leaf()) { // recursive call
-        // std::cout << "Recursive call" << std::endl;
+        // std::cout << "Recursive call" << '\n';
         for (auto &output_cluster_child : output_clusters) {
             for (auto &input_cluster_child : input_clusters) {
                 for (auto &middle_cluster_child : middle_clusters) {

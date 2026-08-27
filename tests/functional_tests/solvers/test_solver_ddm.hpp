@@ -106,12 +106,12 @@ int test_solver_ddm(int argc, char *argv[], int mu, char data_symmetry, char sym
 
     // Clustering
     if (rank == 0)
-        std::cout << "Creating cluster tree" << std::endl;
+        std::cout << "Creating cluster tree" << '\n';
     Cluster<CoordinatePrecision> target_cluster = read_cluster_tree<CoordinatePrecision>(datapath + "/cluster_" + NbrToStr(size) + "_cluster_tree_properties.csv", datapath + "/cluster_" + NbrToStr(size) + "_cluster_tree.csv");
 
     // Matrix
     if (rank == 0)
-        std::cout << "Creating generators" << std::endl;
+        std::cout << "Creating generators" << '\n';
     std::unique_ptr<VirtualGenerator<CoefficientPrecision>> generator;
     Matrix<CoefficientPrecision> A;
     Matrix<std::complex<double>> A_original;
@@ -132,7 +132,7 @@ int test_solver_ddm(int argc, char *argv[], int mu, char data_symmetry, char sym
 
     // Right-hand side
     if (rank == 0)
-        std::cout << "Building rhs" << std::endl;
+        std::cout << "Building rhs" << '\n';
     Matrix<CoefficientPrecision> f_global(n, mu);
     std::vector<complex<double>> temp(n);
     bytes_to_vector(temp, datapath + "/rhs.bin");
@@ -148,7 +148,7 @@ int test_solver_ddm(int argc, char *argv[], int mu, char data_symmetry, char sym
 
     // Hmatrix
     if (rank == 0)
-        std::cout << "Creating HMatrix" << std::endl;
+        std::cout << "Creating HMatrix" << '\n';
     HMatrixTreeBuilder<CoefficientPrecision> hmatrix_builder(epsilon, eta, symmetric, UPLO);
     hmatrix_builder.set_low_rank_generator(std::make_shared<CustomSVD<CoefficientPrecision>>(*generator));
     DefaultApproximationBuilder<CoefficientPrecision, htool::underlying_type<CoefficientPrecision>> default_build(*generator, target_cluster, target_cluster, hmatrix_builder, MPI_COMM_WORLD);
@@ -187,7 +187,7 @@ int test_solver_ddm(int argc, char *argv[], int mu, char data_symmetry, char sym
 
     // Solve
     if (rank == 0)
-        std::cout << "Creating HMatrix" << std::endl;
+        std::cout << "Creating HMatrix" << '\n';
     std::vector<CoordinatePrecision> geometry(n);
     bytes_to_vector(geometry, datapath + "/geometry.bin");
     std::unique_ptr<solver_builder> default_ddm_solver_ptr;
@@ -203,7 +203,7 @@ int test_solver_ddm(int argc, char *argv[], int mu, char data_symmetry, char sym
 
     // No precond with overlap
     if (rank == 0)
-        std::cout << "No precond with overlap:" << std::endl;
+        std::cout << "No precond with overlap:" << '\n';
 
     opt.parse("-hpddm_schwarz_method none");
     ddm_with_overlap.solve(f_global.data(), x_global.data(), mu);
@@ -211,7 +211,7 @@ int test_solver_ddm(int argc, char *argv[], int mu, char data_symmetry, char sym
     error2 = normFrob(f_global - A * x_global) / normFrob(f_global);
 
     if (rank == 0) {
-        cout << "error: " << error2 << endl;
+        cout << "error: " << error2 << '\n';
     }
 
     test = test || !(error2 < tol);
@@ -220,7 +220,7 @@ int test_solver_ddm(int argc, char *argv[], int mu, char data_symmetry, char sym
 
     // DDM one level ASM with overlap
     if (rank == 0)
-        std::cout << "ASM one level with overlap:" << std::endl;
+        std::cout << "ASM one level with overlap:" << '\n';
     MPI_Barrier(MPI_COMM_WORLD);
     opt.parse("-hpddm_schwarz_method asm ");
     Matrix<CoefficientPrecision> Ki;
@@ -259,7 +259,7 @@ int test_solver_ddm(int argc, char *argv[], int mu, char data_symmetry, char sym
     error2 = normFrob(f_global - A * x_global) / normFrob(f_global);
 
     if (rank == 0) {
-        cout << "error: " << error2 << endl;
+        cout << "error: " << error2 << '\n';
     }
 
     test = test || !(error2 < tol);
@@ -268,14 +268,14 @@ int test_solver_ddm(int argc, char *argv[], int mu, char data_symmetry, char sym
 
     // DDM one level RAS with overlap
     if (rank == 0)
-        std::cout << "RAS one level with overlap:" << std::endl;
+        std::cout << "RAS one level with overlap:" << '\n';
     MPI_Barrier(MPI_COMM_WORLD);
     opt.parse("-hpddm_schwarz_method ras ");
     ddm_with_overlap.solve(f_global.data(), x_global.data(), mu);
     ddm_with_overlap.print_infos();
     error2 = normFrob(f_global - A * x_global) / normFrob(f_global);
     if (rank == 0) {
-        cout << "error: " << error2 << endl;
+        cout << "error: " << error2 << '\n';
     }
 
     test = test || !(error2 < tol);
@@ -286,14 +286,14 @@ int test_solver_ddm(int argc, char *argv[], int mu, char data_symmetry, char sym
     if constexpr (!htool::is_complex<CoefficientPrecision>()) {
         if (data_symmetry == 'S' && size > 1) {
             if (rank == 0)
-                std::cout << "ASM two level with overlap:" << std::endl;
+                std::cout << "ASM two level with overlap:" << '\n';
             MPI_Barrier(MPI_COMM_WORLD);
             opt.parse("-hpddm_schwarz_method asm -hpddm_schwarz_coarse_correction additive");
             ddm_with_overlap.solve(f_global.data(), x_global.data(), mu);
             ddm_with_overlap.print_infos();
             error2 = normFrob(f_global - A * x_global) / normFrob(f_global);
             if (rank == 0) {
-                cout << "error: " << error2 << endl;
+                cout << "error: " << error2 << '\n';
             }
 
             test = test || !(error2 < tol);
@@ -301,7 +301,7 @@ int test_solver_ddm(int argc, char *argv[], int mu, char data_symmetry, char sym
             x_global = 0;
 
             if (rank == 0)
-                std::cout << "RAS two level with overlap:" << std::endl;
+                std::cout << "RAS two level with overlap:" << '\n';
             MPI_Barrier(MPI_COMM_WORLD);
             opt.parse("-hpddm_schwarz_method ras -hpddm_schwarz_coarse_correction additive");
             ddm_with_overlap.solve(f_global.data(), x_global.data(), mu);
@@ -309,7 +309,7 @@ int test_solver_ddm(int argc, char *argv[], int mu, char data_symmetry, char sym
             ddm_with_overlap.clean();
             error2 = normFrob(f_global - A * x_global) / normFrob(f_global);
             if (rank == 0) {
-                cout << "error: " << error2 << endl;
+                cout << "error: " << error2 << '\n';
             }
 
             test = test || !(error2 < tol);
@@ -318,7 +318,7 @@ int test_solver_ddm(int argc, char *argv[], int mu, char data_symmetry, char sym
 
             // DDM solver with threshold
             if (rank == 0)
-                std::cout << "RAS two level with overlap and threshold:" << std::endl;
+                std::cout << "RAS two level with overlap and threshold:" << '\n';
             opt.parse("-hpddm_schwarz_method ras -hpddm_schwarz_coarse_correction additive");
 
             std::unique_ptr<solver_builder> default_ddm_solver_with_threshold_ptr;
@@ -359,7 +359,7 @@ int test_solver_ddm(int argc, char *argv[], int mu, char data_symmetry, char sym
             ddm_with_overlap_threshold.clean();
             error2 = normFrob(f_global - A * x_global) / normFrob(f_global);
             if (rank == 0) {
-                cout << "error: " << error2 << endl;
+                cout << "error: " << error2 << '\n';
             }
 
             test = test || !(error2 < tol);

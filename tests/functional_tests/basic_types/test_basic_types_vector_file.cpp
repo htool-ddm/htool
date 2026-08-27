@@ -19,7 +19,7 @@ int main(int, char const *[]) {
     test = test || (vector_to_bytes(Vd, "Vd"));
     test = test || (bytes_to_vector(Pd, "Vd"));
     test = test || !(norm2(Vd - Pd) < 1e-16);
-    cout << "diff : " << norm2(Vd - Pd) << endl;
+    cout << "diff : " << norm2(Vd - Pd) << '\n';
 
     //// Vector - complex double
     vector<complex<double>> Vcd(10);
@@ -31,8 +31,8 @@ int main(int, char const *[]) {
     test = test || (vector_to_bytes(Vcd, "Vcd"));
     test = test || (bytes_to_vector(Pcd, "Vcd"));
     test = test || !(norm2(Vcd - Pcd) < 1e-16);
-    cout << "diff : " << norm2(Vcd - Pcd) << endl;
+    cout << "diff : " << norm2(Vcd - Pcd) << '\n';
 
-    cout << test << endl;
+    cout << test << '\n';
     return test;
 }

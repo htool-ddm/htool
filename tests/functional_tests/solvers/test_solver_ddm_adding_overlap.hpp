@@ -54,12 +54,12 @@ int test_solver_ddm_adding_overlap(int argc, char *argv[], int mu, char data_sym
 
     // Clustering
     if (rank == 0)
-        std::cout << "Creating cluster tree" << std::endl;
+        std::cout << "Creating cluster tree" << '\n';
     Cluster<CoordinatePrecision> target_cluster = read_cluster_tree<CoordinatePrecision>(datapath + "/cluster_" + NbrToStr(size) + "_cluster_tree_properties.csv", datapath + "/cluster_" + NbrToStr(size) + "_cluster_tree.csv");
 
     // Matrix
     if (rank == 0)
-        std::cout << "Creating generators" << std::endl;
+        std::cout << "Creating generators" << '\n';
     std::unique_ptr<VirtualGenerator<CoefficientPrecision>> generator;
     Matrix<CoefficientPrecision> A;
     Matrix<std::complex<double>> A_original;
@@ -80,7 +80,7 @@ int test_solver_ddm_adding_overlap(int argc, char *argv[], int mu, char data_sym
 
     // Right-hand side
     if (rank == 0)
-        std::cout << "Building rhs" << std::endl;
+        std::cout << "Building rhs" << '\n';
     Matrix<CoefficientPrecision> f_global(n, mu);
     std::vector<complex<double>> temp(n);
     bytes_to_vector(temp, datapath + "/rhs.bin");
@@ -96,7 +96,7 @@ int test_solver_ddm_adding_overlap(int argc, char *argv[], int mu, char data_sym
 
     // Hmatrix
     if (rank == 0)
-        std::cout << "Creating Distributed Operator" << std::endl;
+        std::cout << "Creating Distributed Operator" << '\n';
     approximation_type default_build(*generator, target_cluster, target_cluster, HMatrixTreeBuilder<CoefficientPrecision>(epsilon, eta, symmetric, UPLO), MPI_COMM_WORLD);
     DistributedOperator<CoefficientPrecision> &Operator = default_build.distributed_operator;
     std::unique_ptr<Matrix<CoefficientPrecision>> off_diagonal_matrix_1;
@@ -162,13 +162,13 @@ int test_solver_ddm_adding_overlap(int argc, char *argv[], int mu, char data_sym
 
     // Solve
     if (rank == 0)
-        std::cout << "Creating HMatrix" << std::endl;
+        std::cout << "Creating HMatrix" << '\n';
     solver_builder default_ddm_solver(Operator, local_block_diagonal_hmatrix, *generator, ovr_subdomain_to_global, cluster_to_ovr_subdomain, neighbors, intersections);
     auto &ddm_with_overlap = default_ddm_solver.solver;
 
     // No precond with overlap
     if (rank == 0)
-        std::cout << "No precond with overlap:" << std::endl;
+        std::cout << "No precond with overlap:" << '\n';
 
     opt.parse("-hpddm_schwarz_method none");
     ddm_with_overlap.solve(f_global.data(), x_global.data(), mu);
@@ -176,7 +176,7 @@ int test_solver_ddm_adding_overlap(int argc, char *argv[], int mu, char data_sym
     error2 = normFrob(f_global - A * x_global) / normFrob(f_global);
 
     if (rank == 0) {
-        cout << "error: " << error2 << endl;
+        cout << "error: " << error2 << '\n';
     }
 
     test = test || !(error2 < tol);
@@ -185,7 +185,7 @@ int test_solver_ddm_adding_overlap(int argc, char *argv[], int mu, char data_sym
 
     // DDM one level ASM with overlap
     if (rank == 0)
-        std::cout << "ASM one level with overlap:" << std::endl;
+        std::cout << "ASM one level with overlap:" << '\n';
     MPI_Barrier(MPI_COMM_WORLD);
     opt.parse("-hpddm_schwarz_method asm ");
     Matrix<CoefficientPrecision> Ki;
@@ -225,7 +225,7 @@ int test_solver_ddm_adding_overlap(int argc, char *argv[], int mu, char data_sym
     error2 = normFrob(f_global - A * x_global) / normFrob(f_global);
 
     if (rank == 0) {
-        cout << "error: " << error2 << endl;
+        cout << "error: " << error2 << '\n';
     }
 
     test = test || !(error2 < tol);
@@ -234,14 +234,14 @@ int test_solver_ddm_adding_overlap(int argc, char *argv[], int mu, char data_sym
 
     // DDM one level RAS with overlap
     if (rank == 0)
-        std::cout << "RAS one level with overlap:" << std::endl;
+        std::cout << "RAS one level with overlap:" << '\n';
     MPI_Barrier(MPI_COMM_WORLD);
     opt.parse("-hpddm_schwarz_method ras ");
     ddm_with_overlap.solve(f_global.data(), x_global.data(), mu);
     ddm_with_overlap.print_infos();
     error2 = normFrob(f_global - A * x_global) / normFrob(f_global);
     if (rank == 0) {
-        cout << "error: " << error2 << endl;
+        cout << "error: " << error2 << '\n';
     }
 
     test = test || !(error2 < tol);
@@ -252,14 +252,14 @@ int test_solver_ddm_adding_overlap(int argc, char *argv[], int mu, char data_sym
     if constexpr (!htool::is_complex<CoefficientPrecision>()) {
         if (data_symmetry == 'S' && size > 1) {
             if (rank == 0)
-                std::cout << "ASM two level with overlap:" << std::endl;
+                std::cout << "ASM two level with overlap:" << '\n';
             MPI_Barrier(MPI_COMM_WORLD);
             opt.parse("-hpddm_schwarz_method asm -hpddm_schwarz_coarse_correction additive");
             ddm_with_overlap.solve(f_global.data(), x_global.data(), mu);
             ddm_with_overlap.print_infos();
             error2 = normFrob(f_global - A * x_global) / normFrob(f_global);
             if (rank == 0) {
-                cout << "error: " << error2 << endl;
+                cout << "error: " << error2 << '\n';
             }
 
             test = test || !(error2 < tol);
@@ -267,7 +267,7 @@ int test_solver_ddm_adding_overlap(int argc, char *argv[], int mu, char data_sym
             x_global = 0;
 
             if (rank == 0)
-                std::cout << "RAS two level with overlap:" << std::endl;
+                std::cout << "RAS two level with overlap:" << '\n';
             MPI_Barrier(MPI_COMM_WORLD);
             opt.parse("-hpddm_schwarz_method ras -hpddm_schwarz_coarse_correction additive");
             ddm_with_overlap.solve(f_global.data(), x_global.data(), mu);
@@ -275,7 +275,7 @@ int test_solver_ddm_adding_overlap(int argc, char *argv[], int mu, char data_sym
             ddm_with_overlap.clean();
             error2 = normFrob(f_global - A * x_global) / normFrob(f_global);
             if (rank == 0) {
-                cout << "error: " << error2 << endl;
+                cout << "error: " << error2 << '\n';
             }
 
             test = test || !(error2 < tol);
@@ -284,7 +284,7 @@ int test_solver_ddm_adding_overlap(int argc, char *argv[], int mu, char data_sym
 
             // DDM solver with threshold
             if (rank == 0)
-                std::cout << "RAS two level with overlap and threshold:" << std::endl;
+                std::cout << "RAS two level with overlap and threshold:" << '\n';
             opt.parse("-hpddm_schwarz_method ras -hpddm_schwarz_coarse_correction additive -hpddm_geneo_threshold 100");
             // DDM<complex<double>> ddm_with_overlap_threshold(*generator, &Operator, ovr_subdomain_to_global, cluster_to_ovr_subdomain, neighbors, intersections);
             solver_builder default_ddm_solver_with_threshold(Operator, local_block_diagonal_hmatrix_bis, *generator, ovr_subdomain_to_global, cluster_to_ovr_subdomain, neighbors, intersections);
@@ -319,7 +319,7 @@ int test_solver_ddm_adding_overlap(int argc, char *argv[], int mu, char data_sym
             ddm_with_overlap_threshold.clean();
             error2 = normFrob(f_global - A * x_global) / normFrob(f_global);
             if (rank == 0) {
-                cout << "error: " << error2 << endl;
+                cout << "error: " << error2 << '\n';
             }
 
             test = test || !(error2 < tol);
@@ -328,7 +328,7 @@ int test_solver_ddm_adding_overlap(int argc, char *argv[], int mu, char data_sym
 
             // DDM solver with non uniform coarse space
             if (rank == 0)
-                std::cout << "RAS two level with overlap and threshold:" << std::endl;
+                std::cout << "RAS two level with overlap and threshold:" << '\n';
             opt.parse("-hpddm_schwarz_method ras -hpddm_schwarz_coarse_correction additive");
             // DDM<complex<double>> ddm_with_overlap_threshold(*generator, &Operator, ovr_subdomain_to_global, cluster_to_ovr_subdomain, neighbors, intersections);
             solver_builder default_ddm_solver_non_uniform_coarse_space(Operator, local_block_diagonal_hmatrix_ter, *generator, ovr_subdomain_to_global, cluster_to_ovr_subdomain, neighbors, intersections);
@@ -359,7 +359,7 @@ int test_solver_ddm_adding_overlap(int argc, char *argv[], int mu, char data_sym
             ddm_with_non_uniform_coarse_space.clean();
             error2 = normFrob(f_global - A * x_global) / normFrob(f_global);
             if (rank == 0) {
-                cout << "error: " << error2 << endl;
+                cout << "error: " << error2 << '\n';
             }
 
             test = test || !(error2 < tol);

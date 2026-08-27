@@ -129,8 +129,8 @@ int vector_to_bytes(const std::vector<T> &vect, const std::string &file) {
     std::ofstream out(file, std::ios::out | std::ios::binary | std::ios::trunc);
 
     if (!out) {
-        std::cout << "Cannot open file: " << file << std::endl; // LCOV_EXCL_LINE
-        return 1;                                               // LCOV_EXCL_LINE
+        std::cout << "Cannot open file: " << file << '\n'; // LCOV_EXCL_LINE
+        return 1;                                          // LCOV_EXCL_LINE
     }
     int size = vect.size();
     out.write(reinterpret_cast<char *>(&size), sizeof(int));
@@ -146,8 +146,8 @@ int bytes_to_vector(std::vector<T> &vect, const std::string &file) {
     std::ifstream in(file, std::ios::in | std::ios::binary);
 
     if (!in) {
-        std::cout << "Cannot open file: " << file << std::endl; // LCOV_EXCL_LINE
-        return 1;                                               // LCOV_EXCL_LINE
+        std::cout << "Cannot open file: " << file << '\n'; // LCOV_EXCL_LINE
+        return 1;                                          // LCOV_EXCL_LINE
     }
 
     int size = 0;
@@ -165,11 +165,11 @@ int matlab_save(std::vector<T> vector, const std::string &file) {
     std::ofstream out(file);
     out << std::setprecision(18);
     if (!out) {
-        std::cout << "Cannot open file: " << file << std::endl;
+        std::cout << "Cannot open file: " << file << '\n';
         return 1;
     }
 
-    // out<<rows<<" "<<cols<<std::endl;
+    // out<<rows<<" "<<cols<<'\n';
     for (int i = 0; i < vector.size(); i++) {
         out << std::real(vector[i]);
         if (std::imag(vector[i]) < 0) {
@@ -179,7 +179,7 @@ int matlab_save(std::vector<T> vector, const std::string &file) {
         } else {
             out << "+" << std::imag(vector[i]) << "i\t";
         }
-        out << std::endl;
+        out << '\n';
     }
     out.close();
     return 0;
