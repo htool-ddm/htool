@@ -78,7 +78,7 @@ auto make_kernel() {
 template <typename CoefficientPrecision,
           typename CoordinatePrecision,
           std::size_t dimension>
-using basis_function_type = typename BEMHCA<CoefficientPrecision, CoordinatePrecision, dimension>::basis_function_type;
+using basis_function_type = typename htool::FEMSpace<CoefficientPrecision, CoordinatePrecision, dimension>::basis_function_type;
 
 template <typename CoefficientPrecision, typename CoordinatePrecision, std::size_t dimension>
 basis_function_type<CoefficientPrecision, CoordinatePrecision, dimension> make_p0_basis_on_triangle() {
@@ -283,7 +283,7 @@ bool test_lrmat_build_BEMHCA_triangle(double epsilon, int quadrature_order, doub
 
     auto kernel = make_kernel<CoefficientPrecision, dimension, kernel_type>();
 
-    using basis_function_type = typename BEMHCA<CoefficientPrecision, htool::underlying_type<CoefficientPrecision>, dimension>::basis_function_type;
+    using basis_function_type = typename htool::FEMSpace<CoefficientPrecision, htool::underlying_type<CoefficientPrecision>, dimension>::basis_function_type;
 
     basis_function_type target_basis_function;
     basis_function_type source_basis_function;
@@ -396,7 +396,10 @@ bool test_lrmat_build_BEMHCA_triangle(double epsilon, int quadrature_order, doub
         std::vector<int> source_permutation(4);
         std::iota(source_permutation.begin(), source_permutation.end(), 0);
 
-        BEMHCA<CoefficientPrecision, double, dimension> compressor(kernel, target_basis_function, target_dofs_to_elements, target_number_of_dofs_by_elements, target_elements_to_points.data(), target_number_of_points_per_element, target_points.data(), target_points.size(), target_permutation.data(), quadrature_order, source_basis_function, source_dofs_to_elements, source_number_of_dofs_by_elements, source_elements_to_points.data(), source_number_of_points_per_element, source_points.data(), source_points.size(), source_permutation.data(), quadrature_order);
+        using BEMHCACompressor      = BEMHCA<CoefficientPrecision, double, dimension>;
+        htool::FEMSpace<CoefficientPrecision, double, dimension> target_space{target_basis_function, &target_dofs_to_elements, target_number_of_dofs_by_elements, target_elements_to_points.data(), target_number_of_points_per_element, target_points.data(), target_points.size(), target_permutation.data(), quadrature_order};
+        htool::FEMSpace<CoefficientPrecision, double, dimension> source_space{source_basis_function, &source_dofs_to_elements, source_number_of_dofs_by_elements, source_elements_to_points.data(), source_number_of_points_per_element, source_points.data(), source_points.size(), source_permutation.data(), quadrature_order};
+        BEMHCACompressor compressor(kernel, target_space, source_space);
         compressor.check_size = false;
         LowRankMatrix<CoefficientPrecision> A(target_number_of_dofs, source_number_of_dofs, epsilon);
         compressor.copy_low_rank_approximation(target_number_of_dofs, source_number_of_dofs, 0, 0, A);
@@ -432,7 +435,7 @@ bool test_lrmat_build_BEMHCA_segment(double epsilon, int quadrature_order, doubl
 
     auto kernel = make_kernel<CoefficientPrecision, dimension, kernel_type>();
 
-    using basis_function_type = typename BEMHCA<CoefficientPrecision, htool::underlying_type<CoefficientPrecision>, dimension>::basis_function_type;
+    using basis_function_type = typename htool::FEMSpace<CoefficientPrecision, htool::underlying_type<CoefficientPrecision>, dimension>::basis_function_type;
 
     basis_function_type target_basis_function;
     basis_function_type source_basis_function;
@@ -529,7 +532,10 @@ bool test_lrmat_build_BEMHCA_segment(double epsilon, int quadrature_order, doubl
         std::vector<int> source_permutation(3);
         std::iota(source_permutation.begin(), source_permutation.end(), 0);
 
-        BEMHCA<CoefficientPrecision, double, dimension> compressor(kernel, target_basis_function, target_dofs_to_elements, target_number_of_dofs_by_elements, target_elements_to_points.data(), target_number_of_points_per_element, target_points.data(), target_points.size(), target_permutation.data(), quadrature_order, source_basis_function, source_dofs_to_elements, source_number_of_dofs_by_elements, source_elements_to_points.data(), source_number_of_points_per_element, source_points.data(), source_points.size(), source_permutation.data(), quadrature_order);
+        using BEMHCACompressor      = BEMHCA<CoefficientPrecision, double, dimension>;
+        htool::FEMSpace<CoefficientPrecision, double, dimension> target_space{target_basis_function, &target_dofs_to_elements, target_number_of_dofs_by_elements, target_elements_to_points.data(), target_number_of_points_per_element, target_points.data(), target_points.size(), target_permutation.data(), quadrature_order};
+        htool::FEMSpace<CoefficientPrecision, double, dimension> source_space{source_basis_function, &source_dofs_to_elements, source_number_of_dofs_by_elements, source_elements_to_points.data(), source_number_of_points_per_element, source_points.data(), source_points.size(), source_permutation.data(), quadrature_order};
+        BEMHCACompressor compressor(kernel, target_space, source_space);
         compressor.check_size = false;
         LowRankMatrix<CoefficientPrecision> A(target_number_of_dofs, source_number_of_dofs, epsilon);
         compressor.copy_low_rank_approximation(target_number_of_dofs, source_number_of_dofs, 0, 0, A);
