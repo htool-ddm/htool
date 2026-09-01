@@ -201,10 +201,10 @@ Matrix<CoefficientPrecision> compute_reference_matrix_on_triangle(typename BEMHC
         }
         source_weights[i] = triangle_rules<double>[quadrature_order].quad_points[i].w;
     }
-    target_jacobian                = triangle_jacobian(tmp_target_cell_points[0], tmp_target_cell_points[1], tmp_target_cell_points[2]);
-    source_jacobian                = triangle_jacobian(tmp_source_cell_points[0], tmp_source_cell_points[1], tmp_source_cell_points[2]);
-    local_target_quadrature_points = map_reference_to_triangle(tmp_target_cell_points[0], tmp_target_cell_points[1], tmp_target_cell_points[2], triangle_rules<double>[quadrature_order]);
-    local_source_quadrature_points = map_reference_to_triangle(tmp_source_cell_points[0], tmp_source_cell_points[1], tmp_source_cell_points[2], triangle_rules<double>[quadrature_order]);
+    target_jacobian = triangle_jacobian(tmp_target_cell_points[0], tmp_target_cell_points[1], tmp_target_cell_points[2]);
+    source_jacobian = triangle_jacobian(tmp_source_cell_points[0], tmp_source_cell_points[1], tmp_source_cell_points[2]);
+    map_reference_to_triangle(tmp_target_cell_points[0], tmp_target_cell_points[1], tmp_target_cell_points[2], triangle_rules<double>[quadrature_order], local_target_quadrature_points);
+    map_reference_to_triangle(tmp_source_cell_points[0], tmp_source_cell_points[1], tmp_source_cell_points[2], triangle_rules<double>[quadrature_order], local_source_quadrature_points);
 
     for (int i = 0; i < target_number_of_dofs_by_elements; i++) {
         for (int j = 0; j < source_number_of_dofs_by_elements; j++) {
@@ -259,10 +259,10 @@ Matrix<CoefficientPrecision> compute_reference_matrix_on_segment(typename BEMHCA
         }
         source_weights[i] = gauss_legendre_rules<double>[quadrature_order].quad_points[i].w;
     }
-    target_jacobian                = segment_jacobian(tmp_target_cell_points[0], tmp_target_cell_points[1]);
-    source_jacobian                = segment_jacobian(tmp_source_cell_points[0], tmp_source_cell_points[1]);
-    local_target_quadrature_points = map_reference_to_segment(tmp_target_cell_points[0], tmp_target_cell_points[1], gauss_legendre_rules<double>[quadrature_order]);
-    local_source_quadrature_points = map_reference_to_segment(tmp_source_cell_points[0], tmp_source_cell_points[1], gauss_legendre_rules<double>[quadrature_order]);
+    target_jacobian = segment_jacobian(tmp_target_cell_points[0], tmp_target_cell_points[1]);
+    source_jacobian = segment_jacobian(tmp_source_cell_points[0], tmp_source_cell_points[1]);
+    map_reference_to_segment(tmp_target_cell_points[0], tmp_target_cell_points[1], gauss_legendre_rules<double>[quadrature_order], local_target_quadrature_points);
+    map_reference_to_segment(tmp_source_cell_points[0], tmp_source_cell_points[1], gauss_legendre_rules<double>[quadrature_order], local_source_quadrature_points);
 
     for (int i = 0; i < target_number_of_dofs_by_elements; i++) {
         for (int j = 0; j < source_number_of_dofs_by_elements; j++) {

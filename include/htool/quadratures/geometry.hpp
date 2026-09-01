@@ -22,27 +22,25 @@ double segment_jacobian(
 }
 
 template <typename CoordinatePrecision, std::size_t dimension>
-std::vector<std::array<CoordinatePrecision, dimension>> map_reference_to_segment(
+void map_reference_to_segment(
     const std::array<CoordinatePrecision, dimension> &A,
     const std::array<CoordinatePrecision, dimension> &B,
-    const GaussLegendreRule<CoordinatePrecision> &rule) {
+    const GaussLegendreRule<CoordinatePrecision> &rule,
+    std::vector<std::array<CoordinatePrecision, dimension>> &quadrature_points) {
 
-    std::vector<std::array<CoordinatePrecision, dimension>> result;
     std::array<CoordinatePrecision, dimension> e1;
     for (int dim = 0; dim < dimension; dim++) {
         e1[dim] = B[dim] - A[dim];
     }
-
-    result.reserve(rule.nb_points);
+    if (quadrature_points.size() != rule.nb_points)
+        quadrature_points.resize(rule.nb_points);
     std::array<CoordinatePrecision, dimension> tmp;
     for (int qp = 0; qp < rule.nb_points; qp++) {
         for (int dim = 0; dim < dimension; dim++) {
             tmp[dim] = A[dim] + (1. + rule.quad_points[qp].point[0]) * 0.5 * e1[dim];
         }
-        result.push_back(tmp);
+        quadrature_points[qp] = tmp;
     }
-
-    return result;
 }
 
 // 2D
@@ -84,25 +82,22 @@ double triangle_jacobian(
 }
 
 template <typename CoordinatePrecision, std::size_t dimension>
-std::vector<std::array<CoordinatePrecision, dimension>> map_reference_to_triangle(
+void map_reference_to_triangle(
     const std::array<CoordinatePrecision, dimension> &A,
     const std::array<CoordinatePrecision, dimension> &B,
     const std::array<CoordinatePrecision, dimension> &C,
-    const TriangleRule<CoordinatePrecision> &rule) {
+    const TriangleRule<CoordinatePrecision> &rule,
+    std::vector<std::array<CoordinatePrecision, dimension>> &quadrature_points) {
 
-    std::vector<std::array<CoordinatePrecision, dimension>> result;
-
-    result.reserve(rule.nb_points);
+    if (quadrature_points.size() != rule.nb_points)
+        quadrature_points.resize(rule.nb_points);
     std::array<CoordinatePrecision, dimension> tmp;
     for (int qp = 0; qp < rule.nb_points; qp++) {
         for (int dim = 0; dim < dimension; dim++) {
-            // tmp[dim] = A[dim] + rule.quad_points[qp].point[0] * e1[dim] + rule.quad_points[qp].point[1] * e2[dim];
             tmp[dim] = (1. - rule.quad_points[qp].point[0] - rule.quad_points[qp].point[1]) * A[dim] + rule.quad_points[qp].point[0] * B[dim] + rule.quad_points[qp].point[1] * C[dim];
         }
-        result.push_back(tmp);
+        quadrature_points[qp] = tmp;
     }
-
-    return result;
 }
 
 } // namespace htool
