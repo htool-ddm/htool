@@ -45,11 +45,12 @@ void matrix_to_bytes(const Mat &mat, const std::string &file) {
     if (!out) {
         htool::Logger::get_instance().log(LogLevel::WARNING, "Cannot open file " + file); // LCOV_EXCL_LINE
     }
-    int rows = mat.nb_rows();
-    int cols = mat.nb_cols();
+    int rows         = mat.nb_rows();
+    int cols         = mat.nb_cols();
+    std::size_t size = std::size_t(rows) * std::size_t(cols);
     out.write(reinterpret_cast<const char *>(&rows), sizeof(int));
     out.write(reinterpret_cast<const char *>(&cols), sizeof(int));
-    out.write(reinterpret_cast<const char *>(mat.data()), rows * cols * sizeof(T));
+    out.write(reinterpret_cast<const char *>(mat.data()), size * sizeof(T));
 
     out.close();
 }
@@ -65,9 +66,10 @@ void bytes_to_matrix(const std::string &file, Matrix<T> &mat) {
     int rows = 0, cols = 0;
     in.read(reinterpret_cast<char *>(&rows), sizeof(int));
     in.read(reinterpret_cast<char *>(&cols), sizeof(int));
-    T *new_data = new T[rows * cols];
+    std::size_t size = std::size_t(rows) * std::size_t(cols);
+    T *new_data      = new T[size];
     mat.assign(rows, cols, new_data, true);
-    in.read(reinterpret_cast<char *>(&(new_data[0])), rows * cols * sizeof(T));
+    in.read(reinterpret_cast<char *>(&(new_data[0])), size * sizeof(T));
 
     in.close();
 }
