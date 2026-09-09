@@ -148,7 +148,7 @@ std::map<std::string, std::string> get_hmatrix_information(const HMatrix<Coeffic
     get_leaves(hmatrix, dense_blocks, low_rank_blocks);
 
     // Compute information
-    double local_number_of_rows, local_number_of_cols;
+    std::size_t local_number_of_rows, local_number_of_cols;
     std::size_t local_size, local_rank;
     double number_of_generated_coefficient = 0;
     for (const auto &low_rank_block : low_rank_blocks) {
@@ -158,11 +158,11 @@ std::map<std::string, std::string> get_hmatrix_information(const HMatrix<Coeffic
         local_rank           = low_rank_block->get_low_rank_data()->rank_of();
         maxinfos[1]          = std::max(maxinfos[1], local_size);
         mininfos[1]          = std::min(mininfos[1], local_size);
-        meaninfos[1] += local_size;
+        meaninfos[1] += static_cast<double>(local_size);
         maxinfos[2] = std::max(maxinfos[2], local_rank);
         mininfos[2] = std::min(mininfos[2], local_rank);
-        meaninfos[2] += local_rank;
-        number_of_generated_coefficient += local_rank * (local_number_of_rows + local_number_of_cols);
+        meaninfos[2] += static_cast<double>(local_rank);
+        number_of_generated_coefficient += static_cast<double>(local_rank * (local_number_of_rows + local_number_of_cols));
     }
     for (const auto &dense_block : dense_blocks) {
         local_number_of_rows = dense_block->get_target_cluster().get_size();
@@ -170,8 +170,8 @@ std::map<std::string, std::string> get_hmatrix_information(const HMatrix<Coeffic
         local_size           = local_number_of_rows * local_number_of_cols;
         maxinfos[0]          = std::max(maxinfos[0], local_size);
         mininfos[0]          = std::min(mininfos[0], local_size);
-        meaninfos[0] += local_size;
-        number_of_generated_coefficient += (local_number_of_rows * local_number_of_cols);
+        meaninfos[0] += static_cast<double>(local_size);
+        number_of_generated_coefficient += static_cast<double>(local_number_of_rows * local_number_of_cols);
     }
 
     meaninfos[0] = (dense_blocks.size() == 0 ? 0 : meaninfos[0] / dense_blocks.size());
