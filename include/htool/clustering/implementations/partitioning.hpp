@@ -58,9 +58,6 @@ class Partitioning_N : public VirtualPartitioning<CoordinatePrecision> {
         }
     }
 
-    CoordinatePrecision aspect_ratio(std::vector<CoordinatePrecision>) {
-    }
-
     std::vector<int> distributed_splittings(int number_of_dimension, int number_of_partitions, const std::vector<CoordinatePrecision> &weights) {
         // Generate all ordered integer decompositions of number_of_dimension elements
         std::vector<std::vector<int>> integer_decompositions;

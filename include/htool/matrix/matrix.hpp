@@ -37,9 +37,9 @@ class Matrix {
     }
     Matrix(const Matrix &rhs) : m_number_of_rows(rhs.m_number_of_rows), m_number_of_cols(rhs.m_number_of_cols), m_is_owning_data(true), m_pivots(rhs.m_pivots) {
         std::size_t size = std::size_t(rhs.m_number_of_rows) * std::size_t(rhs.m_number_of_cols);
-        m_data           = size != 0 ? new T[rhs.m_number_of_rows * rhs.m_number_of_cols]() : nullptr;
+        m_data           = size != 0 ? new T[size]() : nullptr;
 
-        std::copy_n(rhs.m_data, rhs.m_number_of_rows * rhs.m_number_of_cols, m_data);
+        std::copy_n(rhs.m_data, size, m_data);
     }
     Matrix &operator=(const Matrix &rhs) {
         if (&rhs == this) {
@@ -48,7 +48,7 @@ class Matrix {
         std::size_t size     = std::size_t(m_number_of_rows) * std::size_t(m_number_of_cols);
         std::size_t size_rhs = std::size_t(rhs.m_number_of_rows) * std::size_t(rhs.m_number_of_cols);
         if (size == size_rhs) {
-            std::copy_n(rhs.m_data, m_number_of_rows * m_number_of_cols, m_data);
+            std::copy_n(rhs.m_data, size, m_data);
             m_number_of_rows = rhs.m_number_of_rows;
             m_number_of_cols = rhs.m_number_of_cols;
         } else {
@@ -56,8 +56,8 @@ class Matrix {
             m_number_of_cols = rhs.m_number_of_cols;
             if (m_is_owning_data)
                 delete[] m_data;
-            m_data = size_rhs != 0 ? new T[m_number_of_rows * m_number_of_cols]() : nullptr;
-            std::copy_n(rhs.m_data, m_number_of_rows * m_number_of_cols, m_data);
+            m_data = size_rhs != 0 ? new T[size_rhs]() : nullptr;
+            std::copy_n(rhs.m_data, size_rhs, m_data);
             m_is_owning_data = true;
         }
         m_pivots = rhs.m_pivots;
@@ -153,22 +153,20 @@ class Matrix {
     the number of columns is set to _nbc_.
     */
     void resize(int nbr, int nbc, T value = 0) {
-        if (m_data != nullptr and m_is_owning_data and m_number_of_rows * m_number_of_cols != nbr * nbc) {
-            delete[] m_data;
-            m_data           = nullptr;
-            m_data           = new T[nbr * nbc];
-            m_is_owning_data = true;
-        } else if (m_number_of_rows * m_number_of_cols != nbr * nbc) {
-            m_data           = new T[nbr * nbc];
-            m_is_owning_data = true;
-        } else if (!m_is_owning_data and m_number_of_rows * m_number_of_cols == nbr * nbc) {
-            m_data           = new T[nbr * nbc];
+        std::size_t new_size   = std::size_t(nbr) * std::size_t(nbc);
+        std::size_t old_size   = std::size_t(m_number_of_rows) * std::size_t(m_number_of_cols);
+        bool need_fresh_buffer = !m_is_owning_data or old_size != new_size;
+        if (need_fresh_buffer) {
+            if (m_is_owning_data) {
+                delete[] m_data;
+            }
+            m_data           = new_size != 0 ? new T[new_size] : nullptr;
             m_is_owning_data = true;
         }
 
         m_number_of_rows = nbr;
         m_number_of_cols = nbc;
-        std::fill_n(m_data, nbr * nbc, value);
+        std::fill_n(m_data, new_size, value);
     }
 
     //! ### Matrix-scalar product
