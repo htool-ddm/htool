@@ -29,11 +29,20 @@ All notable changes to this project will be documented in this file.
 ### Added
 
 - JOSS badge and update `CITATION.cff`.
+- Opt-in `tidy` CMake target running clang-tidy (`bugprone-*`/`performance-*`) over `examples/` and `tests/`, not part of the default build. Configured via `.clang-tidy`, excluding the macro-generated `wrapper_blas.hpp`/`wrapper_lapack.hpp` from findings.
 
 ### Changed
 
 - Make std::execution optional via `HTOOL_WITH_STD_EXECUTION_API` macro to avoid linking with TBB. Default to false.
 - Improve `HMatrixBuilder` interface.
+- Lock down `TreeNode`'s CRTP constructors and fold `CRTPHelper` into it.
+- Replace `std::endl`/`endl` with `'\n'` across `include/`, `tests/` and `examples/`.
+- Fix unnecessary-value-param findings from clang-tidy: move sink parameters, take pure reads by const reference.
+
+### Removed
+
+- Remove orphaned `local_operators` test and `proto_ddm`/`wrapper_proto_ddm`.
+- Remove dead `aspect_ratio` stub.
 
 ### Fixed
 
@@ -42,6 +51,9 @@ All notable changes to this project will be documented in this file.
 - Fix `number_of_generated_coefficient` computation.
 - Fix overflow in `get_distributed_hmatrix_information`.
 - Fix float-point computation issue in `create_cluster_tree`.
+- Fix `Matrix` move constructor/assignment to actually move `m_pivots`.
+- Fix `Matrix`'s int-overflow risk in allocation sizes (rows*cols computed in `int` then used as a `new[]`/read/write size), and a zero-length-array leak in `resize()`.
+- Fix real overflow/mistyping bugs surfaced by clang-tidy's widening/narrowing-conversion checks in `matrix/utils/output.hpp` and `hmatrix_output.hpp`.
 
 ## [1.0.2] - 2026-02-14
 
