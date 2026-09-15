@@ -18,6 +18,10 @@ add_custom_target(build-tests-hmatrix)
 add_dependencies(build-tests build-tests-hmatrix)
 add_subdirectory(hmatrix)
 
+add_custom_target(build-tests-quadratures)
+add_dependencies(build-tests build-tests-quadratures)
+add_subdirectory(quadratures)
+
 if(MPI_FOUND)
     add_custom_target(build-tests-distributed-operator)
     add_dependencies(build-tests build-tests-distributed-operator)
