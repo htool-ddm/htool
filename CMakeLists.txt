@@ -84,6 +84,7 @@ option(HTOOL_WITH_EXAMPLES "Build htool examples ?" ON)
 option(HTOOL_WITH_DOC "Build documentation" ON)
 option(HTOOL_WITH_STRICT_TESTS "Add -Werror to the tests" OFF)
 option(HTOOL_WITH_STD_EXECUTION_API "Use std::execution API" OFF)
+option(HTOOL_WITH_THEIA "Add Theia library" ON)
 
 #=============================================================================#
 #========================== External Libraries ===============================#
@@ -129,6 +130,25 @@ message(STATUS "Lapack implementation:" "${LAPACK_LIBRARIES}")
 # HPDDM
 find_package(HPDDM)
 
+# Theia
+if(HTOOL_WITH_THEIA)
+    include(FetchContent)
+    FetchContent_Declare(
+        theia
+        GIT_REPOSITORY https://github.com/IChollet/theia_dev
+        GIT_TAG 7ade29f3143d10c36c14914979ba7651b9e4a021
+        SOURCE_SUBDIR "MADE-UP-DIRECTORY") # https://stackoverflow.com/questions/79261625/cmake-fetchcontent-with-header-only-project
+
+    FetchContent_MakeAvailable(theia)
+
+    add_library(theia INTERFACE)
+    target_include_directories(theia INTERFACE $<BUILD_INTERFACE:${theia_SOURCE_DIR}/include> $<INSTALL_INTERFACE:include>)
+
+    install(
+        TARGETS theia
+        EXPORT ${PROJECT_NAME}Targets
+        PUBLIC_HEADER DESTINATION include)
+endif()
 #=============================================================================#
 #========================== Libraries ========================================#
 #=============================================================================#
@@ -140,6 +160,10 @@ if(OpenMP_CXX_FOUND)
     target_link_libraries(htool INTERFACE OpenMP::OpenMP_CXX)
 endif()
 target_compile_features(htool INTERFACE cxx_std_17)
+
+if(HTOOL_WITH_THEIA)
+    target_link_libraries(htool INTERFACE theia)
+endif()
 
 if("${BLA_VENDOR}" STREQUAL "Intel10_32"
    OR "${BLA_VENDOR}" STREQUAL "Intel10_64lp"

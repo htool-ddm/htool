@@ -1,3 +1,4 @@
+#include "htool/misc/misc.hpp"
 #include <htool/basic_types/vector.hpp>                    // for operator<<
 #include <htool/hmatrix/lrmat/lrmat.hpp>                   // for Frobenius_abs...
 #include <htool/hmatrix/lrmat/utils/SVD_recompression.hpp> // for recompression
@@ -17,12 +18,11 @@ using namespace std;
 using namespace htool;
 
 template <typename CoefficientPrecision>
-bool test_lrmat(const Cluster<double> &target_cluster, const Cluster<double> &source_cluster, const VirtualInternalGenerator<CoefficientPrecision> &A, const LowRankMatrix<CoefficientPrecision> &Fixed_approximation, const LowRankMatrix<CoefficientPrecision> &Auto_approximation, std::pair<double, double> fixed_compression_interval, std::pair<double, double> auto_compression_interval) {
+bool test_lrmat(const Cluster<double> &target_cluster, const Cluster<double> &source_cluster, const VirtualInternalGenerator<CoefficientPrecision> &A, const LowRankMatrix<CoefficientPrecision> &Fixed_approximation, const LowRankMatrix<CoefficientPrecision> &Auto_approximation, std::pair<double, double> fixed_compression_interval, std::pair<double, double> auto_compression_interval, int reqrank_max = 10, htool::underlying_type<CoefficientPrecision> fixed_minimal_error = 1e-8) {
 
     bool test = 0;
 
     // ACA with fixed rank
-    int reqrank_max = 10;
     std::vector<double> fixed_errors;
     for (int k = 0; k < Fixed_approximation.rank_of() + 1; k++) {
         fixed_errors.push_back(Frobenius_absolute_error(target_cluster, source_cluster, Fixed_approximation, A, k));
@@ -34,7 +34,7 @@ bool test_lrmat(const Cluster<double> &target_cluster, const Cluster<double> &so
     cout << "> rank : " << Fixed_approximation.rank_of() << '\n';
 
     // Test Frobenius errors
-    test = test || !(fixed_errors.back() < 1e-8);
+    test = test || !(fixed_errors.back() < fixed_minimal_error);
     cout << "> Errors with Frobenius norm : " << fixed_errors << '\n';
 
     // Test compression
