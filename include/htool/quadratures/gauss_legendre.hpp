@@ -11,11 +11,14 @@ namespace htool {
 
 template <typename T>
 struct GaussLegendreRule {
-    inline static const std::string name = "gauss_legendre";
+    static const std::string name;
     std::size_t degree;
     std::size_t nb_points;
     const QuadPoint<T, 1> *quad_points;
 };
+
+template <typename T>
+const std::string GaussLegendreRule<T>::name = "gauss_legendre";
 
 // ---------- Degree 1 (1 points) ----------
 // Gauss-Legendre

@@ -11,11 +11,14 @@ namespace htool {
 
 template <typename T>
 struct TriangleRule {
-    inline static const std::string name = "triangle";
+    static const std::string name;
     std::size_t degree;
     std::size_t nb_points;
     const QuadPoint<T, 2> *quad_points;
 };
+
+template <typename T>
+const std::string TriangleRule<T>::name = "triangle";
 
 // ---------- Degree 1 (1 points) ----------
 // Centroid rule
