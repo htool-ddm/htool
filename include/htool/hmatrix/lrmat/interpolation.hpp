@@ -163,8 +163,9 @@ class BEMHCA final : public VirtualInternalLowRankGenerator<CoefficientPrecision
 
   private:
     kernel_type m_kernel;
-    std::map<const Cluster<CoordinatePrecision> *, Matrix<CoefficientPrecision>> m_target_interpolated_leaves;
-    std::map<const Cluster<CoordinatePrecision> *, Matrix<CoefficientPrecision>> m_source_interpolated_leaves;
+    using leaf_box = std::pair<std::array<CoordinatePrecision, dimension>, std::array<CoordinatePrecision, dimension>>; // {min_box, max_box}
+    std::map<const Cluster<CoordinatePrecision> *, std::pair<leaf_box, Matrix<CoefficientPrecision>>> m_target_interpolated_leaves;
+    std::map<const Cluster<CoordinatePrecision> *, std::pair<leaf_box, Matrix<CoefficientPrecision>>> m_source_interpolated_leaves;
 
     // Quadrature rule, reference points and weights for one side (target or source). Built once in
     // the constructor and never mutated after, so concurrent const reads from multiple threads
@@ -415,29 +416,42 @@ class BEMHCA final : public VirtualInternalLowRankGenerator<CoefficientPrecision
     BEMHCA(kernel_type kernel, FEMSpace<CoefficientPrecision, CoordinatePrecision, dimension> target, FEMSpace<CoefficientPrecision, CoordinatePrecision, dimension> source) : m_kernel(kernel), m_target(std::move(target)), m_source(std::move(source)), m_target_interpolation_setup(m_target.quadrature_order, m_target.number_of_points_per_element), m_source_interpolation_setup(m_source.quadrature_order, m_source.number_of_points_per_element) {
     }
 
-    // BEMHCA(kernel_type kernel, FEMSpace<CoefficientPrecision, CoordinatePrecision, dimension> target, const Cluster<CoordinatePrecision> &target_cluster, FEMSpace<CoefficientPrecision, CoordinatePrecision, dimension> source, const Cluster<CoordinatePrecision> &source_cluster, bool use_precomputed_PtoL) : m_kernel(kernel), m_target(std::move(target)), m_source(std::move(source)), m_target_interpolation_setup(m_target.quadrature_order, m_target.number_of_points_per_element), m_source_interpolation_setup(m_source.quadrature_order, m_source.number_of_points_per_element) {
-    //     precomputed_PtoM = true;
+    BEMHCA(kernel_type kernel, FEMSpace<CoefficientPrecision, CoordinatePrecision, dimension> target, const Cluster<CoordinatePrecision> &target_cluster, FEMSpace<CoefficientPrecision, CoordinatePrecision, dimension> source, const Cluster<CoordinatePrecision> &source_cluster, underlying_type<CoefficientPrecision> epsilon) : m_kernel(kernel), m_target(std::move(target)), m_source(std::move(source)), m_target_interpolation_setup(m_target.quadrature_order, m_target.number_of_points_per_element), m_source_interpolation_setup(m_source.quadrature_order, m_source.number_of_points_per_element) {
+        precomputed_PtoM = true;
 
-    //     // Get cluster leaves
-    //     preorder_tree_traversal(target_cluster,
-    //                             [this](const Cluster<CoordinatePrecision> &current_cluster) {
-    //                                 if (current_cluster.is_leaf()) {
-    //                                     m_target_interpolated_leaves[&current_cluster];
-    //                                 }
-    //                             });
-    //     preorder_tree_traversal(source_cluster,
-    //                             [this](const Cluster<CoordinatePrecision> &current_cluster) {
-    //                                 if (current_cluster.is_leaf()) {
-    //                                     m_source_interpolated_leaves[&current_cluster];
-    //                                 }
-    //                             });
+        int L        = std::ceil(std::log(1. / epsilon) / std::log(10)) + 1;
+        int n_interp = 1;
+        for (int d = 0; d < dimension; d++)
+            n_interp *= L;
 
-    //     // Interpolate leaves
-    //     for (auto &target_leaf_pair : m_target_interpolated_leaves) {
-    //         auto target_leaf_cluster           = target_leaf_pair.first;
-    //         auto &target_leaf_interpolated_mat = target_leaf_pair.second;
-    //     }
-    // }
+        // Get cluster leaves
+        preorder_tree_traversal(target_cluster,
+                                [this](const Cluster<CoordinatePrecision> &current_cluster) {
+                                    if (current_cluster.is_leaf()) {
+                                        m_target_interpolated_leaves[&current_cluster];
+                                    }
+                                });
+        preorder_tree_traversal(source_cluster,
+                                [this](const Cluster<CoordinatePrecision> &current_cluster) {
+                                    if (current_cluster.is_leaf()) {
+                                        m_source_interpolated_leaves[&current_cluster];
+                                    }
+                                });
+
+        // Interpolate leaves
+        for (auto &target_leaf_pair : m_target_interpolated_leaves) {
+            const Cluster<CoordinatePrecision> *target_leaf_cluster = target_leaf_pair.first;
+            side_geometry geom                                      = collect_side(target_leaf_cluster->get_size(), m_target.permutation + target_leaf_cluster->get_offset(), m_target);
+            inflate_box(geom.min_box, geom.max_box);
+            target_leaf_pair.second = {{geom.min_box, geom.max_box}, build_interpolation_matrix(L, n_interp, target_leaf_cluster->get_size(), geom, m_target, m_target_interpolation_setup)};
+        }
+        for (auto &source_leaf_pair : m_source_interpolated_leaves) {
+            const Cluster<CoordinatePrecision> *source_leaf_cluster = source_leaf_pair.first;
+            side_geometry geom                                      = collect_side(source_leaf_cluster->get_size(), m_source.permutation + source_leaf_cluster->get_offset(), m_source);
+            inflate_box(geom.min_box, geom.max_box);
+            source_leaf_pair.second = {{geom.min_box, geom.max_box}, build_interpolation_matrix(L, n_interp, source_leaf_cluster->get_size(), geom, m_source, m_source_interpolation_setup)};
+        }
+    }
 
     bool copy_low_rank_approximation(int M, int N, int row_offset, int col_offset, LowRankMatrix<CoefficientPrecision> &lrmat) const override {
         int reqrank = -1;
