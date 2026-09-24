@@ -134,7 +134,7 @@ jobs:
       - name: Checkout hpddm
         run: |
           git clone https://github.com/hpddm/hpddm.git hpddm
-          cd hpddm && git checkout 24aed69dbde7ef1526ae87ccf4f39ceb840bccea
+          cd hpddm && git checkout 27d20aa5fac46086e28bcc7de1326f3ea8a16423
         # uses: actions/checkout@v3
         # with:
         #   path: "hpddm"

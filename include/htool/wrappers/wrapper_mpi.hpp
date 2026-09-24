@@ -5,7 +5,22 @@
 #include <climits>             // for UCHAR_MAX, UINT_MAX, ULONG_MAX, USHRT...
 #include <complex>             // for complex
 #include <cstdint>             // for SIZE_MAX
-#include <mpi.h>               // for MPI_Datatype, MPI_C_COMPLEX, MPI_C_DO...
+
+#if defined(__clang__)
+#    pragma clang diagnostic push
+#    pragma clang diagnostic ignored "-Wold-style-cast"
+#elif defined(__GNUC__) || defined(__GNUG__)
+#    pragma GCC diagnostic push
+#    pragma GCC diagnostic ignored "-Wold-style-cast"
+#endif
+
+#include <mpi.h> // for MPI_Datatype, MPI_C_COMPLEX, MPI_C_DO...
+
+#if defined(__clang__)
+#    pragma clang diagnostic pop
+#elif defined(__GNUC__) || defined(__GNUG__)
+#    pragma GCC diagnostic pop
+#endif
 
 namespace htool {
 template <typename T>
