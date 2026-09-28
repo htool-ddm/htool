@@ -272,7 +272,7 @@ class GeometricSplitting {
                     return dprod(direction, std::vector<T>(coordinates + spatial_dimension * a, coordinates + spatial_dimension * (1 + a)) - first_point) > children_geometric_size;
                 });
                 if (result != permutation.end()) {
-                    offsets[p]  = count - permutation.begin();
+                    offsets[p]  = std::distance(permutation.begin(), count);
                     sizes[p]    = (result - permutation.begin()) - (count - permutation.begin());
                     count       = result;
                     first_point = std::vector<T>(coordinates + spatial_dimension * (*result), coordinates + spatial_dimension * (*result + 1));
@@ -282,7 +282,7 @@ class GeometricSplitting {
                     break;
                 }
             }
-            offsets.back() = (count - permutation.begin());
+            offsets.back() = std::distance(permutation.begin(), count);
             sizes.back()   = size - std::accumulate(sizes.begin(), sizes.end() - 1, 0);
             for (int p = 0; p < number_of_partition; p++) {
                 current_partition[p] = std::pair<int, int>(offsets[p], sizes[p]);
