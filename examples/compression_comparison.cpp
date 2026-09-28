@@ -102,6 +102,7 @@ int main(int argc, char *argv[]) {
     LowRankMatrix<double> A_SVD(target_cluster.get_size(), source_cluster.get_size(), epsilon);
     compressor_SVD.copy_low_rank_approximation(target_cluster.get_size(), source_cluster.get_size(), target_cluster.get_offset(), source_cluster.get_offset(), A_SVD);
     std::vector<double> SVD_fixed_errors;
+    SVD_fixed_errors.reserve(A_SVD.rank_of() + 1);
     for (int k = 0; k < A_SVD.rank_of() + 1; k++) {
         SVD_fixed_errors.push_back(Frobenius_absolute_error(target_cluster, source_cluster, A_SVD, A, k) / norm_A);
     }
@@ -111,6 +112,7 @@ int main(int argc, char *argv[]) {
     LowRankMatrix<double> A_fullACA_fixed(target_cluster.get_size(), source_cluster.get_size(), epsilon);
     compressor_fullACA.copy_low_rank_approximation(target_cluster.get_size(), source_cluster.get_size(), target_cluster.get_offset(), source_cluster.get_offset(), A_fullACA_fixed);
     std::vector<double> fullACA_fixed_errors;
+    fullACA_fixed_errors.reserve(A_fullACA_fixed.rank_of() + 1);
     for (int k = 0; k < A_fullACA_fixed.rank_of() + 1; k++) {
         fullACA_fixed_errors.push_back(Frobenius_absolute_error(target_cluster, source_cluster, A_fullACA_fixed, A, k) / norm_A);
     }
@@ -120,6 +122,7 @@ int main(int argc, char *argv[]) {
     LowRankMatrix<double> A_partialACA_fixed(target_cluster.get_size(), source_cluster.get_size(), epsilon);
     compressor_partialACA.copy_low_rank_approximation(target_cluster.get_size(), source_cluster.get_size(), target_cluster.get_offset(), source_cluster.get_offset(), A_partialACA_fixed);
     std::vector<double> partialACA_fixed_errors;
+    partialACA_fixed_errors.reserve(A_partialACA_fixed.rank_of() + 1);
     for (int k = 0; k < A_partialACA_fixed.rank_of() + 1; k++) {
         partialACA_fixed_errors.push_back(Frobenius_absolute_error(target_cluster, source_cluster, A_partialACA_fixed, A, k) / norm_A);
     }
@@ -129,6 +132,7 @@ int main(int argc, char *argv[]) {
     LowRankMatrix<double> A_sympartialACA_fixed(target_cluster.get_size(), source_cluster.get_size(), epsilon);
     compressor_sympartialACA.copy_low_rank_approximation(target_cluster.get_size(), source_cluster.get_size(), target_cluster.get_offset(), source_cluster.get_offset(), A_sympartialACA_fixed);
     std::vector<double> sympartialACA_fixed_errors;
+    sympartialACA_fixed_errors.reserve(A_sympartialACA_fixed.rank_of() + 1);
     for (int k = 0; k < A_sympartialACA_fixed.rank_of() + 1; k++) {
         sympartialACA_fixed_errors.push_back(Frobenius_absolute_error(target_cluster, source_cluster, A_sympartialACA_fixed, A, k) / norm_A);
     }
@@ -138,6 +142,7 @@ int main(int argc, char *argv[]) {
     LowRankMatrix<double> A_recompressed_sympartialACA_fixed(target_cluster.get_size(), source_cluster.get_size(), epsilon);
     compressor_recompressed_sympartialACA.copy_low_rank_approximation(target_cluster.get_size(), source_cluster.get_size(), target_cluster.get_offset(), source_cluster.get_offset(), A_recompressed_sympartialACA_fixed);
     std::vector<double> recompressed_sympartialACA_fixed_errors;
+    recompressed_sympartialACA_fixed_errors.reserve(A_recompressed_sympartialACA_fixed.rank_of() + 1);
     for (int k = 0; k < A_recompressed_sympartialACA_fixed.rank_of() + 1; k++) {
         recompressed_sympartialACA_fixed_errors.push_back(Frobenius_absolute_error(target_cluster, source_cluster, A_recompressed_sympartialACA_fixed, A, k) / norm_A);
     }

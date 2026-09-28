@@ -152,6 +152,8 @@ class DDM {
             // case HPDDM_SCHWARZ_METHOD_SORAS:
             // hpddm_op->setType(HPDDM::Schwarz::Prcndtnr::NO);
             // break;
+        default:   // LCOV_EXCL_LINE
+            break; // LCOV_EXCL_LINE
         }
 
         //
@@ -254,6 +256,8 @@ class DDM {
             // case HPDDM_SCHWARZ_METHOD_SORAS:
             // infos["Precond"] = "SORAS";
             // break;
+        default:   // LCOV_EXCL_LINE
+            break; // LCOV_EXCL_LINE
         }
 
         switch (opt.val("krylov_method", 8)) {
@@ -284,6 +288,8 @@ class DDM {
         case HPDDM_KRYLOV_METHOD_NONE:
             infos["krylov_method"] = "none";
             break;
+        default:   // LCOV_EXCL_LINE
+            break; // LCOV_EXCL_LINE
         }
 
         if (infos["Precond"] == "None") {
@@ -351,7 +357,7 @@ class DDM {
         }
     }
 
-    void add_infos(std::string key, std::string value) const {
+    void add_infos(const std::string &key, const std::string &value) const {
         if (get_rankWorld(m_hpddm_op->HA->get_comm()) == 0) {
             if (infos.find(key) == infos.end()) {
                 infos[key] = value;
@@ -361,7 +367,7 @@ class DDM {
         }
     }
 
-    void set_infos(std::string key, std::string value) const {
+    void set_infos(const std::string &key, const std::string &value) const {
         if (get_rankWorld(m_hpddm_op->HA->get_comm()) == 0) {
             infos[key] = value;
         }

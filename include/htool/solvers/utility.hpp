@@ -15,6 +15,7 @@
 #include <array>                                            // for array
 #include <functional>                                       // for function
 #include <memory>                                           // for make_unique
+#include <utility>                                          // for move
 #include <vector>                                           // for vector
 
 namespace htool {
@@ -293,7 +294,7 @@ class DDMSolverBuilder {
             const std::vector<int> &m_source_local_to_global_numbering;
             std::shared_ptr<VirtualLowRankGenerator<CoefficientPrecision, CoordinatePrecision>> m_low_rank_generator;
 
-            LocalLowRankGenerator(std::shared_ptr<VirtualLowRankGenerator<CoefficientPrecision, CoordinatePrecision>> low_rank_generator, const Cluster<CoordinatePrecision> &local_target_cluster, const Cluster<CoordinatePrecision> &local_source_cluster, const std::vector<int> &target_local_to_global_numbering, const std::vector<int> &source_local_to_global_numbering) : m_local_target_cluster(local_target_cluster), m_local_source_cluster(local_source_cluster), m_target_local_to_global_numbering(target_local_to_global_numbering), m_source_local_to_global_numbering(source_local_to_global_numbering), m_low_rank_generator(low_rank_generator) {}
+            LocalLowRankGenerator(std::shared_ptr<VirtualLowRankGenerator<CoefficientPrecision, CoordinatePrecision>> low_rank_generator, const Cluster<CoordinatePrecision> &local_target_cluster, const Cluster<CoordinatePrecision> &local_source_cluster, const std::vector<int> &target_local_to_global_numbering, const std::vector<int> &source_local_to_global_numbering) : m_local_target_cluster(local_target_cluster), m_local_source_cluster(local_source_cluster), m_target_local_to_global_numbering(target_local_to_global_numbering), m_source_local_to_global_numbering(source_local_to_global_numbering), m_low_rank_generator(std::move(low_rank_generator)) {}
 
             std::pair<std::vector<int>, std::vector<int>> renumber(int M, int N, int row_offset, int col_offset) const {
 
