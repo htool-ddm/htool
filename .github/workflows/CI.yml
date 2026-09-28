@@ -152,6 +152,13 @@ jobs:
           cmake -DHTOOL_WITH_EXAMPLES=ON -DHTOOL_WITH_DOC=ON -DHTOOL_WITH_STRICT_TESTS=ON -DMPIEXEC_PREFLAGS="${{ matrix.MPIEXEC_PREFLAGS }}" -DUSE_SANITIZER=${{ matrix.USE_SANITIZER }} -DCMAKE_BUILD_TYPE=${{ matrix.CMAKE_BUILD_TYPE }} -DCODE_COVERAGE=${{ matrix.CODE_COVERAGE }} ../
           make -j 4 build-tests
 
+      # Only one entry is enough; .clang-tidy needs clang-tidy >= 19
+      - name: Run clang-tidy
+        if: matrix.container == 'ubuntu_clang_openmpi'
+        run: |
+          cd htool/build
+          make tidy
+
       - name: Run tests
         run: |
           cd htool/build

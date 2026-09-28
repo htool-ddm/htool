@@ -29,7 +29,7 @@ All notable changes to this project will be documented in this file.
 ### Added
 
 - JOSS badge and update `CITATION.cff`.
-- Opt-in `tidy` CMake target running clang-tidy (`bugprone-*`/`performance-*`) over `examples/` and `tests/`, not part of the default build. Configured via `.clang-tidy`, excluding the macro-generated `wrapper_blas.hpp`/`wrapper_lapack.hpp` from findings.
+- Opt-in `tidy` CMake target running clang-tidy (`bugprone-*`/`performance-*`) over `examples/` and `tests/`, not part of the default build. Configured via `.clang-tidy`: findings are errors except `branch-clone`, `exception-escape` and `implicit-widening-of-multiplication-result`; the macro-generated `wrapper_blas.hpp`/`wrapper_lapack.hpp` are excluded from findings (needs clang-tidy >= 19). Run in CI on the Ubuntu clang/OpenMPI job.
 
 ### Changed
 
@@ -38,6 +38,7 @@ All notable changes to this project will be documented in this file.
 - Lock down `TreeNode`'s CRTP constructors and fold `CRTPHelper` into it.
 - Replace `std::endl`/`endl` with `'\n'` across `include/`, `tests/` and `examples/`.
 - Fix unnecessary-value-param findings from clang-tidy: move sink parameters, take pure reads by const reference.
+- Add explicit `default` cases to `DDM`'s `schwarz_method`/`krylov_method` switches (behavior unchanged).
 
 ### Removed
 
@@ -54,6 +55,7 @@ All notable changes to this project will be documented in this file.
 - Fix `Matrix` move constructor/assignment to actually move `m_pivots`.
 - Fix `Matrix`'s int-overflow risk in allocation sizes (rows*cols computed in `int` then used as a `new[]`/read/write size), and a zero-length-array leak in `resize()`.
 - Fix real overflow/mistyping bugs surfaced by clang-tidy's widening/narrowing-conversion checks in `matrix/utils/output.hpp` and `hmatrix_output.hpp`.
+- Compute the partition-level power of the number of children as an exact integer instead of via `std::pow` in cluster tree building.
 
 ## [1.0.2] - 2026-02-14
 

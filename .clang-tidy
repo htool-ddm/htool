@@ -7,18 +7,32 @@
 # because they generate high-volume, low-signal findings for a numerical
 # library where same-typed adjacent parameters (M, N, i, j, alpha, beta...)
 # and deterministic RNG seeds (reproducible tests) are normal and intentional.
+# performance-enum-size only suggests shrinking enums to uint8_t, which buys
+# nothing here.
 Checks: >
   -*,
   bugprone-*,
   performance-*,
   -bugprone-easily-swappable-parameters,
-  -bugprone-random-generator-seed
+  -bugprone-random-generator-seed,
+  -performance-enum-size
 
 HeaderFilterRegex: 'include/htool/.*'
 # wrapper_blas.hpp/wrapper_lapack.hpp are macro-generated BLAS/LAPACK bindings
 # where the "macro argument" clang-tidy warns about is always a type name,
 # never an expression -- bugprone-macro-parentheses fires hundreds of times
-# there for no real risk. Requires clang-tidy >= 17.
+# there for no real risk. Requires clang-tidy >= 19.
 ExcludeHeaderFilterRegex: 'wrapper_blas\.hpp|wrapper_lapack\.hpp'
 FormatStyle: file
-WarningsAsErrors: ''
+# htool uses int for sizes/indices by design: ignore conversions from
+# container size/difference types, and integer -> floating point (statistics).
+CheckOptions:
+  bugprone-narrowing-conversions.IgnoreConversionFromTypes: 'size_t;ptrdiff_t;size_type;difference_type'
+  bugprone-narrowing-conversions.WarnOnIntegerToFloatingPointNarrowingConversion: false
+# Every finding fails the run (CI gate), except these checks whose remaining
+# findings are known and accepted -- still reported, just not fatal.
+WarningsAsErrors: >
+  *,
+  -bugprone-branch-clone,
+  -bugprone-exception-escape,
+  -bugprone-implicit-widening-of-multiplication-result
