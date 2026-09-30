@@ -14,7 +14,6 @@ bool test_matrix_triangular_solve(int n, int nrhs, char side, char transa, char 
 
     bool is_error = false;
 
-    // Generate random matrix
     htool::underlying_type<T> error;
     T alpha;
     Matrix<T> result(n, nrhs), B(n, nrhs);
@@ -41,7 +40,7 @@ bool test_matrix_triangular_solve(int n, int nrhs, char side, char transa, char 
         }
         scale(1. / max, A);
     }
-    // Triangular setup
+
     Matrix<T> LA(A), UA(A), LB(B.nb_rows(), B.nb_cols()), permuted_LB(B.nb_rows(), B.nb_cols()), UB(B.nb_rows(), B.nb_cols());
     for (int i = 0; i < A.nb_rows(); i++) {
         if (diag == 'U') {
@@ -58,7 +57,6 @@ bool test_matrix_triangular_solve(int n, int nrhs, char side, char transa, char 
         }
     }
 
-    // Permutation
     std::vector<int> ipiv(A.nb_rows()), inverse_permutation(A.nb_rows());
     for (int i = 0; i < A.nb_rows(); i++) {
         generate_random_scalar(ipiv[i], 0, A.nb_rows() - i - 1);
@@ -117,23 +115,16 @@ bool test_matrix_triangular_solve(int n, int nrhs, char side, char transa, char 
         }
     }
 
-    // triangular_matrix_matrix_solve
     test_factorization = LA;
     test_solve         = LB;
     triangular_matrix_matrix_solve(side, 'L', transa, diag, alpha, test_factorization, test_solve);
-    // test_solve.print(std::cout, ",");
     error    = normFrob(result - test_solve) / normFrob(result);
     is_error = is_error || !(error < 1e-9);
     cout << "> Errors on lower triangular matrix matrix solve: " << error << '\n';
 
     test_factorization              = LA;
     test_factorization.get_pivots() = ipiv;
-    // std::cout << ipiv.size() << "\n";
-    // for (auto elt : ipiv) {
-    //     std::cout << elt << " ";
-    // }
-    // std::cout << "\n";
-    test_solve = permuted_LB;
+    test_solve                      = permuted_LB;
     triangular_matrix_matrix_solve(side, 'L', transa, diag, alpha, test_factorization, test_solve);
     error    = normFrob(result - test_solve) / normFrob(result);
     is_error = is_error || !(error < 1e-9);
@@ -145,6 +136,243 @@ bool test_matrix_triangular_solve(int n, int nrhs, char side, char transa, char 
     error    = normFrob(result - test_solve) / normFrob(result);
     is_error = is_error || !(error < 1e-9);
     cout << "> Errors on upper triangular matrix matrix solve: " << error << '\n';
+
+    return is_error;
+}
+
+template <typename T>
+bool test_cholesky_matrix_triangular_solve(int n, int nrhs, char side) {
+
+    bool is_error = false;
+
+    htool::underlying_type<T> error;
+    T alpha;
+    Matrix<T> result(n, nrhs), B(n, nrhs);
+    if (side == 'R') {
+        result.resize(nrhs, n);
+        B.resize(nrhs, n);
+    }
+    generate_random_array(result.data(), result.nb_rows() * result.nb_cols());
+    generate_random_scalar(alpha);
+
+    Matrix<T> A(n, n), LLtA, UtUA, test_factorization, test_solve;
+    Matrix<T> random_matrix(n, n);
+    generate_random_array(random_matrix.data(), random_matrix.nb_rows() * random_matrix.nb_cols());
+
+    // 'C' degrades to plain transpose for real T: random^H*random is Hermitian PSD for any T.
+    add_matrix_matrix_product('C', 'N', T(1), random_matrix, random_matrix, T(1), A);
+    for (int i = 0; i < n; i++) {
+        htool::underlying_type<T> row_sum = 0;
+        for (int j = 0; j < n; j++) {
+            if (j != i) {
+                row_sum += std::abs(A(i, j));
+            }
+        }
+        A(i, i) += row_sum;
+    }
+    LLtA = A;
+    UtUA = A;
+
+    if (side == 'L') {
+        add_matrix_matrix_product('N', 'N', T(1) / alpha, A, result, T(0), B);
+    } else {
+        add_matrix_matrix_product('N', 'N', T(1) / alpha, result, A, T(0), B);
+    }
+
+    cholesky_factorization('L', LLtA);
+    cholesky_factorization('U', UtUA);
+
+    test_factorization = LLtA;
+    test_solve         = B;
+    triangular_matrix_matrix_solve(side, 'L', side == 'L' ? 'N' : 'C', 'N', alpha, test_factorization, test_solve);
+    triangular_matrix_matrix_solve(side, 'L', side == 'L' ? 'C' : 'N', 'N', T(1.), test_factorization, test_solve);
+    error    = normFrob(result - test_solve) / normFrob(result);
+    is_error = is_error || !(error < 1e-9);
+    cout << "> Errors on lower cholesky matrix matrix solve: " << error << '\n';
+
+    test_factorization = UtUA;
+    test_solve         = B;
+    triangular_matrix_matrix_solve(side, 'U', side == 'L' ? 'C' : 'N', 'N', alpha, test_factorization, test_solve);
+    triangular_matrix_matrix_solve(side, 'U', side == 'L' ? 'N' : 'C', 'N', T(1.), test_factorization, test_solve);
+    error    = normFrob(result - test_solve) / normFrob(result);
+    is_error = is_error || !(error < 1e-9);
+    cout << "> Errors on upper cholesky matrix matrix solve: " << error << '\n';
+
+    return is_error;
+}
+
+// well_conditioned: diagonally-dominant A (tight tolerance) vs weakly-boosted (forces 2x2 pivots).
+template <typename T>
+bool test_symmetric_ldlt_matrix_triangular_solve(int n, int nrhs, char side, bool well_conditioned) {
+
+    bool is_error = false;
+
+    htool::underlying_type<T> error;
+    T alpha;
+    Matrix<T> result(n, nrhs), B(n, nrhs);
+    if (side == 'R') {
+        result.resize(nrhs, n);
+        B.resize(nrhs, n);
+    }
+    generate_random_array(result.data(), result.nb_rows() * result.nb_cols());
+    generate_random_scalar(alpha);
+
+    Matrix<T> A(n, n), LDLtA, UDUtA, test_factorization, test_solve;
+    Matrix<T> random_matrix(n, n);
+    generate_random_array(random_matrix.data(), random_matrix.nb_rows() * random_matrix.nb_cols());
+
+    add_matrix_matrix_product('T', 'N', T(1), random_matrix, random_matrix, T(1), A);
+    htool::underlying_type<T> tol;
+    if (well_conditioned) {
+        for (int i = 0; i < n; i++) {
+            htool::underlying_type<T> row_sum = 0;
+            for (int j = 0; j < n; j++) {
+                if (j != i) {
+                    row_sum += std::abs(A(i, j));
+                }
+            }
+            A(i, i) += row_sum;
+        }
+        tol = 1e-9;
+    } else {
+        T eps = *std::max_element(random_matrix.data(), random_matrix.data() + random_matrix.nb_cols() * random_matrix.nb_rows(), [](const T &lhs, const T &rhs) { return std::abs(lhs) < std::abs(rhs); });
+        for (int i = 0; i < n; i++) {
+            A(i, i) += std::abs(eps);
+        }
+        tol = 1e-6;
+    }
+    LDLtA = A;
+    UDUtA = A;
+
+    if (side == 'L') {
+        add_matrix_matrix_product('N', 'N', T(1) / alpha, A, result, T(0), B);
+    } else {
+        add_matrix_matrix_product('N', 'N', T(1) / alpha, result, A, T(0), B);
+    }
+
+    ldlt_factorization('S', 'L', LDLtA);
+    ldlt_factorization('S', 'U', UDUtA);
+
+    if (!well_conditioned && htool::is_complex<T>()) {
+        bool lower_has_2x2 = false, upper_has_2x2 = false;
+        for (auto v : LDLtA.get_pivots()) {
+            lower_has_2x2 = lower_has_2x2 || v < 0;
+        }
+        for (auto v : UDUtA.get_pivots()) {
+            upper_has_2x2 = upper_has_2x2 || v < 0;
+        }
+        if (!lower_has_2x2 || !upper_has_2x2) {
+            is_error = true;                                                                                                                  // LCOV_EXCL_LINE
+            cout << "> WARNING: ill-conditioned symmetric ldlt never triggered a 2x2 Bunch-Kaufman pivot - lost 2x2 branch coverage" << '\n'; // LCOV_EXCL_LINE
+        }
+    }
+
+    test_factorization = LDLtA;
+    test_solve         = B;
+    triangular_ldlt_matrix_matrix_solve(side, 'L', side == 'L' ? 'N' : 'T', alpha, test_factorization, test_solve);
+    apply_ldlt_diagonal('S', side, 'L', test_factorization, test_solve);
+    triangular_ldlt_matrix_matrix_solve(side, 'L', side == 'L' ? 'T' : 'N', T(1.), test_factorization, test_solve);
+    error    = normFrob(result - test_solve) / normFrob(result);
+    is_error = is_error || !(error < tol);
+    cout << "> Errors on lower symmetric ldlt matrix matrix solve: " << error << '\n';
+
+    test_factorization = UDUtA;
+    test_solve         = B;
+    triangular_ldlt_matrix_matrix_solve(side, 'U', side == 'L' ? 'N' : 'T', alpha, test_factorization, test_solve);
+    apply_ldlt_diagonal('S', side, 'U', test_factorization, test_solve);
+    triangular_ldlt_matrix_matrix_solve(side, 'U', side == 'L' ? 'T' : 'N', T(1.), test_factorization, test_solve);
+    error    = normFrob(result - test_solve) / normFrob(result);
+    is_error = is_error || !(error < tol);
+    cout << "> Errors on upper symmetric ldlt matrix matrix solve: " << error << '\n';
+
+    return is_error;
+}
+
+// well_conditioned: Hermitian PSD A (never needs a 2x2 pivot) vs indefinite M+M^H (forces them).
+template <typename T>
+bool test_hermitian_ldlt_matrix_triangular_solve(int n, int nrhs, char side, bool well_conditioned) {
+
+    bool is_error = false;
+
+    htool::underlying_type<T> error;
+    T alpha;
+    Matrix<T> result(n, nrhs), B(n, nrhs);
+    if (side == 'R') {
+        result.resize(nrhs, n);
+        B.resize(nrhs, n);
+    }
+    generate_random_array(result.data(), result.nb_rows() * result.nb_cols());
+    generate_random_scalar(alpha);
+
+    Matrix<T> A(n, n), LDLtA, UDUtA, test_factorization, test_solve;
+    htool::underlying_type<T> tol;
+    if (well_conditioned) {
+        Matrix<T> random_matrix(n, n);
+        generate_random_array(random_matrix.data(), random_matrix.nb_rows() * random_matrix.nb_cols());
+        add_matrix_matrix_product('C', 'N', T(1), random_matrix, random_matrix, T(1), A);
+        for (int i = 0; i < n; i++) {
+            htool::underlying_type<T> row_sum = 0;
+            for (int j = 0; j < n; j++) {
+                if (j != i) {
+                    row_sum += std::abs(A(i, j));
+                }
+            }
+            A(i, i) += row_sum;
+        }
+        tol = 1e-9;
+    } else {
+        Matrix<T> M(n, n);
+        generate_random_array(M.data(), M.nb_rows() * M.nb_cols());
+        for (int i = 0; i < n; i++) {
+            for (int j = 0; j < n; j++) {
+                A(i, j) = M(i, j) + conj_if_complex(M(j, i));
+            }
+        }
+        tol = 1e-6;
+    }
+    LDLtA = A;
+    UDUtA = A;
+
+    if (side == 'L') {
+        add_matrix_matrix_product('N', 'N', T(1) / alpha, A, result, T(0), B);
+    } else {
+        add_matrix_matrix_product('N', 'N', T(1) / alpha, result, A, T(0), B);
+    }
+
+    ldlt_factorization('H', 'L', LDLtA);
+    ldlt_factorization('H', 'U', UDUtA);
+
+    if (!well_conditioned && htool::is_complex<T>()) {
+        bool lower_has_2x2 = false, upper_has_2x2 = false;
+        for (auto v : LDLtA.get_pivots()) {
+            lower_has_2x2 = lower_has_2x2 || v < 0;
+        }
+        for (auto v : UDUtA.get_pivots()) {
+            upper_has_2x2 = upper_has_2x2 || v < 0;
+        }
+        if (!lower_has_2x2 || !upper_has_2x2) {
+            is_error = true;                                                                                                             // LCOV_EXCL_LINE
+            cout << "> WARNING: indefinite hermitian ldlt never triggered a 2x2 Bunch-Kaufman pivot - lost 2x2 branch coverage" << '\n'; // LCOV_EXCL_LINE
+        }
+    }
+
+    test_factorization = LDLtA;
+    test_solve         = B;
+    triangular_ldlt_matrix_matrix_solve(side, 'L', side == 'L' ? 'N' : 'C', alpha, test_factorization, test_solve);
+    apply_ldlt_diagonal('H', side, 'L', test_factorization, test_solve);
+    triangular_ldlt_matrix_matrix_solve(side, 'L', side == 'L' ? 'C' : 'N', T(1.), test_factorization, test_solve);
+    error    = normFrob(result - test_solve) / normFrob(result);
+    is_error = is_error || !(error < tol);
+    cout << "> Errors on lower hermitian ldlt matrix matrix solve: " << error << '\n';
+
+    test_factorization = UDUtA;
+    test_solve         = B;
+    triangular_ldlt_matrix_matrix_solve(side, 'U', side == 'L' ? 'N' : 'C', alpha, test_factorization, test_solve);
+    apply_ldlt_diagonal('H', side, 'U', test_factorization, test_solve);
+    triangular_ldlt_matrix_matrix_solve(side, 'U', side == 'L' ? 'C' : 'N', T(1.), test_factorization, test_solve);
+    error    = normFrob(result - test_solve) / normFrob(result);
+    is_error = is_error || !(error < tol);
+    cout << "> Errors on upper hermitian ldlt matrix matrix solve: " << error << '\n';
 
     return is_error;
 }

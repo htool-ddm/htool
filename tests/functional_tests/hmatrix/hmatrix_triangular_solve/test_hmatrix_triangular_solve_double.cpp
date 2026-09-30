@@ -10,7 +10,7 @@ int main(int, char *[]) {
     const int n1        = 400;
     const double margin = 1;
 
-    for (auto number_of_rhs : {100}) {
+    for (auto number_of_rhs : {100, 5}) {
         for (auto epsilon : {1e-6, 1e-10}) {
             for (auto side : {'L', 'R'}) {
                 for (auto operation : {'N', 'T'}) {
@@ -18,6 +18,7 @@ int main(int, char *[]) {
                         std::cout << epsilon << " " << number_of_rhs << " " << side << " " << operation << " " << diag << "\n";
                         is_error = is_error || test_hmatrix_triangular_solve<double, GeneratorTestDoubleSymmetric>(side, operation, diag, n1, number_of_rhs, epsilon, margin);
                     }
+                    is_error = is_error || test_hmatrix_ldlt_triangular_solve<double, GeneratorTestDoubleSymmetric>(side, operation, n1, number_of_rhs, epsilon, margin);
                 }
             }
         }

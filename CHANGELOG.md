@@ -30,6 +30,10 @@ All notable changes to this project will be documented in this file.
 
 - JOSS badge and update `CITATION.cff`.
 - Opt-in `tidy` CMake target running clang-tidy (`bugprone-*`/`performance-*`) over `examples/` and `tests/`, not part of the default build. Configured via `.clang-tidy`: findings are errors except `branch-clone`, `exception-escape` and `implicit-widening-of-multiplication-result`; the macro-generated `wrapper_blas.hpp`/`wrapper_lapack.hpp` are excluded from findings (needs clang-tidy >= 19). Run in CI on the Ubuntu clang/OpenMPI job.
+- LDLt factorization (Bunch-Kaufman) for symmetric, complex-symmetric and Hermitian matrices, selected by a `symmetry` of `'S'` or `'H'`:
+  - dense: `ldlt_factorization`/`ldlt_solve` (`sytrf`/`sytrs`, `hetrf`/`hetrs`), `triangular_ldlt_matrix_matrix_solve` (unit L/U with `transa` in N/T/C) and `apply_ldlt_diagonal` (D^-1), plus `Blas::geru`/`Blas::gerc` (BLAS has no plain complex `ger`).
+  - HMatrix: `ldlt_factorization`/`sequential_ldlt_factorization` and `ldlt_solve`, also on a full-storage HMatrix (symmetry `'N'`) like `cholesky_factorization`, with `internal_triangular_ldlt_hmatrix_{hmatrix,matrix,lrmat}_solve` and `internal_apply_ldlt_diagonal`.
+- `is_positive_definite` option (default `false`) in `LocalHMatrixSolver`, `LocalHMatrixPlusOverlapSolver`, `make_DDM_solver_w_custom_local_solver` and `DDMSolverBuilder`: a symmetric/Hermitian local HMatrix is factorized with Cholesky only when it is set, and with LDLt otherwise.
 
 ### Changed
 
@@ -39,6 +43,8 @@ All notable changes to this project will be documented in this file.
 - Replace `std::endl`/`endl` with `'\n'` across `include/`, `tests/` and `examples/`.
 - Fix unnecessary-value-param findings from clang-tidy: move sink parameters, take pure reads by const reference.
 - Add explicit `default` cases to `DDM`'s `schwarz_method`/`krylov_method` switches (behavior unchanged).
+- Symmetric/Hermitian local HMatrix solvers (`DDMSolverBuilder`) now use LDLt by default instead of Cholesky, which silently gave a wrong factorization for indefinite matrices; pass `is_positive_definite=true` to keep Cholesky.
+- Checks of `lu_factorization`/`cholesky_factorization` on HMatrix moved to the public functions taking an execution policy, so they run once for the sequential and task-based implementations.
 
 ### Removed
 
@@ -56,6 +62,9 @@ All notable changes to this project will be documented in this file.
 - Fix `Matrix`'s int-overflow risk in allocation sizes (rows*cols computed in `int` then used as a `new[]`/read/write size), and a zero-length-array leak in `resize()`.
 - Fix real overflow/mistyping bugs surfaced by clang-tidy's widening/narrowing-conversion checks in `matrix/utils/output.hpp` and `hmatrix_output.hpp`.
 - Compute the partition-level power of the number of children as an exact integer instead of via `std::pow` in cluster tree building.
+- Fix HMatrix `cholesky_factorization` symmetry check, which compared `UPLO` instead of the symmetry and could never trigger: it now rejects a complex symmetric (non-Hermitian) HMatrix.
+- Fix complex-symmetric (non-Hermitian) local HMatrix solvers, which were factorized as Hermitian with Cholesky.
+- Report a failed dense `cholesky_factorization` (`potrf`'s `info`), for a matrix that is not positive definite.
 
 ## [1.0.2] - 2026-02-14
 

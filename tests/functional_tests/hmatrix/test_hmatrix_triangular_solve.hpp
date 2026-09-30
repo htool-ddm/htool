@@ -2,9 +2,11 @@
 #include <htool/hmatrix/hmatrix.hpp>
 #include <htool/hmatrix/hmatrix_output.hpp>
 #include <htool/hmatrix/linalg/add_hmatrix_hmatrix_product.hpp>
+#include <htool/hmatrix/linalg/factorization.hpp>
 #include <htool/hmatrix/linalg/triangular_hmatrix_hmatrix_solve.hpp>
 #include <htool/hmatrix/linalg/triangular_hmatrix_lrmat_solve.hpp>
 #include <htool/hmatrix/linalg/triangular_hmatrix_matrix_solve.hpp>
+#include <htool/hmatrix/linalg/triangular_ldlt_hmatrix_hmatrix_solve.hpp>
 #include <htool/hmatrix/lrmat/SVD.hpp>
 #include <htool/hmatrix/lrmat/linalg/add_matrix_lrmat_product.hpp>
 #include <htool/hmatrix/lrmat/lrmat.hpp>
@@ -16,6 +18,7 @@
 #include <htool/testing/generator_input.hpp>
 #include <iostream>
 #include <memory>
+#include <numeric>
 #include <vector>
 using namespace std;
 using namespace htool;
@@ -216,6 +219,199 @@ bool test_hmatrix_triangular_solve(char side, char transa, char diag, int n1, in
     error    = normFrob(X_dense - densified_hmatrix_test) / normFrob(X_dense);
     is_error = is_error || !(error < epsilon * margin);
     cout << "> Errors on upper triangular hmatrix hmatrix solve: " << error << '\n';
+
+    return is_error;
+}
+
+// The LDLt triangular solves use the unit L/U only, so any transa in {N,T,C} applies to any factor.
+template <typename T, typename GeneratorTestType>
+bool test_hmatrix_ldlt_triangular_solve(char side, char transa, int n1, int n2, htool::underlying_type<T> epsilon, htool::underlying_type<T> margin) {
+    bool is_error = false;
+    double eta    = 10;
+    htool::underlying_type<T> error;
+
+    T alpha(1);
+    generate_random_scalar(alpha);
+
+    htool::TestCaseSolve<T, GeneratorTestType> test_case(side, transa, n1, n2, 1, -1);
+
+    HMatrixTreeBuilder<T, htool::underlying_type<T>> hmatrix_tree_builder_A(epsilon, eta, 'N', 'N');
+    HMatrixTreeBuilder<T, htool::underlying_type<T>> hmatrix_tree_builder_X(epsilon, eta, 'N', 'N');
+
+    HMatrix<T, htool::underlying_type<T>> A = hmatrix_tree_builder_A.build(*test_case.operator_A, *test_case.root_cluster_A_output, *test_case.root_cluster_A_input);
+    HMatrix<T, htool::underlying_type<T>> X = hmatrix_tree_builder_X.build(*test_case.operator_X, *test_case.root_cluster_X_output, *test_case.root_cluster_X_input);
+    HMatrix<T, htool::underlying_type<T>> B(X), UB(X), LB(X);
+    HMatrix<T, htool::underlying_type<T>> hmatrix_test(B);
+
+    // Lrmat rhs
+    htool::underlying_type<T> lrmat_tolerance = 1e-3;
+    SVD<T> compressor(*test_case.operator_X);
+    int reqrank = 15;
+    LowRankMatrix<T> X_lrmat(test_case.root_cluster_X_output->get_size(), test_case.root_cluster_X_input->get_size(), lrmat_tolerance, reqrank);
+    LowRankMatrix<T> lrmat_test(test_case.root_cluster_X_output->get_size(), test_case.root_cluster_X_input->get_size(), epsilon);
+    compressor.copy_low_rank_approximation(test_case.root_cluster_X_output->get_size(), test_case.root_cluster_X_input->get_size(), test_case.root_cluster_X_output->get_offset(), test_case.root_cluster_X_input->get_offset(), X_lrmat);
+
+    std::vector<T> diagonal(A.nb_cols());
+    copy_diagonal(A, diagonal.data());
+    scale(1. / (*std::max_element(diagonal.begin(), diagonal.end(), [](T a, T b) { return (std::abs(a) < std::abs(b)); })), A);
+    HMatrix<T, htool::underlying_type<T>> LA(A);
+    HMatrix<T, htool::underlying_type<T>> UA(A);
+    preorder_tree_traversal(LA, [](HMatrix<T, htool::underlying_type<T>> &hmatrix) {
+        if (hmatrix.is_leaf() and hmatrix.get_target_cluster() == hmatrix.get_source_cluster()) {
+            Matrix<T> &dense_data = *hmatrix.get_dense_data();
+            for (int i = 0; i < dense_data.nb_rows(); i++) {
+                dense_data(i, i) = 1;
+                for (int j = i + 1; j < dense_data.nb_cols(); j++) {
+                    dense_data(i, j) = 0;
+                }
+            }
+        } else {
+            std::vector<std::unique_ptr<HMatrix<T, htool::underlying_type<T>>>> filtered_children;
+            for (auto &child : hmatrix.get_children_with_ownership()) {
+                if (child->get_target_cluster().get_offset() >= child->get_source_cluster().get_offset()) {
+                    filtered_children.push_back(std::move(child));
+                }
+            }
+            if (filtered_children.size() > 0) {
+                hmatrix.delete_children();
+                hmatrix.assign_children(filtered_children);
+            }
+        }
+    });
+
+    preorder_tree_traversal(UA, [](HMatrix<T, htool::underlying_type<T>> &hmatrix) {
+        if (hmatrix.is_leaf() and hmatrix.get_target_cluster() == hmatrix.get_source_cluster()) {
+            Matrix<T> &dense_data = *hmatrix.get_dense_data();
+            for (int j = 0; j < dense_data.nb_cols(); j++) {
+                dense_data(j, j) = 1;
+                for (int i = j + 1; i < dense_data.nb_rows(); i++) {
+                    dense_data(i, j) = 0;
+                }
+            }
+        } else {
+            std::vector<std::unique_ptr<HMatrix<T, htool::underlying_type<T>>>> filtered_children;
+            for (auto &child : hmatrix.get_children_with_ownership()) {
+                if (child->get_target_cluster().get_offset() <= child->get_source_cluster().get_offset()) {
+                    filtered_children.push_back(std::move(child));
+                }
+            }
+            if (filtered_children.size() > 0) {
+                hmatrix.delete_children();
+                hmatrix.assign_children(filtered_children);
+            }
+        }
+    });
+
+    // Matrix
+    int ni_A = test_case.root_cluster_A_input->get_size();
+    int no_A = test_case.root_cluster_A_output->get_size();
+    int ni_X = test_case.root_cluster_X_input->get_size();
+    int no_X = test_case.root_cluster_X_output->get_size();
+    Matrix<T> A_dense(no_A, ni_A), X_dense(no_X, ni_X), B_dense(X_dense), densified_hmatrix_test(B_dense), matrix_test, dense_lrmat_test, dense_X_lrmat;
+    test_case.operator_A->copy_submatrix(no_A, ni_A, test_case.root_cluster_A_output->get_offset(), test_case.root_cluster_A_input->get_offset(), A_dense.data());
+    test_case.operator_X->copy_submatrix(no_X, ni_X, test_case.root_cluster_X_output->get_offset(), test_case.root_cluster_X_input->get_offset(), X_dense.data());
+    dense_X_lrmat.resize(X_lrmat.nb_rows(), X_lrmat.nb_cols());
+    X_lrmat.copy_to_dense(dense_X_lrmat.data());
+    T max = 0;
+    for (int i = 0; i < A_dense.nb_cols(); i++) {
+        max = std::max(std::abs(max), std::abs(A_dense(i, i)));
+    }
+    scale(1. / max, A_dense);
+
+    // Triangular matrices
+    Matrix<T> LA_dense(A_dense), UA_dense(A_dense), LB_dense(B.nb_rows(), B.nb_cols()), UB_dense(B.nb_rows(), B.nb_cols());
+    for (int i = 0; i < A.nb_rows(); i++) {
+        UA_dense(i, i) = 1;
+        LA_dense(i, i) = 1;
+        for (int j = 0; j < A.nb_cols(); j++) {
+            if (i > j) {
+                UA_dense(i, j) = 0;
+            }
+            if (i < j) {
+                LA_dense(i, j) = 0;
+            }
+        }
+    }
+    LowRankMatrix<T> UB_lrmat(UA_dense.nb_rows(), X_lrmat.nb_cols(), epsilon), LB_lrmat(LA_dense.nb_rows(), X_lrmat.nb_cols(), epsilon);
+    if (side == 'L') {
+        add_matrix_matrix_product(transa, 'N', T(1) / alpha, UA_dense, X_dense, T(0), UB_dense);
+        add_matrix_matrix_product(transa, 'N', T(1) / alpha, LA_dense, X_dense, T(0), LB_dense);
+        add_matrix_lrmat_product(transa, 'N', T(1) / alpha, UA_dense, X_lrmat, T(0), UB_lrmat);
+        add_matrix_lrmat_product(transa, 'N', T(1) / alpha, LA_dense, X_lrmat, T(0), LB_lrmat);
+        internal_add_hmatrix_hmatrix_product(transa, 'N', T(1) / alpha, UA, X, T(0), UB);
+        internal_add_hmatrix_hmatrix_product(transa, 'N', T(1) / alpha, LA, X, T(0), LB);
+    } else {
+        add_matrix_matrix_product('N', transa, T(1) / alpha, X_dense, UA_dense, T(0), UB_dense);
+        add_matrix_matrix_product('N', transa, T(1) / alpha, X_dense, LA_dense, T(0), LB_dense);
+        UB_lrmat.get_U() = X_lrmat.get_U();
+        UB_lrmat.get_V().resize(X_lrmat.get_V().nb_rows(), A_dense.nb_cols());
+        LB_lrmat.get_U() = X_lrmat.get_U();
+        LB_lrmat.get_V().resize(X_lrmat.get_V().nb_rows(), A_dense.nb_cols());
+        add_matrix_matrix_product('N', transa, T(1) / alpha, X_lrmat.get_V(), UA_dense, T(0), UB_lrmat.get_V());
+        add_matrix_matrix_product('N', transa, T(1) / alpha, X_lrmat.get_V(), LA_dense, T(0), LB_lrmat.get_V());
+        internal_add_hmatrix_hmatrix_product('N', transa, T(1) / alpha, X, UA, T(0), UB);
+        internal_add_hmatrix_hmatrix_product('N', transa, T(1) / alpha, X, LA, T(0), LB);
+    }
+
+    // LDLt-packed form: the diagonal of the dense diagonal leaves holds D (trivial ipiv), which the
+    // triangular solves must ignore, the reference being unit-diagonal.
+    HMatrix<T, htool::underlying_type<T>> LA_ldlt(LA);
+    HMatrix<T, htool::underlying_type<T>> UA_ldlt(UA);
+    auto store_diagonal = [](HMatrix<T, htool::underlying_type<T>> &hmatrix) {
+        if (hmatrix.is_leaf() and hmatrix.get_target_cluster() == hmatrix.get_source_cluster()) {
+            Matrix<T> &dense_data = *hmatrix.get_dense_data();
+            for (int k = 0; k < dense_data.nb_rows(); k++) {
+                dense_data(k, k) = T(2);
+            }
+            auto &ipiv = dense_data.get_pivots();
+            ipiv.resize(dense_data.nb_rows());
+            std::iota(ipiv.begin(), ipiv.end(), 1);
+        }
+    };
+    preorder_tree_traversal(LA_ldlt, store_diagonal);
+    preorder_tree_traversal(UA_ldlt, store_diagonal);
+
+    matrix_test = LB_dense;
+    internal_triangular_ldlt_hmatrix_matrix_solve(side, 'L', transa, alpha, LA_ldlt, matrix_test);
+    error    = normFrob(X_dense - matrix_test) / normFrob(X_dense);
+    is_error = is_error || !(error < epsilon * margin);
+    cout << "> Errors on lower triangular ldlt hmatrix matrix solve: " << error << '\n';
+
+    matrix_test = UB_dense;
+    internal_triangular_ldlt_hmatrix_matrix_solve(side, 'U', transa, alpha, UA_ldlt, matrix_test);
+    error    = normFrob(X_dense - matrix_test) / normFrob(X_dense);
+    is_error = is_error || !(error < epsilon * margin);
+    cout << "> Errors on upper triangular ldlt hmatrix matrix solve: " << error << '\n';
+
+    lrmat_test = LB_lrmat;
+    internal_triangular_ldlt_hmatrix_lrmat_solve(side, 'L', transa, alpha, LA_ldlt, lrmat_test);
+    dense_lrmat_test.resize(lrmat_test.get_U().nb_rows(), lrmat_test.get_V().nb_cols());
+    lrmat_test.copy_to_dense(dense_lrmat_test.data());
+    error    = normFrob(dense_X_lrmat - dense_lrmat_test) / normFrob(dense_X_lrmat);
+    is_error = is_error || !(error < epsilon * margin);
+    cout << "> Errors on lower triangular ldlt hmatrix lrmat solve: " << error << '\n';
+
+    lrmat_test = UB_lrmat;
+    internal_triangular_ldlt_hmatrix_lrmat_solve(side, 'U', transa, alpha, UA_ldlt, lrmat_test);
+    dense_lrmat_test.resize(lrmat_test.get_U().nb_rows(), lrmat_test.get_V().nb_cols());
+    lrmat_test.copy_to_dense(dense_lrmat_test.data());
+    error    = normFrob(dense_X_lrmat - dense_lrmat_test) / normFrob(dense_X_lrmat);
+    is_error = is_error || !(error < epsilon * margin);
+    cout << "> Errors on upper triangular ldlt hmatrix lrmat solve: " << error << '\n';
+
+    hmatrix_test = LB;
+    internal_triangular_ldlt_hmatrix_hmatrix_solve(side, 'L', transa, alpha, LA_ldlt, hmatrix_test);
+    copy_to_dense(hmatrix_test, densified_hmatrix_test.data());
+    error    = normFrob(X_dense - densified_hmatrix_test) / normFrob(X_dense);
+    is_error = is_error || !(error < epsilon * margin);
+    cout << "> Errors on lower triangular ldlt hmatrix hmatrix solve: " << error << '\n';
+
+    hmatrix_test = UB;
+    internal_triangular_ldlt_hmatrix_hmatrix_solve(side, 'U', transa, alpha, UA_ldlt, hmatrix_test);
+    copy_to_dense(hmatrix_test, densified_hmatrix_test.data());
+    error    = normFrob(X_dense - densified_hmatrix_test) / normFrob(X_dense);
+    is_error = is_error || !(error < epsilon * margin);
+    cout << "> Errors on upper triangular ldlt hmatrix hmatrix solve: " << error << '\n';
 
     return is_error;
 }

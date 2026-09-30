@@ -18,7 +18,21 @@ int main(int, char *[]) {
             is_error = is_error || test_hmatrix_lu<std::complex<double>, GeneratorTestComplexHermitian>(trans, n1, n2, epsilon, margin);
         }
         for (auto UPLO : {'L', 'U'}) {
-            is_error = is_error || test_hmatrix_cholesky<std::complex<double>, GeneratorTestComplexHermitian>(UPLO, n1, n2, epsilon, margin);
+            for (bool full_storage : {false, true}) {
+                is_error = is_error || test_hmatrix_cholesky<std::complex<double>, GeneratorTestComplexHermitian>(UPLO, full_storage, n1, n2, epsilon, margin);
+            }
+            for (bool full_storage : {false, true}) {
+                is_error = is_error || test_hmatrix_ldlt<std::complex<double>, GeneratorTestComplexSymmetric>(UPLO, 'S', full_storage, n1, n2, epsilon, margin);
+            }
+            for (bool full_storage : {false, true}) {
+                is_error = is_error || test_hmatrix_ldlt<std::complex<double>, GeneratorTestComplexHermitian>(UPLO, 'H', full_storage, n1, n2, epsilon, margin);
+            }
+        }
+    }
+    for (auto UPLO : {'L', 'U'}) {
+        for (auto side : {'L', 'R'}) {
+            is_error = is_error || test_hmatrix_apply_ldlt_diagonal<std::complex<double>, GeneratorTestComplexSymmetric>('S', side, UPLO, n1);
+            is_error = is_error || test_hmatrix_apply_ldlt_diagonal<std::complex<double>, GeneratorTestComplexHermitian>('H', side, UPLO, n1);
         }
     }
 

@@ -18,6 +18,12 @@ int main(int, char *[]) {
 
         is_error = is_error || test_matrix_cholesky<std::complex<double>>('N', number_of_rows, number_of_rhs, 'H', 'U');
         is_error = is_error || test_matrix_cholesky<std::complex<double>>('N', number_of_rows, number_of_rhs, 'H', 'L');
+        is_error = is_error || test_matrix_symmetric_ldlt<std::complex<double>>('N', number_of_rows, number_of_rhs, 'U', true);
+        is_error = is_error || test_matrix_symmetric_ldlt<std::complex<double>>('N', number_of_rows, number_of_rhs, 'U', false);
+        is_error = is_error || test_matrix_symmetric_ldlt<std::complex<double>>('N', number_of_rows, number_of_rhs, 'L', true);
+        is_error = is_error || test_matrix_symmetric_ldlt<std::complex<double>>('N', number_of_rows, number_of_rhs, 'L', false);
+        is_error = is_error || test_matrix_hermitian_ldlt<std::complex<double>>('N', number_of_rows, number_of_rhs, 'U');
+        is_error = is_error || test_matrix_hermitian_ldlt<std::complex<double>>('N', number_of_rows, number_of_rhs, 'L');
     }
 
     if (is_error) {

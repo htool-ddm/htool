@@ -19,7 +19,17 @@ int main(int, char *[]) {
             is_error = is_error || test_hmatrix_lu<double, GeneratorTestDoubleSymmetric>(trans, n1, n2, epsilon, margin);
         }
         for (auto UPLO : {'L', 'U'}) {
-            is_error = is_error || test_hmatrix_cholesky<double, GeneratorTestDoubleSymmetric>(UPLO, n1, n2, epsilon, margin);
+            for (bool full_storage : {false, true}) {
+                is_error = is_error || test_hmatrix_cholesky<double, GeneratorTestDoubleSymmetric>(UPLO, full_storage, n1, n2, epsilon, margin);
+            }
+            for (bool full_storage : {false, true}) {
+                is_error = is_error || test_hmatrix_ldlt<double, GeneratorTestDoubleSymmetric>(UPLO, 'S', full_storage, n1, n2, epsilon, margin);
+            }
+        }
+    }
+    for (auto UPLO : {'L', 'U'}) {
+        for (auto side : {'L', 'R'}) {
+            is_error = is_error || test_hmatrix_apply_ldlt_diagonal<double, GeneratorTestDoubleSymmetric>('S', side, UPLO, n1);
         }
     }
 
