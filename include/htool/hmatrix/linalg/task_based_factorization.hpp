@@ -31,10 +31,6 @@ namespace htool {
  */
 template <typename CoefficientPrecision, typename CoordinatePrecision = underlying_type<CoefficientPrecision>>
 void task_based_lu_factorization(HMatrix<CoefficientPrecision, CoordinatePrecision> &hmatrix, std::vector<HMatrix<CoefficientPrecision> *> &L0) {
-    if (!hmatrix.is_block_tree_consistent()) {
-        htool::Logger::get_instance().log(LogLevel::ERROR, "task_based_lu_factorization is only implemented for consistent block tree."); // LCOV_EXCL_LINE
-    }
-
     if (hmatrix.is_hierarchical()) {
         // check if hmatrix is in L0.
         bool is_hmatrix_in_L0 = false;
@@ -121,14 +117,6 @@ void task_based_lu_factorization(HMatrix<CoefficientPrecision, CoordinatePrecisi
  */
 template <typename CoefficientPrecision, typename CoordinatePrecision = underlying_type<CoefficientPrecision>>
 void task_based_cholesky_factorization(char UPLO, HMatrix<CoefficientPrecision, CoordinatePrecision> &hmatrix, std::vector<HMatrix<CoefficientPrecision> *> &L0) {
-    if (!hmatrix.is_block_tree_consistent()) {
-        htool::Logger::get_instance().log(LogLevel::ERROR, "task_based_cholesky_factorization is only implemented for consistent block tree."); // LCOV_EXCL_LINE
-    }
-    if ((hmatrix.get_UPLO() != 'S' and !is_complex<CoefficientPrecision>())
-        and (hmatrix.get_UPLO() != 'H' and is_complex<CoefficientPrecision>())) {
-        htool::Logger::get_instance().log(LogLevel::ERROR, "task_based_cholesky_factorization cannot be used on a HMatrix with UPLO=" + std::string(1, hmatrix.get_UPLO()) + "!=N. You should use another factorization."); // LCOV_EXCL_LINE
-    }
-
     if (hmatrix.is_hierarchical()) {
         // check if hmatrix is in L0.
         bool is_hmatrix_in_L0 = false;

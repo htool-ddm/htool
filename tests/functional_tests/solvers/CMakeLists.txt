@@ -41,3 +41,9 @@ add_test(NAME Test_solver_complex_double_3 COMMAND ${MPIEXEC} ${MPIEXEC_NUMPROC_
 set_tests_properties(Test_solver_complex_double_3 PROPERTIES LABELS "mpi")
 add_test(NAME Test_solver_complex_double_4 COMMAND ${MPIEXEC} ${MPIEXEC_NUMPROC_FLAG} 4 ${MPIEXEC_PREFLAGS} ${CMAKE_CURRENT_BINARY_DIR}/Test_solver_complex_double ${Test_solver_ARGS})
 set_tests_properties(Test_solver_complex_double_4 PROPERTIES LABELS "mpi")
+
+add_executable(Test_local_hmatrix_solvers test_local_hmatrix_solvers.cpp)
+target_link_libraries(Test_local_hmatrix_solvers htool)
+add_dependencies(build-tests-solvers Test_local_hmatrix_solvers)
+add_test(NAME Test_local_hmatrix_solvers COMMAND ${MPIEXEC} ${MPIEXEC_NUMPROC_FLAG} 1 ${MPIEXEC_PREFLAGS} ${CMAKE_CURRENT_BINARY_DIR}/Test_local_hmatrix_solvers)
+set_tests_properties(Test_local_hmatrix_solvers PROPERTIES LABELS "mpi")
