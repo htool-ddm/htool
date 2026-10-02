@@ -30,16 +30,18 @@
     void HTOOL_BLAS_F77(C##symm)(const char *, const char *, const int *, const int *, const T *, const T *, const int *, const T *, const int *, const T *, T *, const int *) HTOOL_NOEXCEPT;                           \
     void HTOOL_BLAS_F77(C##syrk)(const char *const, const char *const, const int *const, const int *const, const T *const, const T *const, const int *const, const T *const, T *const, const int *const) HTOOL_NOEXCEPT; \
     void HTOOL_BLAS_F77(C##trsm)(const char *, const char *, const char *, const char *, const int *, const int *, const T *, const T *, const int *, T *, const int *) HTOOL_NOEXCEPT;                                  \
-    void HTOOL_BLAS_F77(C##swap)(const int *, T *, const int *, T *, const int *) HTOOL_NOEXCEPT;                                                                                                                        \
-    void HTOOL_BLAS_F77(C##ger)(const int *, const int *, const T *, const T *, const int *, const T *, const int *, T *, const int *) HTOOL_NOEXCEPT;
+    void HTOOL_BLAS_F77(C##swap)(const int *, T *, const int *, T *, const int *) HTOOL_NOEXCEPT;
 #define HTOOL_GENERATE_EXTERN_BLAS_COMPLEX(C, T, B, U)                                                                                                                                                                   \
     HTOOL_GENERATE_EXTERN_BLAS(B, U)                                                                                                                                                                                     \
     HTOOL_GENERATE_EXTERN_BLAS(C, T)                                                                                                                                                                                     \
+    void HTOOL_BLAS_F77(B##ger)(const int *, const int *, const U *, const U *, const int *, const U *, const int *, U *, const int *) HTOOL_NOEXCEPT;                                                                   \
     void HTOOL_BLAS_F77(C##hemv)(const char *, const int *, const T *, const T *, const int *, const T *, const int *, const T *, T *, const int *) HTOOL_NOEXCEPT;                                                      \
     void HTOOL_BLAS_F77(C##hemm)(const char *, const char *, const int *, const int *, const T *, const T *, const int *, const T *, const int *, const T *, T *, const int *) HTOOL_NOEXCEPT;                           \
     void HTOOL_BLAS_F77(C##herk)(const char *const, const char *const, const int *const, const int *const, const U *const, const T *const, const int *const, const U *const, T *const, const int *const) HTOOL_NOEXCEPT; \
     U HTOOL_BLAS_F77(B##nrm2)(const int *, const U *, const int *) HTOOL_NOEXCEPT;                                                                                                                                       \
-    U HTOOL_BLAS_F77(B##C##nrm2)(const int *, const T *, const int *) HTOOL_NOEXCEPT;
+    U HTOOL_BLAS_F77(B##C##nrm2)(const int *, const T *, const int *) HTOOL_NOEXCEPT;                                                                                                                                    \
+    void HTOOL_BLAS_F77(C##geru)(const int *, const int *, const T *, const T *, const int *, const T *, const int *, T *, const int *) HTOOL_NOEXCEPT;                                                                  \
+    void HTOOL_BLAS_F77(C##gerc)(const int *, const int *, const T *, const T *, const int *, const T *, const int *, T *, const int *) HTOOL_NOEXCEPT;
 
 #if HTOOL_MKL
 #    define HTOOL_GENERATE_EXTERN_GEMM3M(C, T) \
@@ -115,8 +117,17 @@ struct Blas {
      *  Interchanges two vectors. */
     static void swap(const int *, K *, const int *, K *, const int *);
     /* Function:
-     *  Performs a rank 1 operation */
+     *  Performs a rank 1 operation: A += alpha*x*y^T. Real types only - BLAS has no plain
+     *  complex ger, use geru or gerc instead (see below). */
     static void ger(const int *, const int *, const K *, const K *, const int *, const K *, const int *, K *, const int *);
+    /* Function:
+     *  Performs an unconjugated complex rank 1 operation: A += alpha*x*y^T (no conjugation,
+     *  matches a complex-symmetric factorization like sytrf/sytrs). Complex types only. */
+    static void geru(const int *, const int *, const K *, const K *, const int *, const K *, const int *, K *, const int *);
+    /* Function:
+     *  Performs a conjugated complex rank 1 operation: A += alpha*x*conj(y)^T (matches a
+     *  Hermitian factorization like hetrf/hetrs). Complex types only. */
+    static void gerc(const int *, const int *, const K *, const K *, const int *, const K *, const int *, K *, const int *);
 };
 
 #    define HTOOL_GENERATE_GEMM(C, T)                                                                                                                                                                                                                                                                            \
@@ -181,11 +192,6 @@ struct Blas {
             (side, uplo, transa, diag, m, n, alpha, a, lda, b, ldb);                                                                                                                                                                                                                     \
         }                                                                                                                                                                                                                                                                                \
         template <>                                                                                                                                                                                                                                                                      \
-        inline void Blas<T>::ger(const int *M, const int *N, const T *alpha, const T *x, const int *incx, const T *y, const int *incy, T *A, const int *lda) {                                                                                                                           \
-            HTOOL_BLAS_F77(C##ger)                                                                                                                                                                                                                                                       \
-            (M, N, alpha, x, incx, y, incy, A, lda);                                                                                                                                                                                                                                     \
-        }                                                                                                                                                                                                                                                                                \
-        template <>                                                                                                                                                                                                                                                                      \
         inline void Blas<T>::swap(const int *N, T *x, const int *incx, T *y, const int *incy) {                                                                                                                                                                                          \
             HTOOL_BLAS_F77(C##swap)                                                                                                                                                                                                                                                      \
             (N, x, incx, y, incy);                                                                                                                                                                                                                                                       \
@@ -217,6 +223,21 @@ struct Blas {
         inline void Blas<T>::herk(const char *const uplo, const char *const trans, const int *const n, const int *const k, const U *const alpha, const T *const a, const int *const lda, const U *const beta, T *const c, const int *const ldc) {                                        \
             HTOOL_BLAS_F77(C##herk)                                                                                                                                                                                                                                                      \
             (uplo, trans, n, k, alpha, a, lda, beta, c, ldc);                                                                                                                                                                                                                            \
+        }                                                                                                                                                                                                                                                                                \
+        template <>                                                                                                                                                                                                                                                                      \
+        inline void Blas<U>::ger(const int *M, const int *N, const U *alpha, const U *x, const int *incx, const U *y, const int *incy, U *A, const int *lda) {                                                                                                                           \
+            HTOOL_BLAS_F77(B##ger)                                                                                                                                                                                                                                                       \
+            (M, N, alpha, x, incx, y, incy, A, lda);                                                                                                                                                                                                                                     \
+        }                                                                                                                                                                                                                                                                                \
+        template <>                                                                                                                                                                                                                                                                      \
+        inline void Blas<T>::geru(const int *M, const int *N, const T *alpha, const T *x, const int *incx, const T *y, const int *incy, T *A, const int *lda) {                                                                                                                          \
+            HTOOL_BLAS_F77(C##geru)                                                                                                                                                                                                                                                      \
+            (M, N, alpha, x, incx, y, incy, A, lda);                                                                                                                                                                                                                                     \
+        }                                                                                                                                                                                                                                                                                \
+        template <>                                                                                                                                                                                                                                                                      \
+        inline void Blas<T>::gerc(const int *M, const int *N, const T *alpha, const T *x, const int *incx, const T *y, const int *incy, T *A, const int *lda) {                                                                                                                          \
+            HTOOL_BLAS_F77(C##gerc)                                                                                                                                                                                                                                                      \
+            (M, N, alpha, x, incx, y, incy, A, lda);                                                                                                                                                                                                                                     \
         }
 
 HTOOL_GENERATE_BLAS_COMPLEX(c, std::complex<float>, s, float)
