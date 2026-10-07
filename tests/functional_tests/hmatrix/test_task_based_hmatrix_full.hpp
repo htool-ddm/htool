@@ -62,6 +62,93 @@ bool test_task_based_hmatrix_full_lu(char trans, int n1, int n2, htool::underlyi
     cout << "> Errors on hmatrix lu solve: " << error << '\n';
     cout << "> is_error: " << is_error << "\n";
 
+    // Policy reused for another matrix: L0 of A, cached in policy, must not be used for A_bis
+    HMatrix<T, htool::underlying_type<T>> A_bis = hmatrix_tree_builder_A.build(*test_case.operator_in_user_numbering_A, *test_case.root_cluster_A_output, *test_case.root_cluster_A_input);
+    is_error                                    = is_error || !policy.hmatrix_task_dependencies.is_L0_of(*A) || policy.hmatrix_task_dependencies.is_L0_of(A_bis);
+    lu_factorization(policy, A_bis);
+    is_error    = is_error || !policy.hmatrix_task_dependencies.is_L0_of(A_bis);
+    matrix_test = B_dense;
+    lu_solve(trans, A_bis, matrix_test);
+    error    = normFrob(X_dense - matrix_test) / normFrob(X_dense);
+    is_error = is_error || !(error < epsilon * margin);
+    cout << "> Errors on hmatrix lu solve with reused policy: " << error << '\n';
+    cout << "> is_error: " << is_error << "\n";
+
+    // Two builds in a row with the same builder and policy, without waiting for the tasks of the first one
+    std::unique_ptr<HMatrix<T, htool::underlying_type<T>>> A_first, A_second;
+#if defined(_OPENMP)
+#    pragma omp parallel
+#    pragma omp single
+#endif
+    {
+        A_first  = std::make_unique<HMatrix<T, htool::underlying_type<T>>>(hmatrix_tree_builder_A.build(policy, *test_case.operator_in_user_numbering_A, *test_case.root_cluster_A_output, *test_case.root_cluster_A_input));
+        A_second = std::make_unique<HMatrix<T, htool::underlying_type<T>>>(hmatrix_tree_builder_A.build(policy, *test_case.operator_in_user_numbering_A, *test_case.root_cluster_A_output, *test_case.root_cluster_A_input));
+    }
+    for (auto &hmatrix : {A_first.get(), A_second.get()}) {
+        Matrix<T> densified_hmatrix(no_A, ni_A);
+        copy_to_dense_in_user_numbering(*hmatrix, densified_hmatrix.data());
+        error    = normFrob(A_dense - densified_hmatrix) / normFrob(A_dense);
+        is_error = is_error || !(error < epsilon * margin);
+        cout << "> Errors on hmatrix built twice in a row: " << error << '\n';
+    }
+
+    // L0 reduced to the root: build and factorization run sequentially
+    omp_task_policy<T, double> policy_root;
+    policy_root.hmatrix_task_dependencies.max_number_of_nodes = 1;
+    std::unique_ptr<HMatrix<T, htool::underlying_type<T>>> A_root;
+#if defined(_OPENMP)
+#    pragma omp parallel
+#    pragma omp single
+#endif
+    {
+        A_root = std::make_unique<HMatrix<T, htool::underlying_type<T>>>(hmatrix_tree_builder_A.build(policy_root, *test_case.operator_in_user_numbering_A, *test_case.root_cluster_A_output, *test_case.root_cluster_A_input));
+        lu_factorization(policy_root, *A_root);
+    }
+    is_error    = is_error || policy_root.hmatrix_task_dependencies.L0.size() != 1 || policy_root.hmatrix_task_dependencies.L0[0] != A_root.get();
+    matrix_test = B_dense;
+    lu_solve(trans, *A_root, matrix_test);
+    error    = normFrob(X_dense - matrix_test) / normFrob(X_dense);
+    is_error = is_error || !(error < epsilon * margin);
+    cout << "> Errors on hmatrix lu solve with L0 reduced to root: " << error << '\n';
+    cout << "> is_error: " << is_error << "\n";
+
+    // An L0 of a sub-block is not an L0 of the whole HMatrix, but an L0 assigned directly is kept if it is one
+    omp_task_policy<T, double> policy_custom;
+    HMatrix<T, htool::underlying_type<T>> A_custom = hmatrix_tree_builder_A.build(*test_case.operator_in_user_numbering_A, *test_case.root_cluster_A_output, *test_case.root_cluster_A_input);
+    auto &dependencies_custom                      = policy_custom.hmatrix_task_dependencies;
+    dependencies_custom.set_L0(*A_custom.get_children()[0]);
+    is_error               = is_error || dependencies_custom.is_L0_of(A_custom);
+    dependencies_custom.L0 = find_l0(A_custom, 16, dependencies_custom.cost_function);
+    auto L0_custom         = dependencies_custom.L0;
+    is_error               = is_error || !dependencies_custom.is_L0_of(A_custom);
+    lu_factorization(policy_custom, A_custom);
+    is_error    = is_error || dependencies_custom.L0 != L0_custom;
+    matrix_test = B_dense;
+    lu_solve(trans, A_custom, matrix_test);
+    error    = normFrob(X_dense - matrix_test) / normFrob(X_dense);
+    is_error = is_error || !(error < epsilon * margin);
+    cout << "> Errors on hmatrix lu solve with an L0 assigned directly: " << error << '\n';
+
+    // L0 recomputed by a factorization while the tasks of the build are pending: they must be completed first
+    omp_task_policy<T, double> policy_recomputed;
+    std::unique_ptr<HMatrix<T, htool::underlying_type<T>>> A_recomputed;
+#if defined(_OPENMP)
+#    pragma omp parallel
+#    pragma omp single
+#endif
+    {
+        A_recomputed = std::make_unique<HMatrix<T, htool::underlying_type<T>>>(hmatrix_tree_builder_A.build(policy_recomputed, *test_case.operator_in_user_numbering_A, *test_case.root_cluster_A_output, *test_case.root_cluster_A_input));
+        policy_recomputed.hmatrix_task_dependencies.L0.resize(1);            // no longer a cut of A_recomputed's block tree, so that it is recomputed,
+        policy_recomputed.hmatrix_task_dependencies.max_number_of_nodes = 8; // with other nodes than the ones the build tasks depend on
+        lu_factorization(policy_recomputed, *A_recomputed);
+    }
+    matrix_test = B_dense;
+    lu_solve(trans, *A_recomputed, matrix_test);
+    error    = normFrob(X_dense - matrix_test) / normFrob(X_dense);
+    is_error = is_error || !(error < epsilon * margin);
+    cout << "> Errors on hmatrix lu solve with L0 recomputed after the build: " << error << '\n';
+    cout << "> is_error: " << is_error << "\n";
+
     return is_error;
 }
 
@@ -103,7 +190,7 @@ bool test_task_based_hmatrix_full_cholesky(char UPLO, int n1, int n2, htool::und
 #endif
     {
         // Assembly
-        A = std::make_unique<HMatrix<T, htool::underlying_type<T>>>(hmatrix_tree_builder_A.build(*test_case.operator_in_user_numbering_A, *test_case.root_cluster_A_output, *test_case.root_cluster_A_input));
+        A = std::make_unique<HMatrix<T, htool::underlying_type<T>>>(hmatrix_tree_builder_A.build(policy, *test_case.operator_in_user_numbering_A, *test_case.root_cluster_A_output, *test_case.root_cluster_A_input));
 
         // Factorization
         cholesky_factorization(policy, UPLO, *A);

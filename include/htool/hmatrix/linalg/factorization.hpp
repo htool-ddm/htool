@@ -99,22 +99,11 @@ void lu_factorization(ExecutionPolicy &&execution_policy, HMatrix<CoefficientPre
         } else if constexpr (std::is_same_v<std::decay_t<ExecutionPolicy>, exec_compat::sequenced_policy>) {
             sequential_lu_factorization(hmatrix);
         } else if constexpr (std::is_same_v<std::decay_t<ExecutionPolicy>, omp_task_policy<CoefficientPrecision, CoordinatePrecision>>) {
-            if (execution_policy.hmatrix_task_dependencies.L0.empty())
-                execution_policy.hmatrix_task_dependencies.set_L0(hmatrix);
-
-            if (need_to_create_parallel_region()) {
-#    if defined(_OPENMP)
-#        pragma omp parallel
-#        pragma omp single
-#    endif
-                {
-                    task_based_lu_factorization(hmatrix, execution_policy.hmatrix_task_dependencies.L0);
-                }
-            } else {
-                task_based_lu_factorization(hmatrix, execution_policy.hmatrix_task_dependencies.L0);
-            }
+            update_L0(execution_policy.hmatrix_task_dependencies, hmatrix);
+            run_task_based(
+                execution_policy.hmatrix_task_dependencies, hmatrix, [&]() { sequential_lu_factorization(hmatrix); }, [&](auto &L0) { task_based_lu_factorization(hmatrix, L0); });
         } else {
-            static_assert(std::is_same_v<std::decay_t<ExecutionPolicy>, exec_compat::sequenced_policy> || std::is_same_v<std::decay_t<ExecutionPolicy>, exec_compat::parallel_policy>, "Invalid execution policy for factorization.");
+            static_assert(std::is_same_v<std::decay_t<ExecutionPolicy>, exec_compat::sequenced_policy> || std::is_same_v<std::decay_t<ExecutionPolicy>, exec_compat::parallel_policy> || std::is_same_v<std::decay_t<ExecutionPolicy>, omp_task_policy<CoefficientPrecision, CoordinatePrecision>>, "Invalid execution policy for factorization.");
         }
     } else {
         static_assert(is_execution_policy_v<std::decay_t<ExecutionPolicy>>, "Invalid execution policy for factorization.");
@@ -243,22 +232,11 @@ void cholesky_factorization(ExecutionPolicy &&execution_policy, char UPLO, HMatr
         } else if constexpr (std::is_same_v<std::decay_t<ExecutionPolicy>, exec_compat::sequenced_policy>) {
             sequential_cholesky_factorization(UPLO, hmatrix);
         } else if constexpr (std::is_same_v<std::decay_t<ExecutionPolicy>, omp_task_policy<CoefficientPrecision, CoordinatePrecision>>) {
-            if (execution_policy.hmatrix_task_dependencies.L0.empty())
-                execution_policy.hmatrix_task_dependencies.set_L0(hmatrix);
-
-            if (need_to_create_parallel_region()) {
-#    if defined(_OPENMP)
-#        pragma omp parallel
-#        pragma omp single
-#    endif
-                {
-                    task_based_cholesky_factorization(UPLO, hmatrix, execution_policy.hmatrix_task_dependencies.L0);
-                }
-            } else {
-                task_based_cholesky_factorization(UPLO, hmatrix, execution_policy.hmatrix_task_dependencies.L0);
-            }
+            update_L0(execution_policy.hmatrix_task_dependencies, hmatrix);
+            run_task_based(
+                execution_policy.hmatrix_task_dependencies, hmatrix, [&]() { sequential_cholesky_factorization(UPLO, hmatrix); }, [&](auto &L0) { task_based_cholesky_factorization(UPLO, hmatrix, L0); });
         } else {
-            static_assert(std::is_same_v<std::decay_t<ExecutionPolicy>, exec_compat::sequenced_policy> || std::is_same_v<std::decay_t<ExecutionPolicy>, exec_compat::parallel_policy>, "Invalid execution policy for factorization.");
+            static_assert(std::is_same_v<std::decay_t<ExecutionPolicy>, exec_compat::sequenced_policy> || std::is_same_v<std::decay_t<ExecutionPolicy>, exec_compat::parallel_policy> || std::is_same_v<std::decay_t<ExecutionPolicy>, omp_task_policy<CoefficientPrecision, CoordinatePrecision>>, "Invalid execution policy for factorization.");
         }
     } else {
         static_assert(is_execution_policy_v<std::decay_t<ExecutionPolicy>>, "Invalid execution policy for factorization.");

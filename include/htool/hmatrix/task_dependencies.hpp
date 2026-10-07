@@ -2,6 +2,9 @@
 #define HTOOL_HMATRIX_TASK_DEPENDENCIES_HPP
 
 #include "hmatrix.hpp"
+#include <functional>
+#include <stack>
+#include <unordered_set>
 namespace htool {
 
 template <typename CoefficientPrecision, typename CoordinatePrecision>
@@ -9,12 +12,40 @@ std::size_t uniform_cost_function(const HMatrix<CoefficientPrecision, Coordinate
 
 template <typename CoefficientPrecision, typename CoordinatePrecision>
 struct HMatrixTaskDependencies {
-    int max_number_of_nodes                                                                              = 1000;
+    int max_number_of_nodes                                                                              = 64; // TODO:add better default value
     std::function<std::size_t(const HMatrix<CoefficientPrecision, CoordinatePrecision> &)> cost_function = &uniform_cost_function<CoefficientPrecision, CoordinatePrecision>;
     std::vector<HMatrix<CoefficientPrecision, CoordinatePrecision> *> L0;
 
     void set_L0(HMatrix<CoefficientPrecision, CoordinatePrecision> &hmatrix) {
         L0 = find_l0(hmatrix, max_number_of_nodes, cost_function);
+    }
+
+    // True if L0 is a cut of the block tree of hmatrix: every leaf of hmatrix has exactly one node of L0 among itself and its ancestors.
+    // Only compares pointers, so it is safe even if L0 points to a destroyed tree. L0 is not compared with what set_L0 would give,
+    // so call set_L0 explicitly after changing max_number_of_nodes or cost_function.
+    bool is_L0_of(const HMatrix<CoefficientPrecision, CoordinatePrecision> &hmatrix) const {
+        const std::unordered_set<const HMatrix<CoefficientPrecision, CoordinatePrecision> *> L0_nodes(L0.begin(), L0.end());
+        if (L0_nodes.empty() || L0_nodes.size() != L0.size())
+            return false;
+
+        // Traversal stopped at the nodes of L0: a node of L0 below another one is not found
+        std::size_t number_of_L0_nodes_found = 0;
+        std::stack<const HMatrix<CoefficientPrecision, CoordinatePrecision> *> nodes;
+        nodes.push(&hmatrix);
+        while (!nodes.empty()) {
+            const HMatrix<CoefficientPrecision, CoordinatePrecision> *node = nodes.top();
+            nodes.pop();
+            if (L0_nodes.count(node) > 0) {
+                number_of_L0_nodes_found++;
+            } else if (node->is_leaf()) {
+                return false;
+            } else {
+                for (auto &child : node->get_children()) {
+                    nodes.push(child.get());
+                }
+            }
+        }
+        return number_of_L0_nodes_found == L0.size();
     }
 };
 
