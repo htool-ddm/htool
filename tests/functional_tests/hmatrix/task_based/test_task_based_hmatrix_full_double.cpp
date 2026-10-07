@@ -20,6 +20,7 @@ int main(int, char *[]) {
         }
         for (auto UPLO : {'L', 'U'}) {
             is_error = is_error || test_task_based_hmatrix_full_cholesky<double, GeneratorTestDoubleSymmetric>(UPLO, n1, n2, epsilon, margin);
+            is_error = is_error || test_task_based_hmatrix_full_ldlt<double, GeneratorTestDoubleSymmetric>(UPLO, 'S', n1, n2, epsilon, margin);
         }
     }
 

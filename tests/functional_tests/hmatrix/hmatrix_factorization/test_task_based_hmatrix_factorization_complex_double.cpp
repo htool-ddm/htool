@@ -21,6 +21,8 @@ int main(int, char *[]) {
             for (auto UPLO : {'L', 'U'}) {
                 for (bool full_storage : {false, true}) {
                     is_error = is_error || test_hmatrix_cholesky<htool::omp_task_policy<std::complex<double>> &&, std::complex<double>, GeneratorTestComplexHermitian>(omp_task_policy<std::complex<double>>{}, UPLO, full_storage, n1, n2, epsilon, margin);
+                    is_error = is_error || test_hmatrix_ldlt<htool::omp_task_policy<std::complex<double>> &&, std::complex<double>, GeneratorTestComplexSymmetric>(omp_task_policy<std::complex<double>>{}, UPLO, 'S', full_storage, n1, n2, epsilon, margin);
+                    is_error = is_error || test_hmatrix_ldlt<htool::omp_task_policy<std::complex<double>> &&, std::complex<double>, GeneratorTestComplexHermitian>(omp_task_policy<std::complex<double>>{}, UPLO, 'H', full_storage, n1, n2, epsilon, margin);
                 }
             }
         }

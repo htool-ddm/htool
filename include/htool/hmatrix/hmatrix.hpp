@@ -242,6 +242,12 @@ class HMatrix : public TreeNode<HMatrix<CoefficientPrecision, CoordinatePrecisio
         m_dense_data   = std::move(dense_matrix_ptr);
         m_storage_type = StorageType::Dense;
     }
+
+    void set_low_rank_data(std::unique_ptr<LowRankMatrix<CoefficientPrecision>> low_rank_matrix_ptr) {
+        this->delete_children();
+        m_low_rank_data = std::move(low_rank_matrix_ptr);
+        m_storage_type  = StorageType::LowRank;
+    }
 };
 
 template <typename CoefficientPrecision, typename CoordinatePrecision = underlying_type<CoefficientPrecision>>

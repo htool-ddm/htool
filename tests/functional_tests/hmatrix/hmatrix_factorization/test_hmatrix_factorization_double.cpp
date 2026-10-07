@@ -28,7 +28,8 @@ int main(int, char *[]) {
                 is_error = is_error || test_hmatrix_cholesky<const exec_compat::parallel_policy &, double, GeneratorTestDoubleSymmetric>(exec_compat::par, UPLO, full_storage, n1, n2, epsilon, margin);
             }
             for (bool full_storage : {false, true}) {
-                is_error = is_error || test_hmatrix_ldlt<double, GeneratorTestDoubleSymmetric>(UPLO, 'S', full_storage, n1, n2, epsilon, margin);
+                is_error = is_error || test_hmatrix_ldlt<const exec_compat::sequenced_policy &, double, GeneratorTestDoubleSymmetric>(exec_compat::seq, UPLO, 'S', full_storage, n1, n2, epsilon, margin);
+                is_error = is_error || test_hmatrix_ldlt<const exec_compat::parallel_policy &, double, GeneratorTestDoubleSymmetric>(exec_compat::par, UPLO, 'S', full_storage, n1, n2, epsilon, margin);
             }
         }
     }

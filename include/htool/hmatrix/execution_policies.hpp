@@ -49,8 +49,9 @@ struct is_execution_policy<exec_compat::parallel_policy> : std::true_type {};
  * directly), and recompute it otherwise; call set_L0 explicitly after changing
  * max_number_of_nodes or cost_function.
  *
- * If called outside a parallel region, build, lu_factorization and
- * cholesky_factorization create one and return once all their tasks are done.
+ * If called outside a parallel region, build, lu_factorization,
+ * cholesky_factorization and ldlt_factorization create one and return once all
+ * their tasks are done.
  * If L0 is reduced to the root, they run sequentially.
  *
  * If called inside a parallel region (e.g. in a single construct), they only

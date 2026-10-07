@@ -124,8 +124,8 @@ bool test_hmatrix_cholesky(ExecutionPolicy &&execution_policy, char UPLO, bool f
     return is_error;
 }
 
-template <typename T, typename GeneratorTestType>
-bool test_hmatrix_ldlt(char UPLO, char symmetry, bool full_storage, int n1, int n2, htool::underlying_type<T> epsilon, htool::underlying_type<T> margin) {
+template <typename ExecutionPolicy, typename T, typename GeneratorTestType>
+bool test_hmatrix_ldlt(ExecutionPolicy &&execution_policy, char UPLO, char symmetry, bool full_storage, int n1, int n2, htool::underlying_type<T> epsilon, htool::underlying_type<T> margin) {
     bool is_error = false;
     double eta    = 100;
     htool::underlying_type<T> error;
@@ -177,7 +177,7 @@ bool test_hmatrix_ldlt(char UPLO, char symmetry, bool full_storage, int n1, int 
 
     // LDLt factorization
     matrix_test = B_dense;
-    sequential_ldlt_factorization(symmetry, UPLO, HA);
+    ldlt_factorization(execution_policy, symmetry, UPLO, HA);
     ldlt_solve(symmetry, UPLO, HA, matrix_test);
 
     error    = normFrob(X_dense - matrix_test) / normFrob(X_dense);

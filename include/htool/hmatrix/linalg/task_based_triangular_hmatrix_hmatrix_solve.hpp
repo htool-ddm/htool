@@ -10,6 +10,7 @@
 #include "task_based_add_hmatrix_hmatrix_product.hpp"
 #include "triangular_hmatrix_lrmat_solve.hpp"
 #include "triangular_hmatrix_matrix_solve.hpp"
+#include "triangular_ldlt_hmatrix_hmatrix_solve.hpp"
 #include <memory>
 #include <string>
 #include <vector>
@@ -22,22 +23,9 @@
 #endif
 
 namespace htool {
-/**
- * @brief Solves a triangular linear system of equation of the form \f$Ax = B\f$ where \f$A\f$ is a triangular HMatrix and \f$B\f$ is an HMatrix. The solve is done in a task-based manner
- * and uses task based HMatrix-HMatrix product.
- *
- * @param[in] side Indicates whether \f$A\f$ is on the left or right side of \f$x\f$.
- * @param[in] UPLO Indicates whether the upper or lower triangular part of \f$A\f$ is used.
- * @param[in] transa Indicates whether the matrix \f$A\f$ is transposed or not.
- * @param[in] diag Is passed to internal_triangular_hmatrix_hmatrix_solve function
- * @param[in] alpha The scalar \f$\alpha\f$.
- * @param[in] A The triangular HMatrix \f$A\f$.
- * @param[in,out] B The HMatrix \f$B\f$.
- * @param[in] L0_A The L0 of \f$A\f$.
- * @param[in] L0_B The L0 of \f$B\f$.
- */
-template <typename CoefficientPrecision, typename CoordinatePrecision = underlying_type<CoefficientPrecision>>
-void task_based_internal_triangular_hmatrix_hmatrix_solve(char side, char UPLO, char transa, char diag, CoefficientPrecision alpha, const HMatrix<CoefficientPrecision, CoordinatePrecision> &A, HMatrix<CoefficientPrecision, CoordinatePrecision> &B, std::vector<HMatrix<CoefficientPrecision> *> &L0_A, std::vector<HMatrix<CoefficientPrecision> *> &L0_B) {
+// Recursion of the task-based triangular solves above L0, leaf_solve(side, UPLO, transa, A, B) being the sequential solve applied at the nodes of L0_B.
+template <typename LeafSolve, typename CoefficientPrecision, typename CoordinatePrecision>
+void task_based_internal_triangular_hmatrix_hmatrix_solve_with(LeafSolve leaf_solve, char side, char UPLO, char transa, CoefficientPrecision alpha, const HMatrix<CoefficientPrecision, CoordinatePrecision> &A, HMatrix<CoefficientPrecision, CoordinatePrecision> &B, std::vector<HMatrix<CoefficientPrecision> *> &L0_A, std::vector<HMatrix<CoefficientPrecision> *> &L0_B) {
     // if (alpha != CoefficientPrecision(1)) {
     //     scale(alpha, B);
     // }
@@ -70,17 +58,16 @@ void task_based_internal_triangular_hmatrix_hmatrix_solve(char side, char UPLO, 
 #if defined(_OPENMP)
         std::vector<const HMatrix<CoefficientPrecision, CoordinatePrecision> *> read_deps = enumerate_dependences(A, L0_A);
         int read_deps_size                                                                = read_deps.size();
-#    pragma omp task default(none)                    \
-        firstprivate(side, UPLO, transa, alpha, diag) \
-        shared(A, B, read_deps)                       \
-        depend(in : A)                                \
-        depend(inout : B)                             \
+#    pragma omp task default(none)                   \
+        firstprivate(side, UPLO, transa, leaf_solve) \
+        shared(A, B, read_deps)                      \
+        depend(in : A)                               \
+        depend(inout : B)                            \
         depend(iterator(it = 0 : read_deps_size), in : *read_deps[it])
 
 #endif
         {
-            // internal_triangular_hmatrix_hmatrix_solve(side, UPLO, transa, 'N', alpha, A, B);
-            internal_triangular_hmatrix_hmatrix_solve(side, UPLO, transa, diag, CoefficientPrecision(1), A, B); // alpha == 1 because the scaling is done here
+            leaf_solve(side, UPLO, transa, A, B); // alpha == 1 because the scaling is done above
         }
     } else {
         // Fill the clusters for the output, middle, and input clusters
@@ -112,7 +99,7 @@ void task_based_internal_triangular_hmatrix_hmatrix_solve(char side, char UPLO, 
                     for (auto &middle_cluster_child : middle_clusters) {
                         const HMatrix<CoefficientPrecision, CoordinatePrecision> *A_child = transa == 'N' ? A.get_sub_hmatrix(*output_cluster_child, *middle_cluster_child) : A.get_sub_hmatrix(*middle_cluster_child, *output_cluster_child);
                         if (*output_cluster_child == *middle_cluster_child) {
-                            task_based_internal_triangular_hmatrix_hmatrix_solve(side, UPLO, transa, diag, CoefficientPrecision(1), *A_child, *B_child_to_modify, L0_A, L0_B);
+                            task_based_internal_triangular_hmatrix_hmatrix_solve_with(leaf_solve, side, UPLO, transa, CoefficientPrecision(1), *A_child, *B_child_to_modify, L0_A, L0_B);
                         } else if (output_cluster_child->get_offset() > middle_cluster_child->get_offset()) {
                             const HMatrix<CoefficientPrecision, CoordinatePrecision> *B_child = B.get_sub_hmatrix(*middle_cluster_child, *input_cluster_child);
                             task_based_internal_add_hmatrix_hmatrix_product(transa, 'N', CoefficientPrecision(-1), *A_child, *B_child, CoefficientPrecision(1), *B_child_to_modify, L0_A, L0_B, L0_B);
@@ -135,7 +122,7 @@ void task_based_internal_triangular_hmatrix_hmatrix_solve(char side, char UPLO, 
 
                         const HMatrix<CoefficientPrecision, CoordinatePrecision> *A_child = transa == 'N' ? A.get_sub_hmatrix(*output_cluster_child, *middle_cluster_child) : A.get_sub_hmatrix(*middle_cluster_child, *output_cluster_child);
                         if (*output_cluster_child == *middle_cluster_child) {
-                            task_based_internal_triangular_hmatrix_hmatrix_solve(side, UPLO, transa, diag, CoefficientPrecision(1), *A_child, *B_child_to_modify, L0_A, L0_B);
+                            task_based_internal_triangular_hmatrix_hmatrix_solve_with(leaf_solve, side, UPLO, transa, CoefficientPrecision(1), *A_child, *B_child_to_modify, L0_A, L0_B);
                         } else if (output_cluster_child->get_offset() < middle_cluster_child->get_offset()) {
 
                             const HMatrix<CoefficientPrecision, CoordinatePrecision> *B_child = B.get_sub_hmatrix(*middle_cluster_child, *input_cluster_child);
@@ -161,7 +148,7 @@ void task_based_internal_triangular_hmatrix_hmatrix_solve(char side, char UPLO, 
 
                         const HMatrix<CoefficientPrecision, CoordinatePrecision> *A_child = transa == 'N' ? A.get_sub_hmatrix(*middle_cluster_child, *input_cluster_child) : A.get_sub_hmatrix(*input_cluster_child, *middle_cluster_child);
                         if (*input_cluster_child == *middle_cluster_child) {
-                            task_based_internal_triangular_hmatrix_hmatrix_solve(side, UPLO, transa, diag, CoefficientPrecision(1), *A_child, *B_child_to_modify, L0_A, L0_B);
+                            task_based_internal_triangular_hmatrix_hmatrix_solve_with(leaf_solve, side, UPLO, transa, CoefficientPrecision(1), *A_child, *B_child_to_modify, L0_A, L0_B);
                         } else if (middle_cluster_child->get_offset() < input_cluster_child->get_offset()) {
 
                             const HMatrix<CoefficientPrecision, CoordinatePrecision> *B_child = B.get_sub_hmatrix(*output_cluster_child, *middle_cluster_child);
@@ -187,7 +174,7 @@ void task_based_internal_triangular_hmatrix_hmatrix_solve(char side, char UPLO, 
 
                         const HMatrix<CoefficientPrecision, CoordinatePrecision> *A_child = transa == 'N' ? A.get_sub_hmatrix(*middle_cluster_child, *input_cluster_child) : A.get_sub_hmatrix(*input_cluster_child, *middle_cluster_child);
                         if (*input_cluster_child == *middle_cluster_child) {
-                            task_based_internal_triangular_hmatrix_hmatrix_solve(side, UPLO, transa, diag, CoefficientPrecision(1), *A_child, *B_child_to_modify, L0_A, L0_B);
+                            task_based_internal_triangular_hmatrix_hmatrix_solve_with(leaf_solve, side, UPLO, transa, CoefficientPrecision(1), *A_child, *B_child_to_modify, L0_A, L0_B);
                         } else if (middle_cluster_child->get_offset() > input_cluster_child->get_offset()) {
 
                             const HMatrix<CoefficientPrecision, CoordinatePrecision> *B_child = B.get_sub_hmatrix(*output_cluster_child, *middle_cluster_child);
@@ -200,6 +187,53 @@ void task_based_internal_triangular_hmatrix_hmatrix_solve(char side, char UPLO, 
         }
     }
 }
+
+/**
+ * @brief Solves a triangular linear system of equation of the form \f$Ax = B\f$ where \f$A\f$ is a triangular HMatrix and \f$B\f$ is an HMatrix. The solve is done in a task-based manner
+ * and uses task based HMatrix-HMatrix product.
+ *
+ * @param[in] side Indicates whether \f$A\f$ is on the left or right side of \f$x\f$.
+ * @param[in] UPLO Indicates whether the upper or lower triangular part of \f$A\f$ is used.
+ * @param[in] transa Indicates whether the matrix \f$A\f$ is transposed or not.
+ * @param[in] diag Is passed to internal_triangular_hmatrix_hmatrix_solve function
+ * @param[in] alpha The scalar \f$\alpha\f$.
+ * @param[in] A The triangular HMatrix \f$A\f$.
+ * @param[in,out] B The HMatrix \f$B\f$.
+ * @param[in] L0_A The L0 of \f$A\f$.
+ * @param[in] L0_B The L0 of \f$B\f$.
+ */
+template <typename CoefficientPrecision, typename CoordinatePrecision = underlying_type<CoefficientPrecision>>
+void task_based_internal_triangular_hmatrix_hmatrix_solve(char side, char UPLO, char transa, char diag, CoefficientPrecision alpha, const HMatrix<CoefficientPrecision, CoordinatePrecision> &A, HMatrix<CoefficientPrecision, CoordinatePrecision> &B, std::vector<HMatrix<CoefficientPrecision> *> &L0_A, std::vector<HMatrix<CoefficientPrecision> *> &L0_B) {
+    task_based_internal_triangular_hmatrix_hmatrix_solve_with(
+        [diag](char leaf_side, char leaf_UPLO, char leaf_transa, const HMatrix<CoefficientPrecision, CoordinatePrecision> &leaf_A, HMatrix<CoefficientPrecision, CoordinatePrecision> &leaf_B) { internal_triangular_hmatrix_hmatrix_solve(leaf_side, leaf_UPLO, leaf_transa, diag, CoefficientPrecision(1), leaf_A, leaf_B); },
+        side,
+        UPLO,
+        transa,
+        alpha,
+        A,
+        B,
+        L0_A,
+        L0_B);
+}
+
+/**
+ * @brief Same as task_based_internal_triangular_hmatrix_hmatrix_solve, solving with the unit \f$L\f$ or \f$U\f$ of an LDLt factorization
+ * (see internal_triangular_ldlt_hmatrix_hmatrix_solve).
+ */
+template <typename CoefficientPrecision, typename CoordinatePrecision = underlying_type<CoefficientPrecision>>
+void task_based_internal_triangular_ldlt_hmatrix_hmatrix_solve(char side, char UPLO, char transa, CoefficientPrecision alpha, const HMatrix<CoefficientPrecision, CoordinatePrecision> &A, HMatrix<CoefficientPrecision, CoordinatePrecision> &B, std::vector<HMatrix<CoefficientPrecision> *> &L0_A, std::vector<HMatrix<CoefficientPrecision> *> &L0_B) {
+    task_based_internal_triangular_hmatrix_hmatrix_solve_with(
+        [](char leaf_side, char leaf_UPLO, char leaf_transa, const HMatrix<CoefficientPrecision, CoordinatePrecision> &leaf_A, HMatrix<CoefficientPrecision, CoordinatePrecision> &leaf_B) { internal_triangular_ldlt_hmatrix_hmatrix_solve(leaf_side, leaf_UPLO, leaf_transa, CoefficientPrecision(1), leaf_A, leaf_B); },
+        side,
+        UPLO,
+        transa,
+        alpha,
+        A,
+        B,
+        L0_A,
+        L0_B);
+}
+
 } // namespace htool
 
 #if defined(__clang__)
