@@ -11,17 +11,18 @@ using namespace htool;
 int main(int, char *[]) {
 
     bool is_error       = false;
-    const int n1        = 1000;
     const double margin = 1;
     const int n2        = 100;
 
-    for (auto epsilon : {1e-3, 1e-6}) {
-        for (auto trans : {'N', 'T'}) {
-            is_error = is_error || test_hmatrix_lu<htool::omp_task_policy<double> &&, double, GeneratorTestDoubleSymmetric>(omp_task_policy<double>{}, trans, n1, n2, epsilon, margin);
-        }
-        for (auto UPLO : {'L', 'U'}) {
-            for (bool full_storage : {false, true}) {
-                is_error = is_error || test_hmatrix_cholesky<htool::omp_task_policy<double> &&, double, GeneratorTestDoubleSymmetric>(omp_task_policy<double>{}, UPLO, full_storage, n1, n2, epsilon, margin);
+    for (auto n1 : {10, 1000}) { // 10 to deal with trivial case
+        for (auto epsilon : {1e-3, 1e-6}) {
+            for (auto trans : {'N', 'T'}) {
+                is_error = is_error || test_hmatrix_lu<htool::omp_task_policy<double> &&, double, GeneratorTestDoubleSymmetric>(omp_task_policy<double>{}, trans, n1, n2, epsilon, margin);
+            }
+            for (auto UPLO : {'L', 'U'}) {
+                for (bool full_storage : {false, true}) {
+                    is_error = is_error || test_hmatrix_cholesky<htool::omp_task_policy<double> &&, double, GeneratorTestDoubleSymmetric>(omp_task_policy<double>{}, UPLO, full_storage, n1, n2, epsilon, margin);
+                }
             }
         }
     }

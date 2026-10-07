@@ -47,6 +47,7 @@ All notable changes to this project will be documented in this file.
 - Symmetric/Hermitian local HMatrix solvers (`DDMSolverBuilder`) now use LDLt by default instead of Cholesky, which silently gave a wrong factorization for indefinite matrices; pass `is_positive_definite=true` to keep Cholesky.
 - Checks of `lu_factorization`/`cholesky_factorization` on HMatrix moved to the public functions taking an execution policy, so they run once for the sequential and task-based implementations.
 - Refactor `omp_task_policy` extracting the part independent of OpenMP into `HMatrixTaskDependencies`.
+- Task-based HMatrix build and factorizations run sequentially when L0 is reduced to the root, where tasks bring no parallelism.
 
 ### Removed
 
@@ -68,6 +69,8 @@ All notable changes to this project will be documented in this file.
 - Fix HMatrix `cholesky_factorization` symmetry check, which compared `UPLO` instead of the symmetry and could never trigger: it now rejects a complex symmetric (non-Hermitian) HMatrix.
 - Fix complex-symmetric (non-Hermitian) local HMatrix solvers, which were factorized as Hermitian with Cholesky.
 - Report a failed dense `cholesky_factorization` (`potrf`'s `info`), for a matrix that is not positive definite.
+- Fix `omp_task_policy` factorizations reusing the L0 of another HMatrix: L0 is now recomputed when it is not a cut of the block tree of the factorized HMatrix, after the pending tasks when called in a parallel region.
+- Fix task-based HMatrix build tasks reading the builder's and policy's state when they run, which broke a second build with the same builder or policy before the tasks of the first one completed, and race on the number of false positives.
 
 ## [1.0.2] - 2026-02-14
 

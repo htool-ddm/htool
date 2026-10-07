@@ -20,6 +20,7 @@
 #include <memory>                                               // for shar...
 #include <stack>                                                // for stack
 #include <string>                                               // for basi...
+#include <unordered_set>                                        // for unordered_set
 #include <vector>                                               // for vector
 
 namespace htool {
@@ -346,20 +347,12 @@ HMatrix<CoefficientPrecision, CoordinatePrecision> HMatrixTreeBuilder<Coefficien
     HMatrixType root_hmatrix(root_target_cluster_tree, root_source_cluster_tree);
     setup_block_tree(root_hmatrix, generator, root_target_cluster_tree, root_source_cluster_tree, target_partition_number, partition_number_for_symmetry);
 
+    // New block tree: no pending task depends on it, unlike in update_L0
     hmatrix_task_dependencies.set_L0(root_hmatrix);
 
     // Compute leave's data
-    if (need_to_create_parallel_region()) {
-#if defined(_OPENMP)
-#    pragma omp parallel
-#    pragma omp single
-#endif
-        {
-            task_based_compute_blocks(generator, hmatrix_task_dependencies.L0);
-        }
-    } else {
-        task_based_compute_blocks(generator, hmatrix_task_dependencies.L0);
-    }
+    run_task_based(
+        hmatrix_task_dependencies, root_hmatrix, [&]() { sequential_compute_blocks(generator); }, [&](auto &L0) { task_based_compute_blocks(generator, L0); });
 
     set_symmetry_for_leaves(root_hmatrix);
 
@@ -667,43 +660,54 @@ void HMatrixTreeBuilder<CoefficientPrecision, CoordinatePrecision>::openmp_compu
 
 template <typename CoefficientPrecision, typename CoordinatePrecision>
 void HMatrixTreeBuilder<CoefficientPrecision, CoordinatePrecision>::task_based_compute_blocks(const VirtualInternalGenerator<CoefficientPrecision> &generator, const std::vector<HMatrix<CoefficientPrecision, CoordinatePrecision> *> &L0) const {
+    // Tasks may run after this function returns (nested mode), and a new build with this builder resets its members.
+    // So everything a task needs is computed here and captured by value.
+    std::unordered_set<const HMatrix<CoefficientPrecision, CoordinatePrecision> *> admissible_tasks(m_admissible_tasks.begin(), m_admissible_tasks.end());
+    std::unordered_set<const HMatrix<CoefficientPrecision, CoordinatePrecision> *> dense_tasks(m_dense_tasks.begin(), m_dense_tasks.end());
+    // Local copy captured by the tasks: GCC 12.2 (fixed in 12.3) mishandles firstprivate of a non-static data member of a class template in a task construct,
+    // with firstprivate(m_used_low_rank_generator) the generator is destroyed while tasks still use it ("pure virtual method called").
+    std::shared_ptr<VirtualInternalLowRankGenerator<CoefficientPrecision>> low_rank_generator = m_used_low_rank_generator;
+
     // int max_prio = std::max(0, omp_get_max_task_priority());
     for (int p = 0; p < L0.size(); p++) {
+        HMatrix<CoefficientPrecision, CoordinatePrecision> *L0_node = L0[p];
+
+        // Leaves of L0_node to compute, with true if admissible and false if dense
+        std::vector<std::pair<HMatrix<CoefficientPrecision, CoordinatePrecision> *, bool>> leaves_to_compute;
+        for (auto leaf : get_leaves_from(*L0_node).first) {
+            if (!is_removed_by_symmetry(leaf->get_target_cluster(), leaf->get_source_cluster())) {
+                if (admissible_tasks.count(leaf) > 0) {
+                    leaves_to_compute.emplace_back(leaf, true);
+                } else if (dense_tasks.count(leaf) > 0) {
+                    leaves_to_compute.emplace_back(leaf, false);
+                }
+            }
+        }
 
 #if defined(_OPENMP)
-#    pragma omp task default(none)                                                                       \
-        firstprivate(p, m_reqrank, m_epsilon)                                                            \
-        shared(generator, m_false_positive, m_low_rank_generator, L0, m_admissible_tasks, m_dense_tasks) \
-        depend(out : *L0[p])
+#    pragma omp task default(none)                                                         \
+        firstprivate(L0_node, leaves_to_compute, low_rank_generator, m_reqrank, m_epsilon) \
+        shared(generator, m_false_positive)                                                \
+        depend(out : *L0_node)
 // priority(max_prio - 2)
 #endif
         {
-            std::vector<HMatrix<CoefficientPrecision, CoordinatePrecision> *> leaves;
-            std::vector<HMatrix<CoefficientPrecision, CoordinatePrecision> *> leaves_for_symmetry;
-            std::tie(leaves, leaves_for_symmetry) = get_leaves_from(*L0[p]); // C++17 structured binding
-            for (auto leaf : leaves) {
-                // check if leaf is removed by symmetry
-                if (!is_removed_by_symmetry(leaf->get_target_cluster(), leaf->get_source_cluster())) {
+            for (auto &leaf_to_compute : leaves_to_compute) {
+                HMatrix<CoefficientPrecision, CoordinatePrecision> *leaf = leaf_to_compute.first;
+                if (leaf_to_compute.second) {
+                    bool has_low_rank_approximation_succeded = leaf->compute_low_rank_data(*low_rank_generator, m_reqrank, m_epsilon);
 
-                    // check if leaf is in m_admissible_tasks
-                    auto it_admissible = std::find(m_admissible_tasks.begin(), m_admissible_tasks.end(), leaf);
-                    if (it_admissible != m_admissible_tasks.end()) {
-                        bool has_low_rank_approximation_succeded = leaf->compute_low_rank_data(*m_used_low_rank_generator, m_reqrank, m_epsilon);
+                    if (!has_low_rank_approximation_succeded) {
+                        leaf->clear_low_rank_data();
+                        leaf->compute_dense_data(generator);
 
-                        if (!has_low_rank_approximation_succeded) {
-                            leaf->clear_low_rank_data();
-                            leaf->compute_dense_data(generator);
-
-                            m_false_positive += 1;
-                        }
-
-                    } else {
-                        // check if leaf is in m_dense_tasks
-                        auto it_dense = std::find(m_dense_tasks.begin(), m_dense_tasks.end(), leaf);
-                        if (it_dense != m_dense_tasks.end()) {
-                            leaf->compute_dense_data(generator);
-                        }
+#if defined(_OPENMP)
+#    pragma omp atomic
+#endif
+                        m_false_positive += 1;
                     }
+                } else {
+                    leaf->compute_dense_data(generator);
                 }
             }
             // Todo m_dense_blocks_generator
