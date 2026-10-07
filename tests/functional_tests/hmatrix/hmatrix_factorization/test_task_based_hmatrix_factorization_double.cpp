@@ -22,6 +22,7 @@ int main(int, char *[]) {
             for (auto UPLO : {'L', 'U'}) {
                 for (bool full_storage : {false, true}) {
                     is_error = is_error || test_hmatrix_cholesky<htool::omp_task_policy<double> &&, double, GeneratorTestDoubleSymmetric>(omp_task_policy<double>{}, UPLO, full_storage, n1, n2, epsilon, margin);
+                    is_error = is_error || test_hmatrix_ldlt<htool::omp_task_policy<double> &&, double, GeneratorTestDoubleSymmetric>(omp_task_policy<double>{}, UPLO, 'S', full_storage, n1, n2, epsilon, margin);
                 }
             }
         }

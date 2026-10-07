@@ -324,8 +324,8 @@ void sequential_ldlt_factorization(char symmetry, char UPLO, HMatrix<Coefficient
 
 // Symmetric (symmetry='S', also complex) or Hermitian (symmetry='H') LDLt of hmatrix, stored with the
 // same symmetry or in full (symmetry='N', the caller vouching for its symmetry), using its UPLO triangle.
-template <typename CoefficientPrecision, typename CoordinatePrecision = underlying_type<CoefficientPrecision>>
-void ldlt_factorization(char symmetry, char UPLO, HMatrix<CoefficientPrecision, CoordinatePrecision> &hmatrix) {
+template <typename ExecutionPolicy, typename CoefficientPrecision, typename CoordinatePrecision = underlying_type<CoefficientPrecision>>
+void ldlt_factorization(ExecutionPolicy &&execution_policy, char symmetry, char UPLO, HMatrix<CoefficientPrecision, CoordinatePrecision> &hmatrix) {
     if (!hmatrix.is_block_tree_consistent()) {
         htool::Logger::get_instance().log(LogLevel::ERROR, "ldlt_factorization is only implemented for consistent block tree."); // LCOV_EXCL_LINE
     }
@@ -338,7 +338,44 @@ void ldlt_factorization(char symmetry, char UPLO, HMatrix<CoefficientPrecision, 
     if (hmatrix.get_symmetry() != 'N' and hmatrix.get_symmetry() != symmetry and is_complex<CoefficientPrecision>()) {
         htool::Logger::get_instance().log(LogLevel::ERROR, "ldlt_factorization: symmetry=" + std::string(1, symmetry) + " does not match the HMatrix symmetry=" + std::string(1, hmatrix.get_symmetry()) + "."); // LCOV_EXCL_LINE
     }
+
+#if __cplusplus >= 201703L
+    if constexpr (is_execution_policy_v<std::decay_t<ExecutionPolicy>>) {
+        if constexpr (std::is_same_v<std::decay_t<ExecutionPolicy>, exec_compat::parallel_policy>) {
+            HMatrixTaskDependencies<CoefficientPrecision, CoordinatePrecision> hmatrix_task_dependencies;
+            hmatrix_task_dependencies.set_L0(hmatrix);
+
+#    if defined(_OPENMP)
+#        pragma omp parallel
+#        pragma omp single
+#    endif
+            {
+                task_based_ldlt_factorization(symmetry, UPLO, hmatrix, hmatrix_task_dependencies.L0);
+            }
+        } else if constexpr (std::is_same_v<std::decay_t<ExecutionPolicy>, exec_compat::sequenced_policy>) {
+            sequential_ldlt_factorization(symmetry, UPLO, hmatrix);
+        } else if constexpr (std::is_same_v<std::decay_t<ExecutionPolicy>, omp_task_policy<CoefficientPrecision, CoordinatePrecision>>) {
+            update_L0(execution_policy.hmatrix_task_dependencies, hmatrix);
+            run_task_based(
+                execution_policy.hmatrix_task_dependencies, hmatrix, [&]() { sequential_ldlt_factorization(symmetry, UPLO, hmatrix); }, [&](auto &L0) { task_based_ldlt_factorization(symmetry, UPLO, hmatrix, L0); });
+        } else {
+            static_assert(std::is_same_v<std::decay_t<ExecutionPolicy>, exec_compat::sequenced_policy> || std::is_same_v<std::decay_t<ExecutionPolicy>, exec_compat::parallel_policy> || std::is_same_v<std::decay_t<ExecutionPolicy>, omp_task_policy<CoefficientPrecision, CoordinatePrecision>>, "Invalid execution policy for factorization.");
+        }
+    } else {
+        static_assert(is_execution_policy_v<std::decay_t<ExecutionPolicy>>, "Invalid execution policy for factorization.");
+    }
+#else
     sequential_ldlt_factorization(symmetry, UPLO, hmatrix);
+#endif
+}
+
+template <typename CoefficientPrecision, typename CoordinatePrecision = underlying_type<CoefficientPrecision>>
+void ldlt_factorization(char symmetry, char UPLO, HMatrix<CoefficientPrecision, CoordinatePrecision> &hmatrix) {
+#if __cplusplus >= 201703L
+    ldlt_factorization(exec_compat::seq, symmetry, UPLO, hmatrix);
+#else
+    ldlt_factorization(nullptr, symmetry, UPLO, hmatrix);
+#endif
 }
 
 // A = L D L^T (L^H for symmetry='H'), so X := L^-T D^-1 L^-1 X, as sytrs/hetrs.

@@ -27,10 +27,12 @@ int main(int, char *[]) {
                 is_error = is_error || test_hmatrix_cholesky<const exec_compat::parallel_policy &, std::complex<double>, GeneratorTestComplexHermitian>(exec_compat::par, UPLO, full_storage, n1, n2, epsilon, margin);
             }
             for (bool full_storage : {false, true}) {
-                is_error = is_error || test_hmatrix_ldlt<std::complex<double>, GeneratorTestComplexSymmetric>(UPLO, 'S', full_storage, n1, n2, epsilon, margin);
+                is_error = is_error || test_hmatrix_ldlt<const exec_compat::sequenced_policy &, std::complex<double>, GeneratorTestComplexSymmetric>(exec_compat::seq, UPLO, 'S', full_storage, n1, n2, epsilon, margin);
+                is_error = is_error || test_hmatrix_ldlt<const exec_compat::parallel_policy &, std::complex<double>, GeneratorTestComplexSymmetric>(exec_compat::par, UPLO, 'S', full_storage, n1, n2, epsilon, margin);
             }
             for (bool full_storage : {false, true}) {
-                is_error = is_error || test_hmatrix_ldlt<std::complex<double>, GeneratorTestComplexHermitian>(UPLO, 'H', full_storage, n1, n2, epsilon, margin);
+                is_error = is_error || test_hmatrix_ldlt<const exec_compat::sequenced_policy &, std::complex<double>, GeneratorTestComplexHermitian>(exec_compat::seq, UPLO, 'H', full_storage, n1, n2, epsilon, margin);
+                is_error = is_error || test_hmatrix_ldlt<const exec_compat::parallel_policy &, std::complex<double>, GeneratorTestComplexHermitian>(exec_compat::par, UPLO, 'H', full_storage, n1, n2, epsilon, margin);
             }
         }
     }

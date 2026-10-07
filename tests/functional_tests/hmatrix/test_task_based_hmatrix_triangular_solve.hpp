@@ -31,6 +31,7 @@
 #include <htool/testing/partition.hpp> // for test_pa...
 #include <iostream>                    // for operator<<
 #include <memory>                      // for make_sh...
+#include <numeric>                     // for iota
 #include <string>                      // for operator+
 #include <vector>                      // for vector
 
@@ -218,6 +219,40 @@ bool test_task_based_hmatrix_triangular_solve(const TestCaseType &test_case, cha
     cout << "    task_based_duration = " << task_based_duration.count() << '\n';
     if (task_based_duration.count() > classic_duration.count()) {
         htool::Logger::get_instance().log(LogLevel::WARNING, "Careful: task_based_duration > classic_duration. Ratio TB/Classic = " + std::to_string(task_based_duration.count() / classic_duration.count()) + "."); // LCOV_EXCL_LINE
+    }
+
+    // Task-based LDLt solve: with a unit diagonal, LA and UA are the triangular factors of an LDLt factorization
+    // once their diagonal holds D (with trivial pivots), which the solve must ignore.
+    if (diag == 'U') {
+        auto store_diagonal = [](HMatrix<T, htool::underlying_type<T>> &hmatrix) {
+            if (hmatrix.is_leaf() and hmatrix.get_target_cluster() == hmatrix.get_source_cluster()) {
+                Matrix<T> &dense_data = *hmatrix.get_dense_data();
+                for (int k = 0; k < dense_data.nb_rows(); k++) {
+                    dense_data(k, k) = T(2);
+                }
+                auto &ipiv = dense_data.get_pivots();
+                ipiv.resize(dense_data.nb_rows());
+                std::iota(ipiv.begin(), ipiv.end(), 1);
+            }
+        };
+        for (char UPLO : {'L', 'U'}) {
+            HMatrix<T, htool::underlying_type<T>> A_ldlt(UPLO == 'L' ? LA : UA);
+            preorder_tree_traversal(A_ldlt, store_diagonal);
+            std::vector<HMatrix<T> *> L0_A_ldlt = find_l0(A_ldlt, max_nb_nodes);
+            hmatrix_test                        = UPLO == 'L' ? LB : UB;
+            L0_test                             = find_l0(hmatrix_test, max_nb_nodes);
+#if defined(_OPENMP)
+#    pragma omp parallel
+#    pragma omp single
+#endif
+            {
+                task_based_internal_triangular_ldlt_hmatrix_hmatrix_solve(side, UPLO, transa, alpha, A_ldlt, hmatrix_test, L0_A_ldlt, L0_test);
+            }
+            copy_to_dense(hmatrix_test, densified_hmatrix_test.data());
+            error    = normFrob(X_dense - densified_hmatrix_test) / normFrob(X_dense);
+            is_error = is_error || !(error < epsilon);
+            cout << ">> " << UPLO << " task-based ldlt errors = " << error << '\n';
+        }
     }
 
     // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++

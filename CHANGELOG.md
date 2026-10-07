@@ -34,7 +34,8 @@ All notable changes to this project will be documented in this file.
   - dense: `ldlt_factorization`/`ldlt_solve` (`sytrf`/`sytrs`, `hetrf`/`hetrs`), `triangular_ldlt_matrix_matrix_solve` (unit L/U with `transa` in N/T/C) and `apply_ldlt_diagonal` (D^-1), plus `Blas::geru`/`Blas::gerc` (BLAS has no plain complex `ger`).
   - HMatrix: `ldlt_factorization`/`sequential_ldlt_factorization` and `ldlt_solve`, also on a full-storage HMatrix (symmetry `'N'`) like `cholesky_factorization`, with `internal_triangular_ldlt_hmatrix_{hmatrix,matrix,lrmat}_solve` and `internal_apply_ldlt_diagonal`.
 - `is_positive_definite` option (default `false`) in `LocalHMatrixSolver`, `LocalHMatrixPlusOverlapSolver`, `make_DDM_solver_w_custom_local_solver` and `DDMSolverBuilder`: a symmetric/Hermitian local HMatrix is factorized with Cholesky only when it is set, and with LDLt otherwise.
-- Add execution policy interface to hierarchical factorizations.
+- Add execution policy interface to hierarchical factorizations (`lu_factorization`, `cholesky_factorization` and `ldlt_factorization`), with a task-based LDLt (`task_based_ldlt_factorization`, `task_based_internal_triangular_ldlt_hmatrix_hmatrix_solve`, `task_based_internal_apply_ldlt_diagonal`).
+- `HMatrix::set_low_rank_data`, counterpart of `set_dense_data`.
 
 ### Changed
 
