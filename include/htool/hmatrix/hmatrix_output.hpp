@@ -209,6 +209,11 @@ std::map<std::string, std::string> get_hmatrix_information(const HMatrix<Coeffic
     for (const auto &elt : hmatrix_tree_data->m_information) {
         hmatrix_information[elt.first] = elt.second;
     }
+    // Admissible blocks whose low-rank approximation failed, so that they are dense
+    auto number_of_admissible_blocks = hmatrix_tree_data->m_information.find("Number_of_admissible_blocks");
+    if (number_of_admissible_blocks != hmatrix_tree_data->m_information.end()) {
+        hmatrix_information["Number_of_false_positive"] = std::to_string(std::stoul(number_of_admissible_blocks->second) - low_rank_blocks.size());
+    }
     for (const auto &elt : hmatrix_tree_data->m_timings) {
         hmatrix_information[elt.first] = std::to_string(elt.second.count()) + " second(s)";
     }

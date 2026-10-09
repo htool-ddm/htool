@@ -62,7 +62,9 @@ struct is_execution_policy<exec_compat::parallel_policy> : std::true_type {};
  *     passed to other task-based calls with the same policy (hence the same L0),
  *     whose tasks wait for the ones they need through their dependencies,
  *   - the HMatrix can be moved, but must not be destroyed while its tasks are pending,
- *   - the generator passed to build must stay alive.
+ *   - the generator passed to build must stay alive, and so must the
+ *     HMatrixTreeBuilder if the generator is a VirtualGenerator, since the
+ *     builder holds the internal generator wrapping it.
  */
 template <typename CoefficientPrecision, typename CoordinatePrecision = underlying_type<CoefficientPrecision>>
 struct omp_task_policy {
