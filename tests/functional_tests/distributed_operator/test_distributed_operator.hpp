@@ -558,6 +558,13 @@ bool test_default_distributed_operator(int nr, int nc, int mu, bool use_buffer, 
 
         DistributedOperator<T> &distributed_operator = distributed_operator_holder.distributed_operator;
         test                                         = test_vector_product(generator_in_user_numbering, distributed_operator, *target_root_cluster, MasterOffset_target, *source_root_cluster, MasterOffset_source, mu, op, use_buffer, epsilon);
+
+        DefaultApproximationBuilder<T, htool::underlying_type<T>> parallel_distributed_operator_holder(exec_compat::par, generator_in_user_numbering, *target_root_cluster, *source_root_cluster, hmatrix_tree_builder, MPI_COMM_WORLD);
+        test = test || test_vector_product(generator_in_user_numbering, parallel_distributed_operator_holder.distributed_operator, *target_root_cluster, MasterOffset_target, *source_root_cluster, MasterOffset_source, mu, op, use_buffer, epsilon);
+
+        omp_task_policy<T, htool::underlying_type<T>> task_policy;
+        DefaultApproximationBuilder<T, htool::underlying_type<T>> task_based_distributed_operator_holder(task_policy, generator_in_user_numbering, *target_root_cluster, *source_root_cluster, hmatrix_tree_builder, MPI_COMM_WORLD);
+        test = test || test_vector_product(generator_in_user_numbering, task_based_distributed_operator_holder.distributed_operator, *target_root_cluster, MasterOffset_target, *source_root_cluster, MasterOffset_source, mu, op, use_buffer, epsilon);
     }
 
     return test;

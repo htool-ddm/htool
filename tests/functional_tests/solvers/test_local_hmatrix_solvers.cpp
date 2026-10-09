@@ -9,17 +9,20 @@
 #include <htool/testing/generator_test.hpp>     // for GeneratorInUserNumberingFromMatrix
 #include <iostream>                             // for cout
 #include <mpi.h>                                // for MPI_Init
+#include <string>                               // for string
+#include <type_traits>                          // for conditional_t
 
 using namespace htool;
 
-// Solves K x = b with the local solvers, K = [A, B; op(B), D] (op = ^T for symmetry 'S', ^H for 'H').
+// Solves K x = b with the local solvers, K = [A, B; op(B), D] (op = ^H for symmetry 'H', ^T otherwise).
 // With positive_definite, A and D are diagonally dominant with a positive diagonal. Otherwise (and
 // always for a complex symmetric matrix, which cannot be positive definite), consecutive rows of
 // each cluster leaf are paired into dominant [[0,d],[op(d),0]] blocks, so that A is indefinite
-// and LDLt needs 2x2 pivots.
-template <typename T, typename GeneratorTestType>
+// and LDLt needs 2x2 pivots. With task_based, LocalHMatrixSolver factorizes with omp_task_policy.
+template <typename T, typename GeneratorTestType, bool task_based>
 bool test_local_hmatrix_solvers(char symmetry, char UPLO, bool positive_definite) {
-    bool is_error = false;
+    using ExecutionPolicy = std::conditional_t<task_based, omp_task_policy<T, underlying_type<T>>, exec_compat::sequenced_policy>;
+    bool is_error         = false;
     int n_overlap = 40, mu = 3;
     double tol  = 1e-8;
     bool paired = !positive_definite || (symmetry == 'S' && is_complex<T>());
@@ -103,7 +106,7 @@ bool test_local_hmatrix_solvers(char symmetry, char UPLO, bool positive_definite
     // Without overlap
     {
         HMatrix<T, underlying_type<T>> local_hmatrix = hmatrix_builder.build(generator, cluster, cluster);
-        LocalHMatrixSolver<T, underlying_type<T>> solver(local_hmatrix, false, positive_definite);
+        LocalHMatrixSolver<T, underlying_type<T>, ExecutionPolicy> solver(local_hmatrix, false, positive_definite);
         solver.numfact(no_csr);
         Matrix<T> A(n, n), b_local(n, mu);
         for (int j = 0; j < n; j++) {
@@ -126,16 +129,24 @@ bool test_local_hmatrix_solvers(char symmetry, char UPLO, bool positive_definite
     return is_error;
 }
 
-int main(int argc, char *argv[]) {
-    MPI_Init(&argc, &argv);
-    bool is_error = false;
+template <bool task_based>
+bool test_local_hmatrix_solvers() {
+    bool is_error = test_local_hmatrix_solvers<double, GeneratorTestDoubleSymmetric, task_based>('N', 'N', true);
     for (char UPLO : {'L', 'U'}) {
         for (bool positive_definite : {false, true}) {
-            is_error = is_error || test_local_hmatrix_solvers<double, GeneratorTestDoubleSymmetric>('S', UPLO, positive_definite);
-            is_error = is_error || test_local_hmatrix_solvers<std::complex<double>, GeneratorTestComplexSymmetric>('S', UPLO, positive_definite);
-            is_error = is_error || test_local_hmatrix_solvers<std::complex<double>, GeneratorTestComplexHermitian>('H', UPLO, positive_definite);
+            is_error = is_error || test_local_hmatrix_solvers<double, GeneratorTestDoubleSymmetric, task_based>('S', UPLO, positive_definite);
+            is_error = is_error || test_local_hmatrix_solvers<std::complex<double>, GeneratorTestComplexSymmetric, task_based>('S', UPLO, positive_definite);
+            is_error = is_error || test_local_hmatrix_solvers<std::complex<double>, GeneratorTestComplexHermitian, task_based>('H', UPLO, positive_definite);
         }
     }
+    return is_error;
+}
+
+// Optional argument "task_based": factorize with omp_task_policy.
+int main(int argc, char *argv[]) {
+    MPI_Init(&argc, &argv);
+    bool task_based = argc > 1 && std::string(argv[1]) == "task_based";
+    bool is_error   = task_based ? test_local_hmatrix_solvers<true>() : test_local_hmatrix_solvers<false>();
     MPI_Finalize();
     return is_error ? 1 : 0;
 }
