@@ -57,7 +57,6 @@ class HMatrixTreeBuilder {
     mutable std::shared_ptr<VirtualInternalLowRankGenerator<CoefficientPrecision>> m_used_low_rank_generator{nullptr};
 
     // Information
-    mutable int m_false_positive{0};
 
     // Internal storage for adapting user generator
     mutable std::list<InternalGeneratorWithPermutation<CoefficientPrecision>> m_internal_generators; // using list to get pointer stability
@@ -265,7 +264,6 @@ class HMatrixTreeBuilder {
     }
 
     // Getters
-    int get_false_positive() const { return m_false_positive; }
     char get_symmetry() const { return m_symmetry_type; }
     char get_UPLO() const { return m_UPLO_type; }
     double get_epsilon() const { return m_epsilon; }
@@ -312,9 +310,8 @@ HMatrix<CoefficientPrecision, CoordinatePrecision> HMatrixTreeBuilder<Coefficien
     end = std::chrono::steady_clock::now();
 
     // Set information
-    std::chrono::duration<double> block_comptations_duration                        = end - start;
-    root_hmatrix.get_hmatrix_tree_data()->m_information["Number_of_false_positive"] = NbrToStr(m_false_positive);
-    root_hmatrix.get_hmatrix_tree_data()->m_timings["Blocks_computation_walltime"]  = block_comptations_duration;
+    std::chrono::duration<double> block_comptations_duration                       = end - start;
+    root_hmatrix.get_hmatrix_tree_data()->m_timings["Blocks_computation_walltime"] = block_comptations_duration;
 
     set_symmetry_for_leaves(root_hmatrix);
 
@@ -333,9 +330,8 @@ HMatrix<CoefficientPrecision, CoordinatePrecision> HMatrixTreeBuilder<Coefficien
     end = std::chrono::steady_clock::now();
 
     // Set information
-    std::chrono::duration<double> block_comptations_duration                        = end - start;
-    root_hmatrix.get_hmatrix_tree_data()->m_information["Number_of_false_positive"] = NbrToStr(m_false_positive);
-    root_hmatrix.get_hmatrix_tree_data()->m_timings["Blocks_computation_walltime"]  = block_comptations_duration;
+    std::chrono::duration<double> block_comptations_duration                       = end - start;
+    root_hmatrix.get_hmatrix_tree_data()->m_timings["Blocks_computation_walltime"] = block_comptations_duration;
 
     set_symmetry_for_leaves(root_hmatrix);
 
@@ -383,7 +379,6 @@ void HMatrixTreeBuilder<CoefficientPrecision, CoordinatePrecision>::setup_block_
     }
     m_admissible_tasks.clear();
     m_dense_tasks.clear();
-    m_false_positive = 0;
 
     // Create root hmatrix
     root_hmatrix.set_admissibility_condition(m_admissibility_condition);
@@ -405,6 +400,10 @@ void HMatrixTreeBuilder<CoefficientPrecision, CoordinatePrecision>::setup_block_
 
     std::chrono::duration<double> block_tree_build_duration                = end - start;
     root_hmatrix.get_hmatrix_tree_data()->m_timings["Block_tree_walltime"] = block_tree_build_duration;
+
+    // Known before the blocks are computed, so that the number of false positives, the admissible blocks that end up dense,
+    // can be deduced from the number of low-rank blocks once they are, see get_hmatrix_information
+    root_hmatrix.get_hmatrix_tree_data()->m_information["Number_of_admissible_blocks"] = NbrToStr(m_admissible_tasks.size());
 }
 
 template <typename CoefficientPrecision, typename CoordinatePrecision>
@@ -566,7 +565,6 @@ void HMatrixTreeBuilder<CoefficientPrecision, CoordinatePrecision>::sequential_c
         if (!has_low_rank_approximation_succeded) {
             m_admissible_tasks[p]->clear_low_rank_data();
             m_admissible_tasks[p]->compute_dense_data(generator);
-            m_false_positive += 1;
         }
     }
     if (m_dense_blocks_generator.get() == nullptr) {
@@ -602,7 +600,6 @@ void HMatrixTreeBuilder<CoefficientPrecision, CoordinatePrecision>::openmp_compu
     {
         // std::vector<HMatrixType *> local_dense_leaves{};
         // std::vector<HMatrixType *> local_low_rank_leaves{};
-        int local_false_positive = 0;
 #if defined(_OPENMP)
 #    pragma omp for schedule(guided) nowait
 #endif
@@ -616,7 +613,6 @@ void HMatrixTreeBuilder<CoefficientPrecision, CoordinatePrecision>::openmp_compu
                 m_admissible_tasks[p]->compute_dense_data(generator);
                 // }
                 // local_dense_leaves.emplace_back(m_admissible_tasks[p]);
-                local_false_positive += 1;
             }
         }
         if (m_dense_blocks_generator.get() == nullptr) {
@@ -627,16 +623,6 @@ void HMatrixTreeBuilder<CoefficientPrecision, CoordinatePrecision>::openmp_compu
                 m_dense_tasks[p]->compute_dense_data(generator);
             }
             // local_dense_leaves.emplace_back(m_dense_tasks[p]);
-        }
-#if defined(_OPENMP)
-#    pragma omp critical
-#endif
-        {
-            // m_low_rank_leaves.insert(m_low_rank_leaves.end(), std::make_move_iterator(local_low_rank_leaves.begin()), std::make_move_iterator(local_low_rank_leaves.end()));
-
-            // m_dense_leaves.insert(m_dense_leaves.end(), std::make_move_iterator(local_dense_leaves.begin()), std::make_move_iterator(local_dense_leaves.end()));
-
-            m_false_positive += local_false_positive;
         }
     }
 
@@ -687,7 +673,7 @@ void HMatrixTreeBuilder<CoefficientPrecision, CoordinatePrecision>::task_based_c
 #if defined(_OPENMP)
 #    pragma omp task default(none)                                                         \
         firstprivate(L0_node, leaves_to_compute, low_rank_generator, m_reqrank, m_epsilon) \
-        shared(generator, m_false_positive)                                                \
+        shared(generator)                                                                  \
         depend(out : *L0_node)
 // priority(max_prio - 2)
 #endif
@@ -700,11 +686,6 @@ void HMatrixTreeBuilder<CoefficientPrecision, CoordinatePrecision>::task_based_c
                     if (!has_low_rank_approximation_succeded) {
                         leaf->clear_low_rank_data();
                         leaf->compute_dense_data(generator);
-
-#if defined(_OPENMP)
-#    pragma omp atomic
-#endif
-                        m_false_positive += 1;
                     }
                 } else {
                     leaf->compute_dense_data(generator);

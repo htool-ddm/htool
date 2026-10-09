@@ -160,6 +160,11 @@ std::map<std::string, std::string> get_distributed_hmatrix_information(const HMa
         for (std::size_t i = 0; i < information_name.size(); i++) {
             distributed_information[information_name[i]] = std::to_string(information_value[i]);
         }
+        // Admissible blocks whose low-rank approximation failed, so that they are dense
+        auto number_of_admissible_blocks = distributed_information.find("Number_of_admissible_blocks");
+        if (number_of_admissible_blocks != distributed_information.end()) {
+            distributed_information["Number_of_false_positive"] = std::to_string(std::stoul(number_of_admissible_blocks->second) - nb_low_rank_blocks);
+        }
     }
 
     // Reduce results about timing

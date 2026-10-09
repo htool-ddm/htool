@@ -4,6 +4,7 @@
 #include <htool/clustering/implementations/partitioning.hpp> // for GeometricSplitting
 #include <htool/clustering/tree_builder/tree_builder.hpp>    // for ClusterTreeBuilder
 #include <htool/hmatrix/hmatrix.hpp>                         // for HMatrix
+#include <htool/hmatrix/hmatrix_output.hpp>                  // for get_hmatrix_information
 #include <htool/hmatrix/linalg/factorization.hpp>
 #include <htool/hmatrix/tree_builder/tree_builder.hpp>       // for HMatrix...
 #include <htool/matrix/linalg/add_matrix_matrix_product.hpp> // for add_her...
@@ -96,6 +97,14 @@ bool test_task_based_hmatrix_full_lu(char trans, int n1, int n2, htool::underlyi
         error    = normFrob(A_dense - densified_hmatrix) / normFrob(A_dense);
         is_error = is_error || !(error < epsilon * margin);
         cout << "> Errors on hmatrix built twice in a row: " << error << '\n';
+    }
+    // Number of false positives, computed from the HMatrix information: the same as for a sequential build
+    HMatrix<T, htool::underlying_type<T>> A_reference = hmatrix_tree_builder_A.build(*test_case.operator_in_user_numbering_A, *test_case.root_cluster_A_output, *test_case.root_cluster_A_input);
+    auto information_reference                        = get_hmatrix_information(A_reference);
+    for (auto &hmatrix : {A_first.get(), A_second.get()}) {
+        auto information = get_hmatrix_information(*hmatrix);
+        is_error         = is_error || information.count("Number_of_false_positive") == 0 || information["Number_of_false_positive"] != information_reference["Number_of_false_positive"] || information["Number_of_admissible_blocks"] != information_reference["Number_of_admissible_blocks"];
+        cout << "> Number of false positives of hmatrix built twice in a row: " << information["Number_of_false_positive"] << " (" << information_reference["Number_of_false_positive"] << " for a sequential build, out of " << information_reference["Number_of_admissible_blocks"] << " admissible blocks)\n";
     }
 
     // L0 reduced to the root: build and factorization run sequentially

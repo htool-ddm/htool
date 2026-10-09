@@ -48,6 +48,7 @@ All notable changes to this project will be documented in this file.
 - Symmetric/Hermitian local HMatrix solvers (`DDMSolverBuilder`) now use LDLt by default instead of Cholesky, which silently gave a wrong factorization for indefinite matrices; pass `is_positive_definite=true` to keep Cholesky.
 - Checks of `lu_factorization`/`cholesky_factorization` on HMatrix moved to the public functions taking an execution policy, so they run once for the sequential and task-based implementations.
 - Refactor `omp_task_policy` extracting the part independent of OpenMP into `HMatrixTaskDependencies`.
+- The number of false positives of an HMatrix (admissible blocks whose low-rank approximation failed) is computed when outputting its information, from the number of admissible blocks stored by the build and its number of low-rank blocks, so that it is also right for task-based builds.
 - Task-based HMatrix build and factorizations run sequentially when L0 is reduced to the root, where tasks bring no parallelism.
 
 ### Removed
@@ -55,6 +56,7 @@ All notable changes to this project will be documented in this file.
 - Remove orphaned `local_operators` test and `proto_ddm`/`wrapper_proto_ddm`.
 - Remove dead `aspect_ratio` stub.
 - Remove `HTOOL_WITH_PYTHON_INTERFACE` macro to allow threading via python interface.
+- Remove `HMatrixTreeBuilder::get_false_positive`: the number of false positives is in the HMatrix information (`get_hmatrix_information`).
 
 ### Fixed
 
@@ -72,7 +74,7 @@ All notable changes to this project will be documented in this file.
 - Report a failed dense `cholesky_factorization` (`potrf`'s `info`), for a matrix that is not positive definite.
 - Fix `omp_task_policy` factorizations reusing the L0 of another HMatrix: L0 is now recomputed when it is not a cut of the block tree of the factorized HMatrix, after the pending tasks when called in a parallel region.
 - Fix use of freed blocks in task-based HMatrix factorizations with unbalanced cluster trees (e.g. `GeometricSplitting` on unevenly distributed points): the triangular HMatrix-HMatrix solves densified a hierarchical right-hand side whose triangular matrix is a dense block, inside a task while other tasks were created with its sub-blocks. They now solve its sub-blocks, which also keeps its compression.
-- Fix task-based HMatrix build tasks reading the builder's and policy's state when they run, which broke a second build with the same builder or policy before the tasks of the first one completed, and race on the number of false positives.
+- Fix task-based HMatrix build tasks reading the builder's and policy's state when they run, which broke a second build with the same builder or policy before the tasks of the first one completed.
 
 ## [1.0.2] - 2026-02-14
 
