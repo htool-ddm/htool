@@ -71,6 +71,7 @@ All notable changes to this project will be documented in this file.
 - Fix complex-symmetric (non-Hermitian) local HMatrix solvers, which were factorized as Hermitian with Cholesky.
 - Report a failed dense `cholesky_factorization` (`potrf`'s `info`), for a matrix that is not positive definite.
 - Fix `omp_task_policy` factorizations reusing the L0 of another HMatrix: L0 is now recomputed when it is not a cut of the block tree of the factorized HMatrix, after the pending tasks when called in a parallel region.
+- Fix use of freed blocks in task-based HMatrix factorizations with unbalanced cluster trees (e.g. `GeometricSplitting` on unevenly distributed points): the triangular HMatrix-HMatrix solves densified a hierarchical right-hand side whose triangular matrix is a dense block, inside a task while other tasks were created with its sub-blocks. They now solve its sub-blocks, which also keeps its compression.
 - Fix task-based HMatrix build tasks reading the builder's and policy's state when they run, which broke a second build with the same builder or policy before the tasks of the first one completed, and race on the number of false positives.
 
 ## [1.0.2] - 2026-02-14
