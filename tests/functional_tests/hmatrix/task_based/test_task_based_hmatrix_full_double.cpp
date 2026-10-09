@@ -24,6 +24,8 @@ int main(int, char *[]) {
         }
     }
 
+    is_error = is_error || test_task_based_hmatrix_factorizations_unbalanced_cluster_tree<double>();
+
     if (is_error) {
         return 1;
     }

@@ -10,6 +10,7 @@
 #include "add_hmatrix_hmatrix_product.hpp"
 #include "triangular_hmatrix_lrmat_solve.hpp"
 #include "triangular_hmatrix_matrix_solve.hpp"
+#include <algorithm>
 #include <memory>
 #include <string>
 #include <vector>
@@ -177,11 +178,28 @@ void internal_triangular_hmatrix_hmatrix_solve(char side, char UPLO, char transa
                     triangular_matrix_matrix_solve('R', UPLO, transa, diag, CoefficientPrecision(1), *A.get_dense_data(), B.get_low_rank_data()->get_V());
                 }
             } else {
-                std::unique_ptr<Matrix<CoefficientPrecision>> B_dense_ptr = std::make_unique<Matrix<CoefficientPrecision>>(B.nb_rows(), B.nb_cols());
-                auto &B_dense                                             = *B_dense_ptr;
-                copy_to_dense(B, B_dense.data());
-                B.set_dense_data(std::move(B_dense_ptr));
-                triangular_matrix_matrix_solve(side, UPLO, transa, diag, CoefficientPrecision(1), *A.get_dense_data(), *B.get_dense_data());
+                // B is hierarchical while A is a dense diagonal block. If the children of B keep the cluster of A, so that B is only split
+                // along its other dimension, each of them is solved with A: B keeps its block structure, which task-based algorithms rely on
+                // since they create their tasks with it. This is always the case for a consistent block tree, where a dense diagonal block
+                // has a leaf cluster (e.g. a leaf cluster next to a non-leaf one, as with unbalanced cluster trees).
+                const Cluster<CoordinatePrecision> &A_cluster = A.get_target_cluster();
+                const auto &B_children                        = B.get_children();
+                bool children_keep_A_cluster                  = std::all_of(B_children.begin(), B_children.end(), [&](const std::unique_ptr<HMatrix<CoefficientPrecision, CoordinatePrecision>> &child) {
+                    return (side == 'L' or side == 'l' ? child->get_target_cluster() : child->get_source_cluster()) == A_cluster;
+                });
+                if (children_keep_A_cluster) {
+                    for (auto &child : B.get_children_with_ownership()) {
+                        internal_triangular_hmatrix_hmatrix_solve(side, UPLO, transa, diag, CoefficientPrecision(1), A, *child);
+                    }
+                } else {
+                    // Only for a block tree that is not consistent, where the cluster of a dense diagonal block is not a leaf: B is
+                    // densified, which changes its block structure, so task-based factorizations, requiring consistent block trees, never get here.
+                    std::unique_ptr<Matrix<CoefficientPrecision>> B_dense_ptr = std::make_unique<Matrix<CoefficientPrecision>>(B.nb_rows(), B.nb_cols());
+                    auto &B_dense                                             = *B_dense_ptr;
+                    copy_to_dense(B, B_dense.data());
+                    B.set_dense_data(std::move(B_dense_ptr));
+                    triangular_matrix_matrix_solve(side, UPLO, transa, diag, CoefficientPrecision(1), *A.get_dense_data(), *B.get_dense_data());
+                }
             }
         } else if (A.is_low_rank()) {
             htool::Logger::get_instance().log(LogLevel::ERROR, "In triangular_hmatrix_hmatrix_solve, triangular_low_rank_* would be called, which does not make sense."); // LCOV_EXCL_LINE
