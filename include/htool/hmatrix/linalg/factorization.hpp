@@ -109,6 +109,7 @@ void lu_factorization(ExecutionPolicy &&execution_policy, HMatrix<CoefficientPre
         static_assert(is_execution_policy_v<std::decay_t<ExecutionPolicy>>, "Invalid execution policy for factorization.");
     }
 #else
+    (void)execution_policy;
     sequential_lu_factorization(hmatrix);
 #endif
 }
@@ -242,6 +243,7 @@ void cholesky_factorization(ExecutionPolicy &&execution_policy, char UPLO, HMatr
         static_assert(is_execution_policy_v<std::decay_t<ExecutionPolicy>>, "Invalid execution policy for factorization.");
     }
 #else
+    (void)execution_policy;
     sequential_cholesky_factorization(UPLO, hmatrix);
 #endif
 }
@@ -365,6 +367,7 @@ void ldlt_factorization(ExecutionPolicy &&execution_policy, char symmetry, char 
         static_assert(is_execution_policy_v<std::decay_t<ExecutionPolicy>>, "Invalid execution policy for factorization.");
     }
 #else
+    (void)execution_policy;
     sequential_ldlt_factorization(symmetry, UPLO, hmatrix);
 #endif
 }

@@ -1,4 +1,5 @@
 add_subdirectory(functional_tests)
+add_subdirectory(cxx14_compatibility)
 
 # add_executable(Test_warnings test_warnings.cpp)
 # target_link_libraries(Test_warnings htool)
