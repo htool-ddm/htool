@@ -46,6 +46,8 @@ void task_based_internal_apply_ldlt_diagonal(char symmetry, char side, char UPLO
         shared(read_deps)                                  \
         depend(inout : *L0_node)                           \
         depend(iterator(it = 0 : read_deps_size), in : *read_deps[it])
+#else
+        (void)L0_A;
 #endif
         {
             internal_apply_ldlt_diagonal(symmetry, side, UPLO, *A_node, *B_node);

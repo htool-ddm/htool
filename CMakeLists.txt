@@ -222,33 +222,38 @@ if((CMAKE_PROJECT_NAME STREQUAL PROJECT_NAME) AND BUILD_TESTING)
     if(HTOOL_WITH_STRICT_TESTS)
         target_compile_options(htool INTERFACE -Werror)
     endif()
-    target_compile_options(
-        htool
-        INTERFACE -Wall
-                  -Wextra
-                  -Wshadow
-                  -Wnon-virtual-dtor
-                  -pedantic
-                  -Wold-style-cast
-                  -Wcast-align
-                  -Wunused
-                  -Woverloaded-virtual
-                  #   -Wconversion
-                  #   -Wsign-conversion
-                  -Wdouble-promotion
-                  -Wno-sign-compare
-                  -Wextra-semi
-                  -Wzero-as-null-pointer-constant
-                  -Wundef)
+    set(HTOOL_WARNING_FLAGS
+        -Wall
+        -Wextra
+        -Wshadow
+        -Wnon-virtual-dtor
+        -pedantic
+        -Wold-style-cast
+        -Wcast-align
+        -Wunused
+        -Woverloaded-virtual
+        #   -Wconversion
+        #   -Wsign-conversion
+        -Wdouble-promotion
+        -Wno-sign-compare
+        -Wextra-semi
+        -Wzero-as-null-pointer-constant
+        -Wundef)
     if(CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
-        target_compile_options(htool INTERFACE -Wimplicit-fallthrough -Wextra-semi-stmt -ferror-limit=200)
+        list(APPEND HTOOL_WARNING_FLAGS -Wimplicit-fallthrough -Wextra-semi-stmt -ferror-limit=200)
     elseif(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
-        target_compile_options(
-            htool
-            INTERFACE -Wmisleading-indentation -Wduplicated-cond -Wduplicated-branches -Wlogical-op
-                      #   -Wnull-dereference
-                      -Wuseless-cast -fmax-errors=200)
+        list(
+            APPEND
+            HTOOL_WARNING_FLAGS
+            -Wmisleading-indentation
+            -Wduplicated-cond
+            -Wduplicated-branches
+            -Wlogical-op
+            #   -Wnull-dereference
+            -Wuseless-cast
+            -fmax-errors=200)
     endif()
+    target_compile_options(htool INTERFACE ${HTOOL_WARNING_FLAGS})
     add_custom_target(build-tests)
     add_subdirectory(tests EXCLUDE_FROM_ALL)
 endif()
