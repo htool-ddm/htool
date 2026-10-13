@@ -65,6 +65,13 @@ struct is_execution_policy<exec_compat::parallel_policy> : std::true_type {};
  *   - the generator passed to build must stay alive, and so must the
  *     HMatrixTreeBuilder if the generator is a VirtualGenerator, since the
  *     builder holds the internal generator wrapping it.
+ *
+ * lu_solve, cholesky_solve and ldlt_solve (and their internal_ versions) use the
+ * L0 of the factorized HMatrix in the same way, but always return once their
+ * tasks are done; in a parallel region, their tasks first wait for the pending
+ * tasks of the factorization with the same policy. The task_based_internal_*_solve_row_major
+ * functions, called with that L0, only create these tasks, like the factorizations:
+ * their right-hand side is only complete after a taskwait.
  */
 template <typename CoefficientPrecision, typename CoordinatePrecision = underlying_type<CoefficientPrecision>>
 struct omp_task_policy {

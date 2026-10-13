@@ -8,6 +8,7 @@
 #include <htool/hmatrix/linalg/factorization.hpp>
 #include <htool/hmatrix/tree_builder/tree_builder.hpp>       // for HMatrix...
 #include <htool/matrix/linalg/add_matrix_matrix_product.hpp> // for add_her...
+#include <htool/matrix/linalg/transpose.hpp>                 // for transpose
 #include <htool/matrix/matrix.hpp>                           // for Matrix
 #include <htool/misc/misc.hpp>                               // for underly...
 #include <htool/testing/generate_test_case.hpp>              // for TestCas...
@@ -49,6 +50,7 @@ bool test_task_based_hmatrix_full_lu(char trans, int n1, int n2, htool::underlyi
     add_matrix_matrix_product(trans, 'N', T(1.), A_dense, X_dense, T(0.), B_dense);
 
     std::unique_ptr<HMatrix<T, htool::underlying_type<T>>> A;
+    matrix_test = B_dense;
 #if defined(_OPENMP)
 #    pragma omp parallel
 #    pragma omp single
@@ -57,16 +59,37 @@ bool test_task_based_hmatrix_full_lu(char trans, int n1, int n2, htool::underlyi
         // Assembly
         A = std::make_unique<HMatrix<T, htool::underlying_type<T>>>(hmatrix_tree_builder_A.build(policy, *test_case.operator_in_user_numbering_A, *test_case.root_cluster_A_output, *test_case.root_cluster_A_input));
 
-        // Factorization
+        // Factorization and solve, whose tasks wait for the ones of the factorization
         lu_factorization(policy, *A);
+        lu_solve(policy, trans, *A, matrix_test);
     }
-
-    // LU factorization
-    matrix_test = B_dense;
-    lu_solve(trans, *A, matrix_test);
     error    = normFrob(X_dense - matrix_test) / normFrob(X_dense);
     is_error = is_error || !(error < epsilon * margin);
     cout << "> Errors on hmatrix lu solve: " << error << '\n';
+    cout << "> is_error: " << is_error << "\n";
+
+    // Row-major solve, whose tasks are only waited for at the end of the region
+    const Cluster<htool::underlying_type<T>> &cluster = A->get_source_cluster();
+    int mu                                            = B_dense.nb_cols();
+    Matrix<T> permuted_B(B_dense.nb_rows(), mu), Bt(mu, B_dense.nb_rows());
+    for (int j = 0; j < mu; j++) {
+        user_to_cluster(cluster, B_dense.data() + cluster.get_size() * j, permuted_B.data() + cluster.get_size() * j);
+    }
+    transpose(permuted_B, Bt);
+#if defined(_OPENMP)
+#    pragma omp parallel
+#    pragma omp single
+#endif
+    {
+        task_based_internal_lu_solve_row_major(trans, *A, Bt, policy.hmatrix_task_dependencies.L0);
+    }
+    transpose(Bt, permuted_B);
+    for (int j = 0; j < mu; j++) {
+        cluster_to_user(cluster, permuted_B.data() + cluster.get_size() * j, matrix_test.data() + cluster.get_size() * j);
+    }
+    error    = normFrob(X_dense - matrix_test) / normFrob(X_dense);
+    is_error = is_error || !(error < epsilon * margin);
+    cout << "> Errors on hmatrix row-major lu solve: " << error << '\n';
     cout << "> is_error: " << is_error << "\n";
 
     // Policy reused for another matrix: L0 of A, cached in policy, must not be used for A_bis
@@ -75,7 +98,7 @@ bool test_task_based_hmatrix_full_lu(char trans, int n1, int n2, htool::underlyi
     lu_factorization(policy, A_bis);
     is_error    = is_error || !policy.hmatrix_task_dependencies.is_L0_of(A_bis);
     matrix_test = B_dense;
-    lu_solve(trans, A_bis, matrix_test);
+    lu_solve(policy, trans, A_bis, matrix_test);
     error    = normFrob(X_dense - matrix_test) / normFrob(X_dense);
     is_error = is_error || !(error < epsilon * margin);
     cout << "> Errors on hmatrix lu solve with reused policy: " << error << '\n';
@@ -121,7 +144,7 @@ bool test_task_based_hmatrix_full_lu(char trans, int n1, int n2, htool::underlyi
     }
     is_error    = is_error || policy_root.hmatrix_task_dependencies.L0.size() != 1 || policy_root.hmatrix_task_dependencies.L0[0] != A_root.get();
     matrix_test = B_dense;
-    lu_solve(trans, *A_root, matrix_test);
+    lu_solve(policy_root, trans, *A_root, matrix_test);
     error    = normFrob(X_dense - matrix_test) / normFrob(X_dense);
     is_error = is_error || !(error < epsilon * margin);
     cout << "> Errors on hmatrix lu solve with L0 reduced to root: " << error << '\n';
@@ -139,7 +162,7 @@ bool test_task_based_hmatrix_full_lu(char trans, int n1, int n2, htool::underlyi
     lu_factorization(policy_custom, A_custom);
     is_error    = is_error || dependencies_custom.L0 != L0_custom;
     matrix_test = B_dense;
-    lu_solve(trans, A_custom, matrix_test);
+    lu_solve(policy_custom, trans, A_custom, matrix_test);
     error    = normFrob(X_dense - matrix_test) / normFrob(X_dense);
     is_error = is_error || !(error < epsilon * margin);
     cout << "> Errors on hmatrix lu solve with an L0 assigned directly: " << error << '\n';
@@ -158,7 +181,7 @@ bool test_task_based_hmatrix_full_lu(char trans, int n1, int n2, htool::underlyi
         lu_factorization(policy_recomputed, *A_recomputed);
     }
     matrix_test = B_dense;
-    lu_solve(trans, *A_recomputed, matrix_test);
+    lu_solve(policy_recomputed, trans, *A_recomputed, matrix_test);
     error    = normFrob(X_dense - matrix_test) / normFrob(X_dense);
     is_error = is_error || !(error < epsilon * margin);
     cout << "> Errors on hmatrix lu solve with L0 recomputed after the build: " << error << '\n';
@@ -199,6 +222,7 @@ bool test_task_based_hmatrix_full_cholesky(char UPLO, int n1, int n2, htool::und
     }
 
     std::unique_ptr<HMatrix<T, htool::underlying_type<T>>> A;
+    matrix_test = B_dense;
 #if defined(_OPENMP)
 #    pragma omp parallel
 #    pragma omp single
@@ -207,13 +231,11 @@ bool test_task_based_hmatrix_full_cholesky(char UPLO, int n1, int n2, htool::und
         // Assembly
         A = std::make_unique<HMatrix<T, htool::underlying_type<T>>>(hmatrix_tree_builder_A.build(policy, *test_case.operator_in_user_numbering_A, *test_case.root_cluster_A_output, *test_case.root_cluster_A_input));
 
-        // Factorization
+        // Factorization and solve, whose tasks wait for the ones of the factorization
         cholesky_factorization(policy, UPLO, *A);
+        cholesky_solve(policy, UPLO, *A, matrix_test);
     }
 
-    // Cholesky factorization
-    matrix_test = B_dense;
-    cholesky_solve(UPLO, *A, matrix_test);
     error    = normFrob(X_dense - matrix_test) / normFrob(X_dense);
     is_error = is_error || !(error < epsilon * margin);
     cout << "> Errors on hmatrix cholesky solve: " << error << '\n';
@@ -254,6 +276,7 @@ bool test_task_based_hmatrix_full_ldlt(char UPLO, char symmetry, int n1, int n2,
     }
 
     std::unique_ptr<HMatrix<T, htool::underlying_type<T>>> A;
+    matrix_test = B_dense;
 #if defined(_OPENMP)
 #    pragma omp parallel
 #    pragma omp single
@@ -262,13 +285,11 @@ bool test_task_based_hmatrix_full_ldlt(char UPLO, char symmetry, int n1, int n2,
         // Assembly
         A = std::make_unique<HMatrix<T, htool::underlying_type<T>>>(hmatrix_tree_builder_A.build(policy, *test_case.operator_in_user_numbering_A, *test_case.root_cluster_A_output, *test_case.root_cluster_A_input));
 
-        // Factorization
+        // Factorization and solve, whose tasks wait for the ones of the factorization
         ldlt_factorization(policy, symmetry, UPLO, *A);
+        ldlt_solve(policy, symmetry, UPLO, *A, matrix_test);
     }
 
-    // LDLt solve
-    matrix_test = B_dense;
-    ldlt_solve(symmetry, UPLO, *A, matrix_test);
     error    = normFrob(X_dense - matrix_test) / normFrob(X_dense);
     is_error = is_error || !(error < epsilon * margin);
     cout << "> Errors on hmatrix " << (symmetry == 'H' ? "hermitian" : "symmetric") << " ldlt solve: " << error << '\n';
@@ -324,12 +345,12 @@ bool test_task_based_hmatrix_factorizations_unbalanced_cluster_tree() {
         cout << "> Errors on hmatrix " << name << " solve with an unbalanced cluster tree: " << error << '\n';
     };
     char symmetry = is_complex<T>() ? 'H' : 'S';
-    check("lu", 'N', 'N', [](auto &hmatrix, auto &X) { omp_task_policy<T, double> policy; lu_factorization(policy, hmatrix); lu_solve('N', hmatrix, X); });
+    check("lu", 'N', 'N', [](auto &hmatrix, auto &X) { omp_task_policy<T, double> policy; lu_factorization(policy, hmatrix); lu_solve(policy, 'N', hmatrix, X); });
     for (char UPLO : {'L', 'U'}) {
-        check("cholesky", symmetry, UPLO, [UPLO](auto &hmatrix, auto &X) { omp_task_policy<T, double> policy; cholesky_factorization(policy, UPLO, hmatrix); cholesky_solve(UPLO, hmatrix, X); });
+        check("cholesky", symmetry, UPLO, [UPLO](auto &hmatrix, auto &X) { omp_task_policy<T, double> policy; cholesky_factorization(policy, UPLO, hmatrix); cholesky_solve(policy, UPLO, hmatrix, X); });
         // the matrix is real, hence also complex symmetric
         for (char ldlt_symmetry : is_complex<T>() ? std::vector<char>{'S', 'H'} : std::vector<char>{'S'}) {
-            check(std::string("ldlt (") + ldlt_symmetry + ")", ldlt_symmetry, UPLO, [UPLO, ldlt_symmetry](auto &hmatrix, auto &X) { omp_task_policy<T, double> policy; ldlt_factorization(policy, ldlt_symmetry, UPLO, hmatrix); ldlt_solve(ldlt_symmetry, UPLO, hmatrix, X); });
+            check(std::string("ldlt (") + ldlt_symmetry + ")", ldlt_symmetry, UPLO, [UPLO, ldlt_symmetry](auto &hmatrix, auto &X) { omp_task_policy<T, double> policy; ldlt_factorization(policy, ldlt_symmetry, UPLO, hmatrix); ldlt_solve(policy, ldlt_symmetry, UPLO, hmatrix, X); });
         }
     }
     cout << "> is_error: " << is_error << "\n";

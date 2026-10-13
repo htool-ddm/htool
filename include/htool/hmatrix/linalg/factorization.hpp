@@ -13,6 +13,7 @@
 #include "apply_ldlt_diagonal.hpp"                              // for inte...
 #include "htool/hmatrix/linalg/add_hmatrix_hmatrix_product.hpp" // for add_...
 #include "htool/matrix/linalg/factorization.hpp"                // for symm...
+#include "solve.hpp"                                            // for lu_solve, cholesky_solve, ldlt_solve
 #include "task_based_factorization.hpp"                         // for task...
 #include <algorithm>                                            // for reverse
 #include <string>                                               // for basi...
@@ -121,18 +122,6 @@ void lu_factorization(HMatrix<CoefficientPrecision, CoordinatePrecision> &hmatri
 #else
     lu_factorization(nullptr, hmatrix);
 #endif
-}
-
-template <typename Mat, typename CoordinatePrecision = underlying_type<typename Mat::value_type>>
-void internal_lu_solve(char trans, const HMatrix<typename Mat::value_type, CoordinatePrecision> &A, Mat &X) {
-    using CoefficientPrecision = typename Mat::value_type;
-    if (trans == 'N') {
-        internal_triangular_hmatrix_matrix_solve('L', 'L', 'N', 'U', CoefficientPrecision(1), A, X);
-        internal_triangular_hmatrix_matrix_solve('L', 'U', 'N', 'N', CoefficientPrecision(1), A, X);
-    } else {
-        internal_triangular_hmatrix_matrix_solve('L', 'U', trans, 'N', CoefficientPrecision(1), A, X);
-        internal_triangular_hmatrix_matrix_solve('L', 'L', trans, 'U', CoefficientPrecision(1), A, X);
-    }
 }
 
 template <typename CoefficientPrecision, typename CoordinatePrecision = underlying_type<CoefficientPrecision>>
@@ -257,17 +246,6 @@ void cholesky_factorization(char UPLO, HMatrix<CoefficientPrecision, CoordinateP
 #endif
 }
 
-template <typename CoefficientPrecision, typename CoordinatePrecision = underlying_type<CoefficientPrecision>>
-void internal_cholesky_solve(char UPLO, const HMatrix<CoefficientPrecision, CoordinatePrecision> &A, Matrix<CoefficientPrecision> &X) {
-    if (UPLO == 'L') {
-        internal_triangular_hmatrix_matrix_solve('L', 'L', 'N', 'N', CoefficientPrecision(1), A, X);
-        internal_triangular_hmatrix_matrix_solve('L', 'L', is_complex<CoefficientPrecision>() ? 'C' : 'T', 'N', CoefficientPrecision(1), A, X);
-    } else {
-        internal_triangular_hmatrix_matrix_solve('L', 'U', is_complex<CoefficientPrecision>() ? 'C' : 'T', 'N', CoefficientPrecision(1), A, X);
-        internal_triangular_hmatrix_matrix_solve('L', 'U', 'N', 'N', CoefficientPrecision(1), A, X);
-    }
-}
-
 // Block-recursive LDLt, storing the unit L (or U) in place and D at the dense diagonal leaves.
 // UPLO='U' eliminates the last cluster first, matching sytrf/hetrf. Bunch-Kaufman pivoting stays
 // within each dense leaf.
@@ -379,65 +357,6 @@ void ldlt_factorization(char symmetry, char UPLO, HMatrix<CoefficientPrecision, 
 #else
     ldlt_factorization(nullptr, symmetry, UPLO, hmatrix);
 #endif
-}
-
-// A = L D L^T (L^H for symmetry='H'), so X := L^-T D^-1 L^-1 X, as sytrs/hetrs.
-template <typename CoefficientPrecision, typename CoordinatePrecision>
-void internal_ldlt_solve(char symmetry, char UPLO, const HMatrix<CoefficientPrecision, CoordinatePrecision> &A, Matrix<CoefficientPrecision> &X) {
-    internal_triangular_ldlt_hmatrix_matrix_solve('L', UPLO, 'N', CoefficientPrecision(1), A, X);
-    internal_apply_ldlt_diagonal(symmetry, 'L', UPLO, A, X, A.get_target_cluster().get_offset());
-    internal_triangular_ldlt_hmatrix_matrix_solve('L', UPLO, symmetry == 'H' ? 'C' : 'T', CoefficientPrecision(1), A, X);
-}
-
-template <typename Mat, typename CoordinatePrecision = underlying_type<typename Mat::value_type>>
-void lu_solve(char trans, const HMatrix<typename Mat::value_type, CoordinatePrecision> &A, Mat &X) {
-    using CoefficientPrecision = typename Mat::value_type;
-    Matrix<CoefficientPrecision> permuted_X(X.nb_rows(), X.nb_cols());
-    auto &source_cluster = A.get_source_cluster();
-    for (int i = 0; i < X.nb_cols(); i++) {
-        user_to_cluster(source_cluster, X.data() + source_cluster.get_size() * i, permuted_X.data() + source_cluster.get_size() * i);
-    }
-
-    internal_lu_solve(trans, A, permuted_X);
-
-    auto &target_cluster = A.get_target_cluster();
-    for (int i = 0; i < X.nb_cols(); i++) {
-        cluster_to_user(target_cluster, permuted_X.data() + target_cluster.get_size() * i, X.data() + target_cluster.get_size() * i);
-    }
-}
-
-template <typename Mat, typename CoordinatePrecision = underlying_type<typename Mat::value_type>>
-void cholesky_solve(char UPLO, const HMatrix<typename Mat::value_type, CoordinatePrecision> &A, Mat &X) {
-    using CoefficientPrecision = typename Mat::value_type;
-    Matrix<CoefficientPrecision> permuted_X(X.nb_rows(), X.nb_cols());
-    auto &source_cluster = A.get_source_cluster();
-    for (int i = 0; i < X.nb_cols(); i++) {
-        user_to_cluster(source_cluster, X.data() + source_cluster.get_size() * i, permuted_X.data() + source_cluster.get_size() * i);
-    }
-
-    internal_cholesky_solve(UPLO, A, permuted_X);
-
-    auto &target_cluster = A.get_target_cluster();
-    for (int i = 0; i < X.nb_cols(); i++) {
-        cluster_to_user(target_cluster, permuted_X.data() + target_cluster.get_size() * i, X.data() + target_cluster.get_size() * i);
-    }
-}
-
-template <typename Mat, typename CoordinatePrecision = underlying_type<typename Mat::value_type>>
-void ldlt_solve(char symmetry, char UPLO, const HMatrix<typename Mat::value_type, CoordinatePrecision> &A, Mat &X) {
-    using CoefficientPrecision = typename Mat::value_type;
-    Matrix<CoefficientPrecision> permuted_X(X.nb_rows(), X.nb_cols());
-    auto &source_cluster = A.get_source_cluster();
-    for (int i = 0; i < X.nb_cols(); i++) {
-        user_to_cluster(source_cluster, X.data() + source_cluster.get_size() * i, permuted_X.data() + source_cluster.get_size() * i);
-    }
-
-    internal_ldlt_solve(symmetry, UPLO, A, permuted_X);
-
-    auto &target_cluster = A.get_target_cluster();
-    for (int i = 0; i < X.nb_cols(); i++) {
-        cluster_to_user(target_cluster, permuted_X.data() + target_cluster.get_size() * i, X.data() + target_cluster.get_size() * i);
-    }
 }
 
 } // namespace htool

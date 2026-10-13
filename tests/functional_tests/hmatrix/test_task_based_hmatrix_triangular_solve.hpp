@@ -185,6 +185,33 @@ bool test_task_based_hmatrix_triangular_solve(const TestCaseType &test_case, cha
         htool::Logger::get_instance().log(LogLevel::WARNING, "Careful: task_based_duration > classic_duration. Ratio TB/Classic = " + std::to_string(task_based_duration.count() / classic_duration.count()) + "."); // LCOV_EXCL_LINE
     }
 
+    // alpha != 1 on a sub-block of B below the L0 node of B: only this block is scaled
+    if (side == 'L' && !LB.get_target_cluster().is_leaf() && !LB.get_source_cluster().is_leaf()) {
+        const Cluster<htool::underlying_type<T>> &t = *LB.get_target_cluster().get_children()[0];
+        const Cluster<htool::underlying_type<T>> &s = *LB.get_source_cluster().get_children()[0];
+        HMatrix<T> B_classic(LB), B_task_based(LB);
+        const HMatrix<T> *A_sub      = LA.get_sub_hmatrix(t, t);
+        HMatrix<T> *B_sub_classic    = B_classic.get_sub_hmatrix(t, s);
+        HMatrix<T> *B_sub_task_based = B_task_based.get_sub_hmatrix(t, s);
+        std::vector<const HMatrix<T> *> L0_B{&B_task_based};
+        if (A_sub != nullptr && B_sub_classic != nullptr && B_sub_task_based != nullptr) {
+            internal_triangular_hmatrix_hmatrix_solve('L', 'L', transa, diag, T(2), *A_sub, *B_sub_classic);
+#if defined(_OPENMP)
+#    pragma omp parallel
+#    pragma omp single
+#endif
+            {
+                task_based_internal_triangular_hmatrix_hmatrix_solve('L', 'L', transa, diag, T(2), *A_sub, *B_sub_task_based, L0_LA, L0_B);
+            }
+            Matrix<T> densified_B_classic(no_X, ni_X), densified_B_task_based(no_X, ni_X);
+            copy_to_dense(B_classic, densified_B_classic.data());
+            copy_to_dense(B_task_based, densified_B_task_based.data());
+            error = normFrob(densified_B_classic - densified_B_task_based) / normFrob(densified_B_classic);
+            cout << ">   task_based error with alpha != 1 on a sub-block of B below L0 = " << error << '\n';
+            is_error = is_error || !(error < 1e-12);
+        }
+    }
+
     // internal_triangular_hmatrix_hmatrix_solve Upper
     //// Classic
     hmatrix_test = UB;

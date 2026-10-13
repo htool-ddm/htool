@@ -24,12 +24,12 @@ bool use_cholesky_for_local_hmatrix(const HMatrix<CoefficientPrecision, Coordina
     return is_positive_definite and (symmetry == 'H' or (symmetry == 'S' and !is_complex<CoefficientPrecision>()));
 }
 
-// ExecutionPolicy is used by the factorization in numfact, and kept across calls so that the L0 of an
-// omp_task_policy is reused. The solves are sequential.
+// ExecutionPolicy is used by the factorization in numfact and by the solves, and kept across calls so that the L0 of an
+// omp_task_policy is reused.
 template <typename CoefficientPrecision, typename CoordinatePrecision = underlying_type<CoefficientPrecision>, typename ExecutionPolicy = exec_compat::sequenced_policy>
 class LocalHMatrixSolver : public VirtualLocalSolver<CoefficientPrecision> {
   private:
-    ExecutionPolicy m_execution_policy;
+    mutable ExecutionPolicy m_execution_policy; // the solves update its L0 if needed
     HMatrix<CoefficientPrecision, CoordinatePrecision> &m_local_hmatrix;
     bool m_is_using_permutation;
     bool m_is_positive_definite;
@@ -66,11 +66,11 @@ class LocalHMatrixSolver : public VirtualLocalSolver<CoefficientPrecision> {
         }
 
         if (m_local_hmatrix.get_symmetry() == 'N') {
-            internal_lu_solve('N', m_local_hmatrix, buffer);
+            internal_lu_solve(m_execution_policy, 'N', m_local_hmatrix, buffer);
         } else if (m_use_cholesky) {
-            internal_cholesky_solve(m_local_hmatrix.get_UPLO(), m_local_hmatrix, buffer);
+            internal_cholesky_solve(m_execution_policy, m_local_hmatrix.get_UPLO(), m_local_hmatrix, buffer);
         } else {
-            internal_ldlt_solve(m_local_hmatrix.get_symmetry(), m_local_hmatrix.get_UPLO(), m_local_hmatrix, buffer);
+            internal_ldlt_solve(m_execution_policy, m_local_hmatrix.get_symmetry(), m_local_hmatrix.get_UPLO(), m_local_hmatrix, buffer);
         }
 
         if (m_is_using_permutation) {
@@ -95,11 +95,11 @@ class LocalHMatrixSolver : public VirtualLocalSolver<CoefficientPrecision> {
         }
 
         if (m_local_hmatrix.get_symmetry() == 'N') {
-            internal_lu_solve('N', m_local_hmatrix, buffer);
+            internal_lu_solve(m_execution_policy, 'N', m_local_hmatrix, buffer);
         } else if (m_use_cholesky) {
-            internal_cholesky_solve(m_local_hmatrix.get_UPLO(), m_local_hmatrix, buffer);
+            internal_cholesky_solve(m_execution_policy, m_local_hmatrix.get_UPLO(), m_local_hmatrix, buffer);
         } else {
-            internal_ldlt_solve(m_local_hmatrix.get_symmetry(), m_local_hmatrix.get_UPLO(), m_local_hmatrix, buffer);
+            internal_ldlt_solve(m_execution_policy, m_local_hmatrix.get_symmetry(), m_local_hmatrix.get_UPLO(), m_local_hmatrix, buffer);
         }
 
         if (m_is_using_permutation) {

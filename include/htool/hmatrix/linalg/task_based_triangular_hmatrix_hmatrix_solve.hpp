@@ -30,9 +30,13 @@ void task_based_internal_triangular_hmatrix_hmatrix_solve_with(LeafSolve leaf_so
     //     scale(alpha, B);
     // }
 
+    // The nodes of L0_B below B, or the node of L0_B that B is in or below
+    std::vector<const HMatrix<CoefficientPrecision, CoordinatePrecision> *> B_deps = enumerate_dependences(B, L0_B);
+    const HMatrix<CoefficientPrecision, CoordinatePrecision> *L0_node_of_B         = (B_deps.size() == 1 && left_hmatrix_ancestor_of_right_hmatrix(*B_deps[0], B)) ? B_deps[0] : nullptr;
+
     // Scale 'B' with `alpha` if `alpha` is not equal to 1
     if (CoefficientPrecision(alpha) != CoefficientPrecision(1)) {
-        for (const HMatrix<CoefficientPrecision, CoordinatePrecision> *L0_node : enumerate_dependences(B, L0_B)) {
+        for (const HMatrix<CoefficientPrecision, CoordinatePrecision> *L0_node : B_deps) {
             // L0_node not in B's block tree (B below L0): the task only scales B
             HMatrix<CoefficientPrecision, CoordinatePrecision> *B_node = get_mutable_node(B, *L0_node);
             if (B_node == nullptr) {
@@ -49,24 +53,16 @@ void task_based_internal_triangular_hmatrix_hmatrix_solve_with(LeafSolve leaf_so
         }
     }
 
-    // check if B is in L0_B.
-    bool is_B_in_L0_B = false;
-    for (auto &L0_node : L0_B) {
-        if (L0_node->get_target_cluster() == B.get_target_cluster() && L0_node->get_source_cluster() == B.get_source_cluster()) {
-            is_B_in_L0_B = true;
-            break;
-        }
-    }
-
-    if (is_B_in_L0_B) {
+    // B in or below a node of L0_B: one task, on this node, solves on B
+    if (L0_node_of_B != nullptr) {
 #if defined(_OPENMP)
         std::vector<const HMatrix<CoefficientPrecision, CoordinatePrecision> *> read_deps = enumerate_dependences(A, L0_A);
         int read_deps_size                                                                = read_deps.size();
-#    pragma omp task default(none)                   \
-        firstprivate(side, UPLO, transa, leaf_solve) \
-        shared(A, B, read_deps)                      \
-        depend(in : A)                               \
-        depend(inout : B)                            \
+#    pragma omp task default(none)                                 \
+        firstprivate(side, UPLO, transa, leaf_solve, L0_node_of_B) \
+        shared(A, B, read_deps)                                    \
+        depend(in : A)                                             \
+        depend(inout : *L0_node_of_B)                              \
         depend(iterator(it = 0 : read_deps_size), in : *read_deps[it])
 
 #endif

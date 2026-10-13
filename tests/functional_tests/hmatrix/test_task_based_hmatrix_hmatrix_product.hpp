@@ -139,7 +139,8 @@ bool test_task_based_hmatrix_hmatrix_product(const TestCaseType &test_case, char
         std::cout << "SUCCESS" << '\n';
     }
 
-    // beta != 1 on a sub-block of C, while L0_C is the L0 of the whole C: only this block is scaled
+    // beta != 1 on a sub-block of C, while L0_C is the L0 of the whole C: only this block is scaled.
+    // With L0_C, the sub-block is above nodes of L0; with L0_C_root, it is below the L0 node.
     if (sym == 'N' && transa == 'N' && transb == 'N' && !root_cluster_C_output->is_leaf() && !root_cluster_A_input->is_leaf() && !root_cluster_C_input->is_leaf()) {
         const Cluster<htool::underlying_type<T>> &t = *root_cluster_C_output->get_children()[0];
         const Cluster<htool::underlying_type<T>> &m = *root_cluster_A_input->get_children()[0];
@@ -148,20 +149,23 @@ bool test_task_based_hmatrix_hmatrix_product(const TestCaseType &test_case, char
         const HMatrix<T> *B_sub                     = hmatrix_B.get_sub_hmatrix(m, s);
         HMatrix<T> *C_sub_classic                   = hmatrix_classic_C.get_sub_hmatrix(t, s);
         HMatrix<T> *C_sub_task_based                = hmatrix_task_based_C.get_sub_hmatrix(t, s);
-        if (A_sub != nullptr && B_sub != nullptr && C_sub_classic != nullptr && C_sub_task_based != nullptr) {
-            internal_add_hmatrix_hmatrix_product('N', 'N', alpha, *A_sub, *B_sub, beta, *C_sub_classic);
+        std::vector<const HMatrix<T> *> L0_C_root{&hmatrix_task_based_C};
+        for (const std::vector<const HMatrix<T> *> *L0_C_sub : {&L0_C, &L0_C_root}) {
+            if (A_sub != nullptr && B_sub != nullptr && C_sub_classic != nullptr && C_sub_task_based != nullptr) {
+                internal_add_hmatrix_hmatrix_product('N', 'N', alpha, *A_sub, *B_sub, beta, *C_sub_classic);
 #if defined(_OPENMP)
 #    pragma omp parallel
 #    pragma omp single
 #endif
-            {
-                task_based_internal_add_hmatrix_hmatrix_product('N', 'N', alpha, *A_sub, *B_sub, beta, *C_sub_task_based, L0_A, L0_B, L0_C);
+                {
+                    task_based_internal_add_hmatrix_hmatrix_product('N', 'N', alpha, *A_sub, *B_sub, beta, *C_sub_task_based, L0_A, L0_B, *L0_C_sub);
+                }
+                copy_to_dense(hmatrix_classic_C, densified_hmatrix_classic_C.data());
+                copy_to_dense(hmatrix_task_based_C, densified_hmatrix_task_based_C.data());
+                htool::underlying_type<T> sub_block_error = normFrob(densified_hmatrix_classic_C - densified_hmatrix_task_based_C) / normFrob(densified_hmatrix_classic_C);
+                std::cout << "> Error on a product with beta != 1 on a sub-block of C" << (L0_C_sub == &L0_C ? "" : " below L0") << ": " << sub_block_error << '\n';
+                is_error = is_error || !(sub_block_error < 1e-12);
             }
-            copy_to_dense(hmatrix_classic_C, densified_hmatrix_classic_C.data());
-            copy_to_dense(hmatrix_task_based_C, densified_hmatrix_task_based_C.data());
-            htool::underlying_type<T> sub_block_error = normFrob(densified_hmatrix_classic_C - densified_hmatrix_task_based_C) / normFrob(densified_hmatrix_classic_C);
-            std::cout << "> Error on a product with beta != 1 on a sub-block of C: " << sub_block_error << '\n';
-            is_error = is_error || !(sub_block_error < 1e-12);
         }
     }
 

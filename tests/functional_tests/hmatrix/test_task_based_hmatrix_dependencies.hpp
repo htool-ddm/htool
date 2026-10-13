@@ -105,6 +105,7 @@ bool test_task_based_hmatrix_dependencies(const TestCaseType &test_case, char sy
             }
         }
         is_error = is_error || get_mutable_node(child1, child2) != nullptr;
+        is_error = is_error || get_mutable_node(child2, child1_child2) != nullptr;
         is_error = is_error || get_mutable_node(child1, child1_child2) != &child1_child2;
     }
     if (is_error) {

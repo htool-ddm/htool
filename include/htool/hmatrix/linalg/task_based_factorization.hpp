@@ -12,7 +12,7 @@
 #include "task_based_add_hmatrix_hmatrix_product.hpp"      // for add_hmatrix_hmatrix_product
 #include "task_based_apply_ldlt_diagonal.hpp"              // for task_based_internal_apply_ldlt_diagonal
 #include "task_based_triangular_hmatrix_hmatrix_solve.hpp" // for task_based_internal_triangular_hmatrix_hmatrix_solve
-#include <algorithm>                                       // for reverse
+#include <algorithm>                                       // for find, reverse
 #include <memory>                                          // for shared_ptr, unique_ptr
 #include <string>                                          // for basi...
 #include <vector>                                          // for vector
@@ -42,14 +42,7 @@ namespace htool {
 template <typename CoefficientPrecision, typename CoordinatePrecision = underlying_type<CoefficientPrecision>>
 void task_based_lu_factorization(HMatrix<CoefficientPrecision, CoordinatePrecision> &hmatrix, const std::vector<const HMatrix<CoefficientPrecision, CoordinatePrecision> *> &L0) {
     if (hmatrix.is_hierarchical()) {
-        // check if hmatrix is in L0.
-        bool is_hmatrix_in_L0 = false;
-        for (auto &L0_node : L0) {
-            if (L0_node->get_target_cluster() == hmatrix.get_target_cluster() && L0_node->get_source_cluster() == hmatrix.get_source_cluster()) {
-                is_hmatrix_in_L0 = true;
-                break;
-            }
-        }
+        bool is_hmatrix_in_L0 = std::find(L0.begin(), L0.end(), &hmatrix) != L0.end();
 
         if (is_hmatrix_in_L0) {
 #if defined(_OPENMP)
@@ -128,14 +121,7 @@ void task_based_lu_factorization(HMatrix<CoefficientPrecision, CoordinatePrecisi
 template <typename CoefficientPrecision, typename CoordinatePrecision = underlying_type<CoefficientPrecision>>
 void task_based_cholesky_factorization(char UPLO, HMatrix<CoefficientPrecision, CoordinatePrecision> &hmatrix, const std::vector<const HMatrix<CoefficientPrecision, CoordinatePrecision> *> &L0) {
     if (hmatrix.is_hierarchical()) {
-        // check if hmatrix is in L0.
-        bool is_hmatrix_in_L0 = false;
-        for (auto &L0_node : L0) {
-            if (L0_node->get_target_cluster() == hmatrix.get_target_cluster() && L0_node->get_source_cluster() == hmatrix.get_source_cluster()) {
-                is_hmatrix_in_L0 = true;
-                break;
-            }
-        }
+        bool is_hmatrix_in_L0 = std::find(L0.begin(), L0.end(), &hmatrix) != L0.end();
 
         if (is_hmatrix_in_L0) {
 #if defined(_OPENMP)
@@ -244,14 +230,7 @@ template <typename CoefficientPrecision, typename CoordinatePrecision = underlyi
 void task_based_ldlt_factorization(char symmetry, char UPLO, HMatrix<CoefficientPrecision, CoordinatePrecision> &hmatrix, const std::vector<const HMatrix<CoefficientPrecision, CoordinatePrecision> *> &L0) {
     char transa = symmetry == 'H' ? 'C' : 'T';
     if (hmatrix.is_hierarchical()) {
-        // check if hmatrix is in L0.
-        bool is_hmatrix_in_L0 = false;
-        for (auto &L0_node : L0) {
-            if (L0_node->get_target_cluster() == hmatrix.get_target_cluster() && L0_node->get_source_cluster() == hmatrix.get_source_cluster()) {
-                is_hmatrix_in_L0 = true;
-                break;
-            }
-        }
+        bool is_hmatrix_in_L0 = std::find(L0.begin(), L0.end(), &hmatrix) != L0.end();
 
         if (is_hmatrix_in_L0) {
 #if defined(_OPENMP)

@@ -96,7 +96,7 @@ std::vector<const HMatrix<CoefficientPrecision, CoordinatePrecision> *> find_l0(
     // Check if the initial result exceeds the maximum allowed nodes
     if (result.size() > nb_nodes_max) {
         htool::Logger::get_instance().log(LogLevel::ERROR, "Error: no L0 can be defined."); // LCOV_EXCL_LINE
-        return std::vector<const HMatrix<CoefficientPrecision, CoordinatePrecision> *>();
+        return std::vector<const HMatrix<CoefficientPrecision, CoordinatePrecision> *>();   // LCOV_EXCL_LINE
     } else {
         // Perform a dichotomy search to find the optimal criterion
         do {
