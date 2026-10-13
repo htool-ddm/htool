@@ -36,7 +36,7 @@ All notable changes to this project will be documented in this file.
 - `is_positive_definite` option (default `false`) in `LocalHMatrixSolver`, `LocalHMatrixPlusOverlapSolver`, `make_DDM_solver_w_custom_local_solver` and `DDMSolverBuilder`: a symmetric/Hermitian local HMatrix is factorized with Cholesky only when it is set, and with LDLt otherwise.
 - Add execution policy interface to hierarchical factorizations (`lu_factorization`, `cholesky_factorization` and `ldlt_factorization`), with a task-based LDLt (`task_based_ldlt_factorization`, `task_based_internal_triangular_ldlt_hmatrix_hmatrix_solve`, `task_based_internal_apply_ldlt_diagonal`).
 - `HMatrix::set_low_rank_data`, counterpart of `set_dense_data`.
-- `check_cxx14_compatibility` test, built with `CXX_STANDARD 14` and the project warning flags (now shared via `HTOOL_WARNING_FLAGS`), checking that the public headers (`htool/htool.hpp`, with the DDM solvers when HPDDM is found) stay C++14-compatible and warning-free. Part of `build-tests`, so it runs in every CI configuration.
+- `check_cxx14_compatibility` test, built with `CXX_STANDARD 14` and the project warning flags (now shared via `HTOOL_WARNING_FLAGS`), checking that the public headers (`htool/htool.hpp`, with the DDM solvers when HPDDM is found) stay C++14-compatible and warning-free. Part of `build-tests`, so it runs in every CI configuration. Also built without OpenMP (`check_cxx14_compatibility_without_openmp`), to check the code compiled only when `_OPENMP` is not defined, and a CI configuration without OpenMP builds and runs all the tests.
 
 ### Changed
 
