@@ -46,6 +46,18 @@ jobs:
             CODE_COVERAGE: "OFF"
             DOCKER_OPTIONS: "--cap-add SYS_PTRACE"
 
+          # The code compiled only when _OPENMP is not defined, and the task-based code run sequentially
+          - name: "Ubuntu OpenMPI clang++ without OpenMP"
+            CC_COMPILER: clang
+            CXX_COMPILER: clang++
+            container: "ubuntu_clang_openmpi"
+            MPIEXEC_PREFLAGS: "--allow-run-as-root --oversubscribe"
+            USE_SANITIZER: ""
+            CMAKE_BUILD_TYPE: Debug
+            CODE_COVERAGE: "OFF"
+            DOCKER_OPTIONS: "--cap-add SYS_PTRACE"
+            CMAKE_OPTIONS: "-DCMAKE_DISABLE_FIND_PACKAGE_OpenMP=ON"
+
           - name: "Ubuntu MPICH g++"
             CC_COMPILER: gcc
             CXX_COMPILER: g++
@@ -149,12 +161,12 @@ jobs:
       - name: Build tests
         run: |
           cd htool && mkdir build && cd build
-          cmake -DHTOOL_WITH_EXAMPLES=ON -DHTOOL_WITH_DOC=ON -DHTOOL_WITH_STRICT_TESTS=ON -DMPIEXEC_PREFLAGS="${{ matrix.MPIEXEC_PREFLAGS }}" -DUSE_SANITIZER=${{ matrix.USE_SANITIZER }} -DCMAKE_BUILD_TYPE=${{ matrix.CMAKE_BUILD_TYPE }} -DCODE_COVERAGE=${{ matrix.CODE_COVERAGE }} ../
+          cmake -DHTOOL_WITH_EXAMPLES=ON -DHTOOL_WITH_DOC=ON -DHTOOL_WITH_STRICT_TESTS=ON -DMPIEXEC_PREFLAGS="${{ matrix.MPIEXEC_PREFLAGS }}" -DUSE_SANITIZER=${{ matrix.USE_SANITIZER }} -DCMAKE_BUILD_TYPE=${{ matrix.CMAKE_BUILD_TYPE }} -DCODE_COVERAGE=${{ matrix.CODE_COVERAGE }} ${{ matrix.CMAKE_OPTIONS }} ../
           make -j 4 build-tests
 
       # Only one entry is enough; .clang-tidy needs clang-tidy >= 19
       - name: Run clang-tidy
-        if: matrix.container == 'ubuntu_clang_openmpi'
+        if: matrix.name == 'Ubuntu OpenMPI clang++'
         run: |
           cd htool/build
           make tidy

@@ -105,6 +105,8 @@ void task_based_internal_add_hmatrix_vector_product(char trans, CoefficientPreci
         depend(iterator(it = 0 : read_deps_cluster_size), in : *read_cluster[it])                                                                                                        \
         depend(in : *L0_node)
         // priority(max_prio)
+#else
+        (void)in_L0;
 #endif // L0_node must be copied by the thread else heap-use-after-free error
         {
             sequential_internal_add_hmatrix_vector_product(trans, alpha, *L0_node, in + input_offset - local_input_offset, CoefficientPrecision(1), out + output_offset - local_output_offset);
