@@ -41,6 +41,10 @@ All notable changes to this project will be documented in this file.
 
 ### Changed
 
+- `HMatrixTaskDependencies::L0` is a `std::vector<const HMatrix *>`: the task-based kernels take their L0 as const and write through the HMatrix they receive, using the new `get_mutable_node`, so that read-only operations, like the solves, take a `const HMatrix`. This changes the API of the task dependencies:
+  - `find_l0` and `count_nodes` take a `const HMatrix &` and return const pointers, and `set_L0`/`update_L0` take a `const HMatrix &`.
+  - The overload of `enumerate_dependences` taking and returning non-const `HMatrix *` is removed.
+  - The task-based kernels (`task_based_*`) and `view_block_tree` take their L0 as `const std::vector<const HMatrix<CoefficientPrecision, CoordinatePrecision> *> &` (previously `std::vector<HMatrix<CoefficientPrecision> *> &`, without `CoordinatePrecision`).
 - Make std::execution optional via `HTOOL_WITH_STD_EXECUTION_API` macro to avoid linking with TBB. Default to false.
 - Improve `HMatrixBuilder` interface.
 - Lock down `TreeNode`'s CRTP constructors and fold `CRTPHelper` into it.
@@ -62,6 +66,7 @@ All notable changes to this project will be documented in this file.
 
 ### Fixed
 
+- Task-based HMatrix–HMatrix product and triangular solves (`task_based_internal_add_hmatrix_hmatrix_product`, `task_based_internal_triangular_hmatrix_hmatrix_solve`, `task_based_internal_triangular_ldlt_hmatrix_hmatrix_solve`) called on a sub-block with β ≠ 1 (α ≠ 1 for the solves) also scaled the rest of the matrix.
 - Fix uninitialized values in `Partitioning_N`.
 - Fix bug in task-based HLU, PR#81 thanks to @ABoisneault.
 - Fix `number_of_generated_coefficient` computation.

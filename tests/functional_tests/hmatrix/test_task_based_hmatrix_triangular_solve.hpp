@@ -145,9 +145,9 @@ bool test_task_based_hmatrix_triangular_solve(const TestCaseType &test_case, cha
 
     // Tests
     std::chrono::steady_clock::time_point start, end;
-    int max_nb_nodes                = 32;
-    std::vector<HMatrix<T> *> L0_LA = find_l0(LA, max_nb_nodes);
-    std::vector<HMatrix<T> *> L0_UA = find_l0(UA, max_nb_nodes);
+    int max_nb_nodes                      = 32;
+    std::vector<const HMatrix<T> *> L0_LA = find_l0(LA, max_nb_nodes);
+    std::vector<const HMatrix<T> *> L0_UA = find_l0(UA, max_nb_nodes);
 
     //// internal_triangular_hmatrix_hmatrix_solve Lower
     ////// Classic
@@ -164,9 +164,9 @@ bool test_task_based_hmatrix_triangular_solve(const TestCaseType &test_case, cha
     cout << "    classic_duration = " << classic_duration.count() << '\n';
 
     ////// Task-based
-    hmatrix_test                      = LB;
-    std::vector<HMatrix<T> *> L0_test = find_l0(hmatrix_test, max_nb_nodes);
-    start                             = std::chrono::steady_clock::now();
+    hmatrix_test                            = LB;
+    std::vector<const HMatrix<T> *> L0_test = find_l0(hmatrix_test, max_nb_nodes);
+    start                                   = std::chrono::steady_clock::now();
 #if defined(_OPENMP)
 #    pragma omp parallel
 #    pragma omp single
@@ -238,9 +238,9 @@ bool test_task_based_hmatrix_triangular_solve(const TestCaseType &test_case, cha
         for (char UPLO : {'L', 'U'}) {
             HMatrix<T, htool::underlying_type<T>> A_ldlt(UPLO == 'L' ? LA : UA);
             preorder_tree_traversal(A_ldlt, store_diagonal);
-            std::vector<HMatrix<T> *> L0_A_ldlt = find_l0(A_ldlt, max_nb_nodes);
-            hmatrix_test                        = UPLO == 'L' ? LB : UB;
-            L0_test                             = find_l0(hmatrix_test, max_nb_nodes);
+            std::vector<const HMatrix<T> *> L0_A_ldlt = find_l0(A_ldlt, max_nb_nodes);
+            hmatrix_test                              = UPLO == 'L' ? LB : UB;
+            L0_test                                   = find_l0(hmatrix_test, max_nb_nodes);
 #if defined(_OPENMP)
 #    pragma omp parallel
 #    pragma omp single

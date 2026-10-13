@@ -40,6 +40,8 @@ int main(int, char *[]) {
             }
         }
     }
+    is_error = test_task_based_apply_ldlt_diagonal_below_L0_node_with_same_clusters() || is_error;
+
     std::cout << "+++++++++++++++++++++++++++++++++++++++++++" << '\n';
     if (is_error) {
         htool::Logger::get_instance().log(LogLevel::ERROR, "At least one test_task_based_hmatrix_build case failed."); // LCOV_EXCL_LINE

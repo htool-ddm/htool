@@ -14,9 +14,9 @@ template <typename CoefficientPrecision, typename CoordinatePrecision>
 struct HMatrixTaskDependencies {
     int max_number_of_nodes                                                                              = 64; // TODO:add better default value
     std::function<std::size_t(const HMatrix<CoefficientPrecision, CoordinatePrecision> &)> cost_function = &uniform_cost_function<CoefficientPrecision, CoordinatePrecision>;
-    std::vector<HMatrix<CoefficientPrecision, CoordinatePrecision> *> L0;
+    std::vector<const HMatrix<CoefficientPrecision, CoordinatePrecision> *> L0;
 
-    void set_L0(HMatrix<CoefficientPrecision, CoordinatePrecision> &hmatrix) {
+    void set_L0(const HMatrix<CoefficientPrecision, CoordinatePrecision> &hmatrix) {
         L0 = find_l0(hmatrix, max_number_of_nodes, cost_function);
     }
 
@@ -87,16 +87,16 @@ std::size_t cost_function(const Cluster<CoordinatePrecision> &cluster) {
  * total cost of their leaves is less than or equal to nb_nodes_max.
  */
 template <typename CoefficientPrecision, typename CoordinatePrecision, typename CostFunction>
-std::vector<HMatrix<CoefficientPrecision, CoordinatePrecision> *> find_l0(HMatrix<CoefficientPrecision, CoordinatePrecision> &root_hmatrix, const size_t nb_nodes_max, CostFunction &&cost_function) {
+std::vector<const HMatrix<CoefficientPrecision, CoordinatePrecision> *> find_l0(const HMatrix<CoefficientPrecision, CoordinatePrecision> &root_hmatrix, const size_t nb_nodes_max, CostFunction &&cost_function) {
     // Initialize criterion with the cost of the root node
     double criterion = cost_function(root_hmatrix);
 
     // Find initial nodes that meet the criterion
-    std::vector<HMatrix<CoefficientPrecision, CoordinatePrecision> *> old_result, result = count_nodes(root_hmatrix, criterion, cost_function);
+    std::vector<const HMatrix<CoefficientPrecision, CoordinatePrecision> *> old_result, result = count_nodes(root_hmatrix, criterion, cost_function);
     // Check if the initial result exceeds the maximum allowed nodes
     if (result.size() > nb_nodes_max) {
         htool::Logger::get_instance().log(LogLevel::ERROR, "Error: no L0 can be defined."); // LCOV_EXCL_LINE
-        return std::vector<HMatrix<CoefficientPrecision, CoordinatePrecision> *>();
+        return std::vector<const HMatrix<CoefficientPrecision, CoordinatePrecision> *>();
     } else {
         // Perform a dichotomy search to find the optimal criterion
         do {
@@ -104,7 +104,7 @@ std::vector<HMatrix<CoefficientPrecision, CoordinatePrecision> *> find_l0(HMatri
             old_result = result;
 
             // If all nodes are leaves, return the result as it cannot be further divided
-            if (std::all_of(result.begin(), result.end(), [](HMatrix<CoefficientPrecision, CoordinatePrecision> *hmatrix) {
+            if (std::all_of(result.begin(), result.end(), [](const HMatrix<CoefficientPrecision, CoordinatePrecision> *hmatrix) {
                     return hmatrix->is_leaf();
                 })) {
                 return result;
@@ -123,7 +123,7 @@ std::vector<HMatrix<CoefficientPrecision, CoordinatePrecision> *> find_l0(HMatri
 }
 
 template <typename CoefficientPrecision, typename CoordinatePrecision>
-std::vector<HMatrix<CoefficientPrecision, CoordinatePrecision> *> find_l0(HMatrix<CoefficientPrecision, CoordinatePrecision> &root_hmatrix, const size_t nb_nodes_max) {
+std::vector<const HMatrix<CoefficientPrecision, CoordinatePrecision> *> find_l0(const HMatrix<CoefficientPrecision, CoordinatePrecision> &root_hmatrix, const size_t nb_nodes_max) {
     return find_l0(root_hmatrix, nb_nodes_max, &uniform_cost_function<CoefficientPrecision, CoordinatePrecision>);
 }
 
@@ -179,8 +179,8 @@ std::vector<const Cluster<CoordinatePrecision> *> find_l0(const Cluster<Coordina
  * @return A vector of pointers to the nodes of the group tree that have a cost less than criterion.
  */
 template <typename CoefficientPrecision, typename CoordinatePrecision, typename CostFunction>
-std::vector<HMatrix<CoefficientPrecision, CoordinatePrecision> *> count_nodes(HMatrix<CoefficientPrecision, CoordinatePrecision> &hmatrix, double criterion, CostFunction &&cost_function) {
-    std::vector<HMatrix<CoefficientPrecision, CoordinatePrecision> *> result;
+std::vector<const HMatrix<CoefficientPrecision, CoordinatePrecision> *> count_nodes(const HMatrix<CoefficientPrecision, CoordinatePrecision> &hmatrix, double criterion, CostFunction &&cost_function) {
+    std::vector<const HMatrix<CoefficientPrecision, CoordinatePrecision> *> result;
 
     if (cost_function(hmatrix) <= criterion || hmatrix.is_leaf()) {
         // if the node is a leaf or its cost is less than criterion, add it to the result
@@ -235,7 +235,7 @@ std::vector<const Cluster<CoordinatePrecision> *> count_nodes(const Cluster<Coor
  */
 
 template <typename CoefficientPrecision, typename CoordinatePrecision = underlying_type<CoefficientPrecision>>
-std::vector<const HMatrix<CoefficientPrecision, CoordinatePrecision> *> enumerate_dependences(const HMatrix<CoefficientPrecision, CoordinatePrecision> &hmatrix, const std::vector<HMatrix<CoefficientPrecision, CoordinatePrecision> *> &L0) {
+std::vector<const HMatrix<CoefficientPrecision, CoordinatePrecision> *> enumerate_dependences(const HMatrix<CoefficientPrecision, CoordinatePrecision> &hmatrix, const std::vector<const HMatrix<CoefficientPrecision, CoordinatePrecision> *> &L0) {
     // Case 1 : hmatrix is in L0
     if (std::find(L0.begin(), L0.end(), &hmatrix) != L0.end()) {
         return {&hmatrix};
@@ -254,41 +254,7 @@ std::vector<const HMatrix<CoefficientPrecision, CoordinatePrecision> *> enumerat
 
     // Case 3 : hmatrix is below L0. Find the unique ancestor of hmatrix in L0
 
-    const auto it = std::find_if(L0.begin(), L0.end(), [&hmatrix](HMatrix<CoefficientPrecision, CoordinatePrecision> *hmatrix_in_L0) {
-        return left_hmatrix_descendant_of_right_hmatrix(hmatrix, *hmatrix_in_L0);
-    });
-
-    if (it != L0.end()) {
-        return {*it};
-    }
-
-    // Case 4 : error
-    Logger::get_instance().log(LogLevel::ERROR, "No dependence found with L0. It should not happen."); // LCOV_EXCL_LINE
-    return {};
-}
-
-// overload for non-const HMatrix pointers
-template <typename CoefficientPrecision, typename CoordinatePrecision = underlying_type<CoefficientPrecision>>
-std::vector<HMatrix<CoefficientPrecision, CoordinatePrecision> *> enumerate_dependences(HMatrix<CoefficientPrecision, CoordinatePrecision> &hmatrix, const std::vector<HMatrix<CoefficientPrecision, CoordinatePrecision> *> &L0) {
-    // Case 1 : hmatrix is in L0
-    if (std::find(L0.begin(), L0.end(), &hmatrix) != L0.end()) {
-        return {&hmatrix};
-    }
-
-    // Case 2 : hmatrix is above L0. Find descendants of hmatrix in L0
-    std::vector<HMatrix<CoefficientPrecision, CoordinatePrecision> *> children;
-    for (auto &hmatrix_on_L0 : L0) {
-        if (left_hmatrix_ancestor_of_right_hmatrix(hmatrix, *hmatrix_on_L0)) {
-            children.push_back(hmatrix_on_L0);
-        }
-    }
-    if (!children.empty()) {
-        return children;
-    }
-
-    // Case 3 : hmatrix is below L0. Find the unique ancestor of hmatrix in L0
-
-    const auto it = std::find_if(L0.begin(), L0.end(), [&hmatrix](HMatrix<CoefficientPrecision, CoordinatePrecision> *hmatrix_in_L0) {
+    const auto it = std::find_if(L0.begin(), L0.end(), [&hmatrix](const HMatrix<CoefficientPrecision, CoordinatePrecision> *hmatrix_in_L0) {
         return left_hmatrix_descendant_of_right_hmatrix(hmatrix, *hmatrix_in_L0);
     });
 

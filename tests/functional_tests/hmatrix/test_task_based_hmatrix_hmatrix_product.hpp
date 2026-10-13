@@ -39,9 +39,8 @@ using namespace htool;
 
 template <typename T, typename GeneratorTestType, typename TestCaseType>
 bool test_task_based_hmatrix_hmatrix_product(const TestCaseType &test_case, char sym, char transa, char transb, htool::underlying_type<T> epsilon, bool block_tree_consistency, char UPLO = 'L') {
-    bool is_error    = false;
-    double eta       = 10;
-    double error_tol = 1e-15;
+    bool is_error = false;
+    double eta    = 10;
     std::cout << "eta = " << eta << '\n';
     std::cout << "task_based_internal_add_hmatrix_hmatrix_product tests...";
 
@@ -91,9 +90,9 @@ bool test_task_based_hmatrix_hmatrix_product(const TestCaseType &test_case, char
     auto hmatrix_classic_C    = hmatrix_tree_builder_C->build(*test_case.operator_C, *root_cluster_C_output, *root_cluster_C_input);
     auto hmatrix_task_based_C = hmatrix_classic_C;
 
-    std::vector<HMatrix<T> *> L0_A = find_l0(hmatrix_A, 64);
-    std::vector<HMatrix<T> *> L0_B = find_l0(hmatrix_B, 64);
-    std::vector<HMatrix<T> *> L0_C = find_l0(hmatrix_task_based_C, 64);
+    std::vector<const HMatrix<T> *> L0_A = find_l0(hmatrix_A, 64);
+    std::vector<const HMatrix<T> *> L0_B = find_l0(hmatrix_B, 64);
+    std::vector<const HMatrix<T> *> L0_C = find_l0(hmatrix_task_based_C, 64);
     // parameters
     T alpha         = T(3);
     T beta          = T(2);
@@ -129,13 +128,41 @@ bool test_task_based_hmatrix_hmatrix_product(const TestCaseType &test_case, char
     copy_to_dense(hmatrix_task_based_C, densified_hmatrix_task_based_C.data());
 
     // Compare the results
-    is_error = is_error || (std::isnan(normFrob(densified_hmatrix_classic_C - densified_hmatrix_task_based_C) / normFrob(densified_hmatrix_classic_C)) > nb_products * error_tol);
+    htool::underlying_type<T> error = normFrob(densified_hmatrix_classic_C - densified_hmatrix_task_based_C) / normFrob(densified_hmatrix_classic_C);
+    std::cout << "(error: " << error << ") ";
+    is_error = is_error || !(error < 1e-12);
 
     // Print the results
     if (is_error) {
         std::cout << "ERROR" << '\n';
     } else {
         std::cout << "SUCCESS" << '\n';
+    }
+
+    // beta != 1 on a sub-block of C, while L0_C is the L0 of the whole C: only this block is scaled
+    if (sym == 'N' && transa == 'N' && transb == 'N' && !root_cluster_C_output->is_leaf() && !root_cluster_A_input->is_leaf() && !root_cluster_C_input->is_leaf()) {
+        const Cluster<htool::underlying_type<T>> &t = *root_cluster_C_output->get_children()[0];
+        const Cluster<htool::underlying_type<T>> &m = *root_cluster_A_input->get_children()[0];
+        const Cluster<htool::underlying_type<T>> &s = *root_cluster_C_input->get_children()[0];
+        const HMatrix<T> *A_sub                     = hmatrix_A.get_sub_hmatrix(t, m);
+        const HMatrix<T> *B_sub                     = hmatrix_B.get_sub_hmatrix(m, s);
+        HMatrix<T> *C_sub_classic                   = hmatrix_classic_C.get_sub_hmatrix(t, s);
+        HMatrix<T> *C_sub_task_based                = hmatrix_task_based_C.get_sub_hmatrix(t, s);
+        if (A_sub != nullptr && B_sub != nullptr && C_sub_classic != nullptr && C_sub_task_based != nullptr) {
+            internal_add_hmatrix_hmatrix_product('N', 'N', alpha, *A_sub, *B_sub, beta, *C_sub_classic);
+#if defined(_OPENMP)
+#    pragma omp parallel
+#    pragma omp single
+#endif
+            {
+                task_based_internal_add_hmatrix_hmatrix_product('N', 'N', alpha, *A_sub, *B_sub, beta, *C_sub_task_based, L0_A, L0_B, L0_C);
+            }
+            copy_to_dense(hmatrix_classic_C, densified_hmatrix_classic_C.data());
+            copy_to_dense(hmatrix_task_based_C, densified_hmatrix_task_based_C.data());
+            htool::underlying_type<T> sub_block_error = normFrob(densified_hmatrix_classic_C - densified_hmatrix_task_based_C) / normFrob(densified_hmatrix_classic_C);
+            std::cout << "> Error on a product with beta != 1 on a sub-block of C: " << sub_block_error << '\n';
+            is_error = is_error || !(sub_block_error < 1e-12);
+        }
     }
 
     std::cout << "    normFrob(densified_hmatrix_classic_C) = " << normFrob(densified_hmatrix_classic_C) << '\n';

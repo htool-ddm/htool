@@ -75,8 +75,8 @@ bool test_task_based_hmatrix_vector_product(const TestCaseType &test_case, char 
     std::chrono::steady_clock::time_point start, end;
 
     // build
-    auto hmatrix                 = hmatrix_tree_builder->build(*test_case.operator_A, *root_cluster_A_output, *root_cluster_A_input);
-    std::vector<HMatrix<T> *> L0 = find_l0(hmatrix, 64);
+    auto hmatrix                       = hmatrix_tree_builder->build(*test_case.operator_A, *root_cluster_A_output, *root_cluster_A_input);
+    std::vector<const HMatrix<T> *> L0 = find_l0(hmatrix, 64);
 
     // L0 definitions
     std::vector<const Cluster<htool::underlying_type<T>> *> in_L0  = find_l0(*input_cluster, 8);

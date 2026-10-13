@@ -489,5 +489,23 @@ bool left_hmatrix_descendant_of_right_hmatrix(const HMatrix<CoefficientPrecision
     return left_hmatrix_ancestor_of_right_hmatrix(other_hmatrix, hmatrix);
 }
 
+// Non-const pointer to node if it is in hmatrix's block tree, nullptr otherwise.
+// Node is matched by address: clusters only guide the search, since blocks at different depths can have the same clusters.
+template <typename CoefficientPrecision, typename CoordinatePrecision>
+HMatrix<CoefficientPrecision, CoordinatePrecision> *get_mutable_node(HMatrix<CoefficientPrecision, CoordinatePrecision> &hmatrix, const HMatrix<CoefficientPrecision, CoordinatePrecision> &node) {
+    if (&hmatrix == &node) {
+        return &hmatrix;
+    }
+    if (hmatrix.get_depth() >= node.get_depth()) {
+        return nullptr;
+    }
+    for (auto &child : hmatrix.get_children()) {
+        if (left_hmatrix_ancestor_of_right_hmatrix(*child, node)) {
+            return get_mutable_node(*child, node);
+        }
+    }
+    return nullptr;
+}
+
 } // namespace htool
 #endif

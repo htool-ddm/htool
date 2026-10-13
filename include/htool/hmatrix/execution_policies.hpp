@@ -103,7 +103,7 @@ void run_in_task_region(Function &&function) {
 // Recompute the L0 of hmatrix_task_dependencies if it is not a cut of the block tree of hmatrix.
 // In a parallel region, pending tasks may depend on the nodes of the previous L0, which the tasks using the new one would not wait for: wait for them first.
 template <typename CoefficientPrecision, typename CoordinatePrecision>
-void update_L0(HMatrixTaskDependencies<CoefficientPrecision, CoordinatePrecision> &hmatrix_task_dependencies, HMatrix<CoefficientPrecision, CoordinatePrecision> &hmatrix) {
+void update_L0(HMatrixTaskDependencies<CoefficientPrecision, CoordinatePrecision> &hmatrix_task_dependencies, const HMatrix<CoefficientPrecision, CoordinatePrecision> &hmatrix) {
     if (!hmatrix_task_dependencies.is_L0_of(hmatrix)) {
         if (!hmatrix_task_dependencies.L0.empty() && !need_to_create_parallel_region()) {
 #if defined(_OPENMP)

@@ -40,7 +40,7 @@ namespace htool {
  * @see lu_factorization
  */
 template <typename CoefficientPrecision, typename CoordinatePrecision = underlying_type<CoefficientPrecision>>
-void task_based_lu_factorization(HMatrix<CoefficientPrecision, CoordinatePrecision> &hmatrix, std::vector<HMatrix<CoefficientPrecision> *> &L0) {
+void task_based_lu_factorization(HMatrix<CoefficientPrecision, CoordinatePrecision> &hmatrix, const std::vector<const HMatrix<CoefficientPrecision, CoordinatePrecision> *> &L0) {
     if (hmatrix.is_hierarchical()) {
         // check if hmatrix is in L0.
         bool is_hmatrix_in_L0 = false;
@@ -126,7 +126,7 @@ void task_based_lu_factorization(HMatrix<CoefficientPrecision, CoordinatePrecisi
  *
  */
 template <typename CoefficientPrecision, typename CoordinatePrecision = underlying_type<CoefficientPrecision>>
-void task_based_cholesky_factorization(char UPLO, HMatrix<CoefficientPrecision, CoordinatePrecision> &hmatrix, std::vector<HMatrix<CoefficientPrecision> *> &L0) {
+void task_based_cholesky_factorization(char UPLO, HMatrix<CoefficientPrecision, CoordinatePrecision> &hmatrix, const std::vector<const HMatrix<CoefficientPrecision, CoordinatePrecision> *> &L0) {
     if (hmatrix.is_hierarchical()) {
         // check if hmatrix is in L0.
         bool is_hmatrix_in_L0 = false;
@@ -241,7 +241,7 @@ void copy_leaves_data(const HMatrix<CoefficientPrecision, CoordinatePrecision> &
  * @param L0 A vector of pointers to nodes of the output 'hmatrix'.
  */
 template <typename CoefficientPrecision, typename CoordinatePrecision = underlying_type<CoefficientPrecision>>
-void task_based_ldlt_factorization(char symmetry, char UPLO, HMatrix<CoefficientPrecision, CoordinatePrecision> &hmatrix, std::vector<HMatrix<CoefficientPrecision> *> &L0) {
+void task_based_ldlt_factorization(char symmetry, char UPLO, HMatrix<CoefficientPrecision, CoordinatePrecision> &hmatrix, const std::vector<const HMatrix<CoefficientPrecision, CoordinatePrecision> *> &L0) {
     char transa = symmetry == 'H' ? 'C' : 'T';
     if (hmatrix.is_hierarchical()) {
         // check if hmatrix is in L0.
@@ -279,7 +279,7 @@ void task_based_ldlt_factorization(char symmetry, char UPLO, HMatrix<Coefficient
                 // The copies are created with their block tree, so that tasks using them can be created now, and their data is copied by tasks.
                 auto Ws = std::make_shared<std::vector<std::unique_ptr<HMatrix<CoefficientPrecision, CoordinatePrecision>>>>();
                 std::vector<HMatrix<CoefficientPrecision, CoordinatePrecision> *> Ls;
-                std::vector<HMatrix<CoefficientPrecision, CoordinatePrecision> *> Ls_L0_nodes;
+                std::vector<const HMatrix<CoefficientPrecision, CoordinatePrecision> *> Ls_L0_nodes;
                 for (std::size_t q = p + 1; q < clusters.size(); q++) {
                     HMatrix<CoefficientPrecision, CoordinatePrecision> *L = hmatrix.get_sub_hmatrix(*clusters[q], *clusters[p]);
                     task_based_internal_triangular_ldlt_hmatrix_hmatrix_solve('R', UPLO, transa, CoefficientPrecision(1), *pivot, *L, L0, L0);
@@ -288,7 +288,7 @@ void task_based_ldlt_factorization(char symmetry, char UPLO, HMatrix<Coefficient
                     W->set_epsilon(L->get_epsilon());
                     W->set_block_tree_consistency(L->is_block_tree_consistent());
                     copy_block_tree(*L, *W);
-                    for (HMatrix<CoefficientPrecision, CoordinatePrecision> *L0_node : enumerate_dependences(*L, L0)) {
+                    for (const HMatrix<CoefficientPrecision, CoordinatePrecision> *L0_node : enumerate_dependences(*L, L0)) {
                         HMatrix<CoefficientPrecision, CoordinatePrecision> *W_node = W->get_sub_hmatrix(L0_node->get_target_cluster(), L0_node->get_source_cluster());
                         Ls_L0_nodes.push_back(L0_node);
 #if defined(_OPENMP)

@@ -15,8 +15,8 @@
 // #include <htool/hmatrix/linalg/task_based_add_hmatrix_hmatrix_product.hpp>      // for task_bas...
 #include <htool/hmatrix/linalg/task_based_add_hmatrix_vector_product.hpp> // for task_bas...
 // #include <htool/hmatrix/linalg/task_based_factorization.hpp>                    // for task_based_lu_factorization
-// #include <htool/hmatrix/linalg/task_based_triangular_hmatrix_hmatrix_solve.hpp> // for task_based_triangular_hmatrix_hmatrix_solve
-// #include <htool/hmatrix/linalg/triangular_hmatrix_hmatrix_solve.hpp>            // for triangular_hmatrix_hmatrix_solve
+#include <htool/hmatrix/linalg/task_based_apply_ldlt_diagonal.hpp> // for task_based_internal_apply_ldlt_diagonal
+#include <htool/matrix/linalg/factorization.hpp>                   // for ldlt_factorization
 
 #include <htool/hmatrix/lrmat/SVD.hpp>
 #include <htool/hmatrix/task_dependencies.hpp>         // for enumerate_dependence, find_l0...
@@ -94,11 +94,31 @@ bool test_task_based_hmatrix_dependencies(const TestCaseType &test_case, char sy
     }
     std::cout << "----------------------------------" << '\n';
 
+    // Tests for get_mutable_node: every node of the block tree is reached from the root, a node outside it is not
+    std::cout << "get_mutable_node tests...";
+    {
+        std::vector<const HMatrix<T> *> nodes{&root_hmatrix};
+        for (std::size_t i = 0; i < nodes.size(); i++) {
+            is_error = is_error || get_mutable_node(root_hmatrix, *nodes[i]) != nodes[i];
+            for (auto &child : nodes[i]->get_children()) {
+                nodes.push_back(child.get());
+            }
+        }
+        is_error = is_error || get_mutable_node(child1, child2) != nullptr;
+        is_error = is_error || get_mutable_node(child1, child1_child2) != &child1_child2;
+    }
+    if (is_error) {
+        std::cout << "ERROR" << '\n';
+    } else {
+        std::cout << "SUCCESS" << '\n';
+    }
+    std::cout << "----------------------------------" << '\n';
+
     // Tests for enumerate_dependences
     {
         std::cout << "enumerate_dependences tests...";
-        std::vector<HMatrix<T> *> L0;
-        std::vector<HMatrix<T> *> dependences;
+        std::vector<const HMatrix<T> *> L0;
+        std::vector<const HMatrix<T> *> dependences;
 
         // Test case 1: hmatrix is in L0
         {
@@ -151,10 +171,58 @@ bool test_task_based_hmatrix_dependencies(const TestCaseType &test_case, char sy
 
     // Tests for find_l0. Visual verification of the block tree in dotfile.dot
     {
-        std::vector<HMatrix<T> *> L0 = find_l0(root_hmatrix, 256);
+        std::vector<const HMatrix<T> *> L0 = find_l0(root_hmatrix, 256);
         std::ofstream dotfile("test_find_l0.dot");
         view_block_tree(root_hmatrix, L0, dotfile);
     }
 
+    return is_error;
+}
+
+// D^-1 applied by tasks to a block B whose L0 ancestor has the same clusters (a single part in the partition): the
+// ancestor cannot be reached from B, so B itself is modified.
+inline bool test_task_based_apply_ldlt_diagonal_below_L0_node_with_same_clusters() {
+    bool is_error = false;
+    const int n   = 20;
+    std::vector<double> points(3 * n);
+    for (int i = 0; i < 3 * n; i++) {
+        points[i] = i;
+    }
+    std::vector<int> partition(n, 0);
+    ClusterTreeBuilder<double> cluster_builder;
+    Cluster<double> cluster     = cluster_builder.create_cluster_tree_from_global_partition(n, 3, points.data(), 2, 1, partition.data());
+    const Cluster<double> &part = *cluster.get_clusters_on_partition()[0];
+    is_error                    = is_error || !(part.get_offset() == cluster.get_offset() && part.get_size() == cluster.get_size());
+
+    // A = 2 I, factorized, so that D^-1 = I / 2
+    HMatrix<double> A(cluster, cluster), B(cluster, cluster);
+    HMatrix<double> *A_child = A.add_child(&part, &part);
+    HMatrix<double> *B_child = B.add_child(&part, &part);
+    auto D                   = std::make_unique<Matrix<double>>(n, n);
+    auto ones                = std::make_unique<Matrix<double>>(n, n);
+    for (int i = 0; i < n; i++) {
+        (*D)(i, i) = 2;
+        for (int j = 0; j < n; j++) {
+            (*ones)(i, j) = 1;
+        }
+    }
+    ldlt_factorization('S', 'L', *D);
+    A_child->set_dense_data(std::move(D));
+    B_child->set_dense_data(std::move(ones));
+
+    std::vector<const HMatrix<double> *> L0_A{&A}, L0_B{&B};
+#if defined(_OPENMP)
+#    pragma omp parallel
+#    pragma omp single
+#endif
+    {
+        task_based_internal_apply_ldlt_diagonal('S', 'L', 'L', *A_child, *B_child, L0_A, L0_B);
+    }
+    for (int i = 0; i < n; i++) {
+        for (int j = 0; j < n; j++) {
+            is_error = is_error || (*B_child->get_dense_data())(i, j) != 0.5;
+        }
+    }
+    std::cout << "task-based apply_ldlt_diagonal below an L0 node with the same clusters tests..." << (is_error ? "ERROR" : "SUCCESS") << '\n';
     return is_error;
 }

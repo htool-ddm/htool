@@ -49,21 +49,25 @@ namespace htool {
  */
 
 template <typename CoefficientPrecision, typename CoordinatePrecision = CoefficientPrecision>
-void task_based_internal_add_hmatrix_hmatrix_product(char transa, char transb, CoefficientPrecision alpha, const HMatrix<CoefficientPrecision, CoordinatePrecision> &A, const HMatrix<CoefficientPrecision, CoordinatePrecision> &B, CoefficientPrecision beta, HMatrix<CoefficientPrecision, CoordinatePrecision> &C, std::vector<HMatrix<CoefficientPrecision> *> &L0_A, std::vector<HMatrix<CoefficientPrecision> *> &L0_B, std::vector<HMatrix<CoefficientPrecision> *> &L0) {
+void task_based_internal_add_hmatrix_hmatrix_product(char transa, char transb, CoefficientPrecision alpha, const HMatrix<CoefficientPrecision, CoordinatePrecision> &A, const HMatrix<CoefficientPrecision, CoordinatePrecision> &B, CoefficientPrecision beta, HMatrix<CoefficientPrecision, CoordinatePrecision> &C, const std::vector<const HMatrix<CoefficientPrecision, CoordinatePrecision> *> &L0_A, const std::vector<const HMatrix<CoefficientPrecision, CoordinatePrecision> *> &L0_B, const std::vector<const HMatrix<CoefficientPrecision, CoordinatePrecision> *> &L0) {
 
     // int max_prio = std::max(0, omp_get_max_task_priority());
 
     // Scale the output vector `out` with `beta` if `beta` is not equal to 1
     if (CoefficientPrecision(beta) != CoefficientPrecision(1)) {
-        for (auto L0C_node : L0) {
-
+        for (const HMatrix<CoefficientPrecision, CoordinatePrecision> *L0C_node : enumerate_dependences(C, L0)) {
+            // L0C_node not in C's block tree (C below L0): the task only scales C
+            HMatrix<CoefficientPrecision, CoordinatePrecision> *C_node = get_mutable_node(C, *L0C_node);
+            if (C_node == nullptr) {
+                C_node = &C;
+            }
 #if defined(_OPENMP)
-#    pragma omp task default(none)   \
-        firstprivate(L0C_node, beta) \
+#    pragma omp task default(none)           \
+        firstprivate(L0C_node, C_node, beta) \
         depend(inout : *L0C_node)
 #endif
             {
-                sequential_scale(beta, *L0C_node);
+                sequential_scale(beta, *C_node);
             }
         }
     }
@@ -163,11 +167,16 @@ void task_based_internal_add_hmatrix_hmatrix_product(char transa, char transb, C
             const Cluster<CoordinatePrecision> *input_cluster_ptr  = &input_cluster;
             auto write_deps                                        = enumerate_dependences(C, L0);
 
-            for (auto &C_node : write_deps) {
+            for (const HMatrix<CoefficientPrecision, CoordinatePrecision> *L0_node : write_deps) {
+                // L0_node not in C's block tree (C below L0): the task only adds to C
+                HMatrix<CoefficientPrecision, CoordinatePrecision> *C_node = get_mutable_node(C, *L0_node);
+                if (C_node == nullptr) {
+                    C_node = &C;
+                }
 #if defined(_OPENMP)
-#    pragma omp task default(none)                                                  \
-        firstprivate(AB, C_node, output_cluster_ptr, input_cluster_ptr, write_deps) \
-        depend(inout : *C_node)                                                     \
+#    pragma omp task default(none)                                                           \
+        firstprivate(AB, L0_node, C_node, output_cluster_ptr, input_cluster_ptr, write_deps) \
+        depend(inout : *L0_node)                                                             \
         depend(in : *AB)
 #endif
                 {
