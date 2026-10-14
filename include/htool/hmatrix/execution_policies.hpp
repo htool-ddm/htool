@@ -73,8 +73,9 @@ struct is_execution_policy<exec_compat::parallel_policy> : std::true_type {};
  * functions, called with that L0, only create these tasks, like the factorizations:
  * their right-hand side is only complete after a taskwait.
  *
- * add_hmatrix_vector_product uses the L0 in the same way as the solves, with
- * target_L0 and source_L0 as dependencies on the output and input vectors.
+ * add_hmatrix_vector_product and add_hmatrix_matrix_product use the L0 in the
+ * same way as the solves, with target_L0 and source_L0 as dependencies on the
+ * rows of their output and input.
  */
 template <typename CoefficientPrecision, typename CoordinatePrecision = underlying_type<CoefficientPrecision>>
 struct omp_task_policy {
@@ -88,9 +89,11 @@ struct is_execution_policy<omp_task_policy<CoefficientPrecision, CoordinatePreci
 template <typename T>
 constexpr bool is_execution_policy_v = is_execution_policy<T>::value;
 
+// True outside any parallel region. omp_in_parallel() is not used: it is false in a parallel region run by a single thread
+// (e.g. with OMP_NUM_THREADS=1), where a new region would not wait for the pending tasks of the enclosing one.
 inline bool need_to_create_parallel_region() {
 #if defined(_OPENMP)
-    return omp_in_parallel() == 1 ? false : true;
+    return omp_get_level() == 0;
 #else
     return false;
 #endif
@@ -110,17 +113,25 @@ void run_in_task_region(Function &&function) {
     }
 }
 
-// Recompute the L0 of hmatrix_task_dependencies if it is not a cut of the block tree of hmatrix.
-// In a parallel region, pending tasks may depend on the nodes of the previous L0, which the tasks using the new one would not wait for: wait for them first.
+// Recompute the L0 of hmatrix_task_dependencies if it is not a cut of the block tree of hmatrix, and its cluster L0s if they are not cuts
+// of the cluster trees of hmatrix (e.g. after L0 is assigned directly).
+// In a parallel region, pending tasks may depend on the previous ones, which the tasks using the new ones would not wait for: wait for them first.
 template <typename CoefficientPrecision, typename CoordinatePrecision>
 void update_L0(HMatrixTaskDependencies<CoefficientPrecision, CoordinatePrecision> &hmatrix_task_dependencies, const HMatrix<CoefficientPrecision, CoordinatePrecision> &hmatrix) {
-    if (!hmatrix_task_dependencies.is_L0_of(hmatrix)) {
-        if (!hmatrix_task_dependencies.L0.empty() && !need_to_create_parallel_region()) {
+    bool is_L0_of_hmatrix           = hmatrix_task_dependencies.is_L0_of(hmatrix);
+    bool are_cluster_L0s_of_hmatrix = hmatrix_task_dependencies.are_cluster_L0s_of(hmatrix);
+    if (is_L0_of_hmatrix && are_cluster_L0s_of_hmatrix) {
+        return;
+    }
+    if (!hmatrix_task_dependencies.L0.empty() && !need_to_create_parallel_region()) {
 #if defined(_OPENMP)
 #    pragma omp taskwait
 #endif
-        }
+    }
+    if (!is_L0_of_hmatrix) {
         hmatrix_task_dependencies.set_L0(hmatrix);
+    } else {
+        hmatrix_task_dependencies.set_cluster_L0s(hmatrix);
     }
 }
 

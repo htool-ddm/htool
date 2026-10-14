@@ -116,7 +116,7 @@ bool test_task_based_hmatrix_vector_product(const TestCaseType &test_case, char 
     std::chrono::duration<double> task_based_duration = end - start;
 
     // Compare the results
-    is_error = is_error || (std::isnan(norm2(out - out_task) / norm2(out)) > nb_products * error_tol);
+    is_error = is_error || !(norm2(out - out_task) / norm2(out) < nb_products * error_tol);
     if (is_error) {
         std::cout << "ERROR" << '\n';
     } else {

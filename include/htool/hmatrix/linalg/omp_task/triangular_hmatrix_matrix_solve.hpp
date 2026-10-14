@@ -25,10 +25,23 @@
 namespace htool {
 
 // The task-based solves below act on a dense right-hand side stored row-major: Xt is mu x n, the column of Xt
-// for the row i of X (numbered from X_offset) being Xt + mu * (i - X_offset). The tasks depend on the rows of X
-// through X_L0, the target clusters of the diagonal nodes of L0_A, which tile the rows of A.
+// for the row i of X (numbered from X_offset) being Xt + mu * (i - X_offset). They create one task per diagonal node
+// of L0_A, which must tile the diagonal of A (see diagonal_clusters_of_L0), and per node of L0_A in the updates.
+// The tasks depend on the blocks of rows of X given by X_L0, a cut of the cluster tree of the rows of X (the target_L0
+// of HMatrixTaskDependencies), through the address of their first coefficient: one dependence per array and block,
+// shared with the other task-based functions using the same cut, such as the products.
 
-// Returns X_L0 for A and L0_A, sorted by offset, or an empty vector if the diagonal nodes of L0_A do not tile
+// Addresses of the blocks of rows of X, given by the nodes of X_L0, covering the rows of cluster
+template <typename CoefficientPrecision, typename CoordinatePrecision>
+std::vector<CoefficientPrecision *> blocks_of_rows(CoefficientPrecision *Xt, int mu, int X_offset, const Cluster<CoordinatePrecision> &cluster, const std::vector<const Cluster<CoordinatePrecision> *> &X_L0) {
+    std::vector<CoefficientPrecision *> blocks;
+    for (auto X_L0_node : enumerate_dependences(cluster, X_L0)) {
+        blocks.push_back(Xt + mu * (X_L0_node->get_offset() - X_offset));
+    }
+    return blocks;
+}
+
+// Returns the target clusters of the diagonal nodes of L0_A, sorted by offset, or an empty vector if they do not tile
 // the rows of A (e.g. for a block tree that is not consistent).
 template <typename CoefficientPrecision, typename CoordinatePrecision>
 std::vector<const Cluster<CoordinatePrecision> *> diagonal_clusters_of_L0(const HMatrix<CoefficientPrecision, CoordinatePrecision> &A, const std::vector<const HMatrix<CoefficientPrecision, CoordinatePrecision> *> &L0_A) {
@@ -61,7 +74,7 @@ void task_based_internal_triangular_solve_update(char transa, const HMatrix<Coef
         const CoefficientPrecision *Xt_input       = Xt + mu * (input.get_offset() - X_offset);
         CoefficientPrecision *Xt_output            = Xt + mu * (output.get_offset() - X_offset);
 #if defined(_OPENMP)
-        std::vector<const Cluster<CoordinatePrecision> *> write_deps = enumerate_dependences(output, X_L0), read_deps = enumerate_dependences(input, X_L0);
+        std::vector<CoefficientPrecision *> write_deps = blocks_of_rows(Xt, mu, X_offset, output, X_L0), read_deps = blocks_of_rows(Xt, mu, X_offset, input, X_L0);
         int write_deps_size = write_deps.size(), read_deps_size = read_deps.size();
 #    pragma omp task default(none)                                          \
         firstprivate(transa, L0_node, Xt_input, Xt_output, mu)              \
@@ -88,10 +101,13 @@ void task_based_internal_triangular_hmatrix_matrix_solve_row_major_with(LeafSolv
         int size                                                         = X_node->get_size();
         CoefficientPrecision *Xt_node                                    = Xt + mu * (X_node->get_offset() - X_offset);
 #if defined(_OPENMP)
+        std::vector<CoefficientPrecision *> deps = blocks_of_rows(Xt, mu, X_offset, *X_node, X_L0);
+        int deps_size                            = deps.size();
 #    pragma omp task default(none)                                        \
         firstprivate(leaf_solve, UPLO, transa, A_node, Xt_node, mu, size) \
+        shared(deps)                                                      \
         depend(in : *A_node)                                              \
-        depend(inout : *X_node)
+        depend(iterator(it = 0 : deps_size), inout : *deps[it])
 #endif
         {
             Matrix<CoefficientPrecision> Bt;
@@ -141,7 +157,7 @@ void task_based_internal_triangular_hmatrix_matrix_solve_row_major_with(LeafSolv
  * @param[in] A The triangular HMatrix \f$A\f$.
  * @param[in,out] Xt The right-hand side, row-major, overwritten by the solution.
  * @param[in] L0_A The L0 of \f$A\f$.
- * @param[in] X_L0 The clusters given by diagonal_clusters_of_L0(A, L0_A).
+ * @param[in] X_L0 A cut of the cluster tree of the rows of X (see above).
  */
 template <typename CoefficientPrecision, typename CoordinatePrecision>
 void task_based_internal_triangular_hmatrix_matrix_solve_row_major(char UPLO, char transa, char diag, const HMatrix<CoefficientPrecision, CoordinatePrecision> &A, CoefficientPrecision *Xt, int mu, int X_offset, const std::vector<const HMatrix<CoefficientPrecision, CoordinatePrecision> *> &L0_A, const std::vector<const Cluster<CoordinatePrecision> *> &X_L0) {
@@ -160,10 +176,9 @@ void task_based_internal_triangular_ldlt_hmatrix_matrix_solve_row_major(char UPL
 
 // Same as internal_triangular_hmatrix_matrix_solve with alpha=1, returning once the tasks are done.
 template <typename CoefficientPrecision, typename CoordinatePrecision>
-void task_based_internal_triangular_hmatrix_matrix_solve(char side, char UPLO, char transa, char diag, const HMatrix<CoefficientPrecision, CoordinatePrecision> &A, Matrix<CoefficientPrecision> &B, const std::vector<const HMatrix<CoefficientPrecision, CoordinatePrecision> *> &L0) {
-    std::vector<const Cluster<CoordinatePrecision> *> X_L0 = diagonal_clusters_of_L0(A, L0);
+void task_based_internal_triangular_hmatrix_matrix_solve(char side, char UPLO, char transa, char diag, const HMatrix<CoefficientPrecision, CoordinatePrecision> &A, Matrix<CoefficientPrecision> &B, const std::vector<const HMatrix<CoefficientPrecision, CoordinatePrecision> *> &L0, const std::vector<const Cluster<CoordinatePrecision> *> &X_L0) {
     // Cannot happen for a cut of a consistent block tree, as given by find_l0
-    if (X_L0.empty()) {
+    if (diagonal_clusters_of_L0(A, L0).empty()) {
         htool::Logger::get_instance().log(LogLevel::ERROR, "task_based_internal_triangular_hmatrix_matrix_solve: the diagonal nodes of L0 do not tile the diagonal of A."); // LCOV_EXCL_LINE
         return;                                                                                                                                                             // LCOV_EXCL_LINE
     }
@@ -193,10 +208,9 @@ void task_based_internal_triangular_hmatrix_matrix_solve(char side, char UPLO, c
 
 // Same as internal_triangular_ldlt_hmatrix_matrix_solve with alpha=1, returning once the tasks are done.
 template <typename CoefficientPrecision, typename CoordinatePrecision>
-void task_based_internal_triangular_ldlt_hmatrix_matrix_solve(char side, char UPLO, char transa, const HMatrix<CoefficientPrecision, CoordinatePrecision> &A, Matrix<CoefficientPrecision> &B, const std::vector<const HMatrix<CoefficientPrecision, CoordinatePrecision> *> &L0) {
-    std::vector<const Cluster<CoordinatePrecision> *> X_L0 = diagonal_clusters_of_L0(A, L0);
+void task_based_internal_triangular_ldlt_hmatrix_matrix_solve(char side, char UPLO, char transa, const HMatrix<CoefficientPrecision, CoordinatePrecision> &A, Matrix<CoefficientPrecision> &B, const std::vector<const HMatrix<CoefficientPrecision, CoordinatePrecision> *> &L0, const std::vector<const Cluster<CoordinatePrecision> *> &X_L0) {
     // Cannot happen for a cut of a consistent block tree, as given by find_l0
-    if (X_L0.empty()) {
+    if (diagonal_clusters_of_L0(A, L0).empty()) {
         htool::Logger::get_instance().log(LogLevel::ERROR, "task_based_internal_triangular_ldlt_hmatrix_matrix_solve: the diagonal nodes of L0 do not tile the diagonal of A."); // LCOV_EXCL_LINE
         return;                                                                                                                                                                  // LCOV_EXCL_LINE
     }

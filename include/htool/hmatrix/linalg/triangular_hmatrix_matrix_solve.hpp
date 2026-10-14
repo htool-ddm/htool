@@ -34,7 +34,7 @@ void internal_triangular_hmatrix_matrix_solve(ExecutionPolicy &&execution_policy
 #        pragma omp single
 #    endif
             {
-                task_based_internal_triangular_hmatrix_matrix_solve(side, UPLO, transa, diag, A, B, hmatrix_task_dependencies.L0);
+                task_based_internal_triangular_hmatrix_matrix_solve(side, UPLO, transa, diag, A, B, hmatrix_task_dependencies.L0, hmatrix_task_dependencies.target_L0);
             }
         } else if constexpr (std::is_same_v<std::decay_t<ExecutionPolicy>, exec_compat::sequenced_policy>) {
             internal_triangular_hmatrix_matrix_solve(side, UPLO, transa, diag, alpha, A, B);
@@ -44,7 +44,7 @@ void internal_triangular_hmatrix_matrix_solve(ExecutionPolicy &&execution_policy
                 scale(alpha, B);
             }
             run_task_based(
-                execution_policy.hmatrix_task_dependencies, A, [&]() { internal_triangular_hmatrix_matrix_solve(side, UPLO, transa, diag, CoefficientPrecision(1), A, B); }, [&](auto &L0) { task_based_internal_triangular_hmatrix_matrix_solve(side, UPLO, transa, diag, A, B, L0); });
+                execution_policy.hmatrix_task_dependencies, A, [&]() { internal_triangular_hmatrix_matrix_solve(side, UPLO, transa, diag, CoefficientPrecision(1), A, B); }, [&](auto &L0) { task_based_internal_triangular_hmatrix_matrix_solve(side, UPLO, transa, diag, A, B, L0, execution_policy.hmatrix_task_dependencies.target_L0); });
         } else {
             static_assert(std::is_same_v<std::decay_t<ExecutionPolicy>, exec_compat::sequenced_policy> || std::is_same_v<std::decay_t<ExecutionPolicy>, exec_compat::parallel_policy> || std::is_same_v<std::decay_t<ExecutionPolicy>, omp_task_policy<CoefficientPrecision, CoordinatePrecision>>, "Invalid execution policy for solve.");
         }
@@ -73,7 +73,7 @@ void internal_triangular_ldlt_hmatrix_matrix_solve(ExecutionPolicy &&execution_p
 #        pragma omp single
 #    endif
             {
-                task_based_internal_triangular_ldlt_hmatrix_matrix_solve(side, UPLO, transa, A, B, hmatrix_task_dependencies.L0);
+                task_based_internal_triangular_ldlt_hmatrix_matrix_solve(side, UPLO, transa, A, B, hmatrix_task_dependencies.L0, hmatrix_task_dependencies.target_L0);
             }
         } else if constexpr (std::is_same_v<std::decay_t<ExecutionPolicy>, exec_compat::sequenced_policy>) {
             internal_triangular_ldlt_hmatrix_matrix_solve(side, UPLO, transa, alpha, A, B);
@@ -83,7 +83,7 @@ void internal_triangular_ldlt_hmatrix_matrix_solve(ExecutionPolicy &&execution_p
                 scale(alpha, B);
             }
             run_task_based(
-                execution_policy.hmatrix_task_dependencies, A, [&]() { internal_triangular_ldlt_hmatrix_matrix_solve(side, UPLO, transa, CoefficientPrecision(1), A, B); }, [&](auto &L0) { task_based_internal_triangular_ldlt_hmatrix_matrix_solve(side, UPLO, transa, A, B, L0); });
+                execution_policy.hmatrix_task_dependencies, A, [&]() { internal_triangular_ldlt_hmatrix_matrix_solve(side, UPLO, transa, CoefficientPrecision(1), A, B); }, [&](auto &L0) { task_based_internal_triangular_ldlt_hmatrix_matrix_solve(side, UPLO, transa, A, B, L0, execution_policy.hmatrix_task_dependencies.target_L0); });
         } else {
             static_assert(std::is_same_v<std::decay_t<ExecutionPolicy>, exec_compat::sequenced_policy> || std::is_same_v<std::decay_t<ExecutionPolicy>, exec_compat::parallel_policy> || std::is_same_v<std::decay_t<ExecutionPolicy>, omp_task_policy<CoefficientPrecision, CoordinatePrecision>>, "Invalid execution policy for solve.");
         }
@@ -109,14 +109,14 @@ void internal_apply_ldlt_diagonal(ExecutionPolicy &&execution_policy, char symme
 #        pragma omp single
 #    endif
             {
-                task_based_internal_apply_ldlt_diagonal(symmetry, side, UPLO, B, offset, hmatrix_task_dependencies.L0);
+                task_based_internal_apply_ldlt_diagonal(symmetry, side, UPLO, A, B, offset, hmatrix_task_dependencies.L0, hmatrix_task_dependencies.target_L0);
             }
         } else if constexpr (std::is_same_v<std::decay_t<ExecutionPolicy>, exec_compat::sequenced_policy>) {
             internal_apply_ldlt_diagonal(symmetry, side, UPLO, A, B, offset);
         } else if constexpr (std::is_same_v<std::decay_t<ExecutionPolicy>, omp_task_policy<CoefficientPrecision, CoordinatePrecision>>) {
             update_L0(execution_policy.hmatrix_task_dependencies, A);
             run_task_based(
-                execution_policy.hmatrix_task_dependencies, A, [&]() { internal_apply_ldlt_diagonal(symmetry, side, UPLO, A, B, offset); }, [&](auto &L0) { task_based_internal_apply_ldlt_diagonal(symmetry, side, UPLO, B, offset, L0); });
+                execution_policy.hmatrix_task_dependencies, A, [&]() { internal_apply_ldlt_diagonal(symmetry, side, UPLO, A, B, offset); }, [&](auto &L0) { task_based_internal_apply_ldlt_diagonal(symmetry, side, UPLO, A, B, offset, L0, execution_policy.hmatrix_task_dependencies.target_L0); });
         } else {
             static_assert(std::is_same_v<std::decay_t<ExecutionPolicy>, exec_compat::sequenced_policy> || std::is_same_v<std::decay_t<ExecutionPolicy>, exec_compat::parallel_policy> || std::is_same_v<std::decay_t<ExecutionPolicy>, omp_task_policy<CoefficientPrecision, CoordinatePrecision>>, "Invalid execution policy for solve.");
         }

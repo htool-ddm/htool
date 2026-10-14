@@ -15,7 +15,7 @@ template <typename MatB,
           typename MatC,
           typename CoordinatePrecision = underlying_type<typename MatB::value_type>,
           typename                     = std::enable_if_t<
-              std::is_same<typename MatB::value_type, typename MatC::value_type>::value>>
+                                  std::is_same<typename MatB::value_type, typename MatC::value_type>::value>>
 void openmp_internal_add_hmatrix_matrix_product(char transa, char transb, typename MatB::value_type alpha, const HMatrix<typename MatB::value_type, CoordinatePrecision> &A, const MatB &B, typename MatB::value_type beta, MatC &C) {
     using CoefficientPrecision = typename MatB::value_type;
     if (transb == 'N') {

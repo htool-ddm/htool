@@ -10,13 +10,44 @@ namespace htool {
 template <typename CoefficientPrecision, typename CoordinatePrecision>
 std::size_t uniform_cost_function(const HMatrix<CoefficientPrecision, CoordinatePrecision> &hmatrix);
 
+// True if cut is a cut of the tree rooted at root: every leaf has exactly one node of cut among itself and its ancestors.
+// Only compares pointers, so it is safe even if cut points to a destroyed tree.
+template <typename Node>
+bool is_cut_of(const std::vector<const Node *> &cut, const Node &root) {
+    const std::unordered_set<const Node *> cut_nodes(cut.begin(), cut.end());
+    if (cut_nodes.empty() || cut_nodes.size() != cut.size())
+        return false;
+
+    // Traversal stopped at the nodes of cut: a node of cut below another one is not found
+    std::size_t number_of_cut_nodes_found = 0;
+    std::stack<const Node *> nodes;
+    nodes.push(&root);
+    while (!nodes.empty()) {
+        const Node *node = nodes.top();
+        nodes.pop();
+        if (cut_nodes.count(node) > 0) {
+            number_of_cut_nodes_found++;
+        } else if (node->is_leaf()) {
+            return false;
+        } else {
+            for (auto &child : node->get_children()) {
+                nodes.push(child.get());
+            }
+        }
+    }
+    return number_of_cut_nodes_found == cut.size();
+}
+
+// The task-based functions taking an L0 and an HMatrix require L0 to be a cut of the block tree of this HMatrix or of one of its
+// ancestors: dependencies are found by comparing clusters (enumerate_dependences), and write access through the HMatrix (get_mutable_node).
+// update_L0 ensures it for the functions taking an execution policy; it is not checked by the task_based_internal_* functions.
 template <typename CoefficientPrecision, typename CoordinatePrecision>
 struct HMatrixTaskDependencies {
     int max_number_of_nodes                                                                              = 64; // TODO:add better default value
     std::function<std::size_t(const HMatrix<CoefficientPrecision, CoordinatePrecision> &)> cost_function = &uniform_cost_function<CoefficientPrecision, CoordinatePrecision>;
     std::vector<const HMatrix<CoefficientPrecision, CoordinatePrecision> *> L0;
     // Cuts of the target and source cluster trees, used as dependencies on the output and input vectors of products.
-    // Set with L0 by set_L0; if L0 is assigned directly, they are recomputed by the products only when empty.
+    // Set with L0 by set_L0, and recomputed by the task-based products when they are not cuts of the cluster trees of their HMatrix.
     std::vector<const Cluster<CoordinatePrecision> *> target_L0, source_L0;
 
     void set_L0(const HMatrix<CoefficientPrecision, CoordinatePrecision> &hmatrix) {
@@ -33,28 +64,12 @@ struct HMatrixTaskDependencies {
     // Only compares pointers, so it is safe even if L0 points to a destroyed tree. L0 is not compared with what set_L0 would give,
     // so call set_L0 explicitly after changing max_number_of_nodes or cost_function.
     bool is_L0_of(const HMatrix<CoefficientPrecision, CoordinatePrecision> &hmatrix) const {
-        const std::unordered_set<const HMatrix<CoefficientPrecision, CoordinatePrecision> *> L0_nodes(L0.begin(), L0.end());
-        if (L0_nodes.empty() || L0_nodes.size() != L0.size())
-            return false;
+        return is_cut_of(L0, hmatrix);
+    }
 
-        // Traversal stopped at the nodes of L0: a node of L0 below another one is not found
-        std::size_t number_of_L0_nodes_found = 0;
-        std::stack<const HMatrix<CoefficientPrecision, CoordinatePrecision> *> nodes;
-        nodes.push(&hmatrix);
-        while (!nodes.empty()) {
-            const HMatrix<CoefficientPrecision, CoordinatePrecision> *node = nodes.top();
-            nodes.pop();
-            if (L0_nodes.count(node) > 0) {
-                number_of_L0_nodes_found++;
-            } else if (node->is_leaf()) {
-                return false;
-            } else {
-                for (auto &child : node->get_children()) {
-                    nodes.push(child.get());
-                }
-            }
-        }
-        return number_of_L0_nodes_found == L0.size();
+    // True if target_L0 and source_L0 are cuts of the target and source cluster trees of hmatrix, in the same sense.
+    bool are_cluster_L0s_of(const HMatrix<CoefficientPrecision, CoordinatePrecision> &hmatrix) const {
+        return is_cut_of(target_L0, hmatrix.get_target_cluster()) && is_cut_of(source_L0, hmatrix.get_source_cluster());
     }
 };
 

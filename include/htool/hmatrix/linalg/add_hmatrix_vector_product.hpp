@@ -31,9 +31,6 @@ void add_hmatrix_vector_product(ExecutionPolicy &&execution_policy, char trans, 
         } else if constexpr (std::is_same_v<std::decay_t<ExecutionPolicy>, omp_task_policy<CoefficientPrecision, CoordinatePrecision>>) {
             auto &hmatrix_task_dependencies = execution_policy.hmatrix_task_dependencies;
             update_L0(hmatrix_task_dependencies, A);
-            if (hmatrix_task_dependencies.target_L0.empty() || hmatrix_task_dependencies.source_L0.empty()) {
-                hmatrix_task_dependencies.set_cluster_L0s(A);
-            }
             const auto &in_L0  = trans == 'N' ? hmatrix_task_dependencies.source_L0 : hmatrix_task_dependencies.target_L0;
             const auto &out_L0 = trans == 'N' ? hmatrix_task_dependencies.target_L0 : hmatrix_task_dependencies.source_L0;
             run_task_based(

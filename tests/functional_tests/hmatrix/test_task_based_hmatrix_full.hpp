@@ -7,12 +7,15 @@
 #include <htool/hmatrix/hmatrix_output.hpp>                  // for get_hmatrix_information
 #include <htool/hmatrix/linalg/add_hmatrix_vector_product.hpp>
 #include <htool/hmatrix/linalg/factorization.hpp>
+#include <htool/hmatrix/linalg/omp_task/add_hmatrix_matrix_product_row_major.hpp>
+#include <htool/hmatrix/linalg/omp_task/add_hmatrix_vector_product.hpp>
 #include <htool/hmatrix/tree_builder/tree_builder.hpp>       // for HMatrix...
 #include <htool/matrix/linalg/add_matrix_matrix_product.hpp> // for add_her...
-#include <htool/matrix/linalg/transpose.hpp>                 // for transpose
-#include <htool/matrix/matrix.hpp>                           // for Matrix
-#include <htool/misc/misc.hpp>                               // for underly...
-#include <htool/testing/generate_test_case.hpp>              // for TestCas...
+#include <htool/matrix/linalg/add_matrix_vector_product.hpp>
+#include <htool/matrix/linalg/transpose.hpp>    // for transpose
+#include <htool/matrix/matrix.hpp>              // for Matrix
+#include <htool/misc/misc.hpp>                  // for underly...
+#include <htool/testing/generate_test_case.hpp> // for TestCas...
 #include <htool/testing/generator_input.hpp>
 #include <htool/testing/generator_test.hpp> // for generat...
 #include <iostream>                         // for operator<<
@@ -55,6 +58,17 @@ bool test_task_based_hmatrix_full_lu(char trans, int n1, int n2, htool::underlyi
     std::vector<T> x(ni_A);
     Matrix<T> b(no_A, 1);
     generate_random_vector(x);
+
+    // A^2 x and A^2 X computed in cluster numbering by two task-based products in a row, without taskwait in between: the tasks of the
+    // second one wait for the blocks of the first one they read, through the dependences on the blocks of y and Y (same cut of the rows).
+    int mu = X_dense.nb_cols();
+    std::vector<T> x_permuted(ni_A), y(no_A), z(no_A), z_user(no_A);
+    Matrix<T> X_permuted(no_X, ni_X), Xt(mu, no_X), Yt(mu, no_A), Zt(mu, no_A), Z(no_A, mu), Z_user(no_A, mu);
+    user_to_cluster(*test_case.root_cluster_A_input, x.data(), x_permuted.data());
+    for (int j = 0; j < mu; j++) {
+        user_to_cluster(*test_case.root_cluster_A_input, X_dense.data() + no_X * j, X_permuted.data() + no_X * j);
+    }
+    transpose(X_permuted, Xt);
 #if defined(_OPENMP)
 #    pragma omp parallel
 #    pragma omp single
@@ -63,14 +77,46 @@ bool test_task_based_hmatrix_full_lu(char trans, int n1, int n2, htool::underlyi
         // Assembly
         A = std::make_unique<HMatrix<T, htool::underlying_type<T>>>(hmatrix_tree_builder_A.build(policy, *test_case.operator_in_user_numbering_A, *test_case.root_cluster_A_output, *test_case.root_cluster_A_input));
 
-        // Right-hand side computed with the HMatrix, whose tasks wait for the ones of the assembly
+        // Products whose tasks wait for the ones of the assembly
+        const auto &dependencies = policy.hmatrix_task_dependencies;
+        task_based_internal_add_hmatrix_vector_product('N', T(1), *A, x_permuted.data(), T(0), y.data(), dependencies.L0, dependencies.source_L0, dependencies.target_L0);
+        task_based_internal_add_hmatrix_vector_product('N', T(1), *A, y.data(), T(0), z.data(), dependencies.L0, dependencies.source_L0, dependencies.target_L0);
+        task_based_internal_add_hmatrix_matrix_product_row_major('N', T(1), *A, Xt.data(), T(0), Yt.data(), mu, dependencies.L0, dependencies.source_L0, dependencies.target_L0);
+        task_based_internal_add_hmatrix_matrix_product_row_major('N', T(1), *A, Yt.data(), T(0), Zt.data(), mu, dependencies.L0, dependencies.source_L0, dependencies.target_L0);
+
+        // Right-hand side computed with the HMatrix
         add_hmatrix_vector_product(policy, trans, T(1), *A, x.data(), T(0), b.data());
 
         // Factorization and solve, whose tasks wait for the ones of the factorization
         lu_factorization(policy, *A);
         lu_solve(policy, trans, *A, matrix_test);
         lu_solve(policy, trans, *A, b);
+
+        // Row-major solve on Yt = A X, whose tasks wait for the ones of the products writing and reading Yt, through the dependences on its blocks
+        task_based_internal_lu_solve_row_major('N', *A, Yt, dependencies.L0, dependencies.target_L0);
     }
+    std::vector<T> z_reference(no_A), y_reference(no_A);
+    Matrix<T> Y_reference(no_A, mu), Z_reference(no_A, mu);
+    add_matrix_vector_product('N', T(1), A_dense, x.data(), T(0), y_reference.data());
+    add_matrix_vector_product('N', T(1), A_dense, y_reference.data(), T(0), z_reference.data());
+    add_matrix_matrix_product('N', 'N', T(1), A_dense, X_dense, T(0), Y_reference);
+    add_matrix_matrix_product('N', 'N', T(1), A_dense, Y_reference, T(0), Z_reference);
+    cluster_to_user(*test_case.root_cluster_A_output, z.data(), z_user.data());
+    transpose(Zt, Z);
+    for (int j = 0; j < mu; j++) {
+        cluster_to_user(*test_case.root_cluster_A_output, Z.data() + no_A * j, Z_user.data() + no_A * j);
+    }
+    error    = norm2(z_reference - z_user) / norm2(z_reference);
+    is_error = is_error || !(error < epsilon * margin);
+    cout << "> Errors on two task-based hmatrix vector products in a row: " << error << '\n';
+    error    = normFrob(Z_reference - Z_user) / normFrob(Z_reference);
+    is_error = is_error || !(error < epsilon * margin);
+    cout << "> Errors on two task-based hmatrix matrix products in a row: " << error << '\n';
+    error    = normFrob(Xt - Yt) / normFrob(Xt);
+    is_error = is_error || !(error < epsilon * margin);
+    cout << "> Errors on a task-based row-major lu solve after task-based products: " << error << '\n';
+    cout << "> is_error: " << is_error << "\n";
+
     error    = normFrob(X_dense - matrix_test) / normFrob(X_dense);
     is_error = is_error || !(error < epsilon * margin);
     cout << "> Errors on hmatrix lu solve: " << error << '\n';
@@ -83,7 +129,6 @@ bool test_task_based_hmatrix_full_lu(char trans, int n1, int n2, htool::underlyi
 
     // Row-major solve, whose tasks are only waited for at the end of the region
     const Cluster<htool::underlying_type<T>> &cluster = A->get_source_cluster();
-    int mu                                            = B_dense.nb_cols();
     Matrix<T> permuted_B(B_dense.nb_rows(), mu), Bt(mu, B_dense.nb_rows());
     for (int j = 0; j < mu; j++) {
         user_to_cluster(cluster, B_dense.data() + cluster.get_size() * j, permuted_B.data() + cluster.get_size() * j);
@@ -94,7 +139,7 @@ bool test_task_based_hmatrix_full_lu(char trans, int n1, int n2, htool::underlyi
 #    pragma omp single
 #endif
     {
-        task_based_internal_lu_solve_row_major(trans, *A, Bt, policy.hmatrix_task_dependencies.L0);
+        task_based_internal_lu_solve_row_major(trans, *A, Bt, policy.hmatrix_task_dependencies.L0, policy.hmatrix_task_dependencies.target_L0);
     }
     transpose(Bt, permuted_B);
     for (int j = 0; j < mu; j++) {

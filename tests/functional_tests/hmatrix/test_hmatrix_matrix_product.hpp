@@ -2,6 +2,7 @@
 #include <htool/hmatrix/hmatrix.hpp>
 #include <htool/hmatrix/linalg/add_hmatrix_matrix_product.hpp>
 #include <htool/hmatrix/linalg/add_hmatrix_vector_product.hpp>
+#include <htool/hmatrix/linalg/omp_task/add_hmatrix_vector_product.hpp>
 #include <htool/hmatrix/linalg/scale.hpp>
 #include <htool/hmatrix/linalg/seq/add_hmatrix_matrix_product_row_major.hpp>
 #include <htool/hmatrix/linalg/seq/add_matrix_hmatrix_product.hpp>
@@ -135,6 +136,20 @@ bool test_hmatrix_matrix_product(const TestCaseProduct<T, GeneratorTestType> &te
         error    = norm2(get_col(matrix_result_w_matrix_sum, 0) - test_vec) / norm2(get_col(matrix_result_w_matrix_sum, 0));
         is_error = is_error || !(error < epsilon);
         cout << "> Errors on a openmp hmatrix vector product: " << error << '\n';
+
+        HMatrixTaskDependencies<T, htool::underlying_type<T>> hmatrix_task_dependencies;
+        hmatrix_task_dependencies.set_L0(root_hmatrix);
+        test_vec = C_vec;
+#if defined(_OPENMP)
+#    pragma omp parallel
+#    pragma omp single
+#endif
+        {
+            task_based_internal_add_hmatrix_vector_product(transa, alpha, root_hmatrix, B_vec.data(), beta, test_vec.data(), hmatrix_task_dependencies.L0, transa == 'N' ? hmatrix_task_dependencies.source_L0 : hmatrix_task_dependencies.target_L0, transa == 'N' ? hmatrix_task_dependencies.target_L0 : hmatrix_task_dependencies.source_L0);
+        }
+        error    = norm2(get_col(matrix_result_w_matrix_sum, 0) - test_vec) / norm2(get_col(matrix_result_w_matrix_sum, 0));
+        is_error = is_error || !(error < epsilon);
+        cout << "> Errors on a task-based hmatrix vector product: " << error << '\n';
     }
 
     matrix_test = C_dense;
@@ -142,6 +157,13 @@ bool test_hmatrix_matrix_product(const TestCaseProduct<T, GeneratorTestType> &te
     error    = normFrob(matrix_result_w_matrix_sum - matrix_test) / normFrob(matrix_result_w_matrix_sum);
     is_error = is_error || !(error < epsilon);
     cout << "> Errors on a hmatrix matrix product: " << error << '\n';
+
+    omp_task_policy<T> task_policy;
+    matrix_test = C_dense;
+    internal_add_hmatrix_matrix_product(task_policy, transa, transb, alpha, root_hmatrix, B_dense, beta, matrix_test);
+    error    = normFrob(matrix_result_w_matrix_sum - matrix_test) / normFrob(matrix_result_w_matrix_sum);
+    is_error = is_error || !(error < epsilon);
+    cout << "> Errors on a task-based hmatrix matrix product: " << error << '\n';
 
     if (transb == 'N') {
         matrix_test = transposed_C_dense;
@@ -283,6 +305,13 @@ bool test_symmetric_hmatrix_matrix_product(const TestCaseSymmetricProduct<T, Gen
         is_error = is_error || !(error < epsilon);
         cout << "> Errors on a symmetric hmatrix matrix product: " << error << '\n';
 
+        omp_task_policy<T> task_policy;
+        matrix_test = C_dense;
+        internal_add_hmatrix_matrix_product(task_policy, 'N', 'N', alpha, root_hmatrix, B_dense, beta, matrix_test);
+        error    = normFrob(matrix_result_w_matrix_sum - matrix_test) / normFrob(matrix_result_w_matrix_sum);
+        is_error = is_error || !(error < epsilon);
+        cout << "> Errors on a task-based symmetric hmatrix matrix product: " << error << '\n';
+
         matrix_test = transposed_C_dense;
         sequential_internal_add_hmatrix_matrix_product_row_major('N', 'N', alpha, root_hmatrix, transposed_B_dense.data(), beta, matrix_test.data(), C_dense.nb_cols());
         error    = normFrob(transposed_matrix_result_w_matrix_sum - matrix_test) / normFrob(transposed_matrix_result_w_matrix_sum);
@@ -394,6 +423,13 @@ bool test_hermitian_hmatrix_matrix_product(const TestCaseSymmetricProduct<T, Gen
         error    = normFrob(matrix_result_w_matrix_sum - matrix_test) / normFrob(matrix_result_w_matrix_sum);
         is_error = is_error || !(error < epsilon);
         cout << "> Errors on a hermitian hmatrix matrix product: " << error << '\n';
+
+        omp_task_policy<T> task_policy;
+        matrix_test = C_dense;
+        internal_add_hmatrix_matrix_product(task_policy, 'N', 'N', alpha, root_hmatrix, B_dense, beta, matrix_test);
+        error    = normFrob(matrix_result_w_matrix_sum - matrix_test) / normFrob(matrix_result_w_matrix_sum);
+        is_error = is_error || !(error < epsilon);
+        cout << "> Errors on a task-based hermitian hmatrix matrix product: " << error << '\n';
 
         matrix_test = transposed_C_dense;
         sequential_internal_add_hmatrix_matrix_product_row_major('N', 'N', alpha, root_hmatrix, transposed_B_dense.data(), beta, matrix_test.data(), C_dense.nb_cols());

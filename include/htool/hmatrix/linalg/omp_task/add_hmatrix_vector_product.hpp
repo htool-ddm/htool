@@ -50,69 +50,69 @@ void task_based_internal_add_hmatrix_vector_product(char trans, CoefficientPreci
 
     auto get_output_cluster{&HMatrix<CoefficientPrecision, CoordinatePrecision>::get_target_cluster};
     auto get_input_cluster{&HMatrix<CoefficientPrecision, CoordinatePrecision>::get_source_cluster};
-    char sym       = A.get_symmetry();
-    char trans_sym = (A.get_symmetry_for_leaves() == 'S') ? 'T' : 'C';
-    if (trans != 'N') {
-        get_input_cluster  = &HMatrix<CoefficientPrecision, CoordinatePrecision>::get_target_cluster;
-        get_output_cluster = &HMatrix<CoefficientPrecision, CoordinatePrecision>::get_source_cluster;
-        trans_sym          = 'N';
-    }
-
+    char sym                = A.get_symmetry();
+    char trans_sym          = (A.get_symmetry_for_leaves() == 'S') ? 'T' : 'C';
     int local_input_offset  = A.get_source_cluster().get_offset();
     int local_output_offset = A.get_target_cluster().get_offset();
-    // int local_output_size   = A.get_target_cluster().get_size();
+    if (trans != 'N') {
+        get_input_cluster   = &HMatrix<CoefficientPrecision, CoordinatePrecision>::get_target_cluster;
+        get_output_cluster  = &HMatrix<CoefficientPrecision, CoordinatePrecision>::get_source_cluster;
+        local_input_offset  = A.get_target_cluster().get_offset();
+        local_output_offset = A.get_source_cluster().get_offset();
+        trans_sym           = 'N';
+    }
 
-    // int max_prio = std::max(0, omp_get_max_task_priority());
-
-    // Scale the output vector `out` with `beta` if `beta` is not equal to 1
+    // The tasks depend on the first coefficient of the blocks of in and out given by in_L0 and out_L0: one dependence per vector and block,
+    // so that reading in does not wait for writing out, and successive task-based calls on the same vector with the same cut are ordered.
     if (CoefficientPrecision(beta) != CoefficientPrecision(1)) {
         for (auto out_L0_node : out_L0) {
-
+            CoefficientPrecision *out_block = out + out_L0_node->get_offset() - local_output_offset;
+            int out_block_size              = out_L0_node->get_size();
 #if defined(_OPENMP)
-#    pragma omp task default(none)           \
-        firstprivate(out_L0_node, out, beta) \
-        depend(inout : *out_L0_node)
-// priority(max_prio - 1)
-#endif // 'out' must be copied by the thread else stack-use-after-return error
+#    pragma omp task default(none) firstprivate(out_block, out_block_size, beta) depend(inout : *out_block)
+#endif
             {
-                int out_L0_node_offset = out_L0_node->get_offset();
-                int out_L0_node_size   = out_L0_node->get_size();
                 int incx(1);
-                Blas<CoefficientPrecision>::scal(&out_L0_node_size, &beta, out + out_L0_node_offset, &incx);
+                Blas<CoefficientPrecision>::scal(&out_block_size, &beta, out_block, &incx);
             }
         }
     }
 
     for (auto L0_node : L0) {
-        int input_offset  = (*L0_node.*get_input_cluster)().get_offset();
-        int output_offset = (*L0_node.*get_output_cluster)().get_offset();
+        // In the symmetric case, an off-diagonal node is also applied transposed, from in on its output cluster to out on its input cluster:
+        // in a separate task, so that each task writes in the blocks of only one cluster.
+        bool is_off_diagonal_symmetric = sym != 'N' && (*L0_node.*get_input_cluster)().get_offset() != (*L0_node.*get_output_cluster)().get_offset();
+        for (bool transposed : {false, true}) {
+            if (transposed && !is_off_diagonal_symmetric) {
+                continue;
+            }
+            char op                                   = transposed ? trans_sym : trans;
+            const Cluster<CoordinatePrecision> &read  = transposed ? (*L0_node.*get_output_cluster)() : (*L0_node.*get_input_cluster)();
+            const Cluster<CoordinatePrecision> &write = transposed ? (*L0_node.*get_input_cluster)() : (*L0_node.*get_output_cluster)();
+            const CoefficientPrecision *in_node       = in + read.get_offset() - local_input_offset;
+            CoefficientPrecision *out_node            = out + write.get_offset() - local_output_offset;
 
 #if defined(_OPENMP)
-        std::vector<const Cluster<CoordinatePrecision> *> write_cluster, read_cluster;
-        write_cluster = enumerate_dependences((*L0_node.*get_output_cluster)(), out_L0);
-        read_cluster  = enumerate_dependences((*L0_node.*get_input_cluster)(), in_L0);
-
-        // concatenate write_cluster and read_cluster for the symetric case
-        if (sym != 'N') {
-            write_cluster.insert(write_cluster.end(), read_cluster.begin(), read_cluster.end());
-            read_cluster.clear();
-        }
-        auto write_deps_size        = write_cluster.size();
-        auto read_deps_cluster_size = read_cluster.size();
-#    pragma omp task default(none)                                                                                                                                                       \
-        firstprivate(sym, trans_sym, alpha, in, trans, out, write_deps_size, input_offset, output_offset, local_input_offset, local_output_offset, L0_node, write_cluster, read_cluster) \
-        shared(std::cout)                                                                                                                                                                \
-        depend(iterator(it = 0 : write_deps_size), inout : *write_cluster[it])                                                                                                           \
-        depend(iterator(it = 0 : read_deps_cluster_size), in : *read_cluster[it])                                                                                                        \
+            std::vector<CoefficientPrecision *> write_blocks;
+            std::vector<const CoefficientPrecision *> read_blocks;
+            for (auto cluster : enumerate_dependences(write, out_L0)) {
+                write_blocks.push_back(out + cluster->get_offset() - local_output_offset);
+            }
+            for (auto cluster : enumerate_dependences(read, in_L0)) {
+                read_blocks.push_back(in + cluster->get_offset() - local_input_offset);
+            }
+            auto write_deps_size = write_blocks.size();
+            auto read_deps_size  = read_blocks.size();
+#    pragma omp task default(none)                                                     \
+        firstprivate(op, alpha, in_node, out_node, L0_node, write_blocks, read_blocks) \
+        depend(iterator(it = 0 : write_deps_size), inout : *write_blocks[it])          \
+        depend(iterator(it = 0 : read_deps_size), in : *read_blocks[it])               \
         depend(in : *L0_node)
-        // priority(max_prio)
 #else
-        (void)in_L0;
+            (void)in_L0;
 #endif // L0_node must be copied by the thread else heap-use-after-free error
-        {
-            sequential_internal_add_hmatrix_vector_product(trans, alpha, *L0_node, in + input_offset - local_input_offset, CoefficientPrecision(1), out + output_offset - local_output_offset);
-            if (sym != 'N' && input_offset != output_offset) {
-                sequential_internal_add_hmatrix_vector_product(trans_sym, alpha, *L0_node, in + output_offset - local_input_offset, CoefficientPrecision(1), out + input_offset - local_output_offset);
+            {
+                sequential_internal_add_hmatrix_vector_product(op, alpha, *L0_node, in_node, CoefficientPrecision(1), out_node);
             }
         }
     }

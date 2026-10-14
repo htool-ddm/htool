@@ -30,14 +30,14 @@ void internal_lu_solve(ExecutionPolicy &&execution_policy, char trans, const HMa
 #        pragma omp single
 #    endif
             {
-                task_based_internal_lu_solve(trans, A, X, hmatrix_task_dependencies.L0);
+                task_based_internal_lu_solve(trans, A, X, hmatrix_task_dependencies.L0, hmatrix_task_dependencies.target_L0);
             }
         } else if constexpr (std::is_same_v<std::decay_t<ExecutionPolicy>, exec_compat::sequenced_policy>) {
             internal_lu_solve(trans, A, X);
         } else if constexpr (std::is_same_v<std::decay_t<ExecutionPolicy>, omp_task_policy<CoefficientPrecision, CoordinatePrecision>>) {
             update_L0(execution_policy.hmatrix_task_dependencies, A);
             run_task_based(
-                execution_policy.hmatrix_task_dependencies, A, [&]() { internal_lu_solve(trans, A, X); }, [&](auto &L0) { task_based_internal_lu_solve(trans, A, X, L0); });
+                execution_policy.hmatrix_task_dependencies, A, [&]() { internal_lu_solve(trans, A, X); }, [&](auto &L0) { task_based_internal_lu_solve(trans, A, X, L0, execution_policy.hmatrix_task_dependencies.target_L0); });
         } else {
             static_assert(std::is_same_v<std::decay_t<ExecutionPolicy>, exec_compat::sequenced_policy> || std::is_same_v<std::decay_t<ExecutionPolicy>, exec_compat::parallel_policy> || std::is_same_v<std::decay_t<ExecutionPolicy>, omp_task_policy<CoefficientPrecision, CoordinatePrecision>>, "Invalid execution policy for solve.");
         }
@@ -63,14 +63,14 @@ void internal_cholesky_solve(ExecutionPolicy &&execution_policy, char UPLO, cons
 #        pragma omp single
 #    endif
             {
-                task_based_internal_cholesky_solve(UPLO, A, X, hmatrix_task_dependencies.L0);
+                task_based_internal_cholesky_solve(UPLO, A, X, hmatrix_task_dependencies.L0, hmatrix_task_dependencies.target_L0);
             }
         } else if constexpr (std::is_same_v<std::decay_t<ExecutionPolicy>, exec_compat::sequenced_policy>) {
             internal_cholesky_solve(UPLO, A, X);
         } else if constexpr (std::is_same_v<std::decay_t<ExecutionPolicy>, omp_task_policy<CoefficientPrecision, CoordinatePrecision>>) {
             update_L0(execution_policy.hmatrix_task_dependencies, A);
             run_task_based(
-                execution_policy.hmatrix_task_dependencies, A, [&]() { internal_cholesky_solve(UPLO, A, X); }, [&](auto &L0) { task_based_internal_cholesky_solve(UPLO, A, X, L0); });
+                execution_policy.hmatrix_task_dependencies, A, [&]() { internal_cholesky_solve(UPLO, A, X); }, [&](auto &L0) { task_based_internal_cholesky_solve(UPLO, A, X, L0, execution_policy.hmatrix_task_dependencies.target_L0); });
         } else {
             static_assert(std::is_same_v<std::decay_t<ExecutionPolicy>, exec_compat::sequenced_policy> || std::is_same_v<std::decay_t<ExecutionPolicy>, exec_compat::parallel_policy> || std::is_same_v<std::decay_t<ExecutionPolicy>, omp_task_policy<CoefficientPrecision, CoordinatePrecision>>, "Invalid execution policy for solve.");
         }
@@ -96,14 +96,14 @@ void internal_ldlt_solve(ExecutionPolicy &&execution_policy, char symmetry, char
 #        pragma omp single
 #    endif
             {
-                task_based_internal_ldlt_solve(symmetry, UPLO, A, X, hmatrix_task_dependencies.L0);
+                task_based_internal_ldlt_solve(symmetry, UPLO, A, X, hmatrix_task_dependencies.L0, hmatrix_task_dependencies.target_L0);
             }
         } else if constexpr (std::is_same_v<std::decay_t<ExecutionPolicy>, exec_compat::sequenced_policy>) {
             internal_ldlt_solve(symmetry, UPLO, A, X);
         } else if constexpr (std::is_same_v<std::decay_t<ExecutionPolicy>, omp_task_policy<CoefficientPrecision, CoordinatePrecision>>) {
             update_L0(execution_policy.hmatrix_task_dependencies, A);
             run_task_based(
-                execution_policy.hmatrix_task_dependencies, A, [&]() { internal_ldlt_solve(symmetry, UPLO, A, X); }, [&](auto &L0) { task_based_internal_ldlt_solve(symmetry, UPLO, A, X, L0); });
+                execution_policy.hmatrix_task_dependencies, A, [&]() { internal_ldlt_solve(symmetry, UPLO, A, X); }, [&](auto &L0) { task_based_internal_ldlt_solve(symmetry, UPLO, A, X, L0, execution_policy.hmatrix_task_dependencies.target_L0); });
         } else {
             static_assert(std::is_same_v<std::decay_t<ExecutionPolicy>, exec_compat::sequenced_policy> || std::is_same_v<std::decay_t<ExecutionPolicy>, exec_compat::parallel_policy> || std::is_same_v<std::decay_t<ExecutionPolicy>, omp_task_policy<CoefficientPrecision, CoordinatePrecision>>, "Invalid execution policy for solve.");
         }
