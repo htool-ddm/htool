@@ -1,9 +1,9 @@
-#ifndef HTOOL_HMATRIX_LINALG_TRIANGULAR_LDLT_HMATRIX_LRMAT_SOLVE_HPP
-#define HTOOL_HMATRIX_LINALG_TRIANGULAR_LDLT_HMATRIX_LRMAT_SOLVE_HPP
+#ifndef HTOOL_HMATRIX_LINALG_SEQ_TRIANGULAR_LDLT_HMATRIX_LRMAT_SOLVE_HPP
+#define HTOOL_HMATRIX_LINALG_SEQ_TRIANGULAR_LDLT_HMATRIX_LRMAT_SOLVE_HPP
 
-#include "../../misc/misc.hpp"
-#include "../hmatrix.hpp"
-#include "../lrmat/lrmat.hpp"
+#include "../../../misc/misc.hpp"
+#include "../../hmatrix.hpp"
+#include "../../lrmat/lrmat.hpp"
 #include "triangular_ldlt_hmatrix_matrix_solve.hpp"
 
 namespace htool {

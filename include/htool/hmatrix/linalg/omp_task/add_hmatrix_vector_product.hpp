@@ -1,10 +1,11 @@
-#ifndef HTOOL_TASK_BASED_HMATRIX_LINALG_ADD_HMATRIX_VECTOR_PRODUCT_HPP
-#define HTOOL_TASK_BASED_HMATRIX_LINALG_ADD_HMATRIX_VECTOR_PRODUCT_HPP
+#ifndef HTOOL_HMATRIX_LINALG_OMP_TASK_ADD_HMATRIX_VECTOR_PRODUCT_HPP
+#define HTOOL_HMATRIX_LINALG_OMP_TASK_ADD_HMATRIX_VECTOR_PRODUCT_HPP
 
 // #include "../../matrix/linalg/add_matrix_vector_product.hpp"      // for add_mat...
 // #include "../../misc/misc.hpp"                                    // for underly...
-#include "../../wrappers/wrapper_blas.hpp" // for Blas
-#include "../hmatrix.hpp"                  // for HMatrix
+#include "../../../wrappers/wrapper_blas.hpp" // for Blas
+#include "../../hmatrix.hpp"
+#include "../seq/add_hmatrix_vector_product.hpp" // for HMatrix
 // #include "../lrmat/linalg/add_lrmat_vector_product.hpp"           // for add_lrm...
 #include <algorithm> // for transform, max
 // #include <complex>                                                // for complex

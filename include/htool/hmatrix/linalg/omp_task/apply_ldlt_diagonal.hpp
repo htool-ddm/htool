@@ -1,13 +1,13 @@
-#ifndef HTOOL_TASK_BASED_HMATRIX_LINALG_APPLY_LDLT_DIAGONAL_HPP
-#define HTOOL_TASK_BASED_HMATRIX_LINALG_APPLY_LDLT_DIAGONAL_HPP
+#ifndef HTOOL_HMATRIX_LINALG_OMP_TASK_APPLY_LDLT_DIAGONAL_HPP
+#define HTOOL_HMATRIX_LINALG_OMP_TASK_APPLY_LDLT_DIAGONAL_HPP
 
-#include "../../clustering/cluster_node.hpp"
-#include "../../matrix/linalg/transpose.hpp"
-#include "../../matrix/matrix.hpp"
-#include "../../misc/logger.hpp"
-#include "../hmatrix.hpp"
-#include "../task_dependencies.hpp"
-#include "apply_ldlt_diagonal.hpp"
+#include "../../../clustering/cluster_node.hpp"
+#include "../../../matrix/linalg/transpose.hpp"
+#include "../../../matrix/matrix.hpp"
+#include "../../../misc/logger.hpp"
+#include "../../hmatrix.hpp"
+#include "../../task_dependencies.hpp"
+#include "../seq/apply_ldlt_diagonal.hpp"
 #include <vector>
 
 // to remove warning from depend(iterator(it = 0 : read_deps_size), in : *read_deps[it])
@@ -62,7 +62,7 @@ void task_based_internal_apply_ldlt_diagonal(char symmetry, char side, char UPLO
 }
 
 /**
- * @brief Task-based internal_apply_ldlt_diagonal with side='L' on the row-major right-hand side Xt (see task_based_triangular_hmatrix_matrix_solve.hpp): X := D^-1 X, with one task per diagonal node of L0_A.
+ * @brief Task-based internal_apply_ldlt_diagonal with side='L' on the row-major right-hand side Xt (see omp_task/triangular_hmatrix_matrix_solve.hpp): X := D^-1 X, with one task per diagonal node of L0_A.
  */
 template <typename CoefficientPrecision, typename CoordinatePrecision>
 void task_based_internal_apply_ldlt_diagonal_row_major(char symmetry, char UPLO, CoefficientPrecision *Xt, int mu, int X_offset, const std::vector<const HMatrix<CoefficientPrecision, CoordinatePrecision> *> &L0_A) {

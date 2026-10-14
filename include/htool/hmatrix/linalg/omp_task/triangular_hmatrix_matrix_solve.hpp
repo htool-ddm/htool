@@ -1,19 +1,19 @@
-#ifndef HTOOL_TASK_BASED_HMATRIX_LINALG_TRIANGULAR_HMATRIX_MATRIX_SOLVE_HPP
-#define HTOOL_TASK_BASED_HMATRIX_LINALG_TRIANGULAR_HMATRIX_MATRIX_SOLVE_HPP
+#ifndef HTOOL_HMATRIX_LINALG_OMP_TASK_TRIANGULAR_HMATRIX_MATRIX_SOLVE_HPP
+#define HTOOL_HMATRIX_LINALG_OMP_TASK_TRIANGULAR_HMATRIX_MATRIX_SOLVE_HPP
 
-#include "../../clustering/cluster_node.hpp"          // for Cluster
-#include "../../matrix/linalg/transpose.hpp"          // for transpose
-#include "../../matrix/matrix.hpp"                    // for Matrix
-#include "../../misc/logger.hpp"                      // for Logger
-#include "../../misc/misc.hpp"                        // for conj_if_complex
-#include "../hmatrix.hpp"                             // for HMatrix
-#include "../task_dependencies.hpp"                   // for enumerate_dependences
-#include "add_hmatrix_matrix_product_row_major.hpp"   // for internal_add_hmatrix_matrix_product_row_major
-#include "task_based_add_hmatrix_hmatrix_product.hpp" // for fill_clusters
-#include "triangular_hmatrix_matrix_solve.hpp"        // for internal_triangular_hmatrix_matrix_solve_row_major
-#include "triangular_ldlt_hmatrix_matrix_solve.hpp"   // for internal_triangular_ldlt_hmatrix_matrix_solve_row_major
-#include <algorithm>                                  // for find, sort
-#include <vector>                                     // for vector
+#include "../../../clustering/cluster_node.hpp"            // for Cluster
+#include "../../../matrix/linalg/transpose.hpp"            // for transpose
+#include "../../../matrix/matrix.hpp"                      // for Matrix
+#include "../../../misc/logger.hpp"                        // for Logger
+#include "../../../misc/misc.hpp"                          // for conj_if_complex
+#include "../../hmatrix.hpp"                               // for HMatrix
+#include "../../task_dependencies.hpp"                     // for enumerate_dependences
+#include "../seq/add_hmatrix_matrix_product_row_major.hpp" // for internal_add_hmatrix_matrix_product_row_major
+#include "../seq/triangular_hmatrix_matrix_solve.hpp"      // for internal_triangular_hmatrix_matrix_solve_row_major
+#include "../seq/triangular_ldlt_hmatrix_matrix_solve.hpp" // for internal_triangular_ldlt_hmatrix_matrix_solve_row_major
+#include "add_hmatrix_hmatrix_product.hpp"                 // for fill_clusters
+#include <algorithm>                                       // for find, sort
+#include <vector>                                          // for vector
 
 // to remove warning from depend(iterator(it = 0 : read_deps_size), in : *read_deps[it])
 #if defined(__clang__)

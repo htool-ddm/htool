@@ -1,6 +1,6 @@
 #include <htool/hmatrix/hmatrix.hpp>
 #include <htool/hmatrix/hmatrix_output.hpp>
-#include <htool/hmatrix/linalg/add_hmatrix_lrmat_product.hpp>
+#include <htool/hmatrix/linalg/seq/add_hmatrix_lrmat_product.hpp>
 #include <htool/hmatrix/lrmat/SVD.hpp> // for SVD
 #include <htool/hmatrix/lrmat/linalg/add_matrix_lrmat_product.hpp>
 #include <htool/hmatrix/lrmat/lrmat.hpp>

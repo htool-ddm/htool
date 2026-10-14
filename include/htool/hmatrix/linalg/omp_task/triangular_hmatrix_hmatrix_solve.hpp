@@ -1,16 +1,17 @@
-#ifndef HTOOL_TASK_BASED_HMATRIX_LINALG_TRIANGULAR_HMATRIX_HMATRIX_SOLVE_HPP
-#define HTOOL_TASK_BASED_HMATRIX_LINALG_TRIANGULAR_HMATRIX_HMATRIX_SOLVE_HPP
+#ifndef HTOOL_HMATRIX_LINALG_OMP_TASK_TRIANGULAR_HMATRIX_HMATRIX_SOLVE_HPP
+#define HTOOL_HMATRIX_LINALG_OMP_TASK_TRIANGULAR_HMATRIX_HMATRIX_SOLVE_HPP
 
-#include "../../clustering/cluster_node.hpp"
-#include "../../matrix/linalg/factorization.hpp"
-#include "../../matrix/matrix.hpp"
-#include "../../misc/logger.hpp"
-#include "../../misc/misc.hpp"
-#include "../hmatrix.hpp"
-#include "task_based_add_hmatrix_hmatrix_product.hpp"
-#include "triangular_hmatrix_lrmat_solve.hpp"
-#include "triangular_hmatrix_matrix_solve.hpp"
-#include "triangular_ldlt_hmatrix_hmatrix_solve.hpp"
+#include "../../../clustering/cluster_node.hpp"
+#include "../../../matrix/linalg/factorization.hpp"
+#include "../../../matrix/matrix.hpp"
+#include "../../../misc/logger.hpp"
+#include "../../../misc/misc.hpp"
+#include "../../hmatrix.hpp"
+#include "../seq/scale.hpp"
+#include "../seq/triangular_hmatrix_lrmat_solve.hpp"
+#include "../seq/triangular_hmatrix_matrix_solve.hpp"
+#include "../seq/triangular_ldlt_hmatrix_hmatrix_solve.hpp"
+#include "add_hmatrix_hmatrix_product.hpp"
 #include <memory>
 #include <string>
 #include <vector>
@@ -48,7 +49,7 @@ void task_based_internal_triangular_hmatrix_hmatrix_solve_with(LeafSolve leaf_so
         depend(inout : *L0_node)
 #endif
             {
-                scale(alpha, *B_node);
+                sequential_scale(alpha, *B_node);
             }
         }
     }

@@ -13,10 +13,10 @@
 #include <htool/hmatrix/linalg/add_hmatrix_vector_product.hpp>
 // #include <htool/hmatrix/linalg/factorization.hpp>
 // #include <htool/hmatrix/linalg/task_based_add_hmatrix_hmatrix_product.hpp>      // for task_bas...
-#include <htool/hmatrix/linalg/task_based_add_hmatrix_vector_product.hpp> // for task_bas...
+#include <htool/hmatrix/linalg/omp_task/add_hmatrix_vector_product.hpp> // for task_bas...
 // #include <htool/hmatrix/linalg/task_based_factorization.hpp>                    // for task_based_lu_factorization
-#include <htool/hmatrix/linalg/task_based_apply_ldlt_diagonal.hpp> // for task_based_internal_apply_ldlt_diagonal
-#include <htool/matrix/linalg/factorization.hpp>                   // for ldlt_factorization
+#include <htool/hmatrix/linalg/omp_task/apply_ldlt_diagonal.hpp> // for task_based_internal_apply_ldlt_diagonal
+#include <htool/matrix/linalg/factorization.hpp>                 // for ldlt_factorization
 
 #include <htool/hmatrix/lrmat/SVD.hpp>
 #include <htool/hmatrix/task_dependencies.hpp>         // for enumerate_dependence, find_l0...

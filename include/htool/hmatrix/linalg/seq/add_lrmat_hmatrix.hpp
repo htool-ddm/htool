@@ -1,14 +1,14 @@
-#ifndef HTOOL_HMATRIX_LINALG_ADD_LOW_RANK_MATRIX_HMATRIX_HPP
-#define HTOOL_HMATRIX_LINALG_ADD_LOW_RANK_MATRIX_HMATRIX_HPP
+#ifndef HTOOL_HMATRIX_LINALG_SEQ_ADD_LRMAT_HMATRIX_HPP
+#define HTOOL_HMATRIX_LINALG_SEQ_ADD_LRMAT_HMATRIX_HPP
 
-#include "../../basic_types/tree.hpp"          // for preorder_tree_traversal
-#include "../../matrix/matrix.hpp"             // for Matrix
-#include "../../wrappers/wrapper_blas.hpp"     // for Blas
-#include "../hmatrix.hpp"                      // for HMatrix
-#include "../lrmat/linalg/add_lrmat_lrmat.hpp" // for add_lrmat_lrmat
-#include "../lrmat/lrmat.hpp"                  // for LowRankMatrix
-#include <algorithm>                           // for copy_n
-#include <vector>                              // for vector
+#include "../../../basic_types/tree.hpp"          // for preorder_tree_traversal
+#include "../../../matrix/matrix.hpp"             // for Matrix
+#include "../../../wrappers/wrapper_blas.hpp"     // for Blas
+#include "../../hmatrix.hpp"                      // for HMatrix
+#include "../../lrmat/linalg/add_lrmat_lrmat.hpp" // for add_lrmat_lrmat
+#include "../../lrmat/lrmat.hpp"                  // for LowRankMatrix
+#include <algorithm>                              // for copy_n
+#include <vector>                                 // for vector
 namespace htool {
 
 template <typename CoefficientPrecision, typename CoordinatePrecision = underlying_type<CoefficientPrecision>>

@@ -1,12 +1,12 @@
-#ifndef HTOOL_HMATRIX_LINALG_TRIANGULAR_LDLT_HMATRIX_HMATRIX_SOLVE_ROW_MAJOR_HPP
-#define HTOOL_HMATRIX_LINALG_TRIANGULAR_LDLT_HMATRIX_HMATRIX_SOLVE_ROW_MAJOR_HPP
+#ifndef HTOOL_HMATRIX_LINALG_SEQ_TRIANGULAR_LDLT_HMATRIX_MATRIX_SOLVE_HPP
+#define HTOOL_HMATRIX_LINALG_SEQ_TRIANGULAR_LDLT_HMATRIX_MATRIX_SOLVE_HPP
 
-#include "../../clustering/cluster_node.hpp"
-#include "../../matrix/linalg/factorization.hpp"
-#include "../../matrix/linalg/transpose.hpp"
-#include "../../matrix/matrix.hpp"
-#include "../../misc/misc.hpp"
-#include "../hmatrix.hpp"
+#include "../../../clustering/cluster_node.hpp"
+#include "../../../matrix/linalg/factorization.hpp"
+#include "../../../matrix/linalg/transpose.hpp"
+#include "../../../matrix/matrix.hpp"
+#include "../../../misc/misc.hpp"
+#include "../../hmatrix.hpp"
 #include "add_hmatrix_matrix_product_row_major.hpp"
 #include <vector>
 

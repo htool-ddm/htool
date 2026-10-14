@@ -1,59 +1,39 @@
 #ifndef HTOOL_HMATRIX_LINALG_SCALE_HPP
 #define HTOOL_HMATRIX_LINALG_SCALE_HPP
 
-#include "../hmatrix.hpp" // for HMatrix
-#include "../lrmat/linalg/scale.hpp"
-#include "htool/basic_types/tree.hpp" // for preorder_tree_traversal
-#include <vector>                     // for vector
+#include "../execution_policies.hpp"
+#include "../hmatrix.hpp"
+#include "omp/scale.hpp"
+#include "seq/scale.hpp"
 
 namespace htool {
 
-template <typename CoefficientPrecision, typename CoordinatePrecision = underlying_type<CoefficientPrecision>>
-void openmp_scale(CoefficientPrecision da, HMatrix<CoefficientPrecision, CoordinatePrecision> &A) {
-    std::vector<HMatrix<CoefficientPrecision, CoordinatePrecision> *> leaves;
-    preorder_tree_traversal(A, [&leaves](HMatrix<CoefficientPrecision, CoordinatePrecision> &current_node) {
-        if (!current_node.is_hierarchical()) {
-            leaves.push_back(&current_node);
-        }
-    });
-
-#if defined(_OPENMP)
-#    pragma omp parallel
-#endif
-    {
-#if defined(_OPENMP)
-#    pragma omp for schedule(guided) nowait
-#endif
-        for (int b = 0; b < leaves.size(); b++) {
-            if (leaves[b]->is_dense()) {
-                scale(da, *leaves[b]->get_dense_data());
-            } else {
-                scale(da, *leaves[b]->get_low_rank_data());
-            }
-        }
-    }
-}
-
-template <typename CoefficientPrecision, typename CoordinatePrecision = underlying_type<CoefficientPrecision>>
-void sequential_scale(CoefficientPrecision da, HMatrix<CoefficientPrecision, CoordinatePrecision> &A) {
-    std::vector<HMatrix<CoefficientPrecision, CoordinatePrecision> *> leaves;
-    preorder_tree_traversal(A, [&leaves](HMatrix<CoefficientPrecision, CoordinatePrecision> &current_node) {
-        if (!current_node.is_hierarchical()) {
-            leaves.push_back(&current_node);
-        }
-    });
-    for (int b = 0; b < leaves.size(); b++) {
-        if (leaves[b]->is_dense()) {
-            scale(da, *leaves[b]->get_dense_data());
+template <typename ExecutionPolicy, typename CoefficientPrecision, typename CoordinatePrecision = underlying_type<CoefficientPrecision>>
+void scale(ExecutionPolicy &&, CoefficientPrecision da, HMatrix<CoefficientPrecision, CoordinatePrecision> &A) {
+#if __cplusplus >= 201703L
+    if constexpr (is_execution_policy_v<std::decay_t<ExecutionPolicy>>) {
+        if constexpr (std::is_same_v<std::decay_t<ExecutionPolicy>, exec_compat::parallel_policy>) {
+            openmp_scale(da, A);
+        } else if constexpr (std::is_same_v<std::decay_t<ExecutionPolicy>, exec_compat::sequenced_policy>) {
+            sequential_scale(da, A);
         } else {
-            scale(da, *leaves[b]->get_low_rank_data());
+            static_assert(std::is_same_v<std::decay_t<ExecutionPolicy>, exec_compat::sequenced_policy> || std::is_same_v<std::decay_t<ExecutionPolicy>, exec_compat::parallel_policy>, "Invalid execution policy for scale.");
         }
+    } else {
+        static_assert(is_execution_policy_v<std::decay_t<ExecutionPolicy>>, "Invalid execution policy for scale.");
     }
+#else
+    sequential_scale(da, A);
+#endif
 }
 
 template <typename CoefficientPrecision, typename CoordinatePrecision = underlying_type<CoefficientPrecision>>
 void scale(CoefficientPrecision da, HMatrix<CoefficientPrecision, CoordinatePrecision> &A) {
-    sequential_scale(da, A);
+#if __cplusplus >= 201703L
+    scale(exec_compat::seq, da, A);
+#else
+    scale(nullptr, da, A);
+#endif
 }
 
 } // namespace htool

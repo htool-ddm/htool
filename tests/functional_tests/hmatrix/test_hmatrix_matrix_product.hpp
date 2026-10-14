@@ -1,9 +1,10 @@
 #include <htool/basic_types/vector.hpp>
 #include <htool/hmatrix/hmatrix.hpp>
 #include <htool/hmatrix/linalg/add_hmatrix_matrix_product.hpp>
-#include <htool/hmatrix/linalg/add_hmatrix_matrix_product_row_major.hpp>
 #include <htool/hmatrix/linalg/add_hmatrix_vector_product.hpp>
-#include <htool/hmatrix/linalg/add_matrix_hmatrix_product.hpp>
+#include <htool/hmatrix/linalg/scale.hpp>
+#include <htool/hmatrix/linalg/seq/add_hmatrix_matrix_product_row_major.hpp>
+#include <htool/hmatrix/linalg/seq/add_matrix_hmatrix_product.hpp>
 #include <htool/hmatrix/lrmat/SVD.hpp>
 #include <htool/hmatrix/lrmat/lrmat.hpp>
 #include <htool/hmatrix/tree_builder/tree_builder.hpp>
@@ -173,12 +174,20 @@ bool test_hmatrix_matrix_product(const TestCaseProduct<T, GeneratorTestType> &te
     is_error = is_error || !(error < std::max(epsilon, lrmat_tolerance) * (1 + additional_lrmat_sum_tolerance));
     cout << "> Errors on a hmatrix matrix product to lrmat with sum: " << error << '\n';
 
-    // matrix_test = C_dense;
-    // scale(scaling_coefficient, root_hmatrix);
-    // add_hmatrix_matrix_product(transa, transb, alpha, root_hmatrix, B_dense, scaling_coefficient * beta, matrix_test);
-    // error    = normFrob(scaled_matrix_result_w_matrix_sum - matrix_test) / normFrob(scaled_matrix_result_w_matrix_sum);
-    // is_error = is_error || !(error < epsilon);
-    // cout << "> Errors on a scaled hmatrix matrix product: " << error << '\n';
+    // Scale
+    matrix_test = C_dense;
+    scale(exec_compat::par, transa != 'C' ? scaling_coefficient : conj_if_complex(scaling_coefficient), root_hmatrix);
+    internal_add_hmatrix_matrix_product(transa, transb, alpha, root_hmatrix, B_dense, scaling_coefficient * beta, matrix_test);
+    error    = normFrob(scaled_matrix_result_w_matrix_sum - matrix_test) / normFrob(scaled_matrix_result_w_matrix_sum);
+    is_error = is_error || !(error < epsilon);
+    cout << "> Errors on a scaled hmatrix matrix product with parallel scale: " << error << '\n';
+
+    matrix_test = C_dense;
+    scale(exec_compat::seq, transa != 'C' ? T(1) / scaling_coefficient : T(1) / conj_if_complex(scaling_coefficient), root_hmatrix);
+    internal_add_hmatrix_matrix_product(transa, transb, alpha, root_hmatrix, B_dense, beta, matrix_test);
+    error    = normFrob(matrix_result_w_matrix_sum - matrix_test) / normFrob(matrix_result_w_matrix_sum);
+    is_error = is_error || !(error < epsilon);
+    cout << "> Errors on a hmatrix matrix product after sequential scale: " << error << '\n';
 
     return is_error;
 }

@@ -4,6 +4,7 @@
 #include "../interfaces/virtual_local_solver.hpp"
 #include "htool/hmatrix/hmatrix.hpp"
 #include "htool/hmatrix/linalg/factorization.hpp"
+#include "htool/hmatrix/linalg/solve.hpp"
 #include "htool/hmatrix/linalg/triangular_hmatrix_matrix_solve.hpp"
 #include "htool/matrix/linalg/factorization.hpp"
 #include "htool/matrix/matrix.hpp"
