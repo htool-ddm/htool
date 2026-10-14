@@ -72,6 +72,9 @@ struct is_execution_policy<exec_compat::parallel_policy> : std::true_type {};
  * tasks of the factorization with the same policy. The task_based_internal_*_solve_row_major
  * functions, called with that L0, only create these tasks, like the factorizations:
  * their right-hand side is only complete after a taskwait.
+ *
+ * add_hmatrix_vector_product uses the L0 in the same way as the solves, with
+ * target_L0 and source_L0 as dependencies on the output and input vectors.
  */
 template <typename CoefficientPrecision, typename CoordinatePrecision = underlying_type<CoefficientPrecision>>
 struct omp_task_policy {

@@ -5,6 +5,7 @@
 #include <htool/clustering/tree_builder/tree_builder.hpp>    // for ClusterTreeBuilder
 #include <htool/hmatrix/hmatrix.hpp>                         // for HMatrix
 #include <htool/hmatrix/hmatrix_output.hpp>                  // for get_hmatrix_information
+#include <htool/hmatrix/linalg/add_hmatrix_vector_product.hpp>
 #include <htool/hmatrix/linalg/factorization.hpp>
 #include <htool/hmatrix/tree_builder/tree_builder.hpp>       // for HMatrix...
 #include <htool/matrix/linalg/add_matrix_matrix_product.hpp> // for add_her...
@@ -51,6 +52,9 @@ bool test_task_based_hmatrix_full_lu(char trans, int n1, int n2, htool::underlyi
 
     std::unique_ptr<HMatrix<T, htool::underlying_type<T>>> A;
     matrix_test = B_dense;
+    std::vector<T> x(ni_A);
+    Matrix<T> b(no_A, 1);
+    generate_random_vector(x);
 #if defined(_OPENMP)
 #    pragma omp parallel
 #    pragma omp single
@@ -59,13 +63,22 @@ bool test_task_based_hmatrix_full_lu(char trans, int n1, int n2, htool::underlyi
         // Assembly
         A = std::make_unique<HMatrix<T, htool::underlying_type<T>>>(hmatrix_tree_builder_A.build(policy, *test_case.operator_in_user_numbering_A, *test_case.root_cluster_A_output, *test_case.root_cluster_A_input));
 
+        // Right-hand side computed with the HMatrix, whose tasks wait for the ones of the assembly
+        add_hmatrix_vector_product(policy, trans, T(1), *A, x.data(), T(0), b.data());
+
         // Factorization and solve, whose tasks wait for the ones of the factorization
         lu_factorization(policy, *A);
         lu_solve(policy, trans, *A, matrix_test);
+        lu_solve(policy, trans, *A, b);
     }
     error    = normFrob(X_dense - matrix_test) / normFrob(X_dense);
     is_error = is_error || !(error < epsilon * margin);
     cout << "> Errors on hmatrix lu solve: " << error << '\n';
+    cout << "> is_error: " << is_error << "\n";
+
+    error    = norm2(x - get_col(b, 0)) / norm2(x);
+    is_error = is_error || !(error < epsilon * margin);
+    cout << "> Errors on hmatrix lu solve with a right-hand side from a task-based product: " << error << '\n';
     cout << "> is_error: " << is_error << "\n";
 
     // Row-major solve, whose tasks are only waited for at the end of the region
@@ -277,6 +290,9 @@ bool test_task_based_hmatrix_full_ldlt(char UPLO, char symmetry, int n1, int n2,
 
     std::unique_ptr<HMatrix<T, htool::underlying_type<T>>> A;
     matrix_test = B_dense;
+    std::vector<T> x(ni_A);
+    Matrix<T> b(no_A, 1);
+    generate_random_vector(x);
 #if defined(_OPENMP)
 #    pragma omp parallel
 #    pragma omp single
@@ -285,14 +301,23 @@ bool test_task_based_hmatrix_full_ldlt(char UPLO, char symmetry, int n1, int n2,
         // Assembly
         A = std::make_unique<HMatrix<T, htool::underlying_type<T>>>(hmatrix_tree_builder_A.build(policy, *test_case.operator_in_user_numbering_A, *test_case.root_cluster_A_output, *test_case.root_cluster_A_input));
 
+        // Right-hand side computed with the HMatrix, whose tasks wait for the ones of the assembly
+        add_hmatrix_vector_product(policy, 'N', T(1), *A, x.data(), T(0), b.data());
+
         // Factorization and solve, whose tasks wait for the ones of the factorization
         ldlt_factorization(policy, symmetry, UPLO, *A);
         ldlt_solve(policy, symmetry, UPLO, *A, matrix_test);
+        ldlt_solve(policy, symmetry, UPLO, *A, b);
     }
 
     error    = normFrob(X_dense - matrix_test) / normFrob(X_dense);
     is_error = is_error || !(error < epsilon * margin);
     cout << "> Errors on hmatrix " << (symmetry == 'H' ? "hermitian" : "symmetric") << " ldlt solve: " << error << '\n';
+    cout << "> is_error: " << is_error << "\n";
+
+    error    = norm2(x - get_col(b, 0)) / norm2(x);
+    is_error = is_error || !(error < epsilon * margin);
+    cout << "> Errors on hmatrix " << (symmetry == 'H' ? "hermitian" : "symmetric") << " ldlt solve with a right-hand side from a task-based product: " << error << '\n';
     cout << "> is_error: " << is_error << "\n";
 
     return is_error;

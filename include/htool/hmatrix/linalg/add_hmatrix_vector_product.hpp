@@ -6,19 +6,21 @@
 #include "../execution_policies.hpp"
 #include "../hmatrix.hpp"
 #include "omp/add_hmatrix_vector_product.hpp"
+#include "omp_task/add_hmatrix_vector_product.hpp"
 #include "seq/add_hmatrix_vector_product.hpp"
 #include <vector>
 
 namespace htool {
 
 template <typename ExecutionPolicy, typename CoefficientPrecision, typename CoordinatePrecision = underlying_type<CoefficientPrecision>>
-void add_hmatrix_vector_product(ExecutionPolicy &&, char trans, CoefficientPrecision alpha, const HMatrix<CoefficientPrecision, CoordinatePrecision> &A, const CoefficientPrecision *in, CoefficientPrecision beta, CoefficientPrecision *out, CoefficientPrecision *buffer = nullptr) {
+void add_hmatrix_vector_product(ExecutionPolicy &&execution_policy, char trans, CoefficientPrecision alpha, const HMatrix<CoefficientPrecision, CoordinatePrecision> &A, const CoefficientPrecision *in, CoefficientPrecision beta, CoefficientPrecision *out, CoefficientPrecision *buffer = nullptr) {
     auto &source_cluster = A.get_source_cluster();
     auto &target_cluster = A.get_target_cluster();
     std::vector<CoefficientPrecision> tmp(buffer == nullptr ? target_cluster.get_size() + source_cluster.get_size() : 0, 0);
     CoefficientPrecision *buffer_ptr = buffer == nullptr ? tmp.data() : buffer;
     user_to_cluster(source_cluster, in, buffer_ptr);
     user_to_cluster(target_cluster, out, buffer_ptr + source_cluster.get_size());
+    (void)execution_policy; // trick to avoid triggering unused parameter. C++17 -> use [[maybe_unused]] attribute
 
 #if __cplusplus >= 201703L
     if constexpr (is_execution_policy_v<std::decay_t<ExecutionPolicy>>) {
@@ -26,8 +28,23 @@ void add_hmatrix_vector_product(ExecutionPolicy &&, char trans, CoefficientPreci
             openmp_internal_add_hmatrix_vector_product(trans, alpha, A, buffer_ptr, beta, buffer_ptr + source_cluster.get_size());
         } else if constexpr (std::is_same_v<std::decay_t<ExecutionPolicy>, exec_compat::sequenced_policy>) {
             sequential_internal_add_hmatrix_vector_product(trans, alpha, A, buffer_ptr, beta, buffer_ptr + source_cluster.get_size());
+        } else if constexpr (std::is_same_v<std::decay_t<ExecutionPolicy>, omp_task_policy<CoefficientPrecision, CoordinatePrecision>>) {
+            auto &hmatrix_task_dependencies = execution_policy.hmatrix_task_dependencies;
+            update_L0(hmatrix_task_dependencies, A);
+            if (hmatrix_task_dependencies.target_L0.empty() || hmatrix_task_dependencies.source_L0.empty()) {
+                hmatrix_task_dependencies.set_cluster_L0s(A);
+            }
+            const auto &in_L0  = trans == 'N' ? hmatrix_task_dependencies.source_L0 : hmatrix_task_dependencies.target_L0;
+            const auto &out_L0 = trans == 'N' ? hmatrix_task_dependencies.target_L0 : hmatrix_task_dependencies.source_L0;
+            run_task_based(
+                hmatrix_task_dependencies, A, [&]() { sequential_internal_add_hmatrix_vector_product(trans, alpha, A, buffer_ptr, beta, buffer_ptr + source_cluster.get_size()); }, [&](auto &L0) {
+                    task_based_internal_add_hmatrix_vector_product(trans, alpha, A, buffer_ptr, beta, buffer_ptr + source_cluster.get_size(), L0, in_L0, out_L0);
+#    if defined(_OPENMP)
+#        pragma omp taskwait
+#    endif
+                });
         } else {
-            static_assert(std::is_same_v<std::decay_t<ExecutionPolicy>, exec_compat::sequenced_policy> || std::is_same_v<std::decay_t<ExecutionPolicy>, exec_compat::parallel_policy>, "Invalid execution policy for add_hmatrix_vector_product.");
+            static_assert(std::is_same_v<std::decay_t<ExecutionPolicy>, exec_compat::sequenced_policy> || std::is_same_v<std::decay_t<ExecutionPolicy>, exec_compat::parallel_policy> || std::is_same_v<std::decay_t<ExecutionPolicy>, omp_task_policy<CoefficientPrecision, CoordinatePrecision>>, "Invalid execution policy for add_hmatrix_vector_product.");
         }
     } else {
         static_assert(is_execution_policy_v<std::decay_t<ExecutionPolicy>>, "Invalid execution policy for add_hmatrix_vector_product.");

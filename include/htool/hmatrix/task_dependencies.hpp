@@ -15,9 +15,18 @@ struct HMatrixTaskDependencies {
     int max_number_of_nodes                                                                              = 64; // TODO:add better default value
     std::function<std::size_t(const HMatrix<CoefficientPrecision, CoordinatePrecision> &)> cost_function = &uniform_cost_function<CoefficientPrecision, CoordinatePrecision>;
     std::vector<const HMatrix<CoefficientPrecision, CoordinatePrecision> *> L0;
+    // Cuts of the target and source cluster trees, used as dependencies on the output and input vectors of products.
+    // Set with L0 by set_L0; if L0 is assigned directly, they are recomputed by the products only when empty.
+    std::vector<const Cluster<CoordinatePrecision> *> target_L0, source_L0;
 
     void set_L0(const HMatrix<CoefficientPrecision, CoordinatePrecision> &hmatrix) {
         L0 = find_l0(hmatrix, max_number_of_nodes, cost_function);
+        set_cluster_L0s(hmatrix);
+    }
+
+    void set_cluster_L0s(const HMatrix<CoefficientPrecision, CoordinatePrecision> &hmatrix) {
+        target_L0 = find_l0(hmatrix.get_target_cluster(), max_number_of_nodes);
+        source_L0 = find_l0(hmatrix.get_source_cluster(), max_number_of_nodes);
     }
 
     // True if L0 is a cut of the block tree of hmatrix: every leaf of hmatrix has exactly one node of L0 among itself and its ancestors.
