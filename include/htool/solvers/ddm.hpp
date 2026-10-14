@@ -496,8 +496,8 @@ DDM<CoefficientPrecision, HPDDMCustomLocalSolver> make_DDM_solver_w_custom_local
     return make_DDM_solver_w_custom_local_solver(exec_compat::seq, distributed_operator, local_hmatrix, neighbors, intersections, use_permutation, is_positive_definite);
 }
 
-template <typename CoefficientPrecision, typename CoordinatePrecision = underlying_type<CoefficientPrecision>>
-DDM<CoefficientPrecision, HPDDMCustomLocalSolver> make_DDM_solver_w_custom_local_solver(const DistributedOperator<CoefficientPrecision> &distributed_operator, HMatrix<CoefficientPrecision, CoordinatePrecision> &local_hmatrix, Matrix<CoefficientPrecision> &B, Matrix<CoefficientPrecision> &C, Matrix<CoefficientPrecision> &D, const std::vector<int> &neighbors, const std::vector<std::vector<int>> &intersections, bool is_positive_definite = false) {
+template <typename ExecutionPolicy, typename CoefficientPrecision, typename CoordinatePrecision = underlying_type<CoefficientPrecision>, typename = std::enable_if_t<is_execution_policy_v<std::decay_t<ExecutionPolicy>>>>
+DDM<CoefficientPrecision, HPDDMCustomLocalSolver> make_DDM_solver_w_custom_local_solver(ExecutionPolicy &&execution_policy, const DistributedOperator<CoefficientPrecision> &distributed_operator, HMatrix<CoefficientPrecision, CoordinatePrecision> &local_hmatrix, Matrix<CoefficientPrecision> &B, Matrix<CoefficientPrecision> &C, Matrix<CoefficientPrecision> &D, const std::vector<int> &neighbors, const std::vector<std::vector<int>> &intersections, bool is_positive_definite = false) {
     int n = local_hmatrix.get_target_cluster().get_size() + D.nb_rows();
 
     // Timing
@@ -513,7 +513,7 @@ DDM<CoefficientPrecision, HPDDMCustomLocalSolver> make_DDM_solver_w_custom_local
     std::unique_ptr<HPDDMOperator<CoefficientPrecision, HPDDMCustomLocalSolver>> hpddm_op = std::make_unique<HPDDMOperator<CoefficientPrecision, HPDDMCustomLocalSolver>>(&distributed_operator);
     hpddm_op->initialize(n, sym, nullptr, neighbors, intersections); // we should not give a local dense matrix
 
-    auto local_hmatrix_solver = std::make_unique<LocalHMatrixPlusOverlapSolver<CoefficientPrecision, CoordinatePrecision>>(local_hmatrix, B, C, D, is_positive_definite);
+    auto local_hmatrix_solver = std::make_unique<LocalHMatrixPlusOverlapSolver<CoefficientPrecision, CoordinatePrecision, std::decay_t<ExecutionPolicy>>>(std::forward<ExecutionPolicy>(execution_policy), local_hmatrix, B, C, D, is_positive_definite);
     hpddm_op->getSolver().set_local_solver(std::move(local_hmatrix_solver));
 
     mytime = MPI_Wtime() - time;
@@ -525,6 +525,11 @@ DDM<CoefficientPrecision, HPDDMCustomLocalSolver> make_DDM_solver_w_custom_local
     ddm_solver.set_infos("DDM_setup_one_level_max", NbrToStr(maxtime));
 
     return ddm_solver;
+}
+
+template <typename CoefficientPrecision, typename CoordinatePrecision = underlying_type<CoefficientPrecision>>
+DDM<CoefficientPrecision, HPDDMCustomLocalSolver> make_DDM_solver_w_custom_local_solver(const DistributedOperator<CoefficientPrecision> &distributed_operator, HMatrix<CoefficientPrecision, CoordinatePrecision> &local_hmatrix, Matrix<CoefficientPrecision> &B, Matrix<CoefficientPrecision> &C, Matrix<CoefficientPrecision> &D, const std::vector<int> &neighbors, const std::vector<std::vector<int>> &intersections, bool is_positive_definite = false) {
+    return make_DDM_solver_w_custom_local_solver(exec_compat::seq, distributed_operator, local_hmatrix, B, C, D, neighbors, intersections, is_positive_definite);
 }
 
 } // namespace htool

@@ -1,12 +1,13 @@
-#include "test_solver_ddm.hpp"        // for test_solver_ddm
-#include "test_solver_wo_overlap.hpp" // for test_solver_wo_overlap
-#include <htool/solvers/utility.hpp>  // for DDMSolverBuilder
-#include <iostream>                   // for cout
-#include <mpi.h>                      // for MPI_Init
-#include <string>                     // for string
-#include <utility>                    // for forward
+#include "test_solver_ddm.hpp"                // for test_solver_ddm
+#include "test_solver_ddm_adding_overlap.hpp" // for test_solver_ddm_adding_overlap
+#include "test_solver_wo_overlap.hpp"         // for test_solver_wo_overlap
+#include <htool/solvers/utility.hpp>          // for DDMSolverBuilder
+#include <iostream>                           // for cout
+#include <mpi.h>                              // for MPI_Init
+#include <string>                             // for string
+#include <utility>                            // for forward
 
-// DDMSolverBuilder factorizing its local HMatrix with ExecutionPolicy (and building it, when it does)
+// DDMSolverBuilder factorizing and solving with its local HMatrix with ExecutionPolicy (and building it, when it does)
 template <typename ExecutionPolicy, typename CoefficientPrecision, typename CoordinatePrecision>
 struct DDMSolverBuilderWithExecutionPolicy : DDMSolverBuilder<CoefficientPrecision, CoordinatePrecision> {
     template <typename... Args>
@@ -20,6 +21,7 @@ bool test_solver_execution_policy(int argc, char *argv[], const std::string &dat
     for (auto symmetry : {'N', 'S'}) {
         char UPLO = symmetry == 'N' ? 'N' : 'L';
         is_error  = is_error || test_solver_wo_overlap<double, double, SolverBuilder>(argc, argv, 5, symmetry, UPLO, datapath);
+        is_error  = is_error || test_solver_ddm_adding_overlap<double, double, SolverBuilder, DefaultApproximationBuilder<double, double>>(argc, argv, 5, symmetry, symmetry, UPLO, datapath);
         is_error  = is_error || test_solver_ddm<double, double, SolverBuilder>(argc, argv, 5, symmetry, symmetry, UPLO, datapath);
     }
     return is_error;

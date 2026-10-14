@@ -4,10 +4,11 @@
 #include "../../clustering/cluster_node.hpp"          // for Cluster
 #include "../../matrix/linalg/transpose.hpp"          // for transpose
 #include "../../matrix/matrix.hpp"                    // for Matrix
+#include "../../misc/logger.hpp"                      // for Logger
+#include "../../misc/misc.hpp"                        // for conj_if_complex
 #include "../hmatrix.hpp"                             // for HMatrix
 #include "../task_dependencies.hpp"                   // for enumerate_dependences
 #include "add_hmatrix_matrix_product_row_major.hpp"   // for internal_add_hmatrix_matrix_product_row_major
-#include "apply_ldlt_diagonal.hpp"                    // for internal_apply_ldlt_diagonal
 #include "task_based_add_hmatrix_hmatrix_product.hpp" // for fill_clusters
 #include "triangular_hmatrix_matrix_solve.hpp"        // for internal_triangular_hmatrix_matrix_solve_row_major
 #include "triangular_ldlt_hmatrix_matrix_solve.hpp"   // for internal_triangular_ldlt_hmatrix_matrix_solve_row_major
@@ -157,32 +158,68 @@ void task_based_internal_triangular_ldlt_hmatrix_matrix_solve_row_major(char UPL
         [](char leaf_UPLO, char leaf_transa, const HMatrix<CoefficientPrecision, CoordinatePrecision> &leaf_A, Matrix<CoefficientPrecision> &leaf_Bt) { internal_triangular_ldlt_hmatrix_matrix_solve_row_major('L', leaf_UPLO, leaf_transa, CoefficientPrecision(1), leaf_A, leaf_Bt); }, UPLO, transa, A, Xt, mu, X_offset, L0_A, X_L0);
 }
 
-/**
- * @brief Task-based internal_apply_ldlt_diagonal with side='L' on the row-major right-hand side Xt (see above): X := D^-1 X, with one task per diagonal node of L0_A.
- */
+// Same as internal_triangular_hmatrix_matrix_solve with alpha=1, returning once the tasks are done.
 template <typename CoefficientPrecision, typename CoordinatePrecision>
-void task_based_internal_apply_ldlt_diagonal_row_major(char symmetry, char UPLO, CoefficientPrecision *Xt, int mu, int X_offset, const std::vector<const HMatrix<CoefficientPrecision, CoordinatePrecision> *> &L0_A) {
-    for (const HMatrix<CoefficientPrecision, CoordinatePrecision> *A_node : L0_A) {
-        const Cluster<CoordinatePrecision> *X_node = &A_node->get_target_cluster();
-        if (!(*X_node == A_node->get_source_cluster())) {
-            continue;
-        }
-        int size                      = X_node->get_size();
-        int offset                    = X_node->get_offset();
-        CoefficientPrecision *Xt_node = Xt + mu * (offset - X_offset);
+void task_based_internal_triangular_hmatrix_matrix_solve(char side, char UPLO, char transa, char diag, const HMatrix<CoefficientPrecision, CoordinatePrecision> &A, Matrix<CoefficientPrecision> &B, const std::vector<const HMatrix<CoefficientPrecision, CoordinatePrecision> *> &L0) {
+    std::vector<const Cluster<CoordinatePrecision> *> X_L0 = diagonal_clusters_of_L0(A, L0);
+    // Cannot happen for a cut of a consistent block tree, as given by find_l0
+    if (X_L0.empty()) {
+        htool::Logger::get_instance().log(LogLevel::ERROR, "task_based_internal_triangular_hmatrix_matrix_solve: the diagonal nodes of L0 do not tile the diagonal of A."); // LCOV_EXCL_LINE
+        return;                                                                                                                                                             // LCOV_EXCL_LINE
+    }
+    int X_offset = A.get_target_cluster().get_offset();
+    if (side == 'L') {
+        Matrix<CoefficientPrecision> Xt(B.nb_cols(), B.nb_rows());
+        transpose(B, Xt);
+        task_based_internal_triangular_hmatrix_matrix_solve_row_major(UPLO, transa, diag, A, Xt.data(), Xt.nb_rows(), X_offset, L0, X_L0);
 #if defined(_OPENMP)
-#    pragma omp task default(none)                                      \
-        firstprivate(symmetry, UPLO, A_node, Xt_node, mu, size, offset) \
-        depend(in : *A_node)                                            \
-        depend(inout : *X_node)
+#    pragma omp taskwait
 #endif
-        {
-            // D^-1 X on column-major rows: (D^-1 X)^T is not Xt D^-1 for a Hermitian D
-            Matrix<CoefficientPrecision> Bt, B(size, mu);
-            Bt.assign(mu, size, Xt_node, false);
-            transpose(Bt, B);
-            internal_apply_ldlt_diagonal(symmetry, 'L', UPLO, *A_node, B, offset);
-            transpose(B, Bt);
+        transpose(Xt, B);
+    } else {
+        // B is the row-major Xt for X = B^T, and conj(B) for X = B^H, whose transposed op (conj(A)) is not a transa
+        if (transa == 'C') {
+            conj_if_complex(B.data(), B.nb_rows() * B.nb_cols());
+        }
+        task_based_internal_triangular_hmatrix_matrix_solve_row_major(UPLO, transa == 'N' ? 'T' : 'N', diag, A, B.data(), B.nb_rows(), X_offset, L0, X_L0);
+#if defined(_OPENMP)
+#    pragma omp taskwait
+#endif
+        if (transa == 'C') {
+            conj_if_complex(B.data(), B.nb_rows() * B.nb_cols());
+        }
+    }
+}
+
+// Same as internal_triangular_ldlt_hmatrix_matrix_solve with alpha=1, returning once the tasks are done.
+template <typename CoefficientPrecision, typename CoordinatePrecision>
+void task_based_internal_triangular_ldlt_hmatrix_matrix_solve(char side, char UPLO, char transa, const HMatrix<CoefficientPrecision, CoordinatePrecision> &A, Matrix<CoefficientPrecision> &B, const std::vector<const HMatrix<CoefficientPrecision, CoordinatePrecision> *> &L0) {
+    std::vector<const Cluster<CoordinatePrecision> *> X_L0 = diagonal_clusters_of_L0(A, L0);
+    // Cannot happen for a cut of a consistent block tree, as given by find_l0
+    if (X_L0.empty()) {
+        htool::Logger::get_instance().log(LogLevel::ERROR, "task_based_internal_triangular_ldlt_hmatrix_matrix_solve: the diagonal nodes of L0 do not tile the diagonal of A."); // LCOV_EXCL_LINE
+        return;                                                                                                                                                                  // LCOV_EXCL_LINE
+    }
+    int X_offset = A.get_target_cluster().get_offset();
+    if (side == 'L') {
+        Matrix<CoefficientPrecision> Xt(B.nb_cols(), B.nb_rows());
+        transpose(B, Xt);
+        task_based_internal_triangular_ldlt_hmatrix_matrix_solve_row_major(UPLO, transa, A, Xt.data(), Xt.nb_rows(), X_offset, L0, X_L0);
+#if defined(_OPENMP)
+#    pragma omp taskwait
+#endif
+        transpose(Xt, B);
+    } else {
+        // B is the row-major Xt for X = B^T, and conj(B) for X = B^H, whose transposed op (conj(A)) is not a transa
+        if (transa == 'C') {
+            conj_if_complex(B.data(), B.nb_rows() * B.nb_cols());
+        }
+        task_based_internal_triangular_ldlt_hmatrix_matrix_solve_row_major(UPLO, transa == 'N' ? 'T' : 'N', A, B.data(), B.nb_rows(), X_offset, L0, X_L0);
+#if defined(_OPENMP)
+#    pragma omp taskwait
+#endif
+        if (transa == 'C') {
+            conj_if_complex(B.data(), B.nb_rows() * B.nb_cols());
         }
     }
 }

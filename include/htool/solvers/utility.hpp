@@ -349,7 +349,7 @@ class DDMSolverBuilder {
     std::array<Matrix<CoefficientPrecision>, 3> blocks_in_overlap; // B,C,D
     DDM<CoefficientPrecision, HPDDMCustomLocalSolver> solver;
 
-    // execution_policy: used to factorize the local HMatrix, see LocalHMatrixSolver.
+    // execution_policy: used to factorize the local HMatrix and to solve with it, see LocalHMatrixSolver and LocalHMatrixPlusOverlapSolver.
 
     // Block Jacobi
     template <typename ExecutionPolicy, typename = std::enable_if_t<is_execution_policy_v<std::decay_t<ExecutionPolicy>>>>
@@ -358,7 +358,10 @@ class DDMSolverBuilder {
     DDMSolverBuilder(DistributedOperator<CoefficientPrecision> &distributed_operator, HMatrix<CoefficientPrecision, CoordinatePrecision> &block_diagonal_hmatrix, bool is_positive_definite = false) : DDMSolverBuilder(exec_compat::seq, distributed_operator, block_diagonal_hmatrix, is_positive_definite) {}
 
     // DDM building local hmatrix adding overlap
-    DDMSolverBuilder(DistributedOperator<CoefficientPrecision> &distributed_operator, HMatrix<CoefficientPrecision, CoordinatePrecision> &block_diagonal_hmatrix, const VirtualGenerator<CoefficientPrecision> &generator, const std::vector<int> &ovr_subdomain_to_global, const std::vector<int> &cluster_to_ovr_subdomain, const std::vector<int> &neighbors, const std::vector<std::vector<int>> &intersections, bool is_positive_definite = false) : m_local_numbering(ovr_subdomain_to_global, cluster_to_ovr_subdomain, intersections), local_to_global_numbering(m_local_numbering.local_to_global_numbering), blocks_in_overlap(initialize_blocks_in_overlap(block_diagonal_hmatrix, generator)), solver(make_DDM_solver_w_custom_local_solver(distributed_operator, block_diagonal_hmatrix, blocks_in_overlap[0], blocks_in_overlap[1], blocks_in_overlap[2], neighbors, m_local_numbering.intersections, is_positive_definite)) {}
+    template <typename ExecutionPolicy, typename = std::enable_if_t<is_execution_policy_v<std::decay_t<ExecutionPolicy>>>>
+    DDMSolverBuilder(ExecutionPolicy &&execution_policy, DistributedOperator<CoefficientPrecision> &distributed_operator, HMatrix<CoefficientPrecision, CoordinatePrecision> &block_diagonal_hmatrix, const VirtualGenerator<CoefficientPrecision> &generator, const std::vector<int> &ovr_subdomain_to_global, const std::vector<int> &cluster_to_ovr_subdomain, const std::vector<int> &neighbors, const std::vector<std::vector<int>> &intersections, bool is_positive_definite = false) : m_local_numbering(ovr_subdomain_to_global, cluster_to_ovr_subdomain, intersections), local_to_global_numbering(m_local_numbering.local_to_global_numbering), blocks_in_overlap(initialize_blocks_in_overlap(block_diagonal_hmatrix, generator)), solver(make_DDM_solver_w_custom_local_solver(std::forward<ExecutionPolicy>(execution_policy), distributed_operator, block_diagonal_hmatrix, blocks_in_overlap[0], blocks_in_overlap[1], blocks_in_overlap[2], neighbors, m_local_numbering.intersections, is_positive_definite)) {}
+
+    DDMSolverBuilder(DistributedOperator<CoefficientPrecision> &distributed_operator, HMatrix<CoefficientPrecision, CoordinatePrecision> &block_diagonal_hmatrix, const VirtualGenerator<CoefficientPrecision> &generator, const std::vector<int> &ovr_subdomain_to_global, const std::vector<int> &cluster_to_ovr_subdomain, const std::vector<int> &neighbors, const std::vector<std::vector<int>> &intersections, bool is_positive_definite = false) : DDMSolverBuilder(exec_compat::seq, distributed_operator, block_diagonal_hmatrix, generator, ovr_subdomain_to_global, cluster_to_ovr_subdomain, neighbors, intersections, is_positive_definite) {}
 
     // DDM building local hmatrix with overlap
     template <typename ExecutionPolicy, typename = std::enable_if_t<is_execution_policy_v<std::decay_t<ExecutionPolicy>>>>

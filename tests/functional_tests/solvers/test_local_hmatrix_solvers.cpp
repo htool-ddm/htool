@@ -18,7 +18,7 @@ using namespace htool;
 // With positive_definite, A and D are diagonally dominant with a positive diagonal. Otherwise (and
 // always for a complex symmetric matrix, which cannot be positive definite), consecutive rows of
 // each cluster leaf are paired into dominant [[0,d],[op(d),0]] blocks, so that A is indefinite
-// and LDLt needs 2x2 pivots. With task_based, LocalHMatrixSolver factorizes with omp_task_policy.
+// and LDLt needs 2x2 pivots. With task_based, the local solvers use omp_task_policy.
 template <typename T, typename GeneratorTestType, bool task_based>
 bool test_local_hmatrix_solvers(char symmetry, char UPLO, bool positive_definite) {
     using ExecutionPolicy = std::conditional_t<task_based, omp_task_policy<T, underlying_type<T>>, exec_compat::sequenced_policy>;
@@ -93,7 +93,7 @@ bool test_local_hmatrix_solvers(char symmetry, char UPLO, bool positive_definite
                 D_overlap(i, j) = K(n + i, n + j);
             }
         }
-        LocalHMatrixPlusOverlapSolver<T, underlying_type<T>> solver(local_hmatrix, B_overlap, C_overlap, D_overlap, positive_definite);
+        LocalHMatrixPlusOverlapSolver<T, underlying_type<T>, ExecutionPolicy> solver(local_hmatrix, B_overlap, C_overlap, D_overlap, positive_definite);
         solver.numfact(no_csr);
         Matrix<T> x(b), residual(b);
         solver.solve(x.data(), mu);

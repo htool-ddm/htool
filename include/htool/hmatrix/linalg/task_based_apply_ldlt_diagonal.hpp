@@ -1,6 +1,9 @@
 #ifndef HTOOL_TASK_BASED_HMATRIX_LINALG_APPLY_LDLT_DIAGONAL_HPP
 #define HTOOL_TASK_BASED_HMATRIX_LINALG_APPLY_LDLT_DIAGONAL_HPP
 
+#include "../../clustering/cluster_node.hpp"
+#include "../../matrix/linalg/transpose.hpp"
+#include "../../matrix/matrix.hpp"
 #include "../../misc/logger.hpp"
 #include "../hmatrix.hpp"
 #include "../task_dependencies.hpp"
@@ -56,6 +59,58 @@ void task_based_internal_apply_ldlt_diagonal(char symmetry, char side, char UPLO
             internal_apply_ldlt_diagonal(symmetry, side, UPLO, *A_node, *B_node);
         }
     }
+}
+
+/**
+ * @brief Task-based internal_apply_ldlt_diagonal with side='L' on the row-major right-hand side Xt (see task_based_triangular_hmatrix_matrix_solve.hpp): X := D^-1 X, with one task per diagonal node of L0_A.
+ */
+template <typename CoefficientPrecision, typename CoordinatePrecision>
+void task_based_internal_apply_ldlt_diagonal_row_major(char symmetry, char UPLO, CoefficientPrecision *Xt, int mu, int X_offset, const std::vector<const HMatrix<CoefficientPrecision, CoordinatePrecision> *> &L0_A) {
+    for (const HMatrix<CoefficientPrecision, CoordinatePrecision> *A_node : L0_A) {
+        const Cluster<CoordinatePrecision> *X_node = &A_node->get_target_cluster();
+        if (!(*X_node == A_node->get_source_cluster())) {
+            continue;
+        }
+        int size                      = X_node->get_size();
+        int offset                    = X_node->get_offset();
+        CoefficientPrecision *Xt_node = Xt + mu * (offset - X_offset);
+#if defined(_OPENMP)
+#    pragma omp task default(none)                                      \
+        firstprivate(symmetry, UPLO, A_node, Xt_node, mu, size, offset) \
+        depend(in : *A_node)                                            \
+        depend(inout : *X_node)
+#endif
+        {
+            // D^-1 X on column-major rows: (D^-1 X)^T is not Xt D^-1 for a Hermitian D
+            Matrix<CoefficientPrecision> Bt, B(size, mu);
+            Bt.assign(mu, size, Xt_node, false);
+            transpose(Bt, B);
+            internal_apply_ldlt_diagonal(symmetry, 'L', UPLO, *A_node, B, offset);
+            transpose(B, Bt);
+        }
+    }
+}
+// Same as internal_apply_ldlt_diagonal on a Matrix B, D being held by the diagonal nodes of L0, with one task per diagonal node of L0, returning once they are done.
+// Each task works on the rows (side='L') or columns (side='R') of B of its node, which are disjoint.
+template <typename CoefficientPrecision, typename CoordinatePrecision>
+void task_based_internal_apply_ldlt_diagonal(char symmetry, char side, char UPLO, Matrix<CoefficientPrecision> &B, int offset, const std::vector<const HMatrix<CoefficientPrecision, CoordinatePrecision> *> &L0) {
+    for (const HMatrix<CoefficientPrecision, CoordinatePrecision> *A_node : L0) {
+        if (!(A_node->get_target_cluster() == A_node->get_source_cluster())) {
+            continue;
+        }
+#if defined(_OPENMP)
+#    pragma omp task default(none)                         \
+        firstprivate(symmetry, side, UPLO, A_node, offset) \
+        shared(B)                                          \
+        depend(in : *A_node)
+#endif
+        {
+            internal_apply_ldlt_diagonal(symmetry, side, UPLO, *A_node, B, offset);
+        }
+    }
+#if defined(_OPENMP)
+#    pragma omp taskwait
+#endif
 }
 
 } // namespace htool
