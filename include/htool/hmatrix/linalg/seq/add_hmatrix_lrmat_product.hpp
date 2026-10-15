@@ -1,16 +1,17 @@
-#ifndef HTOOL_HMATRIX_LINALG_ADD_HMATRIX_LOW_RANK_MATRIX_PRODUCT_HPP
-#define HTOOL_HMATRIX_LINALG_ADD_HMATRIX_LOW_RANK_MATRIX_PRODUCT_HPP
+#ifndef HTOOL_HMATRIX_LINALG_SEQ_ADD_HMATRIX_LRMAT_PRODUCT_HPP
+#define HTOOL_HMATRIX_LINALG_SEQ_ADD_HMATRIX_LRMAT_PRODUCT_HPP
 
-#include "../../matrix/linalg/scale.hpp"        // for scale
-#include "../../matrix/linalg/transpose.hpp"    // for transpose
-#include "../../matrix/matrix.hpp"              // for Matrix
-#include "../../misc/misc.hpp"                  // for conj_if_complex
-#include "../hmatrix.hpp"                       // for HMatrix
-#include "../lrmat/lrmat.hpp"                   // for LowRankMatrix
-#include "../lrmat/utils/SVD_recompression.hpp" // for recompression
-#include "add_hmatrix_matrix_product.hpp"       // for add_hmatrix_m...
-#include "add_lrmat_hmatrix.hpp"                // for add_lrmat_hma...
-#include <algorithm>                            // for copy_n
+#include "../../../matrix/linalg/scale.hpp"        // for scale
+#include "../../../matrix/linalg/transpose.hpp"    // for transpose
+#include "../../../matrix/matrix.hpp"              // for Matrix
+#include "../../../misc/misc.hpp"                  // for conj_if_complex
+#include "../../hmatrix.hpp"                       // for HMatrix
+#include "../../lrmat/lrmat.hpp"                   // for LowRankMatrix
+#include "../../lrmat/utils/SVD_recompression.hpp" // for recompression
+#include "add_hmatrix_matrix_product.hpp"          // for add_hmatrix_m...
+#include "add_lrmat_hmatrix.hpp"                   // for add_lrmat_hma...
+#include "scale.hpp"
+#include <algorithm> // for copy_n
 
 namespace htool {
 
@@ -116,7 +117,7 @@ void internal_add_hmatrix_lrmat_product(char transa, char transb, CoefficientPre
 template <typename CoefficientPrecision, typename CoordinatePrecision = underlying_type<CoefficientPrecision>>
 void internal_add_hmatrix_lrmat_product(char transa, char transb, CoefficientPrecision alpha, const HMatrix<CoefficientPrecision, CoordinatePrecision> &A, const LowRankMatrix<CoefficientPrecision> &B, CoefficientPrecision beta, HMatrix<CoefficientPrecision, CoordinatePrecision> &C) {
     if (beta != CoefficientPrecision(1)) {
-        scale(beta, C);
+        sequential_scale(beta, C);
     }
 
     LowRankMatrix<CoefficientPrecision> lrmat(A.nb_rows(), B.nb_cols(), B.get_epsilon());

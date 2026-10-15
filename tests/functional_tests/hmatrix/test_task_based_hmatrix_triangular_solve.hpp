@@ -3,20 +3,21 @@
 #include <htool/basic_types/vector.hpp>      // for norm2
 #include <htool/clustering/cluster_node.hpp> // for Cluster...
 #include <htool/clustering/cluster_output.hpp>
-#include <htool/clustering/tree_builder/tree_builder.hpp>       // for Cluster...
-#include <htool/hmatrix/hmatrix.hpp>                            // for copy_di...
-#include <htool/hmatrix/hmatrix_distributed_output.hpp>         // for print_d...
-#include <htool/hmatrix/hmatrix_output.hpp>                     // for print_h...
-#include <htool/hmatrix/hmatrix_output_dot.hpp>                 // for view_block_tree...
-#include <htool/hmatrix/interfaces/virtual_generator.hpp>       // for Generat...
-#include <htool/hmatrix/linalg/add_hmatrix_hmatrix_product.hpp> // for add_...
+#include <htool/clustering/tree_builder/tree_builder.hpp> // for Cluster...
+#include <htool/hmatrix/hmatrix.hpp>                      // for copy_di...
+#include <htool/hmatrix/hmatrix_distributed_output.hpp>   // for print_d...
+#include <htool/hmatrix/hmatrix_output.hpp>               // for print_h...
+#include <htool/hmatrix/hmatrix_output_dot.hpp>           // for view_block_tree...
+#include <htool/hmatrix/interfaces/virtual_generator.hpp> // for Generat...
 #include <htool/hmatrix/linalg/add_hmatrix_vector_product.hpp>
+#include <htool/hmatrix/linalg/scale.hpp>
+#include <htool/hmatrix/linalg/seq/add_hmatrix_hmatrix_product.hpp> // for add_...
 // #include <htool/hmatrix/linalg/factorization.hpp>
-#include <htool/hmatrix/linalg/task_based_add_hmatrix_hmatrix_product.hpp> // for task_bas...
-#include <htool/hmatrix/linalg/task_based_add_hmatrix_vector_product.hpp>  // for task_bas...
+#include <htool/hmatrix/linalg/omp_task/add_hmatrix_hmatrix_product.hpp> // for task_bas...
+#include <htool/hmatrix/linalg/omp_task/add_hmatrix_vector_product.hpp>  // for task_bas...
 // #include <htool/hmatrix/linalg/task_based_factorization.hpp>                    // for task_based_lu_factorization
-#include <htool/hmatrix/linalg/task_based_triangular_hmatrix_hmatrix_solve.hpp> // for task_based_triangular_hmatrix_hmatrix_solve
-#include <htool/hmatrix/linalg/triangular_hmatrix_hmatrix_solve.hpp>            // for triangular_hmatrix_hmatrix_solve
+#include <htool/hmatrix/linalg/omp_task/triangular_hmatrix_hmatrix_solve.hpp> // for task_based_triangular_hmatrix_hmatrix_solve
+#include <htool/hmatrix/linalg/seq/triangular_hmatrix_hmatrix_solve.hpp>      // for triangular_hmatrix_hmatrix_solve
 
 #include <htool/hmatrix/lrmat/SVD.hpp>
 #include <htool/hmatrix/task_dependencies.hpp>         // for enumerate_dependence, find_l0...
@@ -145,9 +146,9 @@ bool test_task_based_hmatrix_triangular_solve(const TestCaseType &test_case, cha
 
     // Tests
     std::chrono::steady_clock::time_point start, end;
-    int max_nb_nodes                = 32;
-    std::vector<HMatrix<T> *> L0_LA = find_l0(LA, max_nb_nodes);
-    std::vector<HMatrix<T> *> L0_UA = find_l0(UA, max_nb_nodes);
+    int max_nb_nodes                      = 32;
+    std::vector<const HMatrix<T> *> L0_LA = find_l0(LA, max_nb_nodes);
+    std::vector<const HMatrix<T> *> L0_UA = find_l0(UA, max_nb_nodes);
 
     //// internal_triangular_hmatrix_hmatrix_solve Lower
     ////// Classic
@@ -164,9 +165,9 @@ bool test_task_based_hmatrix_triangular_solve(const TestCaseType &test_case, cha
     cout << "    classic_duration = " << classic_duration.count() << '\n';
 
     ////// Task-based
-    hmatrix_test                      = LB;
-    std::vector<HMatrix<T> *> L0_test = find_l0(hmatrix_test, max_nb_nodes);
-    start                             = std::chrono::steady_clock::now();
+    hmatrix_test                            = LB;
+    std::vector<const HMatrix<T> *> L0_test = find_l0(hmatrix_test, max_nb_nodes);
+    start                                   = std::chrono::steady_clock::now();
 #if defined(_OPENMP)
 #    pragma omp parallel
 #    pragma omp single
@@ -183,6 +184,33 @@ bool test_task_based_hmatrix_triangular_solve(const TestCaseType &test_case, cha
     cout << "    task_based_duration = " << task_based_duration.count() << '\n';
     if (task_based_duration.count() > classic_duration.count()) {
         htool::Logger::get_instance().log(LogLevel::WARNING, "Careful: task_based_duration > classic_duration. Ratio TB/Classic = " + std::to_string(task_based_duration.count() / classic_duration.count()) + "."); // LCOV_EXCL_LINE
+    }
+
+    // alpha != 1 on a sub-block of B below the L0 node of B: only this block is scaled
+    if (side == 'L' && !LB.get_target_cluster().is_leaf() && !LB.get_source_cluster().is_leaf()) {
+        const Cluster<htool::underlying_type<T>> &t = *LB.get_target_cluster().get_children()[0];
+        const Cluster<htool::underlying_type<T>> &s = *LB.get_source_cluster().get_children()[0];
+        HMatrix<T> B_classic(LB), B_task_based(LB);
+        const HMatrix<T> *A_sub      = LA.get_sub_hmatrix(t, t);
+        HMatrix<T> *B_sub_classic    = B_classic.get_sub_hmatrix(t, s);
+        HMatrix<T> *B_sub_task_based = B_task_based.get_sub_hmatrix(t, s);
+        std::vector<const HMatrix<T> *> L0_B{&B_task_based};
+        if (A_sub != nullptr && B_sub_classic != nullptr && B_sub_task_based != nullptr) {
+            internal_triangular_hmatrix_hmatrix_solve('L', 'L', transa, diag, T(2), *A_sub, *B_sub_classic);
+#if defined(_OPENMP)
+#    pragma omp parallel
+#    pragma omp single
+#endif
+            {
+                task_based_internal_triangular_hmatrix_hmatrix_solve('L', 'L', transa, diag, T(2), *A_sub, *B_sub_task_based, L0_LA, L0_B);
+            }
+            Matrix<T> densified_B_classic(no_X, ni_X), densified_B_task_based(no_X, ni_X);
+            copy_to_dense(B_classic, densified_B_classic.data());
+            copy_to_dense(B_task_based, densified_B_task_based.data());
+            error = normFrob(densified_B_classic - densified_B_task_based) / normFrob(densified_B_classic);
+            cout << ">   task_based error with alpha != 1 on a sub-block of B below L0 = " << error << '\n';
+            is_error = is_error || !(error < 1e-12);
+        }
     }
 
     // internal_triangular_hmatrix_hmatrix_solve Upper
@@ -238,9 +266,9 @@ bool test_task_based_hmatrix_triangular_solve(const TestCaseType &test_case, cha
         for (char UPLO : {'L', 'U'}) {
             HMatrix<T, htool::underlying_type<T>> A_ldlt(UPLO == 'L' ? LA : UA);
             preorder_tree_traversal(A_ldlt, store_diagonal);
-            std::vector<HMatrix<T> *> L0_A_ldlt = find_l0(A_ldlt, max_nb_nodes);
-            hmatrix_test                        = UPLO == 'L' ? LB : UB;
-            L0_test                             = find_l0(hmatrix_test, max_nb_nodes);
+            std::vector<const HMatrix<T> *> L0_A_ldlt = find_l0(A_ldlt, max_nb_nodes);
+            hmatrix_test                              = UPLO == 'L' ? LB : UB;
+            L0_test                                   = find_l0(hmatrix_test, max_nb_nodes);
 #if defined(_OPENMP)
 #    pragma omp parallel
 #    pragma omp single

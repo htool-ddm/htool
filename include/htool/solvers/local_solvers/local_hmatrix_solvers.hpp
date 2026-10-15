@@ -9,6 +9,7 @@
 #include "htool/misc/logger.hpp"                  // for Logger
 #include "htool/misc/misc.hpp"                    // for underlying_type
 #include <algorithm>                              // for copy_n
+#include <utility>                                // for move
 
 namespace htool {
 
@@ -23,9 +24,12 @@ bool use_cholesky_for_local_hmatrix(const HMatrix<CoefficientPrecision, Coordina
     return is_positive_definite and (symmetry == 'H' or (symmetry == 'S' and !is_complex<CoefficientPrecision>()));
 }
 
-template <typename CoefficientPrecision, typename CoordinatePrecision = underlying_type<CoefficientPrecision>>
+// ExecutionPolicy is used by the factorization in numfact and by the solves, and kept across calls so that the L0 of an
+// omp_task_policy is reused.
+template <typename CoefficientPrecision, typename CoordinatePrecision = underlying_type<CoefficientPrecision>, typename ExecutionPolicy = exec_compat::sequenced_policy>
 class LocalHMatrixSolver : public VirtualLocalSolver<CoefficientPrecision> {
   private:
+    mutable ExecutionPolicy m_execution_policy; // the solves update its L0 if needed
     HMatrix<CoefficientPrecision, CoordinatePrecision> &m_local_hmatrix;
     bool m_is_using_permutation;
     bool m_is_positive_definite;
@@ -34,15 +38,16 @@ class LocalHMatrixSolver : public VirtualLocalSolver<CoefficientPrecision> {
 
   public:
     // is_positive_definite: a symmetric/Hermitian local_hmatrix is factorized with Cholesky instead of LDLt.
-    LocalHMatrixSolver(HMatrix<CoefficientPrecision> &local_hmatrix, bool is_using_permutation, bool is_positive_definite = false) : m_local_hmatrix(local_hmatrix), m_is_using_permutation(is_using_permutation), m_is_positive_definite(is_positive_definite) {}
+    LocalHMatrixSolver(ExecutionPolicy execution_policy, HMatrix<CoefficientPrecision, CoordinatePrecision> &local_hmatrix, bool is_using_permutation, bool is_positive_definite = false) : m_execution_policy(std::move(execution_policy)), m_local_hmatrix(local_hmatrix), m_is_using_permutation(is_using_permutation), m_is_positive_definite(is_positive_definite) {}
+    LocalHMatrixSolver(HMatrix<CoefficientPrecision, CoordinatePrecision> &local_hmatrix, bool is_using_permutation, bool is_positive_definite = false) : LocalHMatrixSolver(ExecutionPolicy{}, local_hmatrix, is_using_permutation, is_positive_definite) {}
     void numfact(HPDDM::MatrixCSR<CoefficientPrecision> *const &, bool = false, CoefficientPrecision *const & = nullptr) {
         m_use_cholesky = use_cholesky_for_local_hmatrix(m_local_hmatrix, m_is_positive_definite);
         if (m_local_hmatrix.get_symmetry() == 'N') {
-            lu_factorization(m_local_hmatrix);
+            lu_factorization(m_execution_policy, m_local_hmatrix);
         } else if (m_use_cholesky) {
-            cholesky_factorization(m_local_hmatrix.get_UPLO(), m_local_hmatrix);
+            cholesky_factorization(m_execution_policy, m_local_hmatrix.get_UPLO(), m_local_hmatrix);
         } else {
-            ldlt_factorization(m_local_hmatrix.get_symmetry(), m_local_hmatrix.get_UPLO(), m_local_hmatrix);
+            ldlt_factorization(m_execution_policy, m_local_hmatrix.get_symmetry(), m_local_hmatrix.get_UPLO(), m_local_hmatrix);
         }
     }
     void solve(CoefficientPrecision *const b, const unsigned short &mu = 1) const {
@@ -61,11 +66,11 @@ class LocalHMatrixSolver : public VirtualLocalSolver<CoefficientPrecision> {
         }
 
         if (m_local_hmatrix.get_symmetry() == 'N') {
-            internal_lu_solve('N', m_local_hmatrix, buffer);
+            internal_lu_solve(m_execution_policy, 'N', m_local_hmatrix, buffer);
         } else if (m_use_cholesky) {
-            internal_cholesky_solve(m_local_hmatrix.get_UPLO(), m_local_hmatrix, buffer);
+            internal_cholesky_solve(m_execution_policy, m_local_hmatrix.get_UPLO(), m_local_hmatrix, buffer);
         } else {
-            internal_ldlt_solve(m_local_hmatrix.get_symmetry(), m_local_hmatrix.get_UPLO(), m_local_hmatrix, buffer);
+            internal_ldlt_solve(m_execution_policy, m_local_hmatrix.get_symmetry(), m_local_hmatrix.get_UPLO(), m_local_hmatrix, buffer);
         }
 
         if (m_is_using_permutation) {
@@ -90,11 +95,11 @@ class LocalHMatrixSolver : public VirtualLocalSolver<CoefficientPrecision> {
         }
 
         if (m_local_hmatrix.get_symmetry() == 'N') {
-            internal_lu_solve('N', m_local_hmatrix, buffer);
+            internal_lu_solve(m_execution_policy, 'N', m_local_hmatrix, buffer);
         } else if (m_use_cholesky) {
-            internal_cholesky_solve(m_local_hmatrix.get_UPLO(), m_local_hmatrix, buffer);
+            internal_cholesky_solve(m_execution_policy, m_local_hmatrix.get_UPLO(), m_local_hmatrix, buffer);
         } else {
-            internal_ldlt_solve(m_local_hmatrix.get_symmetry(), m_local_hmatrix.get_UPLO(), m_local_hmatrix, buffer);
+            internal_ldlt_solve(m_execution_policy, m_local_hmatrix.get_symmetry(), m_local_hmatrix.get_UPLO(), m_local_hmatrix, buffer);
         }
 
         if (m_is_using_permutation) {

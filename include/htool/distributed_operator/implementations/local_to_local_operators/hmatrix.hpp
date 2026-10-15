@@ -4,8 +4,9 @@
 
 #include "../../../clustering/cluster_node.hpp" // for Cluster
 #include "../../../hmatrix/hmatrix.hpp"
-#include "../../../hmatrix/linalg/add_hmatrix_matrix_product_row_major.hpp"
 #include "../../../hmatrix/linalg/add_hmatrix_vector_product.hpp"
+#include "../../../hmatrix/linalg/omp/add_hmatrix_matrix_product_row_major.hpp"
+#include "../../../hmatrix/linalg/seq/add_hmatrix_matrix_product_row_major.hpp"
 #include "../../../misc/misc.hpp"
 #include "../../interfaces/virtual_local_to_local_operator.hpp"
 

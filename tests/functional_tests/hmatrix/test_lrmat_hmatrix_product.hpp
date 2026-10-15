@@ -1,5 +1,5 @@
 #include <htool/hmatrix/hmatrix.hpp>
-#include <htool/hmatrix/linalg/add_lrmat_hmatrix_product.hpp>
+#include <htool/hmatrix/linalg/seq/add_lrmat_hmatrix_product.hpp>
 #include <htool/hmatrix/lrmat/SVD.hpp> // for SVD
 #include <htool/hmatrix/lrmat/linalg/add_lrmat_matrix_product.hpp>
 #include <htool/hmatrix/lrmat/lrmat.hpp>

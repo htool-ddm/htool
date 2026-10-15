@@ -1,13 +1,14 @@
-#ifndef HTOOL_HMATRIX_LINALG_TRIANGULAR_LDLT_HMATRIX_HMATRIX_SOLVE_HPP
-#define HTOOL_HMATRIX_LINALG_TRIANGULAR_LDLT_HMATRIX_HMATRIX_SOLVE_HPP
+#ifndef HTOOL_HMATRIX_LINALG_SEQ_TRIANGULAR_LDLT_HMATRIX_HMATRIX_SOLVE_HPP
+#define HTOOL_HMATRIX_LINALG_SEQ_TRIANGULAR_LDLT_HMATRIX_HMATRIX_SOLVE_HPP
 
-#include "../../clustering/cluster_node.hpp"
-#include "../../matrix/linalg/factorization.hpp"
-#include "../../matrix/matrix.hpp"
-#include "../../misc/logger.hpp"
-#include "../../misc/misc.hpp"
-#include "../hmatrix.hpp"
+#include "../../../clustering/cluster_node.hpp"
+#include "../../../matrix/linalg/factorization.hpp"
+#include "../../../matrix/matrix.hpp"
+#include "../../../misc/logger.hpp"
+#include "../../../misc/misc.hpp"
+#include "../../hmatrix.hpp"
 #include "add_hmatrix_hmatrix_product.hpp"
+#include "scale.hpp"
 #include "triangular_ldlt_hmatrix_lrmat_solve.hpp"
 #include "triangular_ldlt_hmatrix_matrix_solve.hpp"
 #include <algorithm>
@@ -22,7 +23,7 @@ namespace htool {
 template <typename CoefficientPrecision, typename CoordinatePrecision = underlying_type<CoefficientPrecision>>
 void internal_triangular_ldlt_hmatrix_hmatrix_solve(char side, char UPLO, char transa, CoefficientPrecision alpha, const HMatrix<CoefficientPrecision, CoordinatePrecision> &A, HMatrix<CoefficientPrecision, CoordinatePrecision> &B) {
     if (alpha != CoefficientPrecision(1)) {
-        scale(alpha, B);
+        sequential_scale(alpha, B);
     }
     if (A.is_hierarchical() and B.is_hierarchical()) {
         bool block_tree_not_consistent = (A.get_target_cluster().get_rank() < 0 || A.get_source_cluster().get_rank() < 0 || B.get_target_cluster().get_rank() < 0 || B.get_source_cluster().get_rank() < 0);

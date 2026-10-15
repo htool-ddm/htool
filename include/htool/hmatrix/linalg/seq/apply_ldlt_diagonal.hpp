@@ -1,10 +1,10 @@
-#ifndef HTOOL_HMATRIX_LINALG_APPLY_LDLT_DIAGONAL_HPP
-#define HTOOL_HMATRIX_LINALG_APPLY_LDLT_DIAGONAL_HPP
+#ifndef HTOOL_HMATRIX_LINALG_SEQ_APPLY_LDLT_DIAGONAL_HPP
+#define HTOOL_HMATRIX_LINALG_SEQ_APPLY_LDLT_DIAGONAL_HPP
 
-#include "../../matrix/linalg/factorization.hpp"
-#include "../../matrix/matrix.hpp"
-#include "../../misc/logger.hpp"
-#include "../hmatrix.hpp"
+#include "../../../matrix/linalg/factorization.hpp"
+#include "../../../matrix/matrix.hpp"
+#include "../../../misc/logger.hpp"
+#include "../../hmatrix.hpp"
 #include <algorithm>
 #include <memory>
 #include <vector>

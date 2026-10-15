@@ -1,15 +1,15 @@
-#ifndef HTOOL_HMATRIX_LINALG_ADD_HMATRIX_HMATRIX_PRODUCT_HPP
-#define HTOOL_HMATRIX_LINALG_ADD_HMATRIX_HMATRIX_PRODUCT_HPP
+#ifndef HTOOL_HMATRIX_LINALG_SEQ_ADD_HMATRIX_HMATRIX_PRODUCT_HPP
+#define HTOOL_HMATRIX_LINALG_SEQ_ADD_HMATRIX_HMATRIX_PRODUCT_HPP
 
-#include "../../clustering/cluster_node.hpp"
-#include "../../matrix/matrix.hpp"
-#include "../hmatrix.hpp"
-#include "../lrmat/linalg/add_lrmat_lrmat.hpp"
-#include "../lrmat/linalg/add_lrmat_lrmat_product.hpp"
-#include "../lrmat/linalg/add_lrmat_matrix_product.hpp"
-#include "../lrmat/linalg/add_matrix_lrmat_product.hpp"
-#include "../lrmat/linalg/add_matrix_matrix_product.hpp"
-#include "../lrmat/lrmat.hpp"
+#include "../../../clustering/cluster_node.hpp"
+#include "../../../matrix/matrix.hpp"
+#include "../../hmatrix.hpp"
+#include "../../lrmat/linalg/add_lrmat_lrmat.hpp"
+#include "../../lrmat/linalg/add_lrmat_lrmat_product.hpp"
+#include "../../lrmat/linalg/add_lrmat_matrix_product.hpp"
+#include "../../lrmat/linalg/add_matrix_lrmat_product.hpp"
+#include "../../lrmat/linalg/add_matrix_matrix_product.hpp"
+#include "../../lrmat/lrmat.hpp"
 #include "add_hmatrix_lrmat_product.hpp"
 #include "add_hmatrix_matrix_product.hpp"
 #include "add_lrmat_hmatrix.hpp"

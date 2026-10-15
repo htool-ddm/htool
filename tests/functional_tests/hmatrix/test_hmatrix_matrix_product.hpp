@@ -1,9 +1,11 @@
 #include <htool/basic_types/vector.hpp>
 #include <htool/hmatrix/hmatrix.hpp>
 #include <htool/hmatrix/linalg/add_hmatrix_matrix_product.hpp>
-#include <htool/hmatrix/linalg/add_hmatrix_matrix_product_row_major.hpp>
 #include <htool/hmatrix/linalg/add_hmatrix_vector_product.hpp>
-#include <htool/hmatrix/linalg/add_matrix_hmatrix_product.hpp>
+#include <htool/hmatrix/linalg/omp_task/add_hmatrix_vector_product.hpp>
+#include <htool/hmatrix/linalg/scale.hpp>
+#include <htool/hmatrix/linalg/seq/add_hmatrix_matrix_product_row_major.hpp>
+#include <htool/hmatrix/linalg/seq/add_matrix_hmatrix_product.hpp>
 #include <htool/hmatrix/lrmat/SVD.hpp>
 #include <htool/hmatrix/lrmat/lrmat.hpp>
 #include <htool/hmatrix/tree_builder/tree_builder.hpp>
@@ -33,7 +35,7 @@ using namespace std;
 using namespace htool;
 
 template <typename T, typename GeneratorTestType>
-bool test_hmatrix_matrix_product(const TestCaseProduct<T, GeneratorTestType> &test_case, bool use_local_cluster, htool::underlying_type<T> epsilon, htool::underlying_type<T> additional_lrmat_sum_tolerance) {
+bool test_hmatrix_matrix_product(const TestCaseProduct<T, GeneratorTestType> &test_case, bool use_local_cluster, htool::underlying_type<T> epsilon, htool::underlying_type<T> additional_lrmat_sum_tolerance, bool task_based = false) {
 
     int rankWorld;
     MPI_Comm_rank(MPI_COMM_WORLD, &rankWorld);
@@ -121,6 +123,33 @@ bool test_hmatrix_matrix_product(const TestCaseProduct<T, GeneratorTestType> &te
     Matrix<T> scaled_matrix_result_w_matrix_sum(matrix_result_w_matrix_sum);
     scale(scaling_coefficient, scaled_matrix_result_w_matrix_sum);
 
+    // Task-based checks, run separately without leak detection (see the CMakeLists.txt)
+    if (task_based) {
+        if (transb == 'N') {
+            HMatrixTaskDependencies<T, htool::underlying_type<T>> hmatrix_task_dependencies;
+            hmatrix_task_dependencies.set_L0(root_hmatrix);
+            test_vec = C_vec;
+#if defined(_OPENMP)
+#    pragma omp parallel
+#    pragma omp single
+#endif
+            {
+                task_based_internal_add_hmatrix_vector_product(transa, alpha, root_hmatrix, B_vec.data(), beta, test_vec.data(), hmatrix_task_dependencies.L0, transa == 'N' ? hmatrix_task_dependencies.source_L0 : hmatrix_task_dependencies.target_L0, transa == 'N' ? hmatrix_task_dependencies.target_L0 : hmatrix_task_dependencies.source_L0);
+            }
+            error    = norm2(get_col(matrix_result_w_matrix_sum, 0) - test_vec) / norm2(get_col(matrix_result_w_matrix_sum, 0));
+            is_error = is_error || !(error < epsilon);
+            cout << "> Errors on a task-based hmatrix vector product: " << error << '\n';
+        }
+
+        omp_task_policy<T> task_policy;
+        matrix_test = C_dense;
+        internal_add_hmatrix_matrix_product(task_policy, transa, transb, alpha, root_hmatrix, B_dense, beta, matrix_test);
+        error    = normFrob(matrix_result_w_matrix_sum - matrix_test) / normFrob(matrix_result_w_matrix_sum);
+        is_error = is_error || !(error < epsilon);
+        cout << "> Errors on a task-based hmatrix matrix product: " << error << '\n';
+        return is_error;
+    }
+
     // Product
     if (transb == 'N') {
         test_vec = C_vec;
@@ -173,18 +202,26 @@ bool test_hmatrix_matrix_product(const TestCaseProduct<T, GeneratorTestType> &te
     is_error = is_error || !(error < std::max(epsilon, lrmat_tolerance) * (1 + additional_lrmat_sum_tolerance));
     cout << "> Errors on a hmatrix matrix product to lrmat with sum: " << error << '\n';
 
-    // matrix_test = C_dense;
-    // scale(scaling_coefficient, root_hmatrix);
-    // add_hmatrix_matrix_product(transa, transb, alpha, root_hmatrix, B_dense, scaling_coefficient * beta, matrix_test);
-    // error    = normFrob(scaled_matrix_result_w_matrix_sum - matrix_test) / normFrob(scaled_matrix_result_w_matrix_sum);
-    // is_error = is_error || !(error < epsilon);
-    // cout << "> Errors on a scaled hmatrix matrix product: " << error << '\n';
+    // Scale
+    matrix_test = C_dense;
+    scale(exec_compat::par, transa != 'C' ? scaling_coefficient : conj_if_complex(scaling_coefficient), root_hmatrix);
+    internal_add_hmatrix_matrix_product(transa, transb, alpha, root_hmatrix, B_dense, scaling_coefficient * beta, matrix_test);
+    error    = normFrob(scaled_matrix_result_w_matrix_sum - matrix_test) / normFrob(scaled_matrix_result_w_matrix_sum);
+    is_error = is_error || !(error < epsilon);
+    cout << "> Errors on a scaled hmatrix matrix product with parallel scale: " << error << '\n';
+
+    matrix_test = C_dense;
+    scale(exec_compat::seq, transa != 'C' ? T(1) / scaling_coefficient : T(1) / conj_if_complex(scaling_coefficient), root_hmatrix);
+    internal_add_hmatrix_matrix_product(transa, transb, alpha, root_hmatrix, B_dense, beta, matrix_test);
+    error    = normFrob(matrix_result_w_matrix_sum - matrix_test) / normFrob(matrix_result_w_matrix_sum);
+    is_error = is_error || !(error < epsilon);
+    cout << "> Errors on a hmatrix matrix product after sequential scale: " << error << '\n';
 
     return is_error;
 }
 
 template <typename T, typename GeneratorTestType>
-bool test_symmetric_hmatrix_matrix_product(const TestCaseSymmetricProduct<T, GeneratorTestType> &test_case, htool::underlying_type<T> epsilon, htool::underlying_type<T>) {
+bool test_symmetric_hmatrix_matrix_product(const TestCaseSymmetricProduct<T, GeneratorTestType> &test_case, htool::underlying_type<T> epsilon, htool::underlying_type<T>, bool task_based = false) {
 
     int rankWorld;
     MPI_Comm_rank(MPI_COMM_WORLD, &rankWorld);
@@ -258,6 +295,19 @@ bool test_symmetric_hmatrix_matrix_product(const TestCaseSymmetricProduct<T, Gen
     Matrix<T> scaled_matrix_result_w_matrix_sum(matrix_result_w_matrix_sum);
     scale(scaling_coefficient, scaled_matrix_result_w_matrix_sum);
 
+    // Task-based checks, run separately without leak detection (see the CMakeLists.txt)
+    if (task_based) {
+        if (side == 'L') {
+            omp_task_policy<T> task_policy;
+            matrix_test = C_dense;
+            internal_add_hmatrix_matrix_product(task_policy, 'N', 'N', alpha, root_hmatrix, B_dense, beta, matrix_test);
+            error    = normFrob(matrix_result_w_matrix_sum - matrix_test) / normFrob(matrix_result_w_matrix_sum);
+            is_error = is_error || !(error < epsilon);
+            cout << "> Errors on a task-based symmetric hmatrix matrix product: " << error << '\n';
+        }
+        return is_error;
+    }
+
     // Product
     // if ((side == 'L' && ni_B == 1) || (side == 'R' && no_B == 1)) {
     //     test_vec = C_vec;
@@ -297,7 +347,7 @@ bool test_symmetric_hmatrix_matrix_product(const TestCaseSymmetricProduct<T, Gen
 }
 
 template <typename T, typename GeneratorTestType>
-bool test_hermitian_hmatrix_matrix_product(const TestCaseSymmetricProduct<T, GeneratorTestType> &test_case, htool::underlying_type<T> epsilon, htool::underlying_type<T>) {
+bool test_hermitian_hmatrix_matrix_product(const TestCaseSymmetricProduct<T, GeneratorTestType> &test_case, htool::underlying_type<T> epsilon, htool::underlying_type<T>, bool task_based = false) {
 
     int rankWorld;
     MPI_Comm_rank(MPI_COMM_WORLD, &rankWorld);
@@ -369,6 +419,19 @@ bool test_hermitian_hmatrix_matrix_product(const TestCaseSymmetricProduct<T, Gen
 
     Matrix<T> scaled_matrix_result_w_matrix_sum(matrix_result_w_matrix_sum);
     scale(scaling_coefficient, scaled_matrix_result_w_matrix_sum);
+
+    // Task-based checks, run separately without leak detection (see the CMakeLists.txt)
+    if (task_based) {
+        if (side == 'L') {
+            omp_task_policy<T> task_policy;
+            matrix_test = C_dense;
+            internal_add_hmatrix_matrix_product(task_policy, 'N', 'N', alpha, root_hmatrix, B_dense, beta, matrix_test);
+            error    = normFrob(matrix_result_w_matrix_sum - matrix_test) / normFrob(matrix_result_w_matrix_sum);
+            is_error = is_error || !(error < epsilon);
+            cout << "> Errors on a task-based hermitian hmatrix matrix product: " << error << '\n';
+        }
+        return is_error;
+    }
 
     // Product
     // if ((side == 'L' && ni_B == 1) || (side == 'R' && no_B == 1)) {

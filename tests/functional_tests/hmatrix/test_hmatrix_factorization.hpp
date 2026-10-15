@@ -41,7 +41,7 @@ bool test_hmatrix_lu(ExecutionPolicy &&execution_policy, char trans, int n1, int
     // LU factorization
     matrix_test = B_dense;
     lu_factorization(execution_policy, A);
-    lu_solve(trans, A, matrix_test);
+    lu_solve(execution_policy, trans, A, matrix_test);
     error    = normFrob(X_dense - matrix_test) / normFrob(X_dense);
     is_error = is_error || !(error < epsilon * margin);
     cout << "> Errors on hmatrix lu solve: " << error << '\n';
@@ -78,7 +78,7 @@ bool test_hmatrix_cholesky(ExecutionPolicy &&execution_policy, char UPLO, bool f
     // Cholesky factorization
     matrix_test = B_dense;
     cholesky_factorization(execution_policy, UPLO, HA);
-    cholesky_solve(UPLO, HA, matrix_test);
+    cholesky_solve(execution_policy, UPLO, HA, matrix_test);
     error    = normFrob(X_dense - matrix_test) / normFrob(X_dense);
     is_error = is_error || !(error < epsilon * margin);
     cout << "> Errors on hmatrix cholesky solve" << (full_storage ? " (full storage)" : "") << ": " << error << '\n';
@@ -115,7 +115,7 @@ bool test_hmatrix_cholesky(ExecutionPolicy &&execution_policy, char UPLO, bool f
     // Cholesky factorization
     matrix_test = B_dense;
     cholesky_factorization(execution_policy, UPLO, HA);
-    cholesky_solve(UPLO, HA, matrix_test);
+    cholesky_solve(execution_policy, UPLO, HA, matrix_test);
     error    = normFrob(X_dense - matrix_test) / normFrob(X_dense);
     is_error = is_error || !(error < epsilon * margin);
     cout << "> Errors on hmatrix cholesky solve" << (full_storage ? " (full storage)" : "") << ": " << error << '\n';
@@ -178,7 +178,7 @@ bool test_hmatrix_ldlt(ExecutionPolicy &&execution_policy, char UPLO, char symme
     // LDLt factorization
     matrix_test = B_dense;
     ldlt_factorization(execution_policy, symmetry, UPLO, HA);
-    ldlt_solve(symmetry, UPLO, HA, matrix_test);
+    ldlt_solve(execution_policy, symmetry, UPLO, HA, matrix_test);
 
     error    = normFrob(X_dense - matrix_test) / normFrob(X_dense);
     is_error = is_error || !(error < epsilon * margin);

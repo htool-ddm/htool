@@ -58,6 +58,18 @@ class DefaultApproximationBuilder {
     }
 
     DefaultApproximationBuilder(const VirtualGenerator<CoefficientPrecision> &generator, const Cluster<CoordinatePrecision> &target_cluster, const Cluster<CoordinatePrecision> &source_cluster, const HMatrixTreeBuilder<CoefficientPrecision, CoordinatePrecision> &hmatrix_tree_builder, MPI_Comm communicator) : DefaultApproximationBuilder(InternalGeneratorWithPermutation<CoefficientPrecision>(generator, target_cluster.get_permutation().data(), source_cluster.get_permutation().data()), target_cluster, source_cluster, hmatrix_tree_builder, communicator) {}
+
+    // Builds the HMatrix with execution_policy. With an omp_task_policy, call it outside a parallel region: the distributed operator
+    // reads the HMatrix right after its build, which returns before its tasks are done inside a parallel region.
+    template <typename ExecutionPolicy>
+    DefaultApproximationBuilder(ExecutionPolicy &&execution_policy, const VirtualInternalGenerator<CoefficientPrecision> &generator, const Cluster<CoordinatePrecision> &target_cluster, const Cluster<CoordinatePrecision> &source_cluster, const HMatrixTreeBuilder<CoefficientPrecision, CoordinatePrecision> &hmatrix_tree_builder, MPI_Comm communicator) : hmatrix(hmatrix_tree_builder.build(execution_policy, generator, target_cluster, source_cluster, get_rankWorld(communicator), get_rankWorld(communicator))), local_hmatrix(hmatrix, hmatrix.get_target_cluster(), hmatrix.get_source_cluster(), false, false), distributed_operator_holder(target_cluster, source_cluster, communicator, local_hmatrix), distributed_operator(distributed_operator_holder.distributed_operator) {
+        block_diagonal_hmatrix = hmatrix.get_sub_hmatrix(target_cluster.get_cluster_on_partition(get_rankWorld(communicator)), source_cluster.get_cluster_on_partition(get_rankWorld(communicator)));
+    }
+
+    template <typename ExecutionPolicy>
+    DefaultApproximationBuilder(ExecutionPolicy &&execution_policy, const VirtualGenerator<CoefficientPrecision> &generator, const Cluster<CoordinatePrecision> &target_cluster, const Cluster<CoordinatePrecision> &source_cluster, const HMatrixTreeBuilder<CoefficientPrecision, CoordinatePrecision> &hmatrix_tree_builder, MPI_Comm communicator) : hmatrix(hmatrix_tree_builder.build(execution_policy, generator, target_cluster, source_cluster, get_rankWorld(communicator), get_rankWorld(communicator))), local_hmatrix(hmatrix, hmatrix.get_target_cluster(), hmatrix.get_source_cluster(), false, false), distributed_operator_holder(target_cluster, source_cluster, communicator, local_hmatrix), distributed_operator(distributed_operator_holder.distributed_operator) {
+        block_diagonal_hmatrix = hmatrix.get_sub_hmatrix(target_cluster.get_cluster_on_partition(get_rankWorld(communicator)), source_cluster.get_cluster_on_partition(get_rankWorld(communicator)));
+    }
 };
 
 template <typename CoefficientPrecision, typename CoordinatePrecision = underlying_type<CoefficientPrecision>>

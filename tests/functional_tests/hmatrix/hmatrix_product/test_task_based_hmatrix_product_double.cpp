@@ -1,3 +1,4 @@
+#include "../test_hmatrix_product.hpp"
 #include "../test_task_based_hmatrix_hmatrix_product.hpp"
 #include "../test_task_based_hmatrix_vector_product.hpp"
 
@@ -5,11 +6,13 @@
 #include <htool/testing/generator_test.hpp> // for GeneratorTestComplexSymm...
 #include <initializer_list>                 // for initializer_list
 #include <iostream>                         // for basic_ostream, char_traits
+#include <mpi.h>                            // for MPI_Finalize, MPI_Init
 
 using namespace std;
 using namespace htool;
 
-int main(int, char *[]) {
+int main(int argc, char *argv[]) {
+    MPI_Init(&argc, &argv);
 
     bool is_error = false;
 
@@ -51,6 +54,7 @@ int main(int, char *[]) {
     std::cout << "+++++++++++++++++++++++++++++++++++++++++++" << '\n';
     if (is_error) {
         htool::Logger::get_instance().log(LogLevel::ERROR, "At least one test_task_based_hmatrix_vector_product case failed."); // LCOV_EXCL_LINE
+        MPI_Finalize();
         return 1;
 
     } else {
@@ -93,6 +97,7 @@ int main(int, char *[]) {
     std::cout << "+++++++++++++++++++++++++++++++++++++++++++" << '\n';
     if (is_error) {
         htool::Logger::get_instance().log(LogLevel::ERROR, "At least one test_task_based_hmatrix_hmatrix_product case failed."); // LCOV_EXCL_LINE
+        MPI_Finalize();
         return 1;
 
     } else {
@@ -100,5 +105,36 @@ int main(int, char *[]) {
     }
     std::cout << "+++++++++++++++++++++++++++++++++++++++++++" << '\n';
 
+    // Task-based checks of test_hmatrix_product, on local clusters with several MPI processes
+    const std::array<double, 5> additional_lrmat_sum_tolerances{10., 10., 10., 10., 10.};
+
+    for (auto epsilon : {1e-6, 1e-10}) {
+        for (auto n1 : {200, 400}) {
+            for (auto n3 : {100}) {
+                for (auto use_local_cluster : {true, false}) {
+                    for (auto n2 : {200, 400}) {
+                        for (auto transa : {'N', 'T'}) {
+                            for (auto transb : {'N', 'T'}) {
+                                std::cout << "hmatrix product: " << use_local_cluster << " " << epsilon << " " << n1 << " " << n2 << " " << n3 << " " << transa << " " << transb << "\n";
+
+                                is_error = is_error || test_hmatrix_product<double, GeneratorTestDouble>(transa, transb, n1, n2, n3, use_local_cluster, epsilon, additional_lrmat_sum_tolerances, true);
+                            }
+                        }
+                    }
+                }
+                for (auto side : {'L', 'R'}) {
+                    for (auto UPLO : {'U', 'L'}) {
+                        const double margin = 0;
+                        std::cout << "symmetric matrix product: " << n1 << " " << n3 << " " << side << " " << UPLO << " " << epsilon << "\n";
+                        is_error = is_error || test_symmetric_hmatrix_product<double, GeneratorTestDoubleSymmetric>(n1, n3, side, UPLO, epsilon, margin, true);
+                    }
+                }
+            }
+        }
+    }
+    MPI_Finalize();
+    if (is_error) {
+        return 1;
+    }
     return 0;
 }

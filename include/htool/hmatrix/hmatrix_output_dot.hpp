@@ -48,7 +48,7 @@ struct TreeCounts {
 
 // overload for const
 template <typename CoefficientPrecision, typename CoordinatePrecision = underlying_type<CoefficientPrecision>>
-void view_block_tree(HMatrix<CoefficientPrecision, CoordinatePrecision> &hmatrix, const std::vector<HMatrix<CoefficientPrecision, CoordinatePrecision> *> &subhmatrices_to_color, std::ostream &dotFile) {
+void view_block_tree(HMatrix<CoefficientPrecision, CoordinatePrecision> &hmatrix, const std::vector<const HMatrix<CoefficientPrecision, CoordinatePrecision> *> &subhmatrices_to_color, std::ostream &dotFile) {
     // Start the DOT file content
     dotFile << "digraph {\n";
 
@@ -123,7 +123,7 @@ std::string get_hmatrix_id(const HMatrix<CoefficientPrecision, CoordinatePrecisi
 
 // overload for const
 template <typename CoefficientPrecision, typename CoordinatePrecision = underlying_type<CoefficientPrecision>>
-void add_node_to_block_tree(HMatrix<CoefficientPrecision, CoordinatePrecision> &hmatrix, std::ostream &dotFile, TreeCounts &counts, const std::vector<HMatrix<CoefficientPrecision, CoordinatePrecision> *> &subhmatrices_to_color) {
+void add_node_to_block_tree(HMatrix<CoefficientPrecision, CoordinatePrecision> &hmatrix, std::ostream &dotFile, TreeCounts &counts, const std::vector<const HMatrix<CoefficientPrecision, CoordinatePrecision> *> &subhmatrices_to_color) {
     // Define node
     dotFile << "    H_" << get_hmatrix_id(hmatrix) << " [tooltip=\"Node information: \\n";
 
@@ -186,7 +186,7 @@ void add_node_to_block_tree(HMatrix<CoefficientPrecision, CoordinatePrecision> &
 
 // overload for const
 template <typename CoefficientPrecision, typename CoordinatePrecision = underlying_type<CoefficientPrecision>>
-void create_block_tree(HMatrix<CoefficientPrecision, CoordinatePrecision> &hmatrix, std::ostream &dotFile, TreeCounts &counts, const std::vector<HMatrix<CoefficientPrecision, CoordinatePrecision> *> &subhmatrices_to_color) {
+void create_block_tree(HMatrix<CoefficientPrecision, CoordinatePrecision> &hmatrix, std::ostream &dotFile, TreeCounts &counts, const std::vector<const HMatrix<CoefficientPrecision, CoordinatePrecision> *> &subhmatrices_to_color) {
     // Increment the call count
     counts.call_count++;
 

@@ -1,15 +1,15 @@
-#ifndef HTOOL_HMATRIX_LINALG_ADD_MATRIX_HMATRIX_PRODUCT_HPP
-#define HTOOL_HMATRIX_LINALG_ADD_MATRIX_HMATRIX_PRODUCT_HPP
+#ifndef HTOOL_HMATRIX_LINALG_SEQ_ADD_MATRIX_HMATRIX_PRODUCT_HPP
+#define HTOOL_HMATRIX_LINALG_SEQ_ADD_MATRIX_HMATRIX_PRODUCT_HPP
 
-#include "../../matrix/linalg/scale.hpp"            // for scale
-#include "../../matrix/linalg/transpose.hpp"        // for transpose
-#include "../../matrix/matrix.hpp"                  // for Matrix
-#include "../../matrix/utils/SVD_truncation.hpp"    // for SVD_truncation
-#include "../../misc/misc.hpp"                      // for conj_if_complex
-#include "../../wrappers/wrapper_blas.hpp"          // for Blas
-#include "../hmatrix.hpp"                           // for HMatrix
-#include "../lrmat/lrmat.hpp"                       // for LowRankMatrix
-#include "../lrmat/utils/SVD_recompression.hpp"     // for recompression
+#include "../../../matrix/linalg/scale.hpp"         // for scale
+#include "../../../matrix/linalg/transpose.hpp"     // for transpose
+#include "../../../matrix/matrix.hpp"               // for Matrix
+#include "../../../matrix/utils/SVD_truncation.hpp" // for SVD_truncation
+#include "../../../misc/misc.hpp"                   // for conj_if_complex
+#include "../../../wrappers/wrapper_blas.hpp"       // for Blas
+#include "../../hmatrix.hpp"                        // for HMatrix
+#include "../../lrmat/lrmat.hpp"                    // for LowRankMatrix
+#include "../../lrmat/utils/SVD_recompression.hpp"  // for recompression
 #include "add_hmatrix_matrix_product_row_major.hpp" // for sequential_ad...
 #include <algorithm>                                // for copy_n, min
 #include <vector>                                   // for vector

@@ -74,7 +74,7 @@ class HMatrixTreeBuilder {
     void reset_root_of_block_tree(HMatrixType &) const;
     void sequential_compute_blocks(const VirtualInternalGenerator<CoefficientPrecision> &generator) const;
     void openmp_compute_blocks(const VirtualInternalGenerator<CoefficientPrecision> &generator) const;
-    void task_based_compute_blocks(const VirtualInternalGenerator<CoefficientPrecision> &generator, const std::vector<HMatrix<CoefficientPrecision, CoordinatePrecision> *> &L0) const;
+    void task_based_compute_blocks(const VirtualInternalGenerator<CoefficientPrecision> &generator, HMatrix<CoefficientPrecision, CoordinatePrecision> &root_hmatrix, const std::vector<const HMatrix<CoefficientPrecision, CoordinatePrecision> *> &L0) const;
 
     // Tests
     void check_inputs() {
@@ -348,7 +348,7 @@ HMatrix<CoefficientPrecision, CoordinatePrecision> HMatrixTreeBuilder<Coefficien
 
     // Compute leave's data
     run_task_based(
-        hmatrix_task_dependencies, root_hmatrix, [&]() { sequential_compute_blocks(generator); }, [&](auto &L0) { task_based_compute_blocks(generator, L0); });
+        hmatrix_task_dependencies, root_hmatrix, [&]() { sequential_compute_blocks(generator); }, [&](auto &L0) { task_based_compute_blocks(generator, root_hmatrix, L0); });
 
     set_symmetry_for_leaves(root_hmatrix);
 
@@ -645,7 +645,7 @@ void HMatrixTreeBuilder<CoefficientPrecision, CoordinatePrecision>::openmp_compu
 }
 
 template <typename CoefficientPrecision, typename CoordinatePrecision>
-void HMatrixTreeBuilder<CoefficientPrecision, CoordinatePrecision>::task_based_compute_blocks(const VirtualInternalGenerator<CoefficientPrecision> &generator, const std::vector<HMatrix<CoefficientPrecision, CoordinatePrecision> *> &L0) const {
+void HMatrixTreeBuilder<CoefficientPrecision, CoordinatePrecision>::task_based_compute_blocks(const VirtualInternalGenerator<CoefficientPrecision> &generator, HMatrix<CoefficientPrecision, CoordinatePrecision> &root_hmatrix, const std::vector<const HMatrix<CoefficientPrecision, CoordinatePrecision> *> &L0) const {
     // Tasks may run after this function returns (nested mode), and a new build with this builder resets its members.
     // So everything a task needs is computed here and captured by value.
     std::unordered_set<const HMatrix<CoefficientPrecision, CoordinatePrecision> *> admissible_tasks(m_admissible_tasks.begin(), m_admissible_tasks.end());
@@ -656,7 +656,8 @@ void HMatrixTreeBuilder<CoefficientPrecision, CoordinatePrecision>::task_based_c
 
     // int max_prio = std::max(0, omp_get_max_task_priority());
     for (int p = 0; p < L0.size(); p++) {
-        HMatrix<CoefficientPrecision, CoordinatePrecision> *L0_node = L0[p];
+        // Mutable through root_hmatrix: the tasks compute the leaves below it
+        HMatrix<CoefficientPrecision, CoordinatePrecision> *L0_node = get_mutable_node(root_hmatrix, *L0[p]);
 
         // Leaves of L0_node to compute, with true if admissible and false if dense
         std::vector<std::pair<HMatrix<CoefficientPrecision, CoordinatePrecision> *, bool>> leaves_to_compute;

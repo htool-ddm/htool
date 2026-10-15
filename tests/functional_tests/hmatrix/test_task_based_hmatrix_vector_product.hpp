@@ -13,7 +13,7 @@
 #include <htool/hmatrix/linalg/add_hmatrix_vector_product.hpp>
 // #include <htool/hmatrix/linalg/factorization.hpp>
 // #include <htool/hmatrix/linalg/task_based_add_hmatrix_hmatrix_product.hpp>      // for task_bas...
-#include <htool/hmatrix/linalg/task_based_add_hmatrix_vector_product.hpp> // for task_bas...
+#include <htool/hmatrix/linalg/omp_task/add_hmatrix_vector_product.hpp> // for task_bas...
 // #include <htool/hmatrix/linalg/task_based_factorization.hpp>                    // for task_based_lu_factorization
 // #include <htool/hmatrix/linalg/task_based_triangular_hmatrix_hmatrix_solve.hpp> // for task_based_triangular_hmatrix_hmatrix_solve
 // #include <htool/hmatrix/linalg/triangular_hmatrix_hmatrix_solve.hpp>            // for triangular_hmatrix_hmatrix_solve
@@ -75,8 +75,8 @@ bool test_task_based_hmatrix_vector_product(const TestCaseType &test_case, char 
     std::chrono::steady_clock::time_point start, end;
 
     // build
-    auto hmatrix                 = hmatrix_tree_builder->build(*test_case.operator_A, *root_cluster_A_output, *root_cluster_A_input);
-    std::vector<HMatrix<T> *> L0 = find_l0(hmatrix, 64);
+    auto hmatrix                       = hmatrix_tree_builder->build(*test_case.operator_A, *root_cluster_A_output, *root_cluster_A_input);
+    std::vector<const HMatrix<T> *> L0 = find_l0(hmatrix, 64);
 
     // L0 definitions
     std::vector<const Cluster<htool::underlying_type<T>> *> in_L0  = find_l0(*input_cluster, 8);
@@ -116,7 +116,7 @@ bool test_task_based_hmatrix_vector_product(const TestCaseType &test_case, char 
     std::chrono::duration<double> task_based_duration = end - start;
 
     // Compare the results
-    is_error = is_error || (std::isnan(norm2(out - out_task) / norm2(out)) > nb_products * error_tol);
+    is_error = is_error || !(norm2(out - out_task) / norm2(out) < nb_products * error_tol);
     if (is_error) {
         std::cout << "ERROR" << '\n';
     } else {

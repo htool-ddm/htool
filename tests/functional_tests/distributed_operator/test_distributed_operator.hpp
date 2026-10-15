@@ -482,7 +482,7 @@ auto add_off_diagonal_operator(ClusterTreeBuilder<htool::underlying_type<T>> &re
 }
 
 template <typename T, typename GeneratorTestType>
-bool test_default_distributed_operator(int nr, int nc, int mu, bool use_buffer, char Symmetry, char UPLO, char op, bool off_diagonal_approximation, DataType data_type, htool::underlying_type<T> epsilon = 1e-14) {
+bool test_default_distributed_operator(int nr, int nc, int mu, bool use_buffer, char Symmetry, char UPLO, char op, bool off_diagonal_approximation, DataType data_type, htool::underlying_type<T> epsilon = 1e-14, bool task_based = false) {
 
     // Get the number of processes
     int sizeWorld;
@@ -554,16 +554,25 @@ bool test_default_distributed_operator(int nr, int nc, int mu, bool use_buffer, 
         auto dependencies                            = add_off_diagonal_operator<T, GeneratorTestType>(recursive_build, distributed_operator, *target_root_cluster, p1, *source_root_cluster, p2, data_type, epsilon, eta);
         test                                         = test_vector_product(generator_in_user_numbering, distributed_operator, *target_root_cluster, MasterOffset_target, *source_root_cluster, MasterOffset_source, mu, op, use_buffer, epsilon);
     } else {
+        if (task_based) {
+            omp_task_policy<T, htool::underlying_type<T>> task_policy;
+            DefaultApproximationBuilder<T, htool::underlying_type<T>> task_based_distributed_operator_holder(task_policy, generator_in_user_numbering, *target_root_cluster, *source_root_cluster, hmatrix_tree_builder, MPI_COMM_WORLD);
+            return test_vector_product(generator_in_user_numbering, task_based_distributed_operator_holder.distributed_operator, *target_root_cluster, MasterOffset_target, *source_root_cluster, MasterOffset_source, mu, op, use_buffer, epsilon);
+        }
+
         DefaultApproximationBuilder<T, htool::underlying_type<T>> distributed_operator_holder(generator_in_user_numbering, *target_root_cluster, *source_root_cluster, hmatrix_tree_builder, MPI_COMM_WORLD);
 
         DistributedOperator<T> &distributed_operator = distributed_operator_holder.distributed_operator;
         test                                         = test_vector_product(generator_in_user_numbering, distributed_operator, *target_root_cluster, MasterOffset_target, *source_root_cluster, MasterOffset_source, mu, op, use_buffer, epsilon);
+
+        DefaultApproximationBuilder<T, htool::underlying_type<T>> parallel_distributed_operator_holder(exec_compat::par, generator_in_user_numbering, *target_root_cluster, *source_root_cluster, hmatrix_tree_builder, MPI_COMM_WORLD);
+        test = test || test_vector_product(generator_in_user_numbering, parallel_distributed_operator_holder.distributed_operator, *target_root_cluster, MasterOffset_target, *source_root_cluster, MasterOffset_source, mu, op, use_buffer, epsilon);
     }
 
     return test;
 }
 
 template <typename T, typename GeneratorTestType>
-bool test_distributed_operator(int nr, int nc, int mu, bool use_buffer, char Symmetry, char UPLO, char op, bool off_diagonal_approximation, DataType data_type, htool::underlying_type<T> epsilon) {
-    return test_default_distributed_operator<T, GeneratorTestType>(nr, nc, mu, use_buffer, Symmetry, UPLO, op, off_diagonal_approximation, data_type, epsilon);
+bool test_distributed_operator(int nr, int nc, int mu, bool use_buffer, char Symmetry, char UPLO, char op, bool off_diagonal_approximation, DataType data_type, htool::underlying_type<T> epsilon, bool task_based = false) {
+    return test_default_distributed_operator<T, GeneratorTestType>(nr, nc, mu, use_buffer, Symmetry, UPLO, op, off_diagonal_approximation, data_type, epsilon, task_based);
 }

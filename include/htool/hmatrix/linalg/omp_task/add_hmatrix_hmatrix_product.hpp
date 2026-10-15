@@ -1,11 +1,12 @@
-#ifndef HTOOL_TASK_BASED_HMATRIX_LINALG_ADD_HMATRIX_HMATRIX_PRODUCT_HPP
-#define HTOOL_TASK_BASED_HMATRIX_LINALG_ADD_HMATRIX_HMATRIX_PRODUCT_HPP
+#ifndef HTOOL_HMATRIX_LINALG_OMP_TASK_ADD_HMATRIX_HMATRIX_PRODUCT_HPP
+#define HTOOL_HMATRIX_LINALG_OMP_TASK_ADD_HMATRIX_HMATRIX_PRODUCT_HPP
 
 // #include "../../matrix/linalg/add_matrix_vector_product.hpp"      // for add_mat...
 // #include "../../misc/misc.hpp"                                    // for underly...
-#include "../../wrappers/wrapper_blas.hpp" // for Blas
-#include "../hmatrix.hpp"                  // for HMatrix
-#include "add_lrmat_hmatrix.hpp"           // for internal_add_lrmat_hmatrix
+#include "../../../wrappers/wrapper_blas.hpp" // for Blas
+#include "../../hmatrix.hpp"                  // for HMatrix
+#include "../seq/add_hmatrix_hmatrix_product.hpp"
+#include "../seq/add_lrmat_hmatrix.hpp" // for internal_add_lrmat_hmatrix
 // #include "../lrmat/linalg/add_lrmat_vector_product.hpp"           // for add_lrm...
 #include <algorithm> // for transform, max
 // #include <complex>                                                // for complex
@@ -49,33 +50,35 @@ namespace htool {
  */
 
 template <typename CoefficientPrecision, typename CoordinatePrecision = CoefficientPrecision>
-void task_based_internal_add_hmatrix_hmatrix_product(char transa, char transb, CoefficientPrecision alpha, const HMatrix<CoefficientPrecision, CoordinatePrecision> &A, const HMatrix<CoefficientPrecision, CoordinatePrecision> &B, CoefficientPrecision beta, HMatrix<CoefficientPrecision, CoordinatePrecision> &C, std::vector<HMatrix<CoefficientPrecision> *> &L0_A, std::vector<HMatrix<CoefficientPrecision> *> &L0_B, std::vector<HMatrix<CoefficientPrecision> *> &L0) {
+void task_based_internal_add_hmatrix_hmatrix_product(char transa, char transb, CoefficientPrecision alpha, const HMatrix<CoefficientPrecision, CoordinatePrecision> &A, const HMatrix<CoefficientPrecision, CoordinatePrecision> &B, CoefficientPrecision beta, HMatrix<CoefficientPrecision, CoordinatePrecision> &C, const std::vector<const HMatrix<CoefficientPrecision, CoordinatePrecision> *> &L0_A, const std::vector<const HMatrix<CoefficientPrecision, CoordinatePrecision> *> &L0_B, const std::vector<const HMatrix<CoefficientPrecision, CoordinatePrecision> *> &L0) {
 
     // int max_prio = std::max(0, omp_get_max_task_priority());
 
+    // The nodes of L0 below C, or the node of L0 that C is in or below
+    std::vector<const HMatrix<CoefficientPrecision, CoordinatePrecision> *> C_deps = enumerate_dependences(C, L0);
+    const HMatrix<CoefficientPrecision, CoordinatePrecision> *L0_node_of_C         = (C_deps.size() == 1 && left_hmatrix_ancestor_of_right_hmatrix(*C_deps[0], C)) ? C_deps[0] : nullptr;
+
     // Scale the output vector `out` with `beta` if `beta` is not equal to 1
     if (CoefficientPrecision(beta) != CoefficientPrecision(1)) {
-        for (auto L0C_node : L0) {
-
+        for (const HMatrix<CoefficientPrecision, CoordinatePrecision> *L0C_node : C_deps) {
+            // L0C_node not in C's block tree (C below L0): the task only scales C
+            HMatrix<CoefficientPrecision, CoordinatePrecision> *C_node = get_mutable_node(C, *L0C_node);
+            if (C_node == nullptr) {
+                C_node = &C;
+            }
 #if defined(_OPENMP)
-#    pragma omp task default(none)   \
-        firstprivate(L0C_node, beta) \
+#    pragma omp task default(none)           \
+        firstprivate(L0C_node, C_node, beta) \
         depend(inout : *L0C_node)
 #endif
             {
-                sequential_scale(beta, *L0C_node);
+                sequential_scale(beta, *C_node);
             }
         }
     }
 
-    // check if C is in L0.
-    bool is_C_in_L0 = false;
-    for (auto L0C_node : L0) {
-        if (L0C_node->get_target_cluster() == C.get_target_cluster() && L0C_node->get_source_cluster() == C.get_source_cluster()) {
-            is_C_in_L0 = true;
-            break;
-        }
-    }
+    // C in or below a node of L0: one task, on this node, computes the product on C
+    bool is_C_in_L0 = L0_node_of_C != nullptr;
 
     // Fill the clusters for the output, middle, and input clusters
     bool block_tree_not_consistent = (A.get_target_cluster().get_rank() < 0 || A.get_source_cluster().get_rank() < 0 || B.get_target_cluster().get_rank() < 0 || B.get_source_cluster().get_rank() < 0);
@@ -115,11 +118,11 @@ void task_based_internal_add_hmatrix_hmatrix_product(char transa, char transb, C
 
         if (is_C_in_L0) {
 #if defined(_OPENMP)
-#    pragma omp task default(none)                                     \
-        firstprivate(transa, transb, alpha, read_deps_size)            \
-        shared(A, B, C, read_deps)                                     \
-        depend(iterator(it = 0 : read_deps_size), in : *read_deps[it]) \
-        depend(inout : C)
+#    pragma omp task default(none)                                        \
+        firstprivate(transa, transb, alpha, read_deps_size, L0_node_of_C) \
+        shared(A, B, C, read_deps)                                        \
+        depend(iterator(it = 0 : read_deps_size), in : *read_deps[it])    \
+        depend(inout : *L0_node_of_C)
 #endif
             {
                 internal_add_hmatrix_hmatrix_product(transa, transb, alpha, A, B, CoefficientPrecision(1), C);
@@ -161,13 +164,13 @@ void task_based_internal_add_hmatrix_hmatrix_product(char transa, char transb, C
             // Use a ptr to keep output_cluster and input_cluster alive as long as any task is running
             const Cluster<CoordinatePrecision> *output_cluster_ptr = &output_cluster;
             const Cluster<CoordinatePrecision> *input_cluster_ptr  = &input_cluster;
-            auto write_deps                                        = enumerate_dependences(C, L0);
-
-            for (auto &C_node : write_deps) {
+            // C above L0: the nodes of L0 below C are in its block tree
+            for (const HMatrix<CoefficientPrecision, CoordinatePrecision> *L0_node : C_deps) {
+                HMatrix<CoefficientPrecision, CoordinatePrecision> *C_node = get_mutable_node(C, *L0_node);
 #if defined(_OPENMP)
-#    pragma omp task default(none)                                                  \
-        firstprivate(AB, C_node, output_cluster_ptr, input_cluster_ptr, write_deps) \
-        depend(inout : *C_node)                                                     \
+#    pragma omp task default(none)                                               \
+        firstprivate(AB, L0_node, C_node, output_cluster_ptr, input_cluster_ptr) \
+        depend(inout : *L0_node)                                                 \
         depend(in : *AB)
 #endif
                 {

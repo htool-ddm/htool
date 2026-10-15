@@ -15,14 +15,18 @@ int main(int, char *[]) {
 
     for (auto n1 : {10, 500}) { // 10 to deal with trivial case
         for (auto epsilon : {1e-3, 1e-6, 1e-10}) {
-            for (auto trans : {'N', 'T'}) {
+            for (auto trans : {'N', 'T', 'C'}) {
                 is_error = is_error || test_hmatrix_lu<htool::omp_task_policy<std::complex<double>> &&, std::complex<double>, GeneratorTestComplexHermitian>(omp_task_policy<std::complex<double>>{}, trans, n1, n2, epsilon, margin);
+                is_error = is_error || test_hmatrix_lu<const exec_compat::parallel_policy &, std::complex<double>, GeneratorTestComplexHermitian>(exec_compat::par, trans, n1, n2, epsilon, margin);
             }
             for (auto UPLO : {'L', 'U'}) {
                 for (bool full_storage : {false, true}) {
                     is_error = is_error || test_hmatrix_cholesky<htool::omp_task_policy<std::complex<double>> &&, std::complex<double>, GeneratorTestComplexHermitian>(omp_task_policy<std::complex<double>>{}, UPLO, full_storage, n1, n2, epsilon, margin);
+                    is_error = is_error || test_hmatrix_cholesky<const exec_compat::parallel_policy &, std::complex<double>, GeneratorTestComplexHermitian>(exec_compat::par, UPLO, full_storage, n1, n2, epsilon, margin);
                     is_error = is_error || test_hmatrix_ldlt<htool::omp_task_policy<std::complex<double>> &&, std::complex<double>, GeneratorTestComplexSymmetric>(omp_task_policy<std::complex<double>>{}, UPLO, 'S', full_storage, n1, n2, epsilon, margin);
+                    is_error = is_error || test_hmatrix_ldlt<const exec_compat::parallel_policy &, std::complex<double>, GeneratorTestComplexSymmetric>(exec_compat::par, UPLO, 'S', full_storage, n1, n2, epsilon, margin);
                     is_error = is_error || test_hmatrix_ldlt<htool::omp_task_policy<std::complex<double>> &&, std::complex<double>, GeneratorTestComplexHermitian>(omp_task_policy<std::complex<double>>{}, UPLO, 'H', full_storage, n1, n2, epsilon, margin);
+                    is_error = is_error || test_hmatrix_ldlt<const exec_compat::parallel_policy &, std::complex<double>, GeneratorTestComplexHermitian>(exec_compat::par, UPLO, 'H', full_storage, n1, n2, epsilon, margin);
                 }
             }
         }
