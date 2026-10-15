@@ -49,9 +49,12 @@ add_test(NAME Test_local_hmatrix_solvers COMMAND ${MPIEXEC} ${MPIEXEC_NUMPROC_FL
 set_tests_properties(Test_local_hmatrix_solvers PROPERTIES LABELS "mpi")
 
 # Task-based tests run without leak detection (see Test_task_based_hmatrix_factorization)
+add_executable(Test_task_based_local_hmatrix_solvers test_task_based_local_hmatrix_solvers.cpp)
+target_link_libraries(Test_task_based_local_hmatrix_solvers htool)
+add_dependencies(build-tests-solvers Test_task_based_local_hmatrix_solvers)
 foreach(nb_threads 1 2 4)
-    add_test(NAME Test_local_hmatrix_solvers_task_based_${nb_threads} COMMAND ${MPIEXEC} ${MPIEXEC_NUMPROC_FLAG} 1 ${MPIEXEC_PREFLAGS} ${CMAKE_CURRENT_BINARY_DIR}/Test_local_hmatrix_solvers task_based)
-    set_tests_properties(Test_local_hmatrix_solvers_task_based_${nb_threads} PROPERTIES LABELS "mpi" ENVIRONMENT "ASAN_OPTIONS=detect_leaks=0;OMP_NUM_THREADS=${nb_threads}")
+    add_test(NAME Test_task_based_local_hmatrix_solvers_${nb_threads} COMMAND ${MPIEXEC} ${MPIEXEC_NUMPROC_FLAG} 1 ${MPIEXEC_PREFLAGS} ${CMAKE_CURRENT_BINARY_DIR}/Test_task_based_local_hmatrix_solvers)
+    set_tests_properties(Test_task_based_local_hmatrix_solvers_${nb_threads} PROPERTIES LABELS "mpi" ENVIRONMENT "ASAN_OPTIONS=detect_leaks=0;OMP_NUM_THREADS=${nb_threads}")
 endforeach()
 
 add_executable(Test_solver_execution_policies test_solver_execution_policies.cpp)

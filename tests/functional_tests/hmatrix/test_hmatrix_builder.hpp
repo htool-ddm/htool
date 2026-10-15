@@ -100,26 +100,6 @@ bool test_hmatrix_builder(int nr, int nc, char Symmetry, char UPLO, double epsil
     is_error = is_error || !(error < epsilon);
     cout << "> Errors on a paralel hmatrix vector product with buffer: " << error << '\n';
 
-    // Test task-based vector product, twice with the same policy to reuse its L0, and with an L0 assigned directly
-    omp_task_policy<T> task_policy;
-    for (int i = 0; i < 2; i++) {
-        vec_result = vec_out;
-        add_hmatrix_vector_product(task_policy, 'N', alpha, hmatrix, vec_in.data(), beta, vec_result.data(), i == 0 ? nullptr : vec_buffer.data());
-
-        error    = norm2(vec_result - vec_reference) / norm2(vec_reference);
-        is_error = is_error || !(error < epsilon);
-        cout << "> Errors on a task-based hmatrix vector product " << (i == 0 ? "wo" : "with") << " buffer: " << error << '\n';
-    }
-
-    omp_task_policy<T> task_policy_custom;
-    task_policy_custom.hmatrix_task_dependencies.L0 = find_l0(hmatrix, 16);
-    vec_result                                      = vec_out;
-    add_hmatrix_vector_product(task_policy_custom, 'N', alpha, hmatrix, vec_in.data(), beta, vec_result.data());
-    is_error = is_error || task_policy_custom.hmatrix_task_dependencies.target_L0.empty() || task_policy_custom.hmatrix_task_dependencies.source_L0.empty();
-    error    = norm2(vec_result - vec_reference) / norm2(vec_reference);
-    is_error = is_error || !(error < epsilon);
-    cout << "> Errors on a task-based hmatrix vector product with an L0 assigned directly: " << error << '\n';
-
     // Test sequential matrix product without buffer
     mat_result = mat_out;
     add_hmatrix_matrix_product(exec_compat::seq, 'N', 'N', alpha, hmatrix, mat_in, beta, mat_result);

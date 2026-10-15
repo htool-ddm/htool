@@ -217,6 +217,17 @@ bool test_task_based_hmatrix_full_lu(char trans, int n1, int n2, htool::underlyi
     dependencies_custom.L0 = find_l0(A_custom, 16, dependencies_custom.cost_function);
     auto L0_custom         = dependencies_custom.L0;
     is_error               = is_error || !dependencies_custom.is_L0_of(A_custom);
+
+    // Products with the L0 assigned directly, whose cluster L0s are then computed, reused for the second product
+    std::vector<T> y_custom_reference(no_A), y_custom(no_A), buffer(ni_A + no_A);
+    add_matrix_vector_product(trans, T(1), A_dense, x.data(), T(0), y_custom_reference.data());
+    for (bool use_buffer : {false, true}) {
+        add_hmatrix_vector_product(policy_custom, trans, T(1), A_custom, x.data(), T(0), y_custom.data(), use_buffer ? buffer.data() : nullptr);
+        error    = norm2(y_custom_reference - y_custom) / norm2(y_custom_reference);
+        is_error = is_error || !(error < epsilon * margin) || dependencies_custom.target_L0.empty() || dependencies_custom.source_L0.empty();
+        cout << "> Errors on task-based hmatrix vector product with an L0 assigned directly " << (use_buffer ? "with" : "wo") << " buffer: " << error << '\n';
+    }
+
     lu_factorization(policy_custom, A_custom);
     is_error    = is_error || dependencies_custom.L0 != L0_custom;
     matrix_test = B_dense;
