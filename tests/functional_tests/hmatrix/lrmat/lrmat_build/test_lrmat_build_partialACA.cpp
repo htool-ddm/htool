@@ -41,7 +41,7 @@ int main(int, char *[]) {
         ClusterTreeBuilder<double> recursive_build_strategy;
 
         Cluster<double> t = recursive_build_strategy.create_cluster_tree(nr, 3, xt.data(), 2, 2);
-        Cluster<double> s = recursive_build_strategy.create_cluster_tree(nc, 3, xt.data(), 2, 2);
+        Cluster<double> s = recursive_build_strategy.create_cluster_tree(nc, 3, xs.data(), 2, 2);
 
         GeneratorTestDouble A_in_user_numbering(3, xt, xs);
         InternalGeneratorWithPermutation<double> A(A_in_user_numbering, t.get_permutation().data(), s.get_permutation().data());

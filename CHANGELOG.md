@@ -30,6 +30,7 @@ All notable changes to this project will be documented in this file.
 
 - JOSS badge and update `CITATION.cff`.
 - Opt-in `tidy` CMake target running clang-tidy (`bugprone-*`/`performance-*`) over `examples/` and `tests/`, not part of the default build. Configured via `.clang-tidy`, excluding the macro-generated `wrapper_blas.hpp`/`wrapper_lapack.hpp` from findings.
+- `HCA` low-rank compressor based on Chebyshev interpolation (via Theia), with target and source sides described by a `VirtualDiscretization`: `PointDiscretization` (point clouds) or `FEMDiscretization` (finite element spaces, by quadrature). Each discretization holds the cluster tree of its side; a constructor taking epsilon precomputes the leaves of these trees and reinterpolates tree-node blocks (`ReinterpolationMode`: `InterpolationMatrices`, `LowRankFactors`, `TensorLowRankFactors`); passing the same discretization on both sides precomputes them once.
 
 ### Changed
 

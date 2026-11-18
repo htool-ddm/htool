@@ -22,13 +22,12 @@ struct FEMSpace {
 
     basis_function_type basis_function;                      ///< Local shape functions, see basis_function_type.
     const std::map<int, std::vector<int>> *dofs_to_elements; ///< Global DOF index -> flattened (element_index, local_dof_index) pairs.
-    int number_of_dofs_per_element;                           ///< Number of local DOFs per element (e.g. 1 for P0, independent of number_of_points_per_element).
-    const int *elements_to_points;                            ///< Element -> geometric point indices, number_of_points_per_element entries per element.
-    int number_of_points_per_element;                         ///< 2 for a segment, 3 for a triangle; no other value is supported.
-    const CoordinatePrecision *points;                        ///< Flat point coordinates, dimension entries per point.
-    std::size_t size;                                         ///< Length of points.
-    const int *permutation;                                   ///< Local DOF index -> global DOF index, i.e. the key used into dofs_to_elements.
-    int quadrature_order;                                     ///< Requested quadrature order.
+    int number_of_dofs_per_element;                          ///< Number of local DOFs per element (e.g. 1 for P0, independent of number_of_points_per_element).
+    const int *elements_to_points;                           ///< Element -> geometric point indices, number_of_points_per_element entries per element.
+    int number_of_points_per_element;                        ///< 2 for a segment, 3 for a triangle; no other value is supported.
+    const CoordinatePrecision *points;                       ///< Flat point coordinates, dimension entries per point.
+    std::size_t size;                                        ///< Length of points.
+    int quadrature_order;                                    ///< Requested quadrature order.
 };
 
 } // namespace htool

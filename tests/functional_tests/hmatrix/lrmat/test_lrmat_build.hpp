@@ -42,7 +42,7 @@ bool test_lrmat(const Cluster<double> &target_cluster, const Cluster<double> &so
     cout << "> Compression rate : " << Fixed_approximation.space_saving() << '\n';
 
     // Recompression with fixed rank
-    LowRankMatrix<double> recompressed_fixed_approximation = Fixed_approximation;
+    LowRankMatrix<CoefficientPrecision> recompressed_fixed_approximation = Fixed_approximation;
     SVD_recompression(recompressed_fixed_approximation);
     std::vector<double> fixed_errors_after_recompression;
     for (int k = 0; k < recompressed_fixed_approximation.rank_of() + 1; k++) {
@@ -78,7 +78,7 @@ bool test_lrmat(const Cluster<double> &target_cluster, const Cluster<double> &so
     cout << "> Compression rate : " << Auto_approximation.space_saving() << '\n';
 
     // Recompression with automatic rank
-    LowRankMatrix<double> recompressed_auto_approximation = Auto_approximation;
+    LowRankMatrix<CoefficientPrecision> recompressed_auto_approximation = Auto_approximation;
     SVD_recompression(recompressed_auto_approximation);
     std::vector<double> auto_errors_after_recompression;
     for (int k = 0; k < recompressed_auto_approximation.rank_of() + 1; k++) {

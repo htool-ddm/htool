@@ -136,7 +136,7 @@ if(HTOOL_WITH_THEIA)
     FetchContent_Declare(
         theia
         GIT_REPOSITORY https://github.com/IChollet/theia_dev
-        GIT_TAG 15958078664d100307f90c5770d6d1f4e1ec2b87
+        GIT_TAG 17fbafd21bf23adb3a479f8fce8aaf3604703ddb
         SOURCE_SUBDIR "MADE-UP-DIRECTORY") # https://stackoverflow.com/questions/79261625/cmake-fetchcontent-with-header-only-project
 
     FetchContent_MakeAvailable(theia)

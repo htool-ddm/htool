@@ -1,5 +1,6 @@
 #include <complex>
 #include <iostream>
+#include <memory>
 #include <vector>
 
 #include <htool/hmatrix/lrmat/interpolation.hpp>
@@ -153,7 +154,7 @@ int main(int argc, char *argv[]) {
         }
         // 1. / (1 + std::sqrt(std::inner_product(m_target_coordinates.begin() + m_space_dim * k, m_target_coordinates.begin() + m_space_dim * k + m_space_dim, m_source_coordinates.begin() + m_space_dim * j, double(0), std::plus<double>(), [](double u, double v) { return (u - v) * (u - v); })));
     });
-    HCA<double, double, 3> compressor_HCA(kernel, target_coordinates.data(), target_coordinates.size(), target_cluster.get_permutation().data(), source_coordinates.data(), source_coordinates.size(), source_cluster.get_permutation().data());
+    HCA<double, double, 3> compressor_HCA(kernel, std::make_shared<PointDiscretization<double, double, 3>>(target_coordinates.data(), target_cluster), std::make_shared<PointDiscretization<double, double, 3>>(source_coordinates.data(), source_cluster));
     LowRankMatrix<double> A_HCA(target_cluster.get_size(), source_cluster.get_size(), epsilon);
     compressor_HCA.copy_low_rank_approximation(target_cluster.get_size(), source_cluster.get_size(), target_cluster.get_offset(), source_cluster.get_offset(), A_HCA);
     std::vector<double> recompressed_HCA_fixed_errors(reqrank_max, 0);
